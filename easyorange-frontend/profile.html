@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="个人中心 - EasyOrange校园二手交易平台">
+    <title>个人中心 - EasyOrange</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700;800;900&family=Crimson+Pro:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="preload" href="/src/styles/main.css" as="style">
+    <link rel="preload" href="/src/styles/profile.css" as="style">
+    <link rel="preload" href="/src/pages/profile.ts" as="script">
+</head>
+<body class="profile-body">
+    <!-- 动态背景 -->
+    <div class="ambient-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <div class="noise-overlay"></div>
+    </div>
+
+    <!-- 顶部导航 -->
+    <header class="unified-header">
+        <div class="header-container">
+            <a href="/" class="brand-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="18" stroke="url(#logoGradient)" stroke-width="2"/>
+                        <path d="M12 20c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="url(#logoGradient)" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="20" cy="20" r="3" fill="url(#logoGradient)"/>
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6366F1"/>
+                                <stop offset="100%" stop-color="#EC4899"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="brand-name">EasyOrange</span>
+            </a>
+            
+            <nav class="header-nav" role="navigation" aria-label="主导航">
+                <a href="/" class="nav-item">首页</a>
+                <a href="/products.html" class="nav-item">商品</a>
+                <a href="/profile.html" class="nav-item active" aria-current="page">个人中心</a>
+            </nav>
+            
+            <div class="header-actions">
+                <button class="notification-btn" aria-label="通知">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                    <span class="notification-badge">3</span>
+                </button>
+                <div class="user-menu" id="userMenu">
+                    <button class="user-avatar-btn" id="userAvatarBtn">
+                        <span class="user-name" id="userName"></span>
+                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <a href="/profile.html" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>个人中心</span>
+                        </a>
+                        <a href="/favorites.html" class="dropdown-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span>我的收藏</span>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item logout-btn" id="logoutBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            <span>退出登录</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="mobile-menu-btn" aria-label="菜单" aria-expanded="false">
+                <span class="hamburger"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="profile-main">
+        <div class="container">
+            <div class="profile-grid">
+                <!-- 左侧边栏 -->
+                <aside class="profile-sidebar">
+                    <!-- 用户卡片 -->
+                    <div class="user-profile-card">
+                        <div class="card-glow"></div>
+                        <div class="card-grain"></div>
+                        <div class="profile-header">
+                            <div class="profile-header-top">
+                                <span class="profile-kicker">EasyOrange Personal Atelier</span>
+                                <span class="profile-presence">
+                                    <span class="presence-dot"></span>
+                                    在线管理中
+                                </span>
+                            </div>
+                            <div class="profile-info">
+                                <p class="profile-eyebrow">校园交易名片</p>
+                                <h1 class="profile-name" id="profileName">加载中...</h1>
+                                <p class="profile-handle">@<span id="profileHandle">user</span></p>
+                                <p class="profile-intro" id="profileIntro">管理你的资料、订单与偏好设置，让闲置流转更从容。</p>
+                            </div>
+                            <div class="profile-badges">
+                                <div class="profile-badge">
+                                    <span class="badge-icon">✓</span>
+                                    <span class="badge-text">已认证</span>
+                                </div>
+                                <div class="profile-badge subtle" id="profileCampusTag">校园身份待完善</div>
+                            </div>
+                            <div class="profile-presence-grid">
+                                <div class="presence-card">
+                                    <span class="presence-label">资料完成度</span>
+                                    <strong class="presence-value" id="profileCompleteness">0%</strong>
+                                </div>
+                                <div class="presence-card">
+                                    <span class="presence-label">最近活跃</span>
+                                    <strong class="presence-value" id="profileLastSeen">未知</strong>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-stats">
+                            <div class="stat-box">
+                                <span class="stat-number" id="statPublished" data-count="0">0</span>
+                                <span class="stat-label">发布</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-box">
+                                <span class="stat-number" id="statSold" data-count="0">0</span>
+                                <span class="stat-label">已售</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-box">
+                                <span class="stat-number" id="statFollowers" data-count="0">0</span>
+                                <span class="stat-label">粉丝</span>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <button class="btn-primary" id="editProfileBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                                编辑资料
+                            </button>
+                            <button class="btn-secondary" id="shareProfileBtn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                                </svg>
+                                分享主页
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 导航菜单 -->
+                    <nav class="profile-nav">
+                        <a href="#overview" class="nav-item active" data-section="overview">
+                            <div class="nav-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"/>
+                                    <rect x="14" y="3" width="7" height="7"/>
+                                    <rect x="14" y="14" width="7" height="7"/>
+                                    <rect x="3" y="14" width="7" height="7"/>
+                                </svg>
+                            </div>
+                            <span class="nav-text">总览</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                        <a href="#info" class="nav-item" data-section="info">
+                            <div class="nav-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                            </div>
+                            <span class="nav-text">个人信息</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                        <a href="#security" class="nav-item" data-section="security">
+                            <div class="nav-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                            </div>
+                            <span class="nav-text">安全中心</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                        <a href="#preferences" class="nav-item" data-section="preferences">
+                            <div class="nav-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                </svg>
+                            </div>
+                            <span class="nav-text">偏好设置</span>
+                            <div class="nav-indicator"></div>
+                        </a>
+                    </nav>
+                </aside>
+
+                <!-- 右侧内容区 -->
+                <div class="profile-content">
+                    <!-- 总览页面 -->
+                    <section id="overview-section" class="content-section active">
+                        <div class="section-header">
+                            <div class="header-title">
+                                <h2>个人总览</h2>
+                                <p class="header-subtitle">查看您的账户概况和活动统计</p>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn-ghost" id="exportDataBtn">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="7 10 12 15 17 10"/>
+                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    导出数据
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 数据概览卡片 -->
+                        <div class="metrics-grid">
+                            <div class="metric-card primary">
+                                <div class="metric-bg"></div>
+                                <div class="metric-content">
+                                    <div class="metric-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-data">
+                                        <span class="metric-value" id="metricRevenue">¥0</span>
+                                        <span class="metric-label">累计收益</span>
+                                    </div>
+                                    <div class="metric-trend up">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                                            <polyline points="17 6 23 6 23 12"/>
+                                        </svg>
+                                        +12.5%
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-content">
+                                    <div class="metric-icon blue">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-data">
+                                        <span class="metric-value" id="metricTransactions">0</span>
+                                        <span class="metric-label">交易次数</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-content">
+                                    <div class="metric-icon purple">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-data">
+                                        <span class="metric-value" id="metricFavorites">0</span>
+                                        <span class="metric-label">收藏商品</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="metric-card">
+                                <div class="metric-content">
+                                    <div class="metric-icon orange">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                            <circle cx="9" cy="7" r="4"/>
+                                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                        </svg>
+                                    </div>
+                                    <div class="metric-data">
+                                        <span class="metric-value" id="metricFollowing">0</span>
+                                        <span class="metric-label">关注中</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 快捷入口 -->
+                        <div class="quick-actions">
+                            <h3 class="section-subtitle">快捷入口</h3>
+                            <div class="action-cards">
+                                <a href="/products.html?mine=1" class="action-card">
+                                    <div class="action-icon blue">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                                            <line x1="7" y1="7" x2="7.01" y2="7"/>
+                                        </svg>
+                                    </div>
+                                    <div class="action-content">
+                                        <span class="action-title">我的商品</span>
+                                        <span class="action-count" id="myProductCount">0 件</span>
+                                    </div>
+                                    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"/>
+                                    </svg>
+                                </a>
+                                <a href="/orders.html" class="action-card">
+                                    <div class="action-icon orange">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                            <line x1="16" y1="13" x2="8" y2="13"/>
+                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                        </svg>
+                                    </div>
+                                    <div class="action-content">
+                                        <span class="action-title">我的订单</span>
+                                        <span class="action-count" id="myOrderCount">0 笔</span>
+                                    </div>
+                                    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"/>
+                                    </svg>
+                                </a>
+                                <a href="/favorites.html" class="action-card">
+                                    <div class="action-icon pink">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="action-content">
+                                        <span class="action-title">我的收藏</span>
+                                        <span class="action-count" id="myFavoriteCount">0 件</span>
+                                    </div>
+                                    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="9 18 15 12 9 6"/>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- 最近活动 -->
+                        <div class="activity-section">
+                            <h3 class="section-subtitle">最近活动</h3>
+                            <div class="activity-list" id="activityList">
+                                <div class="activity-empty">
+                                    <div class="empty-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <p>暂无最近活动</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 个人信息页面 -->
+                    <section id="info-section" class="content-section">
+                        <div class="section-header">
+                            <div class="header-title">
+                                <h2>个人信息</h2>
+                                <p class="header-subtitle">管理您的个人资料和联系方式</p>
+                            </div>
+                        </div>
+
+                        <div class="info-cards">
+                            <div class="info-card-large">
+                                <div class="card-header">
+                                    <h3>基本信息</h3>
+                                </div>
+                                <div class="info-list">
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                                <polyline points="22,6 12,13 2,6"/>
+                                            </svg>
+                                            邮箱地址
+                                        </div>
+                                        <div class="info-value" id="infoEmail">--</div>
+                                    </div>
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                                            </svg>
+                                            手机号码
+                                        </div>
+                                        <div class="info-value" id="infoPhone">--</div>
+                                    </div>
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                                            </svg>
+                                            学号
+                                        </div>
+                                        <div class="info-value" id="infoStudentId">--</div>
+                                    </div>
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                            真实姓名
+                                        </div>
+                                        <div class="info-value" id="infoRealName">--</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="info-card-large">
+                                <div class="card-header">
+                                    <h3>账户信息</h3>
+                                </div>
+                                <div class="info-list">
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                                <line x1="3" y1="10" x2="21" y2="10"/>
+                                            </svg>
+                                            注册时间
+                                        </div>
+                                        <div class="info-value" id="infoJoinDate">--</div>
+                                    </div>
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"/>
+                                                <polyline points="12 6 12 12 16 14"/>
+                                            </svg>
+                                            最后登录
+                                        </div>
+                                        <div class="info-value" id="infoLastActive">--</div>
+                                    </div>
+                                    <div class="info-row">
+                                        <div class="info-label">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                            账户状态
+                                        </div>
+                                        <div class="info-value">
+                                            <span class="status-badge active">正常</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 安全中心页面 -->
+                    <section id="security-section" class="content-section">
+                        <div class="section-header">
+                            <div class="header-title">
+                                <h2>安全中心</h2>
+                                <p class="header-subtitle">保护您的账户安全</p>
+                            </div>
+                        </div>
+
+                        <div class="security-dashboard">
+                            <div class="security-score-card">
+                                <div class="score-visual">
+                                    <svg class="score-ring" viewBox="0 0 120 120">
+                                        <defs>
+                                            <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#10B981"/>
+                                                <stop offset="100%" style="stop-color:#3B82F6"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <circle class="score-bg" cx="60" cy="60" r="54"/>
+                                        <circle class="score-progress" cx="60" cy="60" r="54" id="scoreCircle"/>
+                                    </svg>
+                                    <div class="score-text">
+                                        <span class="score-number" id="securityScoreValue">85</span>
+                                        <span class="score-label">安全评分</span>
+                                    </div>
+                                </div>
+                                <div class="score-details">
+                                    <h3>账户安全状况良好</h3>
+                                    <p>您的账户已完成大部分安全设置，建议开启两步验证以获得更高分数。</p>
+                                    <div class="score-actions">
+                                        <button class="btn-primary" id="improveSecurityBtn">提升安全</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="security-settings">
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <div class="setting-icon">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                            </svg>
+                                        </div>
+                                        <div class="setting-text">
+                                            <h4>登录密码</h4>
+                                            <p>定期更换密码可以保护账户安全</p>
+                                        </div>
+                                    </div>
+                                    <button class="btn-outline" id="changePasswordBtn">修改</button>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <div class="setting-icon">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                            </svg>
+                                        </div>
+                                        <div class="setting-text">
+                                            <h4>两步验证</h4>
+                                            <p>开启后登录需要额外验证码</p>
+                                        </div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="twoFactorSwitch">
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+
+                                <div class="setting-item">
+                                    <div class="setting-info">
+                                        <div class="setting-icon">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                                            </svg>
+                                        </div>
+                                        <div class="setting-text">
+                                            <h4>登录提醒</h4>
+                                            <p>新设备登录时发送通知</p>
+                                        </div>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="loginAlertSwitch" checked>
+                                        <span class="switch-slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 偏好设置页面 -->
+                    <section id="preferences-section" class="content-section">
+                        <div class="section-header">
+                            <div class="header-title">
+                                <h2>偏好设置</h2>
+                                <p class="header-subtitle">自定义您的使用体验</p>
+                            </div>
+                        </div>
+
+                        <div class="preferences-grid">
+                            <div class="pref-card">
+                                <h3>外观主题</h3>
+                                <div class="theme-options">
+                                    <button class="theme-option active" data-theme="light">
+                                        <div class="theme-preview light">
+                                            <div class="preview-header"></div>
+                                            <div class="preview-content">
+                                                <div class="preview-line"></div>
+                                                <div class="preview-line short"></div>
+                                            </div>
+                                        </div>
+                                        <span>浅色</span>
+                                    </button>
+                                    <button class="theme-option" data-theme="dark">
+                                        <div class="theme-preview dark">
+                                            <div class="preview-header"></div>
+                                            <div class="preview-content">
+                                                <div class="preview-line"></div>
+                                                <div class="preview-line short"></div>
+                                            </div>
+                                        </div>
+                                        <span>深色</span>
+                                    </button>
+                                    <button class="theme-option" data-theme="auto">
+                                        <div class="theme-preview auto">
+                                            <div class="preview-header"></div>
+                                            <div class="preview-content">
+                                                <div class="preview-line"></div>
+                                                <div class="preview-line short"></div>
+                                            </div>
+                                        </div>
+                                        <span>自动</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="pref-card">
+                                <h3>通知设置</h3>
+                                <div class="pref-list">
+                                    <label class="pref-item">
+                                        <div class="pref-info">
+                                            <span class="pref-title">消息通知</span>
+                                            <span class="pref-desc">接收站内消息提醒</span>
+                                        </div>
+                                        <div class="switch">
+                                            <input type="checkbox" id="notifMsgSwitch" checked>
+                                            <span class="switch-slider"></span>
+                                        </div>
+                                    </label>
+                                    <label class="pref-item">
+                                        <div class="pref-info">
+                                            <span class="pref-title">邮件通知</span>
+                                            <span class="pref-desc">接收重要邮件提醒</span>
+                                        </div>
+                                        <div class="switch">
+                                            <input type="checkbox" id="notifEmailSwitch" checked>
+                                            <span class="switch-slider"></span>
+                                        </div>
+                                    </label>
+                                    <label class="pref-item">
+                                        <div class="pref-info">
+                                            <span class="pref-title">声音提示</span>
+                                            <span class="pref-desc">新消息播放提示音</span>
+                                        </div>
+                                        <div class="switch">
+                                            <input type="checkbox" id="notifSoundSwitch">
+                                            <span class="switch-slider"></span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pref-card">
+                                <h3>隐私设置</h3>
+                                <div class="pref-list">
+                                    <label class="pref-item">
+                                        <div class="pref-info">
+                                            <span class="pref-title">公开在线状态</span>
+                                            <span class="pref-desc">允许他人看到您是否在线</span>
+                                        </div>
+                                        <div class="switch">
+                                            <input type="checkbox" id="privacyOnlineSwitch" checked>
+                                            <span class="switch-slider"></span>
+                                        </div>
+                                    </label>
+                                    <label class="pref-item">
+                                        <div class="pref-info">
+                                            <span class="pref-title">显示联系方式</span>
+                                            <span class="pref-desc">在个人主页显示手机号</span>
+                                        </div>
+                                        <div class="switch">
+                                            <input type="checkbox" id="privacyContactSwitch">
+                                            <span class="switch-slider"></span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 模态框 -->
+    <div class="modal-overlay" id="modalOverlay"></div>
+    
+    <!-- 修改密码模态框 -->
+    <div class="modal" id="passwordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>修改密码</h3>
+                <button class="modal-close" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form class="form" id="passwordForm">
+                    <div class="form-group">
+                        <label class="form-label">当前密码</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-input" id="currentPassword" placeholder="请输入当前密码" required>
+                            <button type="button" class="input-action toggle-password">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">新密码</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-input" id="newPassword" placeholder="请输入新密码（6-20位）" required>
+                            <button type="button" class="input-action toggle-password">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="password-strength" id="passwordStrength">
+                            <div class="strength-bar"></div>
+                            <span class="strength-text">密码强度</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">确认新密码</label>
+                        <div class="input-wrapper">
+                            <input type="password" class="form-input" id="confirmPassword" placeholder="请再次输入新密码" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="cancelPasswordBtn">取消</button>
+                <button class="btn-primary" id="submitPasswordBtn">确认修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑资料模态框 -->
+    <div class="modal" id="editInfoModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>编辑个人资料</h3>
+                <button class="modal-close" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editInfoForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">用户名</label>
+                            <input type="text" class="form-input" id="editUsername" placeholder="请输入用户名" maxlength="20">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">真实姓名</label>
+                            <input type="text" class="form-input" id="editRealName" placeholder="请输入真实姓名" maxlength="20">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">邮箱地址</label>
+                            <input type="email" class="form-input" id="editEmail" placeholder="请输入邮箱">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">手机号码</label>
+                            <input type="tel" class="form-input" id="editPhone" placeholder="请输入手机号" maxlength="11">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">学号</label>
+                            <input type="text" class="form-input" id="editStudentId" placeholder="请输入学号" maxlength="20">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">性别</label>
+                            <select class="form-input" id="editGender">
+                                <option value="">请选择</option>
+                                <option value="0">保密</option>
+                                <option value="1">男</option>
+                                <option value="2">女</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-ghost" id="cancelEditInfoBtn">取消</button>
+                <button class="btn-primary" id="submitEditInfoBtn">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast" id="toast"></div>
+
+    <script src="/src/pages/profile.ts" type="module"></script>
+</body>
+</html>

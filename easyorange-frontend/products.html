@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="浏览优质二手商品 - EasyOrange校园二手交易平台">
+    <meta name="keywords" content="校园二手, 二手交易, 商品列表, EasyOrange">
+    <title>商品广场 - EasyOrange</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700;800;900&family=Crimson+Pro:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="preload" href="/src/styles/main.css" as="style">
+    <link rel="preload" href="/src/styles/products.css" as="style">
+</head>
+<body class="products-page">
+    <div class="products-bg">
+        <div class="bg-gradient-layer"></div>
+        <div class="bg-noise"></div>
+        <div class="floating-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+    </div>
+
+    <header class="unified-header">
+        <div class="header-container">
+            <a href="/" class="brand-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none">
+                        <circle cx="20" cy="20" r="18" stroke="url(#logoGradient)" stroke-width="2"/>
+                        <path d="M12 20c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="url(#logoGradient)" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="20" cy="20" r="3" fill="url(#logoGradient)"/>
+                        <defs>
+                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#6366F1"/>
+                                <stop offset="100%" stop-color="#EC4899"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span class="brand-name">EasyOrange</span>
+            </a>
+            
+            <nav class="header-nav" role="navigation" aria-label="主导航">
+                <a href="/" class="nav-item">首页</a>
+                <a href="/products.html" class="nav-item active" aria-current="page">商品</a>
+            </nav>
+            
+            <div class="header-actions">
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <button class="user-avatar-btn" id="userAvatarBtn" aria-label="用户菜单" aria-expanded="false" aria-haspopup="true">
+                        <span class="user-name" id="userName"></span>
+                        <svg class="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown" role="menu" aria-label="用户菜单">
+                        <a href="/profile.html" class="dropdown-item" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <span>个人中心</span>
+                        </a>
+                        <a href="/favorites.html" class="dropdown-item" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            <span>我的收藏</span>
+                        </a>
+                        <div class="dropdown-divider" role="separator"></div>
+                        <button class="dropdown-item logout-btn" id="logoutBtn" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16 17 21 12 16 7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                            <span>退出登录</span>
+                        </button>
+                    </div>
+                </div>
+                <button class="login-btn" id="loginBtn" aria-label="登录">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>登录</span>
+                </button>
+                <a href="/publish.html" class="publish-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span>发布</span>
+                </a>
+            </div>
+            
+            <button class="mobile-menu-btn" aria-label="菜单" aria-expanded="false">
+                <span class="hamburger"></span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="filter-sidebar" id="filterSidebar" aria-label="筛选面板">
+        <div class="filter-header">
+            <h3>筛选条件</h3>
+            <button class="filter-close" id="filterClose" aria-label="关闭筛选">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="filter-content">
+            <div class="filter-section">
+                <h4 class="filter-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    </svg>
+                    商品分类
+                </h4>
+                <div class="filter-options" id="categoryFilter" role="group" aria-label="分类筛选">
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4 class="filter-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"/>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    价格区间
+                </h4>
+                <div class="price-range" role="group" aria-label="价格区间">
+                    <div class="price-inputs">
+                        <input type="number" class="price-input" id="priceMin" placeholder="最低价" min="0">
+                        <span class="price-separator">-</span>
+                        <input type="number" class="price-input" id="priceMax" placeholder="最高价" min="0">
+                    </div>
+                    <div class="price-presets">
+                        <button class="preset-btn" data-min="0" data-max="50">¥50以下</button>
+                        <button class="preset-btn" data-min="50" data-max="200">¥50-200</button>
+                        <button class="preset-btn" data-min="200" data-max="500">¥200-500</button>
+                        <button class="preset-btn" data-min="500" data-max="">¥500以上</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4 class="filter-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                    新旧程度
+                </h4>
+                <div class="filter-options condition-options" id="conditionFilter" role="group" aria-label="新旧程度筛选">
+                    <label class="filter-checkbox">
+                        <input type="checkbox" name="condition" value="1">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">全新</span>
+                        <span class="condition-icon">✨</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" name="condition" value="2">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">几乎全新</span>
+                        <span class="condition-icon">🌟</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" name="condition" value="3">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">轻微使用</span>
+                        <span class="condition-icon">💫</span>
+                    </label>
+                    <label class="filter-checkbox">
+                        <input type="checkbox" name="condition" value="4">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-label">明显使用</span>
+                        <span class="condition-icon">⭐</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="filter-section">
+                <h4 class="filter-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="21" x2="4" y2="14"/>
+                        <line x1="4" y1="10" x2="4" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12" y2="3"/>
+                        <line x1="20" y1="21" x2="20" y2="16"/>
+                        <line x1="20" y1="12" x2="20" y2="3"/>
+                    </svg>
+                    排序方式
+                </h4>
+                <div class="sort-options" id="sortFilter" role="radiogroup" aria-label="排序方式">
+                    <label class="filter-radio">
+                        <input type="radio" name="sort" value="newest" checked>
+                        <span class="radio-custom"></span>
+                        <span class="radio-label">最新发布</span>
+                    </label>
+                    <label class="filter-radio">
+                        <input type="radio" name="sort" value="price_asc">
+                        <span class="radio-custom"></span>
+                        <span class="radio-label">价格从低到高</span>
+                    </label>
+                    <label class="filter-radio">
+                        <input type="radio" name="sort" value="price_desc">
+                        <span class="radio-custom"></span>
+                        <span class="radio-label">价格从高到低</span>
+                    </label>
+                    <label class="filter-radio">
+                        <input type="radio" name="sort" value="popular">
+                        <span class="radio-custom"></span>
+                        <span class="radio-label">热门优先</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="filter-footer">
+            <button class="btn btn-ghost" id="resetFilter">重置</button>
+            <button class="btn btn-primary" id="applyFilter">应用筛选</button>
+        </div>
+    </aside>
+
+    <main class="products-main">
+        <div class="products-container">
+            <h1 class="visually-hidden">商品列表 - EasyOrange校园二手交易平台</h1>
+            <div class="products-toolbar">
+                <div class="results-info">
+                    <span class="results-count" id="resultsCount">0</span>
+                    <span class="results-text">件商品</span>
+                </div>
+                <div class="view-options">
+                    <button class="view-btn active" data-view="grid" aria-label="网格视图">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                        </svg>
+                    </button>
+                    <button class="view-btn" data-view="list" aria-label="列表视图">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="active-filters" id="activeFilters" style="display: none;">
+                <div class="active-filter-tags" id="activeFilterTags"></div>
+                <button class="clear-all-filters" id="clearAllFilters">清除全部</button>
+            </div>
+            
+            <div class="products-grid" id="productsGrid" role="list">
+            </div>
+            
+            <div class="loading-more" id="loadingMore" style="display: none;">
+                <div class="loading-spinner"></div>
+                <span>加载更多商品...</span>
+            </div>
+            
+            <div class="no-results" id="noResults" style="display: none;">
+                <div class="no-results-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                        <path d="M8 8l6 6M14 8l-6 6"/>
+                    </svg>
+                </div>
+                <h3>未找到相关商品</h3>
+                <p>尝试调整筛选条件或搜索其他关键词</p>
+                <button class="btn btn-primary" id="resetSearch">重新搜索</button>
+            </div>
+            
+            <div class="load-more-trigger" id="loadMoreTrigger"></div>
+        </div>
+    </main>
+
+    <div class="product-detail-modal" id="productDetailModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-container">
+            <button class="modal-close" id="modalClose" aria-label="关闭">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            
+            <div class="modal-content">
+                <div class="modal-gallery">
+                    <div class="gallery-main">
+                        <img id="modalMainImage" src="" alt="商品图片">
+                        <div class="gallery-nav">
+                            <button class="gallery-btn prev" id="galleryPrev" aria-label="上一张">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 18 9 12 15 6"/>
+                                </svg>
+                            </button>
+                            <button class="gallery-btn next" id="galleryNext" aria-label="下一张">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="gallery-counter" id="galleryCounter">1 / 1</div>
+                    </div>
+                    <div class="gallery-thumbnails" id="galleryThumbnails"></div>
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-header">
+                        <div class="modal-badges">
+                            <span class="badge badge-condition" id="modalCondition"></span>
+                            <span class="badge badge-discount" id="modalDiscount" style="display: none;"></span>
+                        </div>
+                        <h2 class="modal-title" id="modalTitle"></h2>
+                        <div class="modal-price">
+                            <span class="price-current" id="modalPrice"></span>
+                            <span class="price-original" id="modalOriginalPrice" style="display: none;"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-meta">
+                        <div class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                                <circle cx="12" cy="10" r="3"/>
+                            </svg>
+                            <span id="modalLocation"></span>
+                        </div>
+                        <div class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <line x1="16" y1="2" x2="16" y2="6"/>
+                                <line x1="8" y1="2" x2="8" y2="6"/>
+                                <line x1="3" y1="10" x2="21" y2="10"/>
+                            </svg>
+                            <span id="modalDate"></span>
+                        </div>
+                        <div class="meta-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <span id="modalViews"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-description">
+                        <h3>商品描述</h3>
+                        <p id="modalDescription"></p>
+                    </div>
+                    
+                    <div class="modal-seller">
+                        <h3>卖家信息</h3>
+                        <div class="seller-card">
+                            <div class="seller-info">
+                                <span class="seller-name" id="modalSellerName"></span>
+                                <span class="seller-stats" id="modalSellerStats"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-primary btn-lg" id="modalContact">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                            联系卖家
+                        </button>
+                        <button class="btn btn-secondary btn-lg" id="modalFavorite">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                            收藏
+                        </button>
+                        <button class="btn btn-ghost btn-lg" id="modalShare">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="18" cy="5" r="3"/>
+                                <circle cx="6" cy="12" r="3"/>
+                                <circle cx="18" cy="19" r="3"/>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                            </svg>
+                            分享
+                        </button>
+                    </div>
+                    
+                    <div class="modal-price-trend" id="modalPriceTrend" style="display: none;">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                            </svg>
+                            价格走势
+                        </h3>
+                        <div class="price-trend-chart" id="priceTrendChart"></div>
+                        <div class="price-trend-stats">
+                            <div class="trend-stat">
+                                <span class="stat-label">最高价</span>
+                                <span class="stat-value high" id="trendHighPrice">--</span>
+                            </div>
+                            <div class="trend-stat">
+                                <span class="stat-label">最低价</span>
+                                <span class="stat-value low" id="trendLowPrice">--</span>
+                            </div>
+                            <div class="trend-stat">
+                                <span class="stat-label">平均价</span>
+                                <span class="stat-value" id="trendAvgPrice">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-similar" id="modalSimilar" style="display: none;">
+                        <h3>相似推荐</h3>
+                        <div class="similar-products" id="similarProducts"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="contact-modal" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="contactModalTitle">
+        <div class="contact-modal-overlay" id="contactModalOverlay"></div>
+        <div class="contact-modal-content">
+            <div class="contact-modal-header">
+                <h3 id="contactModalTitle">联系卖家</h3>
+                <button class="contact-modal-close" id="contactModalClose" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="contact-modal-body">
+                <div class="contact-seller-info">
+                    <div class="contact-seller-detail">
+                        <span class="contact-seller-name" id="contactSellerName"></span>
+                        <span class="contact-seller-product" id="contactProductName"></span>
+                    </div>
+                </div>
+                <div class="contact-methods" id="contactMethods">
+                </div>
+                <div class="contact-tips">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    <span>交易时请注意安全，建议当面交易，谨防诈骗</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="share-modal" id="shareModal" role="dialog" aria-modal="true" aria-labelledby="shareModalTitle">
+        <div class="share-modal-overlay" id="shareModalOverlay"></div>
+        <div class="share-modal-content">
+            <div class="share-modal-header">
+                <h3 id="shareModalTitle">分享商品</h3>
+                <button class="share-modal-close" id="shareModalClose" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="share-modal-body">
+                <div class="share-options">
+                    <button class="share-option" data-platform="wechat">
+                        <div class="share-icon wechat">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89c-.135-.01-.269-.03-.407-.03zm-2.53 3.274c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.969-.982z"/>
+                            </svg>
+                        </div>
+                        <span>微信</span>
+                    </button>
+                    <button class="share-option" data-platform="weibo">
+                        <div class="share-icon weibo">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M10.098 20.323c-3.977.391-7.414-1.406-7.672-4.02-.259-2.609 2.759-5.047 6.74-5.441 3.979-.394 7.413 1.404 7.671 4.018.259 2.6-2.759 5.049-6.739 5.443zM9.05 17.219c-.384.616-1.208.884-1.829.602-.612-.279-.793-.991-.406-1.593.379-.595 1.176-.861 1.793-.601.622.263.82.972.442 1.592zm1.27-1.627c-.141.237-.449.353-.689.253-.236-.09-.313-.361-.177-.586.138-.227.436-.346.672-.24.239.09.315.36.194.573zm.176-2.719c-1.893-.493-4.033.45-4.857 2.118-.836 1.704-.026 3.591 1.886 4.21 1.983.64 4.318-.341 5.132-2.179.8-1.793-.201-3.642-2.161-4.149zm7.563-1.224c-.346-.105-.579-.18-.405-.649.381-1.017.422-1.896-.001-2.52-.789-1.165-2.943-1.102-5.387-.03 0 0-.772.335-.575-.272.383-1.217.324-2.236-.27-2.82-1.35-1.327-4.941.047-8.024 3.074C1.319 10.761 0 13.217 0 15.328c0 4.036 5.179 6.494 10.245 6.494 6.637 0 11.058-3.861 11.058-6.928 0-1.853-1.563-2.903-3.244-3.245zm2.294-4.608c-.65-.769-1.607-1.197-2.695-1.197-.148 0-.298.01-.448.028-.381.049-.65.395-.601.776.048.381.394.65.775.602.088-.011.176-.017.264-.017.667 0 1.254.264 1.653.726.398.462.569 1.076.48 1.73-.056.379.207.732.586.787.034.005.069.008.103.008.34 0 .636-.25.689-.596.138-.99-.138-1.94-.706-2.647zm1.627-2.99c-1.078-1.274-2.665-1.976-4.47-1.976-.248 0-.498.015-.748.045-.568.072-.972.587-.899 1.155.072.568.586.97 1.155.899.165-.021.33-.031.492-.031 1.258 0 2.369.49 3.129 1.388.76.898 1.074 2.08.885 3.327-.089.565.298 1.095.863 1.184.054.008.108.012.162.012.502 0 .94-.366 1.022-.876.27-1.719-.175-3.368-1.591-5.127z"/>
+                            </svg>
+                        </div>
+                        <span>微博</span>
+                    </button>
+                    <button class="share-option" data-platform="qq">
+                        <div class="share-icon qq">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12.003 2c-2.265 0-6.29 1.364-6.29 7.325v1.195S3.55 14.96 3.55 17.474c0 .665.17 1.025.281 1.025.114 0 .902-.484 1.748-2.072 0 0-.18 2.197 1.904 3.967 0 0-1.77.495-1.77 1.182 0 .686 1.487.787 3.463.787 1.98 0 3.463-.101 3.463-.787 0-.687-1.77-1.182-1.77-1.182 2.085-1.77 1.904-3.967 1.904-3.967.846 1.588 1.634 2.072 1.748 2.072.111 0 .281-.36.281-1.025 0-2.514-2.164-6.954-2.164-6.954V9.325C12.938 3.364 14.272 2 12.003 2z"/>
+                            </svg>
+                        </div>
+                        <span>QQ</span>
+                    </button>
+                    <button class="share-option" data-platform="link" id="copyLinkBtn">
+                        <div class="share-icon link">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                            </svg>
+                        </div>
+                        <span>复制链接</span>
+                    </button>
+                </div>
+                <div class="share-link-preview">
+                    <input type="text" class="share-link-input" id="shareLinkInput" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="compare-bar" id="compareBar" style="display: none;">
+        <div class="compare-bar-content">
+            <div class="compare-info">
+                <span class="compare-count" id="compareCount">0</span>
+                <span class="compare-text">/ 4 件商品已选择</span>
+            </div>
+            <div class="compare-items" id="compareItems"></div>
+            <div class="compare-actions">
+                <button class="btn btn-ghost btn-sm" id="clearCompare">清空</button>
+                <button class="btn btn-primary btn-sm" id="startCompare">开始对比</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="compare-modal" id="compareModal" role="dialog" aria-modal="true">
+        <div class="compare-modal-overlay" id="compareModalOverlay"></div>
+        <div class="compare-modal-content">
+            <div class="compare-modal-header">
+                <h3>商品对比</h3>
+                <button class="compare-modal-close" id="compareModalClose" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="compare-modal-body" id="compareModalBody"></div>
+        </div>
+    </div>
+
+    <div class="quick-filters" id="quickFilters">
+        <button class="quick-filter-btn active" data-filter="all">全部</button>
+        <button class="quick-filter-btn" data-filter="new">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            最新发布
+        </button>
+        <button class="quick-filter-btn" data-filter="hot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+            </svg>
+            热门商品
+        </button>
+        <button class="quick-filter-btn" data-filter="discount">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="5" x2="5" y2="19"/>
+                <circle cx="6.5" cy="6.5" r="2.5"/>
+                <circle cx="17.5" cy="17.5" r="2.5"/>
+            </svg>
+            特价优惠
+        </button>
+        <button class="quick-filter-btn" data-filter="newArrival">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 3l1.912 5.813L20 10l-4.373 3.732L17.237 20 12 16.5 6.763 20l1.61-6.268L4 10l6.088-1.187z"/>
+            </svg>
+            全新物品
+        </button>
+    </div>
+
+    <div class="recent-history" id="recentHistory" style="display: none;">
+        <div class="history-header">
+            <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                最近浏览
+            </h3>
+            <button class="clear-history-btn" id="clearHistory">清空</button>
+        </div>
+        <div class="history-items" id="historyItems"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="/src/pages/products/ProductsPage.ts" type="module"></script>
+</body>
+</html>

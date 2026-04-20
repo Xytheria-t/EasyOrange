@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cartethyia.easyorange.framework.operlog.mapper.SysOperLogMapper">
+
+    <delete id="deleteExpiredLogs">
+        DELETE FROM sys_oper_log 
+        WHERE oper_time &lt; #{expireDate}
+    </delete>
+
+    <delete id="deleteLogsBefore">
+        DELETE FROM sys_oper_log 
+        WHERE oper_time &lt; #{targetDate}
+    </delete>
+
+    <delete id="deleteAllLogs">
+        DELETE FROM sys_oper_log
+    </delete>
+
+    <select id="countTotalLogs" resultType="long">
+        SELECT COUNT(*) FROM sys_oper_log
+    </select>
+
+    <select id="countLogsByDateRange" resultType="long">
+        SELECT COUNT(*) FROM sys_oper_log 
+        WHERE oper_time BETWEEN #{startDate} AND #{endDate}
+    </select>
+
+    <select id="getOldestRecord" resultType="java.time.LocalDateTime">
+        SELECT MIN(oper_time) FROM sys_oper_log
+    </select>
+
+    <select id="getNewestRecord" resultType="java.time.LocalDateTime">
+        SELECT MAX(oper_time) FROM sys_oper_log
+    </select>
+
+    <select id="estimateStorageSize" resultType="long">
+        SELECT 
+            COALESCE(
+                (data_length + index_length) / 1024, 
+                0
+            ) AS size_kb
+        FROM information_schema.tables 
+        WHERE table_schema = DATABASE() 
+        AND table_name = 'sys_oper_log'
+    </select>
+
+    <!-- 查询指定时间之前的日志（用于归档） -->
+    <select id="selectLogsBefore" resultType="com.cartethyia.easyorange.framework.operlog.entity.SysOperLog">
+        SELECT oper_id, title, business_type, method, request_method, 
+               operator_type, oper_name, oper_url, oper_ip, oper_location,
+               oper_param, json_result, status, error_msg, oper_time, cost_time
+        FROM sys_oper_log 
+        WHERE oper_time &lt; #{targetDate}
+        ORDER BY oper_time ASC
+        LIMIT 1000
+    </select>
+
+    <!-- 批量插入归档日志 -->
+    <insert id="batchInsertArchive">
+        INSERT INTO sys_oper_log_archive (
+            title, business_type, method, request_method, operator_type,
+            oper_name, oper_url, oper_ip, oper_location, oper_param,
+            json_result, status, error_msg, oper_time, cost_time
+        ) VALUES
+        <foreach collection="logs" item="log" separator=",">
+            (#{log.title}, #{log.businessType}, #{log.method}, #{log.requestMethod},
+             #{log.operatorType}, #{log.operName}, #{log.operUrl}, #{log.operIp},
+             #{log.operLocation}, #{log.operParam}, #{log.jsonResult}, #{log.status},
+             #{log.errorMsg}, #{log.operTime}, #{log.costTime})
+        </foreach>
+    </insert>
+</mapper>

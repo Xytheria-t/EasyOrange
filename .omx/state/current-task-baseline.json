@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "branch_name": "develop",
+      "worktree_path": "/mnt/d/projects/easyorange",
+      "status": "active",
+      "created_at": "2026-04-18T06:53:47.087Z",
+      "updated_at": "2026-04-19T07:07:58.881Z"
+    }
+  ]
+}

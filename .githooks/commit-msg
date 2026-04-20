@@ -1,0 +1,40 @@
+#!/bin/sh
+# Commit message validator
+# Format: <type>(<scope>): <subject>
+
+# Allowed types
+TYPES="feat|fix|refactor|docs|style|test|chore|perf|ci|build|revert"
+
+# Read commit message
+MSG_FILE=$1
+MSG=$(cat "$MSG_FILE")
+
+# Check if message matches pattern
+PATTERN="^($TYPES)(\([^)]*\))?: .+"
+
+if ! echo "$MSG" | grep -qE "$PATTERN"; then
+    echo "Invalid commit message format."
+    echo ""
+    echo "Expected: <type>(<scope>): <subject>"
+    echo ""
+    echo "Allowed types:"
+    echo "  feat    - 新功能"
+    echo "  fix     - Bug 修复"
+    echo "  refactor - 代码重构"
+    echo "  docs    - 文档"
+    echo "  style   - 代码风格 (格式化)"
+    echo "  test    - 测试"
+    echo "  chore   - 维护/杂项"
+    echo "  perf    - 性能优化"
+    echo "  ci      - CI/CD"
+    echo "  build   - 构建系统"
+    echo "  revert  - 回滚提交"
+    echo ""
+    echo "Examples:"
+    echo "  feat(user): add login API"
+    echo "  fix(product): resolve null pointer exception"
+    echo "  refactor(order): simplify order service"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,22 @@
+#!/bin/sh
+# Pre-commit hook: 代码格式检查
+
+# 检查是否有待提交的 Java 文件
+JAVA_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.java$' | head -5)
+
+if [ -n "$JAVA_FILES" ]; then
+    echo "Checking Java files..."
+    # 可选: 添加 Java 格式检查
+    # 例如: mvn com.coveo:fmt-maven-plugin:format
+fi
+
+# 检查是否有待提交的 TS/JS 文件
+TS_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|js|tsx|jsx)$' | head -5)
+
+if [ -n "$TS_FILES" ]; then
+    echo "Checking TypeScript/JavaScript files..."
+    # 可选: 添加 TS/JS 格式检查
+    # 例如: npm run lint
+fi
+
+exit 0

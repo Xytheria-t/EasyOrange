@@ -1,0 +1,109 @@
+# ===================================================================
+# Spring Boot 开发环境配置文件
+# ===================================================================
+# 说明：仅包含与主配置不同的开发环境特定设置
+# 激活方式：spring.profiles.active=dev（已在 application.yaml 中设置）
+# ===================================================================
+
+spring:
+  # -------------------------------------------------------------------
+  # 自动配置排除
+  # -------------------------------------------------------------------
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
+  # -------------------------------------------------------------------
+  # 数据源配置 - 开发环境使用较小的连接池
+  # -------------------------------------------------------------------
+  datasource:
+    password: ${EASYORANGE_DB_PASSWORD:easyorange_app_dev}  # 通过项目专用环境变量设置，开发环境默认本地应用账号密码
+    hikari:
+      maximum-pool-size: 10               # 开发环境最大连接数
+      minimum-idle: 3                     # 开发环境最小空闲连接数
+      connection-init-sql: SET NAMES utf8mb4
+
+  # -------------------------------------------------------------------
+  # Flyway 配置 - 开发环境额外加载测试数据
+  # -------------------------------------------------------------------
+  flyway:
+    locations: classpath:db/migration,classpath:db/dev
+
+  # -------------------------------------------------------------------
+  # Redis 配置 - 开发环境使用较小的连接池
+  # -------------------------------------------------------------------
+  data:
+    redis:
+      lettuce:
+        pool:
+          min-idle: 3                   # 开发环境最小空闲连接数
+          max-idle: 10                  # 开发环境最大空闲连接数
+          max-active: 10                # 开发环境最大活跃连接数
+
+# -------------------------------------------------------------------
+# 日志配置 - 开发环境
+# -------------------------------------------------------------------
+logging:
+  level:
+    root: INFO
+    com.cartethyia.easyorange: DEBUG
+    org.springframework.boot: INFO
+    org.springframework.web: WARN
+    org.springframework.data: WARN
+    org.mybatis: WARN
+    com.baomidou.mybatisplus: WARN
+    com.zaxxer.hikari: WARN
+    io.lettuce: WARN
+    org.apache: WARN
+
+# -------------------------------------------------------------------
+# 文件上传配置
+# -------------------------------------------------------------------
+file:
+  upload:
+    path: ./upload                        # 文件上传路径
+    url-prefix: /api/file/                # 文件访问 URL 前缀
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# -------------------------------------------------------------------
+# JWT Token 配置
+# -------------------------------------------------------------------
+jwt:
+  secret-key: ${JWT_SECRET_KEY:dev-secret-key-must-be-at-least-32-characters-long}  # JWT 密钥，开发环境默认值，生产必须通过环境变量设置
+  access-token-expiration: 120            # Access Token 过期时间（分钟）
+  refresh-token-expiration: 7             # Refresh Token 过期时间（天）
+  token-prefix: "Bearer "                 # Token 前缀
+  issuer: easyorange                      # Token 发行者
+
+# -------------------------------------------------------------------
+# 微信小程序配置
+# -------------------------------------------------------------------
+wechat:
+  miniprogram:
+    app-id: ${WECHAT_APP_ID}                               # 小程序 AppID，必须通过环境变量设置
+    app-secret: ${WECHAT_APP_SECRET}                        # 小程序 AppSecret，必须通过环境变量设置
+
+# -------------------------------------------------------------------
+# Actuator 监控端点配置
+# -------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true

@@ -1,0 +1,284 @@
+# ==================== Java ====================
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ==================== Maven ====================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ==================== Gradle ====================
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ==================== Spring Boot ====================
+*.log
+*.log.*
+logs/
+
+# ==================== IntelliJ IDEA ====================
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+# ==================== Eclipse / STS ====================
+.apt_generated
+.factorypath
+.springBeans
+.sts4-cache/
+bin/
+tmp/
+
+# ==================== VS Code ====================
+.vscode/
+*.code-workspace
+.history/
+
+# ==================== NetBeans ====================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ==================== 操作系统 ====================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+[Dd]esktop.ini
+
+# Linux
+*~
+.directory
+
+# ==================== 敏感配置文件 ====================
+# 环境配置
+.env
+.env.local
+.env.*.local
+*.env
+
+# 密钥文件
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.key
+*.pem
+*.crt
+*.cer
+
+# 敏感配置
+application-secret.yml
+application-secret.yaml
+application-secret.properties
+application-local.yml
+application-local.yaml
+application-local.properties
+bootstrap-secret.yml
+bootstrap-secret.yaml
+bootstrap-secret.properties
+
+# ==================== 日志与临时文件 ====================
+*.log
+*.log.*
+logs/
+log/
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.cache
+
+# ==================== 数据库文件 ====================
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+*.mv.db
+*.trace.db
+
+# ==================== Docker ====================
+.dockerignore
+docker-compose.override.yml
+docker-compose.prod.yml
+docker-compose.override.yml.*
+docker-compose.prod.yml.*
+
+# ==================== 其他 ====================
+# 包管理器
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 测试覆盖率
+coverage/
+*.lcov
+.nyc_output/
+
+# 文档
+HELP.md
+
+# ==================== 前端项目 (easyorange-frontend) ====================
+# 允许前端项目所有文件（覆盖上方的通用规则）
+!easyorange-frontend/**/*
+
+# 依赖目录（不上传）
+easyorange-frontend/node_modules/
+
+# 构建输出（不上传）
+easyorange-frontend/dist/
+easyorange-frontend/build/
+easyorange-frontend/.next/
+easyorange-frontend/.nuxt/
+easyorange-frontend/.output/
+
+# 敏感环境配置（不上传）- 保留 .env.example
+easyorange-frontend/.env.local
+easyorange-frontend/.env.development.local
+easyorange-frontend/.env.test.local
+easyorange-frontend/.env.production.local
+easyorange-frontend/.env*.local
+
+# 日志文件（不上传）
+easyorange-frontend/npm-debug.log*
+easyorange-frontend/yarn-debug.log*
+easyorange-frontend/yarn-error.log*
+easyorange-frontend/pnpm-debug.log*
+
+# 编辑器配置（可选，根据需要调整）
+# easyorange-frontend/.vscode/
+easyorange-frontend/.idea/
+
+# 测试覆盖率（不上传）
+easyorange-frontend/coverage/
+
+# TypeScript 缓存（不上传）
+easyorange-frontend/*.tsbuildinfo
+
+# Vite/Rollup 分析文件（可选）
+easyorange-frontend/stats.html
+easyorange-frontend/.rpt2_cache/
+
+# ESLint/Prettier 缓存
+easyorange-frontend/.eslintcache
+
+# ==================== OpenCode / AI 工具 ====================
+.opencode/machine-memory/
+.opencode/sessions/
+
+# ==================== 后端项目 (easyorange-backend) ====================
+# 允许后端项目所有文件（覆盖上方的通用规则）
+!easyorange-backend/**/*
+
+# 依赖目录（不上传）
+easyorange-backend/*/target/
+easyorange-backend/target/
+
+# 敏感环境配置（不上传）- 保留 .env.example
+easyorange-backend/.env
+easyorange-backend/.env.local
+easyorange-backend/.env.*.local
+easyorange-backend/*/.env
+easyorange-backend/*/.env.local
+easyorange-backend/*/.env.*.local
+
+# 日志文件（不上传）
+easyorange-backend/logs/
+easyorange-backend/log/
+easyorange-backend/*/logs/
+easyorange-backend/*/log/
+
+# 编辑器配置（上传 IDE 配置）
+# easyorange-backend/.idea/
+# easyorange-backend/.vscode/
+
+# IDE 配置文件（上传）
+# easyorange-backend/*.iml
+# easyorange-backend/*.iws
+# easyorange-backend/*.ipr
+
+# ==================== 小程序项目 (easyorange-miniprogram) ====================
+# 允许小程序项目所有文件
+!easyorange-miniprogram/**/*
+
+# 依赖目录（不上传）
+easyorange-miniprogram/node_modules/
+
+# 编译输出（不上传）
+easyorange-miniprogram/dist/
+easyorange-miniprogram/miniprogram/dist/
+
+# npm 调试日志
+easyorange-miniprogram/npm-debug.log*
+
+# 项目配置（可选，根据需求调整）
+# easyorange-miniprogram/project.private.config.json
+
+# AI 工具会话文件
+easyorange-miniprogram/.opencode/
+
+# ==================== 共享库项目 (easyorange-shared) ====================
+# 允许共享库项目所有文件
+!easyorange-shared/**/*
+
+# 依赖目录（不上传）
+easyorange-shared/node_modules/
+
+# 编译输出（不上传）
+easyorange-shared/dist/
+easyorange-shared/*.tsbuildinfo
+
+# npm 调试日志
+easyorange-shared/npm-debug.log*
+
+# ==================== AI 工具会话文件 ====================
+.codex-skill-install/
+.codex/
+.opencode/
+.sisyphus/
+.sisyphus sessions/
+
+# ==================== AI 编码助手 ====================
+.claude/
+.cursor/
+.ai/
+.windsai/
+
+# ==================== Git Worktrees ====================
+.worktrees/
+worktrees/
+.trae/

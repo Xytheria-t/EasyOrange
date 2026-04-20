@@ -1,0 +1,10 @@
+{
+  "session_id": "019da44a-fe56-7773-bb99-5762a66ffc67",
+  "native_session_id": "019da44a-fe56-7773-bb99-5762a66ffc67",
+  "started_at": "2026-04-19T06:07:59.433Z",
+  "cwd": "/mnt/d/projects/easyorange",
+  "pid": 345,
+  "platform": "linux",
+  "pid_start_ticks": 288656,
+  "pid_cmdline": "/home/qq471292781/.nvm/versions/node/v24.15.0/lib/node_modules/@openai/codex/node_modules/@openai/codex-linux-x64/vendor/x86_64-unknown-linux-musl/codex/codex -c model_instructions_file=\"/mnt/d/Projects/EasyOrange/.omx/state/sessions/omx-1776578619608-eym6qu/AGENTS.md\""
+}

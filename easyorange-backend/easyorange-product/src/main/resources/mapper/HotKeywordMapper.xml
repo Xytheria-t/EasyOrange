@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cartethyia.easyorange.product.mapper.HotKeywordMapper">
+
+    <update id="batchInsertOrUpdate">
+        INSERT INTO hot_keyword (keyword, search_count, last_search_time, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.keyword}, #{item.searchCount}, #{item.lastSearchTime}, NOW(), NOW())
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            search_count = VALUES(search_count),
+            last_search_time = VALUES(last_search_time),
+            update_time = NOW()
+    </update>
+
+</mapper>

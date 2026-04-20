@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.cartethyia</groupId>
+        <artifactId>easyorange-backend</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>easyorange-message</artifactId>
+
+    <description>
+        Message 消息模块 - 消息通知和聊天功能
+    </description>
+
+    <dependencies>
+        <!-- 依赖 Framework 模块 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-framework</artifactId>
+        </dependency>
+
+        <!-- 依赖 User 模块（查询用户信息） -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-user</artifactId>
+        </dependency>
+
+        <!-- WebSocket -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+
+        <!-- Spring Messaging (WebSocket STOMP 需要) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-messaging</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>

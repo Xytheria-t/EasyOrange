@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.cartethyia</groupId>
+        <artifactId>easyorange-backend</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>easyorange-order</artifactId>
+
+    <description>
+        Order 订单模块 - 订单管理和交易处理
+    </description>
+
+    <dependencies>
+        <!-- 依赖 Framework 模块 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-framework</artifactId>
+        </dependency>
+
+        <!-- 依赖 Product 模块（查询商品信息） -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-product</artifactId>
+        </dependency>
+
+        <!-- 依赖 User 模块（查询用户信息） -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-user</artifactId>
+        </dependency>
+
+        <!-- 依赖 Payment 模块（支付相关） -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-payment</artifactId>
+        </dependency>
+
+        <!-- 参数校验 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common</artifactId>
+        </dependency>
+    </dependencies>
+
+</project>
