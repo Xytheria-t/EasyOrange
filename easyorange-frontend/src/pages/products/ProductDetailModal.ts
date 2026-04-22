@@ -104,7 +104,7 @@ export class ProductDetailModal {
         if (!el.modalDescription) {return;}
         el.modalDescription.textContent = product.description || '暂无描述';
         if (!el.modalSellerAvatar) {return;}
-        el.modalSellerAvatar.src = product.sellerAvatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+        el.modalSellerAvatar.src = product.sellerAvatar || '';
         if (!el.modalSellerName) {return;}
         el.modalSellerName.textContent = product.sellerName;
         if (!el.modalSellerStats) {return;}

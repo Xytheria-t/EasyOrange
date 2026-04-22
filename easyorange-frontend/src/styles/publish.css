@@ -1143,14 +1143,17 @@ textarea.field-textarea {
 }
 
 .discount-value {
+    font-family: var(--font-price);
     font-size: 1.5rem;
-    font-weight: 700;
+    font-weight: 800;
     color: #10B981;
+    letter-spacing: 0.02em;
 }
 
 .discount-unit {
+    font-family: var(--font-price);
     font-size: 0.875rem;
-    font-weight: 600;
+    font-weight: 700;
     color: #10B981;
 }
 

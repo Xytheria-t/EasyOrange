@@ -48,6 +48,11 @@ export {
     isHotProduct
 } from './product.js';
 
+export {
+    createAvatarElement,
+    getUserInitial
+} from './avatar.js';
+
 // Re-export types
 export type { ToastType } from '../types/index.js';
 export type { Unsubscribe, NetworkChangeCallback } from './network.js';

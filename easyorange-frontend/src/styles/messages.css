@@ -63,13 +63,25 @@ body.messages-page {
     height: 48px;
     overflow: hidden;
     border-radius: 50%;
-    background: var(--gray-100);
+    background: var(--gradient-primary);
+    color: white;
+    display: grid;
+    place-items: center;
 }
 
 .user-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+.user-avatar-initial {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: 1rem;
+    font-weight: 700;
 }
 
 .conversation-info {

@@ -131,27 +131,46 @@ export class SearchManager {
         const tab = e.currentTarget as HTMLElement;
         const filter = tab.dataset.filter || '';
 
-        // 更新激活状态
-        this.elements.filterTabs.forEach(t => t.classList.remove('active'));
+        if (tab.classList.contains('loading')) {return;}
+
+        const filterNames: Record<string, string> = {
+            'all': '全部商品',
+            'new': '最新发布',
+            'hot': '热门推荐',
+            'discount': '超值优惠'
+        };
+
+        toast.info(`切换到${filterNames[filter] || filter}...`, 1500);
+
+        tab.classList.add('loading');
+
+        this.elements.filterTabs.forEach(t => {
+            if (t !== tab) {
+                t.classList.remove('active');
+            }
+        });
+
         tab.classList.add('active');
 
-        // 根据过滤条件获取商品
-        switch (filter) {
-            case 'all':
-                this.fetchProducts();
-                break;
-            case 'new':
-                this.fetchProducts({ sort: 'newest' });
-                break;
-            case 'hot':
-                this.fetchProducts({ sort: 'popular' });
-                break;
-            case 'discount':
-                this.fetchProducts({ sort: 'price_asc' });
-                break;
-            default:
-                this.fetchProducts();
-        }
+        setTimeout(() => {
+            tab.classList.remove('loading');
+            switch (filter) {
+                case 'all':
+                    this.fetchProducts();
+                    break;
+                case 'new':
+                    this.fetchProducts({ sort: 'newest' });
+                    break;
+                case 'hot':
+                    this.fetchProducts({ sort: 'popular' });
+                    break;
+                case 'discount':
+                    this.fetchProducts({ sort: 'price_asc' });
+                    break;
+                default:
+                    this.fetchProducts();
+            }
+        }, 50);
     }
 
     /**

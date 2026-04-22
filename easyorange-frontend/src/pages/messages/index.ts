@@ -5,7 +5,7 @@
 import '../../styles/main.css';
 import '../../styles/messages.css';
 import { messageApi } from '../../api/index.js';
-import { storage, formatDate, escapeHtml, toast } from '../../utils/index.js';
+import { storage, formatDate, escapeHtml, toast, createAvatarElement } from '../../utils/index.js';
 import { isSuccessCode, type ChatMessage, type Result } from '../../types/index.js';
 import BasePage from '../BasePage.js';
 
@@ -132,21 +132,33 @@ class MessagesPage extends BasePage<MessagesPageElements> {
                 return;
             }
 
-            listEl.innerHTML = this.conversations.map((conv: Conversation) => `
-                <div class="conversation-item" data-id="${conv.userId}">
-                    <div class="user-avatar">
-                        <img src="${conv.avatar || '/images/default-avatar.png'}" alt="${conv.username}">
-                    </div>
-                    <div class="conversation-info">
-                        <h4>${escapeHtml(conv.username)}</h4>
-                        <p class="last-message">${escapeHtml(conv.lastMessage || '')}</p>
-                    </div>
-                    <div class="conversation-meta">
-                        <span class="time">${formatDate(conv.lastTime)}</span>
-                        ${conv.unreadCount > 0 ? `<span class="unread-badge">${conv.unreadCount}</span>` : ''}
-                    </div>
-                </div>
-            `).join('');
+            listEl.innerHTML = '';
+            this.conversations.forEach((conv: Conversation) => {
+                const item = document.createElement('div');
+                item.className = 'conversation-item';
+                item.dataset.id = conv.userId;
+
+                const avatarEl = createAvatarElement(conv.username, conv.avatar);
+                item.appendChild(avatarEl);
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'conversation-info';
+                infoDiv.innerHTML = `
+                    <h4>${escapeHtml(conv.username)}</h4>
+                    <p class="last-message">${escapeHtml(conv.lastMessage || '')}</p>
+                `;
+                item.appendChild(infoDiv);
+
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'conversation-meta';
+                metaDiv.innerHTML = `
+                    <span class="time">${formatDate(conv.lastTime)}</span>
+                    ${conv.unreadCount > 0 ? `<span class="unread-badge">${conv.unreadCount}</span>` : ''}
+                `;
+                item.appendChild(metaDiv);
+
+                listEl.appendChild(item);
+            });
         });
     }
 

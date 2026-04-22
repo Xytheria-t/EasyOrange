@@ -71,9 +71,50 @@ export function generateMockProducts(count: number): ProductListItem[] {
             ],
             sellerId: Math.floor(Math.random() * 10) + 1,
             sellerName: `用户${Math.floor(Math.random() * 100)}`,
-            sellerAvatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`,
+            sellerAvatar: null,
             viewCount: Math.floor(Math.random() * 500),
             createTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
         } as ProductListItem;
+    });
+}
+
+const CONDITION_MAP: Record<number, 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR'> = {
+    1: 'NEW',
+    2: 'LIKE_NEW',
+    3: 'GOOD',
+    4: 'FAIR',
+};
+
+export function generateMockProductItems(count: number): import('../../types/index.js').Product[] {
+    return Array.from({ length: count }, (_, i) => {
+        const category = MOCK_CATEGORIES[Math.floor(Math.random() * MOCK_CATEGORIES.length)];
+        const conditionLevel = Math.floor(Math.random() * 4) + 1;
+        const price = Math.floor(Math.random() * 1000) + 10;
+        const originalPrice = Math.random() > 0.5 ? price + Math.floor(Math.random() * 500) : null;
+
+        return {
+            id: i + 1,
+            title: MOCK_PRODUCT_TITLES[i % MOCK_PRODUCT_TITLES.length],
+            description: `这是一件优质的二手商品，成色新，性价比极高。适合校园交易。`,
+            price,
+            originalPrice,
+            categoryId: category.id,
+            categoryName: category.name,
+            condition: CONDITION_MAP[conditionLevel] || 'GOOD',
+            status: 'ON_SALE' as const,
+            images: [
+                `https://picsum.photos/seed/${i}a/400/400`,
+                `https://picsum.photos/seed/${i}b/400/400`
+            ],
+            location: MOCK_LOCATIONS[Math.floor(Math.random() * MOCK_LOCATIONS.length)],
+            views: Math.floor(Math.random() * 500),
+            favorites: Math.floor(Math.random() * 50),
+            sellerId: Math.floor(Math.random() * 10) + 1,
+            sellerName: `用户${Math.floor(Math.random() * 100)}`,
+            sellerAvatar: null,
+            sellerRating: Math.random() * 2 + 3,
+            createTime: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+            updateTime: new Date(Date.now() - Math.random() * 3 * 24 * 60 * 60 * 1000).toISOString(),
+        };
     });
 }

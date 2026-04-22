@@ -17,11 +17,29 @@
     --primary-800: #9A3412;
     --primary-900: #7C2D12;
 
-    /* Accent - Coral Rose */
-    --accent-300: #FDA4AF;
-    --accent-400: #FB7185;
-    --accent-500: #F43F5E;
-    --accent-600: #E11D48;
+    /* Rose/Pink palette - for gradient transitions */
+    --rose-50: #FFF1F2;
+    --rose-100: #FFE4E6;
+    --rose-200: #FECDD3;
+    --rose-300: #FDA4AF;
+    --rose-400: #FB7185;
+    --rose-500: #F43F5E;
+    --rose-600: #E11D48;
+
+    /* Accent aliases for backward compatibility */
+    --accent-300: var(--rose-300);
+    --accent-400: var(--rose-400);
+    --accent-500: var(--rose-500);
+    --accent-600: var(--rose-600);
+
+    /* Purple palette - for gradient endpoints */
+    --purple-50: #FAF5FF;
+    --purple-100: #F3E8FF;
+    --purple-200: #E9D5FF;
+    --purple-300: #D8B4FE;
+    --purple-400: #C39BD3;
+    --purple-500: #AF7AC5;
+    --purple-600: #9333EA;
 
     /* Gold accent for luxury */
     --gold-300: #FCD34D;
@@ -32,10 +50,10 @@
     --emerald-400: #34D399;
     --emerald-500: #10B981;
 
-    /* Plum Purple for depth */
-    --plum-400: #C39BD3;
-    --plum-500: #AF7AC5;
-    --plum-600: #9B59B6;
+    /* Plum Purple - Now using unified purple palette */
+    --plum-400: var(--purple-400);
+    --plum-500: var(--purple-500);
+    --plum-600: var(--purple-600);
 
     /* Warm neutral */
     --warm-50: #FDF6E3;
@@ -104,12 +122,12 @@
     --glass-blur: blur(24px);
     --glass-blur-heavy: blur(48px);
 
-    /* Gradients - Warm Pomelo Theme */
+    /* Gradients - Orange-Pink-Purple Theme */
     --gradient-primary: linear-gradient(135deg, #F97316 0%, #FB7185 40%, #C39BD3 100%);
-    --gradient-hero: linear-gradient(135deg, #EA580C 0%, #F97316 25%, #FB7185 50%, #C39BD3 100%);
+    --gradient-hero: linear-gradient(135deg, #EA580C 0%, #F97316 25%, #FB7185 50%, #C39BD3 75%, #D8B4E2 100%);
     --gradient-gold: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
-    --gradient-warm: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.05) 50%, rgba(195, 155, 211, 0.05) 100%);
-    --gradient-subtle: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(208, 104, 69, 0.05) 45%, rgba(29, 33, 52, 0.02) 100%);
+    --gradient-warm: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 113, 133, 0.06) 50%, rgba(195, 155, 211, 0.05) 100%);
+    --gradient-subtle: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.04) 45%, rgba(29, 33, 52, 0.02) 100%);
     --gradient-mesh-1: radial-gradient(ellipse at 0% 0%, rgba(249, 115, 22, 0.12) 0%, transparent 50%);
     --gradient-mesh-2: radial-gradient(ellipse at 100% 100%, rgba(251, 113, 133, 0.1) 0%, transparent 50%);
     --gradient-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(195, 155, 211, 0.06) 0%, transparent 60%);
@@ -137,11 +155,46 @@
     --radius-4xl: 40px;
     --radius-full: 9999px;
 
-    /* Typography - Editorial */
-    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-serif: 'Crimson Pro', 'Noto Serif SC', Georgia, serif;
-    --font-display: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    /* Typography - Ultra Premium & Unique Font System */
+    /* Playfair Display - 高对比度优雅衬线，VOGUE 等时尚杂志御用字体 */
+    /* Cormorant Garamond - 艺术感极致衬线，数字设计精美如奢侈品 */
+    /* Source Han Serif (思源宋体) - 中文精致典雅，高端品牌感 */
+    /* Source Han Sans (思源黑体) - 中文现代简约，清晰易读 */
+    --font-display: 'Playfair Display', 'Source Han Serif CN', 'Noto Serif SC', 'Songti SC', serif;
+    --font-sans: 'Source Han Sans CN', 'Source Han Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-serif: 'Playfair Display', 'Source Han Serif CN', 'Noto Serif SC', 'Songti SC', serif;
+    --font-price: 'Cormorant Garamond', 'Playfair Display', 'Source Han Serif CN', 'Noto Serif SC', serif;
+    --font-mono: 'Fira Code', 'Consolas', 'Monaco', monospace;
+
+    /* Typography Scale */
+    --text-display-xl: clamp(3.5rem, 8vw, 6rem);
+    --text-display-lg: clamp(2.5rem, 5vw, 4rem);
+    --text-display-md: clamp(2rem, 4vw, 3rem);
+    --text-display-sm: clamp(1.5rem, 3vw, 2rem);
+    --text-body-lg: 1.125rem;
+    --text-body-md: 1rem;
+    --text-body-sm: 0.875rem;
+    --text-body-xs: 0.75rem;
+
+    /* Font Weights */
+    --font-light: 300;
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+    --font-extrabold: 800;
+
+    /* Line Heights */
+    --leading-tight: 1.1;
+    --leading-snug: 1.25;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.65;
+
+    /* Letter Spacing */
+    --tracking-tight: -0.03em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.02em;
+    --tracking-wider: 0.05em;
 
     /* Spacing */
     --container-max: 1280px;

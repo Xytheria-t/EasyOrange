@@ -7,9 +7,16 @@
     <meta name="keywords" content="校园二手, 二手交易, 商品列表, EasyOrange">
     <title>商品广场 - EasyOrange</title>
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700;800;900&family=Crimson+Pro:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://cdn.bootcdn.net">
+    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/normalize/8.0.1/normalize.min.css" rel="stylesheet">
+    <!-- Ultra Premium Fonts -->
+    <!-- Playfair Display: 时尚杂志级优雅大标题字体 (VOGUE, Harper's BAZAAR) -->
+    <!-- Cormorant Garamond: 奢侈品级精致数字字体 (爱马仕、香奈儿风格) -->
+    <link href="https://fonts.font.im/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- 中文字体：思源宋体 + 思源黑体 -->
+    <link href="https://cdn.bootcdn.net/npm/source-han-serif-cn/1.0.0/css/source-han-serif-cn.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/npm/source-han-sans-cn/1.0.0/css/source-han-sans-cn.min.css" rel="stylesheet">
     
     <link rel="preload" href="/src/styles/main.css" as="style">
     <link rel="preload" href="/src/styles/products.css" as="style">
@@ -29,18 +36,18 @@
         <div class="header-container">
             <a href="/" class="brand-logo">
                 <div class="logo-icon">
-                    <svg viewBox="0 0 40 40" fill="none">
-                        <circle cx="20" cy="20" r="18" stroke="url(#logoGradient)" stroke-width="2"/>
-                        <path d="M12 20c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="url(#logoGradient)" stroke-width="2" stroke-linecap="round"/>
-                        <circle cx="20" cy="20" r="3" fill="url(#logoGradient)"/>
-                        <defs>
-                            <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#6366F1"/>
-                                <stop offset="100%" stop-color="#EC4899"/>
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
+                        <svg viewBox="0 0 40 40" fill="none">
+                            <defs>
+                                <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#F97316"/>
+                                    <stop offset="40%" stop-color="#FB7185"/>
+                                    <stop offset="100%" stop-color="#C39BD3"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M6 10h11M6 10v20M6 30h11M6 10h7M6 20h9" stroke="url(#logoGradient)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="30" cy="20" r="8" stroke="url(#logoGradient)" stroke-width="2.5"/>
+                        </svg>
+                    </div>
                 <span class="brand-name">EasyOrange</span>
             </a>
             
@@ -231,7 +238,95 @@
 
     <main class="products-main">
         <div class="products-container">
-            <h1 class="visually-hidden">商品列表 - EasyOrange校园二手交易平台</h1>
+            <div class="tools-plaza" id="quickFilters">
+                <div class="plaza-header">
+                    <div class="plaza-brand">
+                        <div class="brand-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1m15.5-6.5l-4.5 4.5m-4 4l-4.5 4.5m9-13l4.5 4.5m-4 4l4.5 4.5"/>
+                            </svg>
+                        </div>
+                        <div class="brand-text">
+                            <span class="brand-title">筛选工具</span>
+                            <span class="brand-subtitle">TOOLS PLAZA</span>
+                        </div>
+                    </div>
+                    <div class="plaza-status">
+                        <span class="status-dot"></span>
+                        <span class="status-text">24 件商品</span>
+                    </div>
+                </div>
+                
+                <div class="plaza-tools">
+                    <div class="tool-group">
+                        <button class="plaza-tool active" data-filter="all">
+                            <div class="tool-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"/>
+                                    <rect x="14" y="3" width="7" height="7"/>
+                                    <rect x="14" y="14" width="7" height="7"/>
+                                    <rect x="3" y="14" width="7" height="7"/>
+                                </svg>
+                            </div>
+                            <span class="tool-label">全部</span>
+                            <div class="tool-badge">ALL</div>
+                        </button>
+                    </div>
+                    
+                    <div class="tool-divider"></div>
+                    
+                    <div class="tool-group">
+                        <button class="plaza-tool" data-filter="new">
+                            <div class="tool-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                                </svg>
+                            </div>
+                            <span class="tool-label">最新发布</span>
+                            <div class="tool-badge">NEW</div>
+                        </button>
+                        <button class="plaza-tool" data-filter="hot">
+                            <div class="tool-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+                                </svg>
+                            </div>
+                            <span class="tool-label">热门商品</span>
+                            <div class="tool-badge">HOT</div>
+                        </button>
+                        <button class="plaza-tool" data-filter="discount">
+                            <div class="tool-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="9" cy="21" r="1"/>
+                                    <circle cx="20" cy="21" r="1"/>
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                                </svg>
+                            </div>
+                            <span class="tool-label">特价优惠</span>
+                            <div class="tool-badge">SALE</div>
+                        </button>
+                        <button class="plaza-tool" data-filter="newArrival">
+                            <div class="tool-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                                    <line x1="12" y1="22.08" x2="12" y2="12"/>
+                                </svg>
+                            </div>
+                            <span class="tool-label">全新物品</span>
+                            <div class="tool-badge">FRESH</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="plaza-accent">
+                    <div class="accent-glow"></div>
+                    <div class="accent-line"></div>
+                </div>
+            </div>
+            
+            <h1 class="visually-hidden">商品列表 - EasyOrange 校园二手交易平台</h1>
             <div class="products-toolbar">
                 <div class="results-info">
                     <span class="results-count" id="resultsCount">0</span>
@@ -548,36 +643,6 @@
             </div>
             <div class="compare-modal-body" id="compareModalBody"></div>
         </div>
-    </div>
-
-    <div class="quick-filters" id="quickFilters">
-        <button class="quick-filter-btn active" data-filter="all">全部</button>
-        <button class="quick-filter-btn" data-filter="new">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-            最新发布
-        </button>
-        <button class="quick-filter-btn" data-filter="hot">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
-            </svg>
-            热门商品
-        </button>
-        <button class="quick-filter-btn" data-filter="discount">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="19" y1="5" x2="5" y2="19"/>
-                <circle cx="6.5" cy="6.5" r="2.5"/>
-                <circle cx="17.5" cy="17.5" r="2.5"/>
-            </svg>
-            特价优惠
-        </button>
-        <button class="quick-filter-btn" data-filter="newArrival">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 3l1.912 5.813L20 10l-4.373 3.732L17.237 20 12 16.5 6.763 20l1.61-6.268L4 10l6.088-1.187z"/>
-            </svg>
-            全新物品
-        </button>
     </div>
 
     <div class="recent-history" id="recentHistory" style="display: none;">

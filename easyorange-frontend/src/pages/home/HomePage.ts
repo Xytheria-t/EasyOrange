@@ -8,6 +8,7 @@ import { dom, toast, createEmptyState, appendChildren } from '../../utils/index.
 import ProductCard from '../../components/ProductCard.js';
 import header from '../../components/Header.js';
 import type { Product } from '../../types/index.js';
+import { generateMockProductItems } from '../products/mockData.js';
 import authManager from './auth.js';
 import searchManager from './search.js';
 import animationManager from './animations.js';
@@ -154,7 +155,13 @@ export class HomePage {
             this.renderProducts(products);
         } catch (error) {
             toast.error(errorMessage);
+            this.loadMockProducts();
         }
+    }
+
+    private loadMockProducts(): void {
+        const mockProducts = generateMockProductItems(12);
+        this.renderProducts(mockProducts);
     }
 
     /**

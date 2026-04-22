@@ -41,16 +41,15 @@ const FLOATING_NAV_TEMPLATE = `
         <a href="/" class="floating-nav__brand" aria-label="EasyOrange首页">
             <div class="floating-nav__logo">
                 <svg viewBox="0 0 40 40" fill="none">
-                    <circle cx="20" cy="20" r="18" stroke="url(#logoGradientNav)" stroke-width="2"/>
-                    <path d="M12 20c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8" stroke="url(#logoGradientNav)" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="20" cy="20" r="3" fill="url(#logoGradientNav)"/>
                     <defs>
                         <linearGradient id="logoGradientNav" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stop-color="#F97316"/>
-                            <stop offset="50%" stop-color="#EA580C"/>
-                            <stop offset="100%" stop-color="#F43F5E"/>
+                            <stop offset="40%" stop-color="#FB7185"/>
+                            <stop offset="100%" stop-color="#C39BD3"/>
                         </linearGradient>
                     </defs>
+                    <path d="M6 10h11M6 10v20M6 30h11M6 10h7M6 20h9" stroke="url(#logoGradientNav)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="30" cy="20" r="8" stroke="url(#logoGradientNav)" stroke-width="2.5"/>
                 </svg>
             </div>
             <span class="floating-nav__brand-name">EasyOrange</span>
