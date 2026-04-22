@@ -1,6 +1,0 @@
-{
-  "last_turn_at": "2026-04-21T13:22:39.940Z",
-  "last_progress_at": "2026-04-21T13:22:39.940Z",
-  "turn_count": 3,
-  "last_agent_output": "已修复。\n\n已在 `/home/qq471292781/.codex/config.toml` 添加：\n\n```toml\nsuppress_unstable_features_warning = tr"
-}
