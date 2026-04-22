@@ -2,14 +2,11 @@
  * @fileoverview 订单管理页面
  */
 
-import { orderApi } from '../api/index.js';
-import { formatDate } from '../utils/index.js';
-import { navigation } from '../app/navigation.js';
-import { isSuccessCode, type ApiCode, type Result } from '../types';
+import { orderApi } from '../../api/index.js';
+import { formatDate } from '../../utils/index.js';
+import { navigation } from '../../app/navigation.js';
+import { isSuccessCode, type ApiCode, type Result } from '../../types';
 
-/**
- * 订单状态枚举值（数字形式，与后端保持一致）
- */
 export enum OrderStatusCode {
     PENDING_PAYMENT = 0,
     PAID = 1,
@@ -19,9 +16,6 @@ export enum OrderStatusCode {
     REFUNDED = 5,
 }
 
-/**
- * 订单状态文本映射
- */
 export const OrderStatusText: Record<number, string> = {
     [OrderStatusCode.PENDING_PAYMENT]: '待支付',
     [OrderStatusCode.PAID]: '已支付',
@@ -31,9 +25,6 @@ export const OrderStatusText: Record<number, string> = {
     [OrderStatusCode.REFUNDED]: '已退款',
 };
 
-/**
- * 订单列表项数据结构
- */
 export interface OrderListItem {
     id: number;
     orderNo: string;
@@ -50,31 +41,19 @@ export interface OrderListItem {
     createTime: string;
 }
 
-/**
- * 订单操作类型
- */
 export type OrderAction = 'pay' | 'ship' | 'receive' | 'cancel' | 'review' | 'detail';
 
-/**
- * 订单页面元素接口
- */
 export interface OrdersPageElements {
     container: HTMLElement | null;
     ordersList: HTMLElement | null;
 }
 
-/**
- * API 响应结构
- */
 export interface ApiResponse<T> {
     code: ApiCode;
     message: string;
     data: T | null;
 }
 
-/**
- * 订单管理页面类
- */
 export class OrdersPage {
     private currentTab: 'buyer' | 'seller';
     private orders: OrderListItem[];
@@ -85,18 +64,12 @@ export class OrdersPage {
         this.init();
     }
 
-    /**
-     * 初始化页面
-     */
     private async init(): Promise<void> {
         this.render();
         this.bindEvents();
         await this.loadOrders();
     }
 
-    /**
-     * 渲染页面结构
-     */
     private render(): void {
         const container = document.getElementById('orders-container');
         if (!container) {return;}
@@ -106,12 +79,12 @@ export class OrdersPage {
                 <div class="page-header">
                     <h1>我的订单</h1>
                 </div>
-                
+
                 <div class="tabs">
                     <button class="tab-btn active" data-tab="buyer">我买的</button>
                     <button class="tab-btn" data-tab="seller">我卖的</button>
                 </div>
-                
+
                 <div class="orders-list" id="orders-list">
                     <div class="loading">加载中...</div>
                 </div>
@@ -119,9 +92,6 @@ export class OrdersPage {
         `;
     }
 
-    /**
-     * 绑定事件监听器
-     */
     private bindEvents(): void {
         document.querySelectorAll<HTMLButtonElement>('.tab-btn').forEach(btn => {
             btn.addEventListener('click', async (e: Event) => {
@@ -134,17 +104,14 @@ export class OrdersPage {
         });
     }
 
-    /**
-     * 加载订单列表
-     */
     private async loadOrders(): Promise<void> {
         const listEl = document.getElementById('orders-list');
-        
+
         try {
             const response = this.currentTab === 'buyer'
                 ? await orderApi.getMyOrders({})
                 : await orderApi.getSoldOrders({});
-            
+
             if (isSuccessCode(response.code)) {
                 this.orders = (response.data?.records || []).map((o) => ({
                     id: o.id,
@@ -171,12 +138,9 @@ export class OrdersPage {
         }
     }
 
-    /**
-     * 渲染订单列表
-     */
     private renderOrders(): void {
         const listEl = document.getElementById('orders-list');
-        
+
         if (this.orders.length === 0) {
             if (listEl) { listEl.innerHTML = '<div class="empty">暂无订单</div>'; }
             return;
@@ -214,9 +178,6 @@ export class OrdersPage {
         this.bindOrderEvents();
     }
 
-    /**
-     * 渲染订单操作按钮
-     */
     private renderActions(order: OrderListItem): string {
         const actions: string[] = [];
         const isBuyer = this.currentTab === 'buyer';
@@ -250,9 +211,6 @@ export class OrdersPage {
         return actions.join('');
     }
 
-    /**
-     * 绑定订单操作事件
-     */
     private bindOrderEvents(): void {
         document.querySelectorAll<HTMLButtonElement>('.order-actions button').forEach(btn => {
             btn.addEventListener('click', async (e: Event) => {
@@ -264,9 +222,6 @@ export class OrdersPage {
         });
     }
 
-    /**
-     * 处理订单操作
-     */
     private async handleAction(action: OrderAction, orderId: string): Promise<void> {
         try {
             let response: Result<unknown> | undefined;
@@ -303,7 +258,7 @@ export class OrdersPage {
             }
         } catch (error) {
             const err = error as Error;
-            alert(`操作失败: ${  err.message}`);
+            alert(`操作失败: ${err.message}`);
         }
     }
 }

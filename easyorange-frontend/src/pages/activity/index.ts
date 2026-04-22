@@ -3,14 +3,13 @@
  * @version 1.0.0
  */
 
-import api, { ACTIVITY_TYPE_NAMES, ACTIVITY_STATUS, ACTIVITY_STATUS_NAMES, type ActivityType, type ActivityStatus, type Activity, type CreateActivityRequest } from '../api/index.js';
-import { toast, dom, formatDate } from '../utils/index.js';
+import api, { ACTIVITY_TYPE_NAMES, ACTIVITY_STATUS, ACTIVITY_STATUS_NAMES, type ActivityType, type ActivityStatus, type Activity, type CreateActivityRequest } from '../../api/index.js';
+import { toast, dom, formatDate } from '../../utils/index.js';
 
 export type { ActivityType, ActivityStatus, Activity, CreateActivityRequest };
 
 type ActivityTab = 'ongoing' | 'upcoming' | 'my' | 'joined';
 
-/** 活动页面元素接口 */
 export interface ActivityPageElements {
     activityContainer: HTMLElement | null;
     activityTabs: HTMLElement | null;
@@ -20,7 +19,6 @@ export interface ActivityPageElements {
     activityForm: HTMLFormElement | null;
 }
 
-/** 活动页面对象接口 */
 export interface ActivityPageInterface {
     elements: ActivityPageElements;
     activities: Activity[];
@@ -41,10 +39,6 @@ export interface ActivityPageInterface {
     hideCreateModal(): void;
     handleSubmit(e: Event): Promise<void>;
 }
-
-// ============================================
-// 活动页面逻辑
-// ============================================
 
 const ActivityPage: ActivityPageInterface = {
     elements: {
@@ -97,10 +91,10 @@ const ActivityPage: ActivityPageInterface = {
 
     switchTab(tab: ActivityTab): void {
         this.currentTab = tab;
-        
+
         const tabs = dom.getAll('.activity-tab', this.elements.activityTabs ?? undefined);
         tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-        
+
         this.loadActivities();
     },
 
@@ -146,8 +140,8 @@ const ActivityPage: ActivityPageInterface = {
         const statusClass = `status-${activity.status}`;
         const activityType = activity.activityType || activity.type || 'default';
         const typeIcon = this.getTypeIcon(activityType);
-        const isFull = activity.maxParticipants !== undefined && 
-                       activity.maxParticipants !== null && 
+        const isFull = activity.maxParticipants !== undefined &&
+                       activity.maxParticipants !== null &&
                        (activity.currentParticipants ?? 0) >= activity.maxParticipants;
 
         return `
@@ -161,7 +155,7 @@ const ActivityPage: ActivityPageInterface = {
                     </div>
                 </div>
                 <div class="activity-cover">
-                    ${activity.coverImage 
+                    ${activity.coverImage
                         ? `<img src="${activity.coverImage}" alt="${activity.title}">`
                         : `<div class="cover-placeholder">${typeIcon}</div>`
                     }
@@ -255,7 +249,7 @@ const ActivityPage: ActivityPageInterface = {
             this.loadActivities();
         } catch (error) {
             const err = error as Error;
-            toast.error(`参与失败：${  err.message || '请稍后重试'}`);
+            toast.error(`参与失败：${err.message || '请稍后重试'}`);
         }
     },
 
@@ -266,7 +260,7 @@ const ActivityPage: ActivityPageInterface = {
             this.loadActivities();
         } catch (error) {
             const err = error as Error;
-            toast.error(`退出失败：${  err.message || '请稍后重试'}`);
+            toast.error(`退出失败：${err.message || '请稍后重试'}`);
         }
     },
 
@@ -319,12 +313,11 @@ const ActivityPage: ActivityPageInterface = {
             this.loadActivities();
         } catch (error) {
             const err = error as Error;
-            toast.error(`创建失败：${  err.message || '请稍后重试'}`);
+            toast.error(`创建失败：${err.message || '请稍后重试'}`);
         }
     }
 };
 
-// 挂载到全局对象以供内联事件使用
 (window as unknown as { ActivityPage: ActivityPageInterface }).ActivityPage = ActivityPage;
 
 export default ActivityPage;

@@ -3,8 +3,8 @@
  * @version 1.0.0
  */
 
-import api, { type PaymentInfo, type PaymentResponse } from '../api/index.js';
-import { toast, dom, formatCurrency } from '../utils/index.js';
+import api, { type PaymentInfo, type PaymentResponse } from '../../api/index.js';
+import { toast, dom, formatCurrency } from '../../utils/index.js';
 
 export type { PaymentInfo, PaymentResponse };
 
@@ -17,7 +17,6 @@ type PaymentMethodData = {
     desc: string;
 };
 
-/** 支付页面元素接口 */
 export interface PaymentPageElements {
     paymentContainer: HTMLElement | null;
     paymentAmount: HTMLElement | null;
@@ -28,7 +27,6 @@ export interface PaymentPageElements {
     countdown: HTMLElement | null;
 }
 
-/** 支付页面对象接口 */
 export interface PaymentPageInterface {
     elements: PaymentPageElements;
     currentPayment: PaymentInfo | null;
@@ -48,10 +46,6 @@ export interface PaymentPageInterface {
     onPaymentFailed(): void;
     startCountdown(): void;
 }
-
-// ============================================
-// 支付页面逻辑
-// ============================================
 
 const PaymentPage: PaymentPageInterface = {
     elements: {
@@ -103,7 +97,7 @@ const PaymentPage: PaymentPageInterface = {
     async loadPaymentInfo(): Promise<void> {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('orderId');
-        
+
         if (!orderId) {
             toast.error('订单信息缺失');
             return;
@@ -123,7 +117,7 @@ const PaymentPage: PaymentPageInterface = {
         if (!this.currentPayment || !this.elements.paymentContainer) {return;}
 
         const { amount } = this.currentPayment;
-        
+
         if (this.elements.paymentAmount) {
             this.elements.paymentAmount.textContent = formatCurrency(amount);
         }
@@ -187,7 +181,7 @@ const PaymentPage: PaymentPageInterface = {
             this.handlePaymentResponse(data);
         } catch (error) {
             const err = error as Error;
-            toast.error(`创建支付失败：${  err.message || '请稍后重试'}`);
+            toast.error(`创建支付失败：${err.message || '请稍后重试'}`);
         } finally {
             dom.removeClass(this.elements.paymentBtn, 'loading');
             if (this.elements.paymentBtn) {
@@ -202,7 +196,6 @@ const PaymentPage: PaymentPageInterface = {
         if (qrCodeUrl) {
             this.showQrCode(qrCodeUrl);
         } else if (payUrl) {
-            // 第三方支付跳转 - 外部支付平台必须使用直接 URL
             window.location.href = payUrl;
         } else {
             toast.success('支付创建成功');
@@ -279,7 +272,7 @@ const PaymentPage: PaymentPageInterface = {
         if (!this.elements.countdown || !this.currentPayment) {return;}
 
         const expireTime = new Date(this.currentPayment.expireTime).getTime();
-        
+
         const updateCountdown = () => {
             const now = Date.now();
             const remaining = expireTime - now;

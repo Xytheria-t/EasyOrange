@@ -1,12 +1,11 @@
-import '../styles/main.css';
-import '../styles/profile.css';
-import { profileApi } from '../api/index.js';
-import { storage, toast, formatDate, formatRelativeTime } from '../utils/index.js';
-import { navigation } from '../app/navigation.js';
-import type { UserInfo, UserStats, Gender } from '../types/index.js';
-import { BasePage } from './BasePage.js';
+import '../../styles/main.css';
+import '../../styles/profile.css';
+import { profileApi } from '../../api/index.js';
+import { storage, toast, formatDate, formatRelativeTime, modalManager } from '../../utils/index.js';
+import { navigation } from '../../app/navigation.js';
+import type { UserInfo, UserStats, Gender } from '../../types/index.js';
+import { BasePage } from '../BasePage.js';
 
-// Type definitions
 type ActivityType = 'login' | 'logout' | 'publish' | 'buy' | 'sell' | 'favorite' | 'follow';
 
 interface ActivityData {
@@ -106,9 +105,6 @@ interface ProfilePageElements {
   editGender: HTMLSelectElement | null;
 }
 
-/**
- * Profile page controller
- */
 class ProfilePage extends BasePage<ProfilePageElements> {
   private state: ProfileState = {
     user: {},
@@ -254,7 +250,6 @@ class ProfilePage extends BasePage<ProfilePageElements> {
       if ((e as KeyboardEvent).key === 'Escape') { this.closeModals(); }
     });
 
-    // Hash navigation
     const hash = location.hash.slice(1);
     if (['overview', 'info', 'security', 'preferences'].includes(hash)) {
       const navItem = this.querySelector<HTMLElement>(`.nav-item[data-section="${hash}"]`);
@@ -356,7 +351,6 @@ class ProfilePage extends BasePage<ProfilePageElements> {
         this.updateSecurityUI();
       }
     } catch (e) {
-      // API 数据加载失败时使用默认值
       this.state.preferences = this.getDefaultPreferences();
       this.state.security = this.getDefaultSecurity();
       this.updatePreferencesUI();
@@ -543,10 +537,7 @@ class ProfilePage extends BasePage<ProfilePageElements> {
   }
 
   private openModal(id: string): void {
-    const { elements: el } = this;
-    this.safe(el.modalOverlay, (overlay) => { overlay.classList.add('active'); });
-    const modal = this.querySelector<HTMLElement>(`#${id}`);
-    this.safe(modal, (m) => { m.classList.add('active'); });
+    modalManager.open(id, { closeOnOverlayClick: true });
   }
 
   private openEditInfoModal(): void {
@@ -562,10 +553,8 @@ class ProfilePage extends BasePage<ProfilePageElements> {
   }
 
   private closeModals(): void {
-    const { elements: el } = this;
-    this.safe(el.modalOverlay, (overlay) => { overlay.classList.remove('active'); });
-    this.querySelectorAll<HTMLElement>('.modal').forEach((m) => m.classList.remove('active'));
-    this.safe(el.passwordForm, (form) => { form.reset(); });
+    modalManager.closeAll();
+    this.safe(this.elements.passwordForm, (form) => { form.reset(); });
   }
 
   private async handleShareProfile(): Promise<void> {
@@ -587,7 +576,7 @@ class ProfilePage extends BasePage<ProfilePageElements> {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `user-data-${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `user-data-${new Date().toISOString().slice(0, 10)}. json`;
         a.click();
         URL.revokeObjectURL(url);
         toast.success('数据导出成功');
@@ -606,7 +595,7 @@ class ProfilePage extends BasePage<ProfilePageElements> {
 
     if (!current || !newPwd || !confirm) { return toast.error('请填写所有字段'); }
     if (newPwd !== confirm) { return toast.error('两次密码不一致'); }
-    if (newPwd.length < 6) { return toast.error('密码至少6位'); }
+    if ( newPwd.length < 6) { return toast.error('密码至少6位'); }
 
     try {
       await profileApi.changePassword({ currentPassword: current, newPassword: newPwd, confirmPassword: confirm });
@@ -675,9 +664,11 @@ class ProfilePage extends BasePage<ProfilePageElements> {
   }
 }
 
-// Create instance on DOMContentLoaded
 let profilePage: ProfilePage | null = null;
 document.addEventListener('DOMContentLoaded', async (): Promise<void> => {
   profilePage = new ProfilePage();
   await profilePage.init();
 });
+
+export { ProfilePage };
+export default ProfilePage;

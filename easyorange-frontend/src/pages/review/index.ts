@@ -3,16 +3,11 @@
  * @version 1.0.0
  */
 
-import api, { type OrderDetail } from '../api/index.js';
-import { formatDate } from '../utils/index.js';
-import { navigation } from '../app/navigation.js';
-import { isSuccessCode, type ApiCode, type Result } from '../types/index.js';
+import api, { type OrderDetail } from '../../api/index.js';
+import { formatDate } from '../../utils/index.js';
+import { navigation } from '../../app/navigation.js';
+import { isSuccessCode, type ApiCode, type Result } from '../../types/index.js';
 
-// ============================================
-// 类型定义
-// ============================================
-
-/** 评价数据接口 */
 export interface ReviewData {
     orderId: number;
     targetUserId: number;
@@ -21,7 +16,6 @@ export interface ReviewData {
     content: string;
 }
 
-/** 创建评价请求 */
 export interface CreateReviewRequest {
     orderId: number;
     targetUserId: number;
@@ -30,16 +24,11 @@ export interface CreateReviewRequest {
     content: string;
 }
 
-/** API响应接口 */
 export interface ApiResponse<T = unknown> {
     code: ApiCode;
     message: string;
     data: T;
 }
-
-// ============================================
-// 评价页面类
-// ============================================
 
 export default class ReviewPage {
     private orderId: string | null = null;
@@ -74,12 +63,12 @@ export default class ReviewPage {
                 <div class="page-header">
                     <h1>评价订单</h1>
                 </div>
-                
+
                 <div class="review-form">
                     <div class="order-info" id="order-info">
                         <div class="loading">加载中...</div>
                     </div>
-                    
+
                     <div class="rating-section">
                         <label>评分</label>
                         <div class="star-rating" id="star-rating">
@@ -91,13 +80,13 @@ export default class ReviewPage {
                         </div>
                         <input type="hidden" id="rating-input" value="5">
                     </div>
-                    
+
                     <div class="content-section">
                         <label>评价内容</label>
                         <textarea id="review-content" placeholder="请输入您的评价（选填）" maxlength="500"></textarea>
                         <span class="char-count"><span id="char-count">0</span>/500</span>
                     </div>
-                    
+
                     <div class="submit-section">
                         <button class="btn-secondary" onclick="window.history.back()">取消</button>
                         <button class="btn-primary" id="submit-btn">提交评价</button>
@@ -206,7 +195,7 @@ export default class ReviewPage {
     async submitReview(): Promise<void> {
         const ratingInput = document.getElementById('rating-input') as HTMLInputElement;
         const contentInput = document.getElementById('review-content') as HTMLTextAreaElement;
-        
+
         const rating = parseInt(ratingInput?.value || '5');
         const content = contentInput?.value.trim() || '';
 
@@ -215,9 +204,9 @@ export default class ReviewPage {
             return;
         }
 
-        const orderWithUsers = this.order as OrderDetail & { 
-            sellerId?: number; 
-            buyerId?: number; 
+        const orderWithUsers = this.order as OrderDetail & {
+            sellerId?: number;
+            buyerId?: number;
             productId?: number;
             sellerName?: string;
             buyerName?: string;
@@ -248,7 +237,7 @@ export default class ReviewPage {
             }
         } catch (error) {
             const err = error as Error;
-            alert(`评价失败: ${  err.message}`);
+            alert(`评价失败: ${err.message}`);
         }
     }
 }

@@ -3,8 +3,8 @@
  * @version 1.0.0
  */
 
-import api, { INSURANCE_TYPE_NAMES, calculatePremiumLocal, type InsuranceType, type Insurance, type InsuranceStatus, type ClaimStatus } from '../api/index.js';
-import { toast, dom, formatCurrency, formatDate } from '../utils/index.js';
+import api, { INSURANCE_TYPE_NAMES, calculatePremiumLocal, type InsuranceType, type Insurance, type InsuranceStatus, type ClaimStatus } from '../../api/index.js';
+import { toast, dom, formatCurrency, formatDate } from '../../utils/index.js';
 
 export type { InsuranceType, Insurance, InsuranceStatus, ClaimStatus };
 
@@ -16,7 +16,6 @@ type InsuranceTypeCard = {
     icon: string;
 };
 
-/** 保险页面元素接口 */
 export interface InsurancePageElements {
     insuranceContainer: HTMLElement | null;
     orderInfo: HTMLElement | null;
@@ -28,7 +27,6 @@ export interface InsurancePageElements {
     myInsurances: HTMLElement | null;
 }
 
-/** 保险页面对象接口 */
 export interface InsurancePageInterface {
     elements: InsurancePageElements;
     currentOrder: unknown;
@@ -48,10 +46,6 @@ export interface InsurancePageInterface {
     showClaimModal(insuranceId: number): void;
     submitClaim(insuranceId: number, claimAmount: number, claimReason: string): Promise<void>;
 }
-
-// ============================================
-// 保险页面逻辑
-// ============================================
 
 const InsurancePage: InsurancePageInterface = {
     elements: {
@@ -234,7 +228,7 @@ const InsurancePage: InsurancePageInterface = {
             this.loadMyInsurances();
         } catch (error) {
             const err = error as Error;
-            toast.error(`购买失败：${  err.message || '请稍后重试'}`);
+            toast.error(`购买失败：${err.message || '请稍后重试'}`);
         } finally {
             dom.removeClass(this.elements.purchaseBtn, 'loading');
             if (this.elements.purchaseBtn) {
@@ -251,7 +245,6 @@ const InsurancePage: InsurancePageInterface = {
             const insurances = (response.data?.records || response.data || []) as Insurance[];
             this.renderMyInsurances(insurances);
         } catch (error) {
-            // 加载失败时显示空状态
             this.renderMyInsurances([]);
         }
     },
@@ -332,12 +325,11 @@ const InsurancePage: InsurancePageInterface = {
             this.loadMyInsurances();
         } catch (error) {
             const err = error as Error;
-            toast.error(`申请失败：${  err.message || '请稍后重试'}`);
+            toast.error(`申请失败：${err.message || '请稍后重试'}`);
         }
     }
 };
 
-// 挂载到全局对象以供内联事件使用
 (window as unknown as { InsurancePage: InsurancePageInterface }).InsurancePage = InsurancePage;
 
 export default InsurancePage;

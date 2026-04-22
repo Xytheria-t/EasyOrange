@@ -165,6 +165,9 @@ class Header {
 
         if (document.querySelector('.floating-nav')) {
             this.cacheElements();
+            if (!this.validateElements()) {
+                console.error('[Header] Required elements missing, cannot initialize properly');
+            }
             this.bindEvents();
             this.checkLoginStatus();
             this.initialized = true;
@@ -180,6 +183,26 @@ class Header {
         this.bindEvents();
         this.checkLoginStatus();
         this.initialized = true;
+    }
+
+    private validateElements(): boolean {
+        const userMenu = document.getElementById('userMenu');
+        const userAvatarBtn = document.getElementById('userAvatarBtn');
+        const userDropdown = document.getElementById('userDropdown');
+
+        if (!userMenu) {
+            console.warn('[Header] userMenu element not found');
+            return false;
+        }
+        if (!userAvatarBtn) {
+            console.warn('[Header] userAvatarBtn element not found');
+            return false;
+        }
+        if (!userDropdown) {
+            console.warn('[Header] userDropdown element not found');
+            return false;
+        }
+        return true;
     }
 
     private injectFloatingNav(): void {
@@ -201,7 +224,7 @@ class Header {
     }
 
     private showLoggedInState(user: User): void {
-        const userMenu = document.querySelector('.floating-nav__user');
+        const userMenu = document.getElementById('userMenu');
         const loginBtn = document.getElementById('loginBtn');
         const userName = document.getElementById('userName');
         const userInitial = document.getElementById('userInitial');
@@ -222,7 +245,7 @@ class Header {
     }
 
     private showLoggedOutState(): void {
-        const userMenu = document.querySelector('.floating-nav__user');
+        const userMenu = document.getElementById('userMenu');
         const loginBtn = document.getElementById('loginBtn');
 
         if (userMenu) {
@@ -243,6 +266,17 @@ class Header {
 
         const userAvatarBtn = document.getElementById('userAvatarBtn');
         const userMenu = document.getElementById('userMenu');
+        const userDropdown = document.getElementById('userDropdown');
+
+        if (!userAvatarBtn) {
+            console.warn('[Header] userAvatarBtn not found in bindEvents');
+        }
+        if (!userMenu) {
+            console.warn('[Header] userMenu not found in bindEvents');
+        }
+        if (!userDropdown) {
+            console.warn('[Header] userDropdown not found in bindEvents');
+        }
 
         if (userAvatarBtn && userMenu) {
             userAvatarBtn.addEventListener('click', (e) => {

@@ -13,6 +13,11 @@ export type { ErrorTypeValue, ErrorSeverityValue } from './errorHandler.js';
 
 export { validator, ValidatorUtils } from './validator.js';
 
+export { eventManager, EventManager } from './eventManager.js';
+export { modalManager, ModalManager } from './modalManager.js';
+export { FormManager, FormValidators } from './formManager.js';
+export type { FormField, ValidationResult, SubmitOptions, FieldValidator } from './formManager.js';
+
 export { debounce, throttle } from './function.js';
 export type { DebounceOptions } from './function.js';
 

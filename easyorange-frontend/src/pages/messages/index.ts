@@ -2,16 +2,13 @@
  * @fileoverview 消息中心页面
  */
 
-import '../styles/main.css';
-import '../styles/messages.css';
-import { messageApi } from '../api/index.js';
-import { storage, formatDate, escapeHtml, toast } from '../utils/index.js';
-import { isSuccessCode, type ChatMessage, type Result } from '../types/index.js';
-import BasePage from './BasePage.js';
+import '../../styles/main.css';
+import '../../styles/messages.css';
+import { messageApi } from '../../api/index.js';
+import { storage, formatDate, escapeHtml, toast } from '../../utils/index.js';
+import { isSuccessCode, type ChatMessage, type Result } from '../../types/index.js';
+import BasePage from '../BasePage.js';
 
-/**
- * 对话项接口
- */
 interface Conversation {
     userId: string;
     username: string;

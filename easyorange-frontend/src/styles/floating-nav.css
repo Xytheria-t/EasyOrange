@@ -37,7 +37,7 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.8),
         inset 0 -1px 0 rgba(249, 115, 22, 0.03);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .floating-nav::before {
@@ -489,12 +489,14 @@
     visibility: hidden;
     transform: translateY(-12px) scale(0.96);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: block;
 }
 
 .floating-nav__user.active .floating-nav__user-menu {
     opacity: 1;
     visibility: visible;
     transform: translateY(0) scale(1);
+    display: block;
 }
 
 .floating-nav__menu-item {

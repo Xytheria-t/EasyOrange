@@ -1,13 +1,13 @@
-import '../styles/main.css';
-import '../styles/floating-nav.css';
-import '../styles/favorites.css';
-import api from '../api/index.js';
-import { storage, toast, escapeHtml, getConditionNameFromString, calculateDiscount } from '../utils/index.js';
-import { favoriteManager } from '../managers/index.js';
-import header from '../components/Header.js';
-import { navigation } from '../app/navigation.js';
-import type { Product } from '../types';
-import BasePage from './BasePage.js';
+import '../../styles/main.css';
+import '../../styles/floating-nav.css';
+import '../../styles/favorites.css';
+import api from '../../api/index.js';
+import { storage, toast, escapeHtml, getConditionNameFromString, calculateDiscount } from '../../utils/index.js';
+import { favoriteManager } from '../../managers/index.js';
+import header from '../../components/Header.js';
+import { navigation } from '../../app/navigation.js';
+import type { Product } from '../../types';
+import BasePage from '../BasePage.js';
 
 export type { Product };
 
