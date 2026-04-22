@@ -1,0 +1,54 @@
+{
+  "kind": "omx.question/v1",
+  "question_id": "question-2026-04-22T04-29-08-393Z-798e45d0",
+  "session_id": "omx-1776830515821-q3axsf",
+  "created_at": "2026-04-22T04:29:08.393Z",
+  "updated_at": "2026-04-22T04:29:34.593Z",
+  "status": "answered",
+  "header": "Deep Interview Round 4",
+  "question": "Round 4 | Target: Success Criteria + Pressure Pass | Ambiguity: 32%\n\n压力测试：你要求‘不改 UI/视觉’，但优先痛点又是 CSS 冗余。后续如果真的执行 CSS 清理，什么证据标准才足以证明没有误伤界面？",
+  "options": [
+    {
+      "label": "构建+人工抽查",
+      "value": "build-and-manual-smoke",
+      "description": "build/typecheck/lint 通过，再人工看关键页面是否正常；适合轻量但风险较高"
+    },
+    {
+      "label": "关键页截图对比",
+      "value": "key-screenshots-compare",
+      "description": "对首页/商品/发布/个人页等关键页面做清理前后截图对比，差异需解释或回滚"
+    },
+    {
+      "label": "E2E + 截图",
+      "value": "e2e-plus-screenshots",
+      "description": "关键流程 e2e 通过，同时做关键页面截图对比；适合保护 UI 与功能"
+    },
+    {
+      "label": "先只做可疑清单",
+      "value": "inventory-only-no-execution",
+      "description": "计划阶段只列 CSS 风险、重复、候选删除/合并项，不承诺任何执行验证标准"
+    }
+  ],
+  "allow_other": true,
+  "other_label": "其他证据标准",
+  "multi_select": false,
+  "type": "single-answerable",
+  "source": "deep-interview",
+  "renderer": {
+    "renderer": "tmux-pane",
+    "target": "%5",
+    "launched_at": "2026-04-22T04:29:08.411Z",
+    "return_target": "%0",
+    "return_transport": "tmux-send-keys"
+  },
+  "answer": {
+    "kind": "option",
+    "value": "key-screenshots-compare",
+    "selected_labels": [
+      "关键页截图对比"
+    ],
+    "selected_values": [
+      "key-screenshots-compare"
+    ]
+  }
+}

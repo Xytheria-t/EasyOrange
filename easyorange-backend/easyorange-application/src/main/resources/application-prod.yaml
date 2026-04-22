@@ -1,0 +1,150 @@
+# ===================================================================
+# Spring Boot 生产环境配置文件
+# ===================================================================
+# 说明：生产环境特定配置
+# 激活方式：spring.profiles.active=prod
+# ===================================================================
+
+spring:
+  # -------------------------------------------------------------------
+  # 数据源配置 - 生产环境使用高可用配置
+  # -------------------------------------------------------------------
+  datasource:
+    password: ${EASYORANGE_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-init-sql: SET NAMES utf8mb4
+      # 生产环境必须启用 SSL
+      ssl-mode: VERIFY_IDENTITY
+
+  # -------------------------------------------------------------------
+  # Redis 配置 - 生产环境使用安全的连接配置
+  # -------------------------------------------------------------------
+  data:
+    redis:
+      ssl: true
+      lettuce:
+        pool:
+          min-idle: 10
+          max-idle: 50
+          max-active: 100
+
+  # -------------------------------------------------------------------
+  # 文件上传配置 - 生产环境限制更严格
+  # -------------------------------------------------------------------
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+# -------------------------------------------------------------------
+# 日志配置 - 生产环境使用 JSON 格式，便于 ELK 收集
+# -------------------------------------------------------------------
+logging:
+  level:
+    root: WARN
+    com.cartethyia.easyorange: INFO
+
+# -------------------------------------------------------------------
+# 文件上传配置
+# -------------------------------------------------------------------
+file:
+  upload:
+    path: /var/easyorange/uploads
+    url-prefix: /api/file/
+
+# -------------------------------------------------------------------
+# JWT Token 配置 - 生产环境
+# -------------------------------------------------------------------
+jwt:
+  secret-key: ${JWT_SECRET_KEY}
+  access-token-expiration: 60
+  refresh-token-expiration: 7
+  token-prefix: "Bearer "
+  issuer: easyorange
+
+# -------------------------------------------------------------------
+# 微信小程序配置 - 生产环境
+# -------------------------------------------------------------------
+wechat:
+  miniprogram:
+    app-id: ${WECHAT_APP_ID}
+    app-secret: ${WECHAT_APP_SECRET}
+
+# -------------------------------------------------------------------
+# Actuator 监控端点配置 - 生产环境限制暴露
+# -------------------------------------------------------------------
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# -------------------------------------------------------------------
+# 安全配置 - 生产环境更严格
+# -------------------------------------------------------------------
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+  servlet:
+    context-path: /
+  http2:
+    enabled: true
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
+
+security:
+  ignore-paths:
+    - /api/auth/login
+    - /api/auth/logout
+    - /api/auth/refresh
+    - /api/users/register
+    - /api/users/forgotPassword
+    - /api/users/auth/miniprogram/**
+    - /api/health
+    - /v3/api-docs/**
+    - /swagger-ui/**
+    - /swagger-ui.html
+  product-paths:
+    - /api/products
+    - /api/products/{id}
+    - /api/products/categories/**
+    - /api/products/search
+    - /api/products/{id}/similar
+    - /api/products/batch
+    - /api/products/{id}/view
+  static-paths:
+    - /static/**
+    - /public/**
+    - /upload/**
+    - /favicon.ico
+    - /error
+  allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: false
+  info:
+    title: EasyOrange API
+    description: 校园二手交易平台 API 文档
+    version: 0.0.1
+    contact:
+      name: cartethyia

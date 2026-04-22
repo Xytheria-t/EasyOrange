@@ -6,13 +6,18 @@
 import { userApi, ApiClientError } from '../../api/index.js';
 import { storage, toast, validator, dom } from '../../utils/index.js';
 import { navigation } from '../../app/navigation.js';
-import { getStoredToken, getStoredUser, setSession, type AuthSessionUser } from '../../app/authSession.js';
+import { getStoredToken, getStoredUser, setSession } from '../../app/authSession.js';
 import Modal from '../../components/Modal.js';
 
 /** 用户信息接口 */
-export interface UserInfo extends AuthSessionUser {
-    username?: string;
-    nickname?: string;
+export interface UserInfo {
+    id: number;
+    username: string;
+    email: string;
+    phone: string;
+    studentId: string;
+    realName: string;
+    [key: string]: unknown;
 }
 
 /** 登录响应数据 */

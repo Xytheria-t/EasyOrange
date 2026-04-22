@@ -1,0 +1,34 @@
+# Deep Interview Context Snapshot: frontend-cleanup
+
+- Created: 2026-04-22T04:07:50Z
+- Task statement: 用户想清理 EasyOrange 前端代码，认为现状冗余、杂乱，但不能影响现有界面和功能。
+- Desired outcome: 更清晰、可维护、低冗余的前端代码，同时保持视觉表现、交互行为、页面入口、API 调用契约不变。
+- Stated solution: 清理/重构前端代码。
+- Probable intent hypothesis: 降低维护成本，减少重复 CSS/页面逻辑，避免后续功能开发继续堆积复杂度。
+- Known facts/evidence:
+  - Frontend is `easyorange-frontend`, vanilla TypeScript + Vite multi-page SPA.
+  - Verification scripts exist in `package.json`: `npm run build`, `npm run typecheck`, `npm run lint:check`, Playwright dependency and tests under `tests/`.
+  - Largest source/style files by line count include `src/styles/main.css` (~3606), `src/styles/luxury-v3.css` (~2297), `src/styles/profile-premium.css` (~2226), `src/styles/publish.css` (~1814), `src/styles/profile.css` (~1801), `src/styles/products.css` (~1774), `src/pages/publish.ts` (~1203), `src/pages/profile.ts` (~683), `src/pages/products/ProductsPage.ts` (~625).
+  - Several refined/polish/premium/v3 style variants exist and may be legacy or experimental: `*-refined.css`, `*-polish.css`, `*-premium.css`, `editorial-*`, `luxury-v3.css`.
+  - CSS imports are per-page plus global `main.css`/`floating-nav.css`; HTML also preloads page CSS.
+- Constraints:
+  - Do not alter current UI, layout, styling, visible content, navigation, or behavior unless explicitly approved later.
+  - No new dependencies unless explicitly requested.
+  - Keep vanilla TypeScript + Vite; no framework migration during cleanup.
+  - Follow project anti-patterns: no `as any`, no `@ts-ignore`, no framework imports, no direct DOM spaghetti, no monolithic page growth, no `!important`.
+  - Cleanup work should lock behavior with regression/visual/e2e verification before edits where possible.
+- Unknowns/open questions:
+  - Which frontend area hurts most: CSS duplication, page logic size, API layer, component boundaries, legacy unused assets, or build/test hygiene.
+  - How conservative the first pass must be: only dead-code deletion, internal extraction, CSS consolidation, or broader modularization.
+  - Which pages/features are business-critical and must be tested first.
+  - Whether legacy/experimental pages like `index-v3.html` and `luxury-v3.html` should be preserved, ignored, or treated as candidates for removal only after evidence.
+- Decision-boundary unknowns:
+  - May OMX delete files proven unused, or only mark them/report them first?
+  - May OMX rename/move files if imports are updated and behavior is verified?
+  - May OMX split large files or only simplify inside existing files?
+  - May OMX add or adjust regression tests/screenshots to protect UI?
+- Likely codebase touchpoints:
+  - `easyorange-frontend/src/pages/publish.ts`, `src/pages/publish/*`, `src/pages/profile.ts`, `src/pages/products/*`
+  - `easyorange-frontend/src/styles/*.css`, especially `main.css`, page CSS, polish/refined/v3 variants
+  - `easyorange-frontend/src/components/*`, `src/utils/*`, `src/api/*`
+  - `easyorange-frontend/tests/*`, `playwright.config.ts`, `package.json` scripts

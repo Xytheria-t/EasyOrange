@@ -15,28 +15,37 @@ export interface User {
     lastLoginTime: string | null;
 }
 
+export interface UserBasicInfo {
+    id: number;
+    username: string;
+    email: string;
+    phone: string;
+    studentId: string;
+    realName: string;
+}
+
 export interface LoginRequest {
     account: string;
     password: string;
 }
 
+export interface LoginResponse {
+    token: string;
+    user: UserBasicInfo;
+}
+
 export interface RegisterRequest {
     username: string;
     password: string;
-    email: string;
+    email?: string;
     phone?: string;
-    studentId: string;
-    realName: string;
+    studentId?: string;
+    realName?: string;
 }
 
 export interface CampusLoginRequest {
     campusId: string;
     password: string;
-}
-
-export interface LoginResponse {
-    token: string;
-    user: UserInfo;
 }
 
 export interface UserInfo {

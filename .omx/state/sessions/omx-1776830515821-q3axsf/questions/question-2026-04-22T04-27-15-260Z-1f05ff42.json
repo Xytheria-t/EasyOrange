@@ -1,0 +1,59 @@
+{
+  "kind": "omx.question/v1",
+  "question_id": "question-2026-04-22T04-27-15-260Z-1f05ff42",
+  "session_id": "omx-1776830515821-q3axsf",
+  "created_at": "2026-04-22T04:27:15.260Z",
+  "updated_at": "2026-04-22T04:27:27.558Z",
+  "status": "answered",
+  "header": "Deep Interview Round 3",
+  "question": "Round 3 | Target: Outcome + Scope | Ambiguity: 45%\n\n既然第一阶段只出计划，不改代码：这份前端清理计划最应该优先解决哪个核心痛点？",
+  "options": [
+    {
+      "label": "CSS 冗余混乱",
+      "value": "css-redundancy",
+      "description": "优先梳理 main/page/refined/polish/v3/premium 等样式层级、重复规则和未使用样式风险"
+    },
+    {
+      "label": "页面逻辑臃肿",
+      "value": "page-logic-bloat",
+      "description": "优先拆解 publish/profile/products 等大页面的职责、状态和 DOM 操作边界"
+    },
+    {
+      "label": "遗留/实验文件",
+      "value": "legacy-experimental-files",
+      "description": "优先识别 index-v3/luxury-v3/refined/polish 等遗留或实验资源是否仍应保留"
+    },
+    {
+      "label": "组件/工具复用差",
+      "value": "component-utils-reuse",
+      "description": "优先找重复 UI 片段、重复 formatter/validator/storage/dom 工具和组件边界问题"
+    },
+    {
+      "label": "测试保护不足",
+      "value": "verification-gaps",
+      "description": "优先建立不改 UI/功能的验证矩阵，再决定哪些清理安全"
+    }
+  ],
+  "allow_other": true,
+  "other_label": "其他优先痛点",
+  "multi_select": false,
+  "type": "single-answerable",
+  "source": "deep-interview",
+  "renderer": {
+    "renderer": "tmux-pane",
+    "target": "%4",
+    "launched_at": "2026-04-22T04:27:15.280Z",
+    "return_target": "%0",
+    "return_transport": "tmux-send-keys"
+  },
+  "answer": {
+    "kind": "option",
+    "value": "css-redundancy",
+    "selected_labels": [
+      "CSS 冗余混乱"
+    ],
+    "selected_values": [
+      "css-redundancy"
+    ]
+  }
+}

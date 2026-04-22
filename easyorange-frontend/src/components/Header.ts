@@ -35,6 +35,7 @@ interface HeaderElements {
 
 const FLOATING_NAV_TEMPLATE = `
 <nav class="floating-nav" role="navigation" aria-label="主导航">
+    <div class="floating-nav__ambient"></div>
     <div class="floating-nav__glow"></div>
     <div class="floating-nav__inner">
         <a href="/" class="floating-nav__brand" aria-label="EasyOrange首页">

@@ -1460,21 +1460,43 @@ input, textarea, select {
     animation-delay: -5s;
 }
 
-/* Scroll indicator */
-.scroll-indicator {
+.hero-bottom-elements {
     position: absolute;
-    bottom: 8rem;
+    bottom: 2rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.4rem;
+    text-align: center;
+    z-index: 2;
+}
+
+.hero-watermark {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.35);
+    text-shadow: 0 12px 30px rgba(28, 24, 21, 0.05);
+    pointer-events: none;
+    letter-spacing: -0.04em;
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+    position: static;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
     color: var(--text-tertiary);
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
     font-weight: 500;
+    text-transform: none;
 }
 
 .scroll-mouse {
@@ -2407,6 +2429,8 @@ input, textarea, select {
     box-shadow: var(--shadow-2xl);
     z-index: 1001;
     opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
     transition: all var(--transition-normal);
     max-width: 90%;
     max-height: 90vh;
@@ -2415,6 +2439,8 @@ input, textarea, select {
 
 .modal-active .modal {
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
     transform: translate(-50%, -50%) scale(1);
 }
 

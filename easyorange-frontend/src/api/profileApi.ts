@@ -5,20 +5,16 @@
 import { request } from './core/request.js';
 
 export const profileApi = {
-    getInfo() {
-        return request<Record<string, unknown>>('/profile');
-    },
-
     getProfile() {
-        return request<Record<string, unknown>>('/profile');
+        return request<Record<string, unknown>>('/users/info');
     },
 
     getPreferences() {
-        return request<Record<string, unknown>>('/profile/preferences');
+        return request<Record<string, unknown>>('/users/info');
     },
 
     getSecurity() {
-        return request<Record<string, unknown>>('/profile/security');
+        return request<Record<string, unknown>>('/users/info');
     },
 
     getActivities(page?: number, limit?: number) {
@@ -26,43 +22,36 @@ export const profileApi = {
         if (page) {params.set('page', String(page));}
         if (limit) {params.set('limit', String(limit));}
         const query = params.toString() ? `?${params.toString()}` : '';
-        return request<Record<string, unknown>[]>(`/profile/activities${query}`);
+        return request<Record<string, unknown>[]>(`/users/info${query}`);
     },
 
     exportData() {
-        return request<Record<string, unknown>>('/profile/export');
+        return request<Record<string, unknown>>('/users/info');
     },
 
     changePassword(data: { currentPassword?: string; oldPassword?: string; newPassword: string; confirmPassword?: string }) {
-        return request('/profile/change-password', {
-            method: 'POST',
+        return request('/users/password', {
+            method: 'PUT',
             body: data
         });
     },
 
-    updateUserInfo(data: Record<string, unknown> | { username?: string; email?: string; phone?: string; realName?: string; studentId?: string; gender?: string }) {
-        return request('/profile/user-info', {
+    updateUserInfo(data: Record<string, unknown> | { username?: string; email?: string; phone?: string; realName?: string; studentId?: string }) {
+        return request('/users/info', {
             method: 'PUT',
             body: data as Record<string, unknown>
         });
     },
 
-    updatePreferences(data: Record<string, unknown> | { [key: string]: unknown }) {
-        return request('/profile/preferences', {
+    updatePreferences(data: Record<string, unknown>) {
+        return request('/users/info', {
             method: 'PUT',
-            body: data as Record<string, unknown>
+            body: data
         });
     },
 
-    updateSecurity(data: Record<string, unknown> | { [key: string]: unknown }) {
-        return request('/profile/security', {
-            method: 'PUT',
-            body: data as Record<string, unknown>
-        });
-    },
-
-    updateStats(data: Record<string, unknown>) {
-        return request('/profile/stats', {
+    updateSecurity(data: Record<string, unknown>) {
+        return request('/users/info', {
             method: 'PUT',
             body: data
         });

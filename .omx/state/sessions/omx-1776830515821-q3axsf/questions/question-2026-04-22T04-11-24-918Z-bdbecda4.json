@@ -1,0 +1,54 @@
+{
+  "kind": "omx.question/v1",
+  "question_id": "question-2026-04-22T04-11-24-918Z-bdbecda4",
+  "session_id": "omx-1776830515821-q3axsf",
+  "created_at": "2026-04-22T04:11:24.918Z",
+  "updated_at": "2026-04-22T04:23:11.404Z",
+  "status": "answered",
+  "header": "Deep Interview Round 2",
+  "question": "Round 2 | Target: Decision Boundaries | Ambiguity: 52%\n\n你刚才只把‘不改 UI/视觉’和‘不改功能/交互’设为硬边界。那 OMX 在第一轮清理里可以自主做到什么程度？",
+  "options": [
+    {
+      "label": "极保守",
+      "value": "very-conservative",
+      "description": "只做分析、格式/小整理和明显重复提取；任何删除、迁移、重命名、样式合并都先停下来确认"
+    },
+    {
+      "label": "证据驱动",
+      "value": "evidence-driven",
+      "description": "允许删除/移动/拆分/合并已被引用分析和测试验证保护的内部代码；每步保留回滚和验证证据"
+    },
+    {
+      "label": "测试兜底即可",
+      "value": "tests-guarded-broad",
+      "description": "允许较大范围重组，只要最终 build/typecheck/lint/e2e/必要截图证明 UI 与功能不变"
+    },
+    {
+      "label": "只先出计划",
+      "value": "plan-only",
+      "description": "本阶段只产出清理计划和风险清单，不改代码"
+    }
+  ],
+  "allow_other": true,
+  "other_label": "其他边界",
+  "multi_select": false,
+  "type": "single-answerable",
+  "source": "deep-interview",
+  "renderer": {
+    "renderer": "tmux-pane",
+    "target": "%3",
+    "launched_at": "2026-04-22T04:11:24.975Z",
+    "return_target": "%0",
+    "return_transport": "tmux-send-keys"
+  },
+  "answer": {
+    "kind": "option",
+    "value": "plan-only",
+    "selected_labels": [
+      "只先出计划"
+    ],
+    "selected_values": [
+      "plan-only"
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "active": false,
+  "skill": "ralplan",
+  "keyword": "RALPLAN",
+  "phase": "planning",
+  "activated_at": "2026-04-21T14:11:40.122Z",
+  "updated_at": "2026-04-21T14:30:55.309Z",
+  "source": "keyword-detector",
+  "session_id": "019db070-34f2-7d73-8638-b16c7ec4667e",
+  "turn_id": "019db070-3565-71c0-9031-fa85c53bd5b1",
+  "active_skills": [],
+  "input_lock": {
+    "active": false,
+    "scope": "deep-interview-auto-approval",
+    "acquired_at": "2026-04-21T13:40:22.795Z",
+    "released_at": "2026-04-21T14:27:30.090Z",
+    "blocked_inputs": [
+      "yes",
+      "y",
+      "proceed",
+      "continue",
+      "ok",
+      "sure",
+      "go ahead",
+      "next i should"
+    ],
+    "message": "Deep interview is active; auto-approval shortcuts are blocked until the interview finishes.",
+    "exit_reason": "handoff"
+  },
+  "initialized_mode": "ralplan",
+  "initialized_state_path": ".omx/state/sessions/019db070-34f2-7d73-8638-b16c7ec4667e/ralplan-state.json"
+}

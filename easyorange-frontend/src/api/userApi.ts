@@ -3,32 +3,33 @@
  */
 
 import { request } from './core/request.js';
+import type { LoginResponse, UserBasicInfo } from '../types/user.js';
 
 export const userApi = {
     login(data: { account: string; password: string }) {
-        return request<{ token: string; user: Record<string, unknown> }>('/auth/login', {
+        return request<LoginResponse>('/auth/login', {
             method: 'POST',
             body: { ...data, clientType: 'web' }
         });
     },
 
-    register(data: Record<string, unknown>) {
-        return request('/users/register', {
+    register(data: { username: string; password: string }) {
+        return request<void>('/users/register', {
             method: 'POST',
             body: data
         });
     },
 
     logout() {
-        return request('/auth/logout', { method: 'POST' });
+        return request<void>('/auth/logout', { method: 'POST' });
     },
 
     getInfo() {
-        return request<Record<string, unknown>>('/users/info');
+        return request<UserBasicInfo>('/users/info');
     },
 
-    updateProfile(data: Record<string, unknown>) {
-        return request('/users/info', {
+    updateProfile(data: { username?: string; email?: string; phone?: string; realName?: string; studentId?: string }) {
+        return request<UserBasicInfo>('/users/info', {
             method: 'PUT',
             body: data
         });
