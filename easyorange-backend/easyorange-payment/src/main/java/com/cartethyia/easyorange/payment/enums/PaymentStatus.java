@@ -17,8 +17,9 @@ public enum PaymentStatus {
     PENDING(0, "待支付"),
     SUCCESS(1, "已支付"),
     REFUNDED(2, "已退款"),
-    FAILED(3, "支付失败"),
-    CLOSED(4, "已关闭");
+    PARTIALLY_REFUNDED(3, "部分退款"),
+    FAILED(4, "支付失败"),
+    CLOSED(5, "已关闭");
 
     private final Integer code;
     private final String desc;
@@ -37,7 +38,7 @@ public enum PaymentStatus {
     }
 
     public static boolean canRefund(Integer status) {
-        return SUCCESS.getCode().equals(status);
+        return SUCCESS.getCode().equals(status) || PARTIALLY_REFUNDED.getCode().equals(status);
     }
 
     public static boolean canClose(Integer status) {

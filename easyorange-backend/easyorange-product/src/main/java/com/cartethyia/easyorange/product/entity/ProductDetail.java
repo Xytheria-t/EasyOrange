@@ -2,25 +2,57 @@ package com.cartethyia.easyorange.product.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-/**
- * 商品详情实体（垂直分表）
- * 将 description 大字段从 product 表分离，提升列表查询性能
- */
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("product_detail")
 public class ProductDetail extends BaseDO {
 
     private Long productId;
-
     private String description;
+
+    public ProductDetail() {
+    }
+
+    public ProductDetail(Long productId, String description) {
+        this.productId = productId;
+        this.description = description;
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Long productId) {
+        this.productId = productId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Long productId;
+        private String description;
+
+        public Builder productId(Long productId) {
+            this.productId = productId;
+            return this;
+        }
+
+        public Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public ProductDetail build() {
+            return new ProductDetail(productId, description);
+        }
+    }
 }

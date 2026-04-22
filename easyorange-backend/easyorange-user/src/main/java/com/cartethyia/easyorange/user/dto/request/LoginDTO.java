@@ -20,9 +20,7 @@ public class LoginDTO {
     @Size(min = 6, max = 20, message = "密码长度必须在6-20位之间")
     private String password;
 
-    private String wxCode;
-
     public String getEffectiveClientType() {
-        return clientType != null ? clientType : ClientType.MINI.getValue();
+        return clientType != null ? clientType : ClientType.WEB.getValue();
     }
 }

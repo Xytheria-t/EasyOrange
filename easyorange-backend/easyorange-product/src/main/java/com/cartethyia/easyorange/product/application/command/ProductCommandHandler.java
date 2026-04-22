@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.product.application.command;
 
+import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.assembler.ProductAssembler;
@@ -7,7 +9,6 @@ import com.cartethyia.easyorange.product.domain.aggregate.ProductAggregate;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import com.cartethyia.easyorange.product.entity.Category;
 import com.cartethyia.easyorange.product.entity.Product;
@@ -17,9 +18,8 @@ import com.cartethyia.easyorange.product.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.service.CategoryService;
 import com.cartethyia.easyorange.product.service.ProductImageService;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,10 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
 public class ProductCommandHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductCommandHandler.class);
 
     private final ProductRepository productRepository;
     private final ProductImageService productImageService;
@@ -40,7 +41,22 @@ public class ProductCommandHandler {
     private final ProductAssembler productAssembler;
     private final DomainEventPublisher domainEventPublisher;
 
-    @Transactional(rollbackFor = Exception.class)
+    public ProductCommandHandler(ProductRepository productRepository,
+                                ProductImageService productImageService,
+                                CategoryService categoryService,
+                                ProductDetailMapper productDetailMapper,
+                                ProductMapper productMapper,
+                                ProductAssembler productAssembler,
+                                DomainEventPublisher domainEventPublisher) {
+        this.productRepository = productRepository;
+        this.productImageService = productImageService;
+        this.categoryService = categoryService;
+        this.productDetailMapper = productDetailMapper;
+        this.productMapper = productMapper;
+        this.productAssembler = productAssembler;
+        this.domainEventPublisher = domainEventPublisher;
+    }
+
     public ProductVO handle(CreateProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
@@ -69,7 +85,6 @@ public class ProductCommandHandler {
         return buildProductVO(aggregate.getProduct());
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public ProductVO handle(UpdateProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         Product product = validateAndGetOwnedProduct(command.getId());
@@ -109,7 +124,6 @@ public class ProductCommandHandler {
         return buildProductVO(aggregate.getProduct());
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void handle(DeleteProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         Product product = validateAndGetOwnedProduct(command.getId());
@@ -128,7 +142,6 @@ public class ProductCommandHandler {
         log.info("删除商品成功: productId={}, userId={}", command.getId(), userId);
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void handle(DecrementStockCommand command) {
         Product product = productRepository.findById(command.getProductId());
         BizRequire.notNull(product, "商品不存在");
@@ -143,7 +156,6 @@ public class ProductCommandHandler {
         log.info("扣减库存成功: productId={}", command.getProductId());
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void handle(RestoreStockCommand command) {
         Product product = productRepository.findById(command.getProductId());
         if (product == null) {
@@ -161,7 +173,6 @@ public class ProductCommandHandler {
         log.info("恢复库存成功: productId={}", command.getProductId());
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsSoldCommand command) {
         Product product = productRepository.findById(command.getProductId());
         if (product == null) {

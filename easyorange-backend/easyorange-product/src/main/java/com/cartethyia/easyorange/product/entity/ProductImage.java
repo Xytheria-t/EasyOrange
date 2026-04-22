@@ -2,25 +2,89 @@ package com.cartethyia.easyorange.product.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 @TableName("product_image")
 public class ProductImage extends BaseDO {
 
     private Long productId;
-
     private String imageUrl;
-
     private Integer sortOrder;
-
     private Integer isMain;
+
+    public ProductImage() {
+    }
+
+    public ProductImage(Long productId, String imageUrl, Integer sortOrder, Integer isMain) {
+        this.productId = productId;
+        this.imageUrl = imageUrl;
+        this.sortOrder = sortOrder;
+        this.isMain = isMain;
+    }
+
+    public Long getProductId() {
+        return productId;
+    }
+
+    public void setProductId(Long productId) {
+        this.productId = productId;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+
+    public Integer getIsMain() {
+        return isMain;
+    }
+
+    public void setIsMain(Integer isMain) {
+        this.isMain = isMain;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Long productId;
+        private String imageUrl;
+        private Integer sortOrder;
+        private Integer isMain;
+
+        public Builder productId(Long productId) {
+            this.productId = productId;
+            return this;
+        }
+
+        public Builder imageUrl(String imageUrl) {
+            this.imageUrl = imageUrl;
+            return this;
+        }
+
+        public Builder sortOrder(Integer sortOrder) {
+            this.sortOrder = sortOrder;
+            return this;
+        }
+
+        public Builder isMain(Integer isMain) {
+            this.isMain = isMain;
+            return this;
+        }
+
+        public ProductImage build() {
+            return new ProductImage(productId, imageUrl, sortOrder, isMain);
+        }
+    }
 }

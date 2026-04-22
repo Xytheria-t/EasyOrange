@@ -66,14 +66,6 @@ jwt:
   issuer: easyorange
 
 # -------------------------------------------------------------------
-# 微信小程序配置 - 生产环境
-# -------------------------------------------------------------------
-wechat:
-  miniprogram:
-    app-id: ${WECHAT_APP_ID}
-    app-secret: ${WECHAT_APP_SECRET}
-
-# -------------------------------------------------------------------
 # Actuator 监控端点配置 - 生产环境限制暴露
 # -------------------------------------------------------------------
 management:
@@ -115,7 +107,6 @@ security:
     - /api/auth/refresh
     - /api/users/register
     - /api/users/forgotPassword
-    - /api/users/auth/miniprogram/**
     - /api/health
     - /v3/api-docs/**
     - /swagger-ui/**

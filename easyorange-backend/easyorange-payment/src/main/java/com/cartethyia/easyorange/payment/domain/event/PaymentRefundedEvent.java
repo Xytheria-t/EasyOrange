@@ -7,6 +7,7 @@ import lombok.Getter;
 public class PaymentRefundedEvent extends BaseDomainEvent {
 
     private static final String AGGREGATE_TYPE = "Payment";
+    private static final String EVENT_TYPE = "PaymentRefunded";
 
     private final Long paymentId;
     private final String refundReason;
@@ -15,5 +16,10 @@ public class PaymentRefundedEvent extends BaseDomainEvent {
         super(AGGREGATE_TYPE);
         this.paymentId = paymentId;
         this.refundReason = refundReason;
+    }
+
+    @Override
+    public String eventType() {
+        return EVENT_TYPE;
     }
 }

@@ -60,14 +60,8 @@ public class User extends BaseDO {
     @TableField("nick_name")
     private String nickName;
 
-    @TableField("openid")
-    private String openid;
-
     @TableField("login_type")
     private String loginType;
-
-    @TableField("unionid")
-    private String unionid;
 
     private String sex;
 

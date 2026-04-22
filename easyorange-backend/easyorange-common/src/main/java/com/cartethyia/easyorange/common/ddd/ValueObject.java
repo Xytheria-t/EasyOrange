@@ -1,14 +1,7 @@
 package com.cartethyia.easyorange.common.ddd;
 
-public abstract class ValueObject {
+public interface ValueObject {
+    boolean equals(Object obj);
 
-    @Override
-    public abstract boolean equals(Object obj);
-
-    @Override
-    public abstract int hashCode();
-
-    protected boolean equalsValueObject(ValueObject other) {
-        return this.getClass().equals(other.getClass());
-    }
+    int hashCode();
 }

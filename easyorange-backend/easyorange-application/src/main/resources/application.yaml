@@ -98,7 +98,6 @@ security:
     - /api/auth/refresh
     - /api/users/register
     - /api/users/forgotPassword
-    - /api/users/auth/miniprogram/**
     - /api/health
     - /v3/api-docs/**
     - /swagger-ui/**

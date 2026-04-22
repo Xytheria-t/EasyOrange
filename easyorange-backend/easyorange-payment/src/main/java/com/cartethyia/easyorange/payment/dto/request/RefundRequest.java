@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * 退款请求
  *
@@ -18,6 +20,8 @@ public class RefundRequest {
 
     @NotNull(message = "支付 ID 不能为空")
     private Long paymentId;
+
+    private BigDecimal refundAmount;
 
     private String refundReason;
 }

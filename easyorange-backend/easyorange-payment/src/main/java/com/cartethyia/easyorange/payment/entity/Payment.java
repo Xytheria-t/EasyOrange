@@ -33,6 +33,8 @@ public class Payment extends BaseDO {
 
     private BigDecimal amount;
 
+    private BigDecimal refundedAmount;
+
     /**
      * 支付方式：1-微信 2-支付宝 3-余额
      */

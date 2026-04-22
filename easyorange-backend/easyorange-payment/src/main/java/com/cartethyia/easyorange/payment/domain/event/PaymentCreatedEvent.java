@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public class PaymentCreatedEvent extends BaseDomainEvent {
 
     private static final String AGGREGATE_TYPE = "Payment";
+    private static final String EVENT_TYPE = "PaymentCreated";
 
     private final Long paymentId;
     private final String paymentNo;
@@ -26,5 +27,10 @@ public class PaymentCreatedEvent extends BaseDomainEvent {
         this.userId = userId;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
+    }
+
+    @Override
+    public String eventType() {
+        return EVENT_TYPE;
     }
 }

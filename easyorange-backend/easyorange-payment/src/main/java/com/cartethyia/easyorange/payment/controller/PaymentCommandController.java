@@ -39,6 +39,7 @@ public class PaymentCommandController {
     public Result<Void> refund(@PathVariable Long id, @Valid @RequestBody RefundRequest request) {
         RefundPaymentCommand command = RefundPaymentCommand.builder()
                 .paymentId(id)
+                .refundAmount(request.getRefundAmount())
                 .refundReason(request.getRefundReason())
                 .build();
         commandHandler.handle(command);

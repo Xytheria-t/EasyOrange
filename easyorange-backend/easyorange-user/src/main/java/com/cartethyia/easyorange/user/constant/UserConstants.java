@@ -10,6 +10,7 @@ public final class UserConstants {
     public static final int USERNAME_MAX_LENGTH = 20;
     public static final int PASSWORD_MIN_LENGTH = 6;
     public static final int PASSWORD_MAX_LENGTH = 20;
+    public static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{6,20}$";
 
     public static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
 

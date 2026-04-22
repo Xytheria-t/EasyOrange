@@ -1,10 +1,5 @@
 package com.cartethyia.easyorange.product.enums;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-@Getter
-@AllArgsConstructor
 public enum ConditionLevel {
 
     NEW(1, "全新"),
@@ -14,6 +9,19 @@ public enum ConditionLevel {
 
     private final Integer code;
     private final String desc;
+
+    ConditionLevel(Integer code, String desc) {
+        this.code = code;
+        this.desc = desc;
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
 
     public static ConditionLevel fromCode(Integer code) {
         if (code == null) {

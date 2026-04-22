@@ -14,22 +14,32 @@ import com.cartethyia.easyorange.product.entity.Product;
 import com.cartethyia.easyorange.product.entity.ProductDetail;
 import com.cartethyia.easyorange.product.entity.ProductImage;
 import com.cartethyia.easyorange.product.enums.ProductStatus;
-import lombok.Builder;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
-@Builder
 public class ProductAggregate {
 
     private Product product;
     private ProductDetail detail;
-    @Builder.Default
-    private List<ProductImage> images = new ArrayList<>();
-    @Builder.Default
-    private List<BaseDomainEvent> domainEvents = new ArrayList<>();
+    private List<ProductImage> images;
+    private List<BaseDomainEvent> domainEvents;
+
+    public ProductAggregate() {
+        this.images = new ArrayList<>();
+        this.domainEvents = new ArrayList<>();
+    }
+
+    private ProductAggregate(Builder builder) {
+        this.product = builder.product;
+        this.detail = builder.detail;
+        this.images = builder.images != null ? builder.images : new ArrayList<>();
+        this.domainEvents = new ArrayList<>();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static ProductAggregate create(CreateProductCommand command, Long userId) {
         BizRequire.notBlank(command.getName(), "商品名称不能为空");
@@ -214,5 +224,72 @@ public class ProductAggregate {
 
     public boolean hasImages() {
         return images != null && !images.isEmpty();
+    }
+
+    public Long getId() {
+        return product != null ? product.getId() : null;
+    }
+
+    public Product getProduct() {
+        return product;
+    }
+
+    public void setProduct(Product product) {
+        this.product = product;
+    }
+
+    public ProductDetail getDetail() {
+        return detail;
+    }
+
+    public void setDetail(ProductDetail detail) {
+        this.detail = detail;
+    }
+
+    public List<ProductImage> getImages() {
+        return images;
+    }
+
+    public void setImages(List<ProductImage> images) {
+        this.images = images;
+    }
+
+    public List<BaseDomainEvent> getDomainEvents() {
+        return domainEvents;
+    }
+
+    public void setDomainEvents(List<BaseDomainEvent> domainEvents) {
+        this.domainEvents = domainEvents;
+    }
+
+    public static class Builder {
+        private Product product;
+        private ProductDetail detail;
+        private List<ProductImage> images;
+        private List<BaseDomainEvent> domainEvents;
+
+        public Builder product(Product product) {
+            this.product = product;
+            return this;
+        }
+
+        public Builder detail(ProductDetail detail) {
+            this.detail = detail;
+            return this;
+        }
+
+        public Builder images(List<ProductImage> images) {
+            this.images = images;
+            return this;
+        }
+
+        public Builder domainEvents(List<BaseDomainEvent> domainEvents) {
+            this.domainEvents = domainEvents;
+            return this;
+        }
+
+        public ProductAggregate build() {
+            return new ProductAggregate(this);
+        }
     }
 }

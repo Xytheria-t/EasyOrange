@@ -1,13 +1,15 @@
 package com.cartethyia.easyorange.payment.application.command;
 
+import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.payment.application.factory.PaymentStrategyFactory;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
-import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
+import com.cartethyia.easyorange.payment.domain.strategy.PaymentStrategy;
 import com.cartethyia.easyorange.payment.dto.request.PaymentCallback;
 import com.cartethyia.easyorange.payment.entity.Payment;
 import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
@@ -16,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,6 +27,7 @@ public class PaymentCommandHandler {
 
     private final PaymentRepository paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
+    private final PaymentStrategyFactory paymentStrategyFactory;
 
     @Transactional(rollbackFor = Exception.class)
     public Long handle(CreatePaymentCommand command) {
@@ -58,7 +63,14 @@ public class PaymentCommandHandler {
                 .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         PaymentAggregate aggregate = PaymentAggregate.fromEntity(payment);
-        PaymentRefundedEvent event = aggregate.refund(command.getRefundReason());
+        PaymentStrategy strategy = paymentStrategyFactory.getStrategy(payment.getPaymentMethod());
+
+        BigDecimal refundAmount = command.getRefundAmount();
+        if (refundAmount == null) {
+            refundAmount = payment.getAmount();
+        }
+
+        BaseDomainEvent event = aggregate.refund(refundAmount, strategy);
 
         paymentRepository.update(aggregate.toEntity());
         domainEventPublisher.publish(event);
@@ -72,7 +84,8 @@ public class PaymentCommandHandler {
                 .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         PaymentAggregate aggregate = PaymentAggregate.fromEntity(payment);
-        PaymentSucceededEvent event = aggregate.pay(command.getTransactionId());
+        PaymentStrategy strategy = paymentStrategyFactory.getStrategy(payment.getPaymentMethod());
+        BaseDomainEvent event = aggregate.pay(strategy);
 
         if (command.getAttach() != null) {
             aggregate.setAttach(command.getAttach());

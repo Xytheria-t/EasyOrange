@@ -1,8 +1,7 @@
 package com.cartethyia.easyorange.user.enums;
 
 public enum ClientType {
-    WEB("web"),
-    MINI("mini");
+    WEB("web");
 
     private final String value;
 
@@ -16,13 +15,13 @@ public enum ClientType {
 
     public static ClientType fromValue(String value) {
         if (value == null) {
-            return MINI;
+            return WEB;
         }
         for (ClientType type : values()) {
             if (type.value.equals(value)) {
                 return type;
             }
         }
-        return MINI;
+        return WEB;
     }
 }

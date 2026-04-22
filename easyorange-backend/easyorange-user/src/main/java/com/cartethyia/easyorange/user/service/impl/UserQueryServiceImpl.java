@@ -20,10 +20,6 @@ public class UserQueryServiceImpl implements UserQueryService {
     public User findUserByLoginType(String account, LoginType loginType) {
         LoginType type = loginType != null ? loginType : LoginType.USERNAME;
 
-        if (LoginType.WECHAT.equals(type)) {
-            throw new UnsupportedOperationException("微信登录暂不支持通过账号查找用户");
-        }
-
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
 
         switch (type) {

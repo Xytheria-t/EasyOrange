@@ -16,6 +16,13 @@
     </description>
 
     <dependencies>
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Apache Commons Lang3 - 常用工具类 -->
         <dependency>
             <groupId>org.apache.commons</groupId>

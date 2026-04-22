@@ -266,6 +266,7 @@ easyorange-shared/*.tsbuildinfo
 easyorange-shared/npm-debug.log*
 
 # ==================== AI 工具会话文件 ====================
+.omx/
 .codex-skill-install/
 .codex/
 .opencode/
