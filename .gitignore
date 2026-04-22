@@ -279,6 +279,10 @@ easyorange-shared/npm-debug.log*
 .ai/
 .windsai/
 
+# ==================== 文档目录 ====================
+docs/
+!docs/README.md
+
 # ==================== Git Worktrees ====================
 .worktrees/
 worktrees/
