@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 /**
  * 订单创建事件
  */
-@Getter
 public class OrderCreatedEvent extends BaseDomainEvent {
 
     private static final String AGGREGATE_TYPE = "Order";
@@ -26,5 +25,16 @@ public class OrderCreatedEvent extends BaseDomainEvent {
         this.sellerId = sellerId;
         this.productId = productId;
         this.amount = amount;
+    }
+
+    public Long getOrderId() { return orderId; }
+    public Long getBuyerId() { return buyerId; }
+    public Long getSellerId() { return sellerId; }
+    public Long getProductId() { return productId; }
+    public BigDecimal getAmount() { return amount; }
+
+    @Override
+    public String eventType() {
+        return "OrderCreated";
     }
 }

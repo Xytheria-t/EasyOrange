@@ -117,6 +117,19 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>11.14.1</version>
+                <configuration>
+                    <url>jdbc:mysql://localhost:3306/easyorange?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true</url>
+                    <user>easyorange_app</user>
+                    <password>easyorange_app_dev</password>
+                    <locations>
+                        <location>classpath:db/migration</location>
+                    </locations>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 

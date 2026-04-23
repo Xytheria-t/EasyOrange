@@ -18,4 +18,9 @@ public class OrderCancelledEvent extends BaseDomainEvent {
         this.productId = productId;
         this.reason = reason;
     }
+
+    @Override
+    public String eventType() {
+        return "OrderCancelled";
+    }
 }

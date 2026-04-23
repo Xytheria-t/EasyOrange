@@ -1,16 +1,14 @@
 package com.cartethyia.easyorange.product.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.product.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.dto.vo.HotKeywordVO;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import com.cartethyia.easyorange.product.dto.vo.SearchHistoryVO;
-import com.cartethyia.easyorange.product.entity.SearchHistory;
 
 import java.util.List;
 
-public interface SearchService extends IService<SearchHistory> {
+public interface SearchService {
 
     Page<ProductVO> searchProducts(ProductSearchRequest request);
 

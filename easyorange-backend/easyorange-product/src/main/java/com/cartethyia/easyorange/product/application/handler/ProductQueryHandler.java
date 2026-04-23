@@ -39,12 +39,21 @@ public class ProductQueryHandler {
     private final ProductImageService productImageService;
     private final ProductDetailMapper productDetailMapper;
     private final ProductAssembler productAssembler;
+    private final com.cartethyia.easyorange.product.application.cache.ProductCacheService productCacheService;
 
     @Transactional(readOnly = true)
     public ProductVO getProductById(Long id) {
+        ProductVO cachedProduct = productCacheService.getProductCache(id);
+        if (cachedProduct != null) {
+            return cachedProduct;
+        }
+        
         Product product = productMapper.selectById(id);
         BizRequire.notNull(product, "商品不存在");
-        return buildProductVO(product);
+        ProductVO productVO = buildProductVO(product);
+        
+        productCacheService.setProductCache(id, productVO);
+        return productVO;
     }
 
     @Transactional(readOnly = true)
@@ -58,9 +67,17 @@ public class ProductQueryHandler {
 
     @Transactional(readOnly = true)
     public ProductVO handle(ProductQuery query) {
+        ProductVO cachedProduct = productCacheService.getProductCache(query.getId());
+        if (cachedProduct != null) {
+            return cachedProduct;
+        }
+        
         Product product = productMapper.selectById(query.getId());
         BizRequire.notNull(product, "商品不存在");
-        return buildProductVO(product);
+        ProductVO productVO = buildProductVO(product);
+        
+        productCacheService.setProductCache(query.getId(), productVO);
+        return productVO;
     }
 
     @Transactional(readOnly = true)

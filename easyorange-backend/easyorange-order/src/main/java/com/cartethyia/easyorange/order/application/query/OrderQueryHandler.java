@@ -12,7 +12,6 @@ import com.cartethyia.easyorange.order.enums.OrderResultCode;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import com.cartethyia.easyorange.product.application.handler.ProductQueryHandler;
-import com.cartethyia.easyorange.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,7 @@ public class OrderQueryHandler {
 
     private final OrderReadRepository orderReadRepository;
     private final ProductQueryHandler productQueryHandler;
-    private final UserService userService;
+    private final com.cartethyia.easyorange.order.application.cache.OrderCacheService orderCacheService;
 
     @Transactional(readOnly = true)
     public OrderVO getOrderDetail(Long orderId) {
@@ -64,13 +63,31 @@ public class OrderQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(QueryOrderRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryOrdersByRole(request, Order::getBuyerId, userId);
+        
+        String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
+        PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        
+        PageResult<OrderVO> result = queryOrdersByRole(request, Order::getBuyerId, userId);
+        orderCacheService.setOrderListCache(cacheKey, result);
+        return result;
     }
 
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(QueryOrderRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryOrdersByRole(request, Order::getSellerId, userId);
+        
+        String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
+        PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        
+        PageResult<OrderVO> result = queryOrdersByRole(request, Order::getSellerId, userId);
+        orderCacheService.setOrderListCache(cacheKey, result);
+        return result;
     }
 
     private PageResult<OrderVO> queryOrdersByRole(QueryOrderRequest request,
@@ -99,15 +116,6 @@ public class OrderQueryHandler {
                 .map(Order::getProductId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Set<Long> userIds = new HashSet<>();
-        orders.forEach(o -> {
-            if (o.getBuyerId() != null) {
-                userIds.add(o.getBuyerId());
-            }
-            if (o.getSellerId() != null) {
-                userIds.add(o.getSellerId());
-            }
-        });
 
         Map<Long, ProductVO> productMap = new HashMap<>();
         if (!productIds.isEmpty()) {
@@ -117,20 +125,12 @@ public class OrderQueryHandler {
             }
         }
 
-        Map<Long, String> usernameMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            userService.listByIds(userIds).forEach(u ->
-                    usernameMap.put(u.getId(), u.getUsername()));
-        }
-
         return orders.stream()
-                .map(o -> toOrderVO(o, productMap, usernameMap))
+                .map(o -> toOrderVO(o, productMap))
                 .collect(Collectors.toList());
     }
 
-    private OrderVO toOrderVO(Order order,
-                              Map<Long, ProductVO> productMap,
-                              Map<Long, String> usernameMap) {
+    private OrderVO toOrderVO(Order order, Map<Long, ProductVO> productMap) {
         OrderVO.OrderVOBuilder builder = OrderVO.builder()
                 .id(order.getId())
                 .orderNo(order.getOrderNo())
@@ -154,34 +154,10 @@ public class OrderQueryHandler {
             }
         }
 
-        String buyerName = usernameMap.get(order.getBuyerId());
-        if (buyerName != null) {
-            builder.buyerUsername(buyerName);
-        }
-
-        String sellerName = usernameMap.get(order.getSellerId());
-        if (sellerName != null) {
-            builder.sellerUsername(sellerName);
-        }
-
         return builder.build();
     }
 
     private OrderVO toOrderVOWithMask(Order order) {
-        Set<Long> userIds = new HashSet<>();
-        if (order.getBuyerId() != null) {
-            userIds.add(order.getBuyerId());
-        }
-        if (order.getSellerId() != null) {
-            userIds.add(order.getSellerId());
-        }
-
-        Map<Long, String> usernameMap = new HashMap<>();
-        if (!userIds.isEmpty()) {
-            userService.listByIds(userIds).forEach(u ->
-                    usernameMap.put(u.getId(), u.getUsername()));
-        }
-
         Map<Long, ProductVO> productMap = new HashMap<>();
         if (order.getProductId() != null) {
             try {
@@ -215,16 +191,6 @@ public class OrderQueryHandler {
             if (product.getImages() != null && !product.getImages().isEmpty()) {
                 builder.productImage(product.getImages().getFirst());
             }
-        }
-
-        String buyerName = usernameMap.get(order.getBuyerId());
-        if (buyerName != null) {
-            builder.buyerUsername(buyerName);
-        }
-
-        String sellerName = usernameMap.get(order.getSellerId());
-        if (sellerName != null) {
-            builder.sellerUsername(sellerName);
         }
 
         return builder.build();

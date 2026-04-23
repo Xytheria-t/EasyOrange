@@ -17,4 +17,9 @@ public class OrderShippedEvent extends BaseDomainEvent {
         super(AGGREGATE_TYPE);
         this.orderId = orderId;
     }
+
+    @Override
+    public String eventType() {
+        return "OrderShipped";
+    }
 }

@@ -9,7 +9,7 @@ public interface UserService extends IService<User> {
 
     UserVO getUserInfo();
 
-    void register(RegisterRequest request);
+    Long register(RegisterRequest request);
 
     UserVO updateUserInfo(UpdateUserRequest request);
 

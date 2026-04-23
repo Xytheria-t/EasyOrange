@@ -16,4 +16,9 @@ public class OrderCompletedEvent extends BaseDomainEvent {
         this.orderId = orderId;
         this.productId = productId;
     }
+
+    @Override
+    public String eventType() {
+        return "OrderCompleted";
+    }
 }

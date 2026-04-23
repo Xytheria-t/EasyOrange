@@ -46,4 +46,19 @@ public class ThreadPoolConfig {
         scheduler.initialize();
         return scheduler;
     }
+    
+    @Bean("domainEventExecutor")
+    public Executor domainEventExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(threadPoolProperties.getCorePoolSize() / 2);
+        executor.setMaxPoolSize(threadPoolProperties.getMaxPoolSize() / 2);
+        executor.setQueueCapacity(threadPoolProperties.getQueueCapacity() * 2);
+        executor.setKeepAliveSeconds(threadPoolProperties.getKeepAliveSeconds());
+        executor.setThreadNamePrefix("domain-event-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(threadPoolProperties.getAwaitTerminationSeconds());
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
 }

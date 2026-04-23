@@ -36,4 +36,9 @@ public class CreateOrderCommand {
      * 备注
      */
     private String remark;
+
+    /**
+     * 支付方式
+     */
+    private Integer paymentMethod;
 }

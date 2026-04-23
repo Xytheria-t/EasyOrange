@@ -144,6 +144,7 @@ public class Product extends BaseDO {
     }
 
     public static class Builder {
+        private Long id;
         private Long userId;
         private Long categoryId;
         private String name;
@@ -156,6 +157,11 @@ public class Product extends BaseDO {
         private Integer conditionLevel;
         private String location;
         private String contactMethod;
+
+        public Builder id(Long id) {
+            this.id = id;
+            return this;
+        }
 
         public Builder userId(Long userId) {
             this.userId = userId;
@@ -218,8 +224,12 @@ public class Product extends BaseDO {
         }
 
         public Product build() {
-            return new Product(userId, categoryId, name, price, originalPrice, stock,
+            Product product = new Product(userId, categoryId, name, price, originalPrice, stock,
                     version, status, viewCount, conditionLevel, location, contactMethod);
+            if (id != null) {
+                product.setId(id);
+            }
+            return product;
         }
     }
 }

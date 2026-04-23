@@ -10,6 +10,9 @@ import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.enums.AccountType;
 import com.cartethyia.easyorange.user.enums.UserStatus;
 import com.cartethyia.easyorange.user.enums.UserType;
+import com.cartethyia.easyorange.user.event.annotation.PublishEvent;
+import com.cartethyia.easyorange.user.event.extractor.PasswordChangedEventExtractor;
+import com.cartethyia.easyorange.user.event.extractor.UserRegisteredEventExtractor;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
 import com.cartethyia.easyorange.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,8 @@ import java.time.LocalDateTime;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private final BCryptPasswordEncoder passwordEncoder;
+    private final UserRegisteredEventExtractor userRegisteredEventExtractor;
+    private final PasswordChangedEventExtractor passwordChangedEventExtractor;
 
     @Override
     public UserVO getUserInfo() {
@@ -33,8 +38,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
     @Transactional(rollbackFor = Exception.class)
-    public void register(RegisterRequest request) {
+    public Long register(RegisterRequest request) {
         String username = request.getUsername();
         BizRequire.isFalse(lambdaQuery().eq(User::getUsername, username).exists(), "用户名已存在");
 
@@ -47,7 +53,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             .build();
 
         BizRequire.isTrue(save(user), "注册失败，请稍后重试");
+        
+        userRegisteredEventExtractor.setUser(user);
+        
         log.info("action=register success username={}", username);
+        return user.getId();
     }
 
     @Override
@@ -71,6 +81,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
+    @PublishEvent(type = "PasswordChanged", extractor = "passwordChangedEventExtractor")
     @Transactional(rollbackFor = Exception.class)
     public void changePassword(ChangePasswordRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
@@ -86,6 +97,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             .update();
 
         BizRequire.isTrue(updated, "修改密码失败，请稍后重试");
+        
+        passwordChangedEventExtractor.setUserId(userId);
+        
         log.info("action=changePassword success userId={}", userId);
     }
 

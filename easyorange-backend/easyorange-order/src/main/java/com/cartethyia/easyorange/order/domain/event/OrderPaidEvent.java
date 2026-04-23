@@ -19,4 +19,9 @@ public class OrderPaidEvent extends BaseDomainEvent {
         this.orderId = orderId;
         this.paymentStatus = paymentStatus;
     }
+
+    @Override
+    public String eventType() {
+        return "OrderPaid";
+    }
 }
