@@ -90,11 +90,7 @@ public class RepeatSubmitAspect {
 
         String md5 = md5(params);
 
-        return String.format("%s:%s:%s:%s",
-            CacheConstants.RateLimit.REPEAT_SUBMIT_KEY,
-            userIdentifier,
-            uri,
-            md5);
+        return CacheConstants.RateLimit.repeatSubmitKey(userIdentifier, uri, md5);
     }
 
     private String getUserIdentifier(HttpServletRequest request) {

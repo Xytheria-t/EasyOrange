@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 public record StockQuantity(Integer value) {
     public StockQuantity {
         BizRequire.notNull(value, "库存数量不能为空");
-        BizRequire.isTrue(value >= 0, "库存数量不能为负数");
+        BizRequire.nonNegative(value, "库存数量不能为负数");
     }
 
     public boolean isAvailable() {

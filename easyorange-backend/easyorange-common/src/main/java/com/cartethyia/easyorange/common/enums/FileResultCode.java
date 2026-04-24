@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.common.enums;
 
-import com.cartethyia.easyorange.common.enums.IResultCode;
 import lombok.Getter;
 
 /**

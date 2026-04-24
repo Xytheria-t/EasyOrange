@@ -6,12 +6,10 @@ import lombok.Getter;
 @Getter
 public class PasswordChangedEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "User";
-
     private final Long userId;
 
     public PasswordChangedEvent(Long userId) {
-        super(AGGREGATE_TYPE);
+        super(PasswordChangedEvent.class);
         this.userId = userId;
     }
 

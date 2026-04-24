@@ -60,32 +60,6 @@ public class CacheConstants {
         }
     }
 
-    // ============ User ============
-
-    /**
-     * 用户相关缓存
-     */
-    public static final class User {
-        private User() {}
-
-        /**
-         * 用户信息缓存 Key前缀
-         * <p>完整 Key 格式：eo:user:info:{userId}
-         * <p>过期时间：30 分钟
-         */
-        public static final String INFO_KEY = APP_PREFIX + "user:info:";
-
-        /**
-         * 用户信息缓存过期时间（分钟）
-         */
-        public static final long INFO_EXPIRE_TIME = 30L;
-
-        public static String infoKey(Long userId) {
-            BizRequire.notNull(userId, "userId 不能为 null");
-            return INFO_KEY + userId;
-        }
-    }
-
     // ============ Product ============
 
     /**
@@ -108,12 +82,6 @@ public class CacheConstants {
         public static final String LIST_KEY = APP_PREFIX + "product:list:";
 
         /**
-         * 热销商品缓存 Key
-         * <p>过期时间：10 分钟
-         */
-        public static final String HOT_KEY = APP_PREFIX + "product:hot";
-
-        /**
          * 商品信息缓存过期时间（分钟）
          */
         public static final long INFO_EXPIRE_TIME = 60L;
@@ -123,19 +91,9 @@ public class CacheConstants {
          */
         public static final long LIST_EXPIRE_TIME = 30L;
 
-        /**
-         * 热销商品缓存过期时间（分钟）
-         */
-        public static final long HOT_EXPIRE_TIME = 10L;
-
         public static String infoKey(Long productId) {
             BizRequire.notNull(productId, "productId 不能为 null");
             return INFO_KEY + productId;
-        }
-
-        public static String listKey(String key) {
-            BizRequire.notNull(key, "key 不能为 null");
-            return LIST_KEY + key;
         }
     }
 
@@ -148,12 +106,6 @@ public class CacheConstants {
         private Category() {}
 
         /**
-         * 分类信息缓存 Key前缀
-         * <p>完整 Key 格式：eo:category:{categoryId}
-         */
-        public static final String KEY = APP_PREFIX + "category:";
-
-        /**
          * 分类列表缓存 Key
          */
         public static final String LIST_KEY = APP_PREFIX + "category:list";
@@ -162,52 +114,6 @@ public class CacheConstants {
          * 分类信息缓存过期时间（分钟）
          */
         public static final long INFO_EXPIRE_TIME = 120L;
-
-        public static String key(Long categoryId) {
-            BizRequire.notNull(categoryId, "categoryId 不能为 null");
-            return KEY + categoryId;
-        }
-    }
-
-    // ============ Search ============
-
-    /**
-     * 搜索相关缓存
-     */
-    public static final class Search {
-        private Search() {}
-
-        /**
-         * 热门搜索关键词缓存 Key前缀
-         * <p>完整 Key 格式：eo:search:hot:{date}
-         */
-        public static final String HOT_KEYWORDS_KEY = APP_PREFIX + "search:hot:";
-
-        /**
-         * 搜索建议缓存 Key前缀
-         * <p>完整 Key 格式：eo:search:suggest:{prefix}
-         */
-        public static final String SUGGEST_KEY = APP_PREFIX + "search:suggest:";
-
-        /**
-         * 热门搜索关键词缓存过期时间（分钟）
-         */
-        public static final long HOT_KEYWORDS_EXPIRE_TIME = 60L;
-
-        /**
-         * 搜索建议缓存过期时间（分钟）
-         */
-        public static final long SUGGEST_EXPIRE_TIME = 30L;
-
-        public static String hotKeywordsKey(String date) {
-            BizRequire.notNull(date, "date 不能为 null");
-            return HOT_KEYWORDS_KEY + date;
-        }
-
-        public static String suggestKey(String prefix) {
-            BizRequire.notNull(prefix, "prefix 不能为 null");
-            return SUGGEST_KEY + prefix;
-        }
     }
 
     // ============ Rate Limit & Repeat Submit ============
@@ -232,11 +138,6 @@ public class CacheConstants {
          */
         public static final String KEY = APP_PREFIX + "rate:limit:";
 
-        /**
-         * 限流/防重提交默认过期时间（分钟）
-         */
-        public static final long RATE_LIMIT_EXPIRE_TIME = 5L;
-
         public static String repeatSubmitKey(String token, String methodKey, String paramsHash) {
             BizRequire.notNull(token, "repeatSubmitKey 参数 token 不能为 null");
             BizRequire.notNull(methodKey, "repeatSubmitKey 参数 methodKey 不能为 null");
@@ -251,28 +152,29 @@ public class CacheConstants {
         }
     }
 
-    // ============ Message ============
+    // ============ Order ============
 
     /**
-     * 消息相关缓存
+     * 订单相关缓存
      */
-    public static final class Message {
-        private Message() {}
+    public static final class Order {
+        private Order() {}
 
         /**
-         * 消息模板缓存 Key前缀
-         * <p>完整 Key 格式：eo:message:template:{templateCode}
+         * 订单详情缓存 Key前缀
+         * <p>完整 Key 格式：eo:order:detail:{orderId}
+         * <p>过期时间：30 分钟
          */
-        public static final String TEMPLATE_KEY = APP_PREFIX + "message:template:";
+        public static final String DETAIL_KEY = APP_PREFIX + "order:detail:";
 
         /**
-         * 消息模板缓存过期时间（分钟）
+         * 订单详情缓存过期时间（分钟）
          */
-        public static final long TEMPLATE_EXPIRE_TIME = 1440L;
+        public static final long DETAIL_EXPIRE_TIME = 30L;
 
-        public static String templateKey(String templateCode) {
-            BizRequire.notNull(templateCode, "templateCode 不能为 null");
-            return TEMPLATE_KEY + templateCode;
+        public static String detailKey(Long orderId) {
+            BizRequire.notNull(orderId, "orderId 不能为 null");
+            return DETAIL_KEY + orderId;
         }
     }
 

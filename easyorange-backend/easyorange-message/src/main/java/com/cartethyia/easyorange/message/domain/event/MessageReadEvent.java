@@ -6,13 +6,11 @@ import lombok.Getter;
 @Getter
 public class MessageReadEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "Message";
-
     private final Long messageId;
     private final Long readerId;
 
     public MessageReadEvent(Long messageId, Long readerId) {
-        super(AGGREGATE_TYPE);
+        super(MessageReadEvent.class);
         this.messageId = messageId;
         this.readerId = readerId;
     }

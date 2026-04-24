@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.application.handler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.assembler.ProductAssembler;
@@ -99,10 +100,16 @@ public class ProductQueryHandler {
                 productPage.getSize()).records();
     }
 
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of("price", "viewCount", "createTime");
+
     @Transactional(readOnly = true)
     public PageResult<ProductVO> handle(ProductQueryRequest request) {
+        PageRequest normalized = request.normalized();
+        int pageNum = normalized.getPageNum();
+        int pageSize = normalized.getPageSize();
+
         if (StringUtils.isNotBlank(request.getKeyword())) {
-            Page<Product> searchPage = new Page<>(request.getPageNum(), request.getPageSize());
+            Page<Product> searchPage = new Page<>(pageNum, pageSize);
             Page<Product> resultPage = productMapper.searchByFullText(
                     searchPage, request.getKeyword(), ProductStatus.ONLINE.getCode());
             log.info("action=search_products keyword={} total={}", request.getKeyword(), resultPage.getTotal());
@@ -112,7 +119,7 @@ public class ProductQueryHandler {
                     resultPage.getSize());
         }
 
-        Page<Product> page = new Page<>(request.getPageNum(), request.getPageSize());
+        Page<Product> page = new Page<>(pageNum, pageSize);
 
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
 
@@ -134,7 +141,7 @@ public class ProductQueryHandler {
             wrapper.le(Product::getPrice, request.getMaxPrice());
         }
 
-        applySorting(wrapper, request.getSortBy(), request.getSortOrder());
+        applySorting(wrapper, request);
 
         Page<Product> productPage = productMapper.selectPage(page, wrapper);
         log.info("action=query_products categoryId={} total={}", request.getCategoryId(), productPage.getTotal());
@@ -145,9 +152,13 @@ public class ProductQueryHandler {
                 productPage.getSize());
     }
 
-    private void applySorting(LambdaQueryWrapper<Product> wrapper, String sortBy, String sortOrder) {
-        String sortField = sortBy != null ? sortBy : "createTime";
-        boolean isAsc = "asc".equalsIgnoreCase(sortOrder);
+    private void applySorting(LambdaQueryWrapper<Product> wrapper, ProductQueryRequest request) {
+        String sortField = request.validateSortField(ALLOWED_SORT_FIELDS);
+        if (sortField == null) {
+            sortField = "createTime";
+        }
+
+        boolean isAsc = request.isAsc();
 
         switch (sortField) {
             case "price" -> wrapper.orderBy(true, isAsc, Product::getPrice);

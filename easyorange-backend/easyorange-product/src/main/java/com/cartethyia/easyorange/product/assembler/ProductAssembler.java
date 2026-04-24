@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.assembler;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.util.StreamUtils;
 import com.cartethyia.easyorange.product.constant.ProductConstants;
 import com.cartethyia.easyorange.product.dto.vo.SellerInfo;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
@@ -127,20 +126,23 @@ public class ProductAssembler {
         if (categories == null || categories.isEmpty()) {
             return Map.of();
         }
-        return StreamUtils.toMap(categories, Category::getId);
+        return categories.stream()
+                .collect(Collectors.toMap(Category::getId, c -> c, (a, b) -> a));
     }
 
     public Map<Long, ProductDetail> buildDetailMap(List<ProductDetail> details) {
         if (details == null || details.isEmpty()) {
             return Map.of();
         }
-        return StreamUtils.toMap(details, ProductDetail::getProductId);
+        return details.stream()
+                .collect(Collectors.toMap(ProductDetail::getProductId, d -> d, (a, b) -> a));
     }
 
     public Map<Long, SellerInfo> buildSellerMap(List<SellerInfo> sellers) {
         if (sellers == null || sellers.isEmpty()) {
             return Map.of();
         }
-        return StreamUtils.toMap(sellers, SellerInfo::getId);
+        return sellers.stream()
+                .collect(Collectors.toMap(SellerInfo::getId, s -> s, (a, b) -> a));
     }
 }

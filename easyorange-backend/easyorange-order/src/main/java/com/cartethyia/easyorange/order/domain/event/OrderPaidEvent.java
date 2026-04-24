@@ -9,13 +9,11 @@ import lombok.Getter;
 @Getter
 public class OrderPaidEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "Order";
-
     private final Long orderId;
     private final Integer paymentStatus;
 
     public OrderPaidEvent(Long orderId, Integer paymentStatus) {
-        super(AGGREGATE_TYPE);
+        super(OrderPaidEvent.class);
         this.orderId = orderId;
         this.paymentStatus = paymentStatus;
     }

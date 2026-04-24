@@ -10,6 +10,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
@@ -31,9 +32,11 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
-    public Result<Void> handleBusinessException(BusinessException e) {
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException e) {
         log.warn("业务异常[code={}]: {}", e.getCode(), e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+        return ResponseEntity
+                .status(e.httpStatus())
+                .body(Result.error(e.getCode(), e.getMessage()));
     }
 
     @ExceptionHandler(ParamValidationException.class)
@@ -44,9 +47,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(FileException.class)
-    public Result<Void> handleFileException(FileException e) {
+    public ResponseEntity<Result<Void>> handleFileException(FileException e) {
         log.warn("文件异常[code={}]: {}", e.getCode(), e.getMessage());
-        return Result.error(e.getCode(), e.getMessage());
+        return ResponseEntity
+                .status(e.httpStatus())
+                .body(Result.error(e.getCode(), e.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

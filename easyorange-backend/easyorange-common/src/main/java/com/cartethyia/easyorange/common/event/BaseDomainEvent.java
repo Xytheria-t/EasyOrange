@@ -9,15 +9,19 @@ import java.util.UUID;
 @Getter
 public abstract class BaseDomainEvent implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     private final String eventId;
     private final String aggregateType;
+    private final int version;
     private final Instant occurredOn;
 
-    protected BaseDomainEvent(String aggregateType) {
+    protected BaseDomainEvent(Class<?> aggregateType) {
+        this(aggregateType, 1);
+    }
+
+    protected BaseDomainEvent(Class<?> aggregateType, int version) {
         this.eventId = UUID.randomUUID().toString();
-        this.aggregateType = aggregateType;
+        this.aggregateType = aggregateType.getSimpleName();
+        this.version = version;
         this.occurredOn = Instant.now();
     }
 

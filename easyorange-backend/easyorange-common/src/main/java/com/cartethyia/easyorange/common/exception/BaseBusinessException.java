@@ -43,4 +43,13 @@ public abstract class BaseBusinessException extends RuntimeException {
         super(message, cause);
         this.code = resultCode.getCode();
     }
+
+    /**
+     * 根据错误码返回对应的 HTTP 状态码
+     *
+     * @return HTTP 状态码
+     */
+    public int httpStatus() {
+        return IResultCode.mapToHttpStatus(code);
+    }
 }

@@ -16,12 +16,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderEventSubscriber implements DomainEventSubscriber {
+public class OrderEventSubscriber implements DomainEventSubscriber<BaseDomainEvent> {
 
     private final ProductCommandHandler productCommandHandler;
 
     @Override
-    public Class<? extends BaseDomainEvent> getEventType() {
+    public Class<BaseDomainEvent> getEventType() {
         return BaseDomainEvent.class;
     }
 

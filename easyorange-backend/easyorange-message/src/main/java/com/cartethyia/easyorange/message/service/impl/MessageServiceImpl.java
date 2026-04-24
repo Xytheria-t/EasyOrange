@@ -158,7 +158,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         BizRequire.notNull(message, MessageResultCode.MESSAGE_NOT_FOUND);
 
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.isTrue(message.getReceiverId().equals(userId), MessageResultCode.MESSAGE_NOT_OWNER);
+        BizRequire.eq(message.getReceiverId(), userId, MessageResultCode.MESSAGE_NOT_OWNER);
 
         message.setIsRead(ReadStatus.READ.getCode());
         updateById(message);
@@ -222,7 +222,7 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
         Message message = getById(messageId);
         BizRequire.notNull(message, MessageResultCode.MESSAGE_NOT_FOUND);
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.isTrue(message.getReceiverId().equals(userId), MessageResultCode.MESSAGE_NOT_OWNER);
+        BizRequire.eq(message.getReceiverId(), userId, MessageResultCode.MESSAGE_NOT_OWNER);
         return message;
     }
 

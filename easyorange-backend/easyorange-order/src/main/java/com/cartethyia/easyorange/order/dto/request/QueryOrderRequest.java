@@ -44,4 +44,28 @@ public class QueryOrderRequest extends PageRequest {
      * 商品 ID
      */
     private Long productId;
+
+    /**
+     * 返回规范化后的新实例（不可变模式）
+     * <p>
+     * 将 null 或非法值替换为默认值，返回新的 QueryOrderRequest 实例，不修改原对象。
+     * </p>
+     *
+     * @return 规范化后的新 QueryOrderRequest 实例
+     */
+    @Override
+    public QueryOrderRequest normalized() {
+        PageRequest base = super.normalized();
+        return QueryOrderRequest.builder()
+                .pageNum(base.getPageNum())
+                .pageSize(base.getPageSize())
+                .sortField(base.getSortField())
+                .sortDirection(base.getSortDirection())
+                .orderNo(this.orderNo)
+                .status(this.status)
+                .buyerId(this.buyerId)
+                .sellerId(this.sellerId)
+                .productId(this.productId)
+                .build();
+    }
 }

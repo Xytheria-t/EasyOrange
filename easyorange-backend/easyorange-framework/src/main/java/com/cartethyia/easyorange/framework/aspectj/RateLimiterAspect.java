@@ -89,6 +89,6 @@ public class RateLimiterAspect {
                 case USER -> SecurityContextUtil.getCurrentUserId().map(String::valueOf).orElse("anonymous");
             };
         }
-        return CacheConstants.RateLimit.KEY + limitType + ":" + rateLimiter.key();
+        return CacheConstants.RateLimit.key(limitType, rateLimiter.key());
     }
 }

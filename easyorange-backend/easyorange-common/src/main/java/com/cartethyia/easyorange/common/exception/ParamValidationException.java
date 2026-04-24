@@ -1,11 +1,7 @@
 package com.cartethyia.easyorange.common.exception;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import lombok.Getter;
 
-import java.io.Serial;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -17,7 +13,6 @@ import java.util.Map;
  *
  * @author cartethyia
  */
-@Getter
 public class ParamValidationException extends BaseBusinessException {
 
     /**
@@ -25,14 +20,24 @@ public class ParamValidationException extends BaseBusinessException {
      */
     private final Map<String, String> fieldErrors;
 
-    public ParamValidationException(Map<String, String> fieldErrors) {
-        super(ResultCode.VALIDATE_FAILED, "参数校验失败");
-        this.fieldErrors = fieldErrors != null ? Collections.unmodifiableMap(new LinkedHashMap<>(fieldErrors)) : Map.of();
+    public Map<String, String> getFieldErrors() {
+        return fieldErrors;
     }
 
+    @SuppressWarnings("unused")
+    public ParamValidationException(Map<String, String> fieldErrors) {
+        super(ResultCode.VALIDATE_FAILED, "参数校验失败");
+        this.fieldErrors = fieldErrors != null
+                ? Map.copyOf(fieldErrors)
+                : Map.of();
+    }
+
+    @SuppressWarnings("unused")
     public ParamValidationException(String message, Map<String, String> fieldErrors) {
         super(ResultCode.VALIDATE_FAILED, message);
-        this.fieldErrors = fieldErrors != null ? Collections.unmodifiableMap(new LinkedHashMap<>(fieldErrors)) : Map.of();
+        this.fieldErrors = fieldErrors != null
+                ? Map.copyOf(fieldErrors)
+                : Map.of();
     }
 
     @Override

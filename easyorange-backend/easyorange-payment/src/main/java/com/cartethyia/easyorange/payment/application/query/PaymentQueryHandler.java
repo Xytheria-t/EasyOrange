@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.application.query;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
@@ -42,8 +43,9 @@ public class PaymentQueryHandler {
 
     public PageResult<PaymentVO> getMyPayments(QueryPaymentRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        PageRequest normalized = request.normalized();
         IPage<Payment> page = paymentRepository.findPage(
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(request.getPageNum(), request.getPageSize()),
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(normalized.getPageNum(), normalized.getPageSize()),
                 userId,
                 request.getStatus()
         );
@@ -51,8 +53,9 @@ public class PaymentQueryHandler {
     }
 
     public PageResult<PaymentVO> queryPayments(QueryPaymentRequest request) {
+        PageRequest normalized = request.normalized();
         IPage<Payment> page = paymentRepository.findPage(
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(request.getPageNum(), request.getPageSize()),
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(normalized.getPageNum(), normalized.getPageSize()),
                 request.getUserId(),
                 request.getStatus()
         );

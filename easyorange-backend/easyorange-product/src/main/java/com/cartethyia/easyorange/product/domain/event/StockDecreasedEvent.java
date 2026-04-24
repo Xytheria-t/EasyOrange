@@ -4,13 +4,11 @@ import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 
 public class StockDecreasedEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "Product";
-
     private Long productId;
     private Integer quantity = 1;
 
     public StockDecreasedEvent(Long productId) {
-        super(AGGREGATE_TYPE);
+        super(StockDecreasedEvent.class);
         this.productId = productId;
         this.quantity = 1;
     }

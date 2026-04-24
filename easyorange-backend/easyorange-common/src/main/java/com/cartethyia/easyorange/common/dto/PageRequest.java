@@ -46,7 +46,12 @@ public class PageRequest {
     public PageRequest normalized() {
         int normalizedPageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;
         int normalizedPageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
-        return new PageRequest(normalizedPageNum, normalizedPageSize, this.sortField, this.sortDirection);
+        return PageRequest.builder()
+                .pageNum(normalizedPageNum)
+                .pageSize(normalizedPageSize)
+                .sortField(this.sortField)
+                .sortDirection(this.sortDirection)
+                .build();
     }
 
     /**

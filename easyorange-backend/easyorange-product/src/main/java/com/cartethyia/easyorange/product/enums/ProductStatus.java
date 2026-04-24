@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.enums;
 
-import com.cartethyia.easyorange.common.util.EnumUtils;
 import java.util.Arrays;
 
 public enum ProductStatus {
@@ -27,7 +26,7 @@ public enum ProductStatus {
     }
 
     public static ProductStatus fromCode(Integer code) {
-        return EnumUtils.fromCodeSafe(code, values(), ProductStatus::getCode).orElse(null);
+        return Arrays.stream(values()).filter(v -> v.code.equals(code)).findFirst().orElse(null);
     }
 
     public static String getDescByCode(Integer code) {

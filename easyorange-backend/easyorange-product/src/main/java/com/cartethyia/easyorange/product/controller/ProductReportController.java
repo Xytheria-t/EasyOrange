@@ -1,7 +1,5 @@
 package com.cartethyia.easyorange.product.controller;
 
-import com.cartethyia.easyorange.common.annotation.Log;
-import com.cartethyia.easyorange.common.enums.BusinessType;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
@@ -38,7 +36,6 @@ public class ProductReportController {
     }
 
     @PutMapping("/{reportId}/approve")
-    @Log(title = "商品举报处理", type = BusinessType.UPDATE)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public Result<Void> approveReport(@PathVariable Long reportId) {
         productReportService.processReport(reportId, true);
@@ -46,7 +43,6 @@ public class ProductReportController {
     }
 
     @PutMapping("/{reportId}/reject")
-    @Log(title = "商品举报处理", type = BusinessType.UPDATE)
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public Result<Void> rejectReport(@PathVariable Long reportId) {
         productReportService.processReport(reportId, false);

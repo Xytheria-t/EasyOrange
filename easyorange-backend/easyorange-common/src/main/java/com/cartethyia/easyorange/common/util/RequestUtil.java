@@ -157,4 +157,14 @@ public final class RequestUtil {
         HttpServletRequest request = attributes.getRequest();
         return request.getRequestURI();
     }
+
+    /**
+     * 获取当前 HttpServletRequest 对象（从 RequestContextHolder 中获取）
+     *
+     * @return HttpServletRequest，无请求上下文时返回 null
+     */
+    public static HttpServletRequest getRequest() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attributes != null ? attributes.getRequest() : null;
+    }
 }

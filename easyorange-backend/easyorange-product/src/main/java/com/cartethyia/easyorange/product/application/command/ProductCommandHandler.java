@@ -196,7 +196,7 @@ public class ProductCommandHandler {
         Product product = productRepository.findById(id);
         BizRequire.notNull(product, "商品不存在");
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.isTrue(product.getUserId().equals(userId), "无权操作此商品");
+        BizRequire.eq(product.getUserId(), userId, "无权操作此商品");
         return product;
     }
 

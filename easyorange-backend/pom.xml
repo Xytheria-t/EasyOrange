@@ -40,6 +40,7 @@
         <springdoc.version>3.0.2</springdoc.version>
         <mybatis-plus.version>3.5.16</mybatis-plus.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
+        <jackson2.version>2.18.3</jackson2.version>
     </properties>
 
     <dependencyManagement>
@@ -129,11 +130,28 @@
                 <version>${mybatis-plus.version}</version>
             </dependency>
 
-            <!-- ==================== Logstash Logback Encoder ==================== -->
+            <!-- ==================== Logstash LogbackEncoder ==================== -->
             <dependency>
                 <groupId>net.logstash.logback</groupId>
                 <artifactId>logstash-logback-encoder</artifactId>
                 <version>${logstash-logback-encoder.version}</version>
+            </dependency>
+
+            <!-- ==================== Jackson 2 (LTS) ==================== -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

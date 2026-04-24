@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
@@ -38,12 +39,13 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public Page<ProductVO> searchProducts(ProductSearchRequest request) {
+        PageRequest normalized = request.normalized();
         return productQueryRepository.searchProducts(
                 request.getKeyword(),
                 request.getCategoryId(),
                 null,
-                request.getPageNum(),
-                request.getPageSize()
+                normalized.getPageNum(),
+                normalized.getPageSize()
         );
     }
 
@@ -77,7 +79,7 @@ public class SearchServiceImpl implements SearchService {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         SearchHistory history = searchHistoryMapper.selectById(historyId);
         BizRequire.notNull(history, "搜索记录不存在");
-        BizRequire.isTrue(history.getUserId().equals(userId), "无权操作此搜索记录");
+        BizRequire.eq(history.getUserId(), userId, "无权操作此搜索记录");
         searchHistoryMapper.deleteById(historyId);
     }
 

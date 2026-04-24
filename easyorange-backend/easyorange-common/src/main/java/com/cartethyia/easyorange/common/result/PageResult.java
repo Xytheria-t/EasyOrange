@@ -29,42 +29,29 @@ public record PageResult<T>(
         if (page == null) {
             return empty(1, 10);
         }
-        return new PageResult<>(
-                data != null ? data : Collections.emptyList(),
-                page.getTotal(),
-                (int) page.getCurrent(),
-                (int) page.getSize(),
-                (int) page.getPages()
-        );
+        return of(data, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 
-    @SuppressWarnings("unchecked")
     public static <T> PageResult<T> fromIPage(com.baomidou.mybatisplus.core.metadata.IPage<T> page) {
         if (page == null) {
             return empty(1, 10);
         }
-        return new PageResult<>(
-                page.getRecords() != null ? page.getRecords() : Collections.emptyList(),
-                page.getTotal(),
-                (int) page.getCurrent(),
-                (int) page.getSize(),
-                (int) page.getPages()
-        );
+        return fromIPage(page, page.getRecords());
     }
 
     public static <T> PageResult<T> empty(int pageNum, int pageSize) {
-        return new PageResult<>(Collections.emptyList(), 0L, pageNum, pageSize, 0);
+        return of(Collections.emptyList(), 0L, pageNum, pageSize);
     }
 
     public boolean hasData() {
-        return records != null && !records.isEmpty();
+        return !records.isEmpty();
     }
 
     public boolean hasNext() {
-        return current != null && pages != null && current < pages;
+        return current < pages;
     }
 
     public boolean hasPrevious() {
-        return current != null && current > 1;
+        return current > 1;
     }
 }

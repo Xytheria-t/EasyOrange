@@ -94,7 +94,7 @@ public class CreateOrderSaga {
         
         BizRequire.notNull(productVO, "商品不存在");
         BizRequire.isTrue(ProductStatus.ONLINE.getCode().equals(productVO.getStatus()), "商品已下架");
-        BizRequire.isFalse(productVO.getSellerId().equals(buyerId), "不能购买自己的商品");
+        BizRequire.ne(productVO.getSellerId(), buyerId, "不能购买自己的商品");
         BizRequire.isTrue(productVO.getStock() != null && productVO.getStock() > 0, "商品库存不足");
         
         // 创建订单聚合根

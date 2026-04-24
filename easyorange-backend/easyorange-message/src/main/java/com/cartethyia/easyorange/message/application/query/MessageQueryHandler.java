@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.application.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
@@ -53,7 +54,8 @@ public class MessageQueryHandler {
     public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Page<Message> page = new Page<>(request.getPageNum(), request.getPageSize());
+        PageRequest normalized = request.normalized();
+        Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getReceiverId, userId);
 
@@ -84,7 +86,8 @@ public class MessageQueryHandler {
     public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Page<Message> page = new Page<>(request.getPageNum(), request.getPageSize());
+        PageRequest normalized = request.normalized();
+        Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getReceiverId, userId)
                 .eq(Message::getIsRead, ReadStatus.UNREAD.getCode());

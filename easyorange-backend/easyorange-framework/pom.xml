@@ -90,6 +90,12 @@
             <artifactId>logstash-logback-encoder</artifactId>
         </dependency>
 
+        <!-- Jackson 2 (LTS) - Redis序列化 -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
         <!-- Micrometer Core -->
         <dependency>
             <groupId>io.micrometer</groupId>

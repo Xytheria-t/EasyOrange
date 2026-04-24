@@ -47,8 +47,9 @@ public class OrderAggregate {
     public static OrderCreatedEvent createOrder(Long buyerId, Long sellerId, Long productId,
                                                BigDecimal amount, String address, String phone,
                                                String remark) {
-        BizRequire.isFalse(buyerId.equals(sellerId), "不能购买自己的商品");
-        BizRequire.isTrue(amount != null && amount.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
+        BizRequire.ne(buyerId, sellerId, "不能购买自己的商品");
+        BizRequire.notNull(amount, "订单金额不能为空");
+        BizRequire.isTrue(amount.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
 
         Long orderId = generateOrderId();
         String orderNo = generateOrderNo();

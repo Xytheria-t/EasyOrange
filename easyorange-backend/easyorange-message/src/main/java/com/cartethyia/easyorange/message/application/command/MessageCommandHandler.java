@@ -98,9 +98,8 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadBatchCommand command) {
-        if (command.getMessageIds() == null || command.getMessageIds().isEmpty()) {
-            return;
-        }
+        BizRequire.notEmpty(command.getMessageIds(), "消息ID列表不能为空");
+        BizRequire.noNullElements(command.getMessageIds(), "消息ID不能为null");
 
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 

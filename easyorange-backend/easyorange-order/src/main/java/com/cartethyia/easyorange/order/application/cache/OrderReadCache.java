@@ -14,20 +14,18 @@ public class OrderReadCache {
 
     private final RedisCache redisCache;
 
-    private static final String ORDER_KEY_PREFIX = CacheConstants.APP_PREFIX + "order:";
-
     public Optional<OrderVO> getDetail(Long orderId) {
-        String key = ORDER_KEY_PREFIX + "detail:" + orderId;
+        String key = CacheConstants.Order.detailKey(orderId);
         return Optional.ofNullable(redisCache.get(key, OrderVO.class));
     }
 
     public void putDetail(Long orderId, OrderVO orderVO) {
-        String key = ORDER_KEY_PREFIX + "detail:" + orderId;
-        redisCache.set(key, orderVO, 30, java.util.concurrent.TimeUnit.MINUTES);
+        String key = CacheConstants.Order.detailKey(orderId);
+        redisCache.set(key, orderVO, CacheConstants.Order.DETAIL_EXPIRE_TIME, java.util.concurrent.TimeUnit.MINUTES);
     }
 
     public void evict(Long orderId) {
-        String key = ORDER_KEY_PREFIX + "detail:" + orderId;
+        String key = CacheConstants.Order.detailKey(orderId);
         redisCache.delete(key);
     }
 }

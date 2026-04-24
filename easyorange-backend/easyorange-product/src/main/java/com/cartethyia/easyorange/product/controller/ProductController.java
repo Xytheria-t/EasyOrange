@@ -1,7 +1,5 @@
 package com.cartethyia.easyorange.product.controller;
 
-import com.cartethyia.easyorange.common.annotation.Log;
-import com.cartethyia.easyorange.common.enums.BusinessType;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.product.application.command.*;
@@ -25,7 +23,6 @@ public class ProductController {
     private final ProductCommandHandler commandHandler;
 
     @PostMapping
-    @Log(title = "创建商品", type = BusinessType.ADD)
     public Result<ProductVO> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         CreateProductCommand command = CreateProductCommand.builder()
                 .categoryId(request.getCategoryId())
@@ -44,7 +41,6 @@ public class ProductController {
     }
 
     @PutMapping("/{id}")
-    @Log(title = "更新商品", type = BusinessType.UPDATE)
     public Result<ProductVO> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {
         UpdateProductCommand command = UpdateProductCommand.builder()
                 .id(id)
@@ -64,7 +60,6 @@ public class ProductController {
     }
 
     @DeleteMapping("/{id}")
-    @Log(title = "删除商品", type = BusinessType.DELETE)
     public Result<Void> deleteProduct(@PathVariable Long id) {
         DeleteProductCommand command = DeleteProductCommand.builder()
                 .id(id)

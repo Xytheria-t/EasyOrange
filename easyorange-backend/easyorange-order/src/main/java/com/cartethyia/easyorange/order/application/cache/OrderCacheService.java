@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,6 +31,7 @@ public class OrderCacheService {
      * @param cacheKey 缓存键（由买家 ID+ 状态等组成）
      * @return 缓存的订单列表，不存在返回 null
      */
+    @SuppressWarnings("unchecked")
     public PageResult<OrderVO> getOrderListCache(String cacheKey) {
         if (cacheKey == null || cacheKey.isEmpty()) {
             return null;

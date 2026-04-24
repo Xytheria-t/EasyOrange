@@ -161,6 +161,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getTokenKey(String uuid) {
-        return CacheConstants.Login.TOKEN_KEY + uuid;
+        return CacheConstants.Login.tokenKey(uuid);
     }
 }

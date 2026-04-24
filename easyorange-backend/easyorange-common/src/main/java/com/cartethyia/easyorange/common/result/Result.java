@@ -11,6 +11,8 @@ public record Result<T>(
         long timestamp
 ) {
 
+    // ===== Static Factory Methods: success =====
+
     public static <T> Result<T> success() {
         return success(null, ResultCode.SUCCESS.getMessage());
     }
@@ -28,12 +30,7 @@ public record Result<T>(
         );
     }
 
-    public static <T> Result<T> error(IResultCode resultCode) {
-        if (resultCode.isSuccess()) {
-            throw new IllegalArgumentException("不能使用成功状态码创建错误响应: code=" + resultCode.getCode());
-        }
-        return error(resultCode.getCode(), resultCode.getMessage());
-    }
+    // ===== Static Factory Methods: error =====
 
     public static <T> Result<T> error(String message) {
         return new Result<>(
@@ -42,6 +39,13 @@ public record Result<T>(
                 null,
                 System.currentTimeMillis()
         );
+    }
+
+    public static <T> Result<T> error(IResultCode resultCode) {
+        if (resultCode.isSuccess()) {
+            throw new IllegalArgumentException("不能使用成功状态码创建错误响应: code=" + resultCode.getCode());
+        }
+        return error(resultCode.getCode(), resultCode.getMessage());
     }
 
     public static <T> Result<T> error(IResultCode resultCode, String message) {
@@ -56,6 +60,8 @@ public record Result<T>(
                 System.currentTimeMillis()
         );
     }
+
+    // ===== Instance Methods =====
 
     @JsonIgnore
     public boolean isSuccess() {

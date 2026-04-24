@@ -1,16 +1,16 @@
 package com.cartethyia.easyorange.product.dto.request;
 
+import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ProductQueryRequest {
+public class ProductQueryRequest extends PageRequest {
 
     private Long categoryId;
 
@@ -25,17 +25,4 @@ public class ProductQueryRequest {
     private BigDecimal minPrice;
 
     private BigDecimal maxPrice;
-
-    private String sortBy = "createTime";
-
-    private String sortOrder = "desc";
-
-    @JsonProperty("page")
-    @Min(value = 1, message = "页码最小为 1")
-    private Integer pageNum = 1;
-
-    @JsonProperty("size")
-    @Min(value = 1, message = "每页条数最小为 1")
-    @Max(value = 100, message = "每页条数最大为 100")
-    private Integer pageSize = 10;
 }

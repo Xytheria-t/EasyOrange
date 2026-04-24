@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.product.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.annotation.Log;
-import com.cartethyia.easyorange.common.enums.BusinessType;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.product.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.dto.vo.HotKeywordVO;

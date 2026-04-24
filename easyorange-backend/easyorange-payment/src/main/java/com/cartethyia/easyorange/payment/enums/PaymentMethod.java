@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.enums;
 
-import com.cartethyia.easyorange.common.util.EnumUtils;
+import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,7 +22,7 @@ public enum PaymentMethod {
     private final String desc;
 
     public static PaymentMethod fromCode(Integer code) {
-        return EnumUtils.fromCodeSafe(code, values(), PaymentMethod::getCode).orElse(null);
+        return Arrays.stream(values()).filter(v -> v.code.equals(code)).findFirst().orElse(null);
     }
 
     public static String getDescByCode(Integer code) {

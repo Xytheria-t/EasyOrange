@@ -7,8 +7,6 @@ import java.util.List;
 
 public class ProductCreatedEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "Product";
-
     private Long productId;
     private Long userId;
     private Long categoryId;
@@ -26,7 +24,7 @@ public class ProductCreatedEvent extends BaseDomainEvent {
                               BigDecimal price, BigDecimal originalPrice, Integer stock,
                               Integer conditionLevel, String location, String contactMethod,
                               String description, List<String> imageUrls) {
-        super(AGGREGATE_TYPE);
+        super(ProductCreatedEvent.class);
         this.productId = productId;
         this.userId = userId;
         this.categoryId = categoryId;

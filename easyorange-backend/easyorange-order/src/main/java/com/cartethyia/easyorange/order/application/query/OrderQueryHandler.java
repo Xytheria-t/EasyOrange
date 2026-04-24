@@ -63,14 +63,14 @@ public class OrderQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(QueryOrderRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        
+
         String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
         PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
         if (cachedResult != null) {
             return cachedResult;
         }
-        
-        PageResult<OrderVO> result = queryOrdersByRole(request, Order::getBuyerId, userId);
+
+        PageResult<OrderVO> result = queryOrdersByRole(request, userId, null);
         orderCacheService.setOrderListCache(cacheKey, result);
         return result;
     }
@@ -78,27 +78,32 @@ public class OrderQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(QueryOrderRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        
+
         String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
         PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
         if (cachedResult != null) {
             return cachedResult;
         }
-        
-        PageResult<OrderVO> result = queryOrdersByRole(request, Order::getSellerId, userId);
+
+        PageResult<OrderVO> result = queryOrdersByRole(request, null, userId);
         orderCacheService.setOrderListCache(cacheKey, result);
         return result;
     }
 
     private PageResult<OrderVO> queryOrdersByRole(QueryOrderRequest request,
-                                                  com.baomidou.mybatisplus.core.toolkit.support.SFunction<Order, Long> roleField,
-                                                  Long userId) {
+                                                  Long buyerId,
+                                                  Long sellerId) {
+        QueryOrderRequest normalized = request.normalized();
         QueryOrderRequest roleRequest = QueryOrderRequest.builder()
                 .orderNo(request.getOrderNo())
                 .status(request.getStatus())
                 .productId(request.getProductId())
-                .pageNum(request.getPageNum())
-                .pageSize(request.getPageSize())
+                .buyerId(buyerId)
+                .sellerId(sellerId)
+                .pageNum(normalized.getPageNum())
+                .pageSize(normalized.getPageSize())
+                .sortField(request.getSortField())
+                .sortDirection(request.getSortDirection())
                 .build();
 
         PageResult<Order> orderPage = orderReadRepository.findPage(roleRequest);

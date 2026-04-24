@@ -6,13 +6,11 @@ import lombok.Getter;
 @Getter
 public class UserRegisteredEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "User";
-
     private final Long userId;
     private final String username;
 
     public UserRegisteredEvent(Long userId, String username) {
-        super(AGGREGATE_TYPE);
+        super(UserRegisteredEvent.class);
         this.userId = userId;
         this.username = username;
     }

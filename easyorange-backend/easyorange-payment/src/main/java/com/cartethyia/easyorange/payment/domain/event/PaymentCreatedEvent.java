@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 @Getter
 public class PaymentCreatedEvent extends BaseDomainEvent {
 
-    private static final String AGGREGATE_TYPE = "Payment";
     private static final String EVENT_TYPE = "PaymentCreated";
 
     private final Long paymentId;
@@ -20,7 +19,7 @@ public class PaymentCreatedEvent extends BaseDomainEvent {
 
     public PaymentCreatedEvent(Long paymentId, String paymentNo, Long orderId, Long userId,
                                BigDecimal amount, Integer paymentMethod) {
-        super(AGGREGATE_TYPE);
+        super(PaymentCreatedEvent.class);
         this.paymentId = paymentId;
         this.paymentNo = paymentNo;
         this.orderId = orderId;

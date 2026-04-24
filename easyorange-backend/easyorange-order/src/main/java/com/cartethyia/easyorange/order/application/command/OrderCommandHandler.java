@@ -39,7 +39,7 @@ public class OrderCommandHandler {
         ProductVO productVO = productQueryHandler.getProductById(command.getProductId());
         BizRequire.notNull(productVO, "商品不存在");
         BizRequire.isTrue(ProductStatus.ONLINE.getCode().equals(productVO.getStatus()), "商品已下架");
-        BizRequire.isFalse(productVO.getSellerId().equals(buyerId), "不能购买自己的商品");
+        BizRequire.ne(productVO.getSellerId(), buyerId, "不能购买自己的商品");
         BizRequire.isTrue(productVO.getStock() != null && productVO.getStock() > 0, "商品库存不足");
 
         OrderCreatedEvent event = OrderAggregate.createOrder(
@@ -135,7 +135,7 @@ public class OrderCommandHandler {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("订单不存在"));
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.isTrue(order.getBuyerId().equals(userId), OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.eq(order.getBuyerId(), userId, OrderResultCode.ORDER_NOT_OWNER);
         return order;
     }
 
@@ -143,7 +143,7 @@ public class OrderCommandHandler {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("订单不存在"));
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.isTrue(order.getSellerId().equals(userId), OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.eq(order.getSellerId(), userId, OrderResultCode.ORDER_NOT_OWNER);
         return order;
     }
 }

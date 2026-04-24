@@ -2,12 +2,17 @@ package com.cartethyia.easyorange.order.infrastructure.event;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventSubscriber;
+import com.cartethyia.easyorange.common.notification.NotificationService;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
+import com.cartethyia.easyorange.order.entity.Order;
+import com.cartethyia.easyorange.order.mapper.OrderMapper;
+import com.cartethyia.easyorange.user.entity.User;
+import com.cartethyia.easyorange.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -15,12 +20,15 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderNotificationEventSubscriber implements DomainEventSubscriber {
+public class OrderNotificationEventSubscriber implements DomainEventSubscriber<BaseDomainEvent> {
 
     private final EventIdempotencyChecker idempotencyChecker;
+    private final NotificationService notificationService;
+    private final OrderMapper orderMapper;
+    private final UserService userService;
 
     @Override
-    public Class<? extends BaseDomainEvent> getEventType() {
+    public Class<BaseDomainEvent> getEventType() {
         return BaseDomainEvent.class;
     }
 
@@ -58,28 +66,67 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber {
     }
 
     private void handleOrderCreated(OrderCreatedEvent event) {
-        // TODO: Implement notification service
+        String email = getUserEmail(event.getBuyerId());
+        if (email != null) {
+            notificationService.sendEmail(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId());
+        }
         log.info("action=notify_order_created orderId={}", event.getOrderId());
     }
 
     private void handleOrderPaid(OrderPaidEvent event) {
-        // TODO: Implement notification service
+        String email = getEmailFromOrder(event.getOrderId());
+        if (email != null) {
+            notificationService.sendEmail(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId());
+        }
         log.info("action=notify_order_paid orderId={}", event.getOrderId());
     }
 
     private void handleOrderShipped(OrderShippedEvent event) {
-        // TODO: Implement notification service
+        String email = getEmailFromOrder(event.getOrderId());
+        if (email != null) {
+            notificationService.sendEmail(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId());
+        }
         log.info("action=notify_order_shipped orderId={}", event.getOrderId());
     }
 
     private void handleOrderCompleted(OrderCompletedEvent event) {
-        // TODO: Implement notification service
+        String email = getEmailFromOrder(event.getOrderId());
+        if (email != null) {
+            notificationService.sendEmail(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId());
+        }
         log.info("action=notify_order_completed orderId={}", event.getOrderId());
     }
 
     private void handleOrderCancelled(OrderCancelledEvent event) {
-        // TODO: Implement notification service
+        String email = getEmailFromOrder(event.getOrderId());
+        if (email != null) {
+            notificationService.sendEmail(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId());
+        }
         log.info("action=notify_order_cancelled orderId={}", event.getOrderId());
+    }
+
+    private String getUserEmail(Long userId) {
+        if (userId == null) {
+            return null;
+        }
+        User user = userService.getById(userId);
+        if (user == null) {
+            log.warn("action=user_not_found userId={}", userId);
+            return null;
+        }
+        return user.getEmail();
+    }
+
+    private String getEmailFromOrder(Long orderId) {
+        if (orderId == null) {
+            return null;
+        }
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            log.warn("action=order_not_found orderId={}", orderId);
+            return null;
+        }
+        return getUserEmail(order.getBuyerId());
     }
 
     private String getEventId(BaseDomainEvent event) {

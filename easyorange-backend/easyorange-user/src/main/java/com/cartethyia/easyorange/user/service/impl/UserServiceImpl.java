@@ -65,6 +65,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserVO updateUserInfo(UpdateUserRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
+        if (StringUtils.isNotBlank(request.getEmail())) {
+            BizRequire.validEmail(request.getEmail(), "邮箱格式不正确");
+        }
+        if (StringUtils.isNotBlank(request.getPhone())) {
+            BizRequire.validPhone(request.getPhone(), "手机号格式不正确");
+        }
+
         boolean updated = lambdaUpdate()
             .eq(User::getId, userId)
             .set(StringUtils.isNotBlank(request.getEmail()), User::getEmail, request.getEmail())

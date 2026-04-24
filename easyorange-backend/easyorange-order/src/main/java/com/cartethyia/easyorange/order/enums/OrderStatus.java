@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.order.enums;
 
-import com.cartethyia.easyorange.common.util.EnumUtils;
+import java.util.Arrays;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -58,7 +58,7 @@ public enum OrderStatus {
      * 根据状态值获取枚举
      */
     public static OrderStatus fromCode(Integer code) {
-        return EnumUtils.fromCodeSafe(code, values(), OrderStatus::getCode).orElse(null);
+        return Arrays.stream(values()).filter(v -> v.code.equals(code)).findFirst().orElse(null);
     }
 
     /**

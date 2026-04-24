@@ -1,8 +1,12 @@
 package com.cartethyia.easyorange.common.event;
 
-public interface DomainEventSubscriber {
+public interface DomainEventSubscriber<T extends BaseDomainEvent> {
 
-    Class<? extends BaseDomainEvent> getEventType();
+    Class<T> getEventType();
 
-    void handle(BaseDomainEvent event);
+    void handle(T event);
+
+    default int order() {
+        return 0;
+    }
 }

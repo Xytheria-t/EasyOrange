@@ -9,8 +9,7 @@ import org.springframework.stereotype.Service;
 public class DefaultNotificationServiceImpl implements NotificationService {
 
     @Override
-    public boolean sendEmail(String to, String subject, String content) {
+    public void sendEmail(String to, String subject, String content) {
         log.info("[邮件发送] 收件人: {}, 主题: {}", to, subject);
-        return true;
     }
 }
