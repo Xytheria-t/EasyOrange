@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.common.util;
 
-import com.cartethyia.easyorange.common.dto.LoginUser;
+import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import org.springframework.security.core.Authentication;
@@ -46,8 +46,8 @@ public final class SecurityContextUtil {
             .filter(Authentication::isAuthenticated)
             .map(auth -> {
                 Object principal = auth.getPrincipal();
-                if (principal instanceof LoginUser loginUser) {
-                    return loginUser.getUsername();
+                if (principal instanceof AuthUser authUser) {
+                    return authUser.username();
                 }
                 return auth.getName();
             });
@@ -78,16 +78,16 @@ public final class SecurityContextUtil {
 
     // ==================== User Context ====================
 
-    public static Optional<LoginUser> getUserContext() {
+    public static Optional<AuthUser> getUserContext() {
         return getAuthentication()
             .filter(Authentication::isAuthenticated)
             .map(auth -> {
                 Object principal = auth.getPrincipal();
-                if (principal instanceof LoginUser loginUser) {
-                    return loginUser;
+                if (principal instanceof AuthUser authUser) {
+                    return authUser;
                 }
                 Set<String> authorities = extractAuthorities(auth);
-                return LoginUser.builder()
+                return AuthUser.builder()
                     .userId(extractUserId(auth))
                     .username(auth.getName())
                     .roles(extractRoles(authorities))
@@ -96,7 +96,7 @@ public final class SecurityContextUtil {
             });
     }
 
-    public static LoginUser getUserContextOrThrow() {
+    public static AuthUser getUserContextOrThrow() {
         return getUserContext()
             .orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
     }
@@ -146,7 +146,7 @@ public final class SecurityContextUtil {
     private static Optional<Long> convertPrincipal(Object principal) {
         return switch (principal) {
             case Long id -> Optional.of(id);
-            case LoginUser loginUser -> Optional.ofNullable(loginUser.getUserId());
+            case AuthUser authUser -> Optional.ofNullable(authUser.userId());
             case String s -> parseLongSafe(s);
             default -> Optional.empty();
         };

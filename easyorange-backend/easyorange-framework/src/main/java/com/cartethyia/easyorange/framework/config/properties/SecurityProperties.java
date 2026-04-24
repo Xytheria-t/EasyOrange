@@ -16,4 +16,5 @@ public class SecurityProperties {
     private List<String> staticPaths = List.of();
     private List<String> allowedOrigins = List.of();
     private String logoutUrl = "/api/auth/logout";
+    private int passwordEncoderStrength = 10;
 }

@@ -23,39 +23,30 @@ public class PageRequest {
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
 
-    /**
-     * 当前页码，从 1 开始
-     */
     @Min(value = 1, message = "页码最小为 1")
     private Integer pageNum;
 
-    /**
-     * 每页条数，最大 100 条
-     */
     @Min(value = 1, message = "每页条数最小为 1")
     @Max(value = MAX_PAGE_SIZE, message = "每页条数最大为 " + MAX_PAGE_SIZE)
     private Integer pageSize;
 
-    /**
-     * 排序字段（白名单校验，防止 SQL 注入）
-     */
     private String sortField;
 
-    /**
-     * 排序方向：asc / desc
-     */
     @Pattern(regexp = "^(asc|desc|ASC|DESC)?$", message = "排序方向必须为 asc 或 desc")
     private String sortDirection;
 
     /**
-     * 规范化分页参数，将 null 或非法值替换为默认值
+     * 返回规范化后的新实例（不可变模式）
      * <p>
-     * 注意：此方法修改对象状态（mutable）。
+     * 将 null 或非法值替换为默认值，返回新的 PageRequest 实例，不修改原对象。
      * </p>
+     *
+     * @return 规范化后的新 PageRequest 实例
      */
-    public void normalize() {
-        this.pageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;
-        this.pageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
+    public PageRequest normalized() {
+        int normalizedPageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;
+        int normalizedPageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
+        return new PageRequest(normalizedPageNum, normalizedPageSize, this.sortField, this.sortDirection);
     }
 
     /**
@@ -71,18 +62,10 @@ public class PageRequest {
         return allowedFields.contains(sortField) ? sortField : null;
     }
 
-    /**
-     * 是否为升序
-     */
     public boolean isAsc() {
         return sortDirection == null || "asc".equalsIgnoreCase(sortDirection);
     }
 
-    /**
-     * 计算 SQL OFFSET 值
-     *
-     * @return (pageNum - 1) * pageSize
-     */
     public int getOffset() {
         int pn = (pageNum != null) ? pageNum : DEFAULT_PAGE_NUM;
         int ps = (pageSize != null) ? pageSize : DEFAULT_PAGE_SIZE;

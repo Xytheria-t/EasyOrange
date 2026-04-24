@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.filter;
 
 import com.cartethyia.easyorange.common.constant.CacheConstants;
-import com.cartethyia.easyorange.common.dto.LoginUser;
+import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
@@ -123,14 +123,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .map(a -> a.getAuthority().substring("ROLE_".length()))
                 .collect(Collectors.toSet());
 
-        LoginUser loginUser = LoginUser.builder()
+        AuthUser authUser = AuthUser.builder()
                 .userId(userId)
                 .username(claims.get("username", String.class))
                 .roles(roles)
                 .build();
 
         UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(loginUser, null, authorities);
+            new UsernamePasswordAuthenticationToken(authUser, null, authorities);
 
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);

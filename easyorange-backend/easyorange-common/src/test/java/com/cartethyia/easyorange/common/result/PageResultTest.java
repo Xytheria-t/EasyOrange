@@ -22,26 +22,26 @@ class PageResultTest {
         @DisplayName("正常分页计算")
         void of_normalCalculation() {
             PageResult<String> result = PageResult.of(List.of("a", "b"), 10L, 1, 2);
-            assertEquals(2, result.getRecords().size());
-            assertEquals(10L, result.getTotal());
-            assertEquals(1, result.getCurrent());
-            assertEquals(2, result.getSize());
-            assertEquals(5, result.getPages());
+            assertEquals(2, result.records().size());
+            assertEquals(10L, result.total());
+            assertEquals(1, result.current());
+            assertEquals(2, result.size());
+            assertEquals(5, result.pages());
         }
 
         @Test
         @DisplayName("records 为 null 时返回空列表")
         void of_nullRecords_emptyList() {
             PageResult<String> result = PageResult.of(null, 0L, 1, 10);
-            assertNotNull(result.getRecords());
-            assertTrue(result.getRecords().isEmpty());
+            assertNotNull(result.records());
+            assertTrue(result.records().isEmpty());
         }
 
         @Test
         @DisplayName("pageSize 为 0 时 pages 为 0")
         void of_zeroPageSize_zeroPages() {
             PageResult<String> result = PageResult.of(List.of(), 10L, 1, 0);
-            assertEquals(0, result.getPages());
+            assertEquals(0, result.pages());
         }
     }
 
@@ -53,11 +53,11 @@ class PageResultTest {
         @DisplayName("创建空分页结果")
         void empty_createsEmptyResult() {
             PageResult<String> result = PageResult.empty(1, 10);
-            assertTrue(result.getRecords().isEmpty());
-            assertEquals(0L, result.getTotal());
-            assertEquals(1, result.getCurrent());
-            assertEquals(10, result.getSize());
-            assertEquals(0, result.getPages());
+            assertTrue(result.records().isEmpty());
+            assertEquals(0L, result.total());
+            assertEquals(1, result.current());
+            assertEquals(10, result.size());
+            assertEquals(0, result.pages());
         }
     }
 

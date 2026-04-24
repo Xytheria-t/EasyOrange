@@ -62,7 +62,7 @@ public class ProductQueryHandler {
             return List.of();
         }
         List<Product> products = productMapper.selectBatchIds(ids);
-        return buildProductVOPage(products, products.size(), 1, products.size()).getRecords();
+        return buildProductVOPage(products, products.size(), 1, products.size()).records();
     }
 
     @Transactional(readOnly = true)
@@ -96,7 +96,7 @@ public class ProductQueryHandler {
         return buildProductVOPage(productPage.getRecords(),
                 (int) productPage.getTotal(),
                 productPage.getCurrent(),
-                productPage.getSize()).getRecords();
+                productPage.getSize()).records();
     }
 
     @Transactional(readOnly = true)

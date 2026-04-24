@@ -3,21 +3,13 @@ package com.cartethyia.easyorange.common.result;
 import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class Result<T> {
-
-    private String code;
-    private String message;
-    private T data;
-    private long timestamp;
+public record Result<T>(
+        String code,
+        String message,
+        T data,
+        long timestamp
+) {
 
     public static <T> Result<T> success() {
         return success(null, ResultCode.SUCCESS.getMessage());
@@ -28,12 +20,12 @@ public class Result<T> {
     }
 
     public static <T> Result<T> success(T data, String message) {
-        return Result.<T>builder()
-                .code(ResultCode.SUCCESS.getCode())
-                .message(message)
-                .data(data)
-                .timestamp(System.currentTimeMillis())
-                .build();
+        return new Result<>(
+                ResultCode.SUCCESS.getCode(),
+                message,
+                data,
+                System.currentTimeMillis()
+        );
     }
 
     public static <T> Result<T> error(IResultCode resultCode) {
@@ -44,12 +36,12 @@ public class Result<T> {
     }
 
     public static <T> Result<T> error(String message) {
-        return Result.<T>builder()
-                .code(ResultCode.FAIL.getCode())
-                .message(message)
-                .data(null)
-                .timestamp(System.currentTimeMillis())
-                .build();
+        return new Result<>(
+                ResultCode.FAIL.getCode(),
+                message,
+                null,
+                System.currentTimeMillis()
+        );
     }
 
     public static <T> Result<T> error(IResultCode resultCode, String message) {
@@ -57,12 +49,12 @@ public class Result<T> {
     }
 
     public static <T> Result<T> error(String code, String message) {
-        return Result.<T>builder()
-                .code(code)
-                .message(message)
-                .data(null)
-                .timestamp(System.currentTimeMillis())
-                .build();
+        return new Result<>(
+                code,
+                message,
+                null,
+                System.currentTimeMillis()
+        );
     }
 
     @JsonIgnore
@@ -71,11 +63,11 @@ public class Result<T> {
     }
 
     public Result<T> withMessage(String message) {
-        return Result.<T>builder()
-                .code(this.code)
-                .message(message)
-                .data(this.data)
-                .timestamp(this.timestamp)
-                .build();
+        return new Result<>(
+                this.code,
+                message,
+                this.data,
+                this.timestamp
+        );
     }
 }

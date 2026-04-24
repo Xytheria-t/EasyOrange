@@ -87,7 +87,7 @@ public class PaymentAggregate {
 
         PaymentAmount refundAmountVO = PaymentAmount.of(refundAmount);
         PaymentAmount currentAmount = PaymentAmount.of(this.amount);
-        BizRequire.isTrue(refundAmountVO.isLessThanOrEqualTo(currentAmount.getValue()), "退款金额不能超过支付金额");
+        BizRequire.isTrue(refundAmountVO.isLessThanOrEqualTo(currentAmount.value()), "退款金额不能超过支付金额");
 
         BigDecimal totalRefunded = this.refundedAmount.add(refundAmount);
         BizRequire.isTrue(totalRefunded.compareTo(this.amount) <= 0, "累计退款金额不能超过支付金额");

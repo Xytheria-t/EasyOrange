@@ -39,8 +39,8 @@ class UserControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
-        assertEquals("testuser", result.getData().getUsername());
+        assertEquals("A0000", result.code());
+        assertEquals("testuser", result.data().getUsername());
         verify(userService, times(1)).getUserInfo();
     }
 
@@ -57,8 +57,8 @@ class UserControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
-        assertEquals(100L, result.getData());
+        assertEquals("A0000", result.code());
+        assertEquals(100L, result.data());
         verify(userService, times(1)).register(any(RegisterRequest.class));
     }
 
@@ -79,8 +79,8 @@ class UserControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
-        assertEquals("updated@example.com", result.getData().getEmail());
+        assertEquals("A0000", result.code());
+        assertEquals("updated@example.com", result.data().getEmail());
         verify(userService, times(1)).updateUserInfo(any(UpdateUserRequest.class));
     }
 
@@ -97,7 +97,7 @@ class UserControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
+        assertEquals("A0000", result.code());
         verify(userService, times(1)).changePassword(any(ChangePasswordRequest.class));
     }
 
@@ -114,7 +114,7 @@ class UserControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
+        assertEquals("A0000", result.code());
         verify(userService, times(1)).forgotPassword(any(ForgotPasswordRequest.class));
     }
 }

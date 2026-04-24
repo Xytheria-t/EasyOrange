@@ -10,25 +10,21 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 通用缓存工具类
- * 
+ *
+ * @deprecated 统一使用 {@link com.cartethyia.easyorange.framework.redis.RedisCache}，
+ *             该类支持 key prefix 前缀，便于多环境/多实例隔离。
+ *
  * @author cartethyia
  * @date 2026/04/23
  */
 @Slf4j
 @Component
+@Deprecated
 @RequiredArgsConstructor
 public class CacheUtils {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    /**
-     * 设置缓存
-     *
-     * @param key 键
-     * @param value 值
-     * @param timeout 超时时间
-     * @param unit 单位
-     */
     public void set(String key, Object value, long timeout, TimeUnit unit) {
         try {
             redisTemplate.opsForValue().set(key, value, timeout, unit);
@@ -38,12 +34,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 获取缓存
-     *
-     * @param key 键
-     * @return 缓存值
-     */
     public Object get(String key) {
         try {
             return redisTemplate.opsForValue().get(key);
@@ -53,12 +43,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 删除缓存
-     *
-     * @param key 键
-     * @return 是否删除成功
-     */
     public Boolean delete(String key) {
         try {
             return redisTemplate.delete(key);
@@ -68,11 +52,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 批量删除缓存
-     *
-     * @param keys 键集合
-     */
     public void deleteBatch(Set<String> keys) {
         if (keys == null || keys.isEmpty()) {
             return;
@@ -85,12 +64,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 检查缓存是否存在
-     *
-     * @param key 键
-     * @return 是否存在
-     */
     public Boolean hasKey(String key) {
         try {
             return redisTemplate.hasKey(key);
@@ -100,14 +73,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 设置缓存过期时间
-     *
-     * @param key 键
-     * @param timeout 超时时间
-     * @param unit 单位
-     * @return 是否设置成功
-     */
     public Boolean expire(String key, long timeout, TimeUnit unit) {
         try {
             return redisTemplate.expire(key, timeout, unit);
@@ -117,12 +82,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 获取缓存过期时间（秒）
-     *
-     * @param key 键
-     * @return 过期时间，-1 表示永不过期，-2 表示不存在
-     */
     public Long getExpire(String key) {
         try {
             return redisTemplate.getExpire(key, TimeUnit.SECONDS);
@@ -132,11 +91,6 @@ public class CacheUtils {
         }
     }
 
-    /**
-     * 按前缀删除缓存
-     *
-     * @param prefix 前缀
-     */
     public void deleteByPrefix(String prefix) {
         try {
             Set<String> keys = redisTemplate.keys(prefix + "*");

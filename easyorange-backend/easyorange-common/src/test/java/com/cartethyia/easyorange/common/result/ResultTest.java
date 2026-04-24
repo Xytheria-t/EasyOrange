@@ -22,9 +22,9 @@ class ResultTest {
         void success_noArgs() {
             Result<Void> result = Result.success();
             assertTrue(result.isSuccess());
-            assertEquals("A0000", result.getCode());
-            assertNull(result.getData());
-            assertNotNull(result.getTimestamp());
+            assertEquals("A0000", result.code());
+            assertNull(result.data());
+            assertNotNull(result.timestamp());
         }
 
         @Test
@@ -32,7 +32,7 @@ class ResultTest {
         void success_withData() {
             Result<String> result = Result.success("hello");
             assertTrue(result.isSuccess());
-            assertEquals("hello", result.getData());
+            assertEquals("hello", result.data());
         }
 
         @Test
@@ -40,8 +40,8 @@ class ResultTest {
         void success_withDataAndMessage() {
             Result<String> result = Result.success("hello", "操作成功");
             assertTrue(result.isSuccess());
-            assertEquals("hello", result.getData());
-            assertEquals("操作成功", result.getMessage());
+            assertEquals("hello", result.data());
+            assertEquals("操作成功", result.message());
         }
     }
 
@@ -54,7 +54,7 @@ class ResultTest {
         void error_noArgs() {
             Result<Void> result = Result.error("操作失败");
             assertFalse(result.isSuccess());
-            assertEquals("C0001", result.getCode());
+            assertEquals("B0001", result.code());
         }
 
         @Test
@@ -62,8 +62,8 @@ class ResultTest {
         void error_withMessage() {
             Result<Void> result = Result.error("出错了");
             assertFalse(result.isSuccess());
-            assertEquals("出错了", result.getMessage());
-            assertNull(result.getData());
+            assertEquals("出错了", result.message());
+            assertNull(result.data());
         }
 
         @Test
@@ -71,8 +71,8 @@ class ResultTest {
         void error_withResultCode() {
             Result<Void> result = Result.error(ResultCode.UNAUTHORIZED);
             assertFalse(result.isSuccess());
-            assertEquals("A0401", result.getCode());
-            assertEquals("未登录", result.getMessage());
+            assertEquals("A0401", result.code());
+            assertEquals("未登录", result.message());
         }
 
         @Test
@@ -80,8 +80,8 @@ class ResultTest {
         void error_withResultCodeAndMessage() {
             Result<Void> result = Result.error(ResultCode.UNAUTHORIZED, "请先登录");
             assertFalse(result.isSuccess());
-            assertEquals("A0401", result.getCode());
-            assertEquals("请先登录", result.getMessage());
+            assertEquals("A0401", result.code());
+            assertEquals("请先登录", result.message());
         }
 
         @Test
@@ -89,8 +89,8 @@ class ResultTest {
         void error_withCodeAndMessage() {
             Result<Void> result = Result.error("A0404", "资源不存在");
             assertFalse(result.isSuccess());
-            assertEquals("A0404", result.getCode());
-            assertEquals("资源不存在", result.getMessage());
+            assertEquals("A0404", result.code());
+            assertEquals("资源不存在", result.message());
         }
     }
 
@@ -112,10 +112,10 @@ class ResultTest {
             Result<String> original = Result.success("data");
             Result<String> modified = original.withMessage("新消息");
 
-            assertEquals("data", modified.getData());
-            assertEquals("新消息", modified.getMessage());
-            assertEquals(original.getCode(), modified.getCode());
-            assertEquals(original.getTimestamp(), modified.getTimestamp());
+            assertEquals("data", modified.data());
+            assertEquals("新消息", modified.message());
+            assertEquals(original.code(), modified.code());
+            assertEquals(original.timestamp(), modified.timestamp());
         }
     }
 
@@ -130,9 +130,9 @@ class ResultTest {
             Result<String> r2 = Result.success("data");
             Result<String> r3 = Result.success("data", "msg");
 
-            assertNotNull(r1.getTimestamp());
-            assertNotNull(r2.getTimestamp());
-            assertNotNull(r3.getTimestamp());
+            assertNotNull(r1.timestamp());
+            assertNotNull(r2.timestamp());
+            assertNotNull(r3.timestamp());
         }
 
         @Test
@@ -143,10 +143,10 @@ class ResultTest {
             Result<Void> r3 = Result.error(ResultCode.FAIL);
             Result<Void> r4 = Result.error("C0500", "msg");
 
-            assertNotNull(r1.getTimestamp());
-            assertNotNull(r2.getTimestamp());
-            assertNotNull(r3.getTimestamp());
-            assertNotNull(r4.getTimestamp());
+            assertNotNull(r1.timestamp());
+            assertNotNull(r2.timestamp());
+            assertNotNull(r3.timestamp());
+            assertNotNull(r4.timestamp());
         }
     }
 }

@@ -55,9 +55,9 @@ public class OrderQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<OrderVO> handle(QueryOrderRequest request) {
         PageResult<Order> orderPage = orderReadRepository.findPage(request);
-        List<OrderVO> voList = batchToOrderVOs(orderPage.getRecords());
-        return PageResult.of(voList, orderPage.getTotal(),
-                orderPage.getCurrent(), orderPage.getSize());
+        List<OrderVO> voList = batchToOrderVOs(orderPage.records());
+        return PageResult.of(voList, orderPage.total(),
+                orderPage.current(), orderPage.size());
     }
 
     @Transactional(readOnly = true)
@@ -102,9 +102,9 @@ public class OrderQueryHandler {
                 .build();
 
         PageResult<Order> orderPage = orderReadRepository.findPage(roleRequest);
-        List<OrderVO> voList = batchToOrderVOs(orderPage.getRecords());
-        return PageResult.of(voList, orderPage.getTotal(),
-                orderPage.getCurrent(), orderPage.getSize());
+        List<OrderVO> voList = batchToOrderVOs(orderPage.records());
+        return PageResult.of(voList, orderPage.total(),
+                orderPage.current(), orderPage.size());
     }
 
     private List<OrderVO> batchToOrderVOs(List<Order> orders) {

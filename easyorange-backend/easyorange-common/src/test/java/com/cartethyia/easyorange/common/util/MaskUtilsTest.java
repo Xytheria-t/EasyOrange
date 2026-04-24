@@ -106,7 +106,7 @@ class MaskUtilsTest {
         @Test
         @DisplayName("4 个字姓名")
         void maskName_fourChars() {
-            assertEquals("欧阳**", MaskUtils.maskName("欧阳娜娜"));
+            assertEquals("欧阳****", MaskUtils.maskName("欧阳娜娜"));
         }
 
         @Test

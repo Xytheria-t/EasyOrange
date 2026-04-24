@@ -1,39 +1,10 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
-import com.cartethyia.easyorange.common.ddd.ValueObject;
 import com.cartethyia.easyorange.common.util.BizRequire;
 
-import java.util.Objects;
-
-public final class OrderId implements ValueObject {
-
-    private final Long value;
-
-    public OrderId(Long value) {
+public record OrderId(Long value) {
+    public OrderId {
         BizRequire.notNull(value, "订单ID不能为空");
         BizRequire.isTrue(value > 0, "订单ID必须为正数");
-        this.value = value;
-    }
-
-    public Long value() {
-        return value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        OrderId orderId = (OrderId) o;
-        return Objects.equals(value, orderId.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(value);
-    }
-
-    @Override
-    public String toString() {
-        return "OrderId{" + value + '}';
     }
 }

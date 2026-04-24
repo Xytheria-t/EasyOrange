@@ -1,46 +1,17 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
-import com.cartethyia.easyorange.common.ddd.ValueObject;
 import com.cartethyia.easyorange.common.util.BizRequire;
 
-import java.util.Objects;
-import java.util.regex.Pattern;
+public record ImageUrl(String value) {
+    private static final java.util.regex.Pattern URL_PATTERN = java.util.regex.Pattern.compile("^https?://.*");
 
-public final class ImageUrl implements ValueObject {
-
-    private static final Pattern URL_PATTERN = Pattern.compile("^https?://.*");
-
-    private final String value;
-
-    public ImageUrl(String value) {
+    public ImageUrl {
         BizRequire.notBlank(value, "图片URL不能为空");
         BizRequire.isTrue(URL_PATTERN.matcher(value).matches(), "图片URL格式不正确");
-        this.value = value.trim();
-    }
-
-    public String value() {
-        return value;
+        value = value.trim();
     }
 
     public String trimmed() {
         return value.trim();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ImageUrl imageUrl = (ImageUrl) o;
-        return Objects.equals(value, imageUrl.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(value);
-    }
-
-    @Override
-    public String toString() {
-        return "ImageUrl{" + value + '}';
     }
 }

@@ -57,9 +57,9 @@ class AuthControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
-        assertEquals("mock-jwt-token", result.getData().getToken());
-        assertEquals("testuser", result.getData().getUser().getUsername());
+        assertEquals("A0000", result.code());
+        assertEquals("mock-jwt-token", result.data().getToken());
+        assertEquals("testuser", result.data().getUser().getUsername());
         verify(loginStrategyContext, times(1)).login(any(LoginDTO.class));
     }
 
@@ -75,7 +75,7 @@ class AuthControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
+        assertEquals("A0000", result.code());
         verify(tokenService, times(1)).delToken("valid-token");
     }
 
@@ -86,7 +86,7 @@ class AuthControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
+        assertEquals("A0000", result.code());
         verify(tokenService, never()).delToken(anyString());
     }
 
@@ -104,8 +104,8 @@ class AuthControllerTest {
 
         // Then
         assertNotNull(result);
-        assertEquals("A0000", result.getCode());
-        assertEquals("new-refreshed-token", result.getData());
+        assertEquals("A0000", result.code());
+        assertEquals("new-refreshed-token", result.data());
         verify(tokenService, times(1)).refreshToken("old-token");
     }
 }

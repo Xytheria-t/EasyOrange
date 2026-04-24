@@ -1,7 +1,12 @@
 package com.cartethyia.easyorange.framework.config;
 
 import com.cartethyia.easyorange.common.constant.CacheConstants;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
@@ -22,9 +27,8 @@ import java.util.Map;
 public class CacheConfig {
 
     @Bean
-    public CacheManager cacheManager(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
-        Jackson2JsonRedisSerializer<Object> serializer =
-            new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
+    public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+        Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(createCacheObjectMapper(), Object.class);
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
                 .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
@@ -32,14 +36,39 @@ public class CacheConfig {
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigurations = new HashMap<>();
-        // Product list cache: 30 minutes (from CacheConstants.Product.LIST_EXPIRE_TIME)
         cacheConfigurations.put(CacheConstants.Product.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CacheConstants.Product.LIST_EXPIRE_TIME)));
-        // Category cache: 120 minutes (from CacheConstants.Category.INFO_EXPIRE_TIME)
         cacheConfigurations.put(CacheConstants.Category.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CacheConstants.Category.INFO_EXPIRE_TIME)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 .withInitialCacheConfigurations(cacheConfigurations)
                 .build();
+    }
+
+    private ObjectMapper createCacheObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        PolymorphicTypeValidator typeValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(String.class)
+                .allowIfBaseType(Number.class)
+                .allowIfBaseType(Boolean.class)
+                .allowIfSubType("java.time.")
+                .allowIfSubType("java.util.Date")
+                .allowIfSubType("java.util.List")
+                .allowIfSubType("java.util.Set")
+                .allowIfSubType("java.util.Map")
+                .allowIfSubType("java.util.HashMap")
+                .allowIfSubType("java.util.ArrayList")
+                .build();
+
+        mapper.activateDefaultTyping(
+                typeValidator,
+                ObjectMapper.DefaultTyping.NON_FINAL,
+                JsonTypeInfo.As.PROPERTY
+        );
+
+        return mapper;
     }
 }

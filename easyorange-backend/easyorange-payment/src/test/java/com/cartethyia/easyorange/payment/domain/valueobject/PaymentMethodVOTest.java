@@ -20,7 +20,7 @@ class PaymentMethodVOTest {
         @DisplayName("使用 of 创建微信支付")
         void of_withWechatCode_createsPaymentMethodVO() {
             PaymentMethodVO vo = PaymentMethodVO.of(PaymentMethod.WECHAT.getCode());
-            assertThat(vo.getCode()).isEqualTo(PaymentMethod.WECHAT.getCode());
+            assertThat(vo.code()).isEqualTo(PaymentMethod.WECHAT.getCode());
             assertThat(vo.isWechat()).isTrue();
             assertThat(vo.isAlipay()).isFalse();
             assertThat(vo.isBalance()).isFalse();
@@ -30,7 +30,7 @@ class PaymentMethodVOTest {
         @DisplayName("使用 of 创建支付宝")
         void of_withAlipayCode_createsPaymentMethodVO() {
             PaymentMethodVO vo = PaymentMethodVO.of(PaymentMethod.ALIPAY.getCode());
-            assertThat(vo.getCode()).isEqualTo(PaymentMethod.ALIPAY.getCode());
+            assertThat(vo.code()).isEqualTo(PaymentMethod.ALIPAY.getCode());
             assertThat(vo.isAlipay()).isTrue();
         }
 
@@ -38,7 +38,7 @@ class PaymentMethodVOTest {
         @DisplayName("使用 of 创建余额支付")
         void of_withBalanceCode_createsPaymentMethodVO() {
             PaymentMethodVO vo = PaymentMethodVO.of(PaymentMethod.BALANCE.getCode());
-            assertThat(vo.getCode()).isEqualTo(PaymentMethod.BALANCE.getCode());
+            assertThat(vo.code()).isEqualTo(PaymentMethod.BALANCE.getCode());
             assertThat(vo.isBalance()).isTrue();
         }
 

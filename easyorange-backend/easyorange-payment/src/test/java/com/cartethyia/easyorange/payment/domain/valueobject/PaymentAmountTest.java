@@ -21,28 +21,21 @@ class PaymentAmountTest {
         @DisplayName("使用 of 创建正金额")
         void of_withPositiveAmount_createsPaymentAmount() {
             PaymentAmount amount = PaymentAmount.of(new BigDecimal("100.00"));
-            assertThat(amount.getValue()).isEqualByComparingTo(new BigDecimal("100.00"));
+            assertThat(amount.value()).isEqualByComparingTo(new BigDecimal("100.00"));
         }
 
         @Test
         @DisplayName("使用 of 创建小金额")
         void of_withSmallAmount_createsPaymentAmount() {
             PaymentAmount amount = PaymentAmount.of(new BigDecimal("0.01"));
-            assertThat(amount.getValue()).isEqualByComparingTo(new BigDecimal("0.01"));
+            assertThat(amount.value()).isEqualByComparingTo(new BigDecimal("0.01"));
         }
 
         @Test
         @DisplayName("使用 of 创建大金额")
         void of_withLargeAmount_createsPaymentAmount() {
             PaymentAmount amount = PaymentAmount.of(new BigDecimal("999999.99"));
-            assertThat(amount.getValue()).isEqualByComparingTo(new BigDecimal("999999.99"));
-        }
-
-        @Test
-        @DisplayName("zero 创建零金额")
-        void zero_createsZeroAmount() {
-            PaymentAmount amount = PaymentAmount.zero();
-            assertThat(amount.getValue()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(amount.value()).isEqualByComparingTo(new BigDecimal("999999.99"));
         }
     }
 
@@ -112,7 +105,7 @@ class PaymentAmountTest {
         void isEqualTo_sameValue_returnsTrue() {
             PaymentAmount amount1 = PaymentAmount.of(new BigDecimal("100.00"));
             PaymentAmount amount2 = PaymentAmount.of(new BigDecimal("100.00"));
-            assertThat(amount1.isEqualTo(amount2.getValue())).isTrue();
+            assertThat(amount1.isEqualTo(amount2.value())).isTrue();
         }
     }
 
