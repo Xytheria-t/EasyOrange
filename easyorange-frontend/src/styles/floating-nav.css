@@ -99,6 +99,20 @@
     transform: translateX(-50%) translateY(-2px);
 }
 
+.floating-nav.scrolled {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.92) 0%,
+        rgba(255, 255, 255, 0.85) 50%,
+        rgba(255, 255, 255, 0.88) 100%
+    );
+    box-shadow:
+        0 0 0 1px rgba(249, 115, 22, 0.08),
+        0 8px 32px rgba(249, 115, 22, 0.12),
+        0 16px 48px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
 .floating-nav__glow {
     position: absolute;
     inset: -2px;

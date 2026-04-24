@@ -2,18 +2,18 @@
  * @fileoverview 用户 API 模块
  */
 
-import { request } from './core/request.js';
-import type { LoginResponse, UserBasicInfo } from '../types/user.js';
+import { request } from './core/request';
+import type { LoginRequest, RegisterRequest, LoginResponse, User } from '../types/index.js';
 
 export const userApi = {
-    login(data: { account: string; password: string }) {
+    login(data: LoginRequest) {
         return request<LoginResponse>('/auth/login', {
             method: 'POST',
             body: { ...data, clientType: 'web' }
         });
     },
 
-    register(data: { username: string; password: string }) {
+    register(data: RegisterRequest) {
         return request<void>('/users/register', {
             method: 'POST',
             body: data
@@ -24,12 +24,12 @@ export const userApi = {
         return request<void>('/auth/logout', { method: 'POST' });
     },
 
-    getInfo() {
-        return request<UserBasicInfo>('/users/info');
+    getCurrentUser() {
+        return request<User>('/users/info');
     },
 
-    updateProfile(data: { username?: string; email?: string; phone?: string; realName?: string; studentId?: string }) {
-        return request<UserBasicInfo>('/users/info', {
+    updateProfile(data: Partial<Pick<User, 'username' | 'email' | 'phone' | 'realName' | 'studentId'>>) {
+        return request<User>('/users/info', {
             method: 'PUT',
             body: data
         });

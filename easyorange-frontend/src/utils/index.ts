@@ -1,59 +1,61 @@
 /**
- * @fileoverview 工具函数模块 - 统一导出
- * @description 从子模块重新导出所有工具函数，保持向后兼容
+ * @fileoverview 工具函数模块 - React 版本
+ * @description 只提供 React 应用需要的工具函数
  */
 
-// Re-export from sub-modules
-export { dom, DomUtils } from './dom.js';
-export { toast, ToastUtils } from './toast.js';
+// 存储工具
 export { storage, StorageUtils } from './storage.js';
-export { network, NetworkUtils } from './network.js';
-export { errorHandler } from './errorHandler.js';
-export type { ErrorTypeValue, ErrorSeverityValue } from './errorHandler.js';
+export type { StorageItem } from './storage.js';
 
-export { validator, ValidatorUtils } from './validator.js';
+// 格式化工具
+export {
+  formatCurrency,
+  formatDate,
+  formatRelativeTime,
+  formatPrice,
+  formatCondition,
+  escapeHtml,
+  parseQueryString,
+  buildQueryString
+} from './format.js';
 
-export { eventManager, EventManager } from './eventManager.js';
+// 类名工具
+export { cn } from './cn.js';
+
+// Toast 消息提示
+export { toast, ToastUtils } from './toast.js';
+
+// 模态框管理
 export { modalManager, ModalManager } from './modalManager.js';
-export { FormManager, FormValidators } from './formManager.js';
-export type { FormField, ValidationResult, SubmitOptions, FieldValidator } from './formManager.js';
 
+// DOM 操作
+export { dom, DomUtils } from './dom.js';
+
+// 函数工具
 export { debounce, throttle } from './function.js';
 export type { DebounceOptions } from './function.js';
 
-export {
-    formatCurrency,
-    formatDate,
-    formatRelativeTime,
-    escapeHtml,
-    parseQueryString,
-    buildQueryString
-} from './format.js';
+// 商品工具
+export { calculateDiscount, getConditionNameFromString, isHotProduct } from './product.js';
 
+// 元素创建工具
 export {
-    createElement,
-    createImage,
-    createButton,
-    createSvgIcon,
-    createFragment,
-    appendChildren,
-    clearChildren,
-    createEmptyState
+  createElement,
+  createImage,
+  createButton,
+  createSvgIcon,
+  createFragment,
+  appendChildren,
+  clearChildren,
+  createEmptyState
 } from './element.js';
 export type { ElementOptions } from './element.js';
 
-export {
-    calculateDiscount,
-    getConditionNameFromString,
-    isHotProduct
-} from './product.js';
+// 头像工具
+export { getUserInitial, createAvatarElement } from './avatar.js';
 
-export {
-    createAvatarElement,
-    getUserInitial
-} from './avatar.js';
+// 网络工具
+export { network, NetworkUtils } from './network.js';
 
-// Re-export types
-export type { ToastType } from '../types/index.js';
-export type { Unsubscribe, NetworkChangeCallback } from './network.js';
-export type { StorageItem } from '../types/index.js';
+// 验证工具
+export { validator, ValidatorUtils } from './validator.js';

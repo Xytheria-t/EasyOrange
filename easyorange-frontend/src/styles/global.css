@@ -163,36 +163,6 @@ input, textarea, select {
     background-size: 100% 100%;
 }
 
-/* Aurora background */
-.aurora-bg {
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background: var(--gradient-aurora);
-    animation: auroraShift 40s linear infinite;
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-@keyframes auroraShift {
-    0% { transform: rotate(0deg) scale(2); }
-    100% { transform: rotate(360deg) scale(2); }
-}
-
-/* Cursor glow - Pomelo Orange Theme */
-.cursor-glow {
-    position: fixed;
-    width: 400px;
-    height: 400px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.04) 40%, transparent 70%);
-    pointer-events: none;
-    z-index: -1;
-    transform: translate(-50%, -50%);
-    transition: opacity var(--transition-slow);
-    mix-blend-mode: screen;
-}
-
 /* Particles - Warm theme */
 .particles-container {
     position: fixed;

@@ -5,15 +5,22 @@
   },
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2022,
-    "sourceType": "module"
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
   },
   "plugins": [
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "react",
+    "react-hooks"
   ],
   "rules": {
     "no-var": "error",
@@ -31,7 +38,16 @@
     "@typescript-eslint/no-this-alias": "warn",
     "@typescript-eslint/no-non-null-assertion": "warn",
     "@typescript-eslint/prefer-as-const": "error",
-    "@typescript-eslint/no-inferrable-types": "warn"
+    "@typescript-eslint/no-inferrable-types": "warn",
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   },
   "ignorePatterns": ["node_modules/", "dist/"]
 }

@@ -86,6 +86,7 @@ export interface User {
 export interface LoginRequest {
     account: string;
     password: string;
+    isRegister?: boolean;
 }
 
 export interface RegisterRequest {
@@ -150,6 +151,10 @@ export interface Product {
     sellerRating: number;
     createTime: string;
     updateTime: string;
+    isHot?: boolean;
+    discount?: number;
+    viewCount?: number;
+    category?: string;
 }
 
 export interface ProductDetail extends Product {

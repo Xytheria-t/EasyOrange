@@ -2,25 +2,18 @@
  * @fileoverview 商品 API 模块
  */
 
-import type { PageResult, Category, Product } from '../types/index.js';
-import { request } from './core/request.js';
+import type { PageResult, Category, Product, ProductQueryParams, CreateProductRequest, UpdateProductRequest } from '../types/index.js';
+import { request } from './core/request';
 
 export const productApi = {
-    getList(params?: Record<string, unknown>) {
+    getProducts(params?: ProductQueryParams) {
         return request<PageResult<Product>>('/products', {
             method: 'GET',
-            params
+            params: params as Record<string, unknown>
         });
     },
 
-    getProducts(params?: Record<string, unknown>) {
-        return request<PageResult<Product>>('/products', {
-            method: 'GET',
-            params
-        });
-    },
-
-    getDetail(id: number) {
+    getProductById(id: number) {
         return request<Product>(`/products/${id}`);
     },
 
@@ -28,29 +21,22 @@ export const productApi = {
         return request<Product>(`/products/${id}`);
     },
 
-    create(data: Record<string, unknown>) {
-        return request('/products', {
+    createProduct(data: CreateProductRequest) {
+        return request<Product>('/products', {
             method: 'POST',
             body: data
         });
     },
 
-    createProduct(data: Record<string, unknown> | { title: string; description: string; price: number; originalPrice?: number; condition?: string; location?: string; images?: string[]; categoryId?: number }) {
-        return request('/products', {
-            method: 'POST',
-            body: data as Record<string, unknown>
-        });
-    },
-
-    update(id: number, data: Record<string, unknown>) {
-        return request(`/products/${id}`, {
+    updateProduct(id: number, data: UpdateProductRequest) {
+        return request<Product>(`/products/${id}`, {
             method: 'PUT',
             body: data
         });
     },
 
-    delete(id: number) {
-        return request(`/products/${id}`, {
+    deleteProduct(id: number) {
+        return request<void>(`/products/${id}`, {
             method: 'DELETE'
         });
     },
@@ -67,9 +53,10 @@ export const productApi = {
         return request<PageResult<Product>>(`/products/category/${category}`);
     },
 
-    searchProducts(_keyword: string) {
+    searchProducts(keyword: string) {
         return request<PageResult<Product>>('/products/search', {
-            method: 'GET'
+            method: 'GET',
+            params: { keyword }
         });
     },
 

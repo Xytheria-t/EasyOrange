@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -7,6 +8,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
+    plugins: [
+        react(),
+        ...(process.env.NODE_ENV === 'production' ? [
+            visualizer({
+                open: true,
+                gzipSize: true,
+                brotliSize: true,
+                filename: 'dist/stats.html'
+            })
+        ] : [])
+    ],
     base: './',
     resolve: {
         alias: {
@@ -17,7 +29,10 @@ export default defineConfig({
             '@pages': resolve(__dirname, 'src/pages'),
             '@types': resolve(__dirname, 'src/types'),
             '@constants': resolve(__dirname, 'src/constants'),
-            '@assets': resolve(__dirname, 'src/assets')
+            '@assets': resolve(__dirname, 'src/assets'),
+            '@hooks': resolve(__dirname, 'src/hooks'),
+            '@store': resolve(__dirname, 'src/store'),
+            '@lib': resolve(__dirname, 'src/lib')
         }
     },
     server: {
@@ -35,83 +50,27 @@ export default defineConfig({
     build: {
         target: 'es2020',
         outDir: 'dist',
-        assetsDir: 'assets',
-        minify: 'terser',
-        sourcemap: 'hidden',
-        assetsInlineLimit: 4096,
+        sourcemap: true,
         rollupOptions: {
-            input: {
-                main: resolve(__dirname, 'index.html'),
-                products: resolve(__dirname, 'products.html'),
-                profile: resolve(__dirname, 'profile.html'),
-                publish: resolve(__dirname, 'publish.html'),
-                favorites: resolve(__dirname, 'favorites.html'),
-                messages: resolve(__dirname, 'messages.html')
-            },
             output: {
-                manualChunks: (id) => {
-                    if (id.includes('node_modules')) {
-                        return 'vendor';
-                    }
+                manualChunks: {
+                    vendor: ['react', 'react-dom', 'react-router-dom'],
+                    query: ['@tanstack/react-query'],
+                    ui: ['zustand'],
                 },
-                chunkFileNames: (chunkInfo) => {
-                    const facadeModuleId = chunkInfo.facadeModuleId 
-                        ? chunkInfo.facadeModuleId.split('/').pop() 
-                        : 'chunk';
-                    
-                    if (facadeModuleId.includes('api')) {
-                        return 'assets/js/api/[name]-[hash].js';
-                    }
-                    if (facadeModuleId.includes('components')) {
-                        return 'assets/js/components/[name]-[hash].js';
-                    }
-                    if (facadeModuleId.includes('pages')) {
-                        return 'assets/js/pages/[name]-[hash].js';
-                    }
-                    if (facadeModuleId.includes('utils')) {
-                        return 'assets/js/utils/[name]-[hash].js';
-                    }
-                    return 'assets/js/[name]-[hash].js';
-                },
+                chunkFileNames: 'assets/js/[name]-[hash].js',
+                entryFileNames: 'assets/js/[name]-[hash].js',
                 assetFileNames: (assetInfo) => {
-                    const info = assetInfo.name.split('.');
-                    const ext = info[info.length - 1];
-                    
                     if (/\.(png|jpe?g|gif|svg|webp|ico)$/i.test(assetInfo.name)) {
                         return 'assets/images/[name]-[hash].[ext]';
                     }
                     if (/\.(css|scss|less)$/i.test(assetInfo.name)) {
                         return 'assets/css/[name]-[hash].[ext]';
                     }
-                    if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name)) {
-                        return 'assets/fonts/[name]-[hash].[ext]';
-                    }
                     return 'assets/[name]-[hash].[ext]';
                 }
             }
         },
-        terserOptions: {
-            compress: {
-                drop_console: true,
-                drop_debugger: true,
-                dead_code: true,
-                evaluate: true,
-                unused: true
-            },
-            format: {
-                comments: false
-            }
-        },
         chunkSizeWarningLimit: 1000,
-        cssCodeSplit: true,
-        reportCompressedSize: true
     },
-    plugins: process.env.NODE_ENV === 'production' ? [
-        visualizer({
-            open: true,
-            gzipSize: true,
-            brotliSize: true,
-            filename: 'dist/stats.html'
-        })
-    ] : []
 });
