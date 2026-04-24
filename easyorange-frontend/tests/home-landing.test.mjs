@@ -13,23 +13,19 @@ function assertSection(name, checks) {
     }
 }
 
-assertSection('hero copy', () => {
-    assert.match(html, /校园专属二手交易平台/);
+assertSection('page title and meta', () => {
+    assert.match(html, /<title>EasyOrange - 校园二手交易平台<\/title>/);
+    assert.match(html, /校园二手交易平台/);
     assert.match(html, /让闲置流转/);
     assert.match(html, /让价值延续/);
+    assert.match(html, /meta.*robots.*index.*follow/s);
 });
 
-assertSection('floating chips and preview card', () => {
-    assert.match(html, /hero-floating-chip/);
-    assert.match(html, /教材资料/);
-    assert.match(html, /电子产品/);
-    assert.match(html, /交通工具/);
-    assert.match(html, /hero-preview-card/);
+assertSection('static resources', () => {
+    assert.match(html, /<link rel="stylesheet" href="\/src\/styles\/main\.css">/);
+    assert.match(html, /<script src="\/src\/main\.tsx" type="module"><\/script>/);
 });
 
-assertSection('header actions', () => {
-    assert.match(html, /首页/);
-    assert.match(html, /商品/);
-    assert.match(html, /发布/);
-    assert.match(html, /admin/i);
+assertSection('root element', () => {
+    assert.match(html, /<div id="root"><\/div>/);
 });

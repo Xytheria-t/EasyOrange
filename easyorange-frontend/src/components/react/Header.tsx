@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/authStore'
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -7,10 +8,16 @@ export function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useNavigate()
-  const isLoggedIn = false
+  const { token, logout } = useAuthStore()
+  const isLoggedIn = !!token
 
   const handleLoginClick = () => {
     navigate('/login')
+  }
+
+  const handleLogoutClick = () => {
+    logout()
+    navigate('/')
   }
 
   useEffect(() => {
@@ -57,14 +64,14 @@ export function Header() {
         </nav>
 
         <div className="header-actions">
-          <div className="user-menu" id="userMenu" ref={userMenuRef} style={{ display: isLoggedIn ? 'flex' : 'none' }}>
+          <div className={`user-menu ${isUserMenuOpen ? 'active' : ''}`} id="userMenu" ref={userMenuRef} style={{ display: isLoggedIn ? 'flex' : 'none' }}>
             <button className="user-avatar-btn" id="userAvatarBtn" onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
               <span className="user-name" id="userName">李明</span>
               <svg className="dropdown-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            <div className={`user-dropdown ${isUserMenuOpen ? 'active' : ''}`} id="userDropdown">
+            <div className="user-dropdown" id="userDropdown">
               <a href="/profile" className="dropdown-item">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -79,7 +86,7 @@ export function Header() {
                 <span>我的收藏</span>
               </a>
               <div className="dropdown-divider"></div>
-              <button className="dropdown-item logout-btn">
+              <button className="dropdown-item logout-btn" id="logoutBtn" onClick={handleLogoutClick}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />

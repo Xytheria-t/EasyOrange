@@ -1,4 +1,4 @@
-import { createBrowserRouter, createRoutesFromElements, Navigate, Route } from 'react-router-dom';
+import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation } from 'react-router-dom';
 import HomePage from '@/pages/HomePage';
 import { Layout } from '@/components/react/Layout';
 import { ProductsPage } from '@/pages/ProductsPage';
@@ -11,8 +11,9 @@ import { PublishPage } from '@/pages/PublishPage';
 import { LoginPage } from '@/pages/LoginPage';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
   const token = localStorage.getItem('token');
-  return token ? <>{children}</> : <Navigate to="/login" replace />;
+  return token ? <>{children}</> : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
 };
 
 export const router = createBrowserRouter(
