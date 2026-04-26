@@ -19,6 +19,6 @@ public class UpdateUserRequest {
     private String phone;
 
     @Min(value = 0, message = "性别值无效")
-    @Max(value = 1, message = "性别值无效")
+    @Max(value = 2, message = "性别值无效")
     private Integer gender;
 }

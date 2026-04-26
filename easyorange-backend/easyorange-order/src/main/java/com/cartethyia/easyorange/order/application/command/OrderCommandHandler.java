@@ -31,6 +31,7 @@ public class OrderCommandHandler {
     private final OrderRepository orderRepository;
     private final ProductQueryHandler productQueryHandler;
     private final DomainEventPublisher domainEventPublisher;
+    private final com.cartethyia.easyorange.order.application.cache.OrderCacheService orderCacheService;
 
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult handle(CreateOrderCommand command) {
@@ -69,6 +70,8 @@ public class OrderCommandHandler {
         Order order = aggregate.toEntity();
         orderRepository.save(order);
 
+        orderCacheService.deleteSellerOrderCache(productVO.getSellerId());
+
         domainEventPublisher.publish(event);
         log.info("订单创建成功 orderId={} orderNo={}", order.getId(), order.getOrderNo());
 
@@ -85,6 +88,8 @@ public class OrderCommandHandler {
         OrderAggregate updatedAggregate = aggregate.withPaymentStatus(PAYMENT_STATUS_PAID);
         orderRepository.update(updatedAggregate.toEntity());
 
+        orderCacheService.deleteOrderCache(order.getBuyerId(), order.getSellerId());
+
         domainEventPublisher.publish(event);
         log.info("订单已支付 orderId={}", command.getOrderId());
     }
@@ -98,6 +103,8 @@ public class OrderCommandHandler {
 
         OrderAggregate updatedAggregate = aggregate.withStatus(OrderStatus.CANCELLED.getCode());
         orderRepository.update(updatedAggregate.toEntity());
+
+        orderCacheService.deleteOrderCache(order.getBuyerId(), order.getSellerId());
 
         domainEventPublisher.publish(event);
         log.info("订单已取消 orderId={} reason={}", command.getOrderId(), command.getReason());
@@ -113,6 +120,8 @@ public class OrderCommandHandler {
         OrderAggregate updatedAggregate = aggregate.withStatus(OrderStatus.SHIPPED.getCode());
         orderRepository.update(updatedAggregate.toEntity());
 
+        orderCacheService.deleteOrderCache(order.getBuyerId(), order.getSellerId());
+
         domainEventPublisher.publish(event);
         log.info("订单已发货 orderId={}", command.getOrderId());
     }
@@ -126,6 +135,8 @@ public class OrderCommandHandler {
 
         OrderAggregate updatedAggregate = aggregate.withStatus(OrderStatus.COMPLETED.getCode());
         orderRepository.update(updatedAggregate.toEntity());
+
+        orderCacheService.deleteOrderCache(order.getBuyerId(), order.getSellerId());
 
         domainEventPublisher.publish(event);
         log.info("订单已完成 orderId={}", command.getOrderId());

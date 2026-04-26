@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
@@ -43,9 +44,7 @@ public class MessageQueryHandler {
         Message message = messageRepository.findById(messageId)
                 .orElseThrow(() -> new MessageNotFoundException(messageId));
 
-        if (!message.getReceiverId().equals(userId)) {
-            throw new MessageNotFoundException(messageId);
-        }
+        BizRequire.eq(message.getReceiverId(), userId, "无权查看此消息");
 
         return toMessageVO(message, resolveUsernames(Set.of(message)));
     }

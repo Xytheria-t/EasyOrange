@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.config;
+package com.cartethyia.easyorange.framework.config.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.util;
 
-import com.cartethyia.easyorange.framework.config.JwtProperties;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtBuilder;
@@ -88,10 +88,6 @@ public class JwtUtil {
 
         try {
             return Optional.of(jwtParser.parseSignedClaims(cleanToken).getPayload());
-        } catch (ExpiredJwtException e) {
-            return Optional.empty();
-        } catch (SignatureException e) {
-            return Optional.empty();
         } catch (JwtException e) {
             return Optional.empty();
         }
@@ -124,10 +120,6 @@ public class JwtUtil {
         try {
             jwtParser.parseSignedClaims(cleanToken);
             return true;
-        } catch (ExpiredJwtException e) {
-            return false;
-        } catch (SignatureException e) {
-            return false;
         } catch (JwtException e) {
             return false;
         }
@@ -145,10 +137,7 @@ public class JwtUtil {
         return parseTokenIgnoreExpiration(token)
                 .filter(claims -> !REFRESH_TOKEN_TYPE.equals(claims.get(CLAIM_TYPE, String.class)))
                 .filter(this::isNearExpiration)
-                .map(claims -> {
-                    String newToken = generateToken(claims.getSubject(), extractCustomClaims(claims));
-                    return newToken;
-                });
+                .map(claims -> generateToken(claims.getSubject(), extractCustomClaims(claims)));
     }
 
     private boolean isNearExpiration(Claims claims) {

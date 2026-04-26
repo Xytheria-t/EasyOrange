@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.aspectj;
 
 import com.cartethyia.easyorange.common.annotation.Log;
+import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.BusinessType;
 import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
@@ -8,11 +9,10 @@ import com.cartethyia.easyorange.framework.config.properties.OperLogProperties;
 import com.cartethyia.easyorange.framework.operlog.entity.SysOperLog;
 import com.cartethyia.easyorange.framework.operlog.service.SysOperLogService;
 import com.cartethyia.easyorange.framework.util.OperLogUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -149,9 +149,11 @@ public class OperLogAspect {
         operLog.setBusinessType(businessType.getCode());
         operLog.setMethod(className + "." + method.getName() + "()");
         operLog.setRequestMethod(request.getMethod());
-        operLog.setOperUrl(request.getRequestURI());
+        operLog.setOperUrl(RequestUtil.getFullRequestUrl(request));
         operLog.setOperIp(RequestUtil.getClientIp(request));
-        operLog.setOperName(SecurityContextUtil.getCurrentUsername().orElse("anonymous"));
+        operLog.setOperName(SecurityContextUtil.getUserContext()
+            .map(AuthUser::username)
+            .orElse("anonymous"));
 
         if (saveRequestData) {
             String params = argsArrayToString(joinPoint.getArgs(), excludeParamNames);
@@ -162,7 +164,7 @@ public class OperLogAspect {
             try {
                 String json = objectMapper.writeValueAsString(jsonResult);
                 operLog.setJsonResult(OperLogUtil.truncate(json, 2000));
-            } catch (JsonProcessingException ex) {
+            } catch (JacksonException ex) {
                 log.warn("Failed to serialize response data for oper log", ex);
             }
         }
@@ -219,7 +221,7 @@ public class OperLogAspect {
             String objJson;
             try {
                 objJson = objectMapper.writeValueAsString(value);
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 continue;
             }
             if (objJson != null) {
@@ -258,18 +260,15 @@ public class OperLogAspect {
     private void maskNode(JsonNode node, String[] extraExcludeNames) {
         if (node.isObject()) {
             ObjectNode objectNode = (ObjectNode) node;
-            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
-                String fieldName = entry.getKey();
-                JsonNode value = entry.getValue();
+            node.propertyNames().forEach(fieldName -> {
+                JsonNode value = node.get(fieldName);
 
                 if (isSensitiveField(fieldName, extraExcludeNames)) {
-                    objectNode.set(fieldName, TextNode.valueOf("******"));
+                    objectNode.set(fieldName, objectMapper.valueToTree("******"));
                 } else if (value.isObject() || value.isArray()) {
                     maskNode(value, extraExcludeNames);
                 }
-            }
+            });
         } else if (node.isArray()) {
             node.forEach(child -> maskNode(child, extraExcludeNames));
         }

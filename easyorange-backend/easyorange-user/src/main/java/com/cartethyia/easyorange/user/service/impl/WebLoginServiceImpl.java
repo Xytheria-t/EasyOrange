@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.user.dto.request.LoginDTO;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.enums.ClientType;
 import com.cartethyia.easyorange.user.enums.UserStatus;
@@ -61,11 +62,11 @@ public class WebLoginServiceImpl implements LoginStrategyService {
     }
 
     private void validateUserStatus(User user) {
-        String status = user.getStatus();
-        if (UserStatus.DISABLED.getCode().equals(status)) {
+        UserStatus status = user.getStatus();
+        if (status == UserStatus.DISABLED) {
             throw BusinessException.of("账号已被禁用");
         }
-        if (UserStatus.LOCKED.getCode().equals(status)) {
+        if (status == UserStatus.LOCKED) {
             throw BusinessException.of("账号已被锁定");
         }
     }
@@ -85,13 +86,14 @@ public class WebLoginServiceImpl implements LoginStrategyService {
     }
 
     private String generateToken(User user) {
-        return tokenService.createToken(user.getId(), user.getUsername());
+        String userType = user.getUserType() != null ? user.getUserType().getCode() : null;
+        return tokenService.createToken(user.getId(), user.getUsername(), userType);
     }
 
     private LoginResponse buildLoginResponse(User user, String token) {
         return LoginResponse.builder()
                 .token(token)
-                .user(LoginResponse.UserInfo.builder()
+                .user(UserVO.builder()
                         .id(user.getId())
                         .username(user.getUsername())
                         .email(user.getEmail())

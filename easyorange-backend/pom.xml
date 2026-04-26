@@ -40,7 +40,10 @@
         <springdoc.version>3.0.2</springdoc.version>
         <mybatis-plus.version>3.5.16</mybatis-plus.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
-        <jackson2.version>2.18.3</jackson2.version>
+        <!-- Jackson 3.x 最新稳定版（核心组件使用 tools.jackson.* 坐标） -->
+        <jackson3.version>3.1.2</jackson3.version>
+        <!-- Jackson 3 仍复用 2.x annotations 包与坐标 -->
+        <jackson.annotations.version>2.21</jackson.annotations.version>
     </properties>
 
     <dependencyManagement>
@@ -95,7 +98,7 @@
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
+                <artifactId>jjwt-gson</artifactId>
                 <version>${jjwt.version}</version>
             </dependency>
 
@@ -137,21 +140,22 @@
                 <version>${logstash-logback-encoder.version}</version>
             </dependency>
 
-            <!-- ==================== Jackson 2 (LTS) ==================== -->
+            <!-- ==================== Jackson 3 最新稳定版 ==================== -->
             <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
+                <groupId>tools.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
-                <version>${jackson2.version}</version>
+                <version>${jackson3.version}</version>
             </dependency>
+            <dependency>
+                <groupId>tools.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson3.version}</version>
+            </dependency>
+            <!-- Jackson annotations 仍使用 2.x 版本（兼容 3.x） -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${jackson2.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-jsr310</artifactId>
-                <version>${jackson2.version}</version>
+                <artifactId>jackson-annotations</artifactId>
+                <version>${jackson.annotations.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -233,6 +237,19 @@
 
     <!-- ==================== Maven 仓库配置 ==================== -->
     <repositories>
+        <!-- Maven Central：优先使用官方仓库，确保可解析 Jackson 3 最新版本 -->
+        <repository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
         <!-- 阿里云镜像 -->
         <repository>
             <id>aliyunmaven</id>
@@ -259,18 +276,6 @@
             </snapshots>
         </repository>
 
-        <!-- Maven Central -->
-        <repository>
-            <id>central</id>
-            <name>Maven Central</name>
-            <url>https://repo1.maven.org/maven2/</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
     </repositories>
 
     <!-- 插件仓库配置 -->
@@ -289,7 +294,7 @@
         <pluginRepository>
             <id>central</id>
             <name>Maven Central</name>
-            <url>https://repo1.maven.org/maven2/</url>
+            <url>https://repo.maven.apache.org/maven2/</url>
             <releases>
                 <enabled>true</enabled>
             </releases>

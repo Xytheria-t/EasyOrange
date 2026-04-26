@@ -11,7 +11,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -143,7 +142,7 @@ public final class FileUtils {
     public static String generateTimestampFilename(MultipartFile file) {
         String extension = getExtension(file);
         String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
-        String baseName = getBaseName(Objects.requireNonNull(file.getOriginalFilename()));
+        String baseName = getBaseName(file.getOriginalFilename());
         return datePath + "/" + baseName + "_" + System.currentTimeMillis() + "." + extension;
     }
 

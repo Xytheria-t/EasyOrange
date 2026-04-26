@@ -89,7 +89,7 @@ public final class MaskUtils {
             return name;
         }
         int len = name.length();
-        if (len <= 1) {
+        if (len == 1) {
             return name;
         }
         if (len == 2) {
@@ -151,10 +151,7 @@ public final class MaskUtils {
      * @param tail  保留尾部字符数
      */
     public static String mask(String value, int head, int tail) {
-        if (value == null || value.length() <= head + tail) {
-            return value;
-        }
-        return value.substring(0, head) + MASK + value.substring(value.length() - tail);
+        return mask(value, head, tail, MASK);
     }
 
     /**

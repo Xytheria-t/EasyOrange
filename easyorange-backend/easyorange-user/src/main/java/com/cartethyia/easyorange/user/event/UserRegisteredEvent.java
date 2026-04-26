@@ -10,7 +10,7 @@ public class UserRegisteredEvent extends BaseDomainEvent {
     private final String username;
 
     public UserRegisteredEvent(Long userId, String username) {
-        super(UserRegisteredEvent.class);
+        super(com.cartethyia.easyorange.user.entity.User.class);
         this.userId = userId;
         this.username = username;
     }

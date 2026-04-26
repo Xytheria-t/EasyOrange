@@ -1,18 +1,20 @@
-package com.cartethyia.easyorange.framework.config;
+package com.cartethyia.easyorange.framework.config.security;
 
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.filter.JwtAuthenticationFilter;
 import com.cartethyia.easyorange.framework.filter.XssFilter;
-import com.cartethyia.easyorange.framework.handler.AuthenticationEntryPointImpl;
+import com.cartethyia.easyorange.framework.handler.JsonAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -22,6 +24,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -30,11 +33,14 @@ import java.util.List;
 public class SecurityConfig {
 
     private static final long CORS_MAX_AGE_SECONDS = 3600L;
+    private static final long HSTS_MAX_AGE_SECONDS = 31536000L;
+    private static final String[] CORS_ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"};
+    private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Authorization-New", "Content-Disposition"};
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final XssFilter xssFilter;
-    private final AuthenticationEntryPointImpl authenticationEntryPoint;
-    private final LogoutSuccessHandlerImpl logoutSuccessHandler;
+    private final JsonAuthenticationEntryPoint authenticationEntryPoint;
+    private final JsonLogoutSuccessHandler logoutSuccessHandler;
     private final SecurityProperties securityProperties;
 
     @Bean
@@ -45,47 +51,46 @@ public class SecurityConfig {
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
-            .exceptionHandling(exception ->
-                exception.authenticationEntryPoint(authenticationEntryPoint))
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(exception -> exception.authenticationEntryPoint(authenticationEntryPoint))
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(securityProperties.getIgnorePaths().toArray(String[]::new)).permitAll()
                 .requestMatchers(securityProperties.getProductPaths().toArray(String[]::new)).permitAll()
                 .requestMatchers(securityProperties.getStaticPaths().toArray(String[]::new)).permitAll()
                 .anyRequest().authenticated()
             )
-            .logout(logout ->
-                logout.logoutUrl(securityProperties.getLogoutUrl())
-                    .logoutSuccessHandler(logoutSuccessHandler))
+            .logout(logout -> logout
+                .logoutUrl(securityProperties.getLogoutUrl())
+                .logoutSuccessHandler(logoutSuccessHandler)
+            )
             .addFilterBefore(xssFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, XssFilter.class)
             .headers(headers -> headers
-                .frameOptions(frame -> frame.deny())
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                 .contentTypeOptions(Customizer.withDefaults())
-                .xssProtection(xss -> xss.disable())
+                .xssProtection(HeadersConfigurer.XXssConfig::disable)
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
-                    .maxAgeInSeconds(31536000))
+                    .maxAgeInSeconds(HSTS_MAX_AGE_SECONDS)
+                )
             )
             .build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
         List<String> origins = securityProperties.getAllowedOrigins();
-        if (origins.contains("*")) {
-            config.setAllowedOriginPatterns(List.of("*"));
-        } else {
-            config.setAllowedOrigins(origins);
-        }
+        boolean allowAllOrigins = origins.contains("*");
+
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(allowAllOrigins ? List.of("*") : null);
+        config.setAllowedOrigins(allowAllOrigins ? null : origins);
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedMethods(Stream.of(CORS_ALLOWED_METHODS).toList());
         config.setAllowCredentials(true);
         config.setMaxAge(CORS_MAX_AGE_SECONDS);
-        config.setExposedHeaders(List.of("Authorization", "Authorization-New", "Content-Disposition"));
+        config.setExposedHeaders(Stream.of(CORS_EXPOSED_HEADERS).toList());
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -96,5 +101,4 @@ public class SecurityConfig {
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(securityProperties.getPasswordEncoderStrength());
     }
-
 }

@@ -70,7 +70,7 @@ public class CacheConstants {
 
         /**
          * 商品信息缓存 Key前缀
-         * <p>完整 Key 格式：eo:product:info:{productId}
+         * <p>完整 Key 格式：eo:product:info:{id}
          * <p>过期时间：60 分钟
          */
         public static final String INFO_KEY = APP_PREFIX + "product:info:";
@@ -91,9 +91,14 @@ public class CacheConstants {
          */
         public static final long LIST_EXPIRE_TIME = 30L;
 
-        public static String infoKey(Long productId) {
-            BizRequire.notNull(productId, "productId 不能为 null");
-            return INFO_KEY + productId;
+        public static String infoKey(Object id) {
+            BizRequire.notNull(id, "productId 不能为 null");
+            return INFO_KEY + id;
+        }
+
+        public static String listKey(Object categoryId) {
+            BizRequire.notNull(categoryId, "categoryId 不能为 null");
+            return LIST_KEY + categoryId;
         }
     }
 

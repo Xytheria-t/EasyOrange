@@ -71,12 +71,6 @@ public final class BizRequire {
         }
     }
 
-    public static void isNull(Object obj, IResultCode resultCode) {
-        if (obj != null) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
     /**
      * 验证条件必须为 true，不为 true 时抛异常
      *
@@ -107,12 +101,6 @@ public final class BizRequire {
         }
     }
 
-    public static void isFalse(boolean condition, IResultCode resultCode) {
-        if (condition) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
     /**
      * 验证字符串不能为空（null、""、" " 都视为空）
      */
@@ -134,33 +122,15 @@ public final class BizRequire {
         }
     }
 
-    public static void notEmpty(Collection<?> collection, IResultCode resultCode) {
-        if (collection == null || collection.isEmpty()) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
     public static void notEmpty(Map<?, ?> map, String message) {
         if (map == null || map.isEmpty()) {
             throw BusinessException.of(message);
         }
     }
 
-    public static void notEmpty(Map<?, ?> map, IResultCode resultCode) {
-        if (map == null || map.isEmpty()) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
     public static void notEmpty(Object[] array, String message) {
         if (array == null || array.length == 0) {
             throw BusinessException.of(message);
-        }
-    }
-
-    public static void notEmpty(Object[] array, IResultCode resultCode) {
-        if (array == null || array.length == 0) {
-            throw BusinessException.of(resultCode);
         }
     }
 
@@ -173,12 +143,6 @@ public final class BizRequire {
         }
     }
 
-    public static void positive(Number number, IResultCode resultCode) {
-        if (number == null || number.longValue() <= 0) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
     /**
      * 验证数字必须大于等于 0
      */
@@ -188,21 +152,9 @@ public final class BizRequire {
         }
     }
 
-    public static void nonNegative(Number number, IResultCode resultCode) {
-        if (number == null || number.longValue() < 0) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
     public static void between(long value, long min, long max, String message) {
         if (value < min || value > max) {
             throw BusinessException.of(message);
-        }
-    }
-
-    public static void between(long value, long min, long max, IResultCode resultCode, String message) {
-        if (value < min || value > max) {
-            throw BusinessException.of(resultCode, message);
         }
     }
 
@@ -241,10 +193,6 @@ public final class BizRequire {
         throw BusinessException.of(message);
     }
 
-    public static void fail(IResultCode resultCode) {
-        throw BusinessException.of(resultCode);
-    }
-
     /**
      * 验证两个值必须相等
      */
@@ -266,12 +214,6 @@ public final class BizRequire {
     public static void ne(Object expected, Object actual, String message) {
         if (Objects.equals(expected, actual)) {
             throw BusinessException.of(message);
-        }
-    }
-
-    public static void ne(Object expected, Object actual, IResultCode resultCode) {
-        if (Objects.equals(expected, actual)) {
-            throw BusinessException.of(resultCode);
         }
     }
 }

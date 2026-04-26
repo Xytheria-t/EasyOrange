@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.message.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
@@ -39,6 +38,14 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public MessageVO sendMessage(Long receiverId, Integer type, String title, String content, Long businessId) {
+        BizRequire.notNull(receiverId, "接收者 ID 不能为空");
+        BizRequire.positive(receiverId, "接收者 ID 必须为正数");
+        BizRequire.notNull(type, "消息类型不能为空");
+        BizRequire.notBlank(title, "消息标题不能为空");
+        BizRequire.notBlank(content, "消息内容不能为空");
+        BizRequire.between(title.length(), 0, 200, "消息标题长度必须在 0-200 之间");
+        BizRequire.between(content.length(), 0, 2000, "消息内容长度必须在 0-2000 之间");
+
         Long senderId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         Message message = Message.builder()
@@ -60,6 +67,13 @@ public class MessageServiceImpl extends ServiceImpl<MessageMapper, Message> impl
     @Override
     @Transactional(rollbackFor = Exception.class)
     public MessageVO sendSystemMessage(Long receiverId, String title, String content) {
+        BizRequire.notNull(receiverId, "接收者 ID 不能为空");
+        BizRequire.positive(receiverId, "接收者 ID 必须为正数");
+        BizRequire.notBlank(title, "消息标题不能为空");
+        BizRequire.notBlank(content, "消息内容不能为空");
+        BizRequire.between(title.length(), 0, 200, "消息标题长度必须在 0-200 之间");
+        BizRequire.between(content.length(), 0, 2000, "消息内容长度必须在 0-2000 之间");
+
         Message message = Message.builder()
                 .senderId(null)
                 .receiverId(receiverId)

@@ -2,9 +2,10 @@ package com.cartethyia.easyorange.user.controller;
 
 import com.cartethyia.easyorange.user.dto.request.LoginDTO;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.framework.service.TokenService;
-import com.cartethyia.easyorange.framework.config.JwtProperties;
-import com.cartethyia.easyorange.user.service.strategy.LoginStrategyContext;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import com.cartethyia.easyorange.user.service.LoginStrategyContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,7 +41,7 @@ class AuthControllerTest {
                 .password("password123")
                 .build();
 
-        LoginResponse.UserInfo userInfo = LoginResponse.UserInfo.builder()
+        UserVO userInfo = UserVO.builder()
                 .id(1L)
                 .username("testuser")
                 .build();

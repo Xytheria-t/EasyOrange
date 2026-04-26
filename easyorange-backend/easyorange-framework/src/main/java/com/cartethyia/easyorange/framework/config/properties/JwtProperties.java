@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.config;
+package com.cartethyia.easyorange.framework.config.properties;
 
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
  * </p>
  *
  * @author cartethyia
- * @date 2026/03/06
  */
 @Data
 @Slf4j
@@ -29,7 +28,7 @@ import org.springframework.stereotype.Component;
 public class JwtProperties {
 
     /**
-     * JWT 密钥（至少32字符，256位）
+     * JWT 密钥（至少 32 字符，256 位）
      * <p>
      * 生产环境必须通过环境变量 JWT_SECRET_KEY 设置，禁止使用默认值
      * </p>
@@ -73,8 +72,8 @@ public class JwtProperties {
             throw new IllegalStateException("JWT 密钥不能为空，请检查配置项 jwt.secret-key 或环境变量 JWT_SECRET_KEY");
         }
         if (secretKey.length() < 32) {
-            throw new IllegalStateException("JWT 密钥长度必须至少32字符，请检查配置项 jwt.secret-key 或环境变量 JWT_SECRET_KEY");
+            throw new IllegalStateException("JWT 密钥长度必须至少 32 字符，请检查配置项 jwt.secret-key 或环境变量 JWT_SECRET_KEY");
         }
-        log.info("JWT 配置加载完成 - 发行者: {}, Access Token 过期时间: {}分钟", issuer, accessTokenExpiration);
+        log.info("JWT 配置加载完成 - 发行者：{}, Access Token 过期时间：{}分钟", issuer, accessTokenExpiration);
     }
 }

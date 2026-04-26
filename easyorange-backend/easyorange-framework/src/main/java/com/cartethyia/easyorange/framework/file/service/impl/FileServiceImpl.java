@@ -14,6 +14,8 @@ import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,9 +44,8 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UploadFileVO uploadFile(MultipartFile file, String businessType, Long businessId) {
-        if (file == null || file.isEmpty()) {
-            throw new FileException("上传文件不能为空");
-        }
+        BizRequire.notNull(file, "上传文件不能为空");
+        BizRequire.isTrue(!file.isEmpty(), "上传文件不能为空");
 
         Long userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
@@ -81,6 +82,10 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<UploadFileVO> uploadFiles(List<MultipartFile> files, String businessType) {
+        BizRequire.notEmpty(files, "上传的文件列表不能为空");
+        BizRequire.noNullElements(files, "文件列表不能包含空元素");
+        BizRequire.notBlank(businessType, "业务类型不能为空");
+        
         return files.stream()
                 .filter(file -> !file.isEmpty())
                 .map(file -> uploadFile(file, businessType))
@@ -103,9 +108,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
         Long userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
 
-        if (!file.getUploaderId().equals(userId)) {
-            throw new FileException("无权限删除该文件");
-        }
+        BizRequire.eq(file.getUploaderId(), userId, "无权限删除该文件");
 
         String fullPath = uploadPath + File.separator + file.getFilePath();
         if (!FileUtils.deleteFile(fullPath)) {
@@ -139,6 +142,24 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
         return files.stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Resource downloadFile(Long fileId) {
+        UploadFile file = getById(fileId);
+        BizRequire.notNull(file, "文件不存在");
+
+        String fullPath = uploadPath + File.separator + file.getFilePath();
+
+        if (!FileUtils.exists(fullPath)) {
+            log.error("文件不存在：fileId={}, fullPath={}", fileId, fullPath);
+            throw new FileException("文件不存在：" + file.getFileName());
+        }
+
+        String fileName = FileUtils.getFileName(file.getFilePath());
+        log.info("action=prepare_download, fileId={}, fileName={}", fileId, fileName);
+
+        return new FileSystemResource(fullPath);
     }
 
     private UploadFileVO convertToVO(UploadFile file) {

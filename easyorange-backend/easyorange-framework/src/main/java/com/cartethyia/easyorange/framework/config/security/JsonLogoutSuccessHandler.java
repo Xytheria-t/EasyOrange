@@ -1,30 +1,34 @@
-package com.cartethyia.easyorange.framework.config;
+package com.cartethyia.easyorange.framework.config.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.http.MediaType;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
-public class LogoutSuccessHandlerImpl implements LogoutSuccessHandler {
+@RequiredArgsConstructor
+public class JsonLogoutSuccessHandler implements LogoutSuccessHandler {
 
     private final ObjectMapper objectMapper;
 
-    public LogoutSuccessHandlerImpl(@Lazy ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
-
     @Override
-    public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response,
+    public void onLogoutSuccess(@NonNull HttpServletRequest request, HttpServletResponse response,
                                 org.springframework.security.core.Authentication authentication)
             throws IOException {
-        response.setStatus(200);
+        Long userId = SecurityContextUtil.getCurrentUserId().orElse(null);
+        log.info("action=logout_success, userId={}", userId);
+
+        response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("utf-8");
         objectMapper.writeValue(response.getOutputStream(), Result.success("退出成功"));

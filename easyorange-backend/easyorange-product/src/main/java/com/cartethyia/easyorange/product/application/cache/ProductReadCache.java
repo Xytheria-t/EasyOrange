@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.cache;
 
 import com.cartethyia.easyorange.common.constant.CacheConstants;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +31,7 @@ public class ProductReadCache {
     }
 
     public void evictAll(Long... productIds) {
-        if (productIds == null || productIds.length == 0) {
-            return;
-        }
+        BizRequire.notEmpty(productIds, "商品 ID 数组不能为空");
         for (Long productId : productIds) {
             evict(productId);
         }

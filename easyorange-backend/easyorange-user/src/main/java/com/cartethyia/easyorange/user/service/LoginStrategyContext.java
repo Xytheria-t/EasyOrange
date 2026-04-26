@@ -1,9 +1,8 @@
-package com.cartethyia.easyorange.user.service.strategy;
+package com.cartethyia.easyorange.user.service;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.user.dto.request.LoginDTO;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.service.LoginStrategyService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,14 +31,14 @@ public class LoginStrategyContext {
             }
         }
         strategyMap = Map.copyOf(strategyMap);
-        log.info("登录策略初始化完成，共注册 {} 种策略: {}",
+        log.info("登录策略初始化完成，共注册 {} 种策略：{}",
                 strategyMap.size(), strategyMap.keySet());
     }
 
     public LoginResponse login(LoginDTO loginDTO) {
         String clientType = loginDTO.getEffectiveClientType();
         LoginStrategyService strategy = strategyMap.get(clientType);
-        BizRequire.notNull(strategy, "不支持的客户端类型: " + clientType);
+        BizRequire.notNull(strategy, "不支持的客户端类型：" + clientType);
         return strategy.login(loginDTO);
     }
 }

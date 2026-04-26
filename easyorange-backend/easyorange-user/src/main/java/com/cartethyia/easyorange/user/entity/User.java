@@ -5,6 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.user.enums.LoginType;
+import com.cartethyia.easyorange.user.enums.Sex;
+import com.cartethyia.easyorange.user.enums.UserStatus;
+import com.cartethyia.easyorange.user.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,14 +22,13 @@ import java.time.LocalDateTime;
  * 用户实体类
  *
  * @author cartethyia
- * @date 2026/03/06
  */
+@TableName("sys_user")
 @SuperBuilder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
 @EqualsAndHashCode(callSuper = true)
-@TableName("sys_user")
 public class User extends BaseDO {
 
     /**
@@ -40,11 +43,8 @@ public class User extends BaseDO {
     @JsonIgnore
     private String password;
 
-    /**
-     * 用户类型：01-普通用户，02-管理员
-     */
     @TableField("user_type")
-    private String userType;
+    private UserType userType;
 
     private String email;
 
@@ -61,11 +61,11 @@ public class User extends BaseDO {
     private String nickName;
 
     @TableField("login_type")
-    private String loginType;
+    private LoginType loginType;
 
-    private String sex;
+    private Sex sex;
 
-    private String status;
+    private UserStatus status;
 
     @TableField("login_ip")
     private String loginIp;
@@ -75,6 +75,9 @@ public class User extends BaseDO {
 
     @TableField("pwd_update_date")
     private LocalDateTime pwdUpdateDate;
+
+    @TableField("avatar")
+    private String avatar;
 
     private String remark;
 }

@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.product.entity.ProductImage;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -14,4 +15,8 @@ public interface ProductImageService extends IService<ProductImage> {
     void deleteByProductId(Long productId);
 
     List<ProductImage> listByProductIds(List<Long> productIds);
+
+    String uploadProductImage(Long productId, MultipartFile image);
+
+    void deleteProductImageFile(String imageUrl);
 }

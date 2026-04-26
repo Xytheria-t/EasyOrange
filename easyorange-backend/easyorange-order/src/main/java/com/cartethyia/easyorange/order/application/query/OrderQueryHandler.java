@@ -63,20 +63,16 @@ public class OrderQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(QueryOrderRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
-        String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
-        PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
-        if (cachedResult != null) {
-            return cachedResult;
-        }
-
-        PageResult<OrderVO> result = queryOrdersByRole(request, userId, null);
-        orderCacheService.setOrderListCache(cacheKey, result);
-        return result;
+        return queryOrdersWithCache(request, userId, null);
     }
 
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(QueryOrderRequest request) {
+        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        return queryOrdersWithCache(request, null, userId);
+    }
+
+    private PageResult<OrderVO> queryOrdersWithCache(QueryOrderRequest request, Long buyerId, Long sellerId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
@@ -85,7 +81,7 @@ public class OrderQueryHandler {
             return cachedResult;
         }
 
-        PageResult<OrderVO> result = queryOrdersByRole(request, null, userId);
+        PageResult<OrderVO> result = queryOrdersByRole(request, buyerId, sellerId);
         orderCacheService.setOrderListCache(cacheKey, result);
         return result;
     }
@@ -145,8 +141,8 @@ public class OrderQueryHandler {
                 .amount(order.getAmount())
                 .status(order.getStatus())
                 .statusDesc(OrderStatus.getDescByCode(order.getStatus()))
-                .address(order.getAddress())
-                .phone(order.getPhone())
+                .address(MaskUtils.maskAddress(order.getAddress(), 6))
+                .phone(MaskUtils.maskPhone(order.getPhone()))
                 .remark(order.getRemark())
                 .createTime(order.getCreateTime())
                 .updateTime(order.getUpdateTime());

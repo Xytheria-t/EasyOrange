@@ -98,14 +98,49 @@ public class OrderCacheService {
             return;
         }
         
-        // 删除所有买家的订单缓存（不同状态）
+        deleteOrderCacheByRole(buyerId);
+    }
+
+    /**
+     * 删除卖家订单缓存（清除该卖家的所有订单列表缓存）
+     *
+     * @param sellerId 卖家 ID
+     */
+    public void deleteSellerOrderCache(Long sellerId) {
+        if (sellerId == null) {
+            return;
+        }
+        
+        deleteOrderCacheByRole(sellerId);
+    }
+
+    /**
+     * 删除订单缓存（同时清除买家和卖家的缓存）
+     *
+     * @param buyerId 买家 ID
+     * @param sellerId 卖家 ID
+     */
+    public void deleteOrderCache(Long buyerId, Long sellerId) {
+        if (buyerId != null) {
+            deleteBuyerOrderCache(buyerId);
+        }
+        if (sellerId != null) {
+            deleteSellerOrderCache(sellerId);
+        }
+    }
+
+    /**
+     * 按角色删除订单缓存（内部方法）
+     *
+     * @param roleId 角色 ID（买家或卖家）
+     */
+    private void deleteOrderCacheByRole(Long roleId) {
         for (int status = 0; status <= 5; status++) {
-            String cacheKey = buildOrderListKey(buyerId, status);
+            String cacheKey = buildOrderListKey(roleId, status);
             deleteOrderListCache(cacheKey);
         }
         
-        // 删除不分状态的缓存
-        deleteOrderListCache(buildOrderListKey(buyerId, null));
+        deleteOrderListCache(buildOrderListKey(roleId, null));
     }
 
     /**

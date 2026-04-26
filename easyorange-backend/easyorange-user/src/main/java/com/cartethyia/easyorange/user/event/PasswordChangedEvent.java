@@ -9,7 +9,7 @@ public class PasswordChangedEvent extends BaseDomainEvent {
     private final Long userId;
 
     public PasswordChangedEvent(Long userId) {
-        super(PasswordChangedEvent.class);
+        super(com.cartethyia.easyorange.user.entity.User.class);
         this.userId = userId;
     }
 

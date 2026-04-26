@@ -51,6 +51,10 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public List<SearchHistoryVO> getMySearchHistory(Integer limit) {
+        BizRequire.notNull(limit, "限制数量不能为空");
+        BizRequire.positive(limit, "限制数量必须为正数");
+        BizRequire.between(limit, 1, 100, "限制数量必须在 1-100 之间");
+        
         Long userId;
         try {
             userId = SecurityContextUtil.getCurrentUserIdOrThrow();
@@ -77,6 +81,9 @@ public class SearchServiceImpl implements SearchService {
     @Transactional
     public void deleteSearchHistory(Long historyId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        BizRequire.notNull(historyId, "搜索记录 ID 不能为空");
+        BizRequire.positive(historyId, "搜索记录 ID 必须为正数");
+        
         SearchHistory history = searchHistoryMapper.selectById(historyId);
         BizRequire.notNull(history, "搜索记录不存在");
         BizRequire.eq(history.getUserId(), userId, "无权操作此搜索记录");
@@ -85,11 +92,21 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public List<HotKeywordVO> getHotKeywords(Integer limit) {
+        BizRequire.notNull(limit, "限制数量不能为空");
+        BizRequire.positive(limit, "限制数量必须为正数");
+        BizRequire.between(limit, 1, 50, "限制数量必须在 1-50 之间");
+        
         return productQueryRepository.findHotKeywords(limit);
     }
 
     @Override
     public List<String> getSearchSuggestions(String keyword, Integer limit) {
+        BizRequire.notBlank(keyword, "搜索关键词不能为空");
+        BizRequire.notNull(limit, "限制数量不能为空");
+        BizRequire.positive(limit, "限制数量必须为正数");
+        BizRequire.between(limit, 1, 20, "限制数量必须在 1-20 之间");
+        BizRequire.isFalse(keyword.length() > 100, "搜索关键词不能超过 100 个字符");
+        
         return productQueryRepository.findSearchSuggestions(keyword, limit);
     }
 

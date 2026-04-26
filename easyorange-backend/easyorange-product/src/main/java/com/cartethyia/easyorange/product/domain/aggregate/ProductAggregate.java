@@ -68,14 +68,13 @@ public class ProductAggregate {
         }
 
         List<ProductImage> images = new ArrayList<>();
-        if (command.getImageUrls() != null && !command.getImageUrls().isEmpty()) {
-            for (int i = 0; i < command.getImageUrls().size(); i++) {
-                images.add(ProductImage.builder()
-                        .imageUrl(command.getImageUrls().get(i))
-                        .sortOrder(i)
-                        .isMain(i == 0 ? 1 : 0)
-                        .build());
-            }
+        BizRequire.notEmpty(command.getImageUrls(), "商品图片不能为空");
+        for (int i = 0; i < command.getImageUrls().size(); i++) {
+            images.add(ProductImage.builder()
+                    .imageUrl(command.getImageUrls().get(i))
+                    .sortOrder(i)
+                    .isMain(i == 0 ? 1 : 0)
+                    .build());
         }
 
         ProductAggregate aggregate = ProductAggregate.builder()

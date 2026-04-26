@@ -14,7 +14,7 @@ public record AuthUser(
 ) {
 
     public AuthUser {
-        roles = roles == null ? Collections.emptySet() : Collections.unmodifiableSet(roles);
-        permissions = permissions == null ? Collections.emptySet() : Collections.unmodifiableSet(permissions);
+        roles = roles == null || roles.isEmpty() ? Collections.emptySet() : Collections.unmodifiableSet(Set.copyOf(roles));
+        permissions = permissions == null || permissions.isEmpty() ? Collections.emptySet() : Collections.unmodifiableSet(Set.copyOf(permissions));
     }
 }

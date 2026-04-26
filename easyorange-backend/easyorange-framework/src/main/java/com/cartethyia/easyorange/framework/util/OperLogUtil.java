@@ -1,5 +1,9 @@
 package com.cartethyia.easyorange.framework.util;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * 操作日志工具类
  * 提供方法名推导操作标题、模块名称映射、字符串截断等功能
@@ -12,50 +16,84 @@ public final class OperLogUtil {
         throw new IllegalStateException("Utility class");
     }
 
-    /**
-     * 方法名前缀到操作标题的映射
-     */
-    private static final String[][] METHOD_PREFIX_MAPPING = {
-            {"create", "创建"}, {"add", "新增"}, {"save", "保存"},
-            {"update", "更新"}, {"edit", "编辑"}, {"modify", "修改"},
-            {"delete", "删除"}, {"remove", "删除"},
-            {"import", "导入"}, {"export", "导出"},
-            {"approve", "审批"}, {"reject", "驳回"},
-            {"process", "处理"}, {"upload", "上传"},
-            {"download", "下载"}, {"login", "登录"},
-            {"logout", "登出"}, {"register", "注册"},
-            {"reset", "重置"}, {"change", "修改"},
-            {"cancel", "取消"}, {"confirm", "确认"},
-            {"submit", "提交"}, {"audit", "审核"},
-            {"assign", "分配"}, {"unbind", "解绑"},
-            {"bind", "绑定"}, {"mark", "标记"},
-            {"report", "举报"}, {"handle", "处理"},
-            {"send", "发送"}, {"publish", "发布"},
-            {"batch", "批量操作"}, {"sync", "同步"},
-            {"refresh", "刷新"}, {"clear", "清空"},
-            {"recover", "恢复"}, {"archive", "归档"}
-    };
+    private static final List<Map.Entry<String, String>> METHOD_PREFIX_LIST;
+    private static final List<Map.Entry<String, String>> CONTROLLER_MODULE_LIST;
 
-    /**
-     * Controller 类名到模块名称的映射
-     */
-    private static final String[][] CONTROLLER_MODULE_MAPPING = {
-            {"Product", "商品管理"}, {"ProductReport", "商品举报"},
-            {"User", "用户管理"}, {"Auth", "认证管理"},
-            {"Order", "订单管理"}, {"OrderCommand", "订单管理"},
-            {"OrderQuery", "订单管理"},
-            {"Message", "消息管理"}, {"MessageCommand", "消息管理"},
-            {"MessageQuery", "消息管理"},
-            {"Payment", "支付管理"}, {"PaymentCommand", "支付管理"},
-            {"PaymentQuery", "支付管理"},
-            {"File", "文件管理"},
-            {"Search", "搜索管理"},
-            {"Health", "系统健康"},
-            {"Menu", "菜单管理"}, {"Role", "角色管理"},
-            {"Dept", "部门管理"}, {"Dict", "字典管理"},
-            {"Config", "配置管理"}, {"Notice", "通知公告"},
-            {"LoginLog", "登录日志"}, {"OperLog", "操作日志"}
-    };
+    static {
+        Map<String, String> methodPrefixMap = new HashMap<>();
+        methodPrefixMap.put("create", "创建");
+        methodPrefixMap.put("add", "新增");
+        methodPrefixMap.put("save", "保存");
+        methodPrefixMap.put("update", "更新");
+        methodPrefixMap.put("edit", "编辑");
+        methodPrefixMap.put("modify", "修改");
+        methodPrefixMap.put("delete", "删除");
+        methodPrefixMap.put("remove", "删除");
+        methodPrefixMap.put("import", "导入");
+        methodPrefixMap.put("export", "导出");
+        methodPrefixMap.put("approve", "审批");
+        methodPrefixMap.put("reject", "驳回");
+        methodPrefixMap.put("process", "处理");
+        methodPrefixMap.put("upload", "上传");
+        methodPrefixMap.put("download", "下载");
+        methodPrefixMap.put("login", "登录");
+        methodPrefixMap.put("logout", "登出");
+        methodPrefixMap.put("register", "注册");
+        methodPrefixMap.put("reset", "重置");
+        methodPrefixMap.put("change", "修改");
+        methodPrefixMap.put("cancel", "取消");
+        methodPrefixMap.put("confirm", "确认");
+        methodPrefixMap.put("submit", "提交");
+        methodPrefixMap.put("audit", "审核");
+        methodPrefixMap.put("assign", "分配");
+        methodPrefixMap.put("unbind", "解绑");
+        methodPrefixMap.put("bind", "绑定");
+        methodPrefixMap.put("mark", "标记");
+        methodPrefixMap.put("report", "举报");
+        methodPrefixMap.put("handle", "处理");
+        methodPrefixMap.put("send", "发送");
+        methodPrefixMap.put("publish", "发布");
+        methodPrefixMap.put("batch", "批量操作");
+        methodPrefixMap.put("sync", "同步");
+        methodPrefixMap.put("refresh", "刷新");
+        methodPrefixMap.put("clear", "清空");
+        methodPrefixMap.put("recover", "恢复");
+        methodPrefixMap.put("archive", "归档");
+
+        METHOD_PREFIX_LIST = methodPrefixMap.entrySet().stream()
+                .sorted((a, b) -> b.getKey().length() - a.getKey().length())
+                .toList();
+
+        Map<String, String> controllerModuleMap = new HashMap<>();
+        controllerModuleMap.put("ProductReport", "商品举报");
+        controllerModuleMap.put("Product", "商品管理");
+        controllerModuleMap.put("User", "用户管理");
+        controllerModuleMap.put("Auth", "认证管理");
+        controllerModuleMap.put("OrderCommand", "订单管理");
+        controllerModuleMap.put("OrderQuery", "订单管理");
+        controllerModuleMap.put("Order", "订单管理");
+        controllerModuleMap.put("MessageCommand", "消息管理");
+        controllerModuleMap.put("MessageQuery", "消息管理");
+        controllerModuleMap.put("Message", "消息管理");
+        controllerModuleMap.put("PaymentCommand", "支付管理");
+        controllerModuleMap.put("PaymentQuery", "支付管理");
+        controllerModuleMap.put("Payment", "支付管理");
+        controllerModuleMap.put("File", "文件管理");
+        controllerModuleMap.put("Search", "搜索管理");
+        controllerModuleMap.put("Health", "系统健康");
+        controllerModuleMap.put("Menu", "菜单管理");
+        controllerModuleMap.put("Role", "角色管理");
+        controllerModuleMap.put("Dept", "部门管理");
+        controllerModuleMap.put("Dict", "字典管理");
+        controllerModuleMap.put("Config", "配置管理");
+        controllerModuleMap.put("Notice", "通知公告");
+        controllerModuleMap.put("LoginLog", "登录日志");
+        controllerModuleMap.put("OperLog", "操作日志");
+
+        CONTROLLER_MODULE_LIST = controllerModuleMap.entrySet().stream()
+                .sorted((a, b) -> b.getKey().length() - a.getKey().length())
+                .toList();
+    }
 
     /**
      * 从方法名推导操作标题
@@ -72,9 +110,9 @@ public final class OperLogUtil {
             return methodName;
         }
 
-        for (String[] mapping : METHOD_PREFIX_MAPPING) {
-            if (methodName.startsWith(mapping[0])) {
-                return mapping[1];
+        for (Map.Entry<String, String> entry : METHOD_PREFIX_LIST) {
+            if (methodName.startsWith(entry.getKey())) {
+                return entry.getValue();
             }
         }
 
@@ -100,14 +138,16 @@ public final class OperLogUtil {
                 .replace("Command", "")
                 .replace("Query", "");
 
-        for (String[] mapping : CONTROLLER_MODULE_MAPPING) {
-            if (name.contains(mapping[0])) {
-                return mapping[1];
+        for (Map.Entry<String, String> entry : CONTROLLER_MODULE_LIST) {
+            if (name.contains(entry.getKey())) {
+                return entry.getValue();
             }
         }
 
         return name;
     }
+
+    private static final String TRUNCATE_SUFFIX = "...(已截断)";
 
     /**
      * 截断字符串到指定长度
@@ -117,9 +157,20 @@ public final class OperLogUtil {
      * @return 截断后的字符串
      */
     public static String truncate(String str, int maxLength) {
-        if (str == null || str.length() <= maxLength) {
+        if (str == null) {
+            return null;
+        }
+        if (maxLength < 0) {
+            throw new IllegalArgumentException("maxLength must be non-negative, actual: " + maxLength);
+        }
+        if (str.length() <= maxLength) {
             return str;
         }
-        return str.substring(0, maxLength) + "...(已截断)";
+
+        int truncateLength = maxLength - TRUNCATE_SUFFIX.length();
+        if (truncateLength <= 0) {
+            return str.substring(0, maxLength);
+        }
+        return str.substring(0, truncateLength) + TRUNCATE_SUFFIX;
     }
 }

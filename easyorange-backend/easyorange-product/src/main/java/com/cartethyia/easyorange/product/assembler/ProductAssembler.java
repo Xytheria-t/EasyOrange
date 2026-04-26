@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.assembler;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.product.constant.ProductConstants;
 import com.cartethyia.easyorange.product.dto.vo.SellerInfo;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
@@ -55,8 +56,8 @@ public class ProductAssembler {
                 .status(product.getStatus())
                 .views(product.getViewCount())
                 .condition(product.getConditionLevel())
-                .location(product.getLocation())
-                .contactMethod(product.getContactMethod())
+                .location(MaskUtils.maskAddress(product.getLocation(), 6))
+                .contactMethod(MaskUtils.maskPhone(product.getContactMethod()))
                 .createTime(product.getCreateTime())
                 .updateTime(product.getUpdateTime());
 

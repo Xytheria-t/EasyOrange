@@ -6,11 +6,12 @@ import com.cartethyia.easyorange.common.enums.LimitType;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.config.JwtProperties;
+import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.user.dto.request.LoginDTO;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.service.strategy.LoginStrategyContext;
+import com.cartethyia.easyorange.user.service.LoginStrategyContext;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,8 +41,14 @@ public class AuthController {
             return Result.success();
         }
         BizRequire.isTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
-        log.info("action=logout");
+        
+        Long userId = SecurityContextUtil.getCurrentUserId().orElse(null);
+        log.info("action=logout, userId={}", userId);
+        
         tokenService.delToken(extractToken(authHeader));
+        
+        SecurityContextUtil.clearContext();
+        
         return Result.success();
     }
 

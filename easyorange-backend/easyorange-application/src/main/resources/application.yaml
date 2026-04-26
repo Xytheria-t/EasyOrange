@@ -65,6 +65,7 @@ server:
   shutdown: graceful
   servlet:
     context-path: /
+  trusted-proxies: ${SERVER_TRUSTED_PROXIES:127.0.0.1,localhost,0:0:0:0:0:0:0:1}
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
@@ -76,6 +77,14 @@ mybatis-plus:
       logic-delete-field: delFlag
       logic-delete-value: 2
       logic-not-delete-value: 0
+  pagination:
+    enabled: true
+    db-type: mysql
+    max-limit: 100
+    overflow: false
+    optimize-join: true
+  optimistic-lock:
+    enabled: true
 
 logging:
   level:
@@ -90,6 +99,19 @@ thread-pool:
   queue-capacity: 100
   keep-alive-seconds: 60
   thread-name-prefix: async-
+
+webmvc:
+  exclude-paths:
+    - /static/**
+    - /public/**
+    - /upload/**
+    - /favicon.ico
+    - /error
+    - /actuator/**
+  skip-logging-paths:
+    - /api/health
+    - /actuator/**
+  interceptor-order: 0
 
 security:
   ignore-paths:

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.service;
 
 import com.cartethyia.easyorange.common.constant.CacheConstants;
-import com.cartethyia.easyorange.framework.config.JwtProperties;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class TokenService {
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
 
-    public String createToken(Long userId, String username) {
+    public String createToken(Long userId, String username, String userType) {
         String uuid = UUID.randomUUID().toString().replace("-", "");
 
         String userKey = getTokenKey(uuid);
@@ -33,7 +33,14 @@ public class TokenService {
         if (username != null) {
             claims.put("username", username);
         }
+        if (userType != null) {
+            claims.put("userType", userType);
+        }
         return jwtUtil.generateToken(userId.toString(), claims);
+    }
+
+    public String createToken(Long userId, String username) {
+        return createToken(userId, username, null);
     }
 
     @Deprecated(since = "use verifyTokenAndGetUserId instead")
@@ -110,8 +117,9 @@ public class TokenService {
             return null;
         }
         String username = jwtUtil.getClaim(token, "username", String.class).orElse(null);
+        String userType = jwtUtil.getClaim(token, "userType", String.class).orElse(null);
         delToken(token);
-        return createToken(userId, username);
+        return createToken(userId, username, userType);
     }
 
     private String getTokenKey(String uuid) {

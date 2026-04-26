@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.framework.filter;
 import com.cartethyia.easyorange.common.constant.CacheConstants;
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.util.RequestUtil;
-import com.cartethyia.easyorange.framework.config.JwtProperties;
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;

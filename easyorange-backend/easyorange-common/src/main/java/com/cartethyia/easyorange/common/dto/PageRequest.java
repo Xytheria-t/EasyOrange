@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.common.dto;
 
+import com.cartethyia.easyorange.common.util.BizRequire;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -46,6 +47,8 @@ public class PageRequest {
     public PageRequest normalized() {
         int normalizedPageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;
         int normalizedPageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
+        BizRequire.between(normalizedPageNum, 1, Integer.MAX_VALUE, "页码必须在有效范围内");
+        BizRequire.between(normalizedPageSize, 1, MAX_PAGE_SIZE, "每页条数必须在 1-100 之间");
         return PageRequest.builder()
                 .pageNum(normalizedPageNum)
                 .pageSize(normalizedPageSize)

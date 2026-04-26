@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.redis;
 
+import com.cartethyia.easyorange.common.util.BizRequire;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -190,11 +191,10 @@ public class RedisCache {
     }
 
     public <T> void multiSet(Map<String, T> map) {
-        if (map != null && !map.isEmpty()) {
-            Map<String, Object> prefixedMap = new HashMap<>();
-            map.forEach((key, value) -> prefixedMap.put(generateKey(key), value));
-            redisTemplate.opsForValue().multiSet(prefixedMap);
-        }
+        BizRequire.notEmpty(map, "批量缓存数据不能为空");
+        Map<String, Object> prefixedMap = new HashMap<>();
+        map.forEach((key, value) -> prefixedMap.put(generateKey(key), value));
+        redisTemplate.opsForValue().multiSet(prefixedMap);
     }
 
     public Long multiDelete(Collection<String> keys) {
@@ -237,11 +237,10 @@ public class RedisCache {
     }
 
     public <T> void hashPutAll(String key, Map<String, T> map) {
-        if (map != null && !map.isEmpty()) {
-            Map<String, Object> convertedMap = new HashMap<>();
-            map.forEach(convertedMap::put);
-            redisTemplate.opsForHash().putAll(generateKey(key), convertedMap);
-        }
+        BizRequire.notEmpty(map, "缓存数据不能为空");
+        Map<String, Object> convertedMap = new HashMap<>();
+        map.forEach(convertedMap::put);
+        redisTemplate.opsForHash().putAll(generateKey(key), convertedMap);
     }
 
     @SuppressWarnings("unchecked")
@@ -302,9 +301,7 @@ public class RedisCache {
 
     @SafeVarargs
     public final <T> Boolean setAdd(String key, T... values) {
-        if (values == null || values.length == 0) {
-            return false;
-        }
+        BizRequire.notEmpty(values, "添加的值不能为空");
         return redisTemplate.opsForSet().add(generateKey(key), values) != null;
     }
 
@@ -318,9 +315,7 @@ public class RedisCache {
     }
 
     public Long setRemove(String key, Object... values) {
-        if (values == null || values.length == 0) {
-            return 0L;
-        }
+        BizRequire.notEmpty(values, "删除的值不能为空");
         return redisTemplate.opsForSet().remove(generateKey(key), values);
     }
 
@@ -349,9 +344,7 @@ public class RedisCache {
     }
 
     public Long zsetRemove(String key, Object... values) {
-        if (values == null || values.length == 0) {
-            return 0L;
-        }
+        BizRequire.notEmpty(values, "删除的值不能为空");
         return redisTemplate.opsForZSet().remove(generateKey(key), values);
     }
 

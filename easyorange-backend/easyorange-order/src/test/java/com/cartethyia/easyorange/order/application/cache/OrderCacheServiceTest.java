@@ -124,4 +124,101 @@ class OrderCacheServiceTest {
 
         verify(valueOperations, never()).set(any(), any(), any(Long.class), any(TimeUnit.class));
     }
+
+    @Test
+    @DisplayName("删除买家订单缓存")
+    void testDeleteBuyerOrderCache() {
+        Long buyerId = 123456L;
+
+        orderCacheService.deleteBuyerOrderCache(buyerId);
+
+        for (int status = 0; status <= 5; status++) {
+            String expectedKey = "order:list:" + buyerId + ":" + status;
+            verify(redisTemplate).delete(expectedKey);
+        }
+
+        String expectedAllKey = "order:list:" + buyerId + ":all";
+        verify(redisTemplate).delete(expectedAllKey);
+    }
+
+    @Test
+    @DisplayName("删除卖家订单缓存")
+    void testDeleteSellerOrderCache() {
+        Long sellerId = 789012L;
+
+        orderCacheService.deleteSellerOrderCache(sellerId);
+
+        for (int status = 0; status <= 5; status++) {
+            String expectedKey = "order:list:" + sellerId + ":" + status;
+            verify(redisTemplate).delete(expectedKey);
+        }
+
+        String expectedAllKey = "order:list:" + sellerId + ":all";
+        verify(redisTemplate).delete(expectedAllKey);
+    }
+
+    @Test
+    @DisplayName("删除订单缓存同时清除买家和卖家缓存")
+    void testDeleteOrderCache() {
+        Long buyerId = 111222L;
+        Long sellerId = 333444L;
+
+        orderCacheService.deleteOrderCache(buyerId, sellerId);
+
+        for (int status = 0; status <= 5; status++) {
+            String expectedBuyerKey = "order:list:" + buyerId + ":" + status;
+            String expectedSellerKey = "order:list:" + sellerId + ":" + status;
+            verify(redisTemplate).delete(expectedBuyerKey);
+            verify(redisTemplate).delete(expectedSellerKey);
+        }
+
+        String expectedBuyerAllKey = "order:list:" + buyerId + ":all";
+        String expectedSellerAllKey = "order:list:" + sellerId + ":all";
+        verify(redisTemplate).delete(expectedBuyerAllKey);
+        verify(redisTemplate).delete(expectedSellerAllKey);
+    }
+
+    @Test
+    @DisplayName("删除订单缓存时买家 ID 为 null")
+    void testDeleteOrderCacheWithNullBuyerId() {
+        Long sellerId = 555666L;
+
+        orderCacheService.deleteOrderCache(null, sellerId);
+
+        for (int status = 0; status <= 5; status++) {
+            String expectedSellerKey = "order:list:" + sellerId + ":" + status;
+            verify(redisTemplate).delete(expectedSellerKey);
+        }
+
+        String expectedSellerAllKey = "order:list:" + sellerId + ":all";
+        verify(redisTemplate).delete(expectedSellerAllKey);
+
+        verifyNoMoreInteractions(redisTemplate);
+    }
+
+    @Test
+    @DisplayName("删除订单缓存时卖家 ID 为 null")
+    void testDeleteOrderCacheWithNullSellerId() {
+        Long buyerId = 777888L;
+
+        orderCacheService.deleteOrderCache(buyerId, null);
+
+        for (int status = 0; status <= 5; status++) {
+            String expectedBuyerKey = "order:list:" + buyerId + ":" + status;
+            verify(redisTemplate).delete(expectedBuyerKey);
+        }
+
+        String expectedBuyerAllKey = "order:list:" + buyerId + ":all";
+        verify(redisTemplate).delete(expectedBuyerAllKey);
+
+        verifyNoMoreInteractions(redisTemplate);
+    }
+
+    @Test
+    @DisplayName("null ID 不执行删除操作")
+    void testDeleteOrderCacheWithNullIds() {
+        orderCacheService.deleteOrderCache(null, null);
+
+        verify(redisTemplate, never()).delete(anyString());
+    }
 }

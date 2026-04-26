@@ -5,7 +5,7 @@
 
 INSERT INTO `sys_user` (
     `user_id`, `username`, `password`, `user_type`, `nick_name`,
-    `login_type`, `status`, `del_flag`, `create_time`, `update_time`
+    `login_type`, `sex`, `status`, `del_flag`, `create_time`, `update_time`
 ) VALUES (
     1,
     'testuser',
@@ -13,6 +13,7 @@ INSERT INTO `sys_user` (
     '01',
     '测试用户',
     'web',
+    '0',
     '0',
     0,
     NOW(),

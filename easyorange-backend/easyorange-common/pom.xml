@@ -29,16 +29,10 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
-        <!-- Jackson - JSON 处理 -->
+        <!-- Jackson 3 - JSON 处理（内置 Java 8 时间类型支持） -->
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-
-        <!-- Jackson JSR310 - Java 8 时间类型支持 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
 
         <!-- Servlet API -->
