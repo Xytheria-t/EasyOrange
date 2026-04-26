@@ -11,19 +11,17 @@ import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.user.dto.request.LoginDTO;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.service.LoginStrategyContext;
+import com.cartethyia.easyorange.user.service.strategy.LoginDispatcher;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final LoginStrategyContext loginStrategyContext;
+    private final LoginDispatcher loginDispatcher;
     private final TokenService tokenService;
     private final JwtProperties jwtProperties;
 
@@ -31,7 +29,7 @@ public class AuthController {
     @RepeatSubmit(interval = 5000, message = "请勿重复提交登录请求")
     @PostMapping("/login")
     public Result<LoginResponse> login(@Valid @RequestBody LoginDTO loginDTO) {
-        return Result.success(loginStrategyContext.login(loginDTO));
+        return Result.success(loginDispatcher.login(loginDTO));
     }
 
     @RepeatSubmit(interval = 3000, message = "请勿重复提交")
@@ -41,10 +39,7 @@ public class AuthController {
             return Result.success();
         }
         BizRequire.isTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
-        
-        Long userId = SecurityContextUtil.getCurrentUserId().orElse(null);
-        log.info("action=logout, userId={}", userId);
-        
+
         tokenService.delToken(extractToken(authHeader));
         
         SecurityContextUtil.clearContext();

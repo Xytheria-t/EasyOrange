@@ -8,12 +8,12 @@ import com.cartethyia.easyorange.user.dto.request.LoginDTO;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.enums.ClientType;
+import com.cartethyia.easyorange.user.enums.LoginMethod;
 import com.cartethyia.easyorange.user.enums.UserStatus;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
 import com.cartethyia.easyorange.user.service.LoginSecurityService;
-import com.cartethyia.easyorange.user.service.LoginStrategyService;
 import com.cartethyia.easyorange.user.service.UserQueryService;
+import com.cartethyia.easyorange.user.service.strategy.LoginStrategy;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class WebLoginServiceImpl implements LoginStrategyService {
+public class PasswordLoginStrategy implements LoginStrategy {
 
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
@@ -44,9 +44,12 @@ public class WebLoginServiceImpl implements LoginStrategyService {
         loginSecurityService.checkLoginAttempts(account);
 
         User user = userQueryService.findUserByAccount(account);
-        BizRequire.notNull(user, "用户不存在");
+        if (user == null) {
+            loginSecurityService.recordFailedAttempt(account);
+            BizRequire.fail("账号或密码错误");
+        }
 
-        validateUserStatus(user);
+        validateUserStatus(user, account);
 
         verifyPassword(password, user, account);
 
@@ -61,20 +64,19 @@ public class WebLoginServiceImpl implements LoginStrategyService {
         return buildLoginResponse(user, token);
     }
 
-    private void validateUserStatus(User user) {
+    private void validateUserStatus(User user, String account) {
         UserStatus status = user.getStatus();
-        if (status == UserStatus.DISABLED) {
-            throw BusinessException.of("账号已被禁用");
-        }
-        if (status == UserStatus.LOCKED) {
-            throw BusinessException.of("账号已被锁定");
+        switch (status) {
+            case DISABLED -> throw BusinessException.of("账号或密码错误");
+            case LOCKED -> throw BusinessException.of("账号或密码错误");
+            case NORMAL -> {}
         }
     }
 
     private void verifyPassword(String password, User user, String account) {
         if (!passwordEncoder.matches(password, user.getPassword())) {
             loginSecurityService.recordFailedAttempt(account);
-            BizRequire.fail("密码错误");
+            BizRequire.fail("账号或密码错误");
         }
     }
 
@@ -103,7 +105,7 @@ public class WebLoginServiceImpl implements LoginStrategyService {
     }
 
     @Override
-    public String[] supportedClientTypes() {
-        return new String[]{ClientType.WEB.getValue()};
+    public LoginMethod supportedLoginMethod() {
+        return LoginMethod.PASSWORD;
     }
 }

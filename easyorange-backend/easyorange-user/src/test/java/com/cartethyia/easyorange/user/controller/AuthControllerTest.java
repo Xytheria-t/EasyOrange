@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
-import com.cartethyia.easyorange.user.service.LoginStrategyContext;
+import com.cartethyia.easyorange.user.service.strategy.LoginDispatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 class AuthControllerTest {
 
     @Mock
-    private LoginStrategyContext loginStrategyContext;
+    private LoginDispatcher loginDispatcher;
 
     @Mock
     private TokenService tokenService;
@@ -51,7 +51,7 @@ class AuthControllerTest {
                 .user(userInfo)
                 .build();
 
-        given(loginStrategyContext.login(any(LoginDTO.class))).willReturn(mockResponse);
+        given(loginDispatcher.login(any(LoginDTO.class))).willReturn(mockResponse);
 
         // When
         var result = authController.login(loginDTO);
@@ -61,7 +61,7 @@ class AuthControllerTest {
         assertEquals("A0000", result.code());
         assertEquals("mock-jwt-token", result.data().getToken());
         assertEquals("testuser", result.data().getUser().getUsername());
-        verify(loginStrategyContext, times(1)).login(any(LoginDTO.class));
+        verify(loginDispatcher, times(1)).login(any(LoginDTO.class));
     }
 
     @Test
