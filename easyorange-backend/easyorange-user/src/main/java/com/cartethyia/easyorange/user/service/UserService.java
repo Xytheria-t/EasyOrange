@@ -2,12 +2,13 @@ package com.cartethyia.easyorange.user.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.user.dto.bo.*;
+import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
 
 public interface UserService extends IService<User> {
 
-    UserVO getUserInfo();
+    UserProfileVO getUserInfo();
 
     Long register(RegisterBo bo);
 

@@ -5,14 +5,13 @@
 
 INSERT INTO `sys_user` (
     `user_id`, `username`, `password`, `user_type`, `nick_name`,
-    `login_type`, `sex`, `status`, `del_flag`, `create_time`, `update_time`
+    `sex`, `status`, `del_flag`, `create_time`, `update_time`
 ) VALUES (
     1,
     'testuser',
     '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5E',
     '01',
     '测试用户',
-    'web',
     '0',
     '0',
     0,
@@ -21,7 +20,6 @@ INSERT INTO `sys_user` (
 ) AS new
 ON DUPLICATE KEY UPDATE
     `nick_name` = new.`nick_name`,
-    `login_type` = new.`login_type`,
     `status` = new.`status`,
     `del_flag` = new.`del_flag`,
     `update_time` = new.`update_time`;

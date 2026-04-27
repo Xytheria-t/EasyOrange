@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.user.service.strategy;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.user.dto.request.LoginDTO;
+import com.cartethyia.easyorange.user.dto.request.LoginRequest;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.enums.ClientType;
 import com.cartethyia.easyorange.user.enums.LoginMethod;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +40,17 @@ public class LoginDispatcher {
                         .collect(Collectors.joining(", ")));
     }
 
-    public LoginResponse login(LoginDTO loginDTO) {
-        LoginMethod loginMethod = loginDTO.getEffectiveLoginMethod();
+    public LoginResponse login(LoginRequest loginRequest) {
+        LoginMethod loginMethod = loginRequest.getEffectiveLoginMethod();
+        ClientType clientType = loginRequest.getEffectiveClientType();
+
         LoginStrategy strategy = strategyMap.get(loginMethod);
         BizRequire.notNull(strategy, "不支持的登录方式：" + loginMethod);
-        return strategy.login(loginDTO);
+
+        if (!strategy.supportedClientTypes().contains(clientType)) {
+            BizRequire.fail("登录方式 '" + loginMethod + "' 不支持 '" + clientType + "' 平台");
+        }
+
+        return strategy.login(loginRequest);
     }
 }

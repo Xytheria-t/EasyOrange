@@ -16,7 +16,6 @@ CREATE TABLE `sys_user` (
     `real_name` VARCHAR(30) DEFAULT NULL COMMENT '真实姓名',
     `nick_name` VARCHAR(30) DEFAULT NULL COMMENT '用户昵称',
     `avatar` VARCHAR(500) DEFAULT NULL COMMENT '头像 URL',
-    `login_type` VARCHAR(20) DEFAULT NULL COMMENT '登录类型',
     `sex` VARCHAR(1) NOT NULL DEFAULT '0' COMMENT '用户性别（0 未知 1 男 2 女）',
     `status` VARCHAR(1) NOT NULL DEFAULT '0' COMMENT '帐号状态（0 正常 1 禁用 2 锁定）',
     `login_ip` VARCHAR(128) DEFAULT NULL COMMENT '最后登录 IP',
@@ -35,7 +34,6 @@ CREATE TABLE `sys_user` (
     UNIQUE KEY `uk_sys_user_phone` (`phonenumber`),
     UNIQUE KEY `uk_sys_user_student_id` (`student_id`),
     KEY `idx_sys_user_status` (`status`),
-    KEY `idx_sys_user_login_type` (`login_type`),
     KEY `idx_sys_user_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
 

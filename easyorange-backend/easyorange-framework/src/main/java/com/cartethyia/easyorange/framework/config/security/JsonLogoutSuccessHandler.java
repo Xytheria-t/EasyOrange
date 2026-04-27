@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.config.security;
 
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

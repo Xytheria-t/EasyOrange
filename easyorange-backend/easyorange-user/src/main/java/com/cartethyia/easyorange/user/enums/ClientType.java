@@ -1,24 +1,22 @@
 package com.cartethyia.easyorange.user.enums;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum ClientType {
-    WEB("web");
+    WEB("web", "网页端");
 
-    private final String value;
+    private final String code;
+    private final String description;
 
-    ClientType(String value) {
-        this.value = value;
-    }
-
-    public String getValue() {
-        return value;
-    }
-
-    public static ClientType fromValue(String value) {
-        if (value == null) {
+    public static ClientType fromCode(String code) {
+        if (code == null) {
             return WEB;
         }
         for (ClientType type : values()) {
-            if (type.value.equals(value)) {
+            if (type.code.equals(code)) {
                 return type;
             }
         }

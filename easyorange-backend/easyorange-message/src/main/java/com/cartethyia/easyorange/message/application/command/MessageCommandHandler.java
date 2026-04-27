@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;

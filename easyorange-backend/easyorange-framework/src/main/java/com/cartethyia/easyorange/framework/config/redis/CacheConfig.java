@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
-import com.cartethyia.easyorange.common.constant.CacheConstants;
+import com.cartethyia.easyorange.framework.constant.CategoryCacheConstants;
+import com.cartethyia.easyorange.framework.constant.ProductCacheConstants;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
@@ -51,8 +52,8 @@ public class CacheConfig {
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigs = Map.of(
-                CacheConstants.Product.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CacheConstants.Product.LIST_EXPIRE_TIME)),
-                CacheConstants.Category.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CacheConstants.Category.INFO_EXPIRE_TIME))
+                ProductCacheConstants.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(ProductCacheConstants.LIST_EXPIRE_TIME)),
+                CategoryCacheConstants.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CategoryCacheConstants.INFO_EXPIRE_TIME))
         );
 
         return RedisCacheManager.builder(connectionFactory)

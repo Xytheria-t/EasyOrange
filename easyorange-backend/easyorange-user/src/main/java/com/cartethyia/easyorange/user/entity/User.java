@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
-import com.cartethyia.easyorange.user.enums.LoginType;
 import com.cartethyia.easyorange.user.enums.Sex;
 import com.cartethyia.easyorange.user.enums.UserStatus;
 import com.cartethyia.easyorange.user.enums.UserType;
@@ -59,9 +58,6 @@ public class User extends BaseDO {
 
     @TableField("nick_name")
     private String nickName;
-
-    @TableField("login_type")
-    private LoginType loginType;
 
     private Sex sex;
 

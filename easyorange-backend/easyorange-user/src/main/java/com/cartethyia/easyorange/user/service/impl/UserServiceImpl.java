@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.FileUtils;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.user.converter.UserConverter;
 import com.cartethyia.easyorange.user.dto.bo.*;
+import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.event.annotation.PublishEvent;
@@ -38,8 +40,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private String avatarUploadPath;
 
     @Override
-    public UserVO getUserInfo() {
-        return userConverter.toVo(getCurrentUserOrThrow());
+    public UserProfileVO getUserInfo() {
+        AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
+        User user = getById(authUser.userId());
+        BizRequire.notNull(user, "用户不存在");
+        return UserProfileVO.from(user, authUser.roles(), authUser.permissions(), authUser.loginTime());
     }
 
     @Override

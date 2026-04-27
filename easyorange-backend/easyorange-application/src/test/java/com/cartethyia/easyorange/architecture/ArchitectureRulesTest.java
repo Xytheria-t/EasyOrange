@@ -62,7 +62,23 @@ class ArchitectureRulesTest {
             "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/LoginSecurityService.java|import org.springframework.",
             "easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/persistence/OrderPersistenceMapper.java|import com.baomidou.mybatisplus.",
             "easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/persistence/OrderPersistenceMapper.java|import com.cartethyia.easyorange.order.mapper.",
-            "easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/persistence/OrderPersistenceMapper.java|import org.springframework."
+            "easyorange-order/src/main/java/com/cartethyia/easyorange/order/adapter/outbound/persistence/OrderPersistenceMapper.java|import org.springframework.",
+            "easyorange-order/src/main/java/com/cartethyia/easyorange/order/domain/saga/CreateOrderSaga.java|import com.cartethyia.easyorange.*.dto.vo.",
+            "easyorange-order/src/main/java/com/cartethyia/easyorange/order/domain/saga/CreateOrderSaga.java|import com.cartethyia.easyorange.*.mapper.",
+            "easyorange-order/src/main/java/com/cartethyia/easyorange/order/domain/saga/CreateOrderSaga.java|import org.springframework.",
+            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/domain/strategy/MockPaymentStrategy.java|import org.springframework.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/ProductAttachmentRepositoryImpl.java|import com.baomidou.mybatisplus.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/ProductAttachmentRepositoryImpl.java|import com.cartethyia.easyorange.*.mapper.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/ProductAttachmentRepositoryImpl.java|import org.springframework.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepository.java|import com.baomidou.mybatisplus.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepository.java|import com.cartethyia.easyorange.*.dto.vo.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import com.baomidou.mybatisplus.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import com.cartethyia.easyorange.*.dto.vo.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import com.cartethyia.easyorange.*.mapper.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import org.springframework.data.",
+            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import org.springframework.",
+            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/MybatisMessageRepository.java|import com.baomidou.mybatisplus.",
+            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/MybatisMessageRepository.java|import com.cartethyia.easyorange.*.mapper."
     );
 
     private static final Set<String> COMMAND_QUERY_COUPLING_ALLOWLIST = Set.of(

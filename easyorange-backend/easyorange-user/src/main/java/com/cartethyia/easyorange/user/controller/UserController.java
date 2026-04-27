@@ -2,17 +2,17 @@ package com.cartethyia.easyorange.user.controller;
 
 import com.cartethyia.easyorange.common.annotation.RateLimiter;
 import com.cartethyia.easyorange.common.annotation.RepeatSubmit;
-import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.LimitType;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.converter.UserConverter;
 import com.cartethyia.easyorange.user.dto.bo.*;
 import com.cartethyia.easyorange.user.dto.request.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.dto.request.ForgotPasswordRequest;
 import com.cartethyia.easyorange.user.dto.request.RegisterRequest;
 import com.cartethyia.easyorange.user.dto.request.UpdateUserRequest;
+import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.service.UserService;
 import jakarta.validation.Valid;
@@ -29,13 +29,7 @@ public class UserController {
     private final UserConverter userConverter;
 
     @GetMapping("/me")
-    public Result<AuthUser> getCurrentUser() {
-        AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
-        return Result.success(authUser);
-    }
-
-    @GetMapping("/info")
-    public Result<UserVO> getUserInfo() {
+    public Result<UserProfileVO> getCurrentUser() {
         return Result.success(userService.getUserInfo());
     }
 

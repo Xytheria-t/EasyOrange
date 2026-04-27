@@ -22,13 +22,11 @@ public interface RedisCache {
 
     long getExpire(String key, TimeUnit timeUnit);
 
-    long getExpire(String key);
-
     Boolean hasKey(String key);
 
     boolean delete(String key);
 
-    boolean delete(Collection<String> keys);
+    Long delete(Collection<String> keys);
 
     <T> Boolean setIfAbsent(String key, T value);
 
@@ -48,15 +46,17 @@ public interface RedisCache {
 
     <T> void multiSet(Map<String, T> map);
 
-    Long multiDelete(Collection<String> keys);
-
-    <T> Boolean tryLock(String key, T value, long timeout, TimeUnit timeUnit);
+    Boolean tryLock(String key, String value, long timeout, TimeUnit timeUnit);
 
     Boolean unlock(String key, Object value);
+
+    Boolean unlockIfValueMatches(String key, String expectedValue);
 
     <T> void hashPut(String key, String hashKey, T value);
 
     <T> void hashPutAll(String key, Map<String, T> map);
+
+    Boolean hashPutIfAbsent(String key, String hashKey, Object value);
 
     <T> T hashGet(String key, String hashKey);
 
@@ -68,13 +68,15 @@ public interface RedisCache {
 
     Long hashSize(String key);
 
+    Long hashIncrement(String key, String hashKey, long delta);
+
     <T> Long listPush(String key, T value);
 
     <T> Long listPushLeft(String key, T value);
 
-    <T> T listPop(String key);
+    <T> T listPop(String key, Class<T> type);
 
-    <T> T listPopRight(String key);
+    <T> T listPopRight(String key, Class<T> type);
 
     <T> List<T> listRange(String key, long start, long end);
 
@@ -82,9 +84,9 @@ public interface RedisCache {
 
     <T> Boolean setAdd(String key, T... values);
 
-    <T> Set<T> setMembers(String key);
+    <T> Set<T> setMembers(String key, Class<T> type);
 
-    <T> Boolean setIsMember(String key, Object value);
+    Boolean setIsMember(String key, Object value);
 
     Long setRemove(String key, Object... values);
 
@@ -92,7 +94,7 @@ public interface RedisCache {
 
     <T> Boolean zsetAdd(String key, double score, T value);
 
-    <T> Set<T> zsetRangeByScore(String key, double min, double max);
+    <T> Set<T> zsetRangeByScore(String key, double min, double max, Class<T> type);
 
     <T> Set<T> zsetRangeByScoreWithScores(String key, double min, double max);
 

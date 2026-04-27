@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.application.command;
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.assembler.ProductAssembler;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductAggregate;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;

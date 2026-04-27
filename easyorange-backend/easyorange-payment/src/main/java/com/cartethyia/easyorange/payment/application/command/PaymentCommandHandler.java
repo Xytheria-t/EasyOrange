@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.payment.application.command;
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.application.factory.PaymentStrategyFactory;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;

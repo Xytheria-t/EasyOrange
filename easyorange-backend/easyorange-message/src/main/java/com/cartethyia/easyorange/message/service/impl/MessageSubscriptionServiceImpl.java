@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.dto.request.SubscriptionRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageSubscriptionVO;
 import com.cartethyia.easyorange.message.entity.MessageSubscription;

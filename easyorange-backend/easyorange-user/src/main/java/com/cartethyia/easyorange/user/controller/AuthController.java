@@ -6,10 +6,10 @@ import com.cartethyia.easyorange.common.enums.LimitType;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.service.TokenService;
-import com.cartethyia.easyorange.user.dto.request.LoginDTO;
+import com.cartethyia.easyorange.user.dto.request.LoginRequest;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.service.strategy.LoginDispatcher;
 import jakarta.validation.Valid;
@@ -28,8 +28,8 @@ public class AuthController {
     @RateLimiter(key = "auth:login", count = 10, time = 60, limitType = LimitType.IP)
     @RepeatSubmit(interval = 5000, message = "请勿重复提交登录请求")
     @PostMapping("/login")
-    public Result<LoginResponse> login(@Valid @RequestBody LoginDTO loginDTO) {
-        return Result.success(loginDispatcher.login(loginDTO));
+    public Result<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+        return Result.success(loginDispatcher.login(loginRequest));
     }
 
     @RepeatSubmit(interval = 3000, message = "请勿重复提交")

@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageVO;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import com.cartethyia.easyorange.payment.dto.request.QueryPaymentRequest;

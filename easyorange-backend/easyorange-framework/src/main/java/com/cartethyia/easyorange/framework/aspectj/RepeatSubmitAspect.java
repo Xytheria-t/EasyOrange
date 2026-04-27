@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.framework.aspectj;
 
 import com.cartethyia.easyorange.common.annotation.RepeatSubmit;
-import com.cartethyia.easyorange.common.constant.CacheConstants;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.constant.RateLimitCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.common.util.RequestUtil;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -90,7 +90,7 @@ public class RepeatSubmitAspect {
 
         String md5 = md5(params);
 
-        return CacheConstants.RateLimit.repeatSubmitKey(userIdentifier, uri, md5);
+        return RateLimitCacheConstants.repeatSubmitKey(userIdentifier, uri, md5);
     }
 
     private String getUserIdentifier(HttpServletRequest request) {

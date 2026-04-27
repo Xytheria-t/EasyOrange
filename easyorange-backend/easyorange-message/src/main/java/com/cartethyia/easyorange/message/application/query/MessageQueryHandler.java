@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;

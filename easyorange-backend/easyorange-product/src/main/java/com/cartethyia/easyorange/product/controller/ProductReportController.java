@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.dto.request.ReportRequest;
 import com.cartethyia.easyorange.product.entity.ProductReport;
 import com.cartethyia.easyorange.product.service.ProductReportService;

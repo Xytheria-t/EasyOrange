@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.framework.aspectj;
 
 import com.cartethyia.easyorange.common.annotation.RateLimiter;
-import com.cartethyia.easyorange.common.constant.CacheConstants;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.constant.RateLimitCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.common.util.RequestUtil;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -89,6 +89,6 @@ public class RateLimiterAspect {
                 case USER -> SecurityContextUtil.getCurrentUserId().map(String::valueOf).orElse("anonymous");
             };
         }
-        return CacheConstants.RateLimit.key(limitType, rateLimiter.key());
+        return RateLimitCacheConstants.key(limitType, rateLimiter.key());
     }
 }

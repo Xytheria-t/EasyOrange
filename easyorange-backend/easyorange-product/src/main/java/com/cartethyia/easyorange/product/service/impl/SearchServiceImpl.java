@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.constant.ProductConstants;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.dto.request.ProductSearchRequest;

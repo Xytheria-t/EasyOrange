@@ -5,12 +5,10 @@ import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.mapper.MessageMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-@Repository
 @RequiredArgsConstructor
 public class MybatisMessageRepository implements MessageRepository {
 

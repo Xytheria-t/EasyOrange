@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.user.dto.request.RegisterRequest;
 import com.cartethyia.easyorange.user.dto.request.UpdateUserRequest;
 import com.cartethyia.easyorange.user.dto.request.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.dto.request.ForgotPasswordRequest;
+import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.service.UserService;
 import org.junit.jupiter.api.Test;
@@ -32,13 +33,13 @@ class UserControllerTest {
     private UserController userController;
 
     @Test
-    void shouldCallGetUserInfo() {
-        UserVO mockUserVO = new UserVO();
-        mockUserVO.setId(1L);
-        mockUserVO.setUsername("testuser");
-        given(userService.getUserInfo()).willReturn(mockUserVO);
+    void shouldCallGetCurrentUser() {
+        UserProfileVO mockUserProfile = new UserProfileVO();
+        mockUserProfile.setId(1L);
+        mockUserProfile.setUsername("testuser");
+        given(userService.getUserInfo()).willReturn(mockUserProfile);
 
-        var result = userController.getUserInfo();
+        var result = userController.getCurrentUser();
 
         assertNotNull(result);
         assertEquals("A0000", result.code());

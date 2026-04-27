@@ -1,15 +1,19 @@
 package com.cartethyia.easyorange.user.dto.request;
 
 import com.cartethyia.easyorange.user.constant.UserConstants;
+import com.cartethyia.easyorange.user.enums.ClientType;
 import com.cartethyia.easyorange.user.enums.LoginMethod;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LoginDTO {
+public class LoginRequest {
 
     private String clientType;
 
@@ -24,5 +28,9 @@ public class LoginDTO {
 
     public LoginMethod getEffectiveLoginMethod() {
         return LoginMethod.fromValue(loginMethod);
+    }
+
+    public ClientType getEffectiveClientType() {
+        return ClientType.fromCode(clientType);
     }
 }

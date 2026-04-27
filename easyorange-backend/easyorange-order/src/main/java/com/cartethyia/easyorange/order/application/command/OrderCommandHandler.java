@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.order.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -13,9 +13,8 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.entity.Order;
 import com.cartethyia.easyorange.order.enums.OrderResultCode;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
-import com.cartethyia.easyorange.product.dto.vo.ProductVO;
-import com.cartethyia.easyorange.product.enums.ProductStatus;
-import com.cartethyia.easyorange.product.application.handler.ProductQueryHandler;
+import com.cartethyia.easyorange.product.application.port.outbound.ProductSnapshotPort;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,7 +28,7 @@ public class OrderCommandHandler {
     private static final int PAYMENT_STATUS_PAID = 1;
 
     private final OrderRepository orderRepository;
-    private final ProductQueryHandler productQueryHandler;
+    private final ProductSnapshotPort productSnapshotPort;
     private final DomainEventPublisher domainEventPublisher;
     private final com.cartethyia.easyorange.order.application.cache.OrderCacheService orderCacheService;
 
@@ -37,17 +36,18 @@ public class OrderCommandHandler {
     public CreateOrderResult handle(CreateOrderCommand command) {
         Long buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductVO productVO = productQueryHandler.getProductById(command.getProductId());
-        BizRequire.notNull(productVO, "商品不存在");
-        BizRequire.isTrue(ProductStatus.ONLINE.getCode().equals(productVO.getStatus()), "商品已下架");
-        BizRequire.ne(productVO.getSellerId(), buyerId, "不能购买自己的商品");
-        BizRequire.isTrue(productVO.getStock() != null && productVO.getStock() > 0, "商品库存不足");
+        ProductSnapshotPort.ProductOrderSnapshot snapshot = productSnapshotPort
+                .getOrderableSnapshot(new ProductId(command.getProductId()))
+                .orElseThrow(() -> new RuntimeException("商品不存在"));
+        BizRequire.isTrue(snapshot.status().isOnline(), "商品已下架");
+        BizRequire.ne(snapshot.sellerId().value(), buyerId, "不能购买自己的商品");
+        BizRequire.isTrue(snapshot.stock().isAvailable(), "商品库存不足");
 
         OrderCreatedEvent event = OrderAggregate.createOrder(
                 buyerId,
-                productVO.getSellerId(),
+                snapshot.sellerId().value(),
                 command.getProductId(),
-                productVO.getPrice(),
+                snapshot.price().value(),
                 command.getAddress(),
                 command.getPhone(),
                 command.getRemark()
@@ -70,7 +70,7 @@ public class OrderCommandHandler {
         Order order = aggregate.toEntity();
         orderRepository.save(order);
 
-        orderCacheService.deleteSellerOrderCache(productVO.getSellerId());
+        orderCacheService.deleteSellerOrderCache(snapshot.sellerId().value());
 
         domainEventPublisher.publish(event);
         log.info("订单创建成功 orderId={} orderNo={}", order.getId(), order.getOrderNo());

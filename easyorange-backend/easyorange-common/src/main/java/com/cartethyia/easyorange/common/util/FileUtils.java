@@ -293,7 +293,7 @@ public final class FileUtils {
         if (filePath == null || filePath.isEmpty()) {
             return "";
         }
-        int lastSeparator = Math.max(filePath.lastIndexOf(File.separator), filePath.lastIndexOf("/"));
+        int lastSeparator = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
         if (lastSeparator == -1) {
             return filePath;
         }

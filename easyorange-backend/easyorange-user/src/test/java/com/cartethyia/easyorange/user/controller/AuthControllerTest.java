@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.controller;
 
-import com.cartethyia.easyorange.user.dto.request.LoginDTO;
+import com.cartethyia.easyorange.user.dto.request.LoginRequest;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.framework.service.TokenService;
@@ -36,7 +36,7 @@ class AuthControllerTest {
     @Test
     void shouldCallLogin() {
         // Given
-        LoginDTO loginDTO = LoginDTO.builder()
+        LoginRequest loginRequest = LoginRequest.builder()
                 .account("testuser")
                 .password("password123")
                 .build();
@@ -51,17 +51,17 @@ class AuthControllerTest {
                 .user(userInfo)
                 .build();
 
-        given(loginDispatcher.login(any(LoginDTO.class))).willReturn(mockResponse);
+        given(loginDispatcher.login(any(LoginRequest.class))).willReturn(mockResponse);
 
         // When
-        var result = authController.login(loginDTO);
+        var result = authController.login(loginRequest);
 
         // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
         assertEquals("mock-jwt-token", result.data().getToken());
         assertEquals("testuser", result.data().getUser().getUsername());
-        verify(loginDispatcher, times(1)).login(any(LoginDTO.class));
+        verify(loginDispatcher, times(1)).login(any(LoginRequest.class));
     }
 
     @Test

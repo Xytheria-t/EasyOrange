@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.MaskUtils;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.dto.request.QueryOrderRequest;
 import com.cartethyia.easyorange.order.dto.vo.OrderVO;

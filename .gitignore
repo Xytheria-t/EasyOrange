@@ -287,3 +287,4 @@ docs/
 .worktrees/
 worktrees/
 .trae/
+.agents/

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.handler;
 
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
-import com.cartethyia.easyorange.common.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;

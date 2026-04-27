@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.user.service.impl;
 
-import com.cartethyia.easyorange.common.constant.CacheConstants;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.MaskUtils;
+import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.user.constant.UserConstants;
 import com.cartethyia.easyorange.user.service.LoginSecurityService;
@@ -28,7 +28,7 @@ public class LoginSecurityServiceImpl implements LoginSecurityService {
     @Override
     public void checkLoginAttempts(String account) {
         BizRequire.notBlank(account, "账号不能为空");
-        String key = CacheConstants.Login.attemptsKey(account);
+        String key = LoginCacheConstants.attemptsKey(account);
         Long attempts = redisCache.get(key, Long.class);
         if (attempts != null && attempts >= UserConstants.MAX_LOGIN_ATTEMPTS) {
             throw BusinessException.of("登录失败次数过多，账户已锁定" + UserConstants.LOGIN_LOCK_MINUTES + "分钟");
@@ -38,10 +38,10 @@ public class LoginSecurityServiceImpl implements LoginSecurityService {
     @Override
     public void recordFailedAttempt(String account) {
         BizRequire.notBlank(account, "账号不能为空");
-        String key = CacheConstants.Login.attemptsKey(account);
+        String key = LoginCacheConstants.attemptsKey(account);
         Long count = redisCache.increment(key);
         if (count != null && count == 1) {
-            redisCache.expire(key, CacheConstants.Login.ATTEMPTS_EXPIRE_TIME, TimeUnit.MINUTES);
+            redisCache.expire(key, LoginCacheConstants.ATTEMPTS_EXPIRE_TIME, TimeUnit.MINUTES);
         }
         log.warn("action=login_fail, account={}, attempts={}/{}", maskAccount(account), count, UserConstants.MAX_LOGIN_ATTEMPTS);
     }
@@ -49,7 +49,7 @@ public class LoginSecurityServiceImpl implements LoginSecurityService {
     @Override
     public void clearLoginAttempts(String account) {
         BizRequire.notBlank(account, "账号不能为空");
-        String key = CacheConstants.Login.attemptsKey(account);
+        String key = LoginCacheConstants.attemptsKey(account);
         redisCache.delete(key);
     }
 

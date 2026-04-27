@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.service.impl;
 
-import com.cartethyia.easyorange.common.constant.CacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -129,6 +129,6 @@ public class TokenServiceImpl implements TokenService {
     }
 
     private String getTokenKey(String uuid) {
-        return CacheConstants.Login.tokenKey(uuid);
+        return LoginCacheConstants.tokenKey(uuid);
     }
 }
