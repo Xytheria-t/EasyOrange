@@ -5,14 +5,10 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.FileUtils;
 import com.cartethyia.easyorange.common.util.SecurityContextUtil;
-import org.apache.commons.lang3.StringUtils;
-import com.cartethyia.easyorange.user.dto.request.*;
+import com.cartethyia.easyorange.user.converter.UserConverter;
+import com.cartethyia.easyorange.user.dto.bo.*;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.enums.LoginType;
-import com.cartethyia.easyorange.user.enums.Sex;
-import com.cartethyia.easyorange.user.enums.UserStatus;
-import com.cartethyia.easyorange.user.enums.UserType;
 import com.cartethyia.easyorange.user.event.annotation.PublishEvent;
 import com.cartethyia.easyorange.user.event.extractor.PasswordChangedEventExtractor;
 import com.cartethyia.easyorange.user.event.extractor.UserRegisteredEventExtractor;
@@ -21,133 +17,118 @@ import com.cartethyia.easyorange.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
-    private final BCryptPasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
+    private final UserConverter userConverter;
     private final UserRegisteredEventExtractor userRegisteredEventExtractor;
     private final PasswordChangedEventExtractor passwordChangedEventExtractor;
-
-    @Value("${file.upload.path:./upload}")
-    private String uploadPath;
 
     @Value("${user.avatar.path:./upload/avatar}")
     private String avatarUploadPath;
 
     @Override
     public UserVO getUserInfo() {
-        return UserVO.from(getUserOrThrow());
+        return userConverter.toVo(getCurrentUserOrThrow());
     }
 
     @Override
     @PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
     @Transactional(rollbackFor = Exception.class)
-    public Long register(RegisterRequest request) {
-        String username = request.getUsername();
-        User existingUser = lambdaQuery().eq(User::getUsername, username).one();
+    public Long register(RegisterBo bo) {
+        // 检查用户名是否存在
+        User existingUser = lambdaQuery().eq(User::getUsername, bo.username()).one();
         BizRequire.isNull(existingUser, "用户名已存在");
 
-        User user = User.builder()
-            .username(username)
-            .password(passwordEncoder.encode(request.getPassword()))
-            .loginType(LoginType.USERNAME)
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .build();
-
+        // BO 负责构建实体（包含密码加密和业务规则）
+        User user = bo.toEntity(passwordEncoder);
         BizRequire.isTrue(save(user), "注册失败，请稍后重试");
-        
+
         userRegisteredEventExtractor.setUser(user);
-        
-        log.info("action=register success username={}", username);
+        log.info("action=register success username={}", bo.username());
         return user.getId();
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UserVO updateUserInfo(UpdateUserRequest request) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public UserVO updateUserInfo(UpdateUserBo bo) {
+        User currentUser = getCurrentUserOrThrow();
 
-        if (StringUtils.isNotBlank(request.getEmail())) {
-            BizRequire.validEmail(request.getEmail(), "邮箱格式不正确");
-        }
-        if (StringUtils.isNotBlank(request.getPhone())) {
-            BizRequire.validPhone(request.getPhone(), "手机号格式不正确");
-        }
+        // BO 负责检查是否有更新
+        BizRequire.isTrue(bo.hasAnyUpdate(), "没有需要更新的字段");
 
-        boolean updated = lambdaUpdate()
-            .eq(User::getId, userId)
-            .set(StringUtils.isNotBlank(request.getEmail()), User::getEmail, request.getEmail())
-            .set(StringUtils.isNotBlank(request.getPhone()), User::getPhone, request.getPhone())
-            .set(request.getGender() != null, User::getSex, Sex.fromOrdinal(request.getGender()))
-            .update();
+        // BO 负责应用增量更新
+        bo.applyTo(currentUser);
+        BizRequire.isTrue(updateById(currentUser), "更新用户信息失败");
 
-        BizRequire.isTrue(updated, "更新用户信息失败");
-
-        User updatedUser = getById(userId);
-        BizRequire.notNull(updatedUser, "用户不存在");
-        log.info("action=updateUserInfo success userId={}", userId);
-        return UserVO.from(updatedUser);
+        log.info("action=updateUserInfo success userId={}", currentUser.getId());
+        return userConverter.toVo(currentUser);
     }
 
     @Override
     @PublishEvent(type = "PasswordChanged", extractor = "passwordChangedEventExtractor")
     @Transactional(rollbackFor = Exception.class)
-    public void changePassword(ChangePasswordRequest request) {
+    public void changePassword(ChangePasswordBo bo) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         User user = getById(userId);
         BizRequire.notNull(user, "用户不存在");
 
-        BizRequire.isTrue(passwordEncoder.matches(request.getOldPassword(), user.getPassword()), "旧密码错误");
+        // BO 负责业务规则验证
+        bo.validateDifferentPassword();
 
+        // BO 负责密码验证
+        BizRequire.isTrue(
+            bo.verifyOldPassword(passwordEncoder, user.getPassword()),
+            "旧密码错误"
+        );
+
+        // BO 负责构建更新
         boolean updated = lambdaUpdate()
             .eq(User::getId, userId)
-            .set(User::getPassword, passwordEncoder.encode(request.getNewPassword()))
-            .set(User::getPwdUpdateDate, LocalDateTime.now())
+            .set(User::getPassword, bo.encodeNewPassword(passwordEncoder))
+            .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
             .update();
 
         BizRequire.isTrue(updated, "修改密码失败，请稍后重试");
-        
         passwordChangedEventExtractor.setUserId(userId);
-        
         log.info("action=changePassword success userId={}", userId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void forgotPassword(ForgotPasswordRequest request) {
-        User user = lambdaQuery().eq(User::getPhone, request.getPhone()).one();
+    public void forgotPassword(ForgotPasswordBo bo) {
+        User user = lambdaQuery().eq(User::getPhone, bo.phone()).one();
         BizRequire.notNull(user, "该手机号未注册");
 
+        // BO 负责密码加密
         boolean updated = lambdaUpdate()
             .eq(User::getId, user.getId())
-            .set(User::getPassword, passwordEncoder.encode(request.getNewPassword()))
-            .set(User::getPwdUpdateDate, LocalDateTime.now())
+            .set(User::getPassword, bo.encodePassword(passwordEncoder))
+            .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
             .update();
 
         BizRequire.isTrue(updated, "重置密码失败，请稍后重试");
-        log.info("action=forgotPassword success phone={}", request.getPhone());
+        log.info("action=forgotPassword success phone={}", bo.phone());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UserVO uploadAvatar(MultipartFile avatar) {
+    public UserVO uploadAvatar(UploadAvatarBo bo) {
+        MultipartFile avatar = bo.avatar();
         BizRequire.notNull(avatar, "头像不能为空");
         BizRequire.isTrue(!avatar.isEmpty(), "头像不能为空");
 
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        User user = getById(userId);
-        BizRequire.notNull(user, "用户不存在");
+        User currentUser = getCurrentUserOrThrow();
 
         try {
             String[] allowedExtensions = new String[]{"jpg", "jpeg", "png", "webp"};
@@ -155,22 +136,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             String avatarUrl = "/api/file/" + avatarPath.replace("\\", "/");
 
             boolean updated = lambdaUpdate()
-                .eq(User::getId, userId)
+                .eq(User::getId, currentUser.getId())
                 .set(User::getAvatar, avatarUrl)
                 .update();
 
             BizRequire.isTrue(updated, "更新头像失败");
+            log.info("action=uploadAvatar success userId={}, avatarUrl={}", currentUser.getId(), avatarUrl);
 
-            log.info("action=uploadAvatar success userId={}, avatarUrl={}", userId, avatarUrl);
-
-            return UserVO.from(getById(userId));
+            return userConverter.toVo(getById(currentUser.getId()));
         } catch (IOException e) {
-            log.error("上传头像失败：userId={}, error={}", userId, e.getMessage());
+            log.error("上传头像失败：userId={}, error={}", currentUser.getId(), e.getMessage());
             throw BusinessException.of("上传头像失败：" + e.getMessage(), e);
         }
     }
 
-    private User getUserOrThrow() {
+    private User getCurrentUserOrThrow() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         User user = getById(userId);
         BizRequire.notNull(user, "用户不存在");

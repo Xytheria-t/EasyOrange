@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.user.controller;
 
+import com.cartethyia.easyorange.user.converter.UserConverter;
+import com.cartethyia.easyorange.user.dto.bo.*;
 import com.cartethyia.easyorange.user.dto.request.RegisterRequest;
 import com.cartethyia.easyorange.user.dto.request.UpdateUserRequest;
 import com.cartethyia.easyorange.user.dto.request.ChangePasswordRequest;
@@ -23,21 +25,21 @@ class UserControllerTest {
     @Mock
     private UserService userService;
 
+    @Mock
+    private UserConverter userConverter;
+
     @InjectMocks
     private UserController userController;
 
     @Test
     void shouldCallGetUserInfo() {
-        // Given
         UserVO mockUserVO = new UserVO();
         mockUserVO.setId(1L);
         mockUserVO.setUsername("testuser");
         given(userService.getUserInfo()).willReturn(mockUserVO);
 
-        // When
         var result = userController.getUserInfo();
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
         assertEquals("testuser", result.data().getUsername());
@@ -46,75 +48,78 @@ class UserControllerTest {
 
     @Test
     void shouldCallRegister() {
-        // Given
         RegisterRequest request = new RegisterRequest();
         request.setUsername("newuser");
         request.setPassword("password123");
-        given(userService.register(any(RegisterRequest.class))).willReturn(100L);
+        
+        RegisterBo bo = new RegisterBo("newuser", "password123");
+        given(userConverter.toBo(request)).willReturn(bo);
+        given(userService.register(any(RegisterBo.class))).willReturn(100L);
 
-        // When
         var result = userController.register(request);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
         assertEquals(100L, result.data());
-        verify(userService, times(1)).register(any(RegisterRequest.class));
+        verify(userConverter, times(1)).toBo(request);
+        verify(userService, times(1)).register(any(RegisterBo.class));
     }
 
     @Test
     void shouldCallUpdateUserInfo() {
-        // Given
         UpdateUserRequest request = new UpdateUserRequest();
         request.setEmail("updated@example.com");
         
+        UpdateUserBo bo = new UpdateUserBo("updated@example.com", null, null);
         UserVO updatedUserVO = new UserVO();
         updatedUserVO.setId(1L);
         updatedUserVO.setEmail("updated@example.com");
         
-        given(userService.updateUserInfo(any(UpdateUserRequest.class))).willReturn(updatedUserVO);
+        given(userConverter.toBo(request)).willReturn(bo);
+        given(userService.updateUserInfo(any(UpdateUserBo.class))).willReturn(updatedUserVO);
 
-        // When
         var result = userController.updateUserInfo(request);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
         assertEquals("updated@example.com", result.data().getEmail());
-        verify(userService, times(1)).updateUserInfo(any(UpdateUserRequest.class));
+        verify(userConverter, times(1)).toBo(request);
+        verify(userService, times(1)).updateUserInfo(any(UpdateUserBo.class));
     }
 
     @Test
     void shouldCallChangePassword() {
-        // Given
         ChangePasswordRequest request = new ChangePasswordRequest();
         request.setOldPassword("oldpass");
         request.setNewPassword("newpass");
-        doNothing().when(userService).changePassword(any(ChangePasswordRequest.class));
+        
+        ChangePasswordBo bo = new ChangePasswordBo("oldpass", "newpass");
+        given(userConverter.toBo(request)).willReturn(bo);
+        doNothing().when(userService).changePassword(any(ChangePasswordBo.class));
 
-        // When
         var result = userController.changePassword(request);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
-        verify(userService, times(1)).changePassword(any(ChangePasswordRequest.class));
+        verify(userConverter, times(1)).toBo(request);
+        verify(userService, times(1)).changePassword(any(ChangePasswordBo.class));
     }
 
     @Test
     void shouldCallForgotPassword() {
-        // Given
         ForgotPasswordRequest request = new ForgotPasswordRequest();
         request.setPhone("1234567890");
         request.setNewPassword("newpassword");
-        doNothing().when(userService).forgotPassword(any(ForgotPasswordRequest.class));
+        
+        ForgotPasswordBo bo = new ForgotPasswordBo("1234567890", "newpassword");
+        given(userConverter.toBo(request)).willReturn(bo);
+        doNothing().when(userService).forgotPassword(any(ForgotPasswordBo.class));
 
-        // When
         var result = userController.forgotPassword(request);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
-        verify(userService, times(1)).forgotPassword(any(ForgotPasswordRequest.class));
+        verify(userConverter, times(1)).toBo(request);
+        verify(userService, times(1)).forgotPassword(any(ForgotPasswordBo.class));
     }
 }
