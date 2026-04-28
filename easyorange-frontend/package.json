@@ -41,6 +41,7 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
+    "@rollup/rollup-linux-x64-gnu": "^4.60.2",
     "@tanstack/react-query": "^5.99.2",
     "@tanstack/react-query-devtools": "^5.99.2",
     "@types/react": "^18.3.28",
