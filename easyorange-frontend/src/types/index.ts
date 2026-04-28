@@ -86,6 +86,8 @@ export interface User {
 export interface LoginRequest {
     account: string;
     password: string;
+    loginMethod?: 'PASSWORD' | 'SMS';
+    clientType?: 'WEB';
     isRegister?: boolean;
 }
 

@@ -22,7 +22,6 @@ export function LoginPage() {
     setError(null)
 
     if (activeTab === 'login') {
-      // 登录验证
       const usernameError = validator.getErrorMessage('username', formData.account)
       if (usernameError) {
         toast.error(usernameError)
@@ -37,7 +36,10 @@ export function LoginPage() {
 
       setIsLoading(true)
       try {
-        await login.mutateAsync({ account: formData.account, password: formData.password })
+        await login.mutateAsync({ 
+          account: formData.account, 
+          password: formData.password 
+        })
         toast.success('登录成功')
         navigate('/')
       } catch (err) {
@@ -47,7 +49,6 @@ export function LoginPage() {
         setIsLoading(false)
       }
     } else {
-      // 注册验证
       if (!formData.account || !formData.password || !formData.confirmPassword) {
         toast.error('请填写完整信息')
         return
@@ -77,7 +78,6 @@ export function LoginPage() {
 
       setIsLoading(true)
       try {
-        // 先注册
         await login.mutateAsync({ 
           account: formData.account, 
           password: formData.password,
@@ -86,8 +86,10 @@ export function LoginPage() {
         
         toast.success('注册成功！正在登录...')
         
-        // 自动登录
-        await login.mutateAsync({ account: formData.account, password: formData.password })
+        await login.mutateAsync({ 
+          account: formData.account, 
+          password: formData.password
+        })
         
         storage.set('needCompleteProfile', 'true')
         setTimeout(() => {
@@ -220,7 +222,7 @@ export function LoginPage() {
                   </svg>
                   <input
                     type="text"
-                    placeholder="用户名"
+                    placeholder="用户名 / 邮箱 / 手机号"
                     value={formData.account}
                     onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value }))}
                     required
