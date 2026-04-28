@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useProducts } from '@/hooks';
-import { ProductCard } from '@/components/react/ProductCard';
+import { ProductCard } from '@/components/sections/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { ToolsPlaza } from '@/components/products/ToolsPlaza';
 import { FilterSidebar } from '@/components/products/FilterSidebar';

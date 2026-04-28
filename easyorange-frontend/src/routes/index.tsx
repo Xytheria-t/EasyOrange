@@ -1,6 +1,6 @@
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation } from 'react-router-dom';
 import HomePage from '@/pages/HomePage';
-import { Layout } from '@/components/react/Layout';
+import { Layout } from '@/components/layout/Layout';
 import { ProductsPage } from '@/pages/ProductsPage';
 import { ProductDetailPage } from '@/pages/ProductDetailPage';
 import { ProfilePage } from '@/pages/ProfilePage';
