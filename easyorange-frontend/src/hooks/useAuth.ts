@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '@/api/userApi';
 import { useAuthStore } from '@/store';
+import { setSession, clearSession, type AuthSessionUser } from '@/app/authSession';
 import type { LoginRequest, RegisterRequest } from '@/types';
 
 const AUTH_KEYS = {
@@ -8,9 +9,11 @@ const AUTH_KEYS = {
   user: () => [...AUTH_KEYS.all, 'user'] as const,
 };
 
+const TOKEN_EXPIRES_IN_MINUTES = 30;
+
 export function useCurrentUser() {
   const { token, setUser } = useAuthStore();
-  
+
   return useQuery({
     queryKey: AUTH_KEYS.user(),
     queryFn: async () => {
@@ -28,8 +31,8 @@ export function useCurrentUser() {
 
 export function useLogin() {
   const queryClient = useQueryClient();
-  const { login } = useAuthStore();
-  
+  const { login, setToken } = useAuthStore();
+
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       const response = await userApi.login(data);
@@ -38,6 +41,9 @@ export function useLogin() {
     onSuccess: (data) => {
       if (data.token && data.user) {
         login(data.user, data.token);
+        setToken(data.token);
+        const expiresAt = Date.now() + TOKEN_EXPIRES_IN_MINUTES * 60 * 1000;
+        setSession(data.token, data.user as unknown as AuthSessionUser, expiresAt);
         queryClient.setQueryData(AUTH_KEYS.user(), data.user);
       }
     },
@@ -56,13 +62,14 @@ export function useRegister() {
 export function useLogout() {
   const queryClient = useQueryClient();
   const { logout: clearAuth } = useAuthStore();
-  
+
   return useMutation({
     mutationFn: async () => {
       await userApi.logout();
     },
     onSuccess: () => {
       clearAuth();
+      clearSession('logout');
       queryClient.clear();
     },
   });

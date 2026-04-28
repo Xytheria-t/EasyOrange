@@ -1,6 +1,6 @@
 import { isSuccessCode, type ApiCode, type Result, type RequestOptions } from '../../types/index.js';
 import { storage } from '../../utils/index.js';
-import { handleUnauthorized } from '../../app/authSession.js';
+import { refreshAccessToken } from '../../app/authSession.js';
 
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT = 10000;
@@ -291,7 +291,11 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 
                 if (!processedResponse.ok) {
                     if (processedResponse.status === 401 && shouldHandleUnauthorized(endpoint, skipAuth)) {
-                        handleUnauthorized();
+                        const newToken = await refreshAccessToken();
+                        if (newToken) {
+                            config.headers['Authorization'] = `Bearer ${newToken}`;
+                            continue;
+                        }
                     }
                     throw await parseError(processedResponse);
                 }
