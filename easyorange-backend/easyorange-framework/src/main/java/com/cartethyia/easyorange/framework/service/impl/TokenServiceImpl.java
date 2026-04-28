@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
+import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -23,7 +24,7 @@ public class TokenServiceImpl implements TokenService {
     private final JwtProperties jwtProperties;
 
     @Override
-    public String createToken(Long userId, String username, String userType) {
+    public String createAccessToken(Long userId, String username, String userType) {
         String uuid = UUID.randomUUID().toString().replace("-", "");
 
         String userKey = getTokenKey(uuid);
@@ -32,6 +33,7 @@ public class TokenServiceImpl implements TokenService {
 
         Map<String, Object> claims = new java.util.HashMap<>();
         claims.put("uuid", uuid);
+
         if (username != null) {
             claims.put("username", username);
         }
@@ -42,55 +44,9 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public String createToken(Long userId, String username) {
-        return createToken(userId, username, null);
-    }
-
-    @Override
-    @Deprecated(since = "use verifyTokenAndGetUserId instead")
-    public boolean verifyToken(String token) {
-        try {
-            boolean valid = jwtUtil.validateToken(token);
-            if (!valid) {
-                log.debug("Token validation failed");
-                return false;
-            }
-            String uuid = jwtUtil.getClaim(token, "uuid", String.class).orElse(null);
-            if (uuid == null) {
-                log.debug("Token uuid not found");
-                return false;
-            }
-            String userKey = getTokenKey(uuid);
-            if (!Boolean.TRUE.equals(stringRedisTemplate.hasKey(userKey))) {
-                log.debug("Token not found in Redis, may have been revoked");
-                return false;
-            }
-            return true;
-        } catch (Exception e) {
-            log.error("验证 Token 失败：{}", e.getMessage());
-            return false;
-        }
-    }
-
-    @Override
-    public Long getUserId(String token) {
-        try {
-            return jwtUtil.getSubject(token)
-                .map(Long::parseLong)
-                .orElse(null);
-        } catch (Exception e) {
-            log.error("获取用户 ID 失败：{}", e.getMessage());
-            return null;
-        }
-    }
-
-    @Override
     public void delToken(String token) {
         try {
-            String uuid = jwtUtil.getClaim(token, "uuid", String.class).orElse(null);
-            if (uuid != null) {
-                stringRedisTemplate.delete(getTokenKey(uuid));
-            }
+            jwtUtil.getClaim(token, "uuid", String.class).ifPresent(uuid -> stringRedisTemplate.delete(getTokenKey(uuid)));
         } catch (Exception e) {
             log.error("删除 Token 失败：{}", e.getMessage());
         }
@@ -107,7 +63,7 @@ public class TokenServiceImpl implements TokenService {
                         }
                         return Boolean.TRUE.equals(stringRedisTemplate.hasKey(getTokenKey(uuid)));
                     })
-                    .map(claims -> claims.getSubject())
+                    .map(Claims::getSubject)
                     .map(Long::parseLong)
                     .orElse(null);
         } catch (Exception e) {
@@ -125,10 +81,10 @@ public class TokenServiceImpl implements TokenService {
         String username = jwtUtil.getClaim(token, "username", String.class).orElse(null);
         String userType = jwtUtil.getClaim(token, "userType", String.class).orElse(null);
         delToken(token);
-        return createToken(userId, username, userType);
+        return createAccessToken(userId, username, userType);
     }
 
     private String getTokenKey(String uuid) {
-        return LoginCacheConstants.tokenKey(uuid);
+        return LoginCacheConstants.buildTokenKey(uuid);
     }
 }

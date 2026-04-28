@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.user.service.impl;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.framework.service.TokenService;
@@ -44,16 +43,8 @@ public class PasswordLoginStrategy implements LoginStrategy {
         loginSecurityService.checkLoginAttempts(account);
 
         User user = userQueryService.findUserByAccount(account);
-        if (user == null) {
-            loginSecurityService.recordFailedAttempt(account);
-            BizRequire.fail("账号或密码错误");
-        }
 
-        if (user.getStatus() != UserStatus.NORMAL) {
-            throw BusinessException.of("账号或密码错误");
-        }
-
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        if (user == null || user.getStatus() != UserStatus.NORMAL || !passwordEncoder.matches(password, user.getPassword())) {
             loginSecurityService.recordFailedAttempt(account);
             BizRequire.fail("账号或密码错误");
         }
@@ -62,19 +53,13 @@ public class PasswordLoginStrategy implements LoginStrategy {
 
         updateLoginInfo(user);
 
-        String token = createToken(user);
-
-        log.info("action=login, account={}, userId={}, result=success", 
+        log.info("action=login, account={}, userId={}, result=success",
                 loginSecurityService.maskAccount(account), user.getId());
 
         return LoginResponse.builder()
-                .token(token)
-                .user(UserVO.builder()
-                        .id(user.getId())
-                        .username(user.getUsername())
-                        .email(user.getEmail())
-                        .phone(user.getPhone())
-                        .build())
+                .token(tokenService.createAccessToken(user.getId(), user.getUsername(),
+                        user.getUserType() != null ? user.getUserType().getCode() : null))
+                .user(UserVO.from(user))
                 .build();
     }
 
@@ -83,15 +68,5 @@ public class PasswordLoginStrategy implements LoginStrategy {
                 .eq(User::getId, user.getId())
                 .set(User::getLoginDate, LocalDateTime.now())
                 .set(User::getLoginIp, RequestUtil.getClientIp()));
-    }
-
-    private String createToken(User user) {
-        String userType = user.getUserType() != null ? user.getUserType().getCode() : null;
-        return tokenService.createToken(user.getId(), user.getUsername(), userType);
-    }
-
-    @Override
-    public LoginMethod supportedLoginMethod() {
-        return LoginMethod.PASSWORD;
     }
 }

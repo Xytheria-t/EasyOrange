@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.message.constant.MessageConstants;
+import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
@@ -31,7 +31,7 @@ public class MessageTemplateServiceImpl extends ServiceImpl<MessageTemplateMappe
     public MessageTemplate getByCode(String templateCode) {
         return getOne(new LambdaQueryWrapper<MessageTemplate>()
                 .eq(MessageTemplate::getTemplateCode, templateCode)
-                .eq(MessageTemplate::getStatus, MessageConstants.TEMPLATE_STATUS_ENABLED));
+                .eq(MessageTemplate::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED));
     }
 
     @Override

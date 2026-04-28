@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.application.cache;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
-import com.cartethyia.easyorange.framework.constant.ProductCacheConstants;
+import com.cartethyia.easyorange.product.constant.ProductConstant;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,17 +16,17 @@ public class ProductReadCache {
     private final RedisCache redisCache;
 
     public Optional<ProductVO> getDetail(Long productId) {
-        String key = ProductCacheConstants.infoKey(productId);
+        String key = ProductConstant.infoKey(productId);
         return Optional.ofNullable(redisCache.get(key, ProductVO.class));
     }
 
     public void putDetail(Long productId, ProductVO productVO) {
-        String key = ProductCacheConstants.infoKey(productId);
-        redisCache.set(key, productVO, ProductCacheConstants.INFO_EXPIRE_TIME, java.util.concurrent.TimeUnit.MINUTES);
+        String key = ProductConstant.infoKey(productId);
+        redisCache.set(key, productVO, ProductConstant.PRODUCT_INFO_EXPIRE_TIME, java.util.concurrent.TimeUnit.MINUTES);
     }
 
     public void evict(Long productId) {
-        String key = ProductCacheConstants.infoKey(productId);
+        String key = ProductConstant.infoKey(productId);
         redisCache.delete(key);
     }
 

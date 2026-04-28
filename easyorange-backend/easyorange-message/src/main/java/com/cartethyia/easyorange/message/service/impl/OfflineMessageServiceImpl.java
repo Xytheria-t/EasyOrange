@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cartethyia.easyorange.message.constant.MessageConstants;
+import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.entity.OfflineMessage;
 import com.cartethyia.easyorange.message.mapper.OfflineMessageMapper;
 import com.cartethyia.easyorange.message.service.OfflineMessageService;
@@ -24,9 +24,9 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
                 .userId(userId)
                 .messageId(messageId)
                 .pushChannel(pushChannel)
-                .pushStatus(MessageConstants.PUSH_STATUS_PENDING)
-                .retryCount(MessageConstants.DEFAULT_RETRY_COUNT)
-                .maxRetryCount(MessageConstants.DEFAULT_MAX_RETRY_COUNT)
+                .pushStatus(MessageConstant.PUSH_STATUS_PENDING)
+                .retryCount(MessageConstant.DEFAULT_RETRY_COUNT)
+                .maxRetryCount(MessageConstant.DEFAULT_MAX_RETRY_COUNT)
                 .build();
         save(offlineMessage);
     }
@@ -35,7 +35,7 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
     public List<OfflineMessage> getPendingMessages(Long userId) {
         return list(new LambdaQueryWrapper<OfflineMessage>()
                 .eq(OfflineMessage::getUserId, userId)
-                .eq(OfflineMessage::getPushStatus, MessageConstants.PUSH_STATUS_PENDING)
+                .eq(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
                 .orderByAsc(OfflineMessage::getCreateTime))
                 .stream()
                 .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
@@ -46,7 +46,7 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
     public void markAsPushed(Long offlineMessageId) {
         update(new LambdaUpdateWrapper<OfflineMessage>()
                 .eq(OfflineMessage::getId, offlineMessageId)
-                .set(OfflineMessage::getPushStatus, MessageConstants.PUSH_STATUS_PUSHED)
+                .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PUSHED)
                 .set(OfflineMessage::getPushTime, LocalDateTime.now()));
     }
 
@@ -54,7 +54,7 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
     public void markAsFailed(Long offlineMessageId) {
         update(new LambdaUpdateWrapper<OfflineMessage>()
                 .eq(OfflineMessage::getId, offlineMessageId)
-                .set(OfflineMessage::getPushStatus, MessageConstants.PUSH_STATUS_FAILED));
+                .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_FAILED));
     }
 
     @Override

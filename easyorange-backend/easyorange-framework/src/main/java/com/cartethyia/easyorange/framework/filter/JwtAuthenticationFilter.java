@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.framework.filter;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.util.RequestUtil;
-import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
+import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -161,6 +161,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private String getTokenKey(String uuid) {
-        return LoginCacheConstants.tokenKey(uuid);
+        return LoginCacheConstants.buildTokenKey(uuid);
     }
 }

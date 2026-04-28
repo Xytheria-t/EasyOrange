@@ -2,12 +2,12 @@ package com.cartethyia.easyorange.framework.file.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.framework.file.constant.FileConstants;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.entity.UploadFile;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
@@ -66,7 +66,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
                     .businessType(businessType)
                     .businessId(businessId)
                     .uploaderId(userId)
-                    .status(FileConstants.FILE_STATUS_NORMAL)
+                    .status(CommonConstant.FILE_STATUS_NORMAL)
                     .build();
 
             save(uploadFile);
@@ -135,7 +135,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
         LambdaQueryWrapper<UploadFile> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UploadFile::getBusinessType, businessType)
                 .eq(UploadFile::getBusinessId, businessId)
-                .eq(UploadFile::getStatus, FileConstants.FILE_STATUS_NORMAL)
+                .eq(UploadFile::getStatus, CommonConstant.FILE_STATUS_NORMAL)
                 .orderByAsc(UploadFile::getCreateTime);
 
         List<UploadFile> files = list(wrapper);

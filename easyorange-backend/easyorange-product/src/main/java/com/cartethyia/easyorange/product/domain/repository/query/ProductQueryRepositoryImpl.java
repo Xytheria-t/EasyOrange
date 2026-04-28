@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.domain.repository.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.product.constant.ProductConstants;
+import com.cartethyia.easyorange.product.constant.ProductConstant;
 import com.cartethyia.easyorange.product.dto.vo.HotKeywordVO;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import com.cartethyia.easyorange.product.dto.vo.SearchHistoryVO;
@@ -86,7 +86,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     public List<SearchHistoryVO> findSearchHistoryByUserId(Long userId, Integer limit) {
         int lim = limit != null ? limit : 20;
 
-        String key = ProductConstants.SEARCH_HISTORY_KEY_PREFIX + userId;
+        String key = ProductConstant.SEARCH_HISTORY_KEY_PREFIX + userId;
         List<Object> history = redisTemplate.opsForList().range(key, 0, lim - 1);
 
         if (history != null && !history.isEmpty()) {
@@ -124,12 +124,12 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         int lim = limit != null ? limit : 10;
 
         Set<Object> topKeywords = redisTemplate.opsForZSet()
-                .reverseRange(ProductConstants.HOT_KEYWORD_ZSET_KEY, 0, lim - 1);
+                .reverseRange(ProductConstant.HOT_KEYWORD_ZSET_KEY, 0, lim - 1);
 
         if (topKeywords != null && !topKeywords.isEmpty()) {
             List<HotKeywordVO> result = new ArrayList<>();
             for (Object keyword : topKeywords) {
-                Double score = redisTemplate.opsForZSet().score(ProductConstants.HOT_KEYWORD_ZSET_KEY, keyword);
+                Double score = redisTemplate.opsForZSet().score(ProductConstant.HOT_KEYWORD_ZSET_KEY, keyword);
                 int count = score != null ? score.intValue() : 0;
                 result.add(HotKeywordVO.builder()
                         .keyword(keyword.toString())
@@ -162,7 +162,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
 
         Set<Object> allKeywords = redisTemplate.opsForZSet()
-                .reverseRange(ProductConstants.HOT_KEYWORD_ZSET_KEY, 0, -1);
+                .reverseRange(ProductConstant.HOT_KEYWORD_ZSET_KEY, 0, -1);
 
         if (allKeywords != null && !allKeywords.isEmpty()) {
             String lowerKeyword = keyword.toLowerCase();
@@ -202,11 +202,11 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     private Integer calculateHotLevel(int searchCount) {
-        if (searchCount >= ProductConstants.HOT_LEVEL_5_THRESHOLD) return 5;
-        if (searchCount >= ProductConstants.HOT_LEVEL_4_THRESHOLD) return 4;
-        if (searchCount >= ProductConstants.HOT_LEVEL_3_THRESHOLD) return 3;
-        if (searchCount >= ProductConstants.HOT_LEVEL_2_THRESHOLD) return 2;
-        if (searchCount >= ProductConstants.HOT_LEVEL_1_THRESHOLD) return 1;
+        if (searchCount >= ProductConstant.HOT_LEVEL_5_THRESHOLD) return 5;
+        if (searchCount >= ProductConstant.HOT_LEVEL_4_THRESHOLD) return 4;
+        if (searchCount >= ProductConstant.HOT_LEVEL_3_THRESHOLD) return 3;
+        if (searchCount >= ProductConstant.HOT_LEVEL_2_THRESHOLD) return 2;
+        if (searchCount >= ProductConstant.HOT_LEVEL_1_THRESHOLD) return 1;
         return 0;
     }
 }

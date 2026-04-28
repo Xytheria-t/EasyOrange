@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
 import com.cartethyia.easyorange.user.service.UserQueryService;
@@ -9,6 +9,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * 用户查询服务实现类
+ * <p>
+ * 支持按以下方式查找用户（优先级从高到低）：
+ * <ol>
+ *     <li>邮箱地址（必须是合法邮箱格式）</li>
+ *     <li>手机号码（必须是合法手机号格式）</li>
+ *     <li>用户名（兜底匹配）</li>
+ * </ol>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -22,19 +32,19 @@ public class UserQueryServiceImpl implements UserQueryService {
             return null;
         }
 
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        boolean isEmail = UserConstant.EMAIL_PATTERN.matcher(account).matches();
+        boolean isPhone = UserConstant.PHONE_PATTERN.matcher(account).matches();
 
-        if (account.contains("@")) {
-            BizRequire.validEmail(account, "邮箱格式不正确");
-            queryWrapper.eq(User::getEmail, account);
-        } else if (account.matches("^1[3-9]\\d{9}$")) {
-            BizRequire.validPhone(account, "手机号格式不正确");
-            queryWrapper.eq(User::getPhone, account);
-        } else {
-            BizRequire.between(account.length(), 1, 50, "用户名长度必须在 1-50 之间");
-            queryWrapper.eq(User::getUsername, account);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        
+        if (isEmail) {
+            wrapper.eq(User::getEmail, account).or().eq(User::getPhone, account);
+        } else if (isPhone) {
+            wrapper.eq(User::getPhone, account);
         }
+        
+        wrapper.or().eq(User::getUsername, account);
 
-        return userMapper.selectOne(queryWrapper);
+        return userMapper.selectOne(wrapper);
     }
 }

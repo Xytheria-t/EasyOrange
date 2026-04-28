@@ -2,14 +2,7 @@ package com.cartethyia.easyorange.framework.service;
 
 public interface TokenService {
 
-    String createToken(Long userId, String username, String userType);
-
-    String createToken(Long userId, String username);
-
-    @Deprecated(since = "use verifyTokenAndGetUserId instead")
-    boolean verifyToken(String token);
-
-    Long getUserId(String token);
+    String createAccessToken(Long userId, String username, String userType);
 
     void delToken(String token);
 

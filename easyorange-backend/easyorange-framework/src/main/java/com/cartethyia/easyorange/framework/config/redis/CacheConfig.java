@@ -1,7 +1,5 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
-import com.cartethyia.easyorange.framework.constant.CategoryCacheConstants;
-import com.cartethyia.easyorange.framework.constant.ProductCacheConstants;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
@@ -22,14 +20,14 @@ import java.util.Map;
 @EnableCaching
 public class CacheConfig {
 
-    // ==============================================
-    // 1. 全局唯一 ObjectMapper（配置类型信息，兼容缓存反序列化）
-    // 自动被 RedisSerializer.json() 复用，无手动绑定
-    // ==============================================
+    private static final String PRODUCT_LIST_KEY = "eo:product:list:";
+    private static final String CATEGORY_LIST_KEY = "eo:category:list";
+    private static final long PRODUCT_LIST_EXPIRE_TIME = 30L;
+    private static final long CATEGORY_INFO_EXPIRE_TIME = 120L;
+
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
-        // 核心：保留对象类型信息，和旧缓存完全兼容
         objectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.NON_FINAL,
@@ -38,12 +36,8 @@ public class CacheConfig {
         return objectMapper;
     }
 
-    // ==============================================
-    // 2. 缓存管理器（仅使用无弃用、无报错的官方API）
-    // ==============================================
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        // ✅ 官方4.x唯一无弃用JSON序列化器（无参调用，无任何报错）
         RedisSerializer<Object> jsonSerializer = RedisSerializer.json();
 
         RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
@@ -52,8 +46,8 @@ public class CacheConfig {
                 .disableCachingNullValues();
 
         Map<String, RedisCacheConfiguration> cacheConfigs = Map.of(
-                ProductCacheConstants.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(ProductCacheConstants.LIST_EXPIRE_TIME)),
-                CategoryCacheConstants.LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CategoryCacheConstants.INFO_EXPIRE_TIME))
+                PRODUCT_LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(PRODUCT_LIST_EXPIRE_TIME)),
+                CATEGORY_LIST_KEY, defaultConfig.entryTtl(Duration.ofMinutes(CATEGORY_INFO_EXPIRE_TIME))
         );
 
         return RedisCacheManager.builder(connectionFactory)

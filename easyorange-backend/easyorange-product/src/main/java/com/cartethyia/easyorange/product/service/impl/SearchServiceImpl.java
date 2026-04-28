@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.constant.ProductConstants;
+import com.cartethyia.easyorange.product.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.dto.vo.HotKeywordVO;
@@ -71,7 +71,7 @@ public class SearchServiceImpl implements SearchService {
     public void clearMySearchHistory() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        redisTemplate.delete(ProductConstants.SEARCH_HISTORY_KEY_PREFIX + userId);
+        redisTemplate.delete(ProductConstant.SEARCH_HISTORY_KEY_PREFIX + userId);
 
         searchHistoryMapper.delete(new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SearchHistory>()
                 .eq(SearchHistory::getUserId, userId));
@@ -127,14 +127,14 @@ public class SearchServiceImpl implements SearchService {
             return;
         }
 
-        redisTemplate.opsForZSet().incrementScore(ProductConstants.HOT_KEYWORD_ZSET_KEY, trimmedKeyword, 1);
+        redisTemplate.opsForZSet().incrementScore(ProductConstant.HOT_KEYWORD_ZSET_KEY, trimmedKeyword, 1);
 
-        String historyKey = ProductConstants.SEARCH_HISTORY_KEY_PREFIX + userId;
+        String historyKey = ProductConstant.SEARCH_HISTORY_KEY_PREFIX + userId;
         Boolean keyExists = redisTemplate.hasKey(historyKey);
         redisTemplate.opsForList().leftPush(historyKey, trimmedKeyword);
-        redisTemplate.opsForList().trim(historyKey, 0, ProductConstants.HOT_KEYWORD_LIMIT - 1);
+        redisTemplate.opsForList().trim(historyKey, 0, ProductConstant.HOT_KEYWORD_LIMIT - 1);
         if (Boolean.FALSE.equals(keyExists)) {
-            redisTemplate.expire(historyKey, Duration.ofDays(ProductConstants.SEARCH_HISTORY_EXPIRE_DAYS));
+            redisTemplate.expire(historyKey, Duration.ofDays(ProductConstant.SEARCH_HISTORY_EXPIRE_DAYS));
         }
 
         persistSearchHistory(userId, trimmedKeyword);
@@ -160,19 +160,19 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private Integer calculateHotLevel(int searchCount) {
-        if (searchCount >= ProductConstants.HOT_LEVEL_5_THRESHOLD) return 5;
-        if (searchCount >= ProductConstants.HOT_LEVEL_4_THRESHOLD) return 4;
-        if (searchCount >= ProductConstants.HOT_LEVEL_3_THRESHOLD) return 3;
-        if (searchCount >= ProductConstants.HOT_LEVEL_2_THRESHOLD) return 2;
-        if (searchCount >= ProductConstants.HOT_LEVEL_1_THRESHOLD) return 1;
+        if (searchCount >= ProductConstant.HOT_LEVEL_5_THRESHOLD) return 5;
+        if (searchCount >= ProductConstant.HOT_LEVEL_4_THRESHOLD) return 4;
+        if (searchCount >= ProductConstant.HOT_LEVEL_3_THRESHOLD) return 3;
+        if (searchCount >= ProductConstant.HOT_LEVEL_2_THRESHOLD) return 2;
+        if (searchCount >= ProductConstant.HOT_LEVEL_1_THRESHOLD) return 1;
         return 0;
     }
 
-    @Scheduled(cron = ProductConstants.CRON_SYNC_HOT_KEYWORDS)
+    @Scheduled(cron = ProductConstant.CRON_SYNC_HOT_KEYWORDS)
     public void syncHotKeywordsToDatabase() {
         try {
             Set<Object> allKeywords = redisTemplate.opsForZSet()
-                    .range(ProductConstants.HOT_KEYWORD_ZSET_KEY, 0, -1);
+                    .range(ProductConstant.HOT_KEYWORD_ZSET_KEY, 0, -1);
 
             if (allKeywords == null || allKeywords.isEmpty()) {
                 return;
@@ -181,7 +181,7 @@ public class SearchServiceImpl implements SearchService {
             List<HotKeyword> keywordsToSync = new ArrayList<>();
             for (Object keywordObj : allKeywords) {
                 String keyword = keywordObj.toString();
-                Double score = redisTemplate.opsForZSet().score(ProductConstants.HOT_KEYWORD_ZSET_KEY, keyword);
+                Double score = redisTemplate.opsForZSet().score(ProductConstant.HOT_KEYWORD_ZSET_KEY, keyword);
                 if (score == null) continue;
 
                 keywordsToSync.add(HotKeyword.builder()
@@ -200,7 +200,7 @@ public class SearchServiceImpl implements SearchService {
         }
     }
 
-    @Scheduled(cron = ProductConstants.CRON_CLEANUP_SEARCH_HISTORY)
+    @Scheduled(cron = ProductConstant.CRON_CLEANUP_SEARCH_HISTORY)
     public void cleanupExpiredSearchHistory() {
         try {
             LocalDateTime expireDate = LocalDateTime.now().minusDays(30);

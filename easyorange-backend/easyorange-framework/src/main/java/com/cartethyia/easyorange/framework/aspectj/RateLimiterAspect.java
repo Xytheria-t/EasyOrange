@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.framework.aspectj;
 
 import com.cartethyia.easyorange.common.annotation.RateLimiter;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.constant.RateLimitCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -89,6 +89,6 @@ public class RateLimiterAspect {
                 case USER -> SecurityContextUtil.getCurrentUserId().map(String::valueOf).orElse("anonymous");
             };
         }
-        return RateLimitCacheConstants.key(limitType, rateLimiter.key());
+        return CommonConstant.rateLimitKey(limitType, rateLimiter.key());
     }
 }

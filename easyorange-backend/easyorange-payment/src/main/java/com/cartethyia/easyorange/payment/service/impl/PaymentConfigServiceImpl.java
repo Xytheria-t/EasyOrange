@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cartethyia.easyorange.payment.constant.PaymentConstants;
+import com.cartethyia.easyorange.payment.constant.PaymentConstant;
 import com.cartethyia.easyorange.payment.dto.vo.PaymentConfigVO;
 import com.cartethyia.easyorange.payment.entity.PaymentConfig;
 import com.cartethyia.easyorange.payment.mapper.PaymentConfigMapper;
@@ -21,13 +21,13 @@ public class PaymentConfigServiceImpl extends ServiceImpl<PaymentConfigMapper, P
     public PaymentConfig getByChannelCode(String channelCode) {
         return getOne(new LambdaQueryWrapper<PaymentConfig>()
                 .eq(PaymentConfig::getChannelCode, channelCode)
-                .eq(PaymentConfig::getStatus, PaymentConstants.CONFIG_STATUS_ENABLED));
+                .eq(PaymentConfig::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED));
     }
 
     @Override
     public List<PaymentConfigVO> getEnabledChannels() {
         return list(new LambdaQueryWrapper<PaymentConfig>()
-                        .eq(PaymentConfig::getStatus, PaymentConstants.CONFIG_STATUS_ENABLED)
+                        .eq(PaymentConfig::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
                         .select(PaymentConfig::getId, PaymentConfig::getChannelCode,
                                 PaymentConfig::getChannelName, PaymentConfig::getSandbox,
                                 PaymentConfig::getStatus))

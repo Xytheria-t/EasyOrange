@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.FileUtils;
-import com.cartethyia.easyorange.product.constant.ProductConstants;
+import com.cartethyia.easyorange.product.constant.ProductConstant;
 import com.cartethyia.easyorange.product.entity.ProductImage;
 import com.cartethyia.easyorange.product.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.service.ProductImageService;
@@ -51,7 +51,7 @@ public class ProductImageServiceImpl extends ServiceImpl<ProductImageMapper, Pro
                     .productId(productId)
                     .imageUrl(imageUrls.get(i))
                     .sortOrder(i)
-                    .isMain(i == 0 ? ProductConstants.IMAGE_IS_MAIN : ProductConstants.IMAGE_NOT_MAIN)
+                    .isMain(i == 0 ? ProductConstant.IMAGE_IS_MAIN : ProductConstant.IMAGE_NOT_MAIN)
                     .build());
         }
         saveBatch(images);

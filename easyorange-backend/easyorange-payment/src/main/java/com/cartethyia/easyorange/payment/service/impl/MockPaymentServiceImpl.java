@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.service.impl;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.payment.constant.PaymentConstants;
+import com.cartethyia.easyorange.payment.constant.PaymentConstant;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import com.cartethyia.easyorange.payment.dto.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.dto.vo.PaymentVO;
@@ -28,7 +28,7 @@ public class MockPaymentServiceImpl implements MockPaymentService {
     @Override
     public PaymentVO createMockPayment(Long orderId, Integer paymentMethod, BigDecimal amount) {
         Payment payment = Payment.builder()
-                .paymentNo(PaymentConstants.MOCK_PAYMENT_NO_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16))
+                .paymentNo(PaymentConstant.MOCK_PAYMENT_NO_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16))
                 .orderId(orderId)
                 .amount(amount)
                 .paymentMethod(paymentMethod)
@@ -55,7 +55,7 @@ public class MockPaymentServiceImpl implements MockPaymentService {
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
             payment.setStatus(PaymentStatus.SUCCESS.getCode());
-            payment.setTransactionId(PaymentConstants.MOCK_TXN_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+            payment.setTransactionId(PaymentConstant.MOCK_TXN_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
         } else {
             payment.setStatus(PaymentStatus.FAILED.getCode());
         }
@@ -69,7 +69,7 @@ public class MockPaymentServiceImpl implements MockPaymentService {
     public PaymentVO mockPaymentSuccess(Long paymentId) {
         Payment payment = getPaymentOrThrow(paymentId);
         payment.setStatus(PaymentStatus.SUCCESS.getCode());
-        payment.setTransactionId(PaymentConstants.MOCK_TXN_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+        payment.setTransactionId(PaymentConstant.MOCK_TXN_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
         paymentRepository.update(payment);
 
         return buildPaymentVO(payment);

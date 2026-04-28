@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.assembler;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.util.MaskUtils;
-import com.cartethyia.easyorange.product.constant.ProductConstants;
+import com.cartethyia.easyorange.product.constant.ProductConstant;
 import com.cartethyia.easyorange.product.dto.vo.SellerInfo;
 import com.cartethyia.easyorange.product.dto.vo.ProductVO;
 import com.cartethyia.easyorange.product.entity.Category;
@@ -98,9 +98,9 @@ public class ProductAssembler {
             builder.images(imageUrls);
 
             ProductImage mainImage = images.stream()
-                    .filter(img -> img.getIsMain() != null && img.getIsMain().equals(ProductConstants.IMAGE_IS_MAIN))
-                    .findFirst()
-                    .orElse(images.get(0));
+                .filter(img -> img.getIsMain() != null && img.getIsMain().equals(ProductConstant.IMAGE_IS_MAIN))
+                .findFirst()
+                .orElse(images.get(0));
             builder.mainImageUrl(mainImage.getImageUrl());
         }
 

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.validation;
 
-import com.cartethyia.easyorange.user.constant.UserConstants;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public class PasswordValidator implements ConstraintValidator<Password, String> {
 
-    private static final Pattern PATTERN = Pattern.compile(UserConstants.PASSWORD_REGEX);
+    private static final Pattern PATTERN = Pattern.compile(UserConstant.PASSWORD_REGEX);
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {

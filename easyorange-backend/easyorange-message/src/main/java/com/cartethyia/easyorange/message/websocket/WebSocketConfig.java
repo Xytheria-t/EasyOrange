@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.message.constant.MessageConstants;
+import com.cartethyia.easyorange.message.constant.MessageConstant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -23,13 +23,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker(MessageConstants.WS_TOPIC_PREFIX, MessageConstants.WS_QUEUE_PREFIX);
-        registry.setUserDestinationPrefix(MessageConstants.WS_USER_PREFIX);
+        registry.enableSimpleBroker(MessageConstant.WS_TOPIC_PREFIX, MessageConstant.WS_QUEUE_PREFIX);
+        registry.setUserDestinationPrefix(MessageConstant.WS_USER_PREFIX);
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint(MessageConstants.WS_ENDPOINT)
+        registry.addEndpoint(MessageConstant.WS_ENDPOINT)
                 .addInterceptors(webSocketAuthInterceptor)
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
