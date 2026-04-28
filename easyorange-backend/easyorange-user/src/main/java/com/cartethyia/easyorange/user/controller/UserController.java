@@ -41,11 +41,12 @@ public class UserController {
         return Result.success(userService.register(bo));
     }
 
-    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
-    @PutMapping("/info")
-    public Result<UserVO> updateUserInfo(@Valid @RequestBody UpdateUserRequest request) {
-        UpdateUserBo bo = userConverter.toBo(request);
-        return Result.success(userService.updateUserInfo(bo));
+    @RateLimiter(key = "forgot_password", count = 3, time = 3600, limitType = LimitType.IP)
+    @PostMapping("/forgotPassword")
+    public Result<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        ForgotPasswordBo bo = userConverter.toBo(request);
+        userService.forgotPassword(bo);
+        return Result.success();
     }
 
     @RepeatSubmit(interval = 3000, message = "请勿重复提交")
@@ -56,12 +57,18 @@ public class UserController {
         return Result.success();
     }
 
-    @RateLimiter(key = "forgot_password", count = 3, time = 3600, limitType = LimitType.IP)
-    @PostMapping("/forgotPassword")
-    public Result<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        ForgotPasswordBo bo = userConverter.toBo(request);
-        userService.forgotPassword(bo);
-        return Result.success();
+    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
+    @PutMapping("/info")
+    public Result<UserVO> updateUserInfo(@Valid @RequestBody UpdateUserRequest request) {
+        UpdateUserBo bo = userConverter.toBo(request);
+        return Result.success(userService.updateUserInfo(bo));
+    }
+
+    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
+    @PostMapping("/avatar")
+    public Result<UserVO> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
+        UploadAvatarBo bo = userConverter.toBo(avatar);
+        return Result.success(userService.uploadAvatar(bo));
     }
 
     @GetMapping("/check-auth")
@@ -88,12 +95,5 @@ public class UserController {
             throw BusinessException.of("需要管理员权限才能执行此操作");
         }
         return Result.success();
-    }
-
-    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
-    @PostMapping("/avatar")
-    public Result<UserVO> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
-        UploadAvatarBo bo = userConverter.toBo(avatar);
-        return Result.success(userService.uploadAvatar(bo));
     }
 }

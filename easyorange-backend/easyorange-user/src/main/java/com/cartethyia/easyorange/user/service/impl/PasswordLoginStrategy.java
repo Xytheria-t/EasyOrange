@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.user.dto.request.LoginRequest;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.enums.LoginMethod;
 import com.cartethyia.easyorange.user.enums.UserStatus;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
 import com.cartethyia.easyorange.user.service.LoginSecurityService;

@@ -51,11 +51,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
     @Transactional(rollbackFor = Exception.class)
     public Long register(RegisterBo bo) {
-        // 检查用户名是否存在
         User existingUser = lambdaQuery().eq(User::getUsername, bo.username()).one();
         BizRequire.isNull(existingUser, "用户名已存在");
 
-        // BO 负责构建实体（包含密码加密和业务规则）
         User user = bo.toEntity(passwordEncoder);
         BizRequire.isTrue(save(user), "注册失败，请稍后重试");
 
@@ -66,18 +64,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UserVO updateUserInfo(UpdateUserBo bo) {
-        User currentUser = getCurrentUserOrThrow();
+    public void forgotPassword(ForgotPasswordBo bo) {
+        User user = lambdaQuery().eq(User::getPhone, bo.phone()).one();
+        BizRequire.notNull(user, "该手机号未注册");
 
-        // BO 负责检查是否有更新
-        BizRequire.isTrue(bo.hasAnyUpdate(), "没有需要更新的字段");
+        boolean updated = lambdaUpdate()
+            .eq(User::getId, user.getId())
+            .set(User::getPassword, bo.encodePassword(passwordEncoder))
+            .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
+            .update();
 
-        // BO 负责应用增量更新
-        bo.applyTo(currentUser);
-        BizRequire.isTrue(updateById(currentUser), "更新用户信息失败");
-
-        log.info("action=updateUserInfo success userId={}", currentUser.getId());
-        return userConverter.toVo(currentUser);
+        BizRequire.isTrue(updated, "重置密码失败，请稍后重试");
+        log.info("action=forgotPassword success phone={}", bo.phone());
     }
 
     @Override
@@ -88,16 +86,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = getById(userId);
         BizRequire.notNull(user, "用户不存在");
 
-        // BO 负责业务规则验证
         bo.validateDifferentPassword();
 
-        // BO 负责密码验证
         BizRequire.isTrue(
             bo.verifyOldPassword(passwordEncoder, user.getPassword()),
             "旧密码错误"
         );
 
-        // BO 负责构建更新
         boolean updated = lambdaUpdate()
             .eq(User::getId, userId)
             .set(User::getPassword, bo.encodeNewPassword(passwordEncoder))
@@ -111,19 +106,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void forgotPassword(ForgotPasswordBo bo) {
-        User user = lambdaQuery().eq(User::getPhone, bo.phone()).one();
-        BizRequire.notNull(user, "该手机号未注册");
+    public UserVO updateUserInfo(UpdateUserBo bo) {
+        User currentUser = getCurrentUserOrThrow();
 
-        // BO 负责密码加密
-        boolean updated = lambdaUpdate()
-            .eq(User::getId, user.getId())
-            .set(User::getPassword, bo.encodePassword(passwordEncoder))
-            .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
-            .update();
+        BizRequire.isTrue(bo.hasAnyUpdate(), "没有需要更新的字段");
 
-        BizRequire.isTrue(updated, "重置密码失败，请稍后重试");
-        log.info("action=forgotPassword success phone={}", bo.phone());
+        bo.applyTo(currentUser);
+        BizRequire.isTrue(updateById(currentUser), "更新用户信息失败");
+
+        log.info("action=updateUserInfo success userId={}", currentUser.getId());
+        return userConverter.toVo(currentUser);
     }
 
     @Override
