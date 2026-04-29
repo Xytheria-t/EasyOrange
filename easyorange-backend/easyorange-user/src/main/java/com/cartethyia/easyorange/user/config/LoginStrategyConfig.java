@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.user.config;
 
 import com.cartethyia.easyorange.user.enums.LoginMethod;
-import com.cartethyia.easyorange.user.service.impl.PasswordLoginStrategy;
-import com.cartethyia.easyorange.user.service.strategy.LoginStrategy;
+import com.cartethyia.easyorange.user.service.auth.strategy.PasswordLoginStrategy;
+import com.cartethyia.easyorange.user.service.auth.strategy.LoginStrategy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

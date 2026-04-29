@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.user.service;
 import com.cartethyia.easyorange.user.event.extractor.PasswordChangedEventExtractor;
 import com.cartethyia.easyorange.user.event.extractor.UserRegisteredEventExtractor;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
-import com.cartethyia.easyorange.user.service.impl.UserServiceImpl;
+import com.cartethyia.easyorange.user.service.user.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

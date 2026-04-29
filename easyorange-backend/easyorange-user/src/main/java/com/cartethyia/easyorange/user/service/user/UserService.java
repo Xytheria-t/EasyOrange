@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.service;
+package com.cartethyia.easyorange.user.service.user;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.user.dto.bo.*;

@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.entity.Order;
 import com.cartethyia.easyorange.order.mapper.OrderMapper;
 import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.service.UserService;
+import com.cartethyia.easyorange.user.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
-import com.cartethyia.easyorange.user.service.strategy.LoginDispatcher;
+import com.cartethyia.easyorange.user.service.auth.strategy.LoginDispatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -15,7 +15,7 @@ public record ImageSet(List<ProductImageVO> images) {
             long mainCount = images.stream()
                     .filter(ProductImageVO::isMain)
                     .count();
-            BizRequire.isTrue(mainCount <= 1, "主图只能有一个");
+            BizRequire.requireTrue(mainCount <= 1, "主图只能有一个");
             List<ProductImageVO> validated = new ArrayList<>();
             for (ProductImageVO img : images) {
                 validated.add(new ProductImageVO(

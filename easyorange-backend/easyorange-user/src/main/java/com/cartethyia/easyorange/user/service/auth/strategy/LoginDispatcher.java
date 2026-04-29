@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.service.strategy;
+package com.cartethyia.easyorange.user.service.auth.strategy;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.user.dto.request.LoginRequest;

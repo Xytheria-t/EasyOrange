@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.mapper.MessageMapper;
 import com.cartethyia.easyorange.message.service.MessageService;
 import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.service.UserService;
+import com.cartethyia.easyorange.user.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

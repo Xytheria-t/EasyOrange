@@ -46,7 +46,7 @@ public class PaymentAggregate {
         BizRequire.notNull(orderId, "订单ID不能为空");
         BizRequire.notNull(userId, "用户ID不能为空");
         BizRequire.notNull(amount, "支付金额不能为空");
-        BizRequire.isTrue(amount.compareTo(BigDecimal.ZERO) > 0, "支付金额必须大于0");
+        BizRequire.requireTrue(amount.compareTo(BigDecimal.ZERO) > 0, "支付金额必须大于0");
         BizRequire.notNull(paymentMethod, "支付方式不能为空");
 
         Long paymentId = generatePaymentId();
@@ -68,7 +68,7 @@ public class PaymentAggregate {
     }
 
     public BaseDomainEvent pay(PaymentStrategy strategy) {
-        BizRequire.isTrue(PaymentStatus.canPay(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
+        BizRequire.requireTrue(PaymentStatus.canPay(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
 
         PaymentResult result = strategy.pay(this.id, this.orderId, this.amount, this.paymentMethod);
 
@@ -83,14 +83,14 @@ public class PaymentAggregate {
     }
 
     public BaseDomainEvent refund(BigDecimal refundAmount, PaymentStrategy strategy) {
-        BizRequire.isTrue(PaymentStatus.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
+        BizRequire.requireTrue(PaymentStatus.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
 
         PaymentAmount refundAmountVO = PaymentAmount.of(refundAmount);
         PaymentAmount currentAmount = PaymentAmount.of(this.amount);
-        BizRequire.isTrue(refundAmountVO.isLessThanOrEqualTo(currentAmount.value()), "退款金额不能超过支付金额");
+        BizRequire.requireTrue(refundAmountVO.isLessThanOrEqualTo(currentAmount.value()), "退款金额不能超过支付金额");
 
         BigDecimal totalRefunded = this.refundedAmount.add(refundAmount);
-        BizRequire.isTrue(totalRefunded.compareTo(this.amount) <= 0, "累计退款金额不能超过支付金额");
+        BizRequire.requireTrue(totalRefunded.compareTo(this.amount) <= 0, "累计退款金额不能超过支付金额");
 
         RefundResult result = strategy.refund(this.id, refundAmount);
 
@@ -110,7 +110,7 @@ public class PaymentAggregate {
     }
 
     public BaseDomainEvent directRefund(String refundReason) {
-        BizRequire.isTrue(PaymentStatus.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
+        BizRequire.requireTrue(PaymentStatus.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
 
         this.status = PaymentStatus.REFUNDED.getCode();
         this.refundedAmount = this.amount;
@@ -121,7 +121,7 @@ public class PaymentAggregate {
     }
 
     public PaymentFailedEvent fail(String reason) {
-        BizRequire.isTrue(PaymentStatus.PENDING.getCode().equals(this.status), "只有待支付状态可以标记为失败");
+        BizRequire.requireTrue(PaymentStatus.PENDING.getCode().equals(this.status), "只有待支付状态可以标记为失败");
 
         this.status = PaymentStatus.FAILED.getCode();
 
@@ -129,7 +129,7 @@ public class PaymentAggregate {
     }
 
     public void close() {
-        BizRequire.isTrue(PaymentStatus.canClose(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
+        BizRequire.requireTrue(PaymentStatus.canClose(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
 
         this.status = PaymentStatus.CLOSED.getCode();
     }

@@ -1,67 +1,46 @@
 package com.cartethyia.easyorange.user.event.extractor;
 
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.event.PasswordChangedEvent;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mockStatic;
 
+@ExtendWith(MockitoExtension.class)
 class PasswordChangedEventExtractorTest {
 
-    private PasswordChangedEventExtractor extractor;
-
-    @BeforeEach
-    void setUp() {
-        extractor = new PasswordChangedEventExtractor();
-    }
-
     @Test
-    @DisplayName("应正确提取密码修改事件")
     void shouldExtractPasswordChangedEvent() {
-        // Arrange
         Long userId = 123L;
-        extractor.setUserId(userId);
+        try (MockedStatic<SecurityContextUtil> mockedSecurityContext = mockStatic(SecurityContextUtil.class)) {
+            mockedSecurityContext.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(userId);
 
-        Long result = 456L; // 返回值可以是任意值，主要依赖上下文中的 userId
+            PasswordChangedEventExtractor extractor = new PasswordChangedEventExtractor();
+            PasswordChangedEvent event = extractor.extract(456L);
 
-        // Act
-        PasswordChangedEvent event = extractor.extract(result);
-
-        // Assert
-        assertThat(event).isNotNull();
-        assertThat(event.getUserId()).isEqualTo(userId);
-        assertThat(event.eventType()).isEqualTo("PasswordChanged");
-        assertThat(event.getAggregateType()).isEqualTo("User");
+            assertThat(event).isNotNull();
+            assertThat(event.getUserId()).isEqualTo(userId);
+            assertThat(event.eventType()).isEqualTo("PasswordChanged");
+            assertThat(event.getAggregateType()).isEqualTo("User");
+        }
     }
 
     @Test
-    @DisplayName("当用户 ID 上下文未设置时应抛出异常")
-    void shouldThrowExceptionWhenUserIdContextNotSet() {
-        // Arrange
-        Long result = 789L;
+    void shouldThrowExceptionWhenUserNotAuthenticated() {
+        try (MockedStatic<SecurityContextUtil> mockedSecurityContext = mockStatic(SecurityContextUtil.class)) {
+            mockedSecurityContext.when(SecurityContextUtil::getCurrentUserIdOrThrow)
+                .thenThrow(new IllegalStateException("No authenticated user"));
 
-        // Act & Assert
-        assertThatThrownBy(() -> extractor.extract(result))
-            .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("User ID context not set");
-    }
+            PasswordChangedEventExtractor extractor = new PasswordChangedEventExtractor();
 
-    @Test
-    @DisplayName("提取后应清理上下文")
-    void shouldCleanupContextAfterExtraction() {
-        // Arrange
-        Long userId = 999L;
-        extractor.setUserId(userId);
-
-        Long result = 111L;
-
-        // Act
-        extractor.extract(result);
-
-        // Assert - 第二次提取应该失败，因为上下文已清理
-        assertThatThrownBy(() -> extractor.extract(result))
-            .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> extractor.extract(null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No authenticated user");
+        }
     }
 }

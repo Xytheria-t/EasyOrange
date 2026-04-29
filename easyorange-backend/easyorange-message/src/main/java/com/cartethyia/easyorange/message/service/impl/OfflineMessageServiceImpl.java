@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.message.mapper.OfflineMessageMapper;
 import com.cartethyia.easyorange.message.service.OfflineMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -43,6 +44,7 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void markAsPushed(Long offlineMessageId) {
         update(new LambdaUpdateWrapper<OfflineMessage>()
                 .eq(OfflineMessage::getId, offlineMessageId)
@@ -51,6 +53,7 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void markAsFailed(Long offlineMessageId) {
         update(new LambdaUpdateWrapper<OfflineMessage>()
                 .eq(OfflineMessage::getId, offlineMessageId)
@@ -58,6 +61,7 @@ public class OfflineMessageServiceImpl extends ServiceImpl<OfflineMessageMapper,
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void incrementRetryCount(Long offlineMessageId) {
         update(new LambdaUpdateWrapper<OfflineMessage>()
                 .eq(OfflineMessage::getId, offlineMessageId)

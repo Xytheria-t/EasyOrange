@@ -84,7 +84,7 @@ public class MessageCommandHandler {
         Message message = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
-        BizRequire.isTrue(
+        BizRequire.requireTrue(
                 message.getReceiverId().equals(userId),
                 MessageResultCode.MESSAGE_NOT_OWNER
         );
@@ -127,7 +127,7 @@ public class MessageCommandHandler {
         Message message = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
-        BizRequire.isTrue(
+        BizRequire.requireTrue(
                 message.getReceiverId().equals(userId),
                 MessageResultCode.MESSAGE_NOT_OWNER
         );

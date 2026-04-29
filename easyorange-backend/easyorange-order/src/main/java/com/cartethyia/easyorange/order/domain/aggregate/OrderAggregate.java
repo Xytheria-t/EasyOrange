@@ -49,7 +49,7 @@ public class OrderAggregate {
                                                String remark) {
         BizRequire.ne(buyerId, sellerId, "不能购买自己的商品");
         BizRequire.notNull(amount, "订单金额不能为空");
-        BizRequire.isTrue(amount.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
+        BizRequire.requireTrue(amount.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
 
         Long orderId = generateOrderId();
         String orderNo = generateOrderNo();
@@ -78,22 +78,22 @@ public class OrderAggregate {
     }
 
     public OrderPaidEvent pay() {
-        BizRequire.isTrue(OrderStatus.canPay(this.status), OrderResultCode.ORDER_STATUS_ERROR);
+        BizRequire.requireTrue(OrderStatus.canPay(this.status), OrderResultCode.ORDER_STATUS_ERROR);
         return new OrderPaidEvent(this.id, 1);
     }
 
     public OrderCancelledEvent cancel(String reason) {
-        BizRequire.isTrue(OrderStatus.canCancel(this.status), OrderResultCode.ORDER_CANNOT_CANCEL);
+        BizRequire.requireTrue(OrderStatus.canCancel(this.status), OrderResultCode.ORDER_CANNOT_CANCEL);
         return new OrderCancelledEvent(this.id, this.productId, reason);
     }
 
     public OrderShippedEvent ship() {
-        BizRequire.isTrue(OrderStatus.canShip(this.status), OrderResultCode.ORDER_STATUS_ERROR);
+        BizRequire.requireTrue(OrderStatus.canShip(this.status), OrderResultCode.ORDER_STATUS_ERROR);
         return new OrderShippedEvent(this.id);
     }
 
     public OrderCompletedEvent confirmReceipt() {
-        BizRequire.isTrue(OrderStatus.canConfirmReceipt(this.status), OrderResultCode.ORDER_STATUS_ERROR);
+        BizRequire.requireTrue(OrderStatus.canConfirmReceipt(this.status), OrderResultCode.ORDER_STATUS_ERROR);
         return new OrderCompletedEvent(this.id, this.productId);
     }
 

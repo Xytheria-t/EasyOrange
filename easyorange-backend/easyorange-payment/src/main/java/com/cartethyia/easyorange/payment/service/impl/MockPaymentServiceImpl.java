@@ -50,6 +50,7 @@ public class MockPaymentServiceImpl implements MockPaymentService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public PaymentVO processMockPayment(MockPaymentRequest request) {
         Payment payment = getPaymentOrThrow(request.getPaymentId());
 
@@ -89,7 +90,7 @@ public class MockPaymentServiceImpl implements MockPaymentService {
     @Transactional(rollbackFor = Exception.class)
     public void mockRefund(Long paymentId, String reason) {
         Payment payment = getPaymentOrThrow(paymentId);
-        BizRequire.isTrue(PaymentStatus.SUCCESS.getCode().equals(payment.getStatus()), PaymentResultCode.PAYMENT_INVALID_STATUS);
+        BizRequire.requireTrue(PaymentStatus.SUCCESS.getCode().equals(payment.getStatus()), PaymentResultCode.PAYMENT_INVALID_STATUS);
         payment.setStatus(PaymentStatus.REFUNDED.getCode());
         payment.setRefundReason(reason);
         payment.setRefundTime(LocalDateTime.now());

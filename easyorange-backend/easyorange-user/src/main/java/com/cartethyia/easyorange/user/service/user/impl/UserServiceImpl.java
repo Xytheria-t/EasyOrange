@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.service.impl;
+package com.cartethyia.easyorange.user.service.user.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -12,10 +12,8 @@ import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.event.annotation.PublishEvent;
-import com.cartethyia.easyorange.user.event.extractor.PasswordChangedEventExtractor;
-import com.cartethyia.easyorange.user.event.extractor.UserRegisteredEventExtractor;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
-import com.cartethyia.easyorange.user.service.UserService;
+import com.cartethyia.easyorange.user.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,8 +31,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
 
     private final PasswordEncoder passwordEncoder;
     private final UserConverter userConverter;
-    private final UserRegisteredEventExtractor userRegisteredEventExtractor;
-    private final PasswordChangedEventExtractor passwordChangedEventExtractor;
 
     @Value("${user.avatar.path:./upload/avatar}")
     private String avatarUploadPath;
@@ -55,9 +51,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         BizRequire.isNull(existingUser, "用户名已存在");
 
         User user = bo.toEntity(passwordEncoder);
-        BizRequire.isTrue(save(user), "注册失败，请稍后重试");
+        BizRequire.requireTrue(save(user), "注册失败，请稍后重试");
 
-        userRegisteredEventExtractor.setUser(user);
         log.info("action=register success username={}", bo.username());
         return user.getId();
     }
@@ -74,7 +69,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
             .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
             .update();
 
-        BizRequire.isTrue(updated, "重置密码失败，请稍后重试");
+        BizRequire.requireTrue(updated, "重置密码失败，请稍后重试");
         log.info("action=forgotPassword success phone={}", bo.phone());
     }
 
@@ -82,26 +77,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @PublishEvent(type = "PasswordChanged", extractor = "passwordChangedEventExtractor")
     @Transactional(rollbackFor = Exception.class)
     public void changePassword(ChangePasswordBo bo) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        User user = getById(userId);
-        BizRequire.notNull(user, "用户不存在");
+        User user = getCurrentUserOrThrow();
 
         bo.validateDifferentPassword();
 
-        BizRequire.isTrue(
+        BizRequire.requireTrue(
             bo.verifyOldPassword(passwordEncoder, user.getPassword()),
             "旧密码错误"
         );
 
         boolean updated = lambdaUpdate()
-            .eq(User::getId, userId)
+            .eq(User::getId, user.getId())
             .set(User::getPassword, bo.encodeNewPassword(passwordEncoder))
             .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
             .update();
 
-        BizRequire.isTrue(updated, "修改密码失败，请稍后重试");
-        passwordChangedEventExtractor.setUserId(userId);
-        log.info("action=changePassword success userId={}", userId);
+        BizRequire.requireTrue(updated, "修改密码失败，请稍后重试");
+        log.info("action=changePassword success userId={}", user.getId());
     }
 
     @Override
@@ -109,10 +101,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserVO updateUserInfo(UpdateUserBo bo) {
         User currentUser = getCurrentUserOrThrow();
 
-        BizRequire.isTrue(bo.hasAnyUpdate(), "没有需要更新的字段");
+        BizRequire.requireTrue(bo.hasAnyUpdate(), "没有需要更新的字段");
 
         bo.applyTo(currentUser);
-        BizRequire.isTrue(updateById(currentUser), "更新用户信息失败");
+        BizRequire.requireTrue(updateById(currentUser), "更新用户信息失败");
 
         log.info("action=updateUserInfo success userId={}", currentUser.getId());
         return userConverter.toVo(currentUser);
@@ -123,7 +115,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public UserVO uploadAvatar(UploadAvatarBo bo) {
         MultipartFile avatar = bo.avatar();
         BizRequire.notNull(avatar, "头像不能为空");
-        BizRequire.isTrue(!avatar.isEmpty(), "头像不能为空");
+        BizRequire.requireTrue(!avatar.isEmpty(), "头像不能为空");
 
         User currentUser = getCurrentUserOrThrow();
 
@@ -137,7 +129,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .set(User::getAvatar, avatarUrl)
                 .update();
 
-            BizRequire.isTrue(updated, "更新头像失败");
+            BizRequire.requireTrue(updated, "更新头像失败");
             log.info("action=uploadAvatar success userId={}, avatarUrl={}", currentUser.getId(), avatarUrl);
 
             return userConverter.toVo(getById(currentUser.getId()));

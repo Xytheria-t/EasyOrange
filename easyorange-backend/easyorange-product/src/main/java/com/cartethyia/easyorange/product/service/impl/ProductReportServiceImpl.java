@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.product.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.service.ProductReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -24,6 +25,7 @@ public class ProductReportServiceImpl extends ServiceImpl<ProductReportMapper, P
     private final ProductMapper productMapper;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void reportProduct(Long productId, Long reporterId, String reason) {
         boolean alreadyReported = lambdaQuery()
                 .eq(ProductReport::getProductId, productId)
@@ -58,6 +60,7 @@ public class ProductReportServiceImpl extends ServiceImpl<ProductReportMapper, P
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void processReport(Long reportId, boolean approve) {
         ProductReport report = getById(reportId);
         if (report == null) {

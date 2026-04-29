@@ -46,7 +46,7 @@ public class OrderQueryHandler {
         BizRequire.notNull(order, OrderResultCode.ORDER_NOT_FOUND);
 
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.isTrue(order.getBuyerId().equals(userId) || order.getSellerId().equals(userId),
+        BizRequire.requireTrue(order.getBuyerId().equals(userId) || order.getSellerId().equals(userId),
                 OrderResultCode.ORDER_NOT_OWNER);
 
         return toOrderVOWithMask(order);

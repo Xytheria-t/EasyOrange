@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  * <h3>方法命名规律：</h3>
  * <ul>
  *   <li>{@code notXxx} - 验证"不能为X"，是X则抛异常</li>
- *   <li>{@code isXxx} - 验证"条件X成立时应抛异常"</li>
+ *   <li>{@code requireXxx} - 验证"必须满足X"，不满足则抛异常</li>
  * </ul>
  *
  * <h3>选择指南：</h3>
@@ -27,8 +27,8 @@ import java.util.regex.Pattern;
  * 集合为空时抛异常          → notEmpty(collection, msg)
  * 数字≤0时抛异常            → positive(num, msg)
  * 数字<0时抛异常             → nonNegative(num, msg)
- * 布尔为true时抛异常         → isTrue(cond, msg)   // 注意：是true时抛！
- * 布尔为false时抛异常        → isFalse(cond, msg) // 注意：是false时抛！
+ * 布尔必须为true时抛异常    → requireTrue(cond, msg)
+ * 布尔必须为false时抛异常   → requireFalse(cond, msg)
  * 直接抛异常                 → fail(msg)
  * </pre>
  *
@@ -38,10 +38,10 @@ import java.util.regex.Pattern;
  * BizRequire.notNull(user, "用户不存在");
  *
  * // 验证商品已下架（状态不是ONLINE时抛异常）
- * BizRequire.isTrue(ProductStatus.ONLINE.getCode().equals(status), "商品已下架");
+ * BizRequire.requireTrue(ProductStatus.ONLINE.getCode().equals(status), "商品已下架");
  *
  * // 验证不能买自己商品（是卖家时抛异常）
- * BizRequire.isFalse(product.getSellerId().equals(userId), "不能购买自己的商品");
+ * BizRequire.requireFalse(product.getSellerId().equals(userId), "不能购买自己的商品");
  * </pre>
  */
 public final class BizRequire {
@@ -75,15 +75,15 @@ public final class BizRequire {
      * 验证条件必须为 true，不为 true 时抛异常
      *
      * <p>示例：商品必须在线</p>
-     * <pre>BizRequire.isTrue(product.getStatus() == 1, "商品已下架");</pre>
+     * <pre>BizRequire.requireTrue(product.getStatus() == 1, "商品已下架");</pre>
      */
-    public static void isTrue(boolean condition, String message) {
+    public static void requireTrue(boolean condition, String message) {
         if (!condition) {
             throw BusinessException.of(message);
         }
     }
 
-    public static void isTrue(boolean condition, IResultCode resultCode) {
+    public static void requireTrue(boolean condition, IResultCode resultCode) {
         if (!condition) {
             throw BusinessException.of(resultCode);
         }
@@ -93,9 +93,9 @@ public final class BizRequire {
      * 验证条件必须为 false，为 false 时抛异常
      *
      * <p>示例：用户不能是卖家</p>
-     * <pre>BizRequire.isFalse(product.getSellerId().equals(userId), "不能购买自己的商品");</pre>
+     * <pre>BizRequire.requireFalse(product.getSellerId().equals(userId), "不能购买自己的商品");</pre>
      */
-    public static void isFalse(boolean condition, String message) {
+    public static void requireFalse(boolean condition, String message) {
         if (condition) {
             throw BusinessException.of(message);
         }

@@ -45,7 +45,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     @Transactional(rollbackFor = Exception.class)
     public UploadFileVO uploadFile(MultipartFile file, String businessType, Long businessId) {
         BizRequire.notNull(file, "上传文件不能为空");
-        BizRequire.isTrue(!file.isEmpty(), "上传文件不能为空");
+        BizRequire.requireTrue(!file.isEmpty(), "上传文件不能为空");
 
         Long userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));

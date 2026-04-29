@@ -44,7 +44,7 @@ public class ProductAggregate {
     public static ProductAggregate create(CreateProductCommand command, Long userId) {
         BizRequire.notBlank(command.getName(), "商品名称不能为空");
         BizRequire.notNull(command.getPrice(), "商品价格不能为空");
-        BizRequire.isTrue(command.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0, "商品价格必须大于0");
+        BizRequire.requireTrue(command.getPrice().compareTo(java.math.BigDecimal.ZERO) > 0, "商品价格必须大于0");
 
         Product product = Product.builder()
                 .userId(userId)
@@ -180,7 +180,7 @@ public class ProductAggregate {
 
     public void markAsSold() {
         BizRequire.notNull(product, "商品不存在");
-        BizRequire.isTrue(ProductStatus.ONLINE.getCode().equals(product.getStatus()),
+        BizRequire.requireTrue(ProductStatus.ONLINE.getCode().equals(product.getStatus()),
                 "只有上架中的商品才能标记为已售");
         product.setStatus(ProductStatus.SOLD.getCode());
         addDomainEvent(new ProductMarkedSoldEvent(product.getId()));
@@ -193,7 +193,7 @@ public class ProductAggregate {
 
     public StockDecreasedEvent decrementStock() {
         BizRequire.notNull(product, "商品不存在");
-        BizRequire.isTrue(product.getStock() != null && product.getStock() > 0, "商品库存不足");
+        BizRequire.requireTrue(product.getStock() != null && product.getStock() > 0, "商品库存不足");
         product.setStock(product.getStock() - 1);
         return new StockDecreasedEvent(product.getId());
     }

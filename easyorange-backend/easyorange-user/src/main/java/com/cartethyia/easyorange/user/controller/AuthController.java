@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.user.dto.request.LoginRequest;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.service.strategy.LoginDispatcher;
+import com.cartethyia.easyorange.user.service.auth.strategy.LoginDispatcher;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +38,7 @@ public class AuthController {
         if (authHeader == null) {
             return Result.success();
         }
-        BizRequire.isTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
+        BizRequire.requireTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
 
         tokenService.delToken(extractToken(authHeader));
         
@@ -59,7 +59,7 @@ public class AuthController {
 
     private String extractToken(String authHeader) {
         BizRequire.notBlank(authHeader, ResultCode.UNAUTHORIZED);
-        BizRequire.isTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
+        BizRequire.requireTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
         return authHeader.substring(jwtProperties.getTokenPrefix().length());
     }
 }

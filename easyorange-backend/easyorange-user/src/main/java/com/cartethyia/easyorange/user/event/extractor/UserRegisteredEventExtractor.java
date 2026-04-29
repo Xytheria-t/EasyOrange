@@ -1,29 +1,24 @@
 package com.cartethyia.easyorange.user.event.extractor;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.event.EventExtractor;
 import com.cartethyia.easyorange.user.event.UserRegisteredEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component("userRegisteredEventExtractor")
+@RequiredArgsConstructor
 public class UserRegisteredEventExtractor implements EventExtractor<Long, UserRegisteredEvent> {
 
-    private final ThreadLocal<User> userContext = new ThreadLocal<>();
-
-    public void setUser(User user) {
-        this.userContext.set(user);
-    }
+    private final BaseMapper<User> userMapper;
 
     @Override
     public UserRegisteredEvent extract(Long userId) {
-        User user = userContext.get();
+        User user = userMapper.selectById(userId);
         if (user == null) {
-            throw new IllegalStateException("User context not set. Cannot extract UserRegisteredEvent.");
+            throw new IllegalStateException("User not found: " + userId);
         }
-        try {
-            return new UserRegisteredEvent(userId, user.getUsername());
-        } finally {
-            userContext.remove();
-        }
+        return new UserRegisteredEvent(userId, user.getUsername());
     }
 }

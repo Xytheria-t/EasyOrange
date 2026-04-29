@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 public record Money(BigDecimal value) {
     public Money {
         BizRequire.notNull(value, "金额不能为空");
-        BizRequire.isTrue(value.compareTo(BigDecimal.ZERO) > 0, "金额必须大于0");
+        BizRequire.requireTrue(value.compareTo(BigDecimal.ZERO) > 0, "金额必须大于0");
     }
 
     public Money(Long cents) {

@@ -1,37 +1,42 @@
 package com.cartethyia.easyorange.user.event.extractor;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.event.UserRegisteredEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class UserRegisteredEventExtractorTest {
+
+    @Mock
+    private BaseMapper<User> userMapper;
 
     private UserRegisteredEventExtractor extractor;
 
     @BeforeEach
     void setUp() {
-        extractor = new UserRegisteredEventExtractor();
+        extractor = new UserRegisteredEventExtractor(userMapper);
     }
 
     @Test
     @DisplayName("应正确提取用户注册事件")
     void shouldExtractUserRegisteredEvent() {
-        // Arrange
+        Long userId = 123L;
         User user = new User();
         user.setUsername("testuser");
-        extractor.setUser(user);
+        when(userMapper.selectById(userId)).thenReturn(user);
 
-        Long userId = 123L;
-
-        // Act
         UserRegisteredEvent event = extractor.extract(userId);
 
-        // Assert
         assertThat(event).isNotNull();
         assertThat(event.getUserId()).isEqualTo(userId);
         assertThat(event.getUsername()).isEqualTo("testuser");
@@ -40,32 +45,13 @@ class UserRegisteredEventExtractorTest {
     }
 
     @Test
-    @DisplayName("当用户上下文未设置时应抛出异常")
-    void shouldThrowExceptionWhenUserContextNotSet() {
-        // Arrange
+    @DisplayName("当用户不存在时应抛出异常")
+    void shouldThrowExceptionWhenUserNotFound() {
         Long userId = 456L;
+        when(userMapper.selectById(userId)).thenReturn(null);
 
-        // Act & Assert
         assertThatThrownBy(() -> extractor.extract(userId))
             .isInstanceOf(IllegalStateException.class)
-            .hasMessageContaining("User context not set");
-    }
-
-    @Test
-    @DisplayName("提取后应清理上下文")
-    void shouldCleanupContextAfterExtraction() {
-        // Arrange
-        User user = new User();
-        user.setUsername("cleanup_test");
-        extractor.setUser(user);
-
-        Long userId = 789L;
-
-        // Act
-        extractor.extract(userId);
-
-        // Assert - 第二次提取应该失败，因为上下文已清理
-        assertThatThrownBy(() -> extractor.extract(userId))
-            .isInstanceOf(IllegalStateException.class);
+            .hasMessageContaining("User not found");
     }
 }

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.service.impl;
+package com.cartethyia.easyorange.user.service.auth.impl;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.user.constant.UserConstant;
-import com.cartethyia.easyorange.user.service.LoginSecurityService;
+import com.cartethyia.easyorange.user.service.auth.LoginSecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

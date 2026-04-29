@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.message.service.MessageTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -97,6 +98,7 @@ public class MessageTemplateServiceImpl extends ServiceImpl<MessageTemplateMappe
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public int updateTemplate(MessageTemplate template) {
         return updateById(template) ? 1 : 0;
     }

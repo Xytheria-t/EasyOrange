@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.service.impl;
+package com.cartethyia.easyorange.user.service.auth.strategy;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.RequestUtil;
@@ -9,9 +9,8 @@ import com.cartethyia.easyorange.user.dto.vo.UserVO;
 import com.cartethyia.easyorange.user.entity.User;
 import com.cartethyia.easyorange.user.enums.UserStatus;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
-import com.cartethyia.easyorange.user.service.LoginSecurityService;
-import com.cartethyia.easyorange.user.service.UserQueryService;
-import com.cartethyia.easyorange.user.service.strategy.LoginStrategy;
+import com.cartethyia.easyorange.user.service.auth.LoginSecurityService;
+import com.cartethyia.easyorange.user.service.user.UserQueryService;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

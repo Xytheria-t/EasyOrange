@@ -36,36 +36,36 @@ class BizRequireTest {
     }
 
     @Nested
-    @DisplayName("isTrue")
-    class IsTrueTests {
+    @DisplayName("requireTrue")
+    class RequireTrueTests {
 
         @Test
         @DisplayName("条件为 false 时抛出异常")
-        void isTrue_falseCondition_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.isTrue(false, "条件不满足"));
+        void requireTrue_falseCondition_throwsException() {
+            assertThrows(BusinessException.class, () -> BizRequire.requireTrue(false, "条件不满足"));
         }
 
         @Test
         @DisplayName("条件为 true 时不抛出")
-        void isTrue_trueCondition_noException() {
-            assertDoesNotThrow(() -> BizRequire.isTrue(true, "条件不满足"));
+        void requireTrue_trueCondition_noException() {
+            assertDoesNotThrow(() -> BizRequire.requireTrue(true, "条件不满足"));
         }
     }
 
     @Nested
-    @DisplayName("isFalse")
-    class IsFalseTests {
+    @DisplayName("requireFalse")
+    class RequireFalseTests {
 
         @Test
         @DisplayName("条件为 true 时抛出异常")
-        void isFalse_trueCondition_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.isFalse(true, "条件应为 false"));
+        void requireFalse_trueCondition_throwsException() {
+            assertThrows(BusinessException.class, () -> BizRequire.requireFalse(true, "条件应为 false"));
         }
 
         @Test
         @DisplayName("条件为 false 时不抛出")
-        void isFalse_falseCondition_noException() {
-            assertDoesNotThrow(() -> BizRequire.isFalse(false, "条件应为 false"));
+        void requireFalse_falseCondition_noException() {
+            assertDoesNotThrow(() -> BizRequire.requireFalse(false, "条件应为 false"));
         }
     }
 

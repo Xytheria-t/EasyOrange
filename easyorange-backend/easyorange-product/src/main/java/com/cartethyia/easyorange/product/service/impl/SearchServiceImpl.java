@@ -105,13 +105,13 @@ public class SearchServiceImpl implements SearchService {
         BizRequire.notNull(limit, "限制数量不能为空");
         BizRequire.positive(limit, "限制数量必须为正数");
         BizRequire.between(limit, 1, 20, "限制数量必须在 1-20 之间");
-        BizRequire.isFalse(keyword.length() > 100, "搜索关键词不能超过 100 个字符");
+        BizRequire.requireFalse(keyword.length() > 100, "搜索关键词不能超过 100 个字符");
         
         return productQueryRepository.findSearchSuggestions(keyword, limit);
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public void recordSearch(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return;

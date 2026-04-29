@@ -39,6 +39,7 @@ public class ProductImageServiceImpl extends ServiceImpl<ProductImageMapper, Pro
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void saveProductImages(Long productId, List<String> imageUrls) {
         BizRequire.notNull(productId, "商品 ID 不能为空");
         BizRequire.positive(productId, "商品 ID 必须为正数");
@@ -71,7 +72,7 @@ public class ProductImageServiceImpl extends ServiceImpl<ProductImageMapper, Pro
         BizRequire.notNull(productId, "商品 ID 不能为空");
         BizRequire.positive(productId, "商品 ID 必须为正数");
         BizRequire.notNull(image, "上传的图片不能为空");
-        BizRequire.isTrue(!image.isEmpty(), "上传的图片不能为空");
+        BizRequire.requireTrue(!image.isEmpty(), "上传的图片不能为空");
         
         try {
             String[] allowedExtensions = new String[]{"jpg", "jpeg", "png", "webp"};

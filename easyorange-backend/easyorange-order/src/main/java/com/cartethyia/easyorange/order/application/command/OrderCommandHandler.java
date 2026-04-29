@@ -39,9 +39,9 @@ public class OrderCommandHandler {
         ProductSnapshotPort.ProductOrderSnapshot snapshot = productSnapshotPort
                 .getOrderableSnapshot(new ProductId(command.getProductId()))
                 .orElseThrow(() -> new RuntimeException("商品不存在"));
-        BizRequire.isTrue(snapshot.status().isOnline(), "商品已下架");
+        BizRequire.requireTrue(snapshot.status().isOnline(), "商品已下架");
         BizRequire.ne(snapshot.sellerId().value(), buyerId, "不能购买自己的商品");
-        BizRequire.isTrue(snapshot.stock().isAvailable(), "商品库存不足");
+        BizRequire.requireTrue(snapshot.stock().isAvailable(), "商品库存不足");
 
         OrderCreatedEvent event = OrderAggregate.createOrder(
                 buyerId,
