@@ -1,7 +1,5 @@
 package com.cartethyia.easyorange.user.service;
 
-import com.cartethyia.easyorange.user.event.extractor.PasswordChangedEventExtractor;
-import com.cartethyia.easyorange.user.event.extractor.UserRegisteredEventExtractor;
 import com.cartethyia.easyorange.user.mapper.UserMapper;
 import com.cartethyia.easyorange.user.service.user.impl.UserServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -22,12 +20,6 @@ class UserServiceImplTest {
 
     @Mock
     private BCryptPasswordEncoder passwordEncoder;
-
-    @Mock
-    private UserRegisteredEventExtractor userRegisteredEventExtractor;
-
-    @Mock
-    private PasswordChangedEventExtractor passwordChangedEventExtractor;
 
     @Spy
     @InjectMocks

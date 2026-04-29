@@ -27,10 +27,13 @@ public class OrderAggregate {
     private final String address;
     private final String phone;
     private final String remark;
+    private final String cancelReason;
+    private final java.time.LocalDateTime cancelTime;
 
     private OrderAggregate(Long id, String orderNo, Long buyerId, Long sellerId, Long productId,
                           BigDecimal amount, Integer status, Integer paymentStatus,
-                          String address, String phone, String remark) {
+                          String address, String phone, String remark,
+                          String cancelReason, java.time.LocalDateTime cancelTime) {
         this.id = id;
         this.orderNo = orderNo;
         this.sellerId = sellerId;
@@ -42,6 +45,8 @@ public class OrderAggregate {
         this.address = address;
         this.phone = phone;
         this.remark = remark;
+        this.cancelReason = cancelReason;
+        this.cancelTime = cancelTime;
     }
 
     public static OrderCreatedEvent createOrder(Long buyerId, Long sellerId, Long productId,
@@ -59,22 +64,22 @@ public class OrderAggregate {
 
     public OrderAggregate withId(Long id) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark);
+                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
     public OrderAggregate withOrderNo(String orderNo) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark);
+                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
     public OrderAggregate withStatus(Integer status) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark);
+                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
     public OrderAggregate withPaymentStatus(Integer paymentStatus) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark);
+                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
     public OrderPaidEvent pay() {
@@ -99,9 +104,10 @@ public class OrderAggregate {
 
     public static OrderAggregate from(Long id, String orderNo, Long buyerId, Long sellerId, Long productId,
                                      BigDecimal amount, Integer status, Integer paymentStatus,
-                                     String address, String phone, String remark) {
+                                     String address, String phone, String remark,
+                                     String cancelReason, java.time.LocalDateTime cancelTime) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark);
+                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
     public static OrderAggregate fromEntity(Order order) {
@@ -119,7 +125,9 @@ public class OrderAggregate {
                 order.getPaymentStatus(),
                 order.getAddress(),
                 order.getPhone(),
-                order.getRemark()
+                order.getRemark(),
+                order.getCancelReason(),
+                order.getCancelTime()
         );
     }
 
@@ -136,6 +144,8 @@ public class OrderAggregate {
                 .address(this.address)
                 .phone(this.phone)
                 .remark(this.remark)
+                .cancelReason(this.cancelReason)
+                .cancelTime(this.cancelTime)
                 .build();
     }
 

@@ -22,13 +22,17 @@ public class Product extends BaseDO {
     private Integer conditionLevel;
     private String location;
     private String contactMethod;
+    private String tags;
+    private String searchText;
+    private java.time.LocalDateTime priceUpdateTime;
 
     public Product() {
     }
 
     public Product(Long userId, Long categoryId, String name, BigDecimal price, BigDecimal originalPrice,
                    Integer stock, Integer version, Integer status, Integer viewCount,
-                   Integer conditionLevel, String location, String contactMethod) {
+                   Integer conditionLevel, String location, String contactMethod,
+                   String tags, String searchText, java.time.LocalDateTime priceUpdateTime) {
         this.userId = userId;
         this.categoryId = categoryId;
         this.name = name;
@@ -41,6 +45,9 @@ public class Product extends BaseDO {
         this.conditionLevel = conditionLevel;
         this.location = location;
         this.contactMethod = contactMethod;
+        this.tags = tags;
+        this.searchText = searchText;
+        this.priceUpdateTime = priceUpdateTime;
     }
 
     public Long getUserId() {
@@ -139,6 +146,30 @@ public class Product extends BaseDO {
         this.contactMethod = contactMethod;
     }
 
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+
+    public String getSearchText() {
+        return searchText;
+    }
+
+    public void setSearchText(String searchText) {
+        this.searchText = searchText;
+    }
+
+    public java.time.LocalDateTime getPriceUpdateTime() {
+        return priceUpdateTime;
+    }
+
+    public void setPriceUpdateTime(java.time.LocalDateTime priceUpdateTime) {
+        this.priceUpdateTime = priceUpdateTime;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -157,6 +188,9 @@ public class Product extends BaseDO {
         private Integer conditionLevel;
         private String location;
         private String contactMethod;
+        private String tags;
+        private String searchText;
+        private java.time.LocalDateTime priceUpdateTime;
 
         public Builder id(Long id) {
             this.id = id;
@@ -223,9 +257,24 @@ public class Product extends BaseDO {
             return this;
         }
 
+        public Builder tags(String tags) {
+            this.tags = tags;
+            return this;
+        }
+
+        public Builder searchText(String searchText) {
+            this.searchText = searchText;
+            return this;
+        }
+
+        public Builder priceUpdateTime(java.time.LocalDateTime priceUpdateTime) {
+            this.priceUpdateTime = priceUpdateTime;
+            return this;
+        }
+
         public Product build() {
             Product product = new Product(userId, categoryId, name, price, originalPrice, stock,
-                    version, status, viewCount, conditionLevel, location, contactMethod);
+                    version, status, viewCount, conditionLevel, location, contactMethod, tags, searchText, priceUpdateTime);
             if (id != null) {
                 product.setId(id);
             }

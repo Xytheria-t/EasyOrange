@@ -32,6 +32,8 @@ public class OrderPersistenceMapper {
         order.setAddress(aggregate.getAddress());
         order.setPhone(aggregate.getPhone());
         order.setRemark(aggregate.getRemark());
+        order.setCancelReason(aggregate.getCancelReason());
+        order.setCancelTime(aggregate.getCancelTime());
 
         return order;
     }

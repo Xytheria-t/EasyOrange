@@ -1,0 +1,2778 @@
+# ===================================================================
+# EasyOrange OpenAPI Specification
+# 校园二手交易平台 API 文档
+# ===================================================================
+# 维护说明：
+# 1. 按 Controller 模块分组，每个 tag 对应一个 Controller
+# 2. 新增接口时，按路径找到对应 tag 追加
+# 3. paths 下的路径必须与实际路由一致
+# ===================================================================
+
+openapi: 3.0.3
+
+info:
+  title: EasyOrange API
+  description: 校园二手交易平台 API 文档
+  version: 0.0.1
+  contact:
+    name: cartethyia
+
+servers:
+  - url: http://localhost:8080
+    description: 本地开发环境
+  - url: https://api.easyorange.com
+    description: 生产环境
+
+tags:
+  - name: 健康检查
+    description: 服务健康状态
+  - name: 用户认证
+    description: 用户注册、登录、登出、令牌刷新、密码重置
+  - name: 用户管理
+    description: 用户资料查询、更新、头像上传、密码修改
+  - name: 文件管理
+    description: 文件上传、下载、删除
+  - name: 商品管理
+    description: 商品的创建、更新、删除（需登录）
+  - name: 商品查询
+    description: 商品列表、详情、分类、相似推荐（公开）
+  - name: 商品搜索
+    description: 全文搜索、搜索历史、热搜词、搜索建议
+  - name: 商品举报
+    description: 商品举报及管理（管理员）
+  - name: 订单管理
+    description: 订单创建、取消、支付、发货、确认收货
+  - name: 订单查询
+    description: 订单详情、我的订单列表
+  - name: 支付管理
+    description: 支付创建、退款、关闭、回调
+  - name: 支付查询
+    description: 支付详情、支付记录查询
+  - name: 消息管理
+    description: 消息发送、标记已读、删除
+  - name: 消息查询
+    description: 消息列表、未读消息、未读数量
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT 令牌，格式: Bearer <token>
+
+  schemas:
+    # 通用响应
+    Result:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 状态码
+        message:
+          type: string
+          description: 响应消息
+        data:
+          nullable: true
+          description: 响应数据
+
+    # 分页响应
+    PageResult:
+      type: object
+      properties:
+        records:
+          type: array
+          items: {}
+        total:
+          type: integer
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+
+    # 认证相关
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名
+          example: admin
+        password:
+          type: string
+          format: password
+          description: 密码
+          example: "123456"
+        loginType:
+          type: string
+          description: 登录类型
+          enum: [password, phone, email]
+          default: password
+
+    LoginResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: 访问令牌
+        refreshToken:
+          type: string
+          description: 刷新令牌
+        userId:
+          type: integer
+          format: int64
+        username:
+          type: string
+
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: 用户名（字母、数字、下划线，6-20位）
+        password:
+          type: string
+          format: password
+          description: 密码（必须包含大小写字母和数字，6-20位）
+
+    PhoneRegisterRequest:
+      type: object
+      required:
+        - phone
+        - verifyCode
+        - password
+      properties:
+        phone:
+          type: string
+          description: 手机号
+        verifyCode:
+          type: string
+          description: 短信验证码
+        password:
+          type: string
+          format: password
+          description: 密码
+
+    EmailRegisterRequest:
+      type: object
+      required:
+        - email
+        - verifyCode
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+        verifyCode:
+          type: string
+          description: 邮箱验证码
+        password:
+          type: string
+          format: password
+          description: 密码
+
+    PhoneLoginRequest:
+      type: object
+      required:
+        - phone
+        - verifyCode
+      properties:
+        phone:
+          type: string
+          description: 手机号
+        verifyCode:
+          type: string
+          description: 短信验证码
+
+    EmailLoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: 邮箱地址
+        password:
+          type: string
+          format: password
+          description: 密码
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - username
+        - verifyCode
+        - newPassword
+      properties:
+        username:
+          type: string
+          description: 用户名
+        verifyCode:
+          type: string
+          description: 验证码
+        newPassword:
+          type: string
+          format: password
+          description: 新密码
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - oldPassword
+        - newPassword
+      properties:
+        oldPassword:
+          type: string
+          format: password
+          description: 旧密码
+        newPassword:
+          type: string
+          format: password
+          description: 新密码
+
+    # 用户相关
+    UserProfileVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    UserVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        nickname:
+          type: string
+        avatar:
+          type: string
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        nickname:
+          type: string
+          maxLength: 50
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+
+    # 商品相关
+    ProductCreateRequest:
+      type: object
+      required:
+        - name
+        - price
+        - categoryId
+        - description
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          description: 分类 ID
+        name:
+          type: string
+          maxLength: 100
+          description: 商品名称
+        price:
+          type: number
+          format: double
+          description: 售价
+        originalPrice:
+          type: number
+          format: double
+          description: 原价
+        stock:
+          type: integer
+          description: 库存
+          default: 1
+        conditionLevel:
+          type: integer
+          description: 成色 (1-10)
+          minimum: 1
+          maximum: 10
+        location:
+          type: string
+          description: 交易地点
+        contactMethod:
+          type: string
+          description: 联系方式
+        description:
+          type: string
+          description: 商品描述
+        imageUrls:
+          type: array
+          items:
+            type: string
+          description: 图片 URL 列表
+
+    ProductUpdateRequest:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          maxLength: 100
+        price:
+          type: number
+          format: double
+        originalPrice:
+          type: number
+          format: double
+        stock:
+          type: integer
+        conditionLevel:
+          type: integer
+          minimum: 1
+          maximum: 10
+        location:
+          type: string
+        contactMethod:
+          type: string
+        description:
+          type: string
+        imageUrls:
+          type: array
+          items:
+            type: string
+
+    ProductVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        categoryId:
+          type: integer
+          format: int64
+        sellerId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        price:
+          type: number
+          format: double
+        originalPrice:
+          type: number
+          format: double
+        stock:
+          type: integer
+        conditionLevel:
+          type: integer
+        location:
+          type: string
+        contactMethod:
+          type: string
+        description:
+          type: string
+        imageUrls:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        viewCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductQueryRequest:
+      type: object
+      properties:
+        pageNum:
+          type: integer
+          default: 1
+          minimum: 1
+        pageSize:
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 100
+        categoryId:
+          type: integer
+          format: int64
+          description: 分类 ID
+        minPrice:
+          type: number
+          format: double
+          description: 最低价格
+        maxPrice:
+          type: number
+          format: double
+          description: 最高价格
+        conditionLevel:
+          type: integer
+          description: 成色筛选
+        sort:
+          type: string
+          description: 排序方式
+          enum: [default, price_asc, price_desc, newest, view]
+
+    ProductSearchRequest:
+      type: object
+      required:
+        - keyword
+      properties:
+        keyword:
+          type: string
+          maxLength: 100
+          description: 搜索关键词
+        categoryId:
+          type: integer
+          format: int64
+        minPrice:
+          type: number
+          format: double
+        maxPrice:
+          type: number
+          format: double
+        pageNum:
+          type: integer
+          default: 1
+        pageSize:
+          type: integer
+          default: 20
+
+    CategoryVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        parentId:
+          type: integer
+          format: int64
+        sort:
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryVO"
+
+    ReportRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+          description: 举报原因
+
+    # 订单相关
+    CreateOrderRequest:
+      type: object
+      required:
+        - productId
+        - address
+        - phone
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: 商品 ID
+        address:
+          type: string
+          description: 收货地址
+        phone:
+          type: string
+          description: 联系电话
+        remark:
+          type: string
+          description: 备注
+
+    OrderVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderNo:
+          type: string
+        productId:
+          type: integer
+          format: int64
+        sellerId:
+          type: integer
+          format: int64
+        buyerId:
+          type: integer
+          format: int64
+        price:
+          type: number
+          format: double
+        status:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+        remark:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    QueryOrderRequest:
+      type: object
+      properties:
+        pageNum:
+          type: integer
+          default: 1
+        pageSize:
+          type: integer
+          default: 20
+        status:
+          type: string
+          description: 订单状态筛选
+
+    # 支付相关
+    CreatePaymentCommand:
+      type: object
+      required:
+        - orderId
+        - payMethod
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: 订单 ID
+        payMethod:
+          type: string
+          description: 支付方式
+          enum: [alipay, wechat]
+
+    RefundRequest:
+      type: object
+      required:
+        - refundAmount
+        - refundReason
+      properties:
+        refundAmount:
+          type: number
+          format: double
+          description: 退款金额
+        refundReason:
+          type: string
+          description: 退款原因
+
+    PaymentVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        orderId:
+          type: integer
+          format: int64
+        amount:
+          type: number
+          format: double
+        payMethod:
+          type: string
+        status:
+          type: string
+        payTime:
+          type: string
+          format: date-time
+
+    PaymentCallback:
+      type: object
+      properties:
+        paymentId:
+          type: integer
+          format: int64
+        status:
+          type: string
+        tradeNo:
+          type: string
+          description: 第三方交易号
+
+    QueryPaymentRequest:
+      type: object
+      properties:
+        pageNum:
+          type: integer
+          default: 1
+        pageSize:
+          type: integer
+          default: 20
+        status:
+          type: string
+
+    # 消息相关
+    SendMessageCommand:
+      type: object
+      required:
+        - receiverId
+        - content
+      properties:
+        receiverId:
+          type: integer
+          format: int64
+          description: 接收者 ID
+        content:
+          type: string
+          maxLength: 1000
+          description: 消息内容
+        productId:
+          type: integer
+          format: int64
+          description: 关联商品 ID
+
+    SendSystemMessageCommand:
+      type: object
+      required:
+        - receiverId
+        - title
+        - content
+      properties:
+        receiverId:
+          type: integer
+          format: int64
+        title:
+          type: string
+          description: 消息标题
+        content:
+          type: string
+          description: 消息内容
+
+    MessageVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        senderId:
+          type: integer
+          format: int64
+        receiverId:
+          type: integer
+          format: int64
+        content:
+          type: string
+        type:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    QueryMessageRequest:
+      type: object
+      properties:
+        pageNum:
+          type: integer
+          default: 1
+        pageSize:
+          type: integer
+          default: 20
+        type:
+          type: integer
+          description: 消息类型
+
+    UnreadCountVO:
+      type: object
+      properties:
+        total:
+          type: integer
+        system:
+          type: integer
+        chat:
+          type: integer
+
+    # 搜索相关
+    SearchHistoryVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        keyword:
+          type: string
+        searchTime:
+          type: string
+          format: date-time
+
+    HotKeywordVO:
+      type: object
+      properties:
+        keyword:
+          type: string
+        searchCount:
+          type: integer
+
+    # 文件相关
+    UploadFileVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        contentType:
+          type: string
+        url:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+  parameters:
+    # 通用路径参数
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    PageNumParam:
+      name: pageNum
+      in: query
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+
+    PageSizeParam:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 100
+
+  responses:
+    Unauthorized:
+      description: 未认证或认证失败
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Result"
+    Forbidden:
+      description: 无权限访问
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Result"
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Result"
+
+paths:
+  # ===================================================================
+  # 健康检查
+  # ===================================================================
+  /api/health:
+    get:
+      tags:
+        - 健康检查
+      summary: 服务健康检查
+      description: 检查服务运行状态
+      responses:
+        "200":
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  # ===================================================================
+  # 用户认证
+  # ===================================================================
+  /api/auth/register:
+    post:
+      tags:
+        - 用户认证
+      summary: 用户注册
+      description: 注册新用户账号
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: 新用户 ID
+
+  /api/auth/register/phone:
+    post:
+      tags:
+        - 用户认证
+      summary: 手机号注册（规划中）
+      description: 使用手机号和短信验证码注册新用户账号
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhoneRegisterRequest"
+      responses:
+        "200":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: 新用户 ID
+
+  /api/auth/register/email:
+    post:
+      tags:
+        - 用户认证
+      summary: 邮箱注册（规划中）
+      description: 使用邮箱和验证码注册新用户账号
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailRegisterRequest"
+      responses:
+        "200":
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: 新用户 ID
+
+  /api/auth/login:
+    post:
+      tags:
+        - 用户认证
+      summary: 用户登录
+      description: 用户名密码登录，返回 JWT 访问令牌和刷新令牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/login/phone:
+    post:
+      tags:
+        - 用户认证
+      summary: 手机号验证码登录（规划中）
+      description: 使用手机号和短信验证码登录，返回 JWT 访问令牌和刷新令牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhoneLoginRequest"
+      responses:
+        "200":
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/login/email:
+    post:
+      tags:
+        - 用户认证
+      summary: 邮箱密码登录（规划中）
+      description: 使用邮箱和密码登录，返回 JWT 访问令牌和刷新令牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmailLoginRequest"
+      responses:
+        "200":
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/LoginResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/logout:
+    post:
+      tags:
+        - 用户认证
+      summary: 用户登出
+      description: 使当前令牌失效
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 登出成功
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - 用户认证
+      summary: 刷新令牌
+      description: 使用有效的访问令牌获取新的令牌
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: string
+                        description: 新的访问令牌
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/auth/password-reset:
+    post:
+      tags:
+        - 用户认证
+      summary: 忘记密码
+      description: 通过验证码重置密码（无需登录）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+      responses:
+        "200":
+          description: 密码重置成功
+
+  # ===================================================================
+  # 用户管理
+  # ===================================================================
+  /api/users/me:
+    get:
+      tags:
+        - 用户管理
+      summary: 获取当前用户资料
+      description: 获取登录用户的详细资料
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/UserProfileVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    put:
+      tags:
+        - 用户管理
+      summary: 更新用户资料
+      description: 更新昵称、手机号、邮箱等信息
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/UserVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/users/me/avatar:
+    post:
+      tags:
+        - 用户管理
+      summary: 上传头像
+      description: 上传用户头像图片
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: 头像图片文件
+      responses:
+        "200":
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/UserVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/users/me/password:
+    put:
+      tags:
+        - 用户管理
+      summary: 修改密码
+      description: 登录用户修改自己的密码（需要提供旧密码）
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: 密码修改成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 文件管理
+  # ===================================================================
+  /api/file/upload:
+    post:
+      tags:
+        - 文件管理
+      summary: 上传文件
+      description: 上传单个文件
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 文件
+                businessType:
+                  type: string
+                  description: 业务类型标识
+      responses:
+        "200":
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/UploadFileVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/file/uploads:
+    post:
+      tags:
+        - 文件管理
+      summary: 批量上传文件
+      description: 同时上传多个文件
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: 文件列表
+                businessType:
+                  type: string
+                  description: 业务类型标识
+      responses:
+        "200":
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UploadFileVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/file/{id}:
+    get:
+      tags:
+        - 文件管理
+      summary: 获取文件信息
+      description: 根据文件 ID 获取文件元数据
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/UploadFileVO"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags:
+        - 文件管理
+      summary: 删除文件
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/file/business/{businessType}/{businessId}:
+    get:
+      tags:
+        - 文件管理
+      summary: 按业务查询文件
+      description: 根据业务类型和业务 ID 查询关联文件
+      parameters:
+        - name: businessType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: businessId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UploadFileVO"
+
+  /api/file/{id}/bind:
+    put:
+      tags:
+        - 文件管理
+      summary: 绑定业务
+      description: 将文件关联到指定业务
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: businessType
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: businessId
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 绑定成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/file/{id}/download:
+    get:
+      tags:
+        - 文件管理
+      summary: 下载文件
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 文件内容
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 商品管理（需登录）
+  # ===================================================================
+  /api/products:
+    post:
+      tags:
+        - 商品管理
+      summary: 发布商品
+      description: 发布一个新的二手商品
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCreateRequest"
+      responses:
+        "200":
+          description: 发布成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/ProductVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/{id}:
+    put:
+      tags:
+        - 商品管理
+      summary: 更新商品
+      description: 修改商品信息
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateRequest"
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/ProductVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      tags:
+        - 商品管理
+      summary: 删除商品
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/my:
+    get:
+      tags:
+        - 商品管理
+      summary: 我的商品列表
+      description: 查询当前用户发布的商品
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageNumParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/{productId}/decrement-stock:
+    put:
+      tags:
+        - 商品管理
+      summary: 减少库存
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 操作成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/{productId}/restore-stock:
+    put:
+      tags:
+        - 商品管理
+      summary: 恢复库存
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 操作成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/{productId}/mark-sold:
+    put:
+      tags:
+        - 商品管理
+      summary: 标记已售
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 标记成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 商品查询（公开）
+  # ===================================================================
+  /api/products:
+    get:
+      tags:
+        - 商品查询
+      summary: 商品列表
+      description: 分页查询商品列表，支持分类、价格筛选
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: conditionLevel
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 10
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [default, price_asc, price_desc, newest, view]
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+
+  /api/products/{id}:
+    get:
+      tags:
+        - 商品查询
+      summary: 商品详情
+      description: 根据 ID 获取商品详细信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/ProductVO"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/products/category/{categoryId}:
+    get:
+      tags:
+        - 商品查询
+      summary: 分类商品列表
+      description: 查询指定分类下的商品
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+            format: double
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+
+  /api/products/{id}/similar:
+    get:
+      tags:
+        - 商品查询
+      summary: 相似商品推荐
+      description: 根据当前商品推荐相似商品
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductVO"
+
+  /api/products/batch:
+    post:
+      tags:
+        - 商品查询
+      summary: 批量查询商品
+      description: 根据 ID 列表批量获取商品
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+                format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ProductVO"
+
+  /api/products/{id}/view:
+    post:
+      tags:
+        - 商品查询
+      summary: 增加浏览量
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 操作成功
+
+  /api/products/categories:
+    get:
+      tags:
+        - 商品查询
+      summary: 分类列表
+      description: 获取商品分类树
+      parameters:
+        - name: parentId
+          in: query
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/CategoryVO"
+
+  # ===================================================================
+  # 商品搜索
+  # ===================================================================
+  /api/products/search:
+    get:
+      tags:
+        - 商品搜索
+      summary: 搜索商品
+      description: 关键词全文搜索，支持分类和价格过滤
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+            format: int64
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+            format: double
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: 搜索成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+
+  /api/products/search/history:
+    get:
+      tags:
+        - 商品搜索
+      summary: 我的搜索历史
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 50
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/SearchHistoryVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags:
+        - 商品搜索
+      summary: 清空搜索历史
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 清空成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/search/history/{historyId}:
+    delete:
+      tags:
+        - 商品搜索
+      summary: 删除单条搜索历史
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: historyId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/products/search/hot:
+    get:
+      tags:
+        - 商品搜索
+      summary: 热搜词列表
+      description: 获取热门搜索关键词
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/HotKeywordVO"
+
+  /api/products/search/suggestions:
+    get:
+      tags:
+        - 商品搜索
+      summary: 搜索建议
+      description: 输入关键词时获取自动补全建议
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 50
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          type: string
+
+  /api/products/search/record:
+    post:
+      tags:
+        - 商品搜索
+      summary: 记录搜索关键词
+      description: 记录用户搜索行为，用于热词统计
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        "200":
+          description: 记录成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 商品举报
+  # ===================================================================
+  /api/reports/product/{productId}:
+    post:
+      tags:
+        - 商品举报
+      summary: 举报商品
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportRequest"
+      responses:
+        "200":
+          description: 举报成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/reports/pending:
+    get:
+      tags:
+        - 商品举报
+      summary: 待处理举报列表
+      description: 管理员查看待处理的举报
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/PageNumParam"
+        - $ref: "#/components/parameters/PageSizeParam"
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/reports/{reportId}/approve:
+    put:
+      tags:
+        - 商品举报
+      summary: 通过举报
+      description: 管理员审核通过举报
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 操作成功
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/reports/{reportId}/reject:
+    put:
+      tags:
+        - 商品举报
+      summary: 驳回举报
+      description: 管理员审核驳回举报
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 操作成功
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ===================================================================
+  # 订单管理
+  # ===================================================================
+  /api/orders:
+    post:
+      tags:
+        - 订单管理
+      summary: 创建订单
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "200":
+          description: 订单创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/OrderVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/orders/{id}/cancel:
+    put:
+      tags:
+        - 订单管理
+      summary: 取消订单
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: reason
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 取消成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/orders/{id}/pay:
+    put:
+      tags:
+        - 订单管理
+      summary: 支付订单
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 支付成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/orders/{id}/ship:
+    put:
+      tags:
+        - 订单管理
+      summary: 发货
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 发货成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/orders/{id}/receive:
+    put:
+      tags:
+        - 订单管理
+      summary: 确认收货
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 确认成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 订单查询
+  # ===================================================================
+  /api/orders/{id}:
+    get:
+      tags:
+        - 订单查询
+      summary: 订单详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/OrderVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/orders/my:
+    get:
+      tags:
+        - 订单查询
+      summary: 我的购买订单
+      description: 查询当前用户作为买家的订单
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/orders/sold:
+    get:
+      tags:
+        - 订单查询
+      summary: 我的卖出订单
+      description: 查询当前用户作为卖家的订单
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/orders/list:
+    get:
+      tags:
+        - 订单查询
+      summary: 查询订单
+      description: 综合订单查询（管理员）
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 支付管理
+  # ===================================================================
+  /api/payments:
+    post:
+      tags:
+        - 支付管理
+      summary: 创建支付
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentCommand"
+      responses:
+        "200":
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PaymentVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/payments/callback:
+    post:
+      tags:
+        - 支付管理
+      summary: 支付回调
+      description: 第三方支付平台回调通知
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentCallback"
+      responses:
+        "200":
+          description: 回调处理成功
+
+  /api/payments/{id}/refund:
+    post:
+      tags:
+        - 支付管理
+      summary: 申请退款
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundRequest"
+      responses:
+        "200":
+          description: 退款成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/payments/{id}/close:
+    post:
+      tags:
+        - 支付管理
+      summary: 关闭支付
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 关闭成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 支付查询
+  # ===================================================================
+  /api/payments/{id}:
+    get:
+      tags:
+        - 支付查询
+      summary: 支付详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PaymentVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/payments/my:
+    get:
+      tags:
+        - 支付查询
+      summary: 我的支付记录
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/payments:
+    get:
+      tags:
+        - 支付查询
+      summary: 查询支付
+      description: 综合支付查询（管理员）
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 消息管理
+  # ===================================================================
+  /api/messages:
+    post:
+      tags:
+        - 消息管理
+      summary: 发送消息
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessageCommand"
+      responses:
+        "200":
+          description: 发送成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/system:
+    post:
+      tags:
+        - 消息管理
+      summary: 发送系统消息
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendSystemMessageCommand"
+      responses:
+        "200":
+          description: 发送成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/{id}/read:
+    put:
+      tags:
+        - 消息管理
+      summary: 标记消息已读
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 标记成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/read-all:
+    put:
+      tags:
+        - 消息管理
+      summary: 全部标记已读
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 标记成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/read:
+    put:
+      tags:
+        - 消息管理
+      summary: 批量标记已读
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+                format: int64
+      responses:
+        "200":
+          description: 标记成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/read-by-type/{type}:
+    put:
+      tags:
+        - 消息管理
+      summary: 按类型标记已读
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 标记成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/{id}:
+    delete:
+      tags:
+        - 消息管理
+      summary: 删除消息
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 删除成功
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 消息查询
+  # ===================================================================
+  /api/messages/{id}:
+    get:
+      tags:
+        - 消息查询
+      summary: 消息详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/MessageVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/list:
+    get:
+      tags:
+        - 消息查询
+      summary: 我的消息列表
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: type
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/unread:
+    get:
+      tags:
+        - 消息查询
+      summary: 未读消息列表
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: type
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/PageResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/messages/unread-count:
+    get:
+      tags:
+        - 消息查询
+      summary: 未读消息数量
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        $ref: "#/components/schemas/UnreadCountVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"

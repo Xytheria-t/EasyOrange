@@ -96,8 +96,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Claims claims = claimsOpt.get();
             String uuid = claims.get("uuid", String.class);
+            String tokenType = claims.get("type", String.class);
             if (uuid == null || !Boolean.TRUE.equals(stringRedisTemplate.hasKey(getTokenKey(uuid)))) {
                 log.warn("Invalid or revoked JWT token received from IP: {}, path: {}",
+                    RequestUtil.getClientIp(request), request.getRequestURI());
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+            if ("refresh".equals(tokenType)) {
+                log.warn("Refresh token used for API access from IP: {}, path: {}",
                     RequestUtil.getClientIp(request), request.getRequestURI());
                 SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);

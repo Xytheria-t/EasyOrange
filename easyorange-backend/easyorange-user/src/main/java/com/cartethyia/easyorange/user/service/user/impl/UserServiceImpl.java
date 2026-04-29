@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.service.user.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
@@ -7,6 +8,7 @@ import com.cartethyia.easyorange.common.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.user.converter.UserConverter;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import com.cartethyia.easyorange.user.dto.bo.*;
 import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
@@ -41,36 +43,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = getById(authUser.userId());
         BizRequire.notNull(user, "用户不存在");
         return UserProfileVO.from(user, authUser.roles(), authUser.permissions(), authUser.loginTime());
-    }
-
-    @Override
-    @PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
-    @Transactional(rollbackFor = Exception.class)
-    public Long register(RegisterBo bo) {
-        User existingUser = lambdaQuery().eq(User::getUsername, bo.username()).one();
-        BizRequire.isNull(existingUser, "用户名已存在");
-
-        User user = bo.toEntity(passwordEncoder);
-        BizRequire.requireTrue(save(user), "注册失败，请稍后重试");
-
-        log.info("action=register success username={}", bo.username());
-        return user.getId();
-    }
-
-    @Override
-    @Transactional(rollbackFor = Exception.class)
-    public void forgotPassword(ForgotPasswordBo bo) {
-        User user = lambdaQuery().eq(User::getPhone, bo.phone()).one();
-        BizRequire.notNull(user, "该手机号未注册");
-
-        boolean updated = lambdaUpdate()
-            .eq(User::getId, user.getId())
-            .set(User::getPassword, bo.encodePassword(passwordEncoder))
-            .set(User::getPwdUpdateDate, bo.getPasswordUpdateTime())
-            .update();
-
-        BizRequire.requireTrue(updated, "重置密码失败，请稍后重试");
-        log.info("action=forgotPassword success phone={}", bo.phone());
     }
 
     @Override
@@ -144,5 +116,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         User user = getById(userId);
         BizRequire.notNull(user, "用户不存在");
         return user;
+    }
+
+    @Override
+    public User findUserByAccount(String account) {
+        if (account == null || account.isBlank()) {
+            return null;
+        }
+
+        boolean isEmail = UserConstant.EMAIL_PATTERN.matcher(account).matches();
+        boolean isPhone = UserConstant.PHONE_PATTERN.matcher(account).matches();
+
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+
+        if (isEmail) {
+            wrapper.eq(User::getEmail, account).or().eq(User::getPhone, account);
+        } else if (isPhone) {
+            wrapper.eq(User::getPhone, account);
+        }
+
+        wrapper.or().eq(User::getUsername, account);
+
+        return getOne(wrapper);
     }
 }

@@ -155,8 +155,9 @@ The `easyorange-user` module handles all user-related functionality including:
 | Task Type | Primary Agent | Secondary Agent |
 |-----------|--------------|-----------------|
 | New login method | user-auth-agent | user-security-agent |
-| User registration | user-management-agent | user-event-agent |
-| Password change | user-security-agent | user-event-agent |
+| User registration | user-auth-agent | user-event-agent |
+| Forgot password | user-auth-agent | user-event-agent |
+| Password change (logged in) | user-security-agent | user-event-agent |
 | Profile update | user-management-agent | user-cache-agent |
 | Token refresh | user-auth-agent | user-cache-agent |
 | Account deletion | user-management-agent | user-security-agent |
@@ -170,7 +171,7 @@ The `easyorange-user` module handles all user-related functionality including:
 ```
 Controller Layer (AuthController, UserController)
     ↓
-Service Layer (UserService, LoginService)
+Service Layer (AuthService, UserService, LoginDispatcher)
     ↓
 Repository Layer (UserMapper - MyBatis Plus)
     ↓

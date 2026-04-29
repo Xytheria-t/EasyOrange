@@ -64,8 +64,12 @@ public class JwtUtil {
     }
 
     public String generateToken(String subject, Map<String, Object> claims) {
+        return generateToken(subject, claims, jwtProperties.getAccessTokenExpiration());
+    }
+
+    public String generateToken(String subject, Map<String, Object> claims, long expirationMinutes) {
         Instant now = Instant.now();
-        Instant expiration = now.plus(Duration.ofMinutes(jwtProperties.getAccessTokenExpiration()));
+        Instant expiration = now.plus(Duration.ofMinutes(expirationMinutes));
 
         JwtBuilder builder = Jwts.builder()
                 .issuer(jwtProperties.getIssuer())
@@ -77,6 +81,14 @@ public class JwtUtil {
         builder.claims(claims);
 
         return builder.compact();
+    }
+
+    public String generateRefreshToken(String subject, Map<String, Object> claims) {
+        long expirationDays = jwtProperties.getRefreshTokenExpiration();
+        Map<String, Object> refreshClaims = new java.util.HashMap<>(claims);
+        refreshClaims.put(CLAIM_TYPE, REFRESH_TOKEN_TYPE);
+
+        return generateToken(subject, refreshClaims, expirationDays * 24 * 60);
     }
 
     public Optional<Claims> parseToken(String token) {

@@ -64,7 +64,9 @@ public class OrderCommandHandler {
                 0,
                 command.getAddress(),
                 command.getPhone(),
-                command.getRemark()
+                command.getRemark(),
+                null,
+                null
         );
 
         Order order = aggregate.toEntity();

@@ -10,13 +10,11 @@ public interface UserService extends IService<User> {
 
     UserProfileVO getUserInfo();
 
-    Long register(RegisterBo bo);
-
     UserVO updateUserInfo(UpdateUserBo bo);
 
     void changePassword(ChangePasswordBo bo);
 
-    void forgotPassword(ForgotPasswordBo bo);
-
     UserVO uploadAvatar(UploadAvatarBo bo);
+
+    User findUserByAccount(String account);
 }

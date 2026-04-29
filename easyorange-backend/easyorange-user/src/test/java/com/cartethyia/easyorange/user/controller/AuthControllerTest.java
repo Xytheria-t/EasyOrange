@@ -1,11 +1,12 @@
 package com.cartethyia.easyorange.user.controller;
 
+import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
+import com.cartethyia.easyorange.user.converter.UserConverter;
 import com.cartethyia.easyorange.user.dto.request.LoginRequest;
+import com.cartethyia.easyorange.user.dto.request.RefreshTokenRequest;
 import com.cartethyia.easyorange.user.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.dto.vo.UserVO;
-import com.cartethyia.easyorange.framework.service.TokenService;
-import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
-import com.cartethyia.easyorange.user.service.auth.strategy.LoginDispatcher;
+import com.cartethyia.easyorange.user.service.auth.AuthService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,20 +23,19 @@ import static org.mockito.Mockito.*;
 class AuthControllerTest {
 
     @Mock
-    private LoginDispatcher loginDispatcher;
-
-    @Mock
-    private TokenService tokenService;
+    private AuthService authService;
 
     @Mock
     private JwtProperties jwtProperties;
+
+    @Mock
+    private UserConverter userConverter;
 
     @InjectMocks
     private AuthController authController;
 
     @Test
     void shouldCallLogin() {
-        // Given
         LoginRequest loginRequest = LoginRequest.builder()
                 .account("testuser")
                 .password("password123")
@@ -48,65 +48,59 @@ class AuthControllerTest {
 
         LoginResponse mockResponse = LoginResponse.builder()
                 .token("mock-jwt-token")
+                .refreshToken("mock-refresh-token")
                 .user(userInfo)
                 .build();
 
-        given(loginDispatcher.login(any(LoginRequest.class))).willReturn(mockResponse);
+        given(authService.login(any(LoginRequest.class))).willReturn(mockResponse);
 
-        // When
         var result = authController.login(loginRequest);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
         assertEquals("mock-jwt-token", result.data().getToken());
+        assertEquals("mock-refresh-token", result.data().getRefreshToken());
         assertEquals("testuser", result.data().getUser().getUsername());
-        verify(loginDispatcher, times(1)).login(any(LoginRequest.class));
+        verify(authService, times(1)).login(any(LoginRequest.class));
     }
 
     @Test
     void shouldCallLogout() {
-        // Given
         String authHeader = "Bearer valid-token";
+        String refreshHeader = "Bearer valid-refresh-token";
         given(jwtProperties.getTokenPrefix()).willReturn("Bearer ");
-        doNothing().when(tokenService).delToken("valid-token");
+        doNothing().when(authService).logout("valid-token", "valid-refresh-token");
 
-        // When
-        var result = authController.logout(authHeader);
+        var result = authController.logout(authHeader, refreshHeader);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
-        verify(tokenService, times(1)).delToken("valid-token");
+        verify(authService, times(1)).logout("valid-token", "valid-refresh-token");
     }
 
     @Test
     void shouldCallLogoutWithoutAuthHeader() {
-        // When
-        var result = authController.logout(null);
+        var result = authController.logout(null, null);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
-        verify(tokenService, never()).delToken(anyString());
+        verify(authService, never()).logout(anyString(), anyString());
     }
 
     @Test
     void shouldCallRefreshToken() {
-        // Given
-        String authHeader = "Bearer old-token";
+        RefreshTokenRequest request = RefreshTokenRequest.builder()
+                .refreshToken("old-refresh-token")
+                .build();
         String newToken = "new-refreshed-token";
 
-        given(jwtProperties.getTokenPrefix()).willReturn("Bearer ");
-        given(tokenService.refreshToken("old-token")).willReturn(newToken);
+        given(authService.refreshToken("old-refresh-token")).willReturn(newToken);
 
-        // When
-        var result = authController.refreshToken(authHeader);
+        var result = authController.refreshToken(request);
 
-        // Then
         assertNotNull(result);
         assertEquals("A0000", result.code());
         assertEquals("new-refreshed-token", result.data());
-        verify(tokenService, times(1)).refreshToken("old-token");
+        verify(authService, times(1)).refreshToken("old-refresh-token");
     }
 }

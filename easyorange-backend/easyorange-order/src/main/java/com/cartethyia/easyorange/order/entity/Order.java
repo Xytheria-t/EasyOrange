@@ -47,6 +47,10 @@ public class Order extends BaseDO {
 
     private String remark;
 
+    private String cancelReason;
+
+    private java.time.LocalDateTime cancelTime;
+
     public String getOrderNo() { return orderNo; }
     public Long getBuyerId() { return buyerId; }
     public Long getSellerId() { return sellerId; }
@@ -57,6 +61,8 @@ public class Order extends BaseDO {
     public String getAddress() { return address; }
     public String getPhone() { return phone; }
     public String getRemark() { return remark; }
+    public String getCancelReason() { return cancelReason; }
+    public java.time.LocalDateTime getCancelTime() { return cancelTime; }
 
     public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
     public void setBuyerId(Long buyerId) { this.buyerId = buyerId; }
@@ -68,9 +74,12 @@ public class Order extends BaseDO {
     public void setAddress(String address) { this.address = address; }
     public void setPhone(String phone) { this.phone = phone; }
     public void setRemark(String remark) { this.remark = remark; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
+    public void setCancelTime(java.time.LocalDateTime cancelTime) { this.cancelTime = cancelTime; }
 
     public Order(Long id, String orderNo, Long buyerId, Long sellerId, Long productId, BigDecimal amount,
                  Integer status, Integer paymentStatus, String address, String phone, String remark,
+                 String cancelReason, java.time.LocalDateTime cancelTime,
                  java.time.LocalDateTime createTime, java.time.LocalDateTime updateTime,
                  Long createBy, Long updateBy, Integer delFlag, Integer version) {
         super.setId(id);
@@ -90,6 +99,8 @@ public class Order extends BaseDO {
         this.address = address;
         this.phone = phone;
         this.remark = remark;
+        this.cancelReason = cancelReason;
+        this.cancelTime = cancelTime;
     }
 
     public static OrderBuilder builder() {
@@ -108,6 +119,8 @@ public class Order extends BaseDO {
         private String address;
         private String phone;
         private String remark;
+        private String cancelReason;
+        private java.time.LocalDateTime cancelTime;
         private java.time.LocalDateTime createTime;
         private java.time.LocalDateTime updateTime;
         private Long createBy;
@@ -126,6 +139,8 @@ public class Order extends BaseDO {
         public OrderBuilder address(String address) { this.address = address; return this; }
         public OrderBuilder phone(String phone) { this.phone = phone; return this; }
         public OrderBuilder remark(String remark) { this.remark = remark; return this; }
+        public OrderBuilder cancelReason(String cancelReason) { this.cancelReason = cancelReason; return this; }
+        public OrderBuilder cancelTime(java.time.LocalDateTime cancelTime) { this.cancelTime = cancelTime; return this; }
         public OrderBuilder createTime(java.time.LocalDateTime createTime) { this.createTime = createTime; return this; }
         public OrderBuilder updateTime(java.time.LocalDateTime updateTime) { this.updateTime = updateTime; return this; }
         public OrderBuilder createBy(Long createBy) { this.createBy = createBy; return this; }
@@ -134,7 +149,7 @@ public class Order extends BaseDO {
         public OrderBuilder version(Integer version) { this.version = version; return this; }
 
         public Order build() {
-            Order order = new Order(id, orderNo, buyerId, sellerId, productId, amount, status, paymentStatus, address, phone, remark, createTime, updateTime, createBy, updateBy, delFlag, version);
+            Order order = new Order(id, orderNo, buyerId, sellerId, productId, amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime, createTime, updateTime, createBy, updateBy, delFlag, version);
             return order;
         }
     }

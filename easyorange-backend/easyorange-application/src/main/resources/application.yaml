@@ -121,7 +121,7 @@ security:
     - /api/users/register
     - /api/users/forgotPassword
     - /api/health
-    - /v3/api-docs/**
+    - /openapi/**
     - /swagger-ui/**
     - /swagger-ui.html
   product-paths:
@@ -142,14 +142,10 @@ security:
 
 springdoc:
   api-docs:
-    path: /v3/api-docs
+    enabled: false
   swagger-ui:
+    enabled: true
     path: /swagger-ui.html
+    url: /openapi/spec
     tags-sorter: alpha
     operations-sorter: alpha
-  info:
-    title: EasyOrange API
-    description: 校园二手交易平台 API 文档
-    version: 0.0.1
-    contact:
-      name: cartethyia

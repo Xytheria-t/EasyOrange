@@ -111,7 +111,7 @@ class OrderAggregateTest {
         void toEntity_returnsOrderWithAllFields() {
             OrderAggregate aggregate = OrderAggregate.from(
                     1L, "ORD123", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                    AMOUNT, 0, 0, "地址", "电话", "备注"
+                    AMOUNT, 0, 0, "地址", "电话", "备注", null, null
             );
 
             Order order = aggregate.toEntity();
@@ -329,7 +329,7 @@ class OrderAggregateTest {
         return OrderAggregate.from(
                 1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
                 AMOUNT, OrderStatus.PENDING_PAYMENT.getCode(), 0,
-                "地址", "电话", "备注"
+                "地址", "电话", "备注", null, null
         );
     }
 
@@ -337,7 +337,7 @@ class OrderAggregateTest {
         return OrderAggregate.from(
                 1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
                 AMOUNT, OrderStatus.PAID.getCode(), 1,
-                "地址", "电话", "备注"
+                "地址", "电话", "备注", null, null
         );
     }
 
@@ -345,7 +345,7 @@ class OrderAggregateTest {
         return OrderAggregate.from(
                 1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
                 AMOUNT, OrderStatus.SHIPPED.getCode(), 1,
-                "地址", "电话", "备注"
+                "地址", "电话", "备注", null, null
         );
     }
 
@@ -353,7 +353,7 @@ class OrderAggregateTest {
         return OrderAggregate.from(
                 1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
                 AMOUNT, OrderStatus.COMPLETED.getCode(), 1,
-                "地址", "电话", "备注"
+                "地址", "电话", "备注", null, null
         );
     }
 
@@ -361,7 +361,7 @@ class OrderAggregateTest {
         return OrderAggregate.from(
                 1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
                 AMOUNT, OrderStatus.CANCELLED.getCode(), 0,
-                "地址", "电话", "备注"
+                "地址", "电话", "备注", null, null
         );
     }
 }

@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.user.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -31,9 +30,9 @@ import java.time.LocalDateTime;
 public class User extends BaseDO {
 
     /**
-     * 主键 ID（覆盖 BaseDO 的 ASSIGN_ID，使用数据库自增）
+     * 主键 ID（使用 BaseDO 的 ASSIGN_ID 雪花ID 策略）
      */
-    @TableId(value = "user_id", type = IdType.AUTO)
+    @TableId(value = "user_id")
     private Long id;
 
     @TableField("username")

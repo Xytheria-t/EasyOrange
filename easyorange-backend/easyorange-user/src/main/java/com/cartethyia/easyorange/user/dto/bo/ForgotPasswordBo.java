@@ -26,4 +26,14 @@ public record ForgotPasswordBo(
     public LocalDateTime getPasswordUpdateTime() {
         return LocalDateTime.now();
     }
+
+    /**
+     * 手机号脱敏，用于日志
+     */
+    public String maskPhone() {
+        if (phone == null || phone.length() < 7) {
+            return "***";
+        }
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+    }
 }
