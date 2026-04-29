@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useLogin } from '@/hooks'
+import { useLogin, useRegister } from '@/hooks'
 import { storage, toast, validator } from '@/utils'
 import './LoginPage.css'
 
@@ -16,6 +16,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const login = useLogin()
+  const register = useRegister()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,10 +79,12 @@ export function LoginPage() {
 
       setIsLoading(true)
       try {
-        await login.mutateAsync({ 
-          account: formData.account, 
+        await register.mutateAsync({ 
+          username: formData.account, 
           password: formData.password,
-          isRegister: true 
+          email: `${formData.account}@campus.edu.cn`,
+          studentId: '00000000',
+          realName: formData.account
         })
         
         toast.success('注册成功！正在登录...')

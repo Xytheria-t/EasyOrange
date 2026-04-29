@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@/types';
+import { clearSession } from '../features/auth/session.js';
 
 interface AuthState {
   user: User | null;
@@ -30,7 +31,7 @@ export const useAuthStore = create<AuthState>()(
       }),
       
       logout: () => {
-        localStorage.removeItem('token');
+        clearSession('logout');
         set({
           user: null,
           token: null,

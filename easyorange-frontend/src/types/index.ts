@@ -100,6 +100,32 @@ export interface RegisterRequest {
     realName: string;
 }
 
+// 手机号注册请求（规划中）
+export interface PhoneRegisterRequest {
+    phone: string;
+    verifyCode: string;
+    password: string;
+}
+
+// 邮箱注册请求（规划中）
+export interface EmailRegisterRequest {
+    email: string;
+    verifyCode: string;
+    password: string;
+}
+
+// 手机号登录请求（规划中）
+export interface PhoneLoginRequest {
+    phone: string;
+    verifyCode: string;
+}
+
+// 邮箱登录请求（规划中）
+export interface EmailLoginRequest {
+    email: string;
+    password: string;
+}
+
 export interface LoginResponse {
     token: string;
     user: UserInfo;

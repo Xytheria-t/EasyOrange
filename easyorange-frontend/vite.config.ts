@@ -21,19 +21,7 @@ export default defineConfig({
     ],
     base: './',
     resolve: {
-        alias: {
-            '@': resolve(__dirname, 'src'),
-            '@api': resolve(__dirname, 'src/api'),
-            '@utils': resolve(__dirname, 'src/utils'),
-            '@components': resolve(__dirname, 'src/components'),
-            '@pages': resolve(__dirname, 'src/pages'),
-            '@types': resolve(__dirname, 'src/types'),
-            '@constants': resolve(__dirname, 'src/constants'),
-            '@assets': resolve(__dirname, 'src/assets'),
-            '@hooks': resolve(__dirname, 'src/hooks'),
-            '@store': resolve(__dirname, 'src/store'),
-            '@lib': resolve(__dirname, 'src/lib')
-        }
+        tsconfigPaths: true
     },
     server: {
         port: 5173,
@@ -51,12 +39,20 @@ export default defineConfig({
         target: 'es2020',
         outDir: 'dist',
         sourcemap: true,
-        rollupOptions: {
+        rolldownOptions: {
             output: {
-                manualChunks: {
-                    vendor: ['react', 'react-dom', 'react-router-dom'],
-                    query: ['@tanstack/react-query'],
-                    ui: ['zustand'],
+                manualChunks(id) {
+                    if (id.includes('node_modules')) {
+                        if (id.includes('react') || id.includes('react-router-dom')) {
+                            return 'vendor';
+                        }
+                        if (id.includes('@tanstack/react-query')) {
+                            return 'query';
+                        }
+                        if (id.includes('zustand')) {
+                            return 'ui';
+                        }
+                    }
                 },
                 chunkFileNames: 'assets/js/[name]-[hash].js',
                 entryFileNames: 'assets/js/[name]-[hash].js',

@@ -18,9 +18,8 @@ export function useProducts(params: ProductQueryParams = {}) {
       try {
         const response = await productApi.getProducts(params);
         return response.data;
-      } catch (error) {
+      } catch {
         // 后端不可用时返回模拟数据
-        console.warn('后端服务不可用，使用模拟数据', error);
         const mockItems = generateMockProducts(20);
         return {
           records: mockItems as Product[],

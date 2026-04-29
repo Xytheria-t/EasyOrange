@@ -13,6 +13,7 @@ import {
 } from './constants.js';
 import { toast } from '../../utils/index.js';
 import { isSuccessCode } from '../../types';
+import { getStoredToken } from '../../features/auth/session.js';
 
 /** 图片数据接口 */
 export interface ImageData {
@@ -345,7 +346,7 @@ export class ImageUploader {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                            'Authorization': `Bearer ${getStoredToken()}`
                         }
                     });
 

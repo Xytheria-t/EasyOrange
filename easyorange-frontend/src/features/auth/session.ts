@@ -116,6 +116,8 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 
     isRefreshing = true;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
         const response = await fetch('/api/auth/refresh', {
@@ -123,7 +125,8 @@ export async function refreshAccessToken(): Promise<string | null> {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            }
+            },
+            signal: controller.signal
         });
 
         if (!response.ok) {
@@ -147,6 +150,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         handleUnauthorized();
         return null;
     } finally {
+        clearTimeout(timeoutId);
         isRefreshing = false;
     }
 }

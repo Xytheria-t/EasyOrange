@@ -31,7 +31,7 @@ export function useCurrentUser() {
 
 export function useLogin() {
   const queryClient = useQueryClient();
-  const { login, setToken } = useAuthStore();
+  const { login } = useAuthStore();
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
@@ -41,7 +41,6 @@ export function useLogin() {
     onSuccess: (data) => {
       if (data.token && data.user) {
         login(data.user, data.token);
-        setToken(data.token);
         const expiresAt = Date.now() + TOKEN_EXPIRES_IN_MINUTES * 60 * 1000;
         setSession(data.token, data.user as unknown as AuthSessionUser, expiresAt);
         queryClient.setQueryData(AUTH_KEYS.user(), data.user);

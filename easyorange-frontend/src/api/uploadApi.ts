@@ -2,13 +2,15 @@
  * @fileoverview 上传 API 模块
  */
 
+import { getStoredToken } from '../features/auth/session.js';
+
 const API_BASE_URL = '/api';
 
 export const uploadFile = async (file: File): Promise<{ code: number; message: string; data: { url: string; filename: string; size: number; type: string } }> => {
     const formData = new FormData();
     formData.append('file', file);
 
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     const headers: Record<string, string> = {};
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -27,7 +29,7 @@ export const uploadFiles = async (files: File[]): Promise<{ code: number; messag
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
 
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     const headers: Record<string, string> = {};
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;

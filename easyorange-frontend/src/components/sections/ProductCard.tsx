@@ -1,4 +1,3 @@
-import React from 'react'
 import { Heart, MessageCircle, Eye, MapPin, Clock } from 'lucide-react'
 import { Product } from '../../types'
 import { formatPrice, formatRelativeTime } from '../../utils'
@@ -27,13 +26,13 @@ interface ProductCardProps {
   style?: React.CSSProperties
 }
 
-export const ProductCard: React.FC<ProductCardProps> = ({
+export function ProductCard({
   product,
   onFavorite,
   isFavorited = false,
   onViewDetails,
   style,
-}) => {
+}: ProductCardProps) {
   const imageUrl = product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop'
   const conditionLabel = CONDITION_LABELS[product.condition] || product.condition
   const conditionIcon = CONDITION_ICONS[product.condition] || '○'

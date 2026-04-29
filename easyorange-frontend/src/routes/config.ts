@@ -24,43 +24,43 @@ export const routes: Record<RouteName, RouteConfig> = {
         requiresAuth: false
     },
     products: {
-        path: '/products.html',
+        path: '/products',
         title: '商品',
         navKey: 'products',
         requiresAuth: false
     },
     publish: {
-        path: '/publish.html',
+        path: '/publish',
         title: '发布商品',
         requiresAuth: true
     },
     profile: {
-        path: '/profile.html',
+        path: '/profile',
         title: '个人中心',
         requiresAuth: true
     },
     favorites: {
-        path: '/favorites.html',
+        path: '/favorites',
         title: '我的收藏',
         requiresAuth: true
     },
     messages: {
-        path: '/messages.html',
+        path: '/messages',
         title: '消息',
         requiresAuth: true
     },
     orders: {
-        path: '/orders.html',
+        path: '/orders',
         title: '我的订单',
         requiresAuth: true
     },
     review: {
-        path: '/review.html',
+        path: '/review',
         title: '评价',
         requiresAuth: true
     },
     orderDetail: {
-        path: '/order-detail.html',
+        path: '/order-detail',
         title: '订单详情',
         requiresAuth: true
     }
