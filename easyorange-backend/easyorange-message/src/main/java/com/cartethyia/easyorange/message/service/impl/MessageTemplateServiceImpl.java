@@ -1,14 +1,10 @@
 package com.cartethyia.easyorange.message.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.message.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.mapper.MessageTemplateMapper;
 import com.cartethyia.easyorange.message.service.MessageTemplateService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,25 +15,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MessageTemplateServiceImpl extends ServiceImpl<MessageTemplateMapper, MessageTemplate> implements MessageTemplateService {
+public class MessageTemplateServiceImpl implements MessageTemplateService {
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
 
+    private final MessageTemplateRepository messageTemplateRepository;
+
     @Override
     public MessageTemplate getByCode(String templateCode) {
-        return getOne(new LambdaQueryWrapper<MessageTemplate>()
-                .eq(MessageTemplate::getTemplateCode, templateCode)
-                .eq(MessageTemplate::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED));
+        return messageTemplateRepository.findByCode(templateCode);
     }
 
     @Override
     public MessageTemplateVO renderTemplate(String templateCode, Map<String, String> variables) {
-        MessageTemplate template = getByCode(templateCode);
+        MessageTemplate template = messageTemplateRepository.findByCode(templateCode);
         BizRequire.notNull(template, MessageResultCode.TEMPLATE_NOT_FOUND);
         String renderedContent = renderContent(template.getContent(), variables);
         String renderedTitle = renderContent(template.getTitle(), variables);
@@ -73,64 +68,44 @@ public class MessageTemplateServiceImpl extends ServiceImpl<MessageTemplateMappe
 
     @Override
     public List<MessageTemplate> selectTemplateList(MessageTemplate template) {
-        LambdaQueryWrapper<MessageTemplate> wrapper = new LambdaQueryWrapper<>();
-        if (template != null) {
-            if (template.getTemplateCode() != null) {
-                wrapper.like(MessageTemplate::getTemplateCode, template.getTemplateCode());
-            }
-            if (template.getTemplateName() != null) {
-                wrapper.like(MessageTemplate::getTemplateName, template.getTemplateName());
-            }
-            if (template.getTemplateType() != null) {
-                wrapper.eq(MessageTemplate::getTemplateType, template.getTemplateType());
-            }
-            if (template.getStatus() != null) {
-                wrapper.eq(MessageTemplate::getStatus, template.getStatus());
-            }
-        }
-        wrapper.orderByDesc(MessageTemplate::getCreateTime);
-        return list(wrapper);
+        return messageTemplateRepository.findByCondition(template);
     }
 
     @Override
     public int insertTemplate(MessageTemplate template) {
-        return save(template) ? 1 : 0;
+        messageTemplateRepository.save(template);
+        return 1;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int updateTemplate(MessageTemplate template) {
-        return updateById(template) ? 1 : 0;
+        messageTemplateRepository.update(template);
+        return 1;
     }
 
     @Override
     public void deleteTemplateByIds(Long[] templateIds) {
-        removeBatchByIds(List.of(templateIds));
+        messageTemplateRepository.deleteByIds(templateIds);
     }
 
     @Override
     public boolean checkTemplateCodeUnique(MessageTemplate template) {
-        Long count = count(new LambdaQueryWrapper<MessageTemplate>()
-                .eq(MessageTemplate::getTemplateCode, template.getTemplateCode())
-                .ne(template.getId() != null, MessageTemplate::getId, template.getId()));
-        return count == 0;
+        return !messageTemplateRepository.existsByCodeExcludingId(template.getTemplateCode(), template.getId());
     }
 
     @Override
     public void loadingTemplateCache() {
-        // TODO: 实现模板缓存加载
         log.debug("loadingTemplateCache invoked - to be implemented");
     }
 
     @Override
     public void clearTemplateCache() {
-        // TODO: 实现模板缓存清除
         log.debug("clearTemplateCache invoked - to be implemented");
     }
 
     @Override
     public void resetTemplateCache() {
-        // TODO: 实现模板缓存重置
         log.debug("resetTemplateCache invoked - to be implemented");
     }
 }

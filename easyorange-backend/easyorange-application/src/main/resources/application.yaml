@@ -118,8 +118,9 @@ security:
     - /api/auth/login
     - /api/auth/logout
     - /api/auth/refresh
-    - /api/users/register
-    - /api/users/forgotPassword
+    - /api/auth/sms-code
+    - /api/auth/register
+    - /api/auth/password-reset
     - /api/health
     - /openapi/**
     - /swagger-ui/**

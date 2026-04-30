@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @author cartethyia
  */
 @SpringBootApplication
-@MapperScan("com.cartethyia.easyorange.**.mapper")
+@MapperScan({"com.cartethyia.easyorange.**.mapper", "com.cartethyia.easyorange.**.persistence"})
 @EnableScheduling
 public class EasyOrangeApplication {
     static void main(String[] args) {

@@ -8,15 +8,14 @@ import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
+import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
+import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.util.HtmlUtils;
 
 @Slf4j
 @Service
@@ -25,29 +24,30 @@ public class MessageCommandHandler {
 
     private final MessageRepository messageRepository;
     private final DomainEventPublisher domainEventPublisher;
+    private final MessageRoutingService routingService;
+    private final OfflineMessageStoreService offlineMessageStoreService;
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendMessageCommand command) {
         Long senderId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message message = Message.builder()
-                .senderId(senderId)
-                .receiverId(command.getReceiverId())
-                .type(command.getType())
-                .title(HtmlUtils.htmlEscape(command.getTitle()))
-                .content(HtmlUtils.htmlEscape(command.getContent()))
-                .isRead(ReadStatus.UNREAD.getCode())
-                .businessId(command.getBusinessId())
-                .build();
+        Message message = Message.create(
+                senderId,
+                command.getReceiverId(),
+                command.getType(),
+                command.getTitle(),
+                command.getContent(),
+                command.getBusinessId()
+        );
 
         messageRepository.save(message);
 
-        domainEventPublisher.publish(new MessageSentEvent(
-                message.getId(),
-                senderId,
-                command.getReceiverId(),
-                command.getType()
-        ));
+        MessageRoutingService.RouteDecision decision = routingService.decideRoute(message.getReceiverId());
+        offlineMessageStoreService.storeIfOffline(
+                message.getReceiverId(), message.getId(), "websocket", decision.isOnline());
+
+        MessageSentEvent event = message.send();
+        domainEventPublisher.publish(event);
 
         log.info("action=send_message messageId={} senderId={} receiverId={} type={}",
                 message.getId(), senderId, command.getReceiverId(), command.getType());
@@ -55,23 +55,20 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
-        Message message = Message.builder()
-                .senderId(null)
-                .receiverId(command.getReceiverId())
-                .type(MessageType.SYSTEM.getCode())
-                .title(HtmlUtils.htmlEscape(command.getTitle()))
-                .content(HtmlUtils.htmlEscape(command.getContent()))
-                .isRead(ReadStatus.UNREAD.getCode())
-                .build();
+        Message message = Message.createSystem(
+                command.getReceiverId(),
+                command.getTitle(),
+                command.getContent()
+        );
 
         messageRepository.save(message);
 
-        domainEventPublisher.publish(new MessageSentEvent(
-                message.getId(),
-                null,
-                command.getReceiverId(),
-                MessageType.SYSTEM.getCode()
-        ));
+        MessageRoutingService.RouteDecision decision = routingService.decideRoute(message.getReceiverId());
+        offlineMessageStoreService.storeIfOffline(
+                message.getReceiverId(), message.getId(), "websocket", decision.isOnline());
+
+        MessageSentEvent event = message.send();
+        domainEventPublisher.publish(event);
 
         log.info("action=send_system_message messageId={} receiverId={}",
                 message.getId(), command.getReceiverId());
@@ -85,14 +82,16 @@ public class MessageCommandHandler {
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
         BizRequire.requireTrue(
-                message.getReceiverId().equals(userId),
+                message.isOwnedBy(userId),
                 MessageResultCode.MESSAGE_NOT_OWNER
         );
 
-        if (ReadStatus.UNREAD.getCode().equals(message.getIsRead())) {
-            message.setIsRead(ReadStatus.READ.getCode());
+        if (message.isUnread()) {
+            MessageReadEvent event = message.read(userId);
             messageRepository.update(message);
-            domainEventPublisher.publish(new MessageReadEvent(command.getMessageId(), userId));
+            if (event != null) {
+                domainEventPublisher.publish(event);
+            }
         }
     }
 
@@ -106,11 +105,12 @@ public class MessageCommandHandler {
         for (Long messageId : command.getMessageIds()) {
             try {
                 Message message = messageRepository.findById(messageId).orElse(null);
-                if (message != null && message.getReceiverId().equals(userId)
-                        && ReadStatus.UNREAD.getCode().equals(message.getIsRead())) {
-                    message.setIsRead(ReadStatus.READ.getCode());
+                if (message != null && message.isOwnedBy(userId) && message.isUnread()) {
+                    MessageReadEvent event = message.read(userId);
                     messageRepository.update(message);
-                    domainEventPublisher.publish(new MessageReadEvent(messageId, userId));
+                    if (event != null) {
+                        domainEventPublisher.publish(event);
+                    }
                 }
             } catch (Exception e) {
                 log.warn("action=mark_read_batch_fail messageId={} error={}", messageId, e.getMessage());
@@ -121,6 +121,20 @@ public class MessageCommandHandler {
     }
 
     @Transactional(rollbackFor = Exception.class)
+    public void handleMarkAllAsRead() {
+        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        messageRepository.markAllAsRead(userId);
+        log.info("action=mark_all_read userId={}", userId);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void handleMarkAsReadByType(Integer type) {
+        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        messageRepository.markAsReadByType(userId, type);
+        log.info("action=mark_type_read userId={} type={}", userId, type);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
     public void handle(DeleteMessageCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
@@ -128,12 +142,13 @@ public class MessageCommandHandler {
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
         BizRequire.requireTrue(
-                message.getReceiverId().equals(userId),
+                message.isOwnedBy(userId),
                 MessageResultCode.MESSAGE_NOT_OWNER
         );
 
+        MessageDeletedEvent event = message.delete(userId);
         messageRepository.delete(command.getMessageId());
-        domainEventPublisher.publish(new MessageDeletedEvent(command.getMessageId(), userId));
+        domainEventPublisher.publish(event);
 
         log.info("action=delete_message messageId={} userId={}", command.getMessageId(), userId);
     }

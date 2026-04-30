@@ -26,29 +26,27 @@
         <module>easyorange-order</module>
         <module>easyorange-payment</module>
         <module>easyorange-message</module>
+        <module>easyorange-favorite</module>
         <module>easyorange-application</module>
     </modules>
 
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lombok.version>1.18.44</lombok.version>
+        <lombok.version>1.18.46</lombok.version>
 
-        <!-- 第三方依赖版本管理 -->
         <jjwt.version>0.13.0</jjwt.version>
         <aspectjweaver.version>1.9.25.1</aspectjweaver.version>
         <springdoc.version>3.0.2</springdoc.version>
         <mybatis-plus.version>3.5.16</mybatis-plus.version>
         <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
-        <!-- Jackson 3.x 最新稳定版（核心组件使用 tools.jackson.* 坐标） -->
         <jackson3.version>3.1.2</jackson3.version>
-        <!-- Jackson 3 仍复用 2.x annotations 包与坐标 -->
         <jackson.annotations.version>2.21</jackson.annotations.version>
+        <mapstruct.version>1.6.3</mapstruct.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- ==================== 内部模块 ==================== -->
             <dependency>
                 <groupId>com.cartethyia</groupId>
                 <artifactId>easyorange-common</artifactId>
@@ -84,8 +82,12 @@
                 <artifactId>easyorange-message</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.cartethyia</groupId>
+                <artifactId>easyorange-favorite</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
-            <!-- ==================== JWT 依赖 ==================== -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
@@ -102,21 +104,18 @@
                 <version>${jjwt.version}</version>
             </dependency>
 
-            <!-- ==================== AOP 依赖 ==================== -->
             <dependency>
                 <groupId>org.aspectj</groupId>
                 <artifactId>aspectjweaver</artifactId>
                 <version>${aspectjweaver.version}</version>
             </dependency>
 
-            <!-- ==================== OpenAPI 文档 ==================== -->
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
             </dependency>
 
-            <!-- ==================== MyBatis-Plus ==================== -->
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
@@ -133,11 +132,28 @@
                 <version>${mybatis-plus.version}</version>
             </dependency>
 
-            <!-- ==================== Logstash LogbackEncoder ==================== -->
             <dependency>
                 <groupId>net.logstash.logback</groupId>
                 <artifactId>logstash-logback-encoder</artifactId>
                 <version>${logstash-logback-encoder.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.18.0</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+                <scope>provided</scope>
             </dependency>
 
             <!-- ==================== Jackson 3 最新稳定版 ==================== -->
@@ -151,7 +167,6 @@
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson3.version}</version>
             </dependency>
-            <!-- Jackson annotations 仍使用 2.x 版本（兼容 3.x） -->
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
@@ -161,20 +176,18 @@
     </dependencyManagement>
 
     <dependencies>
-        <!-- ==================== Spring Boot 核心启动器 ==================== -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webmvc</artifactId>
-        </dependency>
-
-        <!-- ==================== 工具库 ==================== -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- ==================== 测试依赖 ==================== -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
@@ -237,7 +250,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <argLine>
-                        -javaagent:${settings.localRepository}/net/bytebuddy/byte-buddy-agent/1.17.8/byte-buddy-agent-1.17.8.jar
                         -Djdk.attach.allowAttachSelf=true
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.lang.reflect=ALL-UNNAMED
@@ -248,9 +260,7 @@
         </plugins>
     </build>
 
-    <!-- ==================== Maven 仓库配置 ==================== -->
     <repositories>
-        <!-- Maven Central：优先使用官方仓库，确保可解析 Jackson 3 最新版本 -->
         <repository>
             <id>central</id>
             <name>Maven Central</name>
@@ -263,7 +273,6 @@
             </snapshots>
         </repository>
 
-        <!-- 阿里云镜像 -->
         <repository>
             <id>aliyunmaven</id>
             <name>Aliyun Maven</name>
@@ -276,7 +285,6 @@
             </snapshots>
         </repository>
 
-        <!-- 腾讯云镜像 -->
         <repository>
             <id>tencentmaven</id>
             <name>Tencent Maven</name>
@@ -291,7 +299,6 @@
 
     </repositories>
 
-    <!-- 插件仓库配置 -->
     <pluginRepositories>
         <pluginRepository>
             <id>aliyunmaven</id>

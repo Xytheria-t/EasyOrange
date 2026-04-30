@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.message.entity.OfflineMessage;
 
 import java.util.List;
 
-public interface OfflineMessageService extends IService<OfflineMessage> {
+public interface OfflineMessageService {
 
     void saveOfflineMessage(Long userId, Long messageId, String pushChannel);
 

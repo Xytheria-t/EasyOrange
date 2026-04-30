@@ -1,22 +1,19 @@
 package com.cartethyia.easyorange.message.application.query;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
-import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
+import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageVO;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
 import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.enums.MessageResultCode;
+import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.message.enums.ReadStatus;
-import com.cartethyia.easyorange.message.mapper.MessageMapper;
-import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.service.user.UserService;
+import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -33,18 +30,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MessageQueryHandler {
 
-    private final MessageRepository messageRepository;
-    private final MessageMapper messageMapper;
-    private final UserService userService;
+    private final MessageQueryRepository queryRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public MessageVO getMessageDetail(Long messageId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message message = messageRepository.findById(messageId)
-                .orElseThrow(() -> new MessageNotFoundException(messageId));
+        Message message = queryRepository.findById(messageId);
+        if (message == null) {
+            throw new MessageNotFoundException(messageId);
+        }
 
-        BizRequire.eq(message.getReceiverId(), userId, "无权查看此消息");
+        BizRequire.eq(message.getReceiverId(), userId, MessageResultCode.MESSAGE_NOT_OWNER);
 
         return toMessageVO(message, resolveUsernames(Set.of(message)));
     }
@@ -52,87 +50,33 @@ public class MessageQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
-        PageRequest normalized = request.normalized();
-        Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Message::getReceiverId, userId);
-
-        if (request.getType() != null) {
-            wrapper.eq(Message::getType, request.getType());
-        }
-        if (request.getIsRead() != null) {
-            wrapper.eq(Message::getIsRead, request.getIsRead());
-        }
-
-        wrapper.orderByDesc(Message::getCreateTime);
-
-        Page<Message> messagePage = messageMapper.selectPage(page, wrapper);
-        List<Message> records = messagePage.getRecords();
-
-        Map<Long, String> usernameMap = resolveUsernames(
-                records.stream().collect(Collectors.toSet()));
-
-        List<MessageVO> voList = records.stream()
-                .map(m -> toMessageVO(m, usernameMap))
-                .collect(Collectors.toList());
-
-        return PageResult.of(voList, messagePage.getTotal(),
-                (int) messagePage.getCurrent(), (int) messagePage.getSize());
+        PageResult<Message> messagePage = queryRepository.findByReceiverId(request, userId);
+        return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-
-        PageRequest normalized = request.normalized();
-        Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Message::getReceiverId, userId)
-                .eq(Message::getIsRead, ReadStatus.UNREAD.getCode());
-
-        if (request.getType() != null) {
-            wrapper.eq(Message::getType, request.getType());
-        }
-
-        wrapper.orderByDesc(Message::getCreateTime);
-
-        Page<Message> messagePage = messageMapper.selectPage(page, wrapper);
-        List<Message> records = messagePage.getRecords();
-
-        Map<Long, String> usernameMap = resolveUsernames(
-                records.stream().collect(Collectors.toSet()));
-
-        List<MessageVO> voList = records.stream()
-                .map(m -> toMessageVO(m, usernameMap))
-                .collect(Collectors.toList());
-
-        return PageResult.of(voList, messagePage.getTotal(),
-                (int) messagePage.getCurrent(), (int) messagePage.getSize());
+        PageResult<Message> messagePage = queryRepository.findUnreadByReceiverId(request, userId);
+        return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public UnreadCountVO getUnreadCount() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        return queryRepository.countUnreadByReceiverId(userId);
+    }
 
-        List<Map<String, Object>> counts = messageMapper.countUnreadByType(userId, ReadStatus.UNREAD.getCode());
+    private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
+        Map<Long, String> usernameMap = resolveUsernames(
+                messagePage.records().stream().collect(Collectors.toSet()));
 
-        Map<Integer, Long> countMap = counts.stream()
-                .collect(Collectors.toMap(
-                        m -> ((Number) m.get("type")).intValue(),
-                        m -> ((Number) m.get("count")).longValue(),
-                        (a, b) -> a));
+        List<MessageVO> voList = messagePage.records().stream()
+                .map(m -> toMessageVO(m, usernameMap))
+                .collect(Collectors.toList());
 
-        long total = countMap.values().stream().mapToLong(Long::longValue).sum();
-
-        return UnreadCountVO.builder()
-                .total(total)
-                .systemCount(countMap.getOrDefault(MessageType.SYSTEM.getCode(), 0L))
-                .chatCount(countMap.getOrDefault(MessageType.CHAT.getCode(), 0L))
-                .orderCount(countMap.getOrDefault(MessageType.ORDER.getCode(), 0L))
-                .paymentCount(countMap.getOrDefault(MessageType.PAYMENT.getCode(), 0L))
-                .activityCount(countMap.getOrDefault(MessageType.ACTIVITY.getCode(), 0L))
-                .build();
+        return PageResult.of(voList, messagePage.total(),
+                messagePage.current(), messagePage.size());
     }
 
     private Map<Long, String> resolveUsernames(Set<Message> messages) {
@@ -145,7 +89,7 @@ public class MessageQueryHandler {
             return Map.of();
         }
 
-        return userService.listByIds(userIds).stream()
+        return userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(User::getId, User::getUsername, (a, b) -> a));
     }
 
@@ -159,7 +103,7 @@ public class MessageQueryHandler {
                 .title(message.getTitle())
                 .content(message.getContent())
                 .isRead(message.getIsRead())
-                .readDesc(ReadStatus.getDescByCode(message.getIsRead()))
+                .readDesc(MessageStatus.getDescByCode(message.getIsRead()))
                 .businessId(message.getBusinessId())
                 .createTime(message.getCreateTime())
                 .updateTime(message.getUpdateTime());

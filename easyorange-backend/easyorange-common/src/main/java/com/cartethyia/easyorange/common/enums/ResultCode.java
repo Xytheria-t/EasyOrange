@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * 仅包含跨业务域的通用状态码。各业务域的错误码位于对应模块：
  * <ul>
  *   <li>用户模块：{@code com.cartethyia.easyorange.user.enums.UserResultCode}</li>
- *   <li>商品模块：{@code com.cartethyia.easyorange.product.enums.ProductResultCode}</li>
+ *   <li>商品模块：{@code com.cartethyia.easyorange.product.application.enums.ProductResultCode}</li>
  *   <li>订单模块：{@code com.cartethyia.easyorange.order.enums.OrderResultCode}</li>
  *   <li>支付模块：{@code com.cartethyia.easyorange.payment.enums.PaymentResultCode}</li>
  *   <li>文件模块：{@code com.cartethyia.easyorange.common.enums.FileResultCode}</li>

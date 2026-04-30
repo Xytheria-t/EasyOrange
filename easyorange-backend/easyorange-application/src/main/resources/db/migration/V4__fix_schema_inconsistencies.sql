@@ -129,3 +129,20 @@ SET @sql := IF(@exist = 0, 'ALTER TABLE `eo_payment` ADD CONSTRAINT `chk_payment
 PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
+
+-- 10. 用户收藏表 (P2-7)
+CREATE TABLE `favorite` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户 ID',
+    `product_id` BIGINT NOT NULL COMMENT '商品 ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_favorite_user_product` (`user_id`, `product_id`),
+    KEY `idx_favorite_user_time` (`user_id`, `create_time` DESC),
+    KEY `idx_favorite_product_id` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户收藏表';

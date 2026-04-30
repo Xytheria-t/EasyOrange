@@ -21,4 +21,8 @@ public interface MessageRepository {
     void update(Message message);
 
     void delete(Long id);
+
+    void markAllAsRead(Long receiverId);
+
+    void markAsReadByType(Long receiverId, Integer type);
 }

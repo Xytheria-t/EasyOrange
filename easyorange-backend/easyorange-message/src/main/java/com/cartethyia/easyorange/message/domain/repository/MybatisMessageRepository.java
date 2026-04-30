@@ -1,14 +1,18 @@
 package com.cartethyia.easyorange.message.domain.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.mapper.MessageMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 @RequiredArgsConstructor
 public class MybatisMessageRepository implements MessageRepository {
 
@@ -43,7 +47,7 @@ public class MybatisMessageRepository implements MessageRepository {
     public long countUnreadByReceiverId(Long receiverId) {
         LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Message::getReceiverId, receiverId)
-                .eq(Message::getIsRead, ReadStatus.UNREAD.getCode());
+                .eq(Message::getIsRead, MessageStatus.UNREAD.getCode());
         return messageMapper.selectCount(wrapper);
     }
 
@@ -60,5 +64,24 @@ public class MybatisMessageRepository implements MessageRepository {
     @Override
     public void delete(Long id) {
         messageMapper.deleteById(id);
+    }
+
+    @Override
+    public void markAllAsRead(Long receiverId) {
+        LambdaUpdateWrapper<Message> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Message::getReceiverId, receiverId)
+                .eq(Message::getIsRead, MessageStatus.UNREAD.getCode())
+                .set(Message::getIsRead, MessageStatus.READ.getCode());
+        messageMapper.update(null, wrapper);
+    }
+
+    @Override
+    public void markAsReadByType(Long receiverId, Integer type) {
+        LambdaUpdateWrapper<Message> wrapper = new LambdaUpdateWrapper<>();
+        wrapper.eq(Message::getReceiverId, receiverId)
+                .eq(Message::getType, type)
+                .eq(Message::getIsRead, MessageStatus.UNREAD.getCode())
+                .set(Message::getIsRead, MessageStatus.READ.getCode());
+        messageMapper.update(null, wrapper);
     }
 }

@@ -1,13 +1,12 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
 
 import java.util.List;
 import java.util.Map;
 
-public interface MessageTemplateService extends IService<MessageTemplate> {
+public interface MessageTemplateService {
 
     MessageTemplate getByCode(String templateCode);
 

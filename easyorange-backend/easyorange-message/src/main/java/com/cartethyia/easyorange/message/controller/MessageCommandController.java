@@ -8,7 +8,6 @@ import com.cartethyia.easyorange.message.application.command.MessageCommandHandl
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
 import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.message.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +20,6 @@ import java.util.List;
 public class MessageCommandController {
 
     private final MessageCommandHandler commandHandler;
-    private final MessageService messageService;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -47,7 +45,7 @@ public class MessageCommandController {
     @PutMapping("/read-all")
     @PreAuthorize("isAuthenticated()")
     public Result<Void> markAllAsRead() {
-        messageService.markAllAsRead();
+        commandHandler.handleMarkAllAsRead();
         return Result.success();
     }
 
@@ -64,7 +62,7 @@ public class MessageCommandController {
         if (MessageType.fromCode(type) == null) {
             return Result.error("无效的消息类型");
         }
-        messageService.markAsReadByType(type);
+        commandHandler.handleMarkAsReadByType(type);
         return Result.success();
     }
 
