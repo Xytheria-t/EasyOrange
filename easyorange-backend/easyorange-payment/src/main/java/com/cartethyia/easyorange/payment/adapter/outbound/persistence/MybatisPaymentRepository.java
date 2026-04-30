@@ -1,10 +1,13 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentConverter;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
+import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
-import com.cartethyia.easyorange.payment.entity.Payment;
-import com.cartethyia.easyorange.payment.mapper.PaymentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -13,64 +16,82 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
-public class MybatisPaymentRepository implements PaymentRepository {
+public class MybatisPaymentRepository implements PaymentRepository, PaymentQueryRepository {
 
     private final PaymentMapper paymentMapper;
 
     @Override
-    public void save(Payment payment) {
-        paymentMapper.insert(payment);
+    public void save(PaymentAggregate aggregate) {
+        paymentMapper.insert(PaymentConverter.toPO(aggregate));
     }
 
     @Override
-    public void update(Payment payment) {
-        paymentMapper.updateById(payment);
+    public void update(PaymentAggregate aggregate) {
+        paymentMapper.updateById(PaymentConverter.toPO(aggregate));
     }
 
     @Override
-    public Optional<Payment> findById(Long id) {
-        return Optional.ofNullable(paymentMapper.selectById(id));
+    public Optional<PaymentAggregate> findById(Long id) {
+        PaymentPO po = paymentMapper.selectById(id);
+        return Optional.ofNullable(PaymentConverter.toAggregate(po));
     }
 
     @Override
-    public Optional<Payment> findByPaymentNo(String paymentNo) {
-        LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Payment::getPaymentNo, paymentNo);
-        return Optional.ofNullable(paymentMapper.selectOne(wrapper));
+    public Optional<PaymentAggregate> findByPaymentNo(String paymentNo) {
+        LambdaQueryWrapper<PaymentPO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PaymentPO::getPaymentNo, paymentNo);
+        PaymentPO po = paymentMapper.selectOne(wrapper);
+        return Optional.ofNullable(PaymentConverter.toAggregate(po));
     }
 
     @Override
-    public Optional<Payment> findByOrderId(Long orderId) {
-        LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Payment::getOrderId, orderId);
-        return Optional.ofNullable(paymentMapper.selectOne(wrapper));
+    public Optional<PaymentAggregate> findByOrderId(Long orderId) {
+        LambdaQueryWrapper<PaymentPO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(PaymentPO::getOrderId, orderId);
+        PaymentPO po = paymentMapper.selectOne(wrapper);
+        return Optional.ofNullable(PaymentConverter.toAggregate(po));
     }
 
     @Override
-    public List<Payment> findByUserId(Long userId) {
-        LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Payment::getUserId, userId);
-        wrapper.orderByDesc(Payment::getCreateTime);
-        return paymentMapper.selectList(wrapper);
+    public Optional<PaymentAggregate> findAggregateById(Long id) {
+        return findById(id);
     }
 
     @Override
-    public List<Payment> findByStatus(Integer status) {
-        LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Payment::getStatus, status);
-        return paymentMapper.selectList(wrapper);
+    public Optional<PaymentAggregate> findAggregateByPaymentNo(String paymentNo) {
+        return findByPaymentNo(paymentNo);
     }
 
     @Override
-    public IPage<Payment> findPage(IPage<Payment> page, Long userId, Integer status) {
-        LambdaQueryWrapper<Payment> wrapper = new LambdaQueryWrapper<>();
+    public Optional<PaymentAggregate> findAggregateByOrderId(Long orderId) {
+        return findByOrderId(orderId);
+    }
+
+    @Override
+    public List<PaymentAggregate> findByUserIdAndStatus(Long userId, Integer status, int pageNum, int pageSize) {
+        LambdaQueryWrapper<PaymentPO> wrapper = new LambdaQueryWrapper<>();
         if (userId != null) {
-            wrapper.eq(Payment::getUserId, userId);
+            wrapper.eq(PaymentPO::getUserId, userId);
         }
         if (status != null) {
-            wrapper.eq(Payment::getStatus, status);
+            wrapper.eq(PaymentPO::getStatus, status);
         }
-        wrapper.orderByDesc(Payment::getCreateTime);
-        return paymentMapper.selectPage(page, wrapper);
+        wrapper.orderByDesc(PaymentPO::getCreateTime);
+        Page<PaymentPO> page = paymentMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        return page.getRecords().stream()
+                .map(PaymentConverter::toAggregate)
+                .toList();
+    }
+
+    @Override
+    public long countByUserIdAndStatus(Long userId, Integer status) {
+        LambdaQueryWrapper<PaymentPO> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.eq(PaymentPO::getUserId, userId);
+        }
+        if (status != null) {
+            wrapper.eq(PaymentPO::getStatus, status);
+        }
+        return paymentMapper.selectCount(wrapper);
     }
 }

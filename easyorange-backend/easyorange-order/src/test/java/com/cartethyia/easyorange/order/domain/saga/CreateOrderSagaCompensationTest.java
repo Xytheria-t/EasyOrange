@@ -1,11 +1,18 @@
 package com.cartethyia.easyorange.order.domain.saga;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
+import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.port.outbound.PaymentGatewayPort;
+import com.cartethyia.easyorange.order.domain.port.outbound.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.outbound.ProductInventoryPort.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.entity.Order;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
-import com.cartethyia.easyorange.product.domain.aggregate.ProductAggregate;
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.entity.Product;
+import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,71 +20,139 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.given;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
-/**
- * Order Saga 补偿逻辑单元测试
- */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("Order Saga 补偿逻辑测试")
+@DisplayName("CreateOrderSaga 补偿测试")
 class CreateOrderSagaCompensationTest {
 
     @Mock
     private OrderRepository orderRepository;
 
     @Mock
-    private ProductRepository productRepository;
+    private ProductInventoryPort productInventoryPort;
 
-    @Test
-    @DisplayName("订单补偿 - 验证订单查询")
-    void testFindOrderForCompensation() {
-        Order order = Order.builder()
-                .id(1L)
-                .orderNo("ORD123")
-                .buyerId(100L)
-                .sellerId(200L)
-                .productId(1L)
-                .amount(BigDecimal.valueOf(100))
-                .status(OrderStatus.PENDING_PAYMENT.getCode())
-                .paymentStatus(0)
-                .build();
+    @Mock
+    private PaymentGatewayPort paymentGatewayPort;
 
-        given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+    @Mock
+    private DomainEventPublisher eventPublisher;
 
-        Optional<Order> foundOrder = orderRepository.findById(1L);
+    @Mock
+    private OrderCacheService orderCacheService;
 
-        assertThat(foundOrder).isPresent();
-        assertThat(foundOrder.get().getOrderNo()).isEqualTo("ORD123");
+    @Mock
+    private RedisCache redisCache;
+
+    private CreateOrderSaga saga;
+
+    private static final Long BUYER_ID = 1L;
+    private static final Long SELLER_ID = 2L;
+
+    @BeforeEach
+    void setUp() {
+        saga = new CreateOrderSaga(orderRepository, productInventoryPort, paymentGatewayPort, eventPublisher, orderCacheService, redisCache);
+
+        Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                BUYER_ID, null, authorities
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
     }
 
     @Test
-    @DisplayName("库存补偿 - 验证恢复库存逻辑")
-    void testRestoreStock_Logic() {
-        Product product = Product.builder()
-                .id(1L)
-                .userId(100L)
-                .name("测试商品")
-                .price(BigDecimal.valueOf(100))
-                .stock(9)
-                .status(1)
-                .build();
+    @DisplayName("正常创建订单 Saga 成功")
+    void execute_normalFlow_succeeds() {
+        CreateOrderCommand command = new CreateOrderCommand();
+        command.setProductId(100L);
+        command.setAddress("北京市朝阳区");
+        command.setPhone("13800138000");
+        command.setRemark("备注");
 
-        given(productRepository.findById(1L)).willReturn(product);
+        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true);
+        when(productInventoryPort.getSnapshot(100L)).thenReturn(Optional.of(snapshot));
+        when(paymentGatewayPort.createPayment(any())).thenReturn(1L);
 
-        ProductAggregate aggregate = ProductAggregate.load(product, null, null);
-        aggregate.restoreStock();
+        CreateOrderResult result = saga.execute(command);
 
-        assertThat(aggregate.getProduct().getStock()).isEqualTo(10);
+        assertThat(result).isNotNull();
+        verify(paymentGatewayPort).createPayment(any());
+        verify(orderRepository).save(any(OrderAggregate.class));
+        verify(eventPublisher).publish(any());
+        verify(redisCache).unlockIfValueMatches(anyString(), anyString());
     }
 
     @Test
-    @DisplayName("补偿顺序 - 后进先出")
-    void testCompensation_Order_LIFO() {
+    @DisplayName("支付失败时执行订单补偿")
+    void execute_paymentFails_cancelsOrder() {
+        CreateOrderCommand command = new CreateOrderCommand();
+        command.setProductId(100L);
+        command.setAddress("北京市朝阳区");
+        command.setPhone("13800138000");
+
+        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true);
+        when(productInventoryPort.getSnapshot(100L)).thenReturn(Optional.of(snapshot));
+        when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
+
+        OrderAggregate cancelledAggregate = OrderAggregate.fromRaw(
+                1L, "ORD1", BUYER_ID, SELLER_ID, 100L,
+                new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
+                "地址", "13800138000", "备注", null, null
+        );
+        when(orderRepository.findById(any(OrderId.class))).thenReturn(Optional.of(cancelledAggregate));
+
+        assertThatThrownBy(() -> saga.execute(command))
+                .isInstanceOf(OrderCreationException.class);
+
+        verify(orderRepository).update(any(OrderAggregate.class));
+    }
+
+    @Test
+    @DisplayName("商品不存在时 Saga 失败")
+    void execute_productNotFound_throws() {
+        CreateOrderCommand command = new CreateOrderCommand();
+        command.setProductId(999L);
+        command.setAddress("北京市朝阳区");
+        command.setPhone("13800138000");
+
+        when(productInventoryPort.getSnapshot(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> saga.execute(command))
+                .isInstanceOf(Exception.class)
+                .hasMessageContaining("商品不存在");
+    }
+
+    @Test
+    @DisplayName("获取分布式锁失败时抛异常")
+    void execute_lockFailed_throws() {
+        when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(false);
+
+        CreateOrderCommand command = new CreateOrderCommand();
+        command.setProductId(100L);
+        command.setAddress("北京市朝阳区");
+        command.setPhone("13800138000");
+
+        assertThatThrownBy(() -> saga.execute(command))
+                .isInstanceOf(Exception.class)
+                .hasMessageContaining("繁忙");
     }
 }

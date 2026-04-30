@@ -4,14 +4,16 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
+import com.cartethyia.easyorange.order.domain.port.outbound.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.outbound.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.repository.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.dto.request.QueryOrderRequest;
-import com.cartethyia.easyorange.order.dto.vo.OrderVO;
-import com.cartethyia.easyorange.order.entity.Order;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
 import com.cartethyia.easyorange.order.enums.OrderResultCode;
-import com.cartethyia.easyorange.order.enums.OrderStatus;
-import com.cartethyia.easyorange.product.dto.vo.ProductVO;
-import com.cartethyia.easyorange.product.application.handler.ProductQueryHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,12 +28,12 @@ import java.util.stream.Collectors;
 public class OrderQueryHandler {
 
     private final OrderReadRepository orderReadRepository;
-    private final ProductQueryHandler productQueryHandler;
-    private final com.cartethyia.easyorange.order.application.cache.OrderCacheService orderCacheService;
+    private final ProductQueryPort productQueryPort;
+    private final OrderCacheService orderCacheService;
 
     @Transactional(readOnly = true)
     public OrderVO getOrderDetail(Long orderId) {
-        Order order = orderReadRepository.findById(orderId).orElse(null);
+        OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId)).orElse(null);
         if (order == null) {
             return null;
         }
@@ -41,12 +43,12 @@ public class OrderQueryHandler {
 
     @Transactional(readOnly = true)
     public OrderVO getOrderDetailForOwner(Long orderId) {
-        Order order = orderReadRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+        OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId))
+                .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
         BizRequire.notNull(order, OrderResultCode.ORDER_NOT_FOUND);
 
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.requireTrue(order.getBuyerId().equals(userId) || order.getSellerId().equals(userId),
+        BizRequire.requireTrue(order.buyerId().equals(userId) || order.sellerId().equals(userId),
                 OrderResultCode.ORDER_NOT_OWNER);
 
         return toOrderVOWithMask(order);
@@ -54,7 +56,8 @@ public class OrderQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<OrderVO> handle(QueryOrderRequest request) {
-        PageResult<Order> orderPage = orderReadRepository.findPage(request);
+        OrderQueryCondition condition = toCondition(request);
+        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
         List<OrderVO> voList = batchToOrderVOs(orderPage.records());
         return PageResult.of(voList, orderPage.total(),
                 orderPage.current(), orderPage.size());
@@ -90,39 +93,50 @@ public class OrderQueryHandler {
                                                   Long buyerId,
                                                   Long sellerId) {
         QueryOrderRequest normalized = request.normalized();
-        QueryOrderRequest roleRequest = QueryOrderRequest.builder()
-                .orderNo(request.getOrderNo())
-                .status(request.getStatus())
-                .productId(request.getProductId())
-                .buyerId(buyerId)
-                .sellerId(sellerId)
-                .pageNum(normalized.getPageNum())
-                .pageSize(normalized.getPageSize())
-                .sortField(request.getSortField())
-                .sortDirection(request.getSortDirection())
-                .build();
+        OrderQueryCondition condition = new OrderQueryCondition(
+                request.getOrderNo(),
+                request.getStatus(),
+                buyerId,
+                sellerId,
+                request.getProductId(),
+                normalized.getPageNum(),
+                normalized.getPageSize()
+        );
 
-        PageResult<Order> orderPage = orderReadRepository.findPage(roleRequest);
+        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
         List<OrderVO> voList = batchToOrderVOs(orderPage.records());
         return PageResult.of(voList, orderPage.total(),
                 orderPage.current(), orderPage.size());
     }
 
-    private List<OrderVO> batchToOrderVOs(List<Order> orders) {
+    private OrderQueryCondition toCondition(QueryOrderRequest request) {
+        QueryOrderRequest normalized = request.normalized();
+        return new OrderQueryCondition(
+                request.getOrderNo(),
+                request.getStatus(),
+                request.getBuyerId(),
+                request.getSellerId(),
+                request.getProductId(),
+                normalized.getPageNum(),
+                normalized.getPageSize()
+        );
+    }
+
+    private List<OrderVO> batchToOrderVOs(List<OrderReadModel> orders) {
         if (orders == null || orders.isEmpty()) {
             return List.of();
         }
 
         Set<Long> productIds = orders.stream()
-                .map(Order::getProductId)
+                .map(OrderReadModel::productId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<Long, ProductVO> productMap = new HashMap<>();
+        Map<Long, ProductDetail> productMap = new HashMap<>();
         if (!productIds.isEmpty()) {
-            List<ProductVO> products = productQueryHandler.getProductsByIds(List.copyOf(productIds));
+            List<ProductDetail> products = productQueryPort.getProductsByIds(List.copyOf(productIds));
             if (products != null) {
-                products.forEach(p -> productMap.put(p.getId(), p));
+                products.forEach(p -> productMap.put(p.id(), p));
             }
         }
 
@@ -131,66 +145,64 @@ public class OrderQueryHandler {
                 .collect(Collectors.toList());
     }
 
-    private OrderVO toOrderVO(Order order, Map<Long, ProductVO> productMap) {
+    private OrderVO toOrderVO(OrderReadModel order, Map<Long, ProductDetail> productMap) {
         OrderVO.OrderVOBuilder builder = OrderVO.builder()
-                .id(order.getId())
-                .orderNo(order.getOrderNo())
-                .buyerId(order.getBuyerId())
-                .sellerId(order.getSellerId())
-                .productId(order.getProductId())
-                .amount(order.getAmount())
-                .status(order.getStatus())
-                .statusDesc(OrderStatus.getDescByCode(order.getStatus()))
-                .address(MaskUtils.maskAddress(order.getAddress(), 6))
-                .phone(MaskUtils.maskPhone(order.getPhone()))
-                .remark(order.getRemark())
-                .createTime(order.getCreateTime())
-                .updateTime(order.getUpdateTime());
+                .id(order.id())
+                .orderNo(order.orderNo())
+                .buyerId(order.buyerId())
+                .sellerId(order.sellerId())
+                .productId(order.productId())
+                .amount(order.amount())
+                .status(order.status())
+                .statusDesc(order.statusDesc())
+                .address(MaskUtils.maskAddress(order.address(), 6))
+                .phone(MaskUtils.maskPhone(order.phone()))
+                .remark(order.remark())
+                .createTime(order.createTime())
+                .updateTime(order.updateTime());
 
-        ProductVO product = productMap.get(order.getProductId());
+        ProductDetail product = productMap.get(order.productId());
         if (product != null) {
-            builder.productTitle(product.getTitle());
-            if (product.getImages() != null && !product.getImages().isEmpty()) {
-                builder.productImage(product.getImages().getFirst());
+            builder.productTitle(product.title());
+            if (product.images() != null && !product.images().isEmpty()) {
+                builder.productImage(product.images().getFirst());
             }
         }
 
         return builder.build();
     }
 
-    private OrderVO toOrderVOWithMask(Order order) {
-        Map<Long, ProductVO> productMap = new HashMap<>();
-        if (order.getProductId() != null) {
+    private OrderVO toOrderVOWithMask(OrderReadModel order) {
+        Map<Long, ProductDetail> productMap = new HashMap<>();
+        if (order.productId() != null) {
             try {
-                ProductVO product = productQueryHandler.getProductById(order.getProductId());
-                if (product != null) {
-                    productMap.put(order.getProductId(), product);
-                }
+                productQueryPort.getProductById(order.productId())
+                        .ifPresent(p -> productMap.put(order.productId(), p));
             } catch (Exception e) {
-                log.warn("action=get_product_failed productId={}", order.getProductId(), e);
+                log.warn("action=get_product_failed productId={}", order.productId(), e);
             }
         }
 
         OrderVO.OrderVOBuilder builder = OrderVO.builder()
-                .id(order.getId())
-                .orderNo(order.getOrderNo())
-                .buyerId(order.getBuyerId())
-                .sellerId(order.getSellerId())
-                .productId(order.getProductId())
-                .amount(order.getAmount())
-                .status(order.getStatus())
-                .statusDesc(OrderStatus.getDescByCode(order.getStatus()))
-                .address(order.getAddress())
-                .phone(MaskUtils.maskPhone(order.getPhone()))
-                .remark(order.getRemark())
-                .createTime(order.getCreateTime())
-                .updateTime(order.getUpdateTime());
+                .id(order.id())
+                .orderNo(order.orderNo())
+                .buyerId(order.buyerId())
+                .sellerId(order.sellerId())
+                .productId(order.productId())
+                .amount(order.amount())
+                .status(order.status())
+                .statusDesc(order.statusDesc())
+                .address(order.address())
+                .phone(MaskUtils.maskPhone(order.phone()))
+                .remark(order.remark())
+                .createTime(order.createTime())
+                .updateTime(order.updateTime());
 
-        ProductVO product = productMap.get(order.getProductId());
+        ProductDetail product = productMap.get(order.productId());
         if (product != null) {
-            builder.productTitle(product.getTitle());
-            if (product.getImages() != null && !product.getImages().isEmpty()) {
-                builder.productImage(product.getImages().getFirst());
+            builder.productTitle(product.title());
+            if (product.images() != null && !product.images().isEmpty()) {
+                builder.productImage(product.images().getFirst());
             }
         }
 

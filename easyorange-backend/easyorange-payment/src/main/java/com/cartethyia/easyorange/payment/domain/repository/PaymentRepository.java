@@ -1,26 +1,18 @@
 package com.cartethyia.easyorange.payment.domain.repository;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.cartethyia.easyorange.payment.entity.Payment;
+import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface PaymentRepository {
 
-    void save(Payment payment);
+    void save(PaymentAggregate aggregate);
 
-    void update(Payment payment);
+    void update(PaymentAggregate aggregate);
 
-    Optional<Payment> findById(Long id);
+    Optional<PaymentAggregate> findById(Long id);
 
-    Optional<Payment> findByPaymentNo(String paymentNo);
+    Optional<PaymentAggregate> findByPaymentNo(String paymentNo);
 
-    Optional<Payment> findByOrderId(Long orderId);
-
-    List<Payment> findByUserId(Long userId);
-
-    List<Payment> findByStatus(Integer status);
-
-    IPage<Payment> findPage(IPage<Payment> page, Long userId, Integer status);
+    Optional<PaymentAggregate> findByOrderId(Long orderId);
 }

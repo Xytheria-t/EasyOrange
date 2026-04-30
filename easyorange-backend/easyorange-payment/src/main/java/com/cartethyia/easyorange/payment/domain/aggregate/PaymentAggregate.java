@@ -3,46 +3,63 @@ package com.cartethyia.easyorange.payment.domain.aggregate;
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
-import com.cartethyia.easyorange.payment.domain.strategy.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.strategy.PaymentStrategy;
-import com.cartethyia.easyorange.payment.domain.strategy.RefundResult;
+import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
+import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
+import com.cartethyia.easyorange.common.util.SnowflakeIdGenerator;
+import com.cartethyia.easyorange.payment.domain.specification.PaymentSpecification;
 import com.cartethyia.easyorange.payment.domain.valueobject.PaymentAmount;
-import com.cartethyia.easyorange.payment.entity.Payment;
 import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
 import com.cartethyia.easyorange.payment.enums.PaymentStatus;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-@Accessors(chain = true)
 public class PaymentAggregate {
 
-    private Long id;
-    private String paymentNo;
-    private Long orderId;
-    private Long userId;
-    private BigDecimal amount;
+    private final Long id;
+    private final String paymentNo;
+    private final Long orderId;
+    private final Long userId;
+    private final BigDecimal amount;
     private BigDecimal refundedAmount;
-    private Integer paymentMethod;
-    private Integer status;
+    private final Integer paymentMethod;
+    private PaymentStatus status;
     private String transactionId;
     private String refundReason;
     private LocalDateTime refundTime;
-    private String attach;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private final String attach;
+    private final LocalDateTime createTime;
+    private final LocalDateTime updateTime;
 
-    public static PaymentCreatedEvent create(Long orderId, Long userId, BigDecimal amount,
-                                            Integer paymentMethod, String attach) {
+    private PaymentAggregate(Long id, String paymentNo, Long orderId, Long userId,
+                             BigDecimal amount, BigDecimal refundedAmount, Integer paymentMethod,
+                             PaymentStatus status, String transactionId, String refundReason,
+                             LocalDateTime refundTime, String attach,
+                             LocalDateTime createTime, LocalDateTime updateTime) {
+        this.id = id;
+        this.paymentNo = paymentNo;
+        this.orderId = orderId;
+        this.userId = userId;
+        this.amount = amount;
+        this.refundedAmount = refundedAmount;
+        this.paymentMethod = paymentMethod;
+        this.status = status;
+        this.transactionId = transactionId;
+        this.refundReason = refundReason;
+        this.refundTime = refundTime;
+        this.attach = attach;
+        this.createTime = createTime;
+        this.updateTime = updateTime;
+    }
+
+    public static PaymentAggregate create(Long orderId, Long userId, BigDecimal amount,
+                                          Integer paymentMethod, String attach) {
         BizRequire.notNull(orderId, "订单ID不能为空");
         BizRequire.notNull(userId, "用户ID不能为空");
         BizRequire.notNull(amount, "支付金额不能为空");
@@ -52,38 +69,61 @@ public class PaymentAggregate {
         Long paymentId = generatePaymentId();
         String paymentNo = generatePaymentNo();
 
-        PaymentAggregate aggregate = PaymentAggregate.builder()
-                .id(paymentId)
-                .paymentNo(paymentNo)
-                .orderId(orderId)
-                .userId(userId)
-                .amount(amount)
-                .refundedAmount(BigDecimal.ZERO)
-                .paymentMethod(paymentMethod)
-                .status(PaymentStatus.PENDING.getCode())
-                .attach(attach)
-                .build();
-
-        return new PaymentCreatedEvent(paymentId, paymentNo, orderId, userId, amount, paymentMethod);
+        return new PaymentAggregate(
+                paymentId, paymentNo, orderId, userId,
+                amount, BigDecimal.ZERO, paymentMethod,
+                PaymentStatus.PENDING, null, null,
+                null, attach, null, null
+        );
     }
 
-    public BaseDomainEvent pay(PaymentStrategy strategy) {
-        BizRequire.requireTrue(PaymentStatus.canPay(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
+    public static PaymentCreatedEvent publishCreatedEvent(PaymentAggregate aggregate) {
+        return new PaymentCreatedEvent(
+                aggregate.id, aggregate.paymentNo, aggregate.orderId,
+                aggregate.userId, aggregate.amount, aggregate.paymentMethod
+        );
+    }
 
-        PaymentResult result = strategy.pay(this.id, this.orderId, this.amount, this.paymentMethod);
+    public BaseDomainEvent pay(PaymentGateway gateway) {
+        BizRequire.requireTrue(PaymentSpecification.canPay(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
+
+        PaymentResult result = gateway.pay(this);
 
         if (result.isSuccess()) {
-            this.status = PaymentStatus.SUCCESS.getCode();
+            this.status = PaymentStatus.SUCCESS;
             this.transactionId = result.getTransactionId();
             return new PaymentSucceededEvent(this.id, result.getTransactionId());
         } else {
-            this.status = PaymentStatus.FAILED.getCode();
+            this.status = PaymentStatus.FAILED;
             return new PaymentFailedEvent(this.id, result.getErrorMessage());
         }
     }
 
-    public BaseDomainEvent refund(BigDecimal refundAmount, PaymentStrategy strategy) {
-        BizRequire.requireTrue(PaymentStatus.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
+    public void preparePay() {
+        BizRequire.requireTrue(PaymentSpecification.canPay(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
+        this.status = PaymentStatus.PAYING;
+    }
+
+    public void cancelPay() {
+        BizRequire.requireTrue(PaymentStatus.PAYING.equals(this.status), "只有支付中状态可以取消支付");
+        this.status = PaymentStatus.PENDING;
+    }
+
+    public BaseDomainEvent confirmPay(PaymentResult result) {
+        BizRequire.requireTrue(PaymentStatus.PAYING.equals(this.status), "只有支付中状态可以确认支付结果");
+
+        if (result.isSuccess()) {
+            this.status = PaymentStatus.SUCCESS;
+            this.transactionId = result.getTransactionId();
+            return new PaymentSucceededEvent(this.id, result.getTransactionId());
+        } else {
+            this.status = PaymentStatus.FAILED;
+            return new PaymentFailedEvent(this.id, result.getErrorMessage());
+        }
+    }
+
+    public BaseDomainEvent refund(BigDecimal refundAmount, PaymentGateway gateway) {
+        BizRequire.requireTrue(PaymentSpecification.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
 
         PaymentAmount refundAmountVO = PaymentAmount.of(refundAmount);
         PaymentAmount currentAmount = PaymentAmount.of(this.amount);
@@ -92,14 +132,14 @@ public class PaymentAggregate {
         BigDecimal totalRefunded = this.refundedAmount.add(refundAmount);
         BizRequire.requireTrue(totalRefunded.compareTo(this.amount) <= 0, "累计退款金额不能超过支付金额");
 
-        RefundResult result = strategy.refund(this.id, refundAmount);
+        RefundResult result = gateway.refund(this, refundAmount);
 
         if (result.isSuccess()) {
             this.refundedAmount = totalRefunded;
             if (this.refundedAmount.compareTo(this.amount) == 0) {
-                this.status = PaymentStatus.REFUNDED.getCode();
+                this.status = PaymentStatus.REFUNDED;
             } else {
-                this.status = PaymentStatus.PARTIALLY_REFUNDED.getCode();
+                this.status = PaymentStatus.PARTIALLY_REFUNDED;
             }
             this.refundReason = "退款成功";
             this.refundTime = LocalDateTime.now();
@@ -109,10 +149,47 @@ public class PaymentAggregate {
         }
     }
 
-    public BaseDomainEvent directRefund(String refundReason) {
-        BizRequire.requireTrue(PaymentStatus.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
+    public void prepareRefund(BigDecimal refundAmount) {
+        BizRequire.requireTrue(PaymentSpecification.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
 
-        this.status = PaymentStatus.REFUNDED.getCode();
+        PaymentAmount refundAmountVO = PaymentAmount.of(refundAmount);
+        PaymentAmount currentAmount = PaymentAmount.of(this.amount);
+        BizRequire.requireTrue(refundAmountVO.isLessThanOrEqualTo(currentAmount.value()), "退款金额不能超过支付金额");
+
+        BigDecimal totalRefunded = this.refundedAmount.add(refundAmount);
+        BizRequire.requireTrue(totalRefunded.compareTo(this.amount) <= 0, "累计退款金额不能超过支付金额");
+
+        this.status = PaymentStatus.REFUNDING;
+    }
+
+    public void cancelRefund() {
+        BizRequire.requireTrue(PaymentStatus.REFUNDING.equals(this.status), "只有退款中状态可以取消退款");
+        this.status = PaymentStatus.SUCCESS;
+    }
+
+    public BaseDomainEvent confirmRefund(RefundResult result, BigDecimal refundAmount) {
+        BizRequire.requireTrue(PaymentStatus.REFUNDING.equals(this.status), "只有退款中状态可以确认退款结果");
+
+        if (result.isSuccess()) {
+            this.refundedAmount = this.refundedAmount.add(refundAmount);
+            if (this.refundedAmount.compareTo(this.amount) == 0) {
+                this.status = PaymentStatus.REFUNDED;
+            } else {
+                this.status = PaymentStatus.PARTIALLY_REFUNDED;
+            }
+            this.refundReason = "退款成功";
+            this.refundTime = LocalDateTime.now();
+            return new PaymentRefundedEvent(this.id, "部分退款: " + refundAmount);
+        } else {
+            this.status = PaymentStatus.SUCCESS;
+            throw BusinessException.of(result.getErrorMessage());
+        }
+    }
+
+    public BaseDomainEvent directRefund(String refundReason) {
+        BizRequire.requireTrue(PaymentSpecification.canRefund(this.status), PaymentResultCode.REFUND_NOT_ALLOWED);
+
+        this.status = PaymentStatus.REFUNDED;
         this.refundedAmount = this.amount;
         this.refundReason = refundReason;
         this.refundTime = LocalDateTime.now();
@@ -121,63 +198,50 @@ public class PaymentAggregate {
     }
 
     public PaymentFailedEvent fail(String reason) {
-        BizRequire.requireTrue(PaymentStatus.PENDING.getCode().equals(this.status), "只有待支付状态可以标记为失败");
+        BizRequire.requireTrue(PaymentSpecification.canFail(this.status), "只有待支付状态可以标记为失败");
 
-        this.status = PaymentStatus.FAILED.getCode();
+        this.status = PaymentStatus.FAILED;
 
         return new PaymentFailedEvent(this.id, reason);
     }
 
-    public void close() {
-        BizRequire.requireTrue(PaymentStatus.canClose(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
+    public PaymentClosedEvent close() {
+        BizRequire.requireTrue(PaymentSpecification.canClose(this.status), PaymentResultCode.PAYMENT_INVALID_STATUS);
 
-        this.status = PaymentStatus.CLOSED.getCode();
+        this.status = PaymentStatus.CLOSED;
+
+        return new PaymentClosedEvent(this.id);
     }
 
-    public static PaymentAggregate fromEntity(Payment payment) {
-        if (payment == null) {
-            return null;
-        }
-        return PaymentAggregate.builder()
-                .id(payment.getId())
-                .paymentNo(payment.getPaymentNo())
-                .orderId(payment.getOrderId())
-                .userId(payment.getUserId())
-                .amount(payment.getAmount())
-                .refundedAmount(payment.getRefundedAmount() != null ? payment.getRefundedAmount() : BigDecimal.ZERO)
-                .paymentMethod(payment.getPaymentMethod())
-                .status(payment.getStatus())
-                .transactionId(payment.getTransactionId())
-                .refundReason(payment.getRefundReason())
-                .refundTime(payment.getRefundTime())
-                .attach(payment.getAttach())
-                .createTime(payment.getCreateTime())
-                .updateTime(payment.getUpdateTime())
-                .build();
+    public static PaymentAggregate reconstruct(Long id, String paymentNo, Long orderId, Long userId,
+                                                BigDecimal amount, BigDecimal refundedAmount, Integer paymentMethod,
+                                                PaymentStatus status, String transactionId, String refundReason,
+                                                LocalDateTime refundTime, String attach,
+                                                LocalDateTime createTime, LocalDateTime updateTime) {
+        return new PaymentAggregate(id, paymentNo, orderId, userId, amount, refundedAmount,
+                paymentMethod, status, transactionId, refundReason, refundTime, attach, createTime, updateTime);
     }
 
-    public Payment toEntity() {
-        return Payment.builder()
-                .id(this.id)
-                .paymentNo(this.paymentNo)
-                .orderId(this.orderId)
-                .userId(this.userId)
-                .amount(this.amount)
-                .refundedAmount(this.refundedAmount)
-                .paymentMethod(this.paymentMethod)
-                .status(this.status)
-                .transactionId(this.transactionId)
-                .refundReason(this.refundReason)
-                .refundTime(this.refundTime)
-                .attach(this.attach)
-                .build();
-    }
+    public Long id() { return id; }
+    public String paymentNo() { return paymentNo; }
+    public Long orderId() { return orderId; }
+    public Long userId() { return userId; }
+    public BigDecimal amount() { return amount; }
+    public BigDecimal refundedAmount() { return refundedAmount; }
+    public Integer paymentMethod() { return paymentMethod; }
+    public PaymentStatus status() { return status; }
+    public String transactionId() { return transactionId; }
+    public String refundReason() { return refundReason; }
+    public LocalDateTime refundTime() { return refundTime; }
+    public String attach() { return attach; }
+    public LocalDateTime createTime() { return createTime; }
+    public LocalDateTime updateTime() { return updateTime; }
 
     private static Long generatePaymentId() {
-        return System.currentTimeMillis();
+        return SnowflakeIdGenerator.getInstance().nextId();
     }
 
     private static String generatePaymentNo() {
-        return "PAY" + System.currentTimeMillis();
+        return "PAY" + SnowflakeIdGenerator.getInstance().nextId();
     }
 }

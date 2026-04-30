@@ -15,4 +15,7 @@ public class PaymentQuery {
     private Long orderId;
     private Long userId;
     private Integer status;
+    private Integer paymentMethod;
+    private Integer pageNum;
+    private Integer pageSize;
 }

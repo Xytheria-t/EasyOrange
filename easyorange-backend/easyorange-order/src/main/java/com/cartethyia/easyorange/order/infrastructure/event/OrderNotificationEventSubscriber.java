@@ -8,11 +8,12 @@ import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
-import com.cartethyia.easyorange.order.entity.Order;
-import com.cartethyia.easyorange.order.mapper.OrderMapper;
-import com.cartethyia.easyorange.user.entity.User;
-import com.cartethyia.easyorange.user.service.user.UserService;
+import com.cartethyia.easyorange.order.domain.port.outbound.UserInfoPort;
+import com.cartethyia.easyorange.order.domain.port.outbound.UserInfoPort.UserInfo;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,8 +25,8 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
 
     private final EventIdempotencyChecker idempotencyChecker;
     private final NotificationService notificationService;
-    private final OrderMapper orderMapper;
-    private final UserService userService;
+    private final OrderReadRepository orderReadRepository;
+    private final UserInfoPort userInfoPort;
 
     @Override
     public Class<BaseDomainEvent> getEventType() {
@@ -58,6 +59,8 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
                 handleOrderCompleted(e);
             } else if (event instanceof OrderCancelledEvent e) {
                 handleOrderCancelled(e);
+            } else if (event instanceof OrderRefundedEvent e) {
+                handleOrderRefunded(e);
             }
         } catch (Exception e) {
             log.error("action=handle_notification_failed eventType={} eventId={}", eventType, eventId, e);
@@ -105,28 +108,33 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         log.info("action=notify_order_cancelled orderId={}", event.getOrderId());
     }
 
+    private void handleOrderRefunded(OrderRefundedEvent event) {
+        String email = getEmailFromOrder(event.getOrderId());
+        if (email != null) {
+            notificationService.sendEmail(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId());
+        }
+        log.info("action=notify_order_refunded orderId={}", event.getOrderId());
+    }
+
     private String getUserEmail(Long userId) {
         if (userId == null) {
             return null;
         }
-        User user = userService.getById(userId);
-        if (user == null) {
-            log.warn("action=user_not_found userId={}", userId);
-            return null;
-        }
-        return user.getEmail();
+        return userInfoPort.getUserInfo(userId)
+                .map(UserInfo::email)
+                .orElseGet(() -> {
+                    log.warn("action=user_not_found userId={}", userId);
+                    return null;
+                });
     }
 
     private String getEmailFromOrder(Long orderId) {
         if (orderId == null) {
             return null;
         }
-        Order order = orderMapper.selectById(orderId);
-        if (order == null) {
-            log.warn("action=order_not_found orderId={}", orderId);
-            return null;
-        }
-        return getUserEmail(order.getBuyerId());
+        return orderReadRepository.findById(OrderId.of(orderId))
+                .map(readModel -> getUserEmail(readModel.buyerId()))
+                .orElse(null);
     }
 
     private String getEventId(BaseDomainEvent event) {
@@ -140,6 +148,8 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
             return "completed:" + e.getOrderId();
         } else if (event instanceof OrderCancelledEvent e) {
             return "cancelled:" + e.getOrderId() + ":" + e.getProductId();
+        } else if (event instanceof OrderRefundedEvent e) {
+            return "refunded:" + e.getOrderId() + ":" + e.getProductId();
         }
         return event.getClass().getSimpleName() + ":" + System.currentTimeMillis();
     }

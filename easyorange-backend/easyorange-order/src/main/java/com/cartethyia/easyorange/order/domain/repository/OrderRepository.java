@@ -1,47 +1,28 @@
 package com.cartethyia.easyorange.order.domain.repository;
 
-import com.cartethyia.easyorange.order.entity.Order;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * 订单仓储接口
- */
 public interface OrderRepository {
 
-    /**
-     * 保存订单
-     */
-    void save(Order order);
+    void save(OrderAggregate aggregate);
 
-    /**
-     * 更新订单
-     */
-    void update(Order order);
+    void update(OrderAggregate aggregate);
 
-    /**
-     * 根据ID查询订单
-     */
-    Optional<Order> findById(Long id);
+    Optional<OrderAggregate> findById(OrderId id);
 
-    /**
-     * 根据买家ID查询订单
-     */
-    List<Order> findByBuyerId(Long buyerId);
+    List<OrderAggregate> findByBuyerId(UserId buyerId);
 
-    /**
-     * 根据卖家ID查询订单
-     */
-    List<Order> findBySellerId(Long sellerId);
+    List<OrderAggregate> findBySellerId(UserId sellerId);
 
-    /**
-     * 查询超时未付款的订单
-     */
-    List<Order> findExpiredOrders(int timeoutMinutes);
+    List<OrderAggregate> findExpiredOrders(int timeoutMinutes);
 
-    /**
-     * 根据状态查询订单
-     */
-    List<Order> findByStatus(Integer status);
+    List<OrderAggregate> findByStatus(Integer status);
+
+    List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold);
 }

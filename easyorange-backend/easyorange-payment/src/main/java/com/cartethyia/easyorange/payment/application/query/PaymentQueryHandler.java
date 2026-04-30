@@ -1,15 +1,10 @@
 package com.cartethyia.easyorange.payment.application.query;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
-import com.cartethyia.easyorange.payment.dto.request.QueryPaymentRequest;
-import com.cartethyia.easyorange.payment.dto.vo.PaymentVO;
-import com.cartethyia.easyorange.payment.entity.Payment;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.enums.PaymentMethod;
 import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
 import com.cartethyia.easyorange.payment.enums.PaymentStatus;
@@ -18,74 +13,65 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentQueryHandler {
 
-    private final PaymentRepository paymentRepository;
+    private final PaymentQueryRepository paymentQueryRepository;
 
-    public PaymentVO getPaymentById(Long paymentId) {
-        PaymentAggregate aggregate = paymentRepository.findById(paymentId)
-                .map(PaymentAggregate::fromEntity)
+    public PaymentView getPaymentById(Long paymentId) {
+        PaymentAggregate aggregate = paymentQueryRepository.findAggregateById(paymentId)
                 .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        return toPaymentVO(aggregate);
+        return toPaymentView(aggregate);
     }
 
-    public PaymentVO getPaymentByOrderId(Long orderId) {
-        PaymentAggregate aggregate = paymentRepository.findByOrderId(orderId)
-                .map(PaymentAggregate::fromEntity)
+    public PaymentView getPaymentByOrderId(Long orderId) {
+        PaymentAggregate aggregate = paymentQueryRepository.findAggregateByOrderId(orderId)
                 .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        return toPaymentVO(aggregate);
+        return toPaymentView(aggregate);
     }
 
-    public PageResult<PaymentVO> getMyPayments(QueryPaymentRequest request) {
+    public PageResult<PaymentView> getMyPayments(PaymentQuery query) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        PageRequest normalized = request.normalized();
-        IPage<Payment> page = paymentRepository.findPage(
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(normalized.getPageNum(), normalized.getPageSize()),
-                userId,
-                request.getStatus()
-        );
-        return toPageResult(page);
+        return queryPaymentsInternal(userId, query.getStatus(), query.getPageNum(), query.getPageSize());
     }
 
-    public PageResult<PaymentVO> queryPayments(QueryPaymentRequest request) {
-        PageRequest normalized = request.normalized();
-        IPage<Payment> page = paymentRepository.findPage(
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(normalized.getPageNum(), normalized.getPageSize()),
-                request.getUserId(),
-                request.getStatus()
-        );
-        return toPageResult(page);
+    public PageResult<PaymentView> queryPayments(PaymentQuery query) {
+        return queryPaymentsInternal(query.getUserId(), query.getStatus(), query.getPageNum(), query.getPageSize());
     }
 
-    private PaymentVO toPaymentVO(PaymentAggregate aggregate) {
-        return PaymentVO.builder()
-                .id(aggregate.getId())
-                .paymentNo(aggregate.getPaymentNo())
-                .orderId(aggregate.getOrderId())
-                .userId(aggregate.getUserId())
-                .amount(aggregate.getAmount())
-                .paymentMethod(aggregate.getPaymentMethod())
-                .paymentMethodDesc(PaymentMethod.getDescByCode(aggregate.getPaymentMethod()))
-                .status(aggregate.getStatus())
-                .statusDesc(PaymentStatus.getDescByCode(aggregate.getStatus()))
-                .transactionId(aggregate.getTransactionId())
-                .refundReason(aggregate.getRefundReason())
-                .refundTime(aggregate.getRefundTime())
-                .createTime(aggregate.getCreateTime())
-                .updateTime(aggregate.getUpdateTime())
+    private PageResult<PaymentView> queryPaymentsInternal(Long userId, Integer status, Integer pageNum, Integer pageSize) {
+        int effectivePageNum = pageNum != null ? pageNum : 1;
+        int effectivePageSize = pageSize != null ? pageSize : 20;
+
+        List<PaymentAggregate> aggregates = paymentQueryRepository.findByUserIdAndStatus(
+                userId, status, effectivePageNum, effectivePageSize);
+        long total = paymentQueryRepository.countByUserIdAndStatus(userId, status);
+        List<PaymentView> views = aggregates.stream()
+                .map(this::toPaymentView)
+                .toList();
+        return PageResult.of(views, total, effectivePageNum, effectivePageSize);
+    }
+
+    private PaymentView toPaymentView(PaymentAggregate aggregate) {
+        return PaymentView.builder()
+                .id(aggregate.id())
+                .paymentNo(aggregate.paymentNo())
+                .orderId(aggregate.orderId())
+                .userId(aggregate.userId())
+                .amount(aggregate.amount())
+                .refundedAmount(aggregate.refundedAmount())
+                .paymentMethod(aggregate.paymentMethod())
+                .paymentMethodDesc(PaymentMethod.getDescByCode(aggregate.paymentMethod()))
+                .status(aggregate.status().getCode())
+                .statusDesc(PaymentStatus.getDescByCode(aggregate.status().getCode()))
+                .transactionId(aggregate.transactionId())
+                .refundReason(aggregate.refundReason())
+                .refundTime(aggregate.refundTime())
+                .createTime(aggregate.createTime())
+                .updateTime(aggregate.updateTime())
                 .build();
-    }
-
-    private PageResult<PaymentVO> toPageResult(IPage<Payment> page) {
-        List<PaymentVO> voList = page.getRecords().stream()
-                .map(PaymentAggregate::fromEntity)
-                .map(this::toPaymentVO)
-                .collect(Collectors.toList());
-        return PageResult.fromIPage(page, voList);
     }
 }

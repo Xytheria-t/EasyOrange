@@ -21,7 +21,9 @@ public enum PaymentResultCode implements IResultCode {
     PAYMENT_ALREADY_REFUNDED("B4004", "已退款"),
     REFUND_NOT_FOUND("B4005", "退款记录不存在"),
     REFUND_NOT_ALLOWED("B4006", "不允许退款"),
-    PAYMENT_INVALID_STATUS("B4007", "支付状态异常");
+    PAYMENT_INVALID_STATUS("B4007", "支付状态异常"),
+    CALLBACK_SIGN_INVALID("B4008", "回调签名验证失败"),
+    PAYMENT_GATEWAY_ERROR("B4009", "支付网关调用失败");
 
     private final String code;
     private final String message;

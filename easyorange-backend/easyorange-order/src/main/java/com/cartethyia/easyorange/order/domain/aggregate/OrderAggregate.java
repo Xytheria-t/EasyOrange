@@ -1,39 +1,46 @@
 package com.cartethyia.easyorange.order.domain.aggregate;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.common.util.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
+import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
-import com.cartethyia.easyorange.order.entity.Order;
+import com.cartethyia.easyorange.order.domain.valueobject.Address;
+import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
+import com.cartethyia.easyorange.order.domain.valueobject.Phone;
+import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.enums.OrderResultCode;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
-import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-@Getter
 public class OrderAggregate {
 
-    private final Long id;
-    private final String orderNo;
-    private final Long buyerId;
-    private final Long sellerId;
-    private final Long productId;
-    private final BigDecimal amount;
-    private final Integer status;
+    private final OrderId id;
+    private final OrderNo orderNo;
+    private final UserId buyerId;
+    private final UserId sellerId;
+    private final ProductId productId;
+    private final Money amount;
+    private final OrderStatus status;
     private final Integer paymentStatus;
-    private final String address;
-    private final String phone;
+    private final Address address;
+    private final Phone phone;
     private final String remark;
     private final String cancelReason;
-    private final java.time.LocalDateTime cancelTime;
+    private final LocalDateTime cancelTime;
 
-    private OrderAggregate(Long id, String orderNo, Long buyerId, Long sellerId, Long productId,
-                          BigDecimal amount, Integer status, Integer paymentStatus,
-                          String address, String phone, String remark,
-                          String cancelReason, java.time.LocalDateTime cancelTime) {
+    private OrderAggregate(OrderId id, OrderNo orderNo, UserId buyerId, UserId sellerId, ProductId productId,
+                          Money amount, OrderStatus status, Integer paymentStatus,
+                          Address address, Phone phone, String remark,
+                          String cancelReason, LocalDateTime cancelTime) {
         this.id = id;
         this.orderNo = orderNo;
         this.sellerId = sellerId;
@@ -49,111 +56,128 @@ public class OrderAggregate {
         this.cancelTime = cancelTime;
     }
 
-    public static OrderCreatedEvent createOrder(Long buyerId, Long sellerId, Long productId,
-                                               BigDecimal amount, String address, String phone,
-                                               String remark) {
-        BizRequire.ne(buyerId, sellerId, "不能购买自己的商品");
+    public OrderId id() { return id; }
+    public OrderNo orderNo() { return orderNo; }
+    public UserId buyerId() { return buyerId; }
+    public UserId sellerId() { return sellerId; }
+    public ProductId productId() { return productId; }
+    public Money amount() { return amount; }
+    public OrderStatus status() { return status; }
+    public Integer paymentStatus() { return paymentStatus; }
+    public Address address() { return address; }
+    public Phone phone() { return phone; }
+    public String remark() { return remark; }
+    public String cancelReason() { return cancelReason; }
+    public LocalDateTime cancelTime() { return cancelTime; }
+
+    public static OrderCreatedResult createOrder(UserId buyerId, UserId sellerId, ProductId productId,
+                                                 Money amount, Address address, Phone phone, String remark) {
+        BizRequire.ne(buyerId.value(), sellerId.value(), "不能购买自己的商品");
         BizRequire.notNull(amount, "订单金额不能为空");
-        BizRequire.requireTrue(amount.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
 
         Long orderId = generateOrderId();
-        String orderNo = generateOrderNo();
+        OrderNo orderNo = OrderNo.of(orderId);
 
-        return new OrderCreatedEvent(orderId, buyerId, sellerId, productId, amount);
+        OrderAggregate aggregate = new OrderAggregate(
+                OrderId.of(orderId), orderNo, buyerId, sellerId, productId,
+                amount, OrderStatus.PENDING_PAYMENT, 0,
+                address, phone, remark, null, null
+        );
+
+        OrderCreatedEvent event = new OrderCreatedEvent(
+                orderId, buyerId.value(), sellerId.value(), productId.value(), amount.amount()
+        );
+
+        return new OrderCreatedResult(aggregate, event);
     }
 
-    public OrderAggregate withId(Long id) {
+    public OrderAggregate withId(OrderId id) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
                 amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
-    public OrderAggregate withOrderNo(String orderNo) {
+    public OrderAggregate withOrderNo(OrderNo orderNo) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
                 amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
-    public OrderAggregate withStatus(Integer status) {
+    public OrderPaidResult pay() {
+        BizRequire.requireTrue(OrderStatus.canPay(this.status.getCode()), OrderResultCode.ORDER_STATUS_ERROR);
+        OrderAggregate updated = new OrderAggregate(
+                id, orderNo, buyerId, sellerId, productId,
+                amount, OrderStatus.PAID, 1,
+                address, phone, remark, cancelReason, cancelTime
+        );
+        return new OrderPaidResult(updated, new OrderPaidEvent(updated.id.value(), 1));
+    }
+
+    public OrderCancelledResult cancel(String reason) {
+        BizRequire.requireTrue(OrderStatus.canCancel(this.status.getCode()), OrderResultCode.ORDER_CANNOT_CANCEL);
+        OrderAggregate updated = new OrderAggregate(
+                id, orderNo, buyerId, sellerId, productId,
+                amount, OrderStatus.CANCELLED, paymentStatus,
+                address, phone, remark, reason, LocalDateTime.now()
+        );
+        return new OrderCancelledResult(updated, new OrderCancelledEvent(updated.id.value(), updated.productId.value(), reason));
+    }
+
+    public OrderShippedResult ship() {
+        BizRequire.requireTrue(OrderStatus.canShip(this.status.getCode()), OrderResultCode.ORDER_STATUS_ERROR);
+        OrderAggregate updated = new OrderAggregate(
+                id, orderNo, buyerId, sellerId, productId,
+                amount, OrderStatus.SHIPPED, paymentStatus,
+                address, phone, remark, cancelReason, cancelTime
+        );
+        return new OrderShippedResult(updated, new OrderShippedEvent(updated.id.value()));
+    }
+
+    public OrderCompletedResult confirmReceipt() {
+        BizRequire.requireTrue(OrderStatus.canConfirmReceipt(this.status.getCode()), OrderResultCode.ORDER_STATUS_ERROR);
+        OrderAggregate updated = new OrderAggregate(
+                id, orderNo, buyerId, sellerId, productId,
+                amount, OrderStatus.COMPLETED, paymentStatus,
+                address, phone, remark, cancelReason, cancelTime
+        );
+        return new OrderCompletedResult(updated, new OrderCompletedEvent(updated.id.value(), updated.productId.value()));
+    }
+
+    public OrderRefundedResult refund(String reason) {
+        BizRequire.requireTrue(OrderStatus.canRefund(this.status.getCode()), OrderResultCode.ORDER_CANNOT_REFUND);
+        OrderAggregate updated = new OrderAggregate(
+                id, orderNo, buyerId, sellerId, productId,
+                amount, OrderStatus.REFUNDED, 2,
+                address, phone, remark, reason, LocalDateTime.now()
+        );
+        return new OrderRefundedResult(updated, new OrderRefundedEvent(updated.id.value(), updated.productId.value(), reason));
+    }
+
+    public static OrderAggregate from(OrderId id, OrderNo orderNo, UserId buyerId, UserId sellerId, ProductId productId,
+                                      Money amount, OrderStatus status, Integer paymentStatus,
+                                      Address address, Phone phone, String remark,
+                                      String cancelReason, LocalDateTime cancelTime) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
                 amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
     }
 
-    public OrderAggregate withPaymentStatus(Integer paymentStatus) {
-        return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
-    }
-
-    public OrderPaidEvent pay() {
-        BizRequire.requireTrue(OrderStatus.canPay(this.status), OrderResultCode.ORDER_STATUS_ERROR);
-        return new OrderPaidEvent(this.id, 1);
-    }
-
-    public OrderCancelledEvent cancel(String reason) {
-        BizRequire.requireTrue(OrderStatus.canCancel(this.status), OrderResultCode.ORDER_CANNOT_CANCEL);
-        return new OrderCancelledEvent(this.id, this.productId, reason);
-    }
-
-    public OrderShippedEvent ship() {
-        BizRequire.requireTrue(OrderStatus.canShip(this.status), OrderResultCode.ORDER_STATUS_ERROR);
-        return new OrderShippedEvent(this.id);
-    }
-
-    public OrderCompletedEvent confirmReceipt() {
-        BizRequire.requireTrue(OrderStatus.canConfirmReceipt(this.status), OrderResultCode.ORDER_STATUS_ERROR);
-        return new OrderCompletedEvent(this.id, this.productId);
-    }
-
-    public static OrderAggregate from(Long id, String orderNo, Long buyerId, Long sellerId, Long productId,
-                                     BigDecimal amount, Integer status, Integer paymentStatus,
-                                     String address, String phone, String remark,
-                                     String cancelReason, java.time.LocalDateTime cancelTime) {
-        return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
-    }
-
-    public static OrderAggregate fromEntity(Order order) {
-        if (order == null) {
-            return null;
-        }
+    public static OrderAggregate fromRaw(Long id, String orderNo, Long buyerId, Long sellerId, Long productId,
+                                         BigDecimal amount, Integer status, Integer paymentStatus,
+                                         String address, String phone, String remark,
+                                         String cancelReason, LocalDateTime cancelTime) {
         return new OrderAggregate(
-                order.getId(),
-                order.getOrderNo(),
-                order.getBuyerId(),
-                order.getSellerId(),
-                order.getProductId(),
-                order.getAmount(),
-                order.getStatus(),
-                order.getPaymentStatus(),
-                order.getAddress(),
-                order.getPhone(),
-                order.getRemark(),
-                order.getCancelReason(),
-                order.getCancelTime()
+                OrderId.of(id), OrderNo.of(orderNo), UserId.of(buyerId), UserId.of(sellerId), ProductId.of(productId),
+                Money.of(amount), OrderStatus.fromCode(status), paymentStatus,
+                Address.of(address), Phone.of(phone), remark, cancelReason, cancelTime
         );
     }
 
-    public Order toEntity() {
-        return Order.builder()
-                .id(this.id)
-                .orderNo(this.orderNo)
-                .buyerId(this.buyerId)
-                .sellerId(this.sellerId)
-                .productId(this.productId)
-                .amount(this.amount)
-                .status(this.status)
-                .paymentStatus(this.paymentStatus)
-                .address(this.address)
-                .phone(this.phone)
-                .remark(this.remark)
-                .cancelReason(this.cancelReason)
-                .cancelTime(this.cancelTime)
-                .build();
-    }
-
     private static Long generateOrderId() {
-        return System.currentTimeMillis();
+        return SnowflakeIdGenerator.getInstance().nextId();
     }
 
-    private static String generateOrderNo() {
-        return "ORD" + System.currentTimeMillis();
-    }
+    public record OrderCreatedResult(OrderAggregate aggregate, OrderCreatedEvent event) {}
+    public record OrderPaidResult(OrderAggregate aggregate, OrderPaidEvent event) {}
+    public record OrderCancelledResult(OrderAggregate aggregate, OrderCancelledEvent event) {}
+    public record OrderShippedResult(OrderAggregate aggregate, OrderShippedEvent event) {}
+    public record OrderCompletedResult(OrderAggregate aggregate, OrderCompletedEvent event) {}
+    public record OrderRefundedResult(OrderAggregate aggregate, OrderRefundedEvent event) {}
 }
