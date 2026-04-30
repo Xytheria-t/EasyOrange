@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.dto.request;
 
-import com.cartethyia.easyorange.user.constant.UserConstant;
+import com.cartethyia.easyorange.user.common.constant.UserConstant;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;

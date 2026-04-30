@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.user.dto.request;
 
-import com.cartethyia.easyorange.user.constant.UserConstant;
-import com.cartethyia.easyorange.user.enums.ClientType;
-import com.cartethyia.easyorange.user.enums.LoginMethod;
+import com.cartethyia.easyorange.user.common.constant.UserConstant;
+import com.cartethyia.easyorange.user.common.enums.ClientType;
+import com.cartethyia.easyorange.user.common.enums.LoginMethod;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

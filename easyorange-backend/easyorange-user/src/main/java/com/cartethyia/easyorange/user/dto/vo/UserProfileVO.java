@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.dto.vo;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
-import com.cartethyia.easyorange.user.entity.User;
+import com.cartethyia.easyorange.user.domain.model.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -66,7 +66,7 @@ public class UserProfileVO {
                         ? Integer.parseInt(user.getStatus().getCode()) : 0)
                 .statusDesc(user.getStatus() != null
                         ? user.getStatus().getDescription() : null)
-                .gender(user.getSex() != null ? user.getSex().ordinal() : null)
+                .gender(user.getSex() != null ? Integer.parseInt(user.getSex().getCode()) : null)
                 .userType(user.getUserType() != null
                         ? user.getUserType().getDescription() : null)
                 .avatar(user.getAvatar())

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.dto.vo;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
-import com.cartethyia.easyorange.user.entity.User;
+import com.cartethyia.easyorange.user.domain.model.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -10,18 +10,13 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-
-/**
- * 用户信息视图对象
- * @author cartethyia
- */
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserVO {
 
-    private Long id;
+    private Long userId;
 
     private String username;
 
@@ -32,6 +27,8 @@ public class UserVO {
     private String studentId;
 
     private String realName;
+
+    private String avatar;
 
     private Integer status;
 
@@ -46,12 +43,13 @@ public class UserVO {
             return null;
         }
         return builder()
-                .id(user.getId())
+                .userId(user.getId())
                 .username(user.getUsername())
                 .email(MaskUtils.maskEmail(user.getEmail()))
                 .phone(MaskUtils.maskPhone(user.getPhone()))
                 .studentId(user.getStudentId())
                 .realName(MaskUtils.maskName(user.getRealName()))
+                .avatar(user.getAvatar())
                 .status(user.getStatus() != null
                         ? Integer.parseInt(user.getStatus().getCode()) : 0)
                 .createTime(user.getCreateTime())
@@ -59,5 +57,3 @@ public class UserVO {
                 .build();
     }
 }
-
-
