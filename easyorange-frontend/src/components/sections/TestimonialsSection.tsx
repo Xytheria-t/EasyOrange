@@ -4,7 +4,8 @@ export default function TestimonialsSection() {
       id: 1,
       name: '李明',
       school: '北京大学',
-      avatar: '👨‍🎓',
+      avatarColor: '#F97316',
+      avatarInitial: '李',
       content: '作为大四毕业生，在这里卖掉了所有带不走的书籍和生活用品，真的太方便了！买家都是本校同学，交易很放心。',
       rating: 5,
       tags: ['卖家', '毕业生'],
@@ -13,7 +14,8 @@ export default function TestimonialsSection() {
       id: 2,
       name: '张雨',
       school: '清华大学',
-      avatar: '👩‍🎓',
+      avatarColor: '#EC4899',
+      avatarInitial: '张',
       content: '用 EasyOrange 淘到了很多便宜的教材和考研资料，比买新的省了好多钱。平台还有验货保障，非常靠谱！',
       rating: 5,
       tags: ['买家', '考研党'],
@@ -22,7 +24,8 @@ export default function TestimonialsSection() {
       id: 3,
       name: '王浩然',
       school: '复旦大学',
-      avatar: '🧑‍💻',
+      avatarColor: '#8B5CF6',
+      avatarInitial: '王',
       content: '发布商品特别简单，拍照上传后很快就有人咨询。已经成功卖出好几件闲置物品了，强烈推荐给同学们！',
       rating: 5,
       tags: ['卖家', '数码达人'],
@@ -31,7 +34,8 @@ export default function TestimonialsSection() {
       id: 4,
       name: '陈思雨',
       school: '上海交通大学',
-      avatar: '👩‍🎨',
+      avatarColor: '#06B6D4',
+      avatarInitial: '陈',
       content: '界面设计很好看，用起来很流畅。最喜欢的是可以按学校筛选，这样交易起来更方便，都是校友信得过。',
       rating: 5,
       tags: ['买家', '设计控'],
@@ -54,7 +58,12 @@ export default function TestimonialsSection() {
               className="testimonial-card glass-card"
             >
               <div className="testimonial-header">
-                <div className="testimonial-avatar">{testimonial.avatar}</div>
+                <div
+                  className="testimonial-avatar"
+                  style={{ background: `linear-gradient(135deg, ${testimonial.avatarColor}, ${testimonial.avatarColor}dd)` }}
+                >
+                  {testimonial.avatarInitial}
+                </div>
                 <div className="testimonial-info">
                   <h4 className="testimonial-name">{testimonial.name}</h4>
                   <p className="testimonial-school">{testimonial.school}</p>

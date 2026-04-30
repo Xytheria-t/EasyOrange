@@ -45,6 +45,8 @@ export const isSuccessCode = (code: ApiCode | null | undefined): code is Success
     return SUCCESS_CODES.includes(code as SuccessCode);
 };
 
+export const RETRYABLE_STATUS = [0, 408, 429] as const;
+
 export interface Result<T = unknown> {
     code: ApiCode;
     message: string;
@@ -66,27 +68,38 @@ export interface PageResult<T> {
 
 export type PageResponse<T> = Result<PageResult<T>>;
 
+export interface ApiResponse<T = unknown> {
+    success: boolean;
+    code: ApiCode;
+    message: string;
+    data: T;
+    timestamp?: number;
+}
+
 // ============ 用户类型 ============
 export type UserStatus = 'NORMAL' | 'DISABLED' | 'BANNED';
 export type Gender = 'MALE' | 'FEMALE' | 'UNKNOWN';
 
 export interface User {
-    id: number;
+    userId: number;
     username: string;
     email: string;
     phone: string | null;
-    studentId: string;
-    realName: string;
-    gender: Gender;
-    status: UserStatus;
+    studentId: string | null;
+    realName: string | null;
+    avatar: string | null;
+    status: number;
+    statusDesc: string | null;
+    gender: number | null;
+    userType: string | null;
     createTime: string;
-    lastLoginTime: string | null;
+    updateTime: string;
 }
 
 export interface LoginRequest {
     account: string;
     password: string;
-    loginMethod?: 'PASSWORD' | 'SMS';
+    loginMethod?: 'password' | 'sms';
     clientType?: 'WEB';
     isRegister?: boolean;
 }
@@ -94,10 +107,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
     username: string;
     password: string;
-    email: string;
     phone?: string;
-    studentId: string;
-    realName: string;
+    email?: string;
 }
 
 // 手机号注册请求（规划中）
@@ -128,20 +139,22 @@ export interface EmailLoginRequest {
 
 export interface LoginResponse {
     token: string;
+    refreshToken: string;
     user: UserInfo;
 }
 
 export interface UserInfo {
-    id: number;
+    userId: number;
     username: string;
     email: string;
     phone: string | null;
-    studentId: string;
-    realName: string;
-    gender: Gender;
-    status: UserStatus;
+    studentId: string | null;
+    realName: string | null;
+    avatar: string | null;
+    status: number;
+    gender: number | null;
     createTime: string;
-    lastLoginTime: string | null;
+    updateTime: string;
 }
 
 export interface UserStats {
@@ -157,7 +170,7 @@ export interface UserStats {
 
 // ============ 商品类型 ============
 export type ProductCondition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
-export type ProductStatus = 'ON_SALE' | 'SOLD' | 'OFF_SHELF' | 'RESERVED';
+export type ProductStatus = 'DRAFT' | 'ONLINE' | 'SOLD' | 'OFFLINE';
 
 export interface Product {
     id: number;
@@ -168,6 +181,7 @@ export interface Product {
     categoryId: number;
     categoryName: string;
     condition: ProductCondition;
+    conditionLevel: number;
     status: ProductStatus;
     images: string[];
     location: string;
@@ -183,6 +197,8 @@ export interface Product {
     discount?: number;
     viewCount?: number;
     category?: string;
+    stock?: number;
+    contactMethod?: string;
 }
 
 export interface ProductDetail extends Product {
@@ -208,7 +224,7 @@ export interface ProductQueryParams {
     categoryId?: number;
     priceMin?: number;
     priceMax?: number;
-    conditions?: ProductCondition[];
+    conditions?: number[];
     status?: ProductStatus;
     sellerId?: number;
     sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
@@ -217,26 +233,29 @@ export interface ProductQueryParams {
 }
 
 export interface CreateProductRequest {
-    title: string;
+    name: string;
     description: string;
     price: number;
     originalPrice?: number;
     categoryId: number;
-    condition: ProductCondition;
-    images: string[];
-    location: string;
+    conditionLevel: number;
+    stock?: number;
+    location?: string;
+    contactMethod?: string;
+    imageUrls: string[];
 }
 
 export interface UpdateProductRequest {
-    title?: string;
+    name?: string;
     description?: string;
     price?: number;
     originalPrice?: number;
     categoryId?: number;
-    condition?: ProductCondition;
-    images?: string[];
+    conditionLevel?: number;
+    stock?: number;
     location?: string;
-    status?: ProductStatus;
+    contactMethod?: string;
+    imageUrls?: string[];
 }
 
 export interface Category {
@@ -255,6 +274,27 @@ export interface Favorite {
     createTime: string;
 }
 
+export const CONDITION_LEVEL_MAP: Record<number, ProductCondition> = {
+    1: 'NEW',
+    2: 'LIKE_NEW',
+    3: 'GOOD',
+    4: 'FAIR',
+};
+
+export const CONDITION_LABEL_MAP: Record<number, string> = {
+    1: '全新',
+    2: '几乎全新',
+    3: '轻微使用',
+    4: '明显使用',
+};
+
+export const STATUS_LABEL_MAP: Record<ProductStatus, string> = {
+    DRAFT: '草稿',
+    ONLINE: '在售',
+    SOLD: '已售出',
+    OFFLINE: '已下架',
+};
+
 // ============ 订单类型 ============
 export type OrderStatus = 
     | 'PENDING_PAYMENT'
@@ -265,46 +305,83 @@ export type OrderStatus =
     | 'CANCELLED'
     | 'REFUNDED';
 
+export const ORDER_STATUS_CODE: Record<number, OrderStatus> = {
+    0: 'PENDING_PAYMENT',
+    1: 'PAID',
+    2: 'SHIPPED',
+    3: 'DELIVERED',
+    4: 'COMPLETED',
+    5: 'CANCELLED',
+    6: 'REFUNDED',
+};
+
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+    PENDING_PAYMENT: '待付款',
+    PAID: '待发货',
+    SHIPPED: '已发货',
+    DELIVERED: '已送达',
+    COMPLETED: '已完成',
+    CANCELLED: '已取消',
+    REFUNDED: '已退款',
+};
+
+export const getOrderStatusLabel = (status: number | OrderStatus): string => {
+    if (typeof status === 'number') {
+        const key = ORDER_STATUS_CODE[status];
+        return key ? ORDER_STATUS_LABEL[key] : '未知状态';
+    }
+    return ORDER_STATUS_LABEL[status] ?? '未知状态';
+};
+
+export const getOrderStatusFromCode = (code: number): OrderStatus => {
+    return ORDER_STATUS_CODE[code] ?? 'PENDING_PAYMENT';
+};
+
 export type PaymentMethod = 'WECHAT' | 'ALIPAY' | 'CAMPUS_CARD' | 'CASH';
 
 export interface Order {
     id: number;
     orderNo: string;
+    buyerId: number;
+    buyerUsername: string;
+    sellerId: number;
+    sellerUsername: string;
     productId: number;
     productTitle: string;
     productImage: string;
-    price: number;
+    amount: number;
+    status: number;
+    statusDesc: string;
+    address: string;
+    phone: string;
     quantity: number;
-    totalAmount: number;
-    status: OrderStatus;
-    paymentMethod: PaymentMethod | null;
-    buyerId: number;
-    buyerName: string;
-    buyerAvatar: string | null;
-    sellerId: number;
-    sellerName: string;
-    sellerAvatar: string | null;
+    remark: string | null;
     createTime: string;
-    payTime: string | null;
-    shipTime: string | null;
-    completeTime: string | null;
-    cancelTime: string | null;
-    cancelReason: string | null;
+    updateTime: string;
 }
 
 export interface CreateOrderRequest {
     productId: number;
-    quantity: number;
-    paymentMethod: PaymentMethod;
-    address?: OrderAddress;
+    quantity?: number;
+    paymentMethod?: PaymentMethod;
+    address?: string;
+    phone?: string;
     remark?: string;
 }
 
 export interface OrderQueryParams {
-    status?: OrderStatus;
+    orderNo?: string;
+    status?: number | OrderStatus;
+    buyerId?: number;
+    sellerId?: number;
+    productId?: number;
     role?: 'buyer' | 'seller';
+    pageNum?: number;
+    pageSize?: number;
     current?: number;
     size?: number;
+    sortField?: string;
+    sortDirection?: 'asc' | 'desc';
 }
 
 // ============ 消息类型 ============
@@ -375,41 +452,11 @@ export interface RequestOptions extends Omit<RequestInit, 'body' | 'headers' | '
     skipAuth?: boolean;
 }
 
-export interface OrderDetail {
-    id: number;
-    orderNo: string;
-    productId: number;
-    productTitle: string;
-    productImage: string;
-    price: number;
-    quantity: number;
-    totalAmount: number;
-    status: string;
-    paymentMethod: string | null;
-    buyerId: number;
-    buyerName: string;
-    buyerAvatar: string | null;
-    sellerId: number;
-    sellerName: string;
-    sellerAvatar: string | null;
-    createTime: string;
-    payTime: string | null;
-    shipTime: string | null;
-    completeTime: string | null;
-    cancelTime: string | null;
-    cancelReason: string | null;
+export interface OrderDetail extends Order {
     product?: {
         id: number;
         title: string;
         images: string[];
         condition: string;
     };
-    address?: {
-        receiverName: string;
-        receiverPhone: string;
-        province: string;
-        city: string;
-        district: string;
-        detail: string;
-    } | null;
 }

@@ -1,53 +1,25 @@
-/**
- * @fileoverview 订单 API 模块
- */
-
-import type { PageResult } from '../types/index.js';
+import type { PageResult, OrderQueryParams, CreateOrderRequest, PaymentMethod, OrderDetail } from '../types/index.js';
 import { request } from './core/request.js';
 
-export interface OrderDetail {
-    id: number;
-    orderNo: string;
-    productId: number;
-    productTitle: string;
-    productImage: string;
-    price: number;
-    quantity: number;
-    totalAmount: number;
-    status: string;
-    paymentMethod: string | null;
-    buyerId: number;
-    buyerName: string;
-    buyerAvatar: string | null;
-    sellerId: number;
-    sellerName: string;
-    sellerAvatar: string | null;
-    createTime: string;
-    payTime: string | null;
-    shipTime: string | null;
-    completeTime: string | null;
-    cancelTime: string | null;
-    cancelReason: string | null;
-}
-
 export const orderApi = {
-    getList(_params?: Record<string, unknown>) {
-        return request<PageResult<Record<string, unknown>>>('/orders/list', {
-            method: 'GET'
+    createOrder(data: CreateOrderRequest) {
+        return request<OrderDetail>('/orders', {
+            method: 'POST',
+            body: data
         });
     },
 
-    getMyOrders(params?: Record<string, unknown>) {
+    getMyOrders(params?: OrderQueryParams) {
         return request<PageResult<OrderDetail>>('/orders/my', {
             method: 'GET',
-            params
+            params: params as Record<string, unknown>
         });
     },
 
-    getSoldOrders(params?: Record<string, unknown>) {
+    getSoldOrders(params?: OrderQueryParams) {
         return request<PageResult<OrderDetail>>('/orders/sold', {
             method: 'GET',
-            params
+            params: params as Record<string, unknown>
         });
     },
 
@@ -55,9 +27,10 @@ export const orderApi = {
         return request<OrderDetail>(`/orders/${id}`);
     },
 
-    cancel(id: number) {
+    cancel(id: number, reason?: string) {
         return request(`/orders/${id}/cancel`, {
-            method: 'PUT'
+            method: 'PUT',
+            body: reason ? { cancelReason: reason } : undefined
         });
     },
 
@@ -73,15 +46,23 @@ export const orderApi = {
         });
     },
 
-    pay(id: number) {
+    pay(id: number, paymentMethod?: PaymentMethod) {
         return request(`/orders/${id}/pay`, {
-            method: 'PUT'
+            method: 'PUT',
+            body: paymentMethod ? { paymentMethod } : undefined
         });
     },
 
     ship(id: number) {
         return request(`/orders/${id}/ship`, {
             method: 'PUT'
+        });
+    },
+
+    refund(id: number, reason?: string) {
+        return request(`/orders/${id}/refund`, {
+            method: 'PUT',
+            body: reason ? { refundReason: reason } : undefined
         });
     }
 };

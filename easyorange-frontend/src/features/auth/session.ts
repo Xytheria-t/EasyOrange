@@ -65,10 +65,14 @@ function getUnauthorizedRedirectQuery(): Record<string, string> | undefined {
 }
 
 export function getStoredToken(): string | null {
+    const zustandToken = useAuthStore.getState().token;
+    if (zustandToken) return zustandToken;
     return storage.get<string | null>(TOKEN_STORAGE_KEY, null);
 }
 
 export function getStoredUser(): AuthSessionUser | null {
+    const zustandUser = useAuthStore.getState().user;
+    if (zustandUser) return zustandUser as unknown as AuthSessionUser;
     return storage.get<AuthSessionUser | null>(USER_STORAGE_KEY, null);
 }
 
@@ -103,6 +107,33 @@ function cancelScheduledRefresh(): void {
     }
 }
 
+function syncAllStores(token: string, user: AuthSessionUser, expiresAt?: number): void {
+    storage.set(TOKEN_STORAGE_KEY, token);
+    storage.set(USER_STORAGE_KEY, user);
+
+    useAuthStore.getState().login(
+        user as unknown as import('../../types/index.js').User,
+        token,
+        useAuthStore.getState().refreshToken ?? ''
+    );
+
+    if (expiresAt) {
+        storage.set(TOKEN_EXPIRES_KEY, expiresAt);
+        scheduleTokenRefresh(expiresAt);
+    } else {
+        storage.remove(TOKEN_EXPIRES_KEY);
+        cancelScheduledRefresh();
+    }
+}
+
+function clearAllStores(reason: AuthSessionClearReason = 'manual'): void {
+    storage.remove(TOKEN_STORAGE_KEY);
+    storage.remove(TOKEN_EXPIRES_KEY);
+    storage.remove(USER_STORAGE_KEY);
+    cancelScheduledRefresh();
+    emitAuthSessionChange(reason);
+}
+
 export async function refreshAccessToken(): Promise<string | null> {
     const token = getStoredToken();
     if (!token) {
@@ -120,12 +151,14 @@ export async function refreshAccessToken(): Promise<string | null> {
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
+        const refreshToken = useAuthStore.getState().refreshToken;
         const response = await fetch('/api/auth/refresh', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
+            body: JSON.stringify({ refreshToken }),
             signal: controller.signal
         });
 
@@ -141,9 +174,8 @@ export async function refreshAccessToken(): Promise<string | null> {
 
         const expiresAt = Date.now() + TOKEN_EXPIRES_IN_MINUTES * 60 * 1000;
         const user = getStoredUser() ?? { username: '', nickname: '' };
-        setSession(data.data, user, expiresAt);
+        syncAllStores(data.data, user, expiresAt);
         notifySubscribers(data.data);
-        syncTokenToStore(data.data);
 
         return data.data;
     } catch {
@@ -156,27 +188,13 @@ export async function refreshAccessToken(): Promise<string | null> {
 }
 
 export function setSession(token: string, user: AuthSessionUser, expiresAt?: number): void {
-    storage.set(TOKEN_STORAGE_KEY, token);
-    storage.set(USER_STORAGE_KEY, user);
-
-    if (expiresAt) {
-        storage.set(TOKEN_EXPIRES_KEY, expiresAt);
-        scheduleTokenRefresh(expiresAt);
-    } else {
-        storage.remove(TOKEN_EXPIRES_KEY);
-        cancelScheduledRefresh();
-    }
-
+    syncAllStores(token, user, expiresAt);
     unauthorizedRedirectInFlight = false;
     emitAuthSessionChange();
 }
 
 export function clearSession(reason: AuthSessionClearReason = 'manual'): void {
-    storage.remove(TOKEN_STORAGE_KEY);
-    storage.remove(TOKEN_EXPIRES_KEY);
-    storage.remove(USER_STORAGE_KEY);
-    cancelScheduledRefresh();
-    emitAuthSessionChange(reason);
+    clearAllStores(reason);
 }
 
 export async function logout(): Promise<void> {
@@ -192,6 +210,7 @@ export async function logout(): Promise<void> {
         }
     }
 
+    useAuthStore.getState().logout();
     clearSession('logout');
 }
 
@@ -201,6 +220,7 @@ export function handleUnauthorized(): void {
     }
 
     unauthorizedRedirectInFlight = true;
+    useAuthStore.getState().logout();
     clearSession('unauthorized');
     navigation.replace('home', getUnauthorizedRedirectQuery());
 }

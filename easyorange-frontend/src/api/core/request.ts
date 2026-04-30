@@ -188,7 +188,7 @@ const isRetryable = (status: ApiCode): boolean => {
     return status === 0 || status === 408 || status === 429 || status >= 500;
 };
 
-const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/logout', '/users/register']);
+const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/logout', '/auth/register', '/auth/password-reset', '/auth/sms-code']);
 
 const shouldHandleUnauthorized = (endpoint: string, skipAuth: boolean): boolean => {
     if (skipAuth) {
@@ -232,14 +232,24 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
     let config: RequestConfig = {
         method,
         headers: {
-            'Content-Type': 'application/json',
             'X-Client-Type': String(CLIENT_TYPE),
             ...headers
         }
     };
 
     if (body && method !== 'GET') {
-        config.body = JSON.stringify(body);
+        if (body instanceof FormData) {
+            config.body = body;
+        } else {
+            config.body = JSON.stringify(body);
+            if (!config.headers['Content-Type']) {
+                config.headers['Content-Type'] = 'application/json';
+            }
+        }
+    } else {
+        if (!config.headers['Content-Type']) {
+            config.headers['Content-Type'] = 'application/json';
+        }
     }
 
     if (!skipAuth) {

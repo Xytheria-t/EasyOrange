@@ -7,8 +7,15 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { FavoritesPage } from '@/pages/FavoritesPage';
 import { MessagesPage } from '@/pages/MessagesPage';
 import { OrdersPage } from '@/pages/OrdersPage';
+import { OrderDetailPage } from '@/pages/OrderDetailPage';
+import { PaymentPage } from '@/pages/PaymentPage';
+import { PaymentResultPage } from '@/pages/PaymentResultPage';
 import { PublishPage } from '@/pages/PublishPage';
+import { SearchPage } from '@/pages/SearchPage';
+import { EditProductPage } from '@/pages/EditProductPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { getStoredToken } from '@/features/auth/session';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -23,7 +30,17 @@ export const router = createBrowserRouter(
       <Route index element={<HomePage />} />
       <Route path="products" element={<ProductsPage />} />
       <Route path="products/:id" element={<ProductDetailPage />} />
+      <Route path="search" element={<SearchPage />} />
+      <Route
+        path="products/:id/edit"
+        element={
+          <ProtectedRoute>
+            <EditProductPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="login" element={<LoginPage />} />
+      <Route path="forgot-password" element={<ForgotPasswordPage />} />
       <Route
         path="profile"
         element={
@@ -57,6 +74,30 @@ export const router = createBrowserRouter(
         }
       />
       <Route
+        path="orders/:id"
+        element={
+          <ProtectedRoute>
+            <OrderDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="payment"
+        element={
+          <ProtectedRoute>
+            <PaymentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="payment/result"
+        element={
+          <ProtectedRoute>
+            <PaymentResultPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="publish"
         element={
           <ProtectedRoute>
@@ -64,6 +105,7 @@ export const router = createBrowserRouter(
           </ProtectedRoute>
         }
       />
+      <Route path="*" element={<NotFoundPage />} />
     </Route>
   )
 );

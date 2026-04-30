@@ -72,7 +72,7 @@ export function generateMockProducts(count: number): MockProduct[] {
       categoryName: category.name,
       condition: condition.value as MockProduct['condition'],
       conditionName: condition.name,
-      status: 'ON_SALE',
+      status: 'ONLINE',
       images: [
         `https://picsum.photos/seed/product${i}a/400/400`,
         `https://picsum.photos/seed/product${i}b/400/400`,

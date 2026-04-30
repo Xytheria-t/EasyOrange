@@ -17,19 +17,15 @@ export const productApi = {
         return request<Product>(`/products/${id}`);
     },
 
-    getProductDetail(id: number) {
-        return request<Product>(`/products/${id}`);
-    },
-
     createProduct(data: CreateProductRequest) {
-        return request<Product>('/products', {
+        return request<number>('/products', {
             method: 'POST',
             body: data
         });
     },
 
     updateProduct(id: number, data: UpdateProductRequest) {
-        return request<Product>(`/products/${id}`, {
+        return request<number>(`/products/${id}`, {
             method: 'PUT',
             body: data
         });
@@ -41,37 +37,64 @@ export const productApi = {
         });
     },
 
-    getCategories() {
-        return request<Category[]>('/products/categories');
+    putOnline(id: number) {
+        return request<void>(`/products/${id}/online`, {
+            method: 'PUT'
+        });
     },
 
-    getCategoryTree() {
-        return request<Category[]>('/products/categories/tree');
+    takeOffline(id: number) {
+        return request<void>(`/products/${id}/offline`, {
+            method: 'PUT'
+        });
+    },
+
+    getCategories(parentId?: number) {
+        return request<Category[]>('/products/categories', {
+            method: 'GET',
+            params: parentId != null ? { parentId } : undefined
+        });
     },
 
     getProductsByCategory(category: string | number) {
         return request<PageResult<Product>>(`/products/category/${category}`);
     },
 
-    searchProducts(keyword: string) {
+    searchProducts(keyword: string, current?: number, size?: number) {
         return request<PageResult<Product>>('/products/search', {
+            method: 'GET',
+            params: { keyword, current, size } as Record<string, unknown>
+        });
+    },
+
+    getSearchSuggestions(keyword: string) {
+        return request<string[]>('/products/search/suggestions', {
             method: 'GET',
             params: { keyword }
         });
     },
 
-    getProductsByIds(ids: number[]) {
-        return request<Product[]>('/products/by-ids', {
-            method: 'POST',
-            body: { ids }
+    getHotKeywords(limit?: number) {
+        return request<Array<{ keyword: string; searchCount: number }>>('/products/search/hot', {
+            method: 'GET',
+            params: limit != null ? { limit } : undefined
         });
     },
 
-    getPriceHistory(id: number) {
-        return request<{ date: string; price: number }[]>(`/products/${id}/price-history`);
+    getProductsByIds(ids: number[]) {
+        return request<Product[]>('/products/batch', {
+            method: 'POST',
+            body: ids
+        });
     },
 
     getSimilarProducts(id: number) {
         return request<Product[]>(`/products/${id}/similar`);
+    },
+
+    incrementView(id: number) {
+        return request<void>(`/products/${id}/view`, {
+            method: 'POST'
+        });
     }
 };

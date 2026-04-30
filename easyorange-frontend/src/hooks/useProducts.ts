@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
-import { generateMockProducts } from '@/data/mockProducts';
 import type { ProductQueryParams, CreateProductRequest, UpdateProductRequest, PageResult, Product } from '@/types';
 
 const PRODUCT_KEYS = {
@@ -15,20 +14,8 @@ export function useProducts(params: ProductQueryParams = {}) {
   return useQuery<PageResult<Product>>({
     queryKey: PRODUCT_KEYS.list(params),
     queryFn: async () => {
-      try {
-        const response = await productApi.getProducts(params);
-        return response.data;
-      } catch {
-        // 后端不可用时返回模拟数据
-        const mockItems = generateMockProducts(20);
-        return {
-          records: mockItems as Product[],
-          total: mockItems.length,
-          current: params.current ?? 1,
-          size: params.size ?? 20,
-          pages: 1,
-        };
-      }
+      const response = await productApi.getProducts(params);
+      return response.data;
     },
     staleTime: 2 * 60 * 1000,
   });

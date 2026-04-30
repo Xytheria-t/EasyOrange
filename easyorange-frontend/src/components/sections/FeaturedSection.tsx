@@ -4,28 +4,47 @@ export default function FeaturedSection() {
       id: 1,
       label: '校园认证',
       desc: '实名认证 · 安全交易',
-      icon: '✓',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      ),
       gradient: 'gradient-1',
     },
     {
       id: 2,
       label: '快速发布',
       desc: '30 秒发布 · 智能分类',
-      icon: '⚡',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+      ),
       gradient: 'gradient-2',
     },
     {
       id: 3,
       label: '精准推荐',
       desc: '智能算法 · 发现所需',
-      icon: '🎯',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" />
+        </svg>
+      ),
       gradient: 'gradient-3',
     },
     {
       id: 4,
       label: '无忧售后',
       desc: '平台保障 · 放心购物',
-      icon: '🛡️',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        </svg>
+      ),
       gradient: 'gradient-4',
     },
   ]
@@ -44,13 +63,15 @@ export default function FeaturedSection() {
             <a
               key={feature.id}
               href="/features"
-              className="featured-card footer-featured-card glass-card"
+              className="featured-card glass-card"
             >
-              <div className="featured-card-inner">
+              <div className="featured-card-content">
                 <div className="featured-icon-wrapper">
-                  <span className={`featured-icon ${feature.gradient}`}>{feature.icon}</span>
+                  <div className={`featured-icon ${feature.gradient}`}>
+                    {feature.icon}
+                  </div>
                 </div>
-                <div className="featured-content">
+                <div className="featured-text">
                   <span className="featured-label">{feature.label}</span>
                   <p className="featured-desc">{feature.desc}</p>
                 </div>

@@ -1,53 +1,135 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLogin, useRegister } from '@/hooks'
+import { userApi } from '@/api/userApi'
 import { storage, toast, validator } from '@/utils'
 import './LoginPage.css'
 
+type LoginMethod = 'password' | 'sms'
+
 export function LoginPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login')
+  const [loginMethod, setLoginMethod] = useState<LoginMethod>('password')
   const [formData, setFormData] = useState({
     account: '',
     password: '',
     confirmPassword: '',
     agreeTerms: false,
   })
+  const [smsCode, setSmsCode] = useState('')
+  const [countdown, setCountdown] = useState(0)
+  const [isSendingCode, setIsSendingCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const login = useLogin()
   const register = useRegister()
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current)
+    }
+  }, [])
+
+  const startCountdown = () => {
+    setCountdown(60)
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const handleSendSmsCode = async () => {
+    const phoneError = validator.getErrorMessage('phone', formData.account)
+    if (phoneError) {
+      toast.error(phoneError)
+      return
+    }
+    setIsSendingCode(true)
+    try {
+      await userApi.sendSmsCode(formData.account)
+      startCountdown()
+      toast.success('验证码已发送')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '发送验证码失败'
+      toast.error(msg)
+    } finally {
+      setIsSendingCode(false)
+    }
+  }
+
+  const handleLoginMethodChange = (method: LoginMethod) => {
+    setLoginMethod(method)
+    setFormData((prev) => ({ ...prev, account: '', password: '' }))
+    setSmsCode('')
+    setError(null)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
     if (activeTab === 'login') {
-      const usernameError = validator.getErrorMessage('username', formData.account)
-      if (usernameError) {
-        toast.error(usernameError)
-        return
-      }
+      if (loginMethod === 'password') {
+        const usernameError = validator.getErrorMessage('username', formData.account)
+        if (usernameError) {
+          toast.error(usernameError)
+          return
+        }
 
-      const passwordError = validator.getErrorMessage('password', formData.password)
-      if (passwordError) {
-        toast.error(passwordError)
-        return
-      }
+        const passwordError = validator.getErrorMessage('password', formData.password)
+        if (passwordError) {
+          toast.error(passwordError)
+          return
+        }
 
-      setIsLoading(true)
-      try {
-        await login.mutateAsync({ 
-          account: formData.account, 
-          password: formData.password 
-        })
-        toast.success('登录成功')
-        navigate('/')
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '登录失败，请检查账号密码'
-        setError(errorMessage)
-      } finally {
-        setIsLoading(false)
+        setIsLoading(true)
+        try {
+          await login.mutateAsync({
+            account: formData.account,
+            password: formData.password,
+          })
+          toast.success('登录成功')
+          navigate('/')
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : '登录失败，请检查账号密码'
+          setError(errorMessage)
+        } finally {
+          setIsLoading(false)
+        }
+      } else {
+        const phoneError = validator.getErrorMessage('phone', formData.account)
+        if (phoneError) {
+          toast.error(phoneError)
+          return
+        }
+
+        if (!smsCode) {
+          toast.error('请输入验证码')
+          return
+        }
+
+        setIsLoading(true)
+        try {
+          await login.mutateAsync({
+            account: formData.account,
+            password: smsCode,
+            loginMethod: 'sms',
+          })
+          toast.success('登录成功')
+          navigate('/')
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : '登录失败，请检查验证码'
+          setError(errorMessage)
+        } finally {
+          setIsLoading(false)
+        }
       }
     } else {
       if (!formData.account || !formData.password || !formData.confirmPassword) {
@@ -79,21 +161,18 @@ export function LoginPage() {
 
       setIsLoading(true)
       try {
-        await register.mutateAsync({ 
-          username: formData.account, 
-          password: formData.password,
-          email: `${formData.account}@campus.edu.cn`,
-          studentId: '00000000',
-          realName: formData.account
-        })
-        
-        toast.success('注册成功！正在登录...')
-        
-        await login.mutateAsync({ 
-          account: formData.account, 
+        await register.mutateAsync({
+          username: formData.account,
           password: formData.password
         })
-        
+
+        toast.success('注册成功！正在登录...')
+
+        await login.mutateAsync({
+          account: formData.account,
+          password: formData.password
+        })
+
         storage.set('needCompleteProfile', 'true')
         setTimeout(() => {
           navigate('/profile?firstLogin=1')
@@ -109,7 +188,6 @@ export function LoginPage() {
 
   return (
     <div className="auth-page-container">
-      {/* 关闭按钮 */}
       <button className="auth-page-close-btn" onClick={() => navigate('/')} aria-label="关闭登录页">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
@@ -117,7 +195,6 @@ export function LoginPage() {
         </svg>
       </button>
 
-      {/* 背景装饰 */}
       <div className="auth-page-bg">
         <div className="bg-gradient-mesh"></div>
         <div className="floating-orbs">
@@ -132,9 +209,7 @@ export function LoginPage() {
         <div className="aurora-bg"></div>
       </div>
 
-      {/* 主容器 */}
       <div className="auth-page-modal">
-        {/* 左侧品牌面板 */}
         <div className="auth-page-brand-panel">
           <div className="auth-page-brand-bg">
             <div className="auth-page-brand-gradient"></div>
@@ -151,9 +226,9 @@ export function LoginPage() {
               <svg viewBox="0 0 48 48" fill="none">
                 <defs>
                   <linearGradient id="authLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#F97316"/>
-                    <stop offset="40%" stop-color="#FB7185"/>
-                    <stop offset="100%" stop-color="#C39BD3"/>
+                    <stop offset="0%" stopColor="#F97316"/>
+                    <stop offset="40%" stopColor="#FB7185"/>
+                    <stop offset="100%" stopColor="#C39BD3"/>
                   </linearGradient>
                 </defs>
                 <path d="M8 12h13M8 12v24M8 36h13M8 12h8M8 24h10" stroke="url(#authLogoGradient)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -189,9 +264,7 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* 右侧表单面板 */}
         <div className="auth-page-form-panel">
-          {/* Tab 切换 */}
           <div className="auth-page-tabs">
             <button
               type="button"
@@ -209,55 +282,128 @@ export function LoginPage() {
             </button>
           </div>
 
-          {/* 登录表单 */}
           {activeTab === 'login' && (
             <form className="auth-page-form" onSubmit={handleSubmit}>
               <div className="auth-page-header">
-                <h3>欢迎回来 👋</h3>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-heading-icon">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                  欢迎回来
+                </h3>
                 <p>登录账户，继续探索好物</p>
               </div>
 
-              <div className="auth-page-input-group">
-                <div className="auth-page-input-wrapper glass-input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-page-input-icon">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                  <input
-                    type="text"
-                    placeholder="用户名 / 邮箱 / 手机号"
-                    value={formData.account}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value }))}
-                    required
-                    autoComplete="username"
-                  />
-                </div>
-              </div>
-
-              <div className="auth-page-input-group">
-                <div className="auth-page-input-wrapper glass-input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-page-input-icon">
+              <div className="auth-page-login-method-toggle">
+                <button
+                  type="button"
+                  className={`auth-page-method-btn ${loginMethod === 'password' ? 'auth-page-method-btn--active' : ''}`}
+                  onClick={() => handleLoginMethodChange('password')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                   </svg>
+                  密码登录
+                </button>
+                <button
+                  type="button"
+                  className={`auth-page-method-btn ${loginMethod === 'sms' ? 'auth-page-method-btn--active' : ''}`}
+                  onClick={() => handleLoginMethodChange('sms')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                  </svg>
+                  短信登录
+                </button>
+              </div>
+
+              <div className="auth-page-input-group">
+                <div className="auth-page-input-wrapper glass-input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-page-input-icon">
+                    {loginMethod === 'password' ? (
+                      <>
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                      </>
+                    ) : (
+                      <>
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                        <line x1="12" y1="18" x2="12.01" y2="18"/>
+                      </>
+                    )}
+                  </svg>
                   <input
-                    type="password"
-                    placeholder="密码"
-                    value={formData.password}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                    type={loginMethod === 'sms' ? 'tel' : 'text'}
+                    placeholder={loginMethod === 'password' ? '用户名 / 邮箱 / 手机号' : '请输入手机号'}
+                    value={formData.account}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value }))}
                     required
-                    autoComplete="current-password"
+                    autoComplete={loginMethod === 'sms' ? 'tel' : 'username'}
+                    maxLength={loginMethod === 'sms' ? 11 : undefined}
                   />
                 </div>
               </div>
 
+              {loginMethod === 'password' ? (
+                <div className="auth-page-input-group">
+                  <div className="auth-page-input-wrapper glass-input">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-page-input-icon">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <input
+                      type="password"
+                      placeholder="密码"
+                      value={formData.password}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
+                      required
+                      autoComplete="current-password"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="auth-page-input-group">
+                  <div className="auth-page-input-wrapper glass-input">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-page-input-icon">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <input
+                      type="text"
+                      placeholder="请输入验证码"
+                      value={smsCode}
+                      onChange={(e) => setSmsCode(e.target.value)}
+                      required
+                      maxLength={6}
+                      autoComplete="one-time-code"
+                    />
+                    <button
+                      type="button"
+                      className="auth-page-sms-btn"
+                      onClick={handleSendSmsCode}
+                      disabled={countdown > 0 || isSendingCode || !formData.account}
+                    >
+                      {isSendingCode ? '发送中...' : countdown > 0 ? `${countdown}s` : '获取验证码'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="auth-page-form-options">
-                <label className="auth-page-checkbox-label">
-                  <input type="checkbox" />
-                  <span className="auth-page-checkbox-custom"></span>
-                  <span>记住我</span>
-                </label>
-                <a href="#" className="auth-page-forgot-link">忘记密码？</a>
+                {loginMethod === 'password' ? (
+                  <>
+                    <label className="auth-page-checkbox-label">
+                      <input type="checkbox" />
+                      <span className="auth-page-checkbox-custom"></span>
+                      <span>记住我</span>
+                    </label>
+                    <button type="button" className="auth-page-forgot-link" onClick={() => navigate('/forgot-password')}>忘记密码？</button>
+                  </>
+                ) : (
+                  <button type="button" className="auth-page-forgot-link" onClick={() => handleLoginMethodChange('password')}>使用密码登录</button>
+                )}
               </div>
 
               {error && activeTab === 'login' && (
@@ -297,11 +443,18 @@ export function LoginPage() {
             </form>
           )}
 
-          {/* 注册表单 */}
           {activeTab === 'register' && (
             <form className="auth-page-form" onSubmit={handleSubmit}>
               <div className="auth-page-header">
-                <h3>创建账户 🎉</h3>
+                <h3>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="auth-heading-icon">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="8.5" cy="7" r="4" />
+                    <line x1="20" y1="8" x2="20" y2="14" />
+                    <line x1="23" y1="11" x2="17" y2="11" />
+                  </svg>
+                  创建账户
+                </h3>
                 <p>加入我们，开始校园交易之旅</p>
               </div>
 

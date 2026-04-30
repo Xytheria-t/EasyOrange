@@ -1,6 +1,6 @@
 import { Heart, MessageCircle, Eye, MapPin, Clock } from 'lucide-react'
-import { Product } from '../../types'
-import { formatPrice, formatRelativeTime } from '../../utils'
+import { Product } from '@/types'
+import { formatPrice, formatRelativeTime } from '@/utils'
 
 const CONDITION_LABELS: Record<string, string> = {
   NEW: '全新',

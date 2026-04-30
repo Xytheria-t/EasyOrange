@@ -1,32 +1,31 @@
 import { useState } from 'react';
+import { useCategories } from '@/hooks';
 
 interface FilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  onApplyFilters?: (filters: any) => void;
+  onApplyFilters?: (filters: FilterState) => void;
   onResetFilters?: () => void;
+  initialFilters?: Partial<FilterState>;
 }
 
-interface Category {
-  id: number;
-  name: string;
-  count?: number;
+export interface FilterState {
+  categories: number[];
+  priceMin?: number;
+  priceMax?: number;
+  conditions: number[];
+  sort: string;
 }
 
-const mockCategories: Category[] = [
-  { id: 1, name: '数码电子', count: 156 },
-  { id: 2, name: '图书教材', count: 230 },
-  { id: 3, name: '生活用品', count: 189 },
-  { id: 4, name: '运动户外', count: 78 },
-  { id: 5, name: '美妆护肤', count: 92 },
-  { id: 6, name: '服装鞋帽', count: 145 },
-];
-
-export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters }: FilterSidebarProps) {
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
-  const [selectedConditions, setSelectedConditions] = useState<number[]>([]);
-  const [sortType, setSortType] = useState('newest');
+export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters, initialFilters }: FilterSidebarProps) {
+  const { data: categories } = useCategories();
+  const [selectedCategories, setSelectedCategories] = useState<number[]>(initialFilters?.categories ?? []);
+  const [priceRange, setPriceRange] = useState({
+    min: initialFilters?.priceMin?.toString() ?? '',
+    max: initialFilters?.priceMax?.toString() ?? '',
+  });
+  const [selectedConditions, setSelectedConditions] = useState<number[]>(initialFilters?.conditions ?? []);
+  const [sortType, setSortType] = useState(initialFilters?.sort ?? 'newest');
 
   const handleCategoryToggle = (categoryId: number) => {
     setSelectedCategories(prev =>
@@ -75,6 +74,8 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
             background: 'rgba(0, 0, 0, 0.4)',
             backdropFilter: 'blur(4px)',
             zIndex: 199,
+            opacity: 1,
+            visibility: 'visible',
           }}
         />
       )}
@@ -91,7 +92,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
         </div>
 
         <div className="filter-content">
-          {/* 商品分类 */}
           <div className="filter-section">
             <h4 className="filter-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -100,7 +100,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
               商品分类
             </h4>
             <div className="filter-options">
-              {mockCategories.map(category => (
+              {categories?.map(category => (
                 <label
                   key={category.id}
                   className={`filter-checkbox ${selectedCategories.includes(category.id) ? 'is-checked' : ''}`}
@@ -112,9 +112,9 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
                   />
                   <span className="checkbox-custom" />
                   <span className="checkbox-label">{category.name}</span>
-                  {category.count && (
+                  {category.productCount > 0 && (
                     <span className="condition-icon" style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
-                      ({category.count})
+                      ({category.productCount})
                     </span>
                   )}
                 </label>
@@ -122,7 +122,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
             </div>
           </div>
 
-          {/* 价格区间 */}
           <div className="filter-section">
             <h4 className="filter-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -180,7 +179,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
             </div>
           </div>
 
-          {/* 新旧程度 */}
           <div className="filter-section">
             <h4 className="filter-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -191,49 +189,25 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
             </h4>
             <div className="filter-options condition-options">
               <label className={`filter-checkbox ${selectedConditions.includes(1) ? 'is-checked' : ''}`}>
-                <input
-                  type="checkbox"
-                  name="condition"
-                  value="1"
-                  checked={selectedConditions.includes(1)}
-                  onChange={() => handleConditionToggle(1)}
-                />
+                <input type="checkbox" checked={selectedConditions.includes(1)} onChange={() => handleConditionToggle(1)} />
                 <span className="checkbox-custom" />
                 <span className="checkbox-label">全新</span>
                 <span className="condition-icon">✨</span>
               </label>
               <label className={`filter-checkbox ${selectedConditions.includes(2) ? 'is-checked' : ''}`}>
-                <input
-                  type="checkbox"
-                  name="condition"
-                  value="2"
-                  checked={selectedConditions.includes(2)}
-                  onChange={() => handleConditionToggle(2)}
-                />
+                <input type="checkbox" checked={selectedConditions.includes(2)} onChange={() => handleConditionToggle(2)} />
                 <span className="checkbox-custom" />
                 <span className="checkbox-label">几乎全新</span>
                 <span className="condition-icon">🌟</span>
               </label>
               <label className={`filter-checkbox ${selectedConditions.includes(3) ? 'is-checked' : ''}`}>
-                <input
-                  type="checkbox"
-                  name="condition"
-                  value="3"
-                  checked={selectedConditions.includes(3)}
-                  onChange={() => handleConditionToggle(3)}
-                />
+                <input type="checkbox" checked={selectedConditions.includes(3)} onChange={() => handleConditionToggle(3)} />
                 <span className="checkbox-custom" />
                 <span className="checkbox-label">轻微使用</span>
                 <span className="condition-icon">💫</span>
               </label>
               <label className={`filter-checkbox ${selectedConditions.includes(4) ? 'is-checked' : ''}`}>
-                <input
-                  type="checkbox"
-                  name="condition"
-                  value="4"
-                  checked={selectedConditions.includes(4)}
-                  onChange={() => handleConditionToggle(4)}
-                />
+                <input type="checkbox" checked={selectedConditions.includes(4)} onChange={() => handleConditionToggle(4)} />
                 <span className="checkbox-custom" />
                 <span className="checkbox-label">明显使用</span>
                 <span className="condition-icon">⭐</span>
@@ -241,7 +215,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
             </div>
           </div>
 
-          {/* 排序方式 */}
           <div className="filter-section">
             <h4 className="filter-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -256,46 +229,22 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters 
             </h4>
             <div className="sort-options">
               <label className={`filter-radio ${sortType === 'newest' ? 'is-checked' : ''}`}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="newest"
-                  checked={sortType === 'newest'}
-                  onChange={() => setSortType('newest')}
-                />
+                <input type="radio" name="sort" value="newest" checked={sortType === 'newest'} onChange={() => setSortType('newest')} />
                 <span className="radio-custom" />
                 <span className="radio-label">最新发布</span>
               </label>
               <label className={`filter-radio ${sortType === 'price_asc' ? 'is-checked' : ''}`}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="price_asc"
-                  checked={sortType === 'price_asc'}
-                  onChange={() => setSortType('price_asc')}
-                />
+                <input type="radio" name="sort" value="price_asc" checked={sortType === 'price_asc'} onChange={() => setSortType('price_asc')} />
                 <span className="radio-custom" />
                 <span className="radio-label">价格从低到高</span>
               </label>
               <label className={`filter-radio ${sortType === 'price_desc' ? 'is-checked' : ''}`}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="price_desc"
-                  checked={sortType === 'price_desc'}
-                  onChange={() => setSortType('price_desc')}
-                />
+                <input type="radio" name="sort" value="price_desc" checked={sortType === 'price_desc'} onChange={() => setSortType('price_desc')} />
                 <span className="radio-custom" />
                 <span className="radio-label">价格从高到低</span>
               </label>
               <label className={`filter-radio ${sortType === 'popular' ? 'is-checked' : ''}`}>
-                <input
-                  type="radio"
-                  name="sort"
-                  value="popular"
-                  checked={sortType === 'popular'}
-                  onChange={() => setSortType('popular')}
-                />
+                <input type="radio" name="sort" value="popular" checked={sortType === 'popular'} onChange={() => setSortType('popular')} />
                 <span className="radio-custom" />
                 <span className="radio-label">热门优先</span>
               </label>

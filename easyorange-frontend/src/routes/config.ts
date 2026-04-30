@@ -2,12 +2,14 @@ export type RouteName =
     | 'home'
     | 'products'
     | 'publish'
+    | 'search'
     | 'profile'
     | 'favorites'
     | 'messages'
     | 'orders'
-    | 'review'
-    | 'orderDetail';
+    | 'orderDetail'
+    | 'payment'
+    | 'paymentResult';
 
 export interface RouteConfig {
     path: string;
@@ -34,6 +36,11 @@ export const routes: Record<RouteName, RouteConfig> = {
         title: '发布商品',
         requiresAuth: true
     },
+    search: {
+        path: '/search',
+        title: '搜索',
+        requiresAuth: false
+    },
     profile: {
         path: '/profile',
         title: '个人中心',
@@ -54,14 +61,19 @@ export const routes: Record<RouteName, RouteConfig> = {
         title: '我的订单',
         requiresAuth: true
     },
-    review: {
-        path: '/review',
-        title: '评价',
+    orderDetail: {
+        path: '/orders/:id',
+        title: '订单详情',
         requiresAuth: true
     },
-    orderDetail: {
-        path: '/order-detail',
-        title: '订单详情',
+    payment: {
+        path: '/payment',
+        title: '收银台',
+        requiresAuth: true
+    },
+    paymentResult: {
+        path: '/payment/result',
+        title: '支付结果',
         requiresAuth: true
     }
 };

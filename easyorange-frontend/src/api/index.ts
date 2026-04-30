@@ -5,15 +5,14 @@
 
 import { userApi } from './userApi.js';
 import { productApi } from './productApi.js';
-import { orderApi, type OrderDetail } from './orderApi.js';
+import { orderApi } from './orderApi.js';
 import { messageApi } from './messageApi.js';
 import { favoriteApi } from './favoriteApi.js';
-import { profileApi } from './profileApi.js';
 import { uploadApi, uploadFile, uploadFiles } from './uploadApi.js';
 import { reviewApi } from './reviewApi.js';
 import { activityApi, ACTIVITY_STATUS, ACTIVITY_TYPE_NAMES, ACTIVITY_STATUS_NAMES, type Activity, type ActivityType, type ActivityStatus, type CreateActivityRequest } from './activityApi.js';
 import { insuranceApi, INSURANCE_TYPE_NAMES, type Insurance, type InsuranceType, type InsuranceStatus, type ClaimStatus, calculatePremiumLocal } from './insuranceApi.js';
-import { paymentApi, type PaymentInfo, type PaymentResponse, type PaymentStatusResponse } from './paymentApi.js';
+import { paymentApi, type PaymentInfo, type CreatePaymentRequest, type PaymentResponse, type PaymentStatusResponse } from './paymentApi.js';
 
 export { ApiClientError } from './core/request.js';
 
@@ -24,7 +23,6 @@ export {
     orderApi,
     messageApi,
     favoriteApi,
-    profileApi,
     uploadApi,
     reviewApi,
     activityApi,
@@ -40,7 +38,6 @@ export {
 };
 
 export type {
-    OrderDetail,
     Activity,
     ActivityType,
     ActivityStatus,
@@ -50,6 +47,7 @@ export type {
     InsuranceStatus,
     ClaimStatus,
     PaymentInfo,
+    CreatePaymentRequest,
     PaymentResponse,
     PaymentStatusResponse
 };
@@ -65,7 +63,6 @@ const api = {
     messages: messageApi,
     favorite: favoriteApi,
     favorites: favoriteApi,
-    profile: profileApi,
     upload: uploadApi,
     review: reviewApi,
     reviews: reviewApi,

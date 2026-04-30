@@ -75,7 +75,7 @@
   position: relative;
   min-height: 100vh;
   background: var(--gray-50);
-  padding-top: calc(5rem + 2rem);
+  padding-top: 0;
   padding-bottom: 2rem;
   z-index: 1;
 }
@@ -86,7 +86,6 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
-  overflow: hidden;
 }
 
 /* Tools Plaza - Premium filtering bar */
@@ -222,6 +221,9 @@
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .plaza-tools::-webkit-scrollbar {
@@ -1145,6 +1147,15 @@
   gap: 0.5rem;
   z-index: 2;
   max-width: calc(100% - 5.5rem);
+  pointer-events: none;
+}
+
+.product-badges > * {
+  pointer-events: auto;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .badge {

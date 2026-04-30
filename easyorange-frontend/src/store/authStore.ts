@@ -6,10 +6,11 @@ import { clearSession } from '../features/auth/session.js';
 interface AuthState {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
-  login: (user: User, token: string) => void;
+  login: (user: User, token: string, refreshToken: string) => void;
   logout: () => void;
 }
 
@@ -18,15 +19,17 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
       setToken: (token) => set({ token }),
       
-      login: (user, token) => set({
+      login: (user, token, refreshToken) => set({
         user,
         token,
+        refreshToken,
         isAuthenticated: true,
       }),
       
@@ -35,13 +38,14 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           token: null,
+          refreshToken: null,
           isAuthenticated: false,
         });
       },
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token }),
+      partialize: (state) => ({ token: state.token, refreshToken: state.refreshToken }),
     }
   )
 );

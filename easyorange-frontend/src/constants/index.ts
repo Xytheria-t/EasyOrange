@@ -24,9 +24,10 @@ export const PRODUCT_CONSTANTS = {
         POOR: 'POOR'
     },
     STATUS: {
-        ON_SALE: 1,
-        SOLD_OUT: 2,
-        OFF_SHELF: 3
+        DRAFT: 0,
+        ONLINE: 1,
+        SOLD: 2,
+        OFFLINE: 3
     },
     CATEGORIES: {
         BOOKS: 1,

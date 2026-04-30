@@ -1,5 +1,6 @@
 import { routes, type RouteName } from './config.js';
-import { storage } from '../utils/index.js';
+import { router } from './index.js';
+import { useAuthStore } from '../store/authStore.js';
 
 export type QueryValue = string | number | boolean | null | undefined;
 
@@ -23,7 +24,7 @@ function buildUrl(path: string, query?: Record<string, QueryValue>): string {
 }
 
 function isLoggedIn(): boolean {
-    return Boolean(storage.get<string>('token'));
+    return Boolean(useAuthStore.getState().token);
 }
 
 function currentFullPath(): string {
@@ -36,19 +37,19 @@ export const navigation = {
         const targetUrl = buildUrl(route.path, options.query);
 
         if (route.requiresAuth && !isLoggedIn()) {
-            const loginUrl = buildUrl('/', {
+            const loginUrl = buildUrl('/login', {
                 redirect: targetUrl
             });
-            window.location.assign(loginUrl);
+            router.navigate(loginUrl);
             return;
         }
 
         if (options.replace) {
-            window.location.replace(targetUrl);
+            router.navigate(targetUrl, { replace: true });
             return;
         }
 
-        window.location.assign(targetUrl);
+        router.navigate(targetUrl);
     },
 
     replace(routeName: RouteName, query?: Record<string, QueryValue>): void {
@@ -58,7 +59,7 @@ export const navigation = {
     loginRedirect(): void {
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
-        window.location.replace(redirect || routes.products.path);
+        router.navigate(redirect || routes.products.path, { replace: true });
     },
 
     requireAuth(): boolean {
@@ -66,10 +67,10 @@ export const navigation = {
             return true;
         }
 
-        const loginUrl = buildUrl('/', {
+        const loginUrl = buildUrl('/login', {
             redirect: currentFullPath()
         });
-        window.location.replace(loginUrl);
+        router.navigate(loginUrl, { replace: true });
         return false;
     },
 
@@ -89,11 +90,6 @@ export const navigation = {
             ? `${window.location.pathname}?${queryString}`
             : window.location.pathname;
 
-        if (mode === 'push') {
-            window.history.pushState({}, '', url);
-            return;
-        }
-
-        window.history.replaceState({}, '', url);
+        router.navigate(url, { replace: mode === 'replace' });
     }
 };

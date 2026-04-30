@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '@/api/userApi';
 import { useAuthStore } from '@/store';
 import { setSession, clearSession, type AuthSessionUser } from '@/app/authSession';
-import type { LoginRequest, RegisterRequest } from '@/types';
+import type { LoginRequest, RegisterRequest, User } from '@/types';
 
 const AUTH_KEYS = {
   all: ['auth'] as const,
@@ -40,7 +40,7 @@ export function useLogin() {
     },
     onSuccess: (data) => {
       if (data.token && data.user) {
-        login(data.user, data.token);
+        login(data.user as unknown as User, data.token, data.refreshToken);
         const expiresAt = Date.now() + TOKEN_EXPIRES_IN_MINUTES * 60 * 1000;
         setSession(data.token, data.user as unknown as AuthSessionUser, expiresAt);
         queryClient.setQueryData(AUTH_KEYS.user(), data.user);

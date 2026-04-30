@@ -1,15 +1,16 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useProducts } from '@/hooks';
 import { ProductCard } from '@/components/sections/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { ToolsPlaza } from '@/components/products/ToolsPlaza';
-import { FilterSidebar } from '@/components/products/FilterSidebar';
+import { FilterSidebar, type FilterState } from '@/components/products/FilterSidebar';
 import type { ProductQueryParams, Product } from '@/types';
 import '@/styles/products.css';
 
 export function ProductsPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialCategoryId = searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -40,11 +41,25 @@ export function ProductsPage() {
   const handleFilterChange = (_filter: string) => {
   };
 
-  const handleApplyFilters = (_filters: any) => {
+  const handleApplyFilters = (filters: FilterState) => {
+    setParams(prev => ({
+      ...prev,
+      categoryId: filters.categories.length === 1 ? filters.categories[0] : undefined,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      conditions: filters.conditions.length > 0 ? filters.conditions : undefined,
+      sort: filters.sort as ProductQueryParams['sort'],
+      current: 1,
+    }));
     setIsFilterOpen(false);
   };
 
   const handleResetFilters = () => {
+    setParams({
+      current: 1,
+      size: 20,
+      sort: 'newest',
+    });
   };
 
   if (isLoading) {
@@ -124,7 +139,7 @@ export function ProductsPage() {
 
         <div className="products-grid">
           {products.map((product: Product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} onViewDetails={(id) => navigate(`/products/${id}`)} />
           ))}
         </div>
 
