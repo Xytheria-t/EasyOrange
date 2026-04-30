@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
-import com.cartethyia.easyorange.product.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 
 public record ProductStatusVO(ProductStatus value) {
     public ProductStatusVO {
@@ -9,7 +9,23 @@ public record ProductStatusVO(ProductStatus value) {
         }
     }
 
-    public boolean isOnline() {
+    public static ProductStatusVO of(Integer code) {
+        return new ProductStatusVO(ProductStatus.fromCode(code));
+    }
+
+    public static ProductStatusVO of(ProductStatus status) {
+        return new ProductStatusVO(status);
+    }
+
+    public Integer code() {
+        return value != null ? value.getCode() : null;
+    }
+
+    public String desc() {
+        return value != null ? value.getDesc() : null;
+    }
+
+    public boolean isOnLine() {
         return ProductStatus.ONLINE.equals(value);
     }
 

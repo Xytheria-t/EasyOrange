@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.cache;
 
-import com.cartethyia.easyorange.product.dto.vo.ProductVO;
+import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,8 @@ class ProductCacheServiceTest {
     @Test
     @DisplayName("设置和获取商品缓存")
     void testSetAndGetProductCache() {
-        when(valueOperations.get("product:detail:" + testProductId)).thenReturn(testProduct);
+        String expectedKey = ProductConstant.infoKey(testProductId);
+        when(valueOperations.get(expectedKey)).thenReturn(testProduct);
 
         productCacheService.setProductCache(testProductId, testProduct);
         ProductVO cachedProduct = productCacheService.getProductCache(testProductId);
@@ -65,13 +67,14 @@ class ProductCacheServiceTest {
         assertThat(cachedProduct.getId()).isEqualTo(testProductId);
         assertThat(cachedProduct.getTitle()).isEqualTo("测试商品");
 
-        verify(valueOperations).set(eq("product:detail:" + testProductId), eq(testProduct), eq(24L), eq(TimeUnit.HOURS));
+        verify(valueOperations).set(eq(expectedKey), eq(testProduct), eq(24L), eq(TimeUnit.HOURS));
     }
 
     @Test
     @DisplayName("获取不存在的商品缓存")
     void testGetNonExistentCache() {
-        when(valueOperations.get("product:detail:999998")).thenReturn(null);
+        String expectedKey = ProductConstant.infoKey(999998L);
+        when(valueOperations.get(expectedKey)).thenReturn(null);
 
         ProductVO cachedProduct = productCacheService.getProductCache(999998L);
 
@@ -81,7 +84,8 @@ class ProductCacheServiceTest {
     @Test
     @DisplayName("检查商品缓存是否存在")
     void testHasProductCache() {
-        when(redisTemplate.hasKey("product:detail:" + testProductId)).thenReturn(true);
+        String expectedKey = ProductConstant.infoKey(testProductId);
+        when(redisTemplate.hasKey(expectedKey)).thenReturn(true);
 
         productCacheService.setProductCache(testProductId, testProduct);
         Boolean hasCache = productCacheService.hasProductCache(testProductId);
@@ -92,10 +96,11 @@ class ProductCacheServiceTest {
     @Test
     @DisplayName("删除商品缓存")
     void testDeleteProductCache() {
-        when(redisTemplate.delete("product:detail:" + testProductId)).thenReturn(true);
+        String expectedKey = ProductConstant.infoKey(testProductId);
+        when(redisTemplate.delete(expectedKey)).thenReturn(true);
 
         productCacheService.setProductCache(testProductId, testProduct);
-        productCacheService.deleteProductCache(testProductId);
+        productCacheService.evictProductCache(testProductId);
 
         ProductVO cachedProduct = productCacheService.getProductCache(testProductId);
         assertThat(cachedProduct).isNull();
@@ -107,7 +112,7 @@ class ProductCacheServiceTest {
         List<Long> productIds = List.of(1000001L, 1000002L, 1000003L);
 
         for (Long productId : productIds) {
-            when(redisTemplate.delete("product:detail:" + productId)).thenReturn(true);
+            when(redisTemplate.delete(ProductConstant.infoKey(productId))).thenReturn(true);
         }
 
         productCacheService.deleteProductBatchCache(productIds);
@@ -120,7 +125,7 @@ class ProductCacheServiceTest {
     void testNullProductId_skipsOperation() {
         productCacheService.setProductCache(null, testProduct);
         productCacheService.getProductCache(null);
-        productCacheService.deleteProductCache(null);
+        productCacheService.evictProductCache(null);
         productCacheService.hasProductCache(null);
 
         verify(valueOperations, never()).set(any(), any(), any(Long.class), any(TimeUnit.class));

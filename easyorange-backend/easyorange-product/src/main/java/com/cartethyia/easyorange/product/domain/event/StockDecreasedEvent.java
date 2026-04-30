@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 
 public class StockDecreasedEvent extends BaseDomainEvent {
 
-    private Long productId;
-    private Integer quantity = 1;
+    private final Long productId;
+    private final int quantity;
 
     public StockDecreasedEvent(Long productId) {
         super(StockDecreasedEvent.class);
@@ -13,43 +13,11 @@ public class StockDecreasedEvent extends BaseDomainEvent {
         this.quantity = 1;
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public Long getProductId() {
-        return productId;
-    }
-
-    public Integer getQuantity() {
-        return quantity;
-    }
+    public Long getProductId() { return productId; }
+    public int getQuantity() { return quantity; }
 
     @Override
     public String eventType() {
         return "StockDecreased";
-    }
-
-    public static class Builder {
-        private Long productId;
-        private Integer quantity = 1;
-
-        public Builder productId(Long productId) {
-            this.productId = productId;
-            return this;
-        }
-
-        public Builder quantity(Integer quantity) {
-            this.quantity = quantity;
-            return this;
-        }
-
-        public StockDecreasedEvent build() {
-            StockDecreasedEvent event = new StockDecreasedEvent(productId);
-            if (quantity != null) {
-                event.quantity = quantity;
-            }
-            return event;
-        }
     }
 }

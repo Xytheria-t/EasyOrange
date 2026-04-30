@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cartethyia.easyorange.product.mapper.ProductMapper">
+<mapper namespace="com.cartethyia.easyorange.product.infrastructure.persistence.mapper.ProductMapper">
 
-    <!-- 全文搜索商品（仅搜索 name，description 已垂直拆分至 product_detail） -->
-    <select id="searchByFullText" resultType="com.cartethyia.easyorange.product.entity.Product">
+    <select id="searchByFullText" resultType="com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.ProductDO">
         SELECT id, user_id, category_id, name, price, original_price, stock,
                status, view_count, condition_level, location, contact_method,
                create_time, update_time, create_by, update_by, del_flag, version,
@@ -11,11 +10,19 @@
         FROM product
         WHERE MATCH(name) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
           AND status = #{status}
+          <if test="minPrice != null">
+              AND price &gt;= #{minPrice}
+          </if>
+          <if test="maxPrice != null">
+              AND price &lt;= #{maxPrice}
+          </if>
+          <if test="conditionLevel != null">
+              AND condition_level = #{conditionLevel}
+          </if>
         ORDER BY relevance DESC, create_time DESC
     </select>
 
-    <!-- 批量查询商品详情（避免 N+1） -->
-    <select id="selectDetailsByProductIds" resultType="com.cartethyia.easyorange.product.entity.ProductDetail">
+    <select id="selectDetailsByProductIds" resultType="com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.ProductDetailDO">
         SELECT product_id, description, create_time, update_time
         FROM product_detail
         WHERE product_id IN
@@ -24,8 +31,7 @@
         </foreach>
     </select>
 
-    <!-- 批量查询商品图片（避免 N+1） -->
-    <select id="selectImagesByProductIds" resultType="com.cartethyia.easyorange.product.entity.ProductImage">
+    <select id="selectImagesByProductIds" resultType="com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.ProductImageDO">
         SELECT id, product_id, image_url, sort_order, is_main, create_time
         FROM product_image
         WHERE product_id IN
@@ -35,8 +41,7 @@
         ORDER BY product_id, sort_order ASC
     </select>
 
-    <!-- 批量查询分类（避免 N+1） -->
-    <select id="selectCategoriesByIds" resultType="com.cartethyia.easyorange.product.entity.Category">
+    <select id="selectCategoriesByIds" resultType="com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.CategoryDO">
         SELECT id, name, parent_id, level, icon, sort_order, status, 
                create_time, update_time, create_by, update_by, del_flag
         FROM category
@@ -47,8 +52,7 @@
         AND del_flag = 0
     </select>
 
-    <!-- 批量查询卖家信息 -->
-    <select id="selectSellersByIds" resultType="com.cartethyia.easyorange.product.dto.vo.SellerInfo">
+    <select id="selectSellersByIds" resultType="com.cartethyia.easyorange.product.application.query.dto.SellerInfo">
         SELECT user_id, username, nick_name, avatar
         FROM sys_user
         WHERE user_id IN

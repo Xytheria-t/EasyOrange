@@ -32,6 +32,28 @@ public record ImageSet(List<ProductImageVO> images) {
         return new ImageSet(Collections.emptyList());
     }
 
+    public static ImageSet of(List<String> urls) {
+        if (urls == null || urls.isEmpty()) {
+            return empty();
+        }
+        List<ProductImageVO> images = new ArrayList<>();
+        for (int i = 0; i < urls.size(); i++) {
+            images.add(new ProductImageVO(
+                    new ImageUrl(urls.get(i)),
+                    i,
+                    i == 0
+            ));
+        }
+        return new ImageSet(images);
+    }
+
+    public static ImageSet ofImages(List<ProductImageVO> images) {
+        if (images == null || images.isEmpty()) {
+            return empty();
+        }
+        return new ImageSet(images);
+    }
+
     public ImageUrl mainImage() {
         return images.stream()
                 .filter(ProductImageVO::isMain)

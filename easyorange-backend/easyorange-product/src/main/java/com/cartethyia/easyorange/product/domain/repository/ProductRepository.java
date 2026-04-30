@@ -1,24 +1,28 @@
 package com.cartethyia.easyorange.product.domain.repository;
 
-import com.cartethyia.easyorange.product.entity.Product;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductStatusVO;
+import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProductRepository {
 
-    Product findById(Long id);
+    void save(Product product);
 
-    List<Product> findByIds(List<Long> ids);
+    void update(Product product);
 
-    List<Product> findByUserId(Long userId);
+    Optional<Product> findById(ProductId id);
 
-    boolean save(Product product);
+    List<Product> findByIds(List<ProductId> ids);
 
-    boolean update(Product product);
+    List<Product> findBySellerId(SellerId sellerId);
 
-    void updateStock(Long productId, int delta);
+    void delete(ProductId id);
 
-    boolean removeById(Long id);
+    boolean existsById(ProductId id);
 
-    boolean existsById(Long id);
+    void updateStatus(ProductId id, ProductStatusVO status);
 }

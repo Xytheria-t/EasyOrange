@@ -12,6 +12,10 @@ public record ProductDescription(String value) {
         }
     }
 
+    public static ProductDescription of(String value) {
+        return new ProductDescription(value);
+    }
+
     public boolean isBlank() {
         return value == null || value.isBlank();
     }

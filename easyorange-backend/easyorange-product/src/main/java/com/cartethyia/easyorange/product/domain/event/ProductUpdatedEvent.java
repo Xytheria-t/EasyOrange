@@ -7,18 +7,18 @@ import java.util.List;
 
 public class ProductUpdatedEvent extends BaseDomainEvent {
 
-    private Long productId;
-    private Long userId;
-    private Long categoryId;
-    private String name;
-    private BigDecimal price;
-    private BigDecimal originalPrice;
-    private Integer stock;
-    private Integer conditionLevel;
-    private String location;
-    private String contactMethod;
-    private String description;
-    private List<String> imageUrls;
+    private final Long productId;
+    private final Long userId;
+    private final Long categoryId;
+    private final String name;
+    private final BigDecimal price;
+    private final BigDecimal originalPrice;
+    private final Integer stock;
+    private final Integer conditionLevel;
+    private final String location;
+    private final String contactMethod;
+    private final String description;
+    private final List<String> imageUrls;
 
     public ProductUpdatedEvent(Long productId, Long userId, Long categoryId, String name,
                               BigDecimal price, BigDecimal originalPrice, Integer stock,
@@ -36,144 +36,24 @@ public class ProductUpdatedEvent extends BaseDomainEvent {
         this.location = location;
         this.contactMethod = contactMethod;
         this.description = description;
-        this.imageUrls = imageUrls;
+        this.imageUrls = imageUrls != null ? List.copyOf(imageUrls) : List.of();
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public Long getProductId() {
-        return productId;
-    }
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public Long getCategoryId() {
-        return categoryId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public BigDecimal getPrice() {
-        return price;
-    }
-
-    public BigDecimal getOriginalPrice() {
-        return originalPrice;
-    }
-
-    public Integer getStock() {
-        return stock;
-    }
-
-    public Integer getConditionLevel() {
-        return conditionLevel;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public String getContactMethod() {
-        return contactMethod;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public List<String> getImageUrls() {
-        return imageUrls;
-    }
+    public Long getProductId() { return productId; }
+    public Long getUserId() { return userId; }
+    public Long getCategoryId() { return categoryId; }
+    public String getName() { return name; }
+    public BigDecimal getPrice() { return price; }
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public Integer getStock() { return stock; }
+    public Integer getConditionLevel() { return conditionLevel; }
+    public String getLocation() { return location; }
+    public String getContactMethod() { return contactMethod; }
+    public String getDescription() { return description; }
+    public List<String> getImageUrls() { return imageUrls; }
 
     @Override
     public String eventType() {
         return "ProductUpdated";
-    }
-
-    public static class Builder {
-        private Long productId;
-        private Long userId;
-        private Long categoryId;
-        private String name;
-        private BigDecimal price;
-        private BigDecimal originalPrice;
-        private Integer stock;
-        private Integer conditionLevel;
-        private String location;
-        private String contactMethod;
-        private String description;
-        private List<String> imageUrls;
-
-        public Builder productId(Long productId) {
-            this.productId = productId;
-            return this;
-        }
-
-        public Builder userId(Long userId) {
-            this.userId = userId;
-            return this;
-        }
-
-        public Builder categoryId(Long categoryId) {
-            this.categoryId = categoryId;
-            return this;
-        }
-
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder price(BigDecimal price) {
-            this.price = price;
-            return this;
-        }
-
-        public Builder originalPrice(BigDecimal originalPrice) {
-            this.originalPrice = originalPrice;
-            return this;
-        }
-
-        public Builder stock(Integer stock) {
-            this.stock = stock;
-            return this;
-        }
-
-        public Builder conditionLevel(Integer conditionLevel) {
-            this.conditionLevel = conditionLevel;
-            return this;
-        }
-
-        public Builder location(String location) {
-            this.location = location;
-            return this;
-        }
-
-        public Builder contactMethod(String contactMethod) {
-            this.contactMethod = contactMethod;
-            return this;
-        }
-
-        public Builder description(String description) {
-            this.description = description;
-            return this;
-        }
-
-        public Builder imageUrls(List<String> imageUrls) {
-            this.imageUrls = imageUrls;
-            return this;
-        }
-
-        public ProductUpdatedEvent build() {
-            return new ProductUpdatedEvent(productId, userId, categoryId, name, price,
-                    originalPrice, stock, conditionLevel, location, contactMethod,
-                    description, imageUrls);
-        }
     }
 }

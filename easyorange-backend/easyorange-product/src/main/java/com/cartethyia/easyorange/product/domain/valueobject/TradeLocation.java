@@ -7,6 +7,10 @@ public record TradeLocation(String value) {
         }
     }
 
+    public static TradeLocation of(String value) {
+        return new TradeLocation(value);
+    }
+
     public String trimmed() {
         return value != null ? value.trim() : null;
     }

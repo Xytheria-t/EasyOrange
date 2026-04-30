@@ -8,6 +8,10 @@ public record StockQuantity(Integer value) {
         BizRequire.nonNegative(value, "库存数量不能为负数");
     }
 
+    public static StockQuantity of(Integer value) {
+        return new StockQuantity(value);
+    }
+
     public boolean isAvailable() {
         return value > 0;
     }

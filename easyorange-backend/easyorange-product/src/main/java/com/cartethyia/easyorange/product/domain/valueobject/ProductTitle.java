@@ -9,6 +9,10 @@ public record ProductTitle(String value) {
         value = value.trim();
     }
 
+    public static ProductTitle of(String value) {
+        return new ProductTitle(value);
+    }
+
     public String trimmed() {
         return value.trim();
     }

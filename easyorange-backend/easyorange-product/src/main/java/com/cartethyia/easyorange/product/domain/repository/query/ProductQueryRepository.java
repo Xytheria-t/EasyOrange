@@ -1,24 +1,55 @@
 package com.cartethyia.easyorange.product.domain.repository.query;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.product.dto.vo.ProductVO;
-import com.cartethyia.easyorange.product.dto.vo.SearchHistoryVO;
-import com.cartethyia.easyorange.product.dto.vo.HotKeywordVO;
+import com.cartethyia.easyorange.product.application.query.dto.HotKeywordReadModel;
+import com.cartethyia.easyorange.product.application.query.dto.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.dto.SearchHistoryReadModel;
+import com.cartethyia.easyorange.product.application.query.dto.SellerReadModel;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 public interface ProductQueryRepository {
 
-    Page<ProductVO> searchProducts(String keyword, Long categoryId, Integer status,
-                                   Integer pageNum, Integer pageSize);
+    Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+                                           Integer pageNum, Integer pageSize);
 
-    List<ProductVO> findProductsByIds(List<Long> ids);
+    Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+                                          BigDecimal minPrice, BigDecimal maxPrice,
+                                          Integer conditionLevel, String sort,
+                                          Integer pageNum, Integer pageSize);
 
-    ProductVO findProductVOById(Long id);
+    Page<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
+                                                   Integer pageNum, Integer pageSize);
 
-    List<SearchHistoryVO> findSearchHistoryByUserId(Long userId, Integer limit);
+    List<ProductReadModel> findProductsByIds(List<Long> ids);
 
-    List<HotKeywordVO> findHotKeywords(Integer limit);
+    ProductReadModel findProductById(Long id);
+
+    List<SearchHistoryReadModel> findSearchHistoryByUserId(Long userId, Integer limit);
+
+    List<HotKeywordReadModel> findHotKeywords(Integer limit);
 
     List<String> findSearchSuggestions(String keyword, Integer limit);
+
+    List<SellerReadModel> findSellersByIds(Set<Long> sellerIds);
+
+    List<CategoryInfo> findCategoriesByIds(List<Long> categoryIds);
+
+    List<ProductDetailInfo> findDetailsByProductIds(List<Long> productIds);
+
+    List<ProductImageInfo> findImagesByProductIds(List<Long> productIds);
+
+    void saveSearchHistory(Long userId, String keyword);
+
+    void clearSearchHistory(Long userId);
+
+    void deleteSearchHistoryById(Long historyId, Long userId);
+
+    record CategoryInfo(Long id, String name, Long parentId, Integer level, Integer sortOrder) {}
+
+    record ProductDetailInfo(Long productId, String description) {}
+
+    record ProductImageInfo(Long productId, String imageUrl, Integer sortOrder, boolean isMain) {}
 }

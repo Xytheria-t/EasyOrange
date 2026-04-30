@@ -7,6 +7,10 @@ public record ContactMethod(String value) {
         }
     }
 
+    public static ContactMethod of(String value) {
+        return new ContactMethod(value);
+    }
+
     public String trimmed() {
         return value != null ? value.trim() : null;
     }

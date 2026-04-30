@@ -7,6 +7,10 @@ public record Version(Integer value) {
         }
     }
 
+    public static Version of(Integer value) {
+        return new Version(value);
+    }
+
     public static Version initial() {
         return new Version(0);
     }
