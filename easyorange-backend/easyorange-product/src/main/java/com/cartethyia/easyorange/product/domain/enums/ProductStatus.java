@@ -26,11 +26,45 @@ public enum ProductStatus {
     }
 
     public static ProductStatus fromCode(Integer code) {
-        return Arrays.stream(values()).filter(v -> v.code.equals(code)).findFirst().orElse(null);
+        if (code == null) {
+            return null;
+        }
+        return Arrays.stream(values())
+                .filter(v -> v.code.equals(code))
+                .findFirst()
+                .orElse(null);
     }
 
     public static String getDescByCode(Integer code) {
         ProductStatus status = fromCode(code);
         return status != null ? status.getDesc() : "未知状态";
+    }
+
+    public boolean isDraft() {
+        return this == DRAFT;
+    }
+
+    public boolean isOnline() {
+        return this == ONLINE;
+    }
+
+    public boolean isSold() {
+        return this == SOLD;
+    }
+
+    public boolean isOffline() {
+        return this == OFFLINE;
+    }
+
+    public boolean canPutOnline() {
+        return this == DRAFT || this == OFFLINE;
+    }
+
+    public boolean canTakeOffline() {
+        return this == ONLINE;
+    }
+
+    public boolean canMarkAsSold() {
+        return this == ONLINE;
     }
 }

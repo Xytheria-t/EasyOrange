@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.product.domain.service;
 
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-import com.cartethyia.easyorange.product.domain.repository.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductStatusVO;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +38,7 @@ public class ProductReportDomainService {
             report.approve(null);
             productRepository.updateStatus(
                     ProductId.of(report.getProductId()),
-                    ProductStatusVO.of(ProductStatus.OFFLINE)
+                    ProductStatus.OFFLINE
             );
             productCachePort.evictProductCache(report.getProductId());
             log.info("举报审核通过，商品已下线: productId={}", report.getProductId());

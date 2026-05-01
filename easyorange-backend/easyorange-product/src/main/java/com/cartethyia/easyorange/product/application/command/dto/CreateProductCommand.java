@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.command.dto;
 
-import com.cartethyia.easyorange.product.interfaces.rest.dto.request.ProductCreateRequest;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductCreateRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

@@ -7,57 +7,46 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public record ImageSet(List<ProductImageVO> images) {
+public record ImageSet(List<ProductImage> images) {
+
+    public static final ImageSet EMPTY = new ImageSet(Collections.emptyList());
+
     public ImageSet {
         if (images == null || images.isEmpty()) {
             images = Collections.emptyList();
         } else {
-            long mainCount = images.stream()
-                    .filter(ProductImageVO::isMain)
-                    .count();
+            long mainCount = images.stream().filter(ProductImage::isMain).count();
             BizRequire.requireTrue(mainCount <= 1, "主图只能有一个");
-            List<ProductImageVO> validated = new ArrayList<>();
-            for (ProductImageVO img : images) {
-                validated.add(new ProductImageVO(
-                        img.url(),
-                        img.sortOrder(),
-                        img.isMain()
-                ));
-            }
-            images = Collections.unmodifiableList(validated);
+            images = List.copyOf(images);
         }
     }
 
     public static ImageSet empty() {
-        return new ImageSet(Collections.emptyList());
+        return EMPTY;
     }
 
     public static ImageSet of(List<String> urls) {
         if (urls == null || urls.isEmpty()) {
-            return empty();
+            return EMPTY;
         }
-        List<ProductImageVO> images = new ArrayList<>();
+        List<ProductImage> imageList = new ArrayList<>(urls.size());
         for (int i = 0; i < urls.size(); i++) {
-            images.add(new ProductImageVO(
-                    new ImageUrl(urls.get(i)),
-                    i,
-                    i == 0
-            ));
+            imageList.add(new ProductImage(new ImageUrl(urls.get(i)), i, i == 0));
         }
-        return new ImageSet(images);
+        return new ImageSet(imageList);
     }
 
-    public static ImageSet ofImages(List<ProductImageVO> images) {
+    public static ImageSet ofImages(List<ProductImage> images) {
         if (images == null || images.isEmpty()) {
-            return empty();
+            return EMPTY;
         }
         return new ImageSet(images);
     }
 
     public ImageUrl mainImage() {
         return images.stream()
-                .filter(ProductImageVO::isMain)
-                .map(ProductImageVO::url)
+                .filter(ProductImage::isMain)
+                .map(ProductImage::url)
                 .findFirst()
                 .orElse(null);
     }
@@ -76,9 +65,5 @@ public record ImageSet(List<ProductImageVO> images) {
         return images.isEmpty();
     }
 
-    public record ProductImageVO(ImageUrl url, Integer sortOrder, boolean isMain) {
-        public boolean isMain() {
-            return isMain;
-        }
-    }
+    public record ProductImage(ImageUrl url, Integer sortOrder, boolean isMain) { }
 }

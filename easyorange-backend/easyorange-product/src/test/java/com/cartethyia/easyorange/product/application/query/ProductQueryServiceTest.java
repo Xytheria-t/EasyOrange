@@ -4,11 +4,12 @@ import com.cartethyia.easyorange.product.application.query.assembler.ProductRead
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.repository.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,7 +61,7 @@ class ProductQueryServiceTest {
                 Money.of(new BigDecimal("100")),
                 null,
                 StockQuantity.of(10),
-                ConditionLevelVO.of(1),
+                ConditionLevel.NEW,
                 TradeLocation.of("北京"),
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),

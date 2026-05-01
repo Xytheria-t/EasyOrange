@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import java.util.Arrays;
+
 public enum ConditionLevel {
 
     NEW(1, "全新"),
@@ -27,11 +29,14 @@ public enum ConditionLevel {
         if (code == null) {
             return null;
         }
-        for (ConditionLevel level : values()) {
-            if (level.getCode().equals(code)) {
-                return level;
-            }
-        }
-        return null;
+        return Arrays.stream(values())
+                .filter(level -> level.code.equals(code))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static String getDescByCode(Integer code) {
+        ConditionLevel level = fromCode(code);
+        return level != null ? level.getDesc() : "未知";
     }
 }

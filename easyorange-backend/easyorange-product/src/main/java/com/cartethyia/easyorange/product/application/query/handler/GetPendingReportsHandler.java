@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.application.query.handler;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
-import com.cartethyia.easyorange.product.interfaces.rest.dto.response.ProductReportResponse;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -3,10 +3,16 @@ package com.cartethyia.easyorange.product.domain.valueobject;
 import com.cartethyia.easyorange.common.util.BizRequire;
 
 public record ProductDescription(String value) {
+
+    public static final int MAX_LENGTH = 5000;
+
     public ProductDescription {
         if (value != null && !value.isBlank()) {
-            BizRequire.between(value.length(), 0, 5000, "商品描述长度必须在 0-5000 个字符之间");
             value = value.trim();
+            BizRequire.requireTrue(
+                    value.length() <= MAX_LENGTH,
+                    "商品描述长度不能超过 " + MAX_LENGTH + " 个字符"
+            );
         } else {
             value = null;
         }
@@ -18,5 +24,9 @@ public record ProductDescription(String value) {
 
     public boolean isBlank() {
         return value == null || value.isBlank();
+    }
+
+    public boolean isPresent() {
+        return value != null;
     }
 }

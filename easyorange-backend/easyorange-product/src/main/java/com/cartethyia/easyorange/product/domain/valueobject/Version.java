@@ -1,21 +1,17 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
+import com.cartethyia.easyorange.common.util.BizRequire;
+
 public record Version(Integer value) {
+
+    public static final Version INITIAL = new Version(0);
+
     public Version {
-        if (value == null) {
-            throw new IllegalArgumentException("版本号不能为空");
-        }
+        BizRequire.notNull(value, "版本号不能为空");
+        BizRequire.nonNegative(value, "版本号不能为负数");
     }
 
     public static Version of(Integer value) {
         return new Version(value);
-    }
-
-    public static Version initial() {
-        return new Version(0);
-    }
-
-    public Version next() {
-        return new Version(value + 1);
     }
 }

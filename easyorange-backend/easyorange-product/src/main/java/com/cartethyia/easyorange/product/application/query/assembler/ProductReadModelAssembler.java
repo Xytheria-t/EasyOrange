@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.product.application.query.assembler;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
-import com.cartethyia.easyorange.product.application.query.dto.ProductReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.SellerReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
@@ -28,13 +28,13 @@ public class ProductReadModelAssembler {
                 .price(product.getPrice().value())
                 .originalPrice(product.getOriginalPrice() != null ? product.getOriginalPrice().value() : null)
                 .stock(product.getStock().value())
-                .status(product.getStatus().code())
+                .status(product.getStatus().getCode())
                 .views(product.getViewCount())
-                .condition(product.getConditionLevel() != null ? product.getConditionLevel().code() : null)
+                .condition(product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null)
                 .location(MaskUtils.maskAddress(
                         product.getLocation() != null ? product.getLocation().value() : null, 6))
-                .contactMethod(MaskUtils.maskPhone(
-                        product.getContactMethod() != null ? product.getContactMethod().value() : null))
+                .contactMethod(product.getContactMethod() != null && product.getContactMethod().isNotBlank()
+                        ? MaskUtils.maskPhone(product.getContactMethod().value()) : null)
                 .createTime(product.getCreateTime())
                 .updateTime(product.getUpdateTime());
 
@@ -50,9 +50,9 @@ public class ProductReadModelAssembler {
             builder.description(product.getDescription().value());
         }
 
-        builder.statusDesc(product.getStatus().desc());
+        builder.statusDesc(product.getStatus().getDesc());
         if (product.getConditionLevel() != null) {
-            builder.conditionDesc(product.getConditionLevel().desc());
+            builder.conditionDesc(product.getConditionLevel().getDesc());
         }
 
         if (product.getCategoryId() != null) {

@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.product.domain.repository.query;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.product.application.query.dto.HotKeywordReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.ProductReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.SellerReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -47,9 +47,9 @@ public interface ProductQueryRepository {
 
     void deleteSearchHistoryById(Long historyId, Long userId);
 
-    record CategoryInfo(Long id, String name, Long parentId, Integer level, Integer sortOrder) {}
+    record CategoryInfo(Long id, String name, Long parentId, Integer level, Integer sortOrder) { }
 
-    record ProductDetailInfo(Long productId, String description) {}
+    record ProductDetailInfo(Long productId, String description) { }
 
-    record ProductImageInfo(Long productId, String imageUrl, Integer sortOrder, boolean isMain) {}
+    record ProductImageInfo(Long productId, String imageUrl, Integer sortOrder, boolean isMain) { }
 }

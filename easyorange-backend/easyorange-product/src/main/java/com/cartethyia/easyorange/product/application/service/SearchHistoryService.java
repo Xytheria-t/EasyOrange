@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.service;
 
-import com.cartethyia.easyorange.product.application.query.dto.SearchHistoryReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

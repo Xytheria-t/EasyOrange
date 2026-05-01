@@ -11,10 +11,9 @@ import com.cartethyia.easyorange.product.application.command.dto.RestoreStockCom
 import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.repository.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
-import com.cartethyia.easyorange.product.domain.valueobject.ConditionLevelVO;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Money;
@@ -24,6 +23,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,7 +49,7 @@ public class ProductCommandService {
                 Money.of(command.getPrice()),
                 command.getOriginalPrice() != null ? Money.of(command.getOriginalPrice()) : null,
                 StockQuantity.of(command.getStock() != null ? command.getStock() : 1),
-                ConditionLevelVO.of(command.getConditionLevel()),
+                ConditionLevel.fromCode(command.getConditionLevel()),
                 TradeLocation.of(command.getLocation()),
                 ContactMethod.of(command.getContactMethod()),
                 ProductDescription.of(command.getDescription()),
@@ -78,7 +78,7 @@ public class ProductCommandService {
                 command.getPrice() != null ? Money.of(command.getPrice()) : null,
                 command.getOriginalPrice() != null ? Money.of(command.getOriginalPrice()) : null,
                 command.getStock() != null ? StockQuantity.of(command.getStock()) : null,
-                command.getConditionLevel() != null ? ConditionLevelVO.of(command.getConditionLevel()) : null,
+                command.getConditionLevel() != null ? ConditionLevel.fromCode(command.getConditionLevel()) : null,
                 command.getLocation() != null ? TradeLocation.of(command.getLocation()) : null,
                 command.getContactMethod() != null ? ContactMethod.of(command.getContactMethod()) : null,
                 command.getDescription() != null ? ProductDescription.of(command.getDescription()) : null,

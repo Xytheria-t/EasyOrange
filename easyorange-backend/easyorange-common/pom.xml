@@ -16,6 +16,18 @@
     </description>
 
     <dependencies>
+        <!-- Core 模块 - 纯 Java 工具类 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common-core</artifactId>
+        </dependency>
+
+        <!-- Domain 模块 - 领域概念 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common-domain</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

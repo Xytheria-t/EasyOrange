@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.domain.repository.query;
 
-import com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 
 import java.util.List;
 

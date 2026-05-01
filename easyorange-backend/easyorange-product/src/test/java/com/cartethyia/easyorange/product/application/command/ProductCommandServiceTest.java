@@ -9,9 +9,10 @@ import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldComma
 import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.repository.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,13 +55,15 @@ class ProductCommandServiceTest {
                 com.cartethyia.easyorange.product.domain.valueobject.Money.of(new BigDecimal("100")),
                 null,
                 com.cartethyia.easyorange.product.domain.valueobject.StockQuantity.of(10),
-                com.cartethyia.easyorange.product.domain.valueobject.ConditionLevelVO.of(1),
+                ConditionLevel.NEW,
                 com.cartethyia.easyorange.product.domain.valueobject.TradeLocation.of("北京"),
                 com.cartethyia.easyorange.product.domain.valueobject.ContactMethod.of("微信"),
                 com.cartethyia.easyorange.product.domain.valueobject.ProductDescription.of("描述"),
                 com.cartethyia.easyorange.product.domain.valueobject.ImageSet.of(java.util.List.of("http://img/1.jpg"))
         );
         existingProduct.assignId(1L);
+        existingProduct.releaseEvents();
+        existingProduct.putOnline();
         existingProduct.releaseEvents();
     }
 

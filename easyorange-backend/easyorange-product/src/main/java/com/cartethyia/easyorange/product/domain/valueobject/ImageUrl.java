@@ -2,8 +2,11 @@ package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 
+import java.util.regex.Pattern;
+
 public record ImageUrl(String value) {
-    private static final java.util.regex.Pattern URL_PATTERN = java.util.regex.Pattern.compile("^https?://.*");
+
+    private static final Pattern URL_PATTERN = Pattern.compile("^https?://.*");
 
     public ImageUrl {
         BizRequire.notBlank(value, "图片URL不能为空");
@@ -11,7 +14,7 @@ public record ImageUrl(String value) {
         value = value.trim();
     }
 
-    public String trimmed() {
-        return value.trim();
+    public static ImageUrl of(String value) {
+        return new ImageUrl(value);
     }
 }
