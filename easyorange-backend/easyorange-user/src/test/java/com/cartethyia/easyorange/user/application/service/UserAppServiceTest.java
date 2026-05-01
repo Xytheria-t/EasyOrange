@@ -3,19 +3,17 @@ package com.cartethyia.easyorange.user.application.service;
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUserRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
-import com.cartethyia.easyorange.user.dto.request.ChangePasswordRequest;
-import com.cartethyia.easyorange.user.dto.request.UpdateUserRequest;
-import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
-import com.cartethyia.easyorange.user.dto.vo.UserVO;
-import com.cartethyia.easyorange.user.common.enums.Sex;
-import com.cartethyia.easyorange.user.common.enums.UserStatus;
-import com.cartethyia.easyorange.user.common.enums.UserType;
-import com.cartethyia.easyorange.user.infrastructure.event.UserEventPublisher;
-import com.cartethyia.easyorange.user.infrastructure.storage.FileStorageAdapter;
+import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.UserEventPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -48,13 +46,13 @@ class UserAppServiceTest {
     private PasswordDomainService passwordDomainService;
 
     @Mock
-    private FileStorageAdapter fileStorageAdapter;
+    private AvatarFilePort avatarFilePort;
 
     @Mock
     private UserAssembler userAssembler;
 
     @Mock
-    private UserEventPublisher userEventPublisher;
+    private UserEventPort userEventPort;
 
     private UserAppService userAppService;
 
@@ -63,9 +61,9 @@ class UserAppServiceTest {
         userAppService = new UserAppService(
             userRepository,
             passwordDomainService,
-            fileStorageAdapter,
+            avatarFilePort,
             userAssembler,
-            userEventPublisher
+            userEventPort
         );
     }
 
@@ -88,17 +86,23 @@ class UserAppServiceTest {
     }
 
     private User buildTestUser() {
+        UserProfile profile = new UserProfile(
+            "test@example.com",
+            "13812345678",
+            "张三",
+            null,
+            com.cartethyia.easyorange.user.domain.shared.enums.Sex.MALE,
+            "/avatar/old.png",
+            null
+        );
+
         return User.builder()
             .id(1L)
             .username("testuser")
             .password("$2a$10$encoded")
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .email("test@example.com")
-            .phone("13812345678")
-            .realName("张三")
-            .sex(Sex.MALE)
-            .avatar("/avatar/old.png")
+            .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
+            .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
+            .profile(profile)
             .build();
     }
 
@@ -109,7 +113,6 @@ class UserAppServiceTest {
         @Test
         @DisplayName("应返回 UserProfileVO")
         void shouldReturnUserProfileVO() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -120,10 +123,8 @@ class UserAppServiceTest {
                 .build();
             when(userAssembler.toProfileVo(any(), any(), any(), anyLong())).thenReturn(profileVO);
 
-            // Act
             UserProfileVO result = userAppService.getUserInfo();
 
-            // Assert
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(1L);
             assertThat(result.getUsername()).isEqualTo("testuser");
@@ -132,11 +133,9 @@ class UserAppServiceTest {
         @Test
         @DisplayName("用户不存在时应抛出异常")
         void shouldThrowWhenUserNotFound() {
-            // Arrange
             setSecurityContext(999L);
             when(userRepository.findById(999L)).thenReturn(Optional.empty());
 
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.getUserInfo())
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("用户不存在");
@@ -145,10 +144,8 @@ class UserAppServiceTest {
         @Test
         @DisplayName("未登录时应抛出异常")
         void shouldThrowWhenNotAuthenticated() {
-            // Arrange
             SecurityContextHolder.clearContext();
 
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.getUserInfo())
                 .isInstanceOf(BusinessException.class);
         }
@@ -161,7 +158,6 @@ class UserAppServiceTest {
         @Test
         @DisplayName("应更新并返回 UserVO")
         void shouldUpdateAndReturnUserVO() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -170,15 +166,10 @@ class UserAppServiceTest {
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").build();
             when(userAssembler.toVo(any(User.class))).thenReturn(userVO);
 
-            UpdateUserRequest request = new UpdateUserRequest();
-            request.setEmail("new@example.com");
-            request.setPhone("13999999999");
-            request.setGender(1);
+            UpdateUserRequest request = new UpdateUserRequest("new@example.com", "13999999999", 1);
 
-            // Act
             UserVO result = userAppService.updateUserInfo(request);
 
-            // Assert
             assertThat(result).isNotNull();
             assertThat(result.getUserId()).isEqualTo(1L);
             verify(userRepository).update(any(User.class));
@@ -187,14 +178,12 @@ class UserAppServiceTest {
         @Test
         @DisplayName("没有需要更新的字段时应抛出异常")
         void shouldThrowWhenNoUpdateFields() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-            UpdateUserRequest request = new UpdateUserRequest();
+            UpdateUserRequest request = new UpdateUserRequest(null, null, null);
 
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.updateUserInfo(request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("没有需要更新的字段");
@@ -210,7 +199,6 @@ class UserAppServiceTest {
         @Test
         @DisplayName("应验证并更新密码")
         void shouldValidateAndUpdatePassword() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
@@ -218,58 +206,46 @@ class UserAppServiceTest {
             when(passwordDomainService.encode("NewPassword456")).thenReturn("$2a$10$newEncoded");
             when(userRepository.updatePassword(1L, "$2a$10$newEncoded")).thenReturn(true);
 
-            ChangePasswordRequest request = new ChangePasswordRequest();
-            request.setOldPassword("OldPassword123");
-            request.setNewPassword("NewPassword456");
+            ChangePasswordRequest request = new ChangePasswordRequest("OldPassword123", "NewPassword456");
 
-            // Act
             userAppService.changePassword(request);
 
-            // Assert
             verify(passwordDomainService).validateDifferentPassword("OldPassword123", "NewPassword456");
             verify(passwordDomainService).matches("OldPassword123", "$2a$10$encoded");
             verify(passwordDomainService).encode("NewPassword456");
             verify(userRepository).updatePassword(1L, "$2a$10$newEncoded");
-            verify(userEventPublisher).publishPasswordChanged(1L);
+            verify(userEventPort).publishPasswordChanged(1L);
         }
 
         @Test
         @DisplayName("旧密码错误时应抛出异常")
         void shouldThrowWhenOldPasswordWrong() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(passwordDomainService.matches("WrongOldPassword", "$2a$10$encoded")).thenReturn(false);
 
-            ChangePasswordRequest request = new ChangePasswordRequest();
-            request.setOldPassword("WrongOldPassword");
-            request.setNewPassword("NewPassword456");
+            ChangePasswordRequest request = new ChangePasswordRequest("WrongOldPassword", "NewPassword456");
 
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.changePassword(request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("密码错误");
 
             verify(userRepository, never()).updatePassword(any(), any());
-            verify(userEventPublisher, never()).publishPasswordChanged(any());
+            verify(userEventPort, never()).publishPasswordChanged(any());
         }
 
         @Test
         @DisplayName("新旧密码相同时应抛出异常")
         void shouldThrowWhenPasswordsAreSame() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             doThrow(BusinessException.of("新密码不能与旧密码相同"))
                 .when(passwordDomainService).validateDifferentPassword("SamePassword", "SamePassword");
 
-            ChangePasswordRequest request = new ChangePasswordRequest();
-            request.setOldPassword("SamePassword");
-            request.setNewPassword("SamePassword");
+            ChangePasswordRequest request = new ChangePasswordRequest("SamePassword", "SamePassword");
 
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.changePassword(request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("新密码不能与旧密码相同");
@@ -283,36 +259,47 @@ class UserAppServiceTest {
         @Test
         @DisplayName("应上传并更新头像")
         void shouldUploadAndUpdateAvatar() {
-            // Arrange
             setSecurityContext(1L);
             User user = buildTestUser();
-            User updatedUser = buildTestUser();
-            updatedUser.setAvatar("/avatar/new.png");
+            UserProfile newProfile = new UserProfile(
+                "test@example.com",
+                "13812345678",
+                "张三",
+                null,
+                com.cartethyia.easyorange.user.domain.shared.enums.Sex.MALE,
+                "/avatar/new.png",
+                null
+            );
+            User updatedUser = User.builder()
+                .id(1L)
+                .username("testuser")
+                .password("$2a$10$encoded")
+                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
+                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
+                .profile(newProfile)
+                .build();
 
             MockMultipartFile file = new MockMultipartFile(
                 "avatar", "new.jpg", "image/jpeg", "fake-image".getBytes());
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user)).thenReturn(Optional.of(updatedUser));
-            when(fileStorageAdapter.uploadAvatar(file, 1L)).thenReturn("/avatar/new.png");
+            when(avatarFilePort.uploadAvatar(file, 1L)).thenReturn("/avatar/new.png");
             when(userRepository.update(any(User.class))).thenReturn(true);
 
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").avatar("/avatar/new.png").build();
             when(userAssembler.toVo(updatedUser)).thenReturn(userVO);
 
-            // Act
             UserVO result = userAppService.uploadAvatar(file);
 
-            // Assert
             assertThat(result).isNotNull();
             assertThat(result.getAvatar()).isEqualTo("/avatar/new.png");
-            verify(fileStorageAdapter).deleteIfExists("/avatar/old.png");
-            verify(fileStorageAdapter).uploadAvatar(file, 1L);
+            verify(avatarFilePort).deleteIfExists("/avatar/old.png");
+            verify(avatarFilePort).uploadAvatar(file, 1L);
         }
 
         @Test
         @DisplayName("头像为 null 时应抛出异常")
         void shouldThrowWhenAvatarIsNull() {
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.uploadAvatar(null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("头像不能为空");
@@ -321,11 +308,9 @@ class UserAppServiceTest {
         @Test
         @DisplayName("头像文件为空时应抛出异常")
         void shouldThrowWhenAvatarIsEmpty() {
-            // Arrange
             MockMultipartFile emptyFile = new MockMultipartFile(
                 "avatar", "empty.jpg", "image/jpeg", new byte[0]);
 
-            // Act & Assert
             assertThatThrownBy(() -> userAppService.uploadAvatar(emptyFile))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("头像不能为空");

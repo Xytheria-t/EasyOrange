@@ -166,16 +166,152 @@ The `easyorange-user` module handles all user-related functionality including:
 
 ## Architecture Patterns
 
-### Layered Architecture
+### DDD Layered Architecture
 
 ```
-Controller Layer (AuthController, UserController)
-    ↓
-Service Layer (AuthService, UserService, LoginDispatcher)
-    ↓
-Repository Layer (UserMapper - MyBatis Plus)
-    ↓
-Entity Layer (User entity)
+┌─────────────────────────────────────────────────────────────┐
+│                    Adapter Layer (适配器层)                   │
+│  ┌──────────────────────┐    ┌──────────────────────────┐  │
+│  │   Inbound Adapters   │    │    Outbound Adapters     │  │
+│  │  ┌────────────────┐  │    │  ┌────────────────────┐  │  │
+│  │  │  Web (REST)    │  │    │  │  Persistence       │  │  │
+│  │  │  - Controllers │  │    │  │  - UserRepository  │  │  │
+│  │  │  - DTOs        │  │    │  │  - UserEntity      │  │  │
+│  │  │  - Validation  │  │    │  │  - UserMapper      │  │  │
+│  │  └────────────────┘  │    │  ├────────────────────┤  │  │
+│  │                      │    │  │  Cache             │  │  │
+│  │                      │    │  │  - RedisRepos      │  │  │
+│  │                      │    │  ├────────────────────┤  │  │
+│  │                      │    │  │  Messaging         │  │  │
+│  │                      │    │  │  - EventPublisher  │  │  │
+│  │                      │    │  ├────────────────────┤  │  │
+│  │                      │    │  │  Storage           │  │  │
+│  │                      │    │  │  - FileStorage     │  │  │
+│  └──────────────────────┘    │  └────────────────────┘  │  │
+│                              └──────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓ ↑
+┌─────────────────────────────────────────────────────────────┐
+│                  Application Layer (应用层)                   │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Application Services                                │  │
+│  │  - AuthAppService (认证用例编排)                      │  │
+│  │  - UserAppService (用户用例编排)                      │  │
+│  ├──────────────────────────────────────────────────────┤  │
+│  │  Assemblers                                          │  │
+│  │  - UserAssembler (DTO 组装)                          │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓ ↑
+┌─────────────────────────────────────────────────────────────┐
+│                    Domain Layer (领域层)                      │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Domain Model                                        │  │
+│  │  - User (用户聚合根)                                  │  │
+│  ├──────────────────────────────────────────────────────┤  │
+│  │  Domain Services                                     │  │
+│  │  - PasswordDomainService (密码策略)                   │  │
+│  │  - LoginSecurityDomainService (登录安全)              │  │
+│  │  - SmsCodeService (验证码服务)                        │  │
+│  ├──────────────────────────────────────────────────────┤  │
+│  │  Repository Interfaces                               │  │
+│  │  - UserRepository                                    │  │
+│  │  - LoginAttemptRepository                            │  │
+│  │  - SmsCodeRepository                                 │  │
+│  ├──────────────────────────────────────────────────────┤  │
+│  │  Domain Events                                       │  │
+│  │  - UserRegisteredEvent                               │  │
+│  │  - PasswordChangedEvent                              │  │
+│  │  - ForgotPasswordEvent                               │  │
+│  ├──────────────────────────────────────────────────────┤  │
+│  │  Shared Kernel                                       │  │
+│  │  - Enums (UserType, UserStatus, Sex, etc.)          │  │
+│  │  - Constants (UserConstant)                          │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                              ↓ ↑
+┌─────────────────────────────────────────────────────────────┐
+│               Infrastructure Layer (基础设施层)               │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Utilities                                           │  │
+│  │  - NicknameGenerator                                 │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Directory Structure
+
+```
+user/
+├── domain/                         # 领域层
+│   ├── model/                      # 领域模型
+│   │   └── User.java
+│   ├── service/                    # 领域服务
+│   │   ├── PasswordDomainService.java
+│   │   ├── LoginSecurityDomainService.java
+│   │   └── SmsCodeService.java
+│   ├── repository/                 # 仓储接口
+│   │   ├── UserRepository.java
+│   │   ├── LoginAttemptRepository.java
+│   │   └── SmsCodeRepository.java
+│   ├── event/                      # 领域事件
+│   │   ├── UserRegisteredEvent.java
+│   │   ├── PasswordChangedEvent.java
+│   │   └── ForgotPasswordEvent.java
+│   └── shared/                     # 领域共享
+│       ├── constant/
+│       │   └── UserConstant.java
+│       └── enums/
+│           ├── UserType.java
+│           ├── UserStatus.java
+│           ├── Sex.java
+│           ├── LoginMethod.java
+│           └── ClientType.java
+│
+├── application/                    # 应用层
+│   ├── service/                    # 应用服务
+│   │   ├── AuthAppService.java
+│   │   └── UserAppService.java
+│   └── assembler/                  # DTO组装器
+│       └── UserAssembler.java
+│
+├── adapter/                        # 适配器层
+│   ├── inbound/                    # 入站适配器
+│   │   └── web/
+│   │       ├── controller/
+│   │       │   ├── AuthController.java
+│   │       │   └── UserController.java
+│   │       ├── dto/
+│   │       │   ├── request/
+│   │       │   │   ├── LoginRequest.java
+│   │       │   │   ├── RegisterRequest.java
+│   │       │   │   └── ...
+│   │       │   └── response/
+│   │       │       ├── LoginResponse.java
+│   │       │       ├── UserVO.java
+│   │       │       └── ...
+│   │       └── validation/         # 输入验证
+│   │           ├── Password.java
+│   │           ├── PasswordValidator.java
+│   │           ├── Unique.java
+│   │           └── UniqueFieldValidator.java
+│   │
+│   └── outbound/                   # 出站适配器
+│       ├── persistence/            # 持久化
+│       │   ├── UserEntity.java
+│       │   ├── UserMapper.java
+│       │   └── UserRepositoryImpl.java
+│       ├── cache/                  # 缓存
+│       │   ├── RedisLoginAttemptRepository.java
+│       │   └── RedisSmsCodeRepository.java
+│       ├── messaging/              # 消息
+│       │   └── UserEventPublisher.java
+│       └── storage/                # 存储
+│           └── FileStorageAdapter.java
+│
+└── infrastructure/                 # 基础设施层
+    └── util/
+        └── NicknameGenerator.java
 ```
 
 ### Key Patterns Used

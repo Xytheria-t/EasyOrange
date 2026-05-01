@@ -1,12 +1,14 @@
 package com.cartethyia.easyorange.user.application.assembler;
 
-import com.cartethyia.easyorange.user.domain.model.User;
-import com.cartethyia.easyorange.user.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
-import com.cartethyia.easyorange.user.dto.vo.UserVO;
-import com.cartethyia.easyorange.user.common.enums.Sex;
-import com.cartethyia.easyorange.user.common.enums.UserStatus;
-import com.cartethyia.easyorange.user.common.enums.UserType;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.shared.enums.Sex;
+import com.cartethyia.easyorange.user.domain.shared.enums.UserStatus;
+import com.cartethyia.easyorange.user.domain.shared.enums.UserType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -24,24 +26,37 @@ class UserAssemblerTest {
 
     @BeforeEach
     void setUp() {
-        userAssembler = new UserAssembler();
+        userAssembler = new UserAssemblerImpl();
     }
 
     private User buildTestUser() {
+        UserProfile profile = new UserProfile(
+            "test@example.com",
+            "13812345678",
+            "张三",
+            "小张",
+            Sex.MALE,
+            "/avatar/test.png",
+            null
+        );
+        AuditInfo auditInfo = new AuditInfo(
+            LocalDateTime.of(2024, 1, 1, 0, 0),
+            LocalDateTime.of(2024, 6, 1, 0, 0),
+            1L,
+            1L,
+            0,
+            0
+        );
+
         return User.builder()
             .id(1L)
             .username("testuser")
             .password("$2a$10$encoded")
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .email("test@example.com")
-            .phone("13812345678")
             .studentId("2024001")
-            .realName("张三")
-            .sex(Sex.MALE)
-            .avatar("/avatar/test.png")
-            .createTime(LocalDateTime.of(2024, 1, 1, 0, 0))
-            .updateTime(LocalDateTime.of(2024, 6, 1, 0, 0))
+            .profile(profile)
+            .auditInfo(auditInfo)
             .build();
     }
 
@@ -52,13 +67,10 @@ class UserAssemblerTest {
         @Test
         @DisplayName("应正确映射并脱敏")
         void shouldMapCorrectlyWithMasking() {
-            // Arrange
             User user = buildTestUser();
 
-            // Act
             UserVO vo = userAssembler.toVo(user);
 
-            // Assert
             assertThat(vo).isNotNull();
             assertThat(vo.getUserId()).isEqualTo(1L);
             assertThat(vo.getUsername()).isEqualTo("testuser");
@@ -73,29 +85,25 @@ class UserAssemblerTest {
         }
 
         @Test
-        @DisplayName("null 用户应返回 null")
-        void shouldReturnNullForNullUser() {
-            // Act
+        @DisplayName("null 用户应返回默认对象（RETURN_DEFAULT 策略）")
+        void shouldReturnDefaultForNullUser() {
             UserVO vo = userAssembler.toVo(null);
 
-            // Assert
-            assertThat(vo).isNull();
+            assertThat(vo).isNotNull();
+            assertThat(vo.getUserId()).isNull();
         }
 
         @Test
         @DisplayName("status 为 null 时应返回 0")
         void shouldReturnZeroWhenStatusIsNull() {
-            // Arrange
             User user = User.builder()
                 .id(1L)
                 .username("testuser")
                 .status(null)
                 .build();
 
-            // Act
             UserVO vo = userAssembler.toVo(user);
 
-            // Assert
             assertThat(vo.getStatus()).isEqualTo(0);
         }
     }
@@ -107,16 +115,13 @@ class UserAssemblerTest {
         @Test
         @DisplayName("应正确映射并脱敏")
         void shouldMapCorrectly() {
-            // Arrange
             User user = buildTestUser();
             Set<String> roles = Set.of("ROLE_USER");
             Set<String> permissions = Set.of("user:read");
             Long loginTime = System.currentTimeMillis();
 
-            // Act
             UserProfileVO vo = userAssembler.toProfileVo(user, roles, permissions, loginTime);
 
-            // Assert
             assertThat(vo).isNotNull();
             assertThat(vo.getId()).isEqualTo(1L);
             assertThat(vo.getUsername()).isEqualTo("testuser");
@@ -135,13 +140,14 @@ class UserAssemblerTest {
         }
 
         @Test
-        @DisplayName("null 用户应返回 null")
-        void shouldReturnNullForNullUser() {
-            // Act
+        @DisplayName("null 用户应返回默认对象（多参数方法 RETURN_DEFAULT 策略）")
+        void shouldReturnDefaultForNullUser() {
             UserProfileVO vo = userAssembler.toProfileVo(null, Set.of(), Set.of(), 0L);
 
-            // Assert
-            assertThat(vo).isNull();
+            assertThat(vo).isNotNull();
+            assertThat(vo.getId()).isNull();
+            assertThat(vo.getRoles()).isEmpty();
+            assertThat(vo.getPermissions()).isEmpty();
         }
     }
 
@@ -152,13 +158,10 @@ class UserAssemblerTest {
         @Test
         @DisplayName("应正确映射登录响应")
         void shouldMapCorrectly() {
-            // Arrange
             User user = buildTestUser();
 
-            // Act
             LoginResponse response = userAssembler.toLoginResponse(user, "access-token", "refresh-token");
 
-            // Assert
             assertThat(response).isNotNull();
             assertThat(response.getToken()).isEqualTo("access-token");
             assertThat(response.getRefreshToken()).isEqualTo("refresh-token");

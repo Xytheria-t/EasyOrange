@@ -2,21 +2,20 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.service.TokenService;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ForgotPasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.LoginRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RegisterRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.LoginSecurityDomainService;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
-import com.cartethyia.easyorange.user.domain.service.SmsCodeService;
-import com.cartethyia.easyorange.user.dto.request.ForgotPasswordRequest;
-import com.cartethyia.easyorange.user.dto.request.LoginRequest;
-import com.cartethyia.easyorange.user.dto.request.RegisterRequest;
-import com.cartethyia.easyorange.user.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.dto.vo.UserVO;
-import com.cartethyia.easyorange.user.common.enums.UserStatus;
-import com.cartethyia.easyorange.user.common.enums.UserType;
-import com.cartethyia.easyorange.user.infrastructure.event.UserEventPublisher;
-import com.cartethyia.easyorange.user.util.NicknameGenerator;
+import com.cartethyia.easyorange.user.domain.service.SmsCodeDomainService;
+import com.cartethyia.easyorange.user.domain.port.UserEventPort;
+import com.cartethyia.easyorange.user.infrastructure.util.NicknameGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +49,7 @@ class AuthAppServiceTest {
     private LoginSecurityDomainService loginSecurityDomainService;
 
     @Mock
-    private SmsCodeService smsCodeService;
+    private SmsCodeDomainService smsCodeDomainService;
 
     @Mock
     private TokenService tokenService;
@@ -58,7 +58,7 @@ class AuthAppServiceTest {
     private UserAssembler userAssembler;
 
     @Mock
-    private UserEventPublisher userEventPublisher;
+    private UserEventPort userEventPort;
 
     @Mock
     private NicknameGenerator nicknameGenerator;
@@ -71,10 +71,10 @@ class AuthAppServiceTest {
             userRepository,
             passwordDomainService,
             loginSecurityDomainService,
-            smsCodeService,
+            smsCodeDomainService,
             tokenService,
             userAssembler,
-            userEventPublisher,
+            userEventPort,
             nicknameGenerator
         );
     }
@@ -86,21 +86,19 @@ class AuthAppServiceTest {
         @Test
         @DisplayName("应保存用户并发布注册事件")
         void shouldSaveUserAndPublishEvent() {
-            RegisterRequest request = RegisterRequest.builder()
-                .username("newuser")
-                .password("Password123")
-                .build();
+            RegisterRequest request = new RegisterRequest("newuser", "Password123", null, null);
             when(userRepository.findByUsername("newuser")).thenReturn(Optional.empty());
             when(passwordDomainService.encode("Password123")).thenReturn("$2a$10$encoded");
             when(nicknameGenerator.generate()).thenReturn("阳光橙子");
 
+            UserProfile profile = new UserProfile(null, null, null, "阳光橙子", null, null, null);
             User savedUser = User.builder()
                 .id(1L)
                 .username("newuser")
                 .password("$2a$10$encoded")
-                .nickName("阳光橙子")
-                .userType(UserType.NORMAL)
-                .status(UserStatus.NORMAL)
+                .profile(profile)
+                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
+                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
                 .build();
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
@@ -113,20 +111,17 @@ class AuthAppServiceTest {
             User capturedUser = userCaptor.getValue();
             assertThat(capturedUser.getUsername()).isEqualTo("newuser");
             assertThat(capturedUser.getPassword()).isEqualTo("$2a$10$encoded");
-            assertThat(capturedUser.getNickName()).isEqualTo("阳光橙子");
-            assertThat(capturedUser.getUserType()).isEqualTo(UserType.NORMAL);
-            assertThat(capturedUser.getStatus()).isEqualTo(UserStatus.NORMAL);
+            assertThat(capturedUser.getProfile().nickName()).isEqualTo("阳光橙子");
+            assertThat(capturedUser.getUserType()).isEqualTo(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL);
+            assertThat(capturedUser.getStatus()).isEqualTo(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL);
 
-            verify(userEventPublisher).publishUserRegistered(1L, "newuser");
+            verify(userEventPort).publishUserRegistered(1L, "newuser");
         }
 
         @Test
         @DisplayName("用户名已存在时应抛出异常")
         void shouldThrowWhenUsernameExists() {
-            RegisterRequest request = RegisterRequest.builder()
-                .username("existinguser")
-                .password("Password123")
-                .build();
+            RegisterRequest request = new RegisterRequest("existinguser", "Password123", null, null);
             User existingUser = User.builder().id(1L).username("existinguser").build();
             when(userRepository.findByUsername("existinguser")).thenReturn(Optional.of(existingUser));
 
@@ -135,7 +130,7 @@ class AuthAppServiceTest {
                 .hasMessageContaining("用户名已存在");
 
             verify(userRepository, never()).save(any());
-            verify(userEventPublisher, never()).publishUserRegistered(any(), any());
+            verify(userEventPort, never()).publishUserRegistered(any(), any());
         }
     }
 
@@ -149,18 +144,14 @@ class AuthAppServiceTest {
             String rawPassword = "Password123";
             String encodedPassword = new BCryptPasswordEncoder().encode(rawPassword);
 
-            LoginRequest loginRequest = LoginRequest.builder()
-                .account("testuser")
-                .password(rawPassword)
-                .loginMethod("password")
-                .build();
+            LoginRequest loginRequest = new LoginRequest(null, "password", "testuser", rawPassword);
 
             User user = User.builder()
                 .id(1L)
                 .username("testuser")
                 .password(encodedPassword)
-                .userType(UserType.NORMAL)
-                .status(UserStatus.NORMAL)
+                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
+                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
                 .build();
 
             when(userRepository.findByAccount("testuser")).thenReturn(Optional.of(user));
@@ -190,17 +181,13 @@ class AuthAppServiceTest {
         @Test
         @DisplayName("凭证错误时应抛出异常并记录失败尝试")
         void shouldThrowOnWrongCredentials() {
-            LoginRequest loginRequest = LoginRequest.builder()
-                .account("testuser")
-                .password("WrongPassword")
-                .loginMethod("password")
-                .build();
+            LoginRequest loginRequest = new LoginRequest(null, "password", "testuser", "WrongPassword");
 
             User user = User.builder()
                 .id(1L)
                 .username("testuser")
                 .password("$2a$10$encoded")
-                .status(UserStatus.NORMAL)
+                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
                 .build();
 
             when(userRepository.findByAccount("testuser")).thenReturn(Optional.of(user));
@@ -216,11 +203,7 @@ class AuthAppServiceTest {
         @Test
         @DisplayName("用户不存在时应抛出异常")
         void shouldThrowWhenUserNotFound() {
-            LoginRequest loginRequest = LoginRequest.builder()
-                .account("nonexistent")
-                .password("Password123")
-                .loginMethod("password")
-                .build();
+            LoginRequest loginRequest = new LoginRequest(null, "password", "nonexistent", "Password123");
 
             when(userRepository.findByAccount("nonexistent")).thenReturn(Optional.empty());
 
@@ -234,17 +217,13 @@ class AuthAppServiceTest {
         @Test
         @DisplayName("用户状态非正常时应抛出异常")
         void shouldThrowWhenUserDisabled() {
-            LoginRequest loginRequest = LoginRequest.builder()
-                .account("disableduser")
-                .password("Password123")
-                .loginMethod("password")
-                .build();
+            LoginRequest loginRequest = new LoginRequest(null, "password", "disableduser", "Password123");
 
             User disabledUser = User.builder()
                 .id(1L)
                 .username("disableduser")
                 .password("$2a$10$encoded")
-                .status(UserStatus.DISABLED)
+                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.DISABLED)
                 .build();
 
             when(userRepository.findByAccount("disableduser")).thenReturn(Optional.of(disabledUser));
@@ -285,12 +264,9 @@ class AuthAppServiceTest {
         @Test
         @DisplayName("应验证验证码后重置密码并发布事件")
         void shouldVerifyCodeAndResetPasswordAndPublishEvent() {
-            ForgotPasswordRequest request = ForgotPasswordRequest.builder()
-                .phone("13812345678")
-                .verifyCode("123456")
-                .newPassword("NewPassword123")
-                .build();
-            User user = User.builder().id(1L).username("testuser").phone("13812345678").build();
+            ForgotPasswordRequest request = new ForgotPasswordRequest("13812345678", "123456", "NewPassword123");
+            UserProfile profile = new UserProfile(null, "13812345678", null, null, null, null, null);
+            User user = User.builder().id(1L).username("testuser").profile(profile).build();
             when(userRepository.findByPhone("13812345678")).thenReturn(Optional.of(user));
             when(passwordDomainService.encode("NewPassword123")).thenReturn("$2a$10$newEncoded");
             when(userRepository.updatePassword(1L, "$2a$10$newEncoded")).thenReturn(true);
@@ -298,55 +274,44 @@ class AuthAppServiceTest {
             Long result = authAppService.forgotPassword(request);
 
             assertThat(result).isEqualTo(1L);
-            verify(smsCodeService).verifyCode("13812345678", "123456");
+            verify(smsCodeDomainService).verifyCode("13812345678", "123456");
             verify(passwordDomainService).encode("NewPassword123");
             verify(userRepository).updatePassword(1L, "$2a$10$newEncoded");
-            verify(userEventPublisher).publishForgotPassword(1L, "13812345678");
+            verify(userEventPort).publishForgotPassword(1L, "13812345678");
         }
 
         @Test
         @DisplayName("验证码无效时应抛出异常")
         void shouldThrowWhenVerifyCodeInvalid() {
-            ForgotPasswordRequest request = ForgotPasswordRequest.builder()
-                .phone("13812345678")
-                .verifyCode("000000")
-                .newPassword("NewPassword123")
-                .build();
-            doThrow(BusinessException.of("验证码无效或已过期")).when(smsCodeService).verifyCode("13812345678", "000000");
+            ForgotPasswordRequest request = new ForgotPasswordRequest("13812345678", "000000", "NewPassword123");
+            doThrow(BusinessException.of("验证码无效或已过期")).when(smsCodeDomainService).verifyCode("13812345678", "000000");
 
             assertThatThrownBy(() -> authAppService.forgotPassword(request))
                 .isInstanceOf(BusinessException.class);
 
             verify(userRepository, never()).findByPhone(any());
-            verify(userEventPublisher, never()).publishForgotPassword(any(), any());
+            verify(userEventPort, never()).publishForgotPassword(any(), any());
         }
 
         @Test
         @DisplayName("手机号未注册时应抛出异常")
         void shouldThrowWhenPhoneNotRegistered() {
-            ForgotPasswordRequest request = ForgotPasswordRequest.builder()
-                .phone("13899999999")
-                .verifyCode("123456")
-                .newPassword("NewPassword123")
-                .build();
+            ForgotPasswordRequest request = new ForgotPasswordRequest("13899999999", "123456", "NewPassword123");
             when(userRepository.findByPhone("13899999999")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> authAppService.forgotPassword(request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("该手机号未注册");
 
-            verify(userEventPublisher, never()).publishForgotPassword(any(), any());
+            verify(userEventPort, never()).publishForgotPassword(any(), any());
         }
 
         @Test
         @DisplayName("更新密码失败时应抛出异常")
         void shouldThrowWhenUpdateFails() {
-            ForgotPasswordRequest request = ForgotPasswordRequest.builder()
-                .phone("13812345678")
-                .verifyCode("123456")
-                .newPassword("NewPassword123")
-                .build();
-            User user = User.builder().id(1L).username("testuser").phone("13812345678").build();
+            ForgotPasswordRequest request = new ForgotPasswordRequest("13812345678", "123456", "NewPassword123");
+            UserProfile profile = new UserProfile(null, "13812345678", null, null, null, null, null);
+            User user = User.builder().id(1L).username("testuser").profile(profile).build();
             when(userRepository.findByPhone("13812345678")).thenReturn(Optional.of(user));
             when(passwordDomainService.encode("NewPassword123")).thenReturn("$2a$10$newEncoded");
             when(userRepository.updatePassword(1L, "$2a$10$newEncoded")).thenReturn(false);
@@ -355,7 +320,7 @@ class AuthAppServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("重置密码失败");
 
-            verify(userEventPublisher, never()).publishForgotPassword(any(), any());
+            verify(userEventPort, never()).publishForgotPassword(any(), any());
         }
     }
 }

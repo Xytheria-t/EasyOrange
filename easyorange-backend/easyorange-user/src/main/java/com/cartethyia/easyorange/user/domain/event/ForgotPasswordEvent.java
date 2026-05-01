@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.domain.event;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
 import lombok.Getter;
 
 @Getter

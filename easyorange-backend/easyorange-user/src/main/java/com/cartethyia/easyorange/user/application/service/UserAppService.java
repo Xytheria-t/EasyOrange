@@ -5,18 +5,18 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileSizeLimitExceededException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUserRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
-import com.cartethyia.easyorange.user.common.enums.Sex;
-import com.cartethyia.easyorange.user.common.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.shared.enums.Sex;
+import com.cartethyia.easyorange.user.domain.shared.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
-import com.cartethyia.easyorange.user.dto.request.ChangePasswordRequest;
-import com.cartethyia.easyorange.user.dto.request.UpdateUserRequest;
-import com.cartethyia.easyorange.user.dto.vo.UserProfileVO;
-import com.cartethyia.easyorange.user.dto.vo.UserVO;
-import com.cartethyia.easyorange.user.infrastructure.event.UserEventPublisher;
-import com.cartethyia.easyorange.user.infrastructure.storage.FileStorageAdapter;
+import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.UserEventPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,9 +32,9 @@ public class UserAppService {
 
     private final UserRepository userRepository;
     private final PasswordDomainService passwordDomainService;
-    private final FileStorageAdapter fileStorageAdapter;
+    private final AvatarFilePort avatarFilePort;
     private final UserAssembler userAssembler;
-    private final UserEventPublisher userEventPublisher;
+    private final UserEventPort userEventPort;
 
     public UserProfileVO getUserInfo() {
         AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
@@ -49,30 +49,30 @@ public class UserAppService {
 
         BizRequire.requireTrue(hasAnyUpdate(request), "没有需要更新的字段");
 
-        currentUser.updateInfo(request.getEmail(), request.getPhone(),
-            Sex.fromCode(request.getGender()));
-        BizRequire.requireTrue(userRepository.update(currentUser), "更新用户信息失败");
-        log.info("action=updateUserInfo success userId={}", currentUser.getId());
-        return userAssembler.toVo(currentUser);
+        User updatedUser = currentUser.updateProfile(request.email(), request.phone(),
+            Sex.fromCode(request.gender()), currentUser.getId());
+        BizRequire.requireTrue(userRepository.update(updatedUser), "更新用户信息失败");
+        log.info("action=updateUserInfo success userId={}", updatedUser.getId());
+        return userAssembler.toVo(updatedUser);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void changePassword(ChangePasswordRequest request) {
         User user = getCurrentUserOrThrow();
 
-        passwordDomainService.validateDifferentPassword(request.getOldPassword(), request.getNewPassword());
+        passwordDomainService.validateDifferentPassword(request.oldPassword(), request.newPassword());
 
         BizRequire.requireTrue(
-            passwordDomainService.matches(request.getOldPassword(), user.getPassword()),
+            passwordDomainService.matches(request.oldPassword(), user.getPassword()),
             UserResultCode.PASSWORD_ERROR
         );
 
-        String encodedNewPassword = passwordDomainService.encode(request.getNewPassword());
+        String encodedNewPassword = passwordDomainService.encode(request.newPassword());
         boolean updated = userRepository.updatePassword(user.getId(), encodedNewPassword);
 
         BizRequire.requireTrue(updated, "修改密码失败，请稍后重试");
 
-        userEventPublisher.publishPasswordChanged(user.getId());
+        userEventPort.publishPasswordChanged(user.getId());
 
         log.info("action=changePassword success userId={}", user.getId());
     }
@@ -88,24 +88,25 @@ public class UserAppService {
 
         User currentUser = getCurrentUserOrThrow();
 
-        fileStorageAdapter.deleteIfExists(currentUser.getAvatar());
+        String currentAvatar = currentUser.getProfile() != null ? currentUser.getProfile().avatar() : null;
+        avatarFilePort.deleteIfExists(currentAvatar);
 
-        String avatarUrl = fileStorageAdapter.uploadAvatar(avatar, currentUser.getId());
+        String avatarUrl = avatarFilePort.uploadAvatar(avatar, currentUser.getId());
 
-        currentUser.changeAvatar(avatarUrl);
-        BizRequire.requireTrue(userRepository.update(currentUser), "更新头像失败");
+        User updatedUser = currentUser.changeAvatar(avatarUrl, currentUser.getId());
+        BizRequire.requireTrue(userRepository.update(updatedUser), "更新头像失败");
 
-        log.info("action=uploadAvatar success userId={}, avatarUrl={}", currentUser.getId(), avatarUrl);
+        log.info("action=uploadAvatar success userId={}, avatarUrl={}", updatedUser.getId(), avatarUrl);
 
-        return userRepository.findById(currentUser.getId())
+        return userRepository.findById(updatedUser.getId())
             .map(userAssembler::toVo)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
     }
 
     private boolean hasAnyUpdate(UpdateUserRequest request) {
-        return request.getEmail() != null && !request.getEmail().isBlank()
-            || request.getPhone() != null && !request.getPhone().isBlank()
-            || request.getGender() != null;
+        return request.email() != null && !request.email().isBlank()
+            || request.phone() != null && !request.phone().isBlank()
+            || request.gender() != null;
     }
 
     private User getCurrentUserOrThrow() {

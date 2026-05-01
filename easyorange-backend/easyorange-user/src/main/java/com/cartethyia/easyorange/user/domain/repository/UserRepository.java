@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.domain.repository;
 
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
 
 import java.util.Collection;
 import java.util.List;

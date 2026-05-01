@@ -4,25 +4,22 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
-import com.cartethyia.easyorange.user.common.constant.UserConstant;
+import com.cartethyia.easyorange.user.domain.shared.constant.UserConstant;
+import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class LoginSecurityDomainService {
 
-    private final RedisCache redisCache;
+    private final LoginAttemptPort loginAttemptPort;
 
     public void checkLoginAttempts(String account) {
         BizRequire.notBlank(account, "账号不能为空");
-        String key = LoginCacheConstants.buildAttemptsKey(account);
-        Long attempts = redisCache.get(key, Long.class);
+        Long attempts = loginAttemptPort.getAttempts(account);
         if (attempts != null && attempts >= LoginCacheConstants.MAX_LOGIN_ATTEMPTS) {
             throw BusinessException.of("登录失败次数过多，账户已锁定" + LoginCacheConstants.LOGIN_LOCK_MINUTES + "分钟");
         }
@@ -30,22 +27,18 @@ public class LoginSecurityDomainService {
 
     public void recordFailedAttempt(String account) {
         BizRequire.notBlank(account, "账号不能为空");
-        String key = LoginCacheConstants.buildAttemptsKey(account);
-        Long count = redisCache.increment(key);
-        if (count != null) {
-            redisCache.expire(key, LoginCacheConstants.ATTEMPTS_EXPIRE_TIME, TimeUnit.MINUTES);
-            if (count >= LoginCacheConstants.MAX_LOGIN_ATTEMPTS) {
-                log.warn("action=account_locked, account={}, attempts={}/{}", maskAccount(account), count, LoginCacheConstants.MAX_LOGIN_ATTEMPTS);
-                throw BusinessException.of("登录失败次数过多，账户已锁定" + LoginCacheConstants.LOGIN_LOCK_MINUTES + "分钟");
-            }
+        long count = loginAttemptPort.incrementAttempts(account);
+        loginAttemptPort.expireAttempts(account, LoginCacheConstants.ATTEMPTS_EXPIRE_TIME);
+        if (count >= LoginCacheConstants.MAX_LOGIN_ATTEMPTS) {
+            log.warn("action=account_locked, account={}, attempts={}/{}", maskAccount(account), count, LoginCacheConstants.MAX_LOGIN_ATTEMPTS);
+            throw BusinessException.of("登录失败次数过多，账户已锁定" + LoginCacheConstants.LOGIN_LOCK_MINUTES + "分钟");
         }
         log.warn("action=login_fail, account={}, attempts={}/{}", maskAccount(account), count, LoginCacheConstants.MAX_LOGIN_ATTEMPTS);
     }
 
     public void clearLoginAttempts(String account) {
         BizRequire.notBlank(account, "账号不能为空");
-        String key = LoginCacheConstants.buildAttemptsKey(account);
-        redisCache.delete(key);
+        loginAttemptPort.clearAttempts(account);
     }
 
     public String maskAccount(String account) {
