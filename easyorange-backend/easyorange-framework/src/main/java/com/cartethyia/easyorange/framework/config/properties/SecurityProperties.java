@@ -121,6 +121,18 @@ public class SecurityProperties {
     private int passwordEncoderStrength = 10;
 
     /**
+     * 是否启用 XSS 防护
+     * <p>
+     * 对于纯 JSON API，建议关闭此选项，由前端负责 XSS 防护
+     * 对于传统的服务端渲染应用，建议开启此选项
+     * </p>
+     * <p>
+     * 默认值：false（关闭）
+     * </p>
+     */
+    private boolean xssProtectionEnabled = false;
+
+    /**
      * 应用启动时验证安全配置
      */
     @PostConstruct
@@ -131,7 +143,8 @@ public class SecurityProperties {
         validateAllowedOrigins();
         validatePasswordEncoderStrength();
 
-        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}", logoutUrl, passwordEncoderStrength);
+        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}, XSS 防护：{}",
+                logoutUrl, passwordEncoderStrength, xssProtectionEnabled ? "启用" : "禁用");
     }
 
     /**

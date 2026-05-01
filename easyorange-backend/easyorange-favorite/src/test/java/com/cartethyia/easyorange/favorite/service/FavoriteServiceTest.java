@@ -2,16 +2,16 @@ package com.cartethyia.easyorange.favorite.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.favorite.domain.model.Favorite;
+import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.infrastructure.acl.ProductAclService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.application.query.dto.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.query.dto.SellerReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -140,10 +140,16 @@ class FavoriteServiceTest {
     @DisplayName("批量移除收藏成功")
     void removeManyFavorites_success() {
         List<Long> favoriteIds = List.of(1L, 2L, 3L);
+        Favorite favorite1 = Favorite.reconstitute(1L, TEST_USER_ID, 2001L, null);
+        Favorite favorite2 = Favorite.reconstitute(2L, TEST_USER_ID, 2002L, null);
+        Favorite favorite3 = Favorite.reconstitute(3L, TEST_USER_ID, 2003L, null);
+        
+        when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(favorite1, favorite2, favorite3));
         when(favoriteRepository.removeByIds(favoriteIds)).thenReturn(3);
 
         favoriteService.removeManyFavorites(favoriteIds);
 
+        verify(favoriteRepository).findByIds(favoriteIds);
         verify(favoriteRepository).removeByIds(favoriteIds);
     }
 
@@ -151,6 +157,23 @@ class FavoriteServiceTest {
     @DisplayName("批量移除收藏 - 空列表时不执行")
     void removeManyFavorites_emptyList() {
         favoriteService.removeManyFavorites(List.of());
+
+        verify(favoriteRepository, never()).findByIds(any());
+        verify(favoriteRepository, never()).removeByIds(any());
+    }
+
+    @Test
+    @DisplayName("批量移除收藏 - 包含他人收藏时抛出异常")
+    void removeManyFavorites_containsOtherUserFavorite() {
+        List<Long> favoriteIds = List.of(1L, 2L);
+        Favorite ownFavorite = Favorite.reconstitute(1L, TEST_USER_ID, 2001L, null);
+        Favorite otherUserFavorite = Favorite.reconstitute(2L, 9999L, 2002L, null);
+        
+        when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(ownFavorite, otherUserFavorite));
+
+        assertThatThrownBy(() -> favoriteService.removeManyFavorites(favoriteIds))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("无权操作他人的收藏");
 
         verify(favoriteRepository, never()).removeByIds(any());
     }

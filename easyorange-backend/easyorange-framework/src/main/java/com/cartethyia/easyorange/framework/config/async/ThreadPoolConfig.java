@@ -75,12 +75,14 @@ public class ThreadPoolConfig {
     private void applyCommonExecutorConfig(ThreadPoolTaskExecutor executor) {
         executor.setWaitForTasksToCompleteOnShutdown(WAIT_FOR_TASKS_TO_COMPLETE);
         executor.setAwaitTerminationSeconds(threadPoolProperties.getAwaitTerminationSeconds());
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setRejectedExecutionHandler(new LoggingRejectedExecutionHandler(
+                executor.getThreadNamePrefix(), false));
     }
 
     private void applyCommonSchedulerConfig(ThreadPoolTaskScheduler scheduler) {
         scheduler.setWaitForTasksToCompleteOnShutdown(WAIT_FOR_TASKS_TO_COMPLETE);
         scheduler.setAwaitTerminationSeconds(threadPoolProperties.getAwaitTerminationSeconds());
-        scheduler.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        scheduler.setRejectedExecutionHandler(new LoggingRejectedExecutionHandler(
+                scheduler.getThreadNamePrefix(), false));
     }
 }

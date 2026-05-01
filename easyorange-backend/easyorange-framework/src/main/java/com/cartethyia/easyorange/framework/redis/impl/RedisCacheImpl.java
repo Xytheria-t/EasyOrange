@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.redis.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
 import com.cartethyia.easyorange.framework.redis.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,14 +51,19 @@ public class RedisCacheImpl implements RedisCache {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T castValue(Object value, Class<T> type) {
+    private <T> T castValue(Object value, Class<T> type, String key) {
         if (value == null) {
             return null;
         }
         if (type.isInstance(value)) {
             return (T) value;
         }
-        throw new ClassCastException("Value type mismatch: expected " + type.getName() + ", got " + value.getClass().getName());
+        throw new CacheTypeMismatchException(key, type, value.getClass());
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T castValue(Object value, Class<T> type) {
+        return castValue(value, type, "unknown");
     }
 
     private <T> Set<T> filterByType(Set<?> candidates, Class<T> type) {
@@ -151,7 +157,7 @@ public class RedisCacheImpl implements RedisCache {
 
     @Override
     public <T> T get(String key, Class<T> type) {
-        return castValue(redisTemplate.opsForValue().get(generateKey(key)), type);
+        return castValue(redisTemplate.opsForValue().get(generateKey(key)), type, key);
     }
 
     @Override
@@ -293,12 +299,12 @@ public class RedisCacheImpl implements RedisCache {
 
     @Override
     public <T> T listPop(String key, Class<T> type) {
-        return castValue(redisTemplate.opsForList().leftPop(generateKey(key)), type);
+        return castValue(redisTemplate.opsForList().leftPop(generateKey(key)), type, key);
     }
 
     @Override
     public <T> T listPopRight(String key, Class<T> type) {
-        return castValue(redisTemplate.opsForList().rightPop(generateKey(key)), type);
+        return castValue(redisTemplate.opsForList().rightPop(generateKey(key)), type, key);
     }
 
     @Override

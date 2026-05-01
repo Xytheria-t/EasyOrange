@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.domain.vo;
+package com.cartethyia.easyorange.message.domain.valueobject;
 
 public record Recipient(Long userId, String channel) {
 

@@ -19,6 +19,8 @@
     <description>easyorange-backend</description>
 
     <modules>
+        <module>easyorange-common-core</module>
+        <module>easyorange-common-domain</module>
         <module>easyorange-common</module>
         <module>easyorange-framework</module>
         <module>easyorange-user</module>
@@ -43,10 +45,22 @@
         <jackson3.version>3.1.2</jackson3.version>
         <jackson.annotations.version>2.21</jackson.annotations.version>
         <mapstruct.version>1.6.3</mapstruct.version>
+        <jetbrains.annotations.version>26.0.2</jetbrains.annotations.version>
+        <testcontainers.version>1.21.0</testcontainers.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>com.cartethyia</groupId>
+                <artifactId>easyorange-common-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cartethyia</groupId>
+                <artifactId>easyorange-common-domain</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.cartethyia</groupId>
                 <artifactId>easyorange-common</artifactId>
@@ -145,6 +159,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${jetbrains.annotations.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
@@ -171,6 +191,15 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.annotations.version}</version>
+            </dependency>
+
+            <!-- ==================== Testcontainers ==================== -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -201,6 +230,18 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Testcontainers for Integration Tests -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

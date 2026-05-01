@@ -1,6 +1,9 @@
-package com.cartethyia.easyorange.favorite.domain.model;
+package com.cartethyia.easyorange.favorite.domain.aggregate;
+
+import com.cartethyia.easyorange.common.exception.BusinessException;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public class Favorite {
 
@@ -25,6 +28,16 @@ public class Favorite {
 
     public static Favorite reconstitute(Long id, Long userId, Long productId, LocalDateTime createTime) {
         return new Favorite(id, userId, productId, createTime);
+    }
+
+    public boolean belongsTo(Long userId) {
+        return Objects.equals(this.userId, userId);
+    }
+
+    public void validateOwnership(Long userId) {
+        if (!belongsTo(userId)) {
+            throw BusinessException.of("无权操作他人的收藏");
+        }
     }
 
     public Long getId() { return id; }

@@ -13,7 +13,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan({"com.cartethyia.easyorange.**.mapper", "com.cartethyia.easyorange.**.persistence"})
 @EnableScheduling
 public class EasyOrangeApplication {
-    static void main(String[] args) {
+    public static void main(String[] args) {
         SpringApplication.run(EasyOrangeApplication.class, args);
     }
 }

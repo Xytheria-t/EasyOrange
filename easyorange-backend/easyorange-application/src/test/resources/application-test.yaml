@@ -19,3 +19,37 @@ spring:
 logging:
   level:
     root: WARN
+
+jwt:
+  secret-key: test-secret-key-at-least-32-characters-long-for-testing
+  access-token-expiration: 120
+  refresh-token-expiration: 7
+  token-prefix: "Bearer "
+  issuer: easyorange-test
+
+security:
+  ignore-paths:
+    - /api/auth/login
+    - /api/auth/logout
+    - /api/auth/refresh
+    - /api/auth/sms-code
+    - /api/auth/register
+    - /api/auth/password-reset
+    - /api/health
+    - /openapi/**
+    - /swagger-ui/**
+  product-paths: []
+  static-paths:
+    - /static/**
+    - /public/**
+    - /upload/**
+    - /favicon.ico
+    - /error
+  allowed-origins: "http://localhost:5173"
+
+thread-pool:
+  core-pool-size: 2
+  max-pool-size: 4
+  queue-capacity: 50
+  keep-alive-seconds: 30
+  thread-name-prefix: test-async-

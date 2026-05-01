@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.favorite.infrastructure.persistence;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.cartethyia.easyorange.favorite.domain.model.Favorite;
+import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,6 +18,15 @@ public class MybatisFavoriteRepository extends ServiceImpl<FavoriteMapper, Favor
     public Optional<Favorite> findById(Long id) {
         FavoriteDO dataObject = baseMapper.selectById(id);
         return Optional.ofNullable(toDomain(dataObject));
+    }
+
+    @Override
+    public List<Favorite> findByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<FavoriteDO> dataObjects = baseMapper.selectBatchIds(ids);
+        return dataObjects.stream().map(this::toDomain).collect(Collectors.toList());
     }
 
     @Override

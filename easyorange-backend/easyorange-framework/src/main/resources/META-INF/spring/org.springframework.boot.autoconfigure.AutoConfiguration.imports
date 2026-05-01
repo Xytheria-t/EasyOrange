@@ -1,7 +1,7 @@
-com.cartethyia.easyorange.framework.config.SecurityConfig
-com.cartethyia.easyorange.framework.config.JacksonConfig
-com.cartethyia.easyorange.framework.config.ThreadPoolConfig
-com.cartethyia.easyorange.framework.config.RestClientConfig
-com.cartethyia.easyorange.framework.config.RedisConfig
-com.cartethyia.easyorange.framework.config.MybatisPlusConfig
-com.cartethyia.easyorange.framework.config.CacheConfig
+com.cartethyia.easyorange.framework.config.security.SecurityConfig
+com.cartethyia.easyorange.framework.config.async.JacksonConfig
+com.cartethyia.easyorange.framework.config.async.ThreadPoolConfig
+com.cartethyia.easyorange.framework.config.http.RestClientConfig
+com.cartethyia.easyorange.framework.config.redis.RedisConfig
+com.cartethyia.easyorange.framework.config.database.MybatisPlusConfig
+com.cartethyia.easyorange.framework.config.redis.CacheConfig

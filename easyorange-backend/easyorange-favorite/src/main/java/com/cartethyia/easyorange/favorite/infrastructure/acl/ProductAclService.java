@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.favorite.infrastructure.acl;
 
-import com.cartethyia.easyorange.product.application.query.dto.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.query.dto.SellerReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 
 import java.util.List;
 import java.util.Map;

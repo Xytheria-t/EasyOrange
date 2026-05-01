@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

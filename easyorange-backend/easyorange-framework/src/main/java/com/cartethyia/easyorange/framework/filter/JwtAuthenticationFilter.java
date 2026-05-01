@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
+import com.github.benmanes.caffeine.cache.Cache;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -42,6 +43,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenService tokenService;
     private final SecurityProperties securityProperties;
     private final StringRedisTemplate stringRedisTemplate;
+    private final Cache<String, Boolean> tokenUuidCache;
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
@@ -97,7 +99,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Claims claims = claimsOpt.get();
             String uuid = claims.get("uuid", String.class);
             String tokenType = claims.get("type", String.class);
-            if (uuid == null || !Boolean.TRUE.equals(stringRedisTemplate.hasKey(getTokenKey(uuid)))) {
+            if (uuid == null || !isTokenValid(uuid)) {
                 log.warn("Invalid or revoked JWT token received from IP: {}, path: {}",
                     RequestUtil.getClientIp(request), request.getRequestURI());
                 SecurityContextHolder.clearContext();
@@ -170,5 +172,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String getTokenKey(String uuid) {
         return LoginCacheConstants.buildTokenKey(uuid);
+    }
+
+    private boolean isTokenValid(String uuid) {
+        Boolean cached = tokenUuidCache.getIfPresent(uuid);
+        if (Boolean.TRUE.equals(cached)) {
+            return true;
+        }
+
+        boolean exists = Boolean.TRUE.equals(stringRedisTemplate.hasKey(getTokenKey(uuid)));
+        if (exists) {
+            tokenUuidCache.put(uuid, true);
+        }
+        return exists;
     }
 }

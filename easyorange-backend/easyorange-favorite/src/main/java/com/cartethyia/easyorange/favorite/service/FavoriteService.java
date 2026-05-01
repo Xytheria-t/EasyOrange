@@ -3,16 +3,16 @@ package com.cartethyia.easyorange.favorite.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.favorite.domain.model.Favorite;
+import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.infrastructure.acl.ProductAclService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.application.query.dto.ProductReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.query.dto.SellerReadModel;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -63,6 +63,7 @@ public class FavoriteService {
         Favorite favorite = favoriteRepository.findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
 
+        favorite.validateOwnership(userId);
         favoriteRepository.removeById(favorite.getId());
         log.info("移除收藏成功: userId={}, productId={}", userId, productId);
     }
@@ -74,6 +75,9 @@ public class FavoriteService {
         if (ids == null || ids.isEmpty()) {
             return;
         }
+
+        List<Favorite> favorites = favoriteRepository.findByIds(ids);
+        favorites.forEach(favorite -> favorite.validateOwnership(userId));
 
         int removedCount = favoriteRepository.removeByIds(ids);
         log.info("批量移除收藏成功: userId={}, count={}", userId, removedCount);

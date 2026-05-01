@@ -996,6 +996,13 @@ paths:
       description: 使当前令牌失效
       security:
         - BearerAuth: []
+      parameters:
+        - name: X-Refresh-Token
+          in: header
+          description: 刷新令牌（可选，用于撤销刷新令牌）
+          required: false
+          schema:
+            type: string
       responses:
         "200":
           description: 登出成功

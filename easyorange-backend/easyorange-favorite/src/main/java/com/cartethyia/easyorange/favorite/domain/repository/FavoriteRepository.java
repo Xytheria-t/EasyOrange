@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.favorite.domain.repository;
 
-import com.cartethyia.easyorange.favorite.domain.model.Favorite;
+import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 
 import java.util.List;
 import java.util.Optional;
@@ -8,6 +8,8 @@ import java.util.Optional;
 public interface FavoriteRepository {
 
     Optional<Favorite> findById(Long id);
+
+    List<Favorite> findByIds(List<Long> ids);
 
     Optional<Favorite> findByUserIdAndProductId(Long userId, Long productId);
 

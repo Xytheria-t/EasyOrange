@@ -1,8 +1,5 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,17 +21,6 @@ public class CacheConfig {
     private static final String CATEGORY_LIST_KEY = "eo:category:list";
     private static final long PRODUCT_LIST_EXPIRE_TIME = 30L;
     private static final long CATEGORY_INFO_EXPIRE_TIME = 120L;
-
-    @Bean
-    public ObjectMapper objectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.activateDefaultTyping(
-                LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
-                JsonTypeInfo.As.PROPERTY
-        );
-        return objectMapper;
-    }
 
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {

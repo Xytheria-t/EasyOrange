@@ -35,7 +35,7 @@ public class SecurityConfig {
     private static final long CORS_MAX_AGE_SECONDS = 3600L;
     private static final long HSTS_MAX_AGE_SECONDS = 31536000L;
     private static final String[] CORS_ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"};
-    private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Authorization-New", "Content-Disposition"};
+    private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Authorization-New", "Content-Disposition", "X-Refresh-Token"};
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final XssFilter xssFilter;

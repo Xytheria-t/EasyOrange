@@ -22,6 +22,12 @@
             <artifactId>easyorange-common</artifactId>
         </dependency>
 
+        <!-- 依赖 Domain 模块 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common-domain</artifactId>
+        </dependency>
+
         <!-- Spring Boot WebMVC -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -90,6 +96,12 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
+        </dependency>
+
+        <!-- Caffeine Cache -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
     </dependencies>
 
