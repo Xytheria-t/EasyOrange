@@ -264,7 +264,7 @@
 .auth-page-brand-title {
     font-family: var(--font-display, 'Playfair Display', serif);
     font-size: 2.25rem;
-    font-weight: 800;
+    font-weight: 900;
     margin-bottom: 0.75rem;
     letter-spacing: -0.03em;
 }
@@ -365,8 +365,8 @@
 
 .auth-page-header h3 {
     font-size: 1.625rem;
-    font-weight: 800;
-    color: var(--text-primary, #111827);
+    font-weight: 900;
+    color: var(--text-heading, #111827);
     margin-bottom: 0.5rem;
     letter-spacing: -0.02em;
     display: flex;

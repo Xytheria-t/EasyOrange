@@ -20,12 +20,13 @@ html {
 body {
     font-family: var(--font-sans);
     font-size: 16px;
-    line-height: 1.65;
+    line-height: 1.75;
     color: var(--text-primary);
     background-color: var(--gray-50);
     min-height: 100vh;
     overflow-x: hidden;
-    letter-spacing: -0.01em;
+    letter-spacing: 0.01em;
+    font-feature-settings: 'kern' 1, 'liga' 1;
 }
 
 ::selection {
@@ -71,14 +72,14 @@ input, textarea, select {
 .text-warning { color: var(--warning); }
 
 .gradient-text {
-    background: var(--gradient-primary);
+    background: var(--gradient-luxury);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .gold-text {
-    background: var(--gradient-gold);
+    background: var(--gradient-rose-gold);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -812,17 +813,19 @@ input, textarea, select {
 }
 
 .card-title {
+    font-family: var(--font-serif);
     font-size: 1.0625rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    color: var(--text-primary);
-    letter-spacing: -0.01em;
+    color: var(--text-heading);
+    letter-spacing: 0.01em;
 }
 
 .card-price {
+    font-family: var(--font-price);
     font-size: 1.375rem;
-    font-weight: 800;
-    background: var(--gradient-primary);
+    font-weight: 700;
+    background: var(--gradient-luxury);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

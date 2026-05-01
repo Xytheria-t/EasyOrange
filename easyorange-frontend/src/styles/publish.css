@@ -3,7 +3,7 @@
     background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     position: relative;
     overflow-x: hidden;
-    font-family: var(--font-family-sans);
+    font-family: var(--font-sans);
 }
 
 /* ==================== 最强覆盖样式 ==================== */
@@ -1145,7 +1145,7 @@ textarea.field-textarea {
 .discount-value {
     font-family: var(--font-price);
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 900;
     color: #10B981;
     letter-spacing: 0.02em;
 }

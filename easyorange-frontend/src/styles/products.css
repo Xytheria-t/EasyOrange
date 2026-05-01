@@ -426,8 +426,8 @@
 
 .results-count {
   font-family: var(--font-price);
-  font-weight: 800;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--text-heading);
   font-size: 1.125rem;
   letter-spacing: 0.02em;
 }
@@ -1413,8 +1413,8 @@
 .price-current {
   font-family: var(--font-price);
   font-size: 1.55rem;
-  font-weight: 800;
-  background: var(--gradient-primary);
+  font-weight: 700;
+  background: var(--gradient-luxury);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -2135,7 +2135,7 @@
 
 .product-detail-modal .price-current {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--primary-600);
   font-family: var(--font-display);
 }

@@ -5,12 +5,10 @@ import FeaturedSection from '@/components/sections/FeaturedSection'
 import ServicesSection from '@/components/sections/ServicesSection'
 import TestimonialsSection from '@/components/sections/TestimonialsSection'
 import BannerSection from '@/components/sections/BannerSection'
-import BackgroundEffects from '@/components/sections/BackgroundEffects'
 
 function HomePage() {
   return (
     <>
-      <BackgroundEffects />
       <HeroSection />
 
       {/* 分类导航 */}

@@ -331,7 +331,7 @@
 
 .payment-amount-value {
   font-size: 2.5rem;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--gray-900);
   font-family: var(--font-price, system-ui);
 }

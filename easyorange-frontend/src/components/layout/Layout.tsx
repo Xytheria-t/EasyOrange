@@ -8,7 +8,7 @@ function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
-      <main className="mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 flex-1" style={{ paddingTop: 'var(--header-height)' }}>
+      <main className="main-content mx-auto max-w-7xl px-4 pb-6 sm:px-6 lg:px-8 flex-1">
         <Outlet />
       </main>
       <footer className="footer-editorial mt-auto">

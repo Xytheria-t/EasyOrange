@@ -2,34 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 
 export default function HeroSection() {
   const heroRef = useRef<HTMLElement>(null)
-  const particlesRef = useRef<HTMLDivElement>(null)
   const statRefs = useRef<(HTMLSpanElement | null)[]>([])
-
   const [countersStarted, setCountersStarted] = useState(false)
-
-  useEffect(() => {
-    if (particlesRef.current) {
-      for (let i = 0; i < 12; i++) {
-        const particle = document.createElement('div')
-        particle.className = 'particle'
-        const size = Math.random() * 4 + 2
-        const colors = ['rgba(249,115,22,0.15)', 'rgba(251,113,133,0.12)', 'rgba(195,155,211,0.12)', 'rgba(251,191,36,0.10)']
-        particle.style.cssText = `
-          position: absolute;
-          width: ${size}px;
-          height: ${size}px;
-          border-radius: 50%;
-          background: ${colors[Math.floor(Math.random() * colors.length)]};
-          left: ${Math.random() * 100}%;
-          top: ${Math.random() * 100}%;
-          animation: particleFloat ${8 + Math.random() * 12}s ease-in-out infinite ${-Math.random() * 8}s;
-          pointer-events: none;
-          filter: blur(${size > 4 ? 1 : 0}px);
-        `
-        particlesRef.current.appendChild(particle)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     if (countersStarted) return
@@ -77,9 +51,13 @@ export default function HeroSection() {
   return (
     <section className="hero-section" ref={heroRef}>
       <div className="hero-bg">
-        <div className="hero-gradient"></div>
+        <div className="hero-blob hero-blob-1"></div>
+        <div className="hero-blob hero-blob-2"></div>
+        <div className="hero-blob hero-blob-3"></div>
+        <div className="hero-aurora"></div>
+        <div className="hero-noise"></div>
         <div className="hero-grid"></div>
-        <div className="hero-particles" ref={particlesRef}></div>
+        <div className="hero-vignette"></div>
       </div>
 
       <div className="container hero-inner">
@@ -141,15 +119,16 @@ export default function HeroSection() {
         </div>
 
         <div className="hero-visual animate-float">
-          <div className="visual-card glass-card">
-            <div className="card-glow"></div>
+          <div className="visual-card glass-card-premium">
+            <div className="card-glow-premium"></div>
+            <div className="card-shine"></div>
             <div className="card-content">
               <div className="product-preview">
                 <div className="preview-image">
                   <img src="https://picsum.photos/seed/hero-product/400/400" alt="热门商品" loading="lazy" />
                 </div>
                 <div className="preview-info">
-                  <span className="preview-tag">🔥 热门</span>
+                  <span className="preview-tag">热门</span>
                   <h4>MacBook Pro 2023</h4>
                   <p className="preview-price">¥6,999</p>
                   <span className="preview-original">原价 ¥12,999</span>
@@ -158,15 +137,15 @@ export default function HeroSection() {
             </div>
           </div>
           <div className="floating-cards">
-            <div className="float-card float-card-1 glass-card">
+            <div className="float-card float-card-1 glass-card-premium">
               <span className="float-icon">📚</span>
               <span>教材资料</span>
             </div>
-            <div className="float-card float-card-2 glass-card">
+            <div className="float-card float-card-2 glass-card-premium">
               <span className="float-icon">💻</span>
               <span>电子产品</span>
             </div>
-            <div className="float-card float-card-3 glass-card">
+            <div className="float-card float-card-3 glass-card-premium">
               <span className="float-icon">🚴</span>
               <span>交通工具</span>
             </div>

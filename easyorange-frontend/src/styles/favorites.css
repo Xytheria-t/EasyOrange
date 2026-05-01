@@ -156,7 +156,7 @@
 .favorites-count .count-number {
     font-family: var(--font-price);
     font-size: 1.5rem;
-    font-weight: 800;
+    font-weight: 900;
     color: #EC4899;
     letter-spacing: 0.02em;
 }

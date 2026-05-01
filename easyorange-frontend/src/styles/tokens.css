@@ -1,11 +1,12 @@
 /* ============================================================
    EasyOrange - Design Tokens
    CSS Custom Properties for the design system
-   Theme: Pomelo Orange (柚子橙) - Warm, distinctive, brand-aligned
+   Theme: Orange-Pink Diffusion Gradient (橙粉弥散渐变)
+   Primary: #F97316 Warm Orange → #C39BD3 Soft Pink-Purple
    ============================================================ */
 
 :root {
-    /* Primary palette - Pomelo Orange */
+    /* Primary palette - Warm Orange */
     --primary-50: #FFF7ED;
     --primary-100: #FFEDD5;
     --primary-200: #FED7AA;
@@ -17,7 +18,7 @@
     --primary-800: #9A3412;
     --primary-900: #7C2D12;
 
-    /* Rose/Pink palette - for gradient transitions */
+    /* Pink/Rose palette - Soft transition */
     --rose-50: #FFF1F2;
     --rose-100: #FFE4E6;
     --rose-200: #FECDD3;
@@ -26,13 +27,13 @@
     --rose-500: #F43F5E;
     --rose-600: #E11D48;
 
-    /* Accent aliases for backward compatibility */
+    /* Accent aliases */
     --accent-300: var(--rose-300);
     --accent-400: var(--rose-400);
     --accent-500: var(--rose-500);
     --accent-600: var(--rose-600);
 
-    /* Purple palette - for gradient endpoints */
+    /* Purple palette - Gradient endpoint #C39BD3 */
     --purple-50: #FAF5FF;
     --purple-100: #F3E8FF;
     --purple-200: #E9D5FF;
@@ -41,7 +42,7 @@
     --purple-500: #AF7AC5;
     --purple-600: #9333EA;
 
-    /* Gold accent for luxury */
+    /* Gold accent for warmth */
     --gold-300: #FCD34D;
     --gold-400: #FBBF24;
     --gold-500: #F59E0B;
@@ -50,7 +51,7 @@
     --emerald-400: #34D399;
     --emerald-500: #10B981;
 
-    /* Plum Purple - Now using unified purple palette */
+    /* Plum Purple - Unified with purple palette */
     --plum-400: var(--purple-400);
     --plum-500: var(--purple-500);
     --plum-600: var(--purple-600);
@@ -90,10 +91,12 @@
     --gray-950: #0D0B09;
 
     /* Text colors - Warm tint */
-    --text-primary: #2A2520;
-    --text-secondary: #5C544C;
-    --text-tertiary: #A8A098;
+    --text-primary: #1E1A16;
+    --text-secondary: #5A524A;
+    --text-tertiary: #9E968E;
     --text-inverse: #FFFFFF;
+    --text-heading: #1A1612;
+    --text-accent: #C2410C;
 
     /* Borders */
     --border-light: rgba(42, 37, 32, 0.05);
@@ -109,7 +112,8 @@
     --shadow-xl: 0 24px 48px -8px rgba(42, 37, 32, 0.1), 0 12px 24px -6px rgba(42, 37, 32, 0.05);
     --shadow-2xl: 0 32px 64px -12px rgba(42, 37, 32, 0.14), 0 16px 32px -8px rgba(42, 37, 32, 0.08);
     --shadow-glow: 0 0 60px rgba(249, 115, 22, 0.2);
-    --shadow-glow-accent: 0 0 60px rgba(251, 113, 133, 0.15);
+    --shadow-glow-accent: 0 0 60px rgba(195, 155, 211, 0.2);
+    --shadow-glow-pink: 0 0 60px rgba(251, 113, 133, 0.15);
     --shadow-glow-gold: 0 0 40px rgba(251, 191, 36, 0.2);
     --shadow-card-hover: 0 24px 48px -8px rgba(42, 37, 32, 0.12), 0 0 0 1px rgba(249, 115, 22, 0.08);
     --shadow-inner: inset 0 2px 4px rgba(42, 37, 32, 0.04);
@@ -122,17 +126,59 @@
     --glass-blur: blur(24px);
     --glass-blur-heavy: blur(48px);
 
-    /* Gradients - Orange-Pink-Purple Theme */
-    --gradient-primary: linear-gradient(135deg, #F97316 0%, #FB7185 40%, #C39BD3 100%);
-    --gradient-hero: linear-gradient(135deg, #EA580C 0%, #F97316 25%, #FB7185 50%, #C39BD3 75%, #D8B4E2 100%);
-    --gradient-gold: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%);
+    /* ============================================================
+       GRADIENTS - Orange-Pink Diffusion Theme
+       Core: #F97316 → #C39BD3
+       ============================================================ */
+
+    /* Primary gradient - Orange to Pink-Purple */
+    --gradient-primary: linear-gradient(135deg, #F97316 0%, #FB7185 50%, #C39BD3 100%);
+    --gradient-primary-soft: linear-gradient(135deg, #F97316 0%, #FDA4AF 60%, #C39BD3 100%);
+
+    /* Hero gradient - Full diffusion spectrum */
+    --gradient-hero: linear-gradient(135deg, #EA580C 0%, #F97316 20%, #FB7185 45%, #C39BD3 70%, #D8B4FE 100%);
+
+    /* Diffusion gradients - Soft and ethereal */
+    --gradient-diffusion-1: radial-gradient(ellipse at 20% 30%, rgba(249, 115, 22, 0.15) 0%, transparent 50%);
+    --gradient-diffusion-2: radial-gradient(ellipse at 80% 70%, rgba(195, 155, 211, 0.12) 0%, transparent 50%);
+    --gradient-diffusion-3: radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.08) 0%, transparent 60%);
+    --gradient-diffusion-4: radial-gradient(ellipse at 70% 20%, rgba(249, 115, 22, 0.1) 0%, transparent 45%);
+    --gradient-diffusion-5: radial-gradient(ellipse at 30% 80%, rgba(195, 155, 211, 0.1) 0%, transparent 45%);
+
+    /* Warm subtle backgrounds */
     --gradient-warm: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 113, 133, 0.06) 50%, rgba(195, 155, 211, 0.05) 100%);
-    --gradient-subtle: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.04) 45%, rgba(29, 33, 52, 0.02) 100%);
+    --gradient-subtle: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.04) 45%, rgba(195, 155, 211, 0.03) 100%);
+
+    /* Mesh gradients - Multi-point diffusion */
     --gradient-mesh-1: radial-gradient(ellipse at 0% 0%, rgba(249, 115, 22, 0.12) 0%, transparent 50%);
-    --gradient-mesh-2: radial-gradient(ellipse at 100% 100%, rgba(251, 113, 133, 0.1) 0%, transparent 50%);
-    --gradient-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(195, 155, 211, 0.06) 0%, transparent 60%);
-    --gradient-aurora: conic-gradient(from 180deg at 50% 50%, rgba(249, 115, 22, 0.08), rgba(251, 113, 133, 0.06), rgba(195, 155, 211, 0.08), rgba(251, 191, 36, 0.04), rgba(249, 115, 22, 0.08));
+    --gradient-mesh-2: radial-gradient(ellipse at 100% 100%, rgba(195, 155, 211, 0.1) 0%, transparent 50%);
+    --gradient-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.06) 0%, transparent 60%);
+
+    /* Aurora flowing effect */
+    --gradient-aurora: conic-gradient(from 180deg at 50% 50%,
+        rgba(249, 115, 22, 0.08),
+        rgba(251, 113, 133, 0.06),
+        rgba(195, 155, 211, 0.08),
+        rgba(251, 191, 36, 0.04),
+        rgba(249, 115, 22, 0.08));
+
+    /* Shine effect */
     --gradient-shine: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%);
+
+    /* Luxury gold gradient */
+    --gradient-luxury: linear-gradient(135deg, #9A3412 0%, #C2410C 25%, #F97316 50%, #FBBF24 75%, #F59E0B 100%);
+
+    /* Rose gold gradient */
+    --gradient-rose-gold: linear-gradient(135deg, #B76E79 0%, #E8B4B8 40%, #F5D5CB 70%, #FBBF24 100%);
+
+    /* Deep gradient */
+    --gradient-deep: linear-gradient(135deg, #1A1612 0%, #2A2520 30%, #433D36 60%, #9A3412 100%);
+
+    /* Pink-Purple soft gradient */
+    --gradient-pink-purple: linear-gradient(135deg, #FB7185 0%, #C39BD3 50%, #D8B4FE 100%);
+
+    /* Orange glow gradient */
+    --gradient-orange-glow: linear-gradient(135deg, #F97316 0%, #FB923C 50%, #FDA4AF 100%);
 
     /* Transitions - Ultra smooth */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -156,15 +202,12 @@
     --radius-full: 9999px;
 
     /* Typography - Ultra Premium & Unique Font System */
-    /* Playfair Display - 高对比度优雅衬线，VOGUE 等时尚杂志御用字体 */
-    /* Cormorant Garamond - 艺术感极致衬线，数字设计精美如奢侈品 */
-    /* Source Han Serif (思源宋体) - 中文精致典雅，高端品牌感 */
-    /* Source Han Sans (思源黑体) - 中文现代简约，清晰易读 */
-    --font-display: 'Playfair Display', 'Source Han Serif CN', 'Noto Serif SC', 'Songti SC', serif;
-    --font-sans: 'Source Han Sans CN', 'Source Han Sans', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    --font-serif: 'Playfair Display', 'Source Han Serif CN', 'Noto Serif SC', 'Songti SC', serif;
-    --font-price: 'Cormorant Garamond', 'Playfair Display', 'Source Han Serif CN', 'Noto Serif SC', serif;
+    --font-display: 'Playfair Display', 'Noto Serif SC', 'Source Han Serif CN', 'Songti SC', serif;
+    --font-sans: 'LXGW WenKai', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-serif: 'Noto Serif SC', 'Playfair Display', 'Source Han Serif CN', 'Songti SC', serif;
+    --font-price: 'Cormorant Garamond', 'Playfair Display', 'Noto Serif SC', serif;
     --font-mono: 'Fira Code', 'Consolas', 'Monaco', monospace;
+    --font-accent: 'LXGW WenKai', 'Noto Serif SC', serif;
 
     /* Typography Scale */
     --text-display-xl: clamp(3.5rem, 8vw, 6rem);
@@ -183,18 +226,22 @@
     --font-semibold: 600;
     --font-bold: 700;
     --font-extrabold: 800;
+    --font-black: 900;
 
     /* Line Heights */
     --leading-tight: 1.1;
     --leading-snug: 1.25;
     --leading-normal: 1.5;
     --leading-relaxed: 1.65;
+    --leading-loose: 1.8;
 
     /* Letter Spacing */
+    --tracking-tighter: -0.05em;
     --tracking-tight: -0.03em;
     --tracking-normal: 0;
     --tracking-wide: 0.02em;
     --tracking-wider: 0.05em;
+    --tracking-widest: 0.1em;
 
     /* Spacing */
     --container-max: 1280px;
