@@ -28,7 +28,6 @@ public class OrderCommandHandler {
     private final PaymentGatewayPort paymentGatewayPort;
     private final OrderCacheService orderCacheService;
 
-    @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult handle(CreateOrderCommand command) {
         return createOrderSaga.execute(command);
     }

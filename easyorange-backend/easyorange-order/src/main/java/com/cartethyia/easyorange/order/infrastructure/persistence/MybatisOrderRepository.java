@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.enums.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -57,7 +58,7 @@ public class MybatisOrderRepository implements OrderRepository {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(timeoutMinutes);
         return orderMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderDO>()
-                        .eq(OrderDO::getStatus, 0)
+                        .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT.getCode())
                         .lt(OrderDO::getCreateTime, threshold)
         ).stream().map(converter::toAggregate).toList();
     }
@@ -75,7 +76,7 @@ public class MybatisOrderRepository implements OrderRepository {
     public List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold) {
         return orderMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<OrderDO>()
-                        .eq(OrderDO::getStatus, 2)
+                        .eq(OrderDO::getStatus, OrderStatus.SHIPPED.getCode())
                         .lt(OrderDO::getUpdateTime, threshold)
         ).stream().map(converter::toAggregate).toList();
     }

@@ -16,6 +16,7 @@ import org.springframework.data.redis.core.ValueOperations;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,11 +75,11 @@ class OrderCacheServiceTest {
         when(valueOperations.get(cacheKey)).thenReturn(testOrderPage);
 
         orderCacheService.setOrderListCache(cacheKey, testOrderPage);
-        PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        Optional<PageResult<OrderVO>> cachedResult = orderCacheService.getOrderListCache(cacheKey);
 
-        assertThat(cachedResult).isNotNull();
-        assertThat(cachedResult.records()).hasSize(2);
-        assertThat(cachedResult.total()).isEqualTo(2);
+        assertThat(cachedResult).isPresent();
+        assertThat(cachedResult.get().records()).hasSize(2);
+        assertThat(cachedResult.get().total()).isEqualTo(2);
 
         verify(valueOperations).set(eq(cacheKey), eq(testOrderPage), eq(30L), eq(TimeUnit.MINUTES));
     }
@@ -89,9 +90,9 @@ class OrderCacheServiceTest {
         String cacheKey = orderCacheService.buildOrderListKey(999998L, 0);
         when(valueOperations.get(cacheKey)).thenReturn(null);
 
-        PageResult<OrderVO> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        Optional<PageResult<OrderVO>> cachedResult = orderCacheService.getOrderListCache(cacheKey);
 
-        assertThat(cachedResult).isNull();
+        assertThat(cachedResult).isEmpty();
     }
 
     @Test

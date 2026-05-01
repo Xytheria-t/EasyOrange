@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.payment.application.mock;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.factory.PaymentFactory;
 import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import com.cartethyia.easyorange.payment.enums.PaymentMethod;
-import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
 import com.cartethyia.easyorange.payment.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,7 +43,7 @@ public class MockPaymentUseCase {
     @Transactional(rollbackFor = Exception.class)
     public PaymentResponse processMockPayment(MockPaymentRequest request) {
         PaymentAggregate aggregate = paymentRepository.findById(request.getPaymentId())
-                .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(PaymentNotFoundException::of);
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
             aggregate.pay(paymentGateway);
@@ -59,7 +58,7 @@ public class MockPaymentUseCase {
     @Transactional(rollbackFor = Exception.class)
     public PaymentResponse mockPaymentSuccess(Long paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(PaymentNotFoundException::of);
         aggregate.pay(paymentGateway);
         paymentRepository.update(aggregate);
 
@@ -69,7 +68,7 @@ public class MockPaymentUseCase {
     @Transactional(rollbackFor = Exception.class)
     public PaymentResponse mockPaymentFail(Long paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(PaymentNotFoundException::of);
         aggregate.fail("模拟支付失败");
         paymentRepository.update(aggregate);
 
@@ -79,7 +78,7 @@ public class MockPaymentUseCase {
     @Transactional(rollbackFor = Exception.class)
     public void mockRefund(Long paymentId, String reason) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(PaymentNotFoundException::of);
         aggregate.directRefund(reason);
         paymentRepository.update(aggregate);
     }

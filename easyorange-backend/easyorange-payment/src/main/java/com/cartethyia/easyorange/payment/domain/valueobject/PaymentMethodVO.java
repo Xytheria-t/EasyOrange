@@ -1,16 +1,16 @@
 package com.cartethyia.easyorange.payment.domain.valueobject;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.enums.PaymentMethod;
 
 public record PaymentMethodVO(Integer code) {
     public PaymentMethodVO {
         if (code == null) {
-            throw BusinessException.of("支付方式不能为空");
+            throw PaymentDomainException.of("支付方式不能为空");
         }
         PaymentMethod method = PaymentMethod.fromCode(code);
         if (method == null) {
-            throw BusinessException.of("不支持的支付方式: " + code);
+            throw PaymentDomainException.of("不支持的支付方式: " + code);
         }
     }
 

@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("orderPaymentGatewayAdapter")
 @RequiredArgsConstructor
 public class PaymentGatewayAdapter implements PaymentGatewayPort {
 

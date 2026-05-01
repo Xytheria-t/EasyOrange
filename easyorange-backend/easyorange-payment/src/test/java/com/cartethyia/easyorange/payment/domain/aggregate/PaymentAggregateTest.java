@@ -4,7 +4,11 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
+import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentInvalidStatusException;
+import com.cartethyia.easyorange.payment.domain.exception.RefundNotAllowedException;
 import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
 import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
@@ -55,14 +59,16 @@ class PaymentAggregateTest {
         }
 
         @Test
-        @DisplayName("create 返回的聚合根可通过 publishCreatedEvent 发布事件")
-        void create_publishCreatedEvent() {
+        @DisplayName("create 返回的聚合根包含 PaymentCreatedEvent")
+        void create_containsCreatedEvent() {
             PaymentAggregate aggregate = PaymentAggregate.create(
                 1001L, 2001L, new BigDecimal("99.99"), 1, "attach_data"
             );
 
-            PaymentCreatedEvent event = PaymentAggregate.publishCreatedEvent(aggregate);
-
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            assertThat(aggregate.domainEvents().get(0)).isInstanceOf(PaymentCreatedEvent.class);
+            
+            PaymentCreatedEvent event = (PaymentCreatedEvent) aggregate.domainEvents().get(0);
             assertThat(event.getPaymentId()).isEqualTo(aggregate.id());
             assertThat(event.getPaymentNo()).isEqualTo(aggregate.paymentNo());
             assertThat(event.getOrderId()).isEqualTo(1001L);
@@ -129,13 +135,14 @@ class PaymentAggregateTest {
                 new BigDecimal("99.99"), BigDecimal.ZERO, 1,
                 PaymentStatus.SUCCESS, "TXN123", "已退款",
                 LocalDateTime.now(), "attach",
-                LocalDateTime.now(), LocalDateTime.now()
+                LocalDateTime.now(), LocalDateTime.now(), 1
             );
 
             assertThat(aggregate.id()).isEqualTo(1001L);
             assertThat(aggregate.paymentNo()).isEqualTo("PAY123456");
             assertThat(aggregate.amount()).isEqualByComparingTo(new BigDecimal("99.99"));
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.SUCCESS);
+            assertThat(aggregate.version()).isEqualTo(1L);
         }
     }
 
@@ -148,12 +155,12 @@ class PaymentAggregateTest {
         void pay_withPendingStatus_success() {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.PENDING);
 
-            PaymentSucceededEvent event = (PaymentSucceededEvent) aggregate.pay(mockGateway);
+            aggregate.pay(mockGateway);
 
-            assertThat(event).isNotNull();
-            assertThat(event.getTransactionId()).isNotNull();
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.SUCCESS);
             assertThat(aggregate.transactionId()).isNotNull();
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            assertThat(aggregate.domainEvents().get(0)).isInstanceOf(PaymentSucceededEvent.class);
         }
 
         @Test
@@ -162,7 +169,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
             assertThatThrownBy(() -> aggregate.pay(mockGateway))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(PaymentInvalidStatusException.class);
         }
     }
 
@@ -175,11 +182,12 @@ class PaymentAggregateTest {
         void refund_withSuccessStatus_fullRefund() {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
-            var event = aggregate.refund(new BigDecimal("100.00"), mockGateway);
+            aggregate.refund(new BigDecimal("100.00"), mockGateway);
 
-            assertThat(event).isNotNull();
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.REFUNDED);
             assertThat(aggregate.refundedAmount()).isEqualByComparingTo(new BigDecimal("100.00"));
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            assertThat(aggregate.domainEvents().get(0)).isInstanceOf(PaymentRefundedEvent.class);
         }
 
         @Test
@@ -187,11 +195,12 @@ class PaymentAggregateTest {
         void refund_withSuccessStatus_partialRefund() {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
-            var event = aggregate.refund(new BigDecimal("30.00"), mockGateway);
+            aggregate.refund(new BigDecimal("30.00"), mockGateway);
 
-            assertThat(event).isNotNull();
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.PARTIALLY_REFUNDED);
             assertThat(aggregate.refundedAmount()).isEqualByComparingTo(new BigDecimal("30.00"));
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            assertThat(aggregate.domainEvents().get(0)).isInstanceOf(PaymentRefundedEvent.class);
         }
 
         @Test
@@ -200,7 +209,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
             assertThatThrownBy(() -> aggregate.refund(new BigDecimal("150.00"), mockGateway))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(RefundNotAllowedException.class)
                 .hasMessageContaining("退款金额不能超过支付金额");
         }
 
@@ -210,7 +219,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createRefundedAggregate(new BigDecimal("80.00"));
 
             assertThatThrownBy(() -> aggregate.refund(new BigDecimal("30.00"), mockGateway))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(RefundNotAllowedException.class)
                 .hasMessageContaining("累计退款金额不能超过支付金额");
         }
 
@@ -220,7 +229,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.PENDING);
 
             assertThatThrownBy(() -> aggregate.refund(new BigDecimal("100.00"), mockGateway))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(RefundNotAllowedException.class);
         }
     }
 
@@ -233,11 +242,12 @@ class PaymentAggregateTest {
         void fail_withPendingStatus_success() {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.PENDING);
 
-            PaymentFailedEvent event = aggregate.fail("支付超时");
+            aggregate.fail("支付超时");
 
-            assertThat(event).isNotNull();
-            assertThat(event.getReason()).isEqualTo("支付超时");
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.FAILED);
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            PaymentFailedEvent event = (PaymentFailedEvent) aggregate.domainEvents().get(0);
+            assertThat(event.getReason()).isEqualTo("支付超时");
         }
 
         @Test
@@ -246,7 +256,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
             assertThatThrownBy(() -> aggregate.fail("支付超时"))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(PaymentInvalidStatusException.class)
                 .hasMessageContaining("只有待支付状态可以标记为失败");
         }
     }
@@ -260,10 +270,12 @@ class PaymentAggregateTest {
         void close_withPendingStatus_success() {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.PENDING);
 
-            PaymentClosedEvent event = aggregate.close();
+            aggregate.close();
 
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.CLOSED);
-            assertThat(event).isNotNull();
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            assertThat(aggregate.domainEvents().get(0)).isInstanceOf(PaymentClosedEvent.class);
+            PaymentClosedEvent event = (PaymentClosedEvent) aggregate.domainEvents().get(0);
             assertThat(event.getPaymentId()).isEqualTo(aggregate.id());
         }
 
@@ -272,10 +284,11 @@ class PaymentAggregateTest {
         void close_withFailedStatus_success() {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.FAILED);
 
-            PaymentClosedEvent event = aggregate.close();
+            aggregate.close();
 
             assertThat(aggregate.status()).isEqualTo(PaymentStatus.CLOSED);
-            assertThat(event).isNotNull();
+            assertThat(aggregate.domainEvents()).hasSize(1);
+            assertThat(aggregate.domainEvents().get(0)).isInstanceOf(PaymentClosedEvent.class);
         }
 
         @Test
@@ -284,7 +297,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
             assertThatThrownBy(() -> aggregate.close())
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(PaymentInvalidStatusException.class);
         }
     }
 
@@ -308,7 +321,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.PENDING);
 
             assertThatThrownBy(() -> aggregate.cancelPay())
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(PaymentInvalidStatusException.class)
                 .hasMessageContaining("只有支付中状态可以取消支付");
         }
     }
@@ -333,7 +346,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.PENDING);
 
             assertThatThrownBy(() -> aggregate.cancelRefund())
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(PaymentInvalidStatusException.class)
                 .hasMessageContaining("只有退款中状态可以取消退款");
         }
     }
@@ -348,7 +361,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.CLOSED);
 
             assertThatThrownBy(() -> aggregate.pay(mockGateway))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(PaymentInvalidStatusException.class);
         }
 
         @Test
@@ -357,7 +370,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.REFUNDED);
 
             assertThatThrownBy(() -> aggregate.refund(new BigDecimal("50.00"), mockGateway))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(RefundNotAllowedException.class);
         }
 
         @Test
@@ -366,7 +379,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.CLOSED);
 
             assertThatThrownBy(() -> aggregate.refund(new BigDecimal("50.00"), mockGateway))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(RefundNotAllowedException.class);
         }
 
         @Test
@@ -375,7 +388,7 @@ class PaymentAggregateTest {
             PaymentAggregate aggregate = createTestAggregate(PaymentStatus.SUCCESS);
 
             assertThatThrownBy(() -> aggregate.fail("test"))
-                .isInstanceOf(BusinessException.class);
+                .isInstanceOf(PaymentInvalidStatusException.class);
         }
     }
 
@@ -383,7 +396,7 @@ class PaymentAggregateTest {
         return PaymentAggregate.reconstruct(
             System.currentTimeMillis(), "PAY" + System.currentTimeMillis(),
             1001L, 2001L, new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-            status, null, null, null, null, null, null
+            status, null, null, null, null, null, null, 0
         );
     }
 
@@ -391,7 +404,7 @@ class PaymentAggregateTest {
         return PaymentAggregate.reconstruct(
             System.currentTimeMillis(), "PAY" + System.currentTimeMillis(),
             1001L, 2001L, new BigDecimal("100.00"), refundedAmount, 1,
-            PaymentStatus.PARTIALLY_REFUNDED, null, null, null, null, null, null
+            PaymentStatus.PARTIALLY_REFUNDED, null, null, null, null, null, null, 0
         );
     }
 }

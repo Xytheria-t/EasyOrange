@@ -6,14 +6,17 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.exception.OptimisticLockException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class MybatisPaymentRepository implements PaymentRepository, PaymentQueryRepository {
@@ -27,7 +30,15 @@ public class MybatisPaymentRepository implements PaymentRepository, PaymentQuery
 
     @Override
     public void update(PaymentAggregate aggregate) {
-        paymentMapper.updateById(PaymentConverter.toPO(aggregate));
+        PaymentPO po = PaymentConverter.toPO(aggregate);
+        int rows = paymentMapper.updateById(po);
+        
+        if (rows == 0) {
+            log.error("乐观锁冲突: paymentId={}, version={}", aggregate.id(), aggregate.version());
+            throw OptimisticLockException.concurrentUpdate(aggregate.id());
+        }
+        
+        log.debug("支付记录更新成功: paymentId={}, newVersion={}", aggregate.id(), aggregate.version());
     }
 
     @Override

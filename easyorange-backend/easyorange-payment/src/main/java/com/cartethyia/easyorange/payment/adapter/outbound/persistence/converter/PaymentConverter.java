@@ -28,7 +28,8 @@ public final class PaymentConverter {
                 po.getRefundTime(),
                 po.getAttach(),
                 po.getCreateTime(),
-                po.getUpdateTime()
+                po.getUpdateTime(),
+                po.getVersion()
         );
     }
 
@@ -46,6 +47,7 @@ public final class PaymentConverter {
                 .refundReason(aggregate.refundReason())
                 .refundTime(aggregate.refundTime())
                 .attach(aggregate.attach())
+                .version(aggregate.version())
                 .build();
     }
 }

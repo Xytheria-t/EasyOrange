@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.repository.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import com.cartethyia.easyorange.order.interfaces.assembler.OrderVOAssembler;
 import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -20,10 +21,13 @@ import org.mockito.quality.Strictness;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -40,6 +44,9 @@ class OrderQueryHandlerTest {
     @Mock
     private OrderCacheService orderCacheService;
 
+    @Mock
+    private OrderVOAssembler orderVOAssembler;
+
     private OrderQueryHandler handler;
 
     private OrderReadModel testOrderReadModel;
@@ -47,7 +54,7 @@ class OrderQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCacheService);
+        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCacheService, orderVOAssembler);
 
         testOrderReadModel = new OrderReadModel(
                 1L, "ORD001", 100L, 200L, 300L,
@@ -59,6 +66,19 @@ class OrderQueryHandlerTest {
         testProductDetail = new ProductDetail(
                 300L, "测试商品", new BigDecimal("99.99"), 1, List.of("http://img.jpg")
         );
+        
+        OrderVO mockOrderVO = OrderVO.builder()
+                .id(1L)
+                .orderNo("ORD001")
+                .productTitle("测试商品")
+                .build();
+        
+        when(orderVOAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
+                .thenReturn(mockOrderVO);
+        when(orderVOAssembler.toOrderVOs(any(), anyMap()))
+                .thenReturn(List.of(mockOrderVO));
+        when(orderVOAssembler.buildProductMap(any()))
+                .thenReturn(Map.of(300L, testProductDetail));
     }
 
     @Test

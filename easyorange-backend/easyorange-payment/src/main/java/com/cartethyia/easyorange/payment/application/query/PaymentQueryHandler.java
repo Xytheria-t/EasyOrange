@@ -1,12 +1,11 @@
 package com.cartethyia.easyorange.payment.application.query;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.enums.PaymentMethod;
-import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
 import com.cartethyia.easyorange.payment.enums.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +22,13 @@ public class PaymentQueryHandler {
 
     public PaymentView getPaymentById(Long paymentId) {
         PaymentAggregate aggregate = paymentQueryRepository.findAggregateById(paymentId)
-                .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(PaymentNotFoundException::of);
         return toPaymentView(aggregate);
     }
 
     public PaymentView getPaymentByOrderId(Long orderId) {
         PaymentAggregate aggregate = paymentQueryRepository.findAggregateByOrderId(orderId)
-                .orElseThrow(() -> BusinessException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
+                .orElseThrow(PaymentNotFoundException::of);
         return toPaymentView(aggregate);
     }
 

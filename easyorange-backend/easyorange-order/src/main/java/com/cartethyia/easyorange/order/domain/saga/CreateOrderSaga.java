@@ -21,11 +21,13 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
 import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -42,8 +44,11 @@ public class CreateOrderSaga {
     private final DomainEventPublisher eventPublisher;
     private final OrderCacheService orderCacheService;
     private final RedisCache redisCache;
+    private final SagaRepository sagaRepository;
+    private final ObjectMapper objectMapper;
 
     private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
+    private static final String SAGA_TYPE = "CREATE_ORDER";
 
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult execute(CreateOrderCommand command) {
@@ -63,13 +68,23 @@ public class CreateOrderSaga {
     }
 
     private CreateOrderResult doExecute(CreateOrderCommand command) {
+        String sagaId = UUID.randomUUID().toString();
+        SagaStatus sagaStatus = createInitialSagaStatus(sagaId, command);
+        sagaRepository.save(sagaStatus);
+
         List<CompensatingAction> compensations = new ArrayList<>();
 
         try {
+            sagaStatus = sagaStatus.withState(SagaState.ORDER_CREATED).withStep("CREATE_ORDER");
+            sagaRepository.update(sagaStatus);
+
             OrderAggregate.OrderCreatedResult createResult = createOrder(command);
             OrderAggregate aggregate = createResult.aggregate();
             OrderCreatedEvent orderEvent = createResult.event();
             compensations.add(() -> cancelOrder(aggregate.id()));
+
+            sagaStatus = sagaStatus.withState(SagaState.PAYMENT_CREATED).withStep("CREATE_PAYMENT");
+            sagaRepository.update(sagaStatus);
 
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
                     orderEvent.getOrderId(),
@@ -81,14 +96,61 @@ public class CreateOrderSaga {
 
             orderCacheService.deleteSellerOrderCache(aggregate.sellerId().value());
 
-            log.info("订单创建 Saga 完成 orderId={} orderNo={}", aggregate.id().value(), aggregate.orderNo().value());
+            sagaStatus = sagaStatus.withState(SagaState.COMPLETED).withStep("COMPLETED");
+            sagaRepository.update(sagaStatus);
+
+            log.info("订单创建 Saga 完成 sagaId={} orderId={} orderNo={}", 
+                sagaId, aggregate.id().value(), aggregate.orderNo().value());
 
             return new CreateOrderResult(aggregate.id().value(), aggregate.orderNo().value());
 
         } catch (Exception e) {
-            log.error("订单创建 Saga 失败，执行补偿逻辑 command={}", command, e);
-            compensate(compensations, e);
+            log.error("订单创建 Saga 失败 sagaId={} command={}", sagaId, command, e);
+            
+            sagaStatus = sagaStatus.withState(SagaState.COMPENSATING)
+                .withStep("COMPENSATING")
+                .withError(e.getMessage());
+            sagaRepository.update(sagaStatus);
+
+            String compensationLog = compensate(compensations, e);
+
+            sagaStatus = sagaStatus.withState(SagaState.COMPENSATED)
+                .withCompensationLog(compensationLog);
+            sagaRepository.update(sagaStatus);
+
             throw new OrderCreationException("订单创建失败：" + e.getMessage(), e);
+        }
+    }
+
+    private SagaStatus createInitialSagaStatus(String sagaId, CreateOrderCommand command) {
+        try {
+            String payload = objectMapper.writeValueAsString(command);
+            return new SagaStatus(
+                sagaId,
+                SAGA_TYPE,
+                SagaState.PENDING,
+                "INIT",
+                payload,
+                null,
+                null,
+                0,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+            );
+        } catch (Exception e) {
+            log.error("序列化 Saga payload 失败 sagaId={}", sagaId, e);
+            return new SagaStatus(
+                sagaId,
+                SAGA_TYPE,
+                SagaState.PENDING,
+                "INIT",
+                command.getProductId().toString(),
+                null,
+                null,
+                0,
+                LocalDateTime.now(),
+                LocalDateTime.now()
+            );
         }
     }
 
@@ -123,21 +185,33 @@ public class CreateOrderSaga {
         void compensate();
     }
 
-    private void compensate(List<CompensatingAction> compensations, Exception cause) {
+    private String compensate(List<CompensatingAction> compensations, Exception cause) {
+        log.warn("开始执行补偿逻辑，共 {} 个补偿操作", compensations.size());
+        
+        List<String> compensationResults = new ArrayList<>();
+        
         for (int i = compensations.size() - 1; i >= 0; i--) {
+            int stepIndex = compensations.size() - i;
             try {
+                log.info("执行补偿操作 step={}/{}", stepIndex, compensations.size());
                 compensations.get(i).compensate();
+                compensationResults.add(String.format("Step %d: SUCCESS", stepIndex));
+                log.info("补偿操作成功 step={}", stepIndex);
             } catch (Exception e) {
-                log.error("补偿操作失败 index={}", i, e);
+                compensationResults.add(String.format("Step %d: FAILED - %s", stepIndex, e.getMessage()));
+                log.error("补偿操作失败 step={}，将继续执行其他补偿", stepIndex, e);
             }
         }
+        
+        log.warn("补偿逻辑执行完成，结果: {}", compensationResults);
+        return String.join("; ", compensationResults);
     }
 
     private void cancelOrder(OrderId orderId) {
         try {
             orderRepository.findById(orderId)
                     .ifPresent(aggregate -> {
-                        if (OrderStatus.canCancel(aggregate.status().getCode())) {
+                        if (aggregate.canCancel()) {
                             OrderAggregate.OrderCancelledResult result = aggregate.cancel("Saga 补偿取消");
                             orderRepository.update(result.aggregate());
                             log.info("Saga: 订单补偿成功 orderId={}", orderId.value());
@@ -148,6 +222,32 @@ public class CreateOrderSaga {
         } catch (Exception e) {
             log.error("Saga: 订单补偿失败 orderId={}", orderId.value(), e);
             throw new OrderDomainException("订单补偿失败", e);
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void retryFailedSaga(String sagaId) {
+        SagaStatus sagaStatus = sagaRepository.findById(sagaId)
+            .orElseThrow(() -> new OrderDomainException("Saga 不存在: " + sagaId));
+
+        if (!sagaStatus.canRetry()) {
+            throw new OrderDomainException("Saga 不允许重试: " + sagaId);
+        }
+
+        try {
+            CreateOrderCommand command = objectMapper.readValue(sagaStatus.payload(), CreateOrderCommand.class);
+            
+            sagaStatus = sagaStatus.withRetry();
+            sagaRepository.update(sagaStatus);
+            
+            execute(command);
+            
+            log.info("Saga 重试成功 sagaId={}", sagaId);
+        } catch (Exception e) {
+            log.error("Saga 重试失败 sagaId={}", sagaId, e);
+            sagaStatus = sagaStatus.withError(e.getMessage());
+            sagaRepository.update(sagaStatus);
+            throw new OrderDomainException("Saga 重试失败", e);
         }
     }
 }

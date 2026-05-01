@@ -26,12 +26,6 @@ public class OrderCreatedEvent extends BaseDomainEvent {
         this.amount = amount;
     }
 
-    public Long getOrderId() { return orderId; }
-    public Long getBuyerId() { return buyerId; }
-    public Long getSellerId() { return sellerId; }
-    public Long getProductId() { return productId; }
-    public BigDecimal getAmount() { return amount; }
-
     @Override
     public String eventType() {
         return "OrderCreated";

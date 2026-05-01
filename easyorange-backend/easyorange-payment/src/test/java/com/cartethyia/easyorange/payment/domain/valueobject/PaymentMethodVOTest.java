@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.valueobject;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.enums.PaymentMethod;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -69,18 +69,18 @@ class PaymentMethodVOTest {
     class OfInvalidTests {
 
         @Test
-        @DisplayName("null 抛出 BusinessException")
+        @DisplayName("null 抛出 PaymentDomainException")
         void of_withNull_throws() {
             assertThatThrownBy(() -> PaymentMethodVO.of(null))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(PaymentDomainException.class)
                 .hasMessageContaining("支付方式不能为空");
         }
 
         @Test
-        @DisplayName("不支持的支付方式抛出 BusinessException")
+        @DisplayName("不支持的支付方式抛出 PaymentDomainException")
         void of_withUnsupportedCode_throws() {
             assertThatThrownBy(() -> PaymentMethodVO.of(999))
-                .isInstanceOf(BusinessException.class)
+                .isInstanceOf(PaymentDomainException.class)
                 .hasMessageContaining("不支持的支付方式");
         }
     }

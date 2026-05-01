@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.infrastructure.adapter;
 
 import com.cartethyia.easyorange.order.domain.port.outbound.UserInfoPort;
-import com.cartethyia.easyorange.user.domain.model.User;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,7 +20,7 @@ public class UserInfoAdapter implements UserInfoPort {
                 .map(user -> new UserInfo(
                         user.getId(),
                         user.getUsername(),
-                        user.getEmail()
+                        user.getProfile() != null ? user.getProfile().email() : null
                 ));
     }
 }

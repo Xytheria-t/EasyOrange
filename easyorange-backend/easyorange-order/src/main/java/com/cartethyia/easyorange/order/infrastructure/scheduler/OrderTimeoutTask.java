@@ -65,7 +65,7 @@ public class OrderTimeoutTask {
     }
 
     private boolean cancelExpiredOrder(OrderAggregate aggregate) {
-        if (!OrderStatus.canCancel(aggregate.status().getCode())) {
+        if (!aggregate.canCancel()) {
             return false;
         }
 

@@ -1,9 +1,12 @@
-package com.cartethyia.easyorange.payment.application.command;
+package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
+import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
+import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
@@ -61,7 +64,7 @@ class PaymentCommandHandlerTest {
         testAggregate = PaymentAggregate.reconstruct(
                 1001L, "PAY123", 2001L, 3001L,
                 new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                PaymentStatus.PENDING, null, null, null, null, null, null
+                PaymentStatus.PENDING, null, null, null, null, null, null, 0
         );
     }
 
@@ -116,7 +119,7 @@ class PaymentCommandHandlerTest {
             PaymentAggregate payingAggregate = PaymentAggregate.reconstruct(
                     1001L, "PAY123", 2001L, 3001L,
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                    PaymentStatus.PAYING, null, null, null, null, null, null
+                    PaymentStatus.PAYING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById(1001L)).thenReturn(Optional.of(payingAggregate));
 
@@ -133,7 +136,7 @@ class PaymentCommandHandlerTest {
             when(paymentRepository.findByPaymentNo("NOT_EXIST")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> commandHandler.preparePayPhase1("NOT_EXIST"))
-                    .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(PaymentNotFoundException.class);
         }
     }
 
@@ -147,7 +150,7 @@ class PaymentCommandHandlerTest {
             PaymentAggregate paidAggregate = PaymentAggregate.reconstruct(
                     1001L, "PAY123", 2001L, 3001L,
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                    PaymentStatus.SUCCESS, null, null, null, null, null, null
+                    PaymentStatus.SUCCESS, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById(1001L)).thenReturn(Optional.of(paidAggregate));
 
@@ -164,7 +167,7 @@ class PaymentCommandHandlerTest {
             PaymentAggregate refundingAggregate = PaymentAggregate.reconstruct(
                     1001L, "PAY123", 2001L, 3001L,
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                    PaymentStatus.REFUNDING, null, null, null, null, null, null
+                    PaymentStatus.REFUNDING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById(1001L)).thenReturn(Optional.of(refundingAggregate));
 
@@ -186,7 +189,7 @@ class PaymentCommandHandlerTest {
             PaymentAggregate payingAggregate = PaymentAggregate.reconstruct(
                     1001L, "PAY123", 2001L, 3001L,
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                    PaymentStatus.PAYING, null, null, null, null, null, null
+                    PaymentStatus.PAYING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById(1001L)).thenReturn(Optional.of(payingAggregate));
 
@@ -207,7 +210,7 @@ class PaymentCommandHandlerTest {
             PaymentAggregate refundingAggregate = PaymentAggregate.reconstruct(
                     1001L, "PAY123", 2001L, 3001L,
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                    PaymentStatus.REFUNDING, null, null, null, null, null, null
+                    PaymentStatus.REFUNDING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById(1001L)).thenReturn(Optional.of(refundingAggregate));
 
@@ -248,7 +251,7 @@ class PaymentCommandHandlerTest {
                     .build();
 
             assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(PaymentNotFoundException.class);
         }
     }
 }

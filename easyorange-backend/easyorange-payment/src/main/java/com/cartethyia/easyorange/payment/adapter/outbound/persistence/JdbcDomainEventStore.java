@@ -37,6 +37,11 @@ public class JdbcDomainEventStore implements DomainEventStore {
     }
 
     @Override
+    public List<StoredEvent> findPendingEvents(int limit) {
+        return findUnpublished(limit);
+    }
+
+    @Override
     public void markAsPublished(UUID eventId) {
         LambdaQueryWrapper<DomainEventPO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(DomainEventPO::getEventId, eventId);
@@ -44,6 +49,17 @@ public class JdbcDomainEventStore implements DomainEventStore {
         if (po != null) {
             po.setStatus(StoredEvent.STATUS_PUBLISHED);
             po.setPublishedAt(java.time.Instant.now());
+            domainEventMapper.updateById(po);
+        }
+    }
+
+    @Override
+    public void markAsFailed(UUID eventId, String errorMessage) {
+        LambdaQueryWrapper<DomainEventPO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DomainEventPO::getEventId, eventId);
+        DomainEventPO po = domainEventMapper.selectOne(wrapper);
+        if (po != null) {
+            po.setStatus(StoredEvent.STATUS_FAILED);
             domainEventMapper.updateById(po);
         }
     }

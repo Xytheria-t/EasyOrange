@@ -260,31 +260,6 @@ class OrderAggregateTest {
         }
     }
 
-    @Nested
-    @DisplayName("withXxx 不可变方法")
-    class WithMethodsTests {
-
-        @Test
-        @DisplayName("withId 返回新实例")
-        void withId_returnsNewInstance() {
-            OrderAggregate original = createPendingPaymentAggregate();
-            OrderAggregate updated = original.withId(OrderId.of(999L));
-
-            assertThat(updated.id().value()).isEqualTo(999L);
-            assertThat(original.id().value()).isEqualTo(1L);
-        }
-
-        @Test
-        @DisplayName("withOrderNo 返回新实例")
-        void withOrderNo_returnsNewInstance() {
-            OrderAggregate original = createPendingPaymentAggregate();
-            OrderAggregate updated = original.withOrderNo(OrderNo.of("ORD999"));
-
-            assertThat(updated.orderNo().value()).isEqualTo("ORD999");
-            assertThat(original.orderNo().value()).isEqualTo("ORD1");
-        }
-    }
-
     private OrderAggregate createPendingPaymentAggregate() {
         return OrderAggregate.fromRaw(
                 1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,

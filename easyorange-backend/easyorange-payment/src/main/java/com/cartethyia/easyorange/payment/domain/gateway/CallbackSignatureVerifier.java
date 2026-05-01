@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.gateway;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.exception.CallbackSignInvalidException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -32,7 +31,7 @@ public class CallbackSignatureVerifier {
 
         if (sign == null || sign.isBlank()) {
             log.warn("回调签名缺失 paymentNo={}", paymentNo);
-            throw BusinessException.of(PaymentResultCode.CALLBACK_SIGN_INVALID);
+            throw CallbackSignInvalidException.of();
         }
 
         String data = paymentNo + "|" + transactionId;
@@ -40,7 +39,7 @@ public class CallbackSignatureVerifier {
 
         if (!expectedSign.equals(sign)) {
             log.warn("回调签名验证失败 paymentNo={}", paymentNo);
-            throw BusinessException.of(PaymentResultCode.CALLBACK_SIGN_INVALID);
+            throw CallbackSignInvalidException.of();
         }
 
         log.debug("回调签名验证通过 paymentNo={}", paymentNo);

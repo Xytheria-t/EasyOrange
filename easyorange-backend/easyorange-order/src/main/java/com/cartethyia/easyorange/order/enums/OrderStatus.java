@@ -68,39 +68,4 @@ public enum OrderStatus {
         OrderStatus status = fromCode(code);
         return status != null ? status.getDesc() : "未知状态";
     }
-
-    /**
-     * 判断是否可以取消（仅待付款状态可取消）
-     */
-    public static boolean canCancel(Integer status) {
-        return PENDING_PAYMENT.getCode().equals(status);
-    }
-
-    /**
-     * 判断是否可以付款（仅待付款状态可付款）
-     */
-    public static boolean canPay(Integer status) {
-        return PENDING_PAYMENT.getCode().equals(status);
-    }
-
-    /**
-     * 判断是否可以发货
-     */
-    public static boolean canShip(Integer status) {
-        return PAID.getCode().equals(status);
-    }
-
-    /**
-     * 判断是否可以确认收货
-     */
-    public static boolean canConfirmReceipt(Integer status) {
-        return SHIPPED.getCode().equals(status);
-    }
-
-    /**
-     * 判断是否可以退款
-     */
-    public static boolean canRefund(Integer status) {
-        return PAID.getCode().equals(status) || SHIPPED.getCode().equals(status);
-    }
 }

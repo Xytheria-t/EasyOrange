@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
 import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,12 @@ class CreateOrderSagaCompensationTest {
     @Mock
     private RedisCache redisCache;
 
+    @Mock
+    private SagaRepository sagaRepository;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
     private CreateOrderSaga saga;
 
     private static final Long BUYER_ID = 1L;
@@ -68,7 +75,8 @@ class CreateOrderSagaCompensationTest {
 
     @BeforeEach
     void setUp() {
-        saga = new CreateOrderSaga(orderRepository, productInventoryPort, paymentGatewayPort, eventPublisher, orderCacheService, redisCache);
+        saga = new CreateOrderSaga(orderRepository, productInventoryPort, paymentGatewayPort, 
+                eventPublisher, orderCacheService, redisCache, sagaRepository, objectMapper);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

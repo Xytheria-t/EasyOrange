@@ -70,6 +70,26 @@ public class OrderAggregate {
     public String cancelReason() { return cancelReason; }
     public LocalDateTime cancelTime() { return cancelTime; }
 
+    public boolean canPay() {
+        return status == OrderStatus.PENDING_PAYMENT;
+    }
+
+    public boolean canCancel() {
+        return status == OrderStatus.PENDING_PAYMENT;
+    }
+
+    public boolean canShip() {
+        return status == OrderStatus.PAID;
+    }
+
+    public boolean canConfirmReceipt() {
+        return status == OrderStatus.SHIPPED;
+    }
+
+    public boolean canRefund() {
+        return status == OrderStatus.PAID || status == OrderStatus.SHIPPED;
+    }
+
     public static OrderCreatedResult createOrder(UserId buyerId, UserId sellerId, ProductId productId,
                                                  Money amount, Address address, Phone phone, String remark) {
         BizRequire.ne(buyerId.value(), sellerId.value(), "不能购买自己的商品");
@@ -91,18 +111,8 @@ public class OrderAggregate {
         return new OrderCreatedResult(aggregate, event);
     }
 
-    public OrderAggregate withId(OrderId id) {
-        return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
-    }
-
-    public OrderAggregate withOrderNo(OrderNo orderNo) {
-        return new OrderAggregate(id, orderNo, buyerId, sellerId, productId,
-                amount, status, paymentStatus, address, phone, remark, cancelReason, cancelTime);
-    }
-
     public OrderPaidResult pay() {
-        BizRequire.requireTrue(OrderStatus.canPay(this.status.getCode()), OrderResultCode.ORDER_STATUS_ERROR);
+        BizRequire.requireTrue(canPay(), OrderResultCode.ORDER_STATUS_ERROR);
         OrderAggregate updated = new OrderAggregate(
                 id, orderNo, buyerId, sellerId, productId,
                 amount, OrderStatus.PAID, 1,
@@ -112,7 +122,7 @@ public class OrderAggregate {
     }
 
     public OrderCancelledResult cancel(String reason) {
-        BizRequire.requireTrue(OrderStatus.canCancel(this.status.getCode()), OrderResultCode.ORDER_CANNOT_CANCEL);
+        BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
         OrderAggregate updated = new OrderAggregate(
                 id, orderNo, buyerId, sellerId, productId,
                 amount, OrderStatus.CANCELLED, paymentStatus,
@@ -122,7 +132,7 @@ public class OrderAggregate {
     }
 
     public OrderShippedResult ship() {
-        BizRequire.requireTrue(OrderStatus.canShip(this.status.getCode()), OrderResultCode.ORDER_STATUS_ERROR);
+        BizRequire.requireTrue(canShip(), OrderResultCode.ORDER_STATUS_ERROR);
         OrderAggregate updated = new OrderAggregate(
                 id, orderNo, buyerId, sellerId, productId,
                 amount, OrderStatus.SHIPPED, paymentStatus,
@@ -132,7 +142,7 @@ public class OrderAggregate {
     }
 
     public OrderCompletedResult confirmReceipt() {
-        BizRequire.requireTrue(OrderStatus.canConfirmReceipt(this.status.getCode()), OrderResultCode.ORDER_STATUS_ERROR);
+        BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
         OrderAggregate updated = new OrderAggregate(
                 id, orderNo, buyerId, sellerId, productId,
                 amount, OrderStatus.COMPLETED, paymentStatus,
@@ -142,7 +152,7 @@ public class OrderAggregate {
     }
 
     public OrderRefundedResult refund(String reason) {
-        BizRequire.requireTrue(OrderStatus.canRefund(this.status.getCode()), OrderResultCode.ORDER_CANNOT_REFUND);
+        BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
         OrderAggregate updated = new OrderAggregate(
                 id, orderNo, buyerId, sellerId, productId,
                 amount, OrderStatus.REFUNDED, 2,

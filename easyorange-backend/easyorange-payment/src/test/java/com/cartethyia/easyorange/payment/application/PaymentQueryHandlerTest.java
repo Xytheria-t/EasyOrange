@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.payment.application;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.application.query.PaymentView;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
 import com.cartethyia.easyorange.payment.enums.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +35,7 @@ class PaymentQueryHandlerTest {
         return PaymentAggregate.reconstruct(
                 id, paymentNo, 2001L, 3001L,
                 new BigDecimal("100.00"), BigDecimal.ZERO, 1,
-                status, null, null, null, null, null, null
+                status, null, null, null, null, null, null, 0
         );
     }
 
@@ -62,7 +62,7 @@ class PaymentQueryHandlerTest {
             when(paymentQueryRepository.findAggregateById(9999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> queryHandler.getPaymentById(9999L))
-                    .isInstanceOf(BusinessException.class);
+                    .isInstanceOf(PaymentNotFoundException.class);
         }
     }
 

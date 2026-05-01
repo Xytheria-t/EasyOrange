@@ -9,5 +9,9 @@ public interface DomainEventStore {
 
     List<StoredEvent> findUnpublished(int limit);
 
+    List<StoredEvent> findPendingEvents(int limit);
+
     void markAsPublished(UUID eventId);
+
+    void markAsFailed(UUID eventId, String errorMessage);
 }

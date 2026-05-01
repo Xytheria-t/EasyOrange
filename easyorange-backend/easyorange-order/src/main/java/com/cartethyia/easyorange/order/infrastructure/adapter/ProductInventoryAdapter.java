@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.product.application.command.ProductCommandServi
 import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
 import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;
 import com.cartethyia.easyorange.product.application.command.dto.RestoreStockCommand;
-import com.cartethyia.easyorange.product.application.port.outbound.ProductSnapshotPort;
+import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -26,7 +26,7 @@ public class ProductInventoryAdapter implements ProductInventoryPort {
                         snapshot.productId().value(),
                         snapshot.sellerId().value(),
                         snapshot.price().value(),
-                        snapshot.status().isOnLine(),
+                        snapshot.status().isOnline(),
                         snapshot.stock().isAvailable()
                 ));
     }

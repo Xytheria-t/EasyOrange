@@ -52,7 +52,7 @@ public class OrderAutoConfirmTask {
     }
 
     private boolean autoConfirmOrder(OrderAggregate aggregate) {
-        if (!OrderStatus.canConfirmReceipt(aggregate.status().getCode())) {
+        if (!aggregate.canConfirmReceipt()) {
             return false;
         }
 

@@ -1,15 +1,16 @@
 package com.cartethyia.easyorange.order.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
-import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.outbound.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.order.domain.saga.CreateOrderSaga;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
 import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
@@ -18,21 +19,18 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OrderCommandHandler 单元测试")
@@ -45,215 +43,257 @@ class OrderCommandHandlerTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
+    private CreateOrderSaga createOrderSaga;
+
+    @Mock
     private PaymentGatewayPort paymentGatewayPort;
 
     @Mock
     private OrderCacheService orderCacheService;
 
-    private OrderCommandHandler handler;
+    @InjectMocks
+    private OrderCommandHandler commandHandler;
 
-    private static final Long ORDER_ID = 1L;
-    private static final Long BUYER_ID = 10L;
-    private static final Long SELLER_ID = 20L;
-    private static final Long PRODUCT_ID = 100L;
+    private static final Long BUYER_ID = 1L;
+    private static final Long SELLER_ID = 2L;
+    private static final Long ORDER_ID = 100L;
+    private static final Long PRODUCT_ID = 200L;
 
     @BeforeEach
     void setUp() {
-        handler = new OrderCommandHandler(orderRepository, domainEventPublisher, null, paymentGatewayPort, orderCacheService);
-
-        Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                BUYER_ID, null, authorities
-        );
-        SecurityContextHolder.getContext().setAuthentication(auth);
-    }
-
-    private OrderAggregate pendingPaymentOrder() {
-        return OrderAggregate.fromRaw(
-                ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
-                "北京市朝阳区", "13800138000", "备注", null, null
-        );
-    }
-
-    private OrderAggregate paidOrder() {
-        return OrderAggregate.fromRaw(
-                ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 1,
-                "北京市朝阳区", "13800138000", "备注", null, null
-        );
-    }
-
-    private OrderAggregate shippedOrder() {
-        return OrderAggregate.fromRaw(
-                ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                new BigDecimal("99.99"), OrderStatus.SHIPPED.getCode(), 1,
-                "北京市朝阳区", "13800138000", "备注", null, null
-        );
     }
 
     @Nested
-    @DisplayName("pay")
-    class PayTests {
+    @DisplayName("handle(CreateOrderCommand)")
+    class CreateOrderTests {
 
         @Test
-        @DisplayName("待付款订单可以支付")
-        void pay_pendingPayment_success() {
-            OrderAggregate aggregate = pendingPaymentOrder();
+        @DisplayName("正常创建订单")
+        void handle_createOrder_success() {
+            CreateOrderCommand command = CreateOrderCommand.builder()
+                .productId(PRODUCT_ID)
+                .address("北京市朝阳区")
+                .phone("13800138000")
+                .remark("尽快发货")
+                .build();
+
+            CreateOrderResult expectedResult = new CreateOrderResult(ORDER_ID, "ORD123");
+            when(createOrderSaga.execute(command)).thenReturn(expectedResult);
+
+            CreateOrderResult result = commandHandler.handle(command);
+
+            assertThat(result.orderId()).isEqualTo(ORDER_ID);
+            assertThat(result.orderNo()).isEqualTo("ORD123");
+            verify(createOrderSaga).execute(command);
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(PayOrderCommand)")
+    class PayOrderTests {
+
+        @Test
+        @DisplayName("正常支付订单")
+        void handle_payOrder_success() {
+            PayOrderCommand command = PayOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .build();
+
+            OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            PayOrderCommand command = PayOrderCommand.builder().orderId(ORDER_ID).build();
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
 
-            handler.handle(command);
+                commandHandler.handle(command);
 
-            verify(orderRepository).update(any(OrderAggregate.class));
-            verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
-            verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
+                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+            }
         }
 
         @Test
-        @DisplayName("订单不存在时支付抛异常")
-        void pay_orderNotFound_throws() {
+        @DisplayName("订单不存在时抛出异常")
+        void handle_payOrder_orderNotFound() {
+            PayOrderCommand command = PayOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .build();
+
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
-            PayOrderCommand command = PayOrderCommand.builder().orderId(ORDER_ID).build();
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
 
-            assertThatThrownBy(() -> handler.handle(command))
+                assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(OrderDomainException.class);
+            }
+        }
+
+        @Test
+        @DisplayName("非买家尝试支付时抛出异常")
+        void handle_payOrder_notOwner() {
+            PayOrderCommand command = PayOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .build();
+
+            OrderAggregate aggregate = createPendingPaymentAggregate();
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
+
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
+
+                assertThatThrownBy(() -> commandHandler.handle(command))
+                    .isInstanceOf(Exception.class);
+            }
         }
     }
 
     @Nested
-    @DisplayName("cancel")
-    class CancelTests {
+    @DisplayName("handle(CancelOrderCommand)")
+    class CancelOrderTests {
 
         @Test
-        @DisplayName("待付款订单可以取消")
-        void cancel_pendingPayment_success() {
-            OrderAggregate aggregate = pendingPaymentOrder();
-            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
-
+        @DisplayName("正常取消订单")
+        void handle_cancelOrder_success() {
             CancelOrderCommand command = CancelOrderCommand.builder()
-                    .orderId(ORDER_ID).reason("不想要了").build();
+                .orderId(ORDER_ID)
+                .reason("不想要了")
+                .build();
 
-            handler.handle(command);
-
-            verify(orderRepository).update(any(OrderAggregate.class));
-            verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
-            verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
-        }
-    }
-
-    @Nested
-    @DisplayName("ship")
-    class ShipTests {
-
-        @Test
-        @DisplayName("已付款订单可以发货")
-        void ship_paid_success() {
-            Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    SELLER_ID, null, authorities
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            OrderAggregate aggregate = paidOrder();
+            OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            ShipOrderCommand command = ShipOrderCommand.builder().orderId(ORDER_ID).build();
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
 
-            handler.handle(command);
+                commandHandler.handle(command);
 
-            verify(orderRepository).update(any(OrderAggregate.class));
-            verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
-            verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
+                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+            }
         }
     }
 
     @Nested
-    @DisplayName("confirmReceipt")
+    @DisplayName("handle(ShipOrderCommand)")
+    class ShipOrderTests {
+
+        @Test
+        @DisplayName("正常发货")
+        void handle_shipOrder_success() {
+            ShipOrderCommand command = ShipOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .build();
+
+            OrderAggregate aggregate = createPaidAggregate();
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
+
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(SELLER_ID);
+
+                commandHandler.handle(command);
+
+                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
+                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+            }
+        }
+
+        @Test
+        @DisplayName("非卖家尝试发货时抛出异常")
+        void handle_shipOrder_notSeller() {
+            ShipOrderCommand command = ShipOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .build();
+
+            OrderAggregate aggregate = createPaidAggregate();
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
+
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
+
+                assertThatThrownBy(() -> commandHandler.handle(command))
+                    .isInstanceOf(Exception.class);
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("handle(ConfirmReceiptCommand)")
     class ConfirmReceiptTests {
 
         @Test
-        @DisplayName("已发货订单可以确认收货")
-        void confirmReceipt_shipped_success() {
-            OrderAggregate aggregate = shippedOrder();
+        @DisplayName("正常确认收货")
+        void handle_confirmReceipt_success() {
+            ConfirmReceiptCommand command = ConfirmReceiptCommand.builder()
+                .orderId(ORDER_ID)
+                .build();
+
+            OrderAggregate aggregate = createShippedAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            ConfirmReceiptCommand command = ConfirmReceiptCommand.builder().orderId(ORDER_ID).build();
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
 
-            handler.handle(command);
+                commandHandler.handle(command);
 
-            verify(orderRepository).update(any(OrderAggregate.class));
-            verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
-            verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
+                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+            }
         }
     }
 
     @Nested
-    @DisplayName("refund")
-    class RefundTests {
+    @DisplayName("handle(RefundOrderCommand)")
+    class RefundOrderTests {
 
         @Test
-        @DisplayName("已付款订单可以退款")
-        void refund_paid_success() {
-            OrderAggregate aggregate = paidOrder();
+        @DisplayName("正常退款")
+        void handle_refundOrder_success() {
+            RefundOrderCommand command = RefundOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .reason("商品有问题")
+                .build();
+
+            OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            RefundOrderCommand command = RefundOrderCommand.builder()
-                    .orderId(ORDER_ID).reason("商品有问题").build();
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
 
-            handler.handle(command);
+                commandHandler.handle(command);
 
-            verify(paymentGatewayPort).refundPayment(ORDER_ID, "商品有问题");
-            verify(orderRepository).update(any(OrderAggregate.class));
-            verify(domainEventPublisher).publish(any(OrderRefundedEvent.class));
-            verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
-        }
-
-        @Test
-        @DisplayName("已发货订单可以退款")
-        void refund_shipped_success() {
-            OrderAggregate aggregate = shippedOrder();
-            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
-
-            RefundOrderCommand command = RefundOrderCommand.builder()
-                    .orderId(ORDER_ID).reason("快递损坏").build();
-
-            handler.handle(command);
-
-            verify(paymentGatewayPort).refundPayment(ORDER_ID, "快递损坏");
-            verify(orderRepository).update(any(OrderAggregate.class));
-            verify(domainEventPublisher).publish(any(OrderRefundedEvent.class));
-        }
-
-        @Test
-        @DisplayName("待付款订单不能退款")
-        void refund_pendingPayment_throws() {
-            OrderAggregate aggregate = pendingPaymentOrder();
-            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
-
-            RefundOrderCommand command = RefundOrderCommand.builder()
-                    .orderId(ORDER_ID).reason("测试").build();
-
-            assertThatThrownBy(() -> handler.handle(command))
-                    .isInstanceOf(Exception.class);
+                verify(paymentGatewayPort).refundPayment(ORDER_ID, "商品有问题");
+                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+            }
         }
     }
 
-    @Nested
-    @DisplayName("validateBuyerOrder")
-    class ValidateBuyerOrderTests {
+    private OrderAggregate createPendingPaymentAggregate() {
+        return OrderAggregate.fromRaw(
+            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
+            new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
+            "地址", "13800138000", "备注", null, null
+        );
+    }
 
-        @Test
-        @DisplayName("订单不存在时抛 OrderDomainException")
-        void validateBuyerOrder_notFound_throws() {
-            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
+    private OrderAggregate createPaidAggregate() {
+        return OrderAggregate.fromRaw(
+            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
+            new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 1,
+            "地址", "13800138000", "备注", null, null
+        );
+    }
 
-            PayOrderCommand command = PayOrderCommand.builder().orderId(ORDER_ID).build();
-
-            assertThatThrownBy(() -> handler.handle(command))
-                    .isInstanceOf(OrderDomainException.class);
-        }
+    private OrderAggregate createShippedAggregate() {
+        return OrderAggregate.fromRaw(
+            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
+            new BigDecimal("99.99"), OrderStatus.SHIPPED.getCode(), 1,
+            "地址", "13800138000", "备注", null, null
+        );
     }
 }

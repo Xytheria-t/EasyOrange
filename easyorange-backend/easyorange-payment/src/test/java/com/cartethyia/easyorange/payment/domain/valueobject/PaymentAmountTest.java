@@ -37,6 +37,13 @@ class PaymentAmountTest {
             PaymentAmount amount = PaymentAmount.of(new BigDecimal("999999.99"));
             assertThat(amount.value()).isEqualByComparingTo(new BigDecimal("999999.99"));
         }
+        
+        @Test
+        @DisplayName("使用 of 创建零金额")
+        void of_withZero_createsPaymentAmount() {
+            PaymentAmount amount = PaymentAmount.of(BigDecimal.ZERO);
+            assertThat(amount.value()).isEqualByComparingTo(BigDecimal.ZERO);
+        }
     }
 
     @Nested
@@ -52,19 +59,11 @@ class PaymentAmountTest {
         }
 
         @Test
-        @DisplayName("零金额抛出 BusinessException")
-        void of_withZero_throws() {
-            assertThatThrownBy(() -> PaymentAmount.of(BigDecimal.ZERO))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("支付金额必须大于0");
-        }
-
-        @Test
         @DisplayName("负金额抛出 BusinessException")
         void of_withNegative_throws() {
             assertThatThrownBy(() -> PaymentAmount.of(new BigDecimal("-100.00")))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("支付金额必须大于0");
+                .hasMessageContaining("支付金额不能为负数");
         }
     }
 
