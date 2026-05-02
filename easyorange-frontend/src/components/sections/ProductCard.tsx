@@ -1,22 +1,16 @@
-import { Heart, MessageCircle, Eye, MapPin, Clock } from 'lucide-react'
+import { useRef, useState, useCallback } from 'react'
+import { Heart, MessageCircle, Eye, MapPin, Clock, Sparkles } from 'lucide-react'
 import { Product } from '@/types'
 import { formatPrice, formatRelativeTime } from '@/utils'
+import { Image } from '@/components/ui/Image'
 
-const CONDITION_LABELS: Record<string, string> = {
-  NEW: '全新',
-  LIKE_NEW: '近乎全新',
-  GOOD: '良好',
-  FAIR: '一般',
-  POOR: '较差',
+const CONDITION_LABELS: Record<number, string> = {
+  1: '全新',
+  2: '几乎全新',
+  3: '轻微使用',
+  4: '明显使用',
 }
 
-const CONDITION_ICONS: Record<string, string> = {
-  NEW: '✨',
-  LIKE_NEW: '🌟',
-  GOOD: '✓',
-  FAIR: '○',
-  POOR: '△',
-}
 
 interface ProductCardProps {
   product: Product
@@ -24,6 +18,7 @@ interface ProductCardProps {
   isFavorited?: boolean
   onViewDetails?: (id: number) => void
   style?: React.CSSProperties
+  index?: number
 }
 
 export function ProductCard({
@@ -32,10 +27,15 @@ export function ProductCard({
   isFavorited = false,
   onViewDetails,
   style,
+  index = 0,
 }: ProductCardProps) {
-  const imageUrl = product.images?.[0] || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop'
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
+  const [isHovered, setIsHovered] = useState(false)
+  const [imageLoaded, setImageLoaded] = useState(false)
+
+  const imageUrl = product.images?.[0] || '/placeholder.png'
   const conditionLabel = CONDITION_LABELS[product.condition] || product.condition
-  const conditionIcon = CONDITION_ICONS[product.condition] || '○'
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price
   const discountPercent = hasDiscount
     ? Math.round((1 - product.price / product.originalPrice!) * 100)
@@ -49,82 +49,158 @@ export function ProductCard({
     onFavorite?.(product.id, !isFavorited)
   }
 
+  // 3D tilt effect
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return
+    const rect = cardRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+    const rotateX = (y - centerY) / 20
+    const rotateY = (centerX - x) / 20
+
+    setTiltStyle({
+      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) scale(1.02)`,
+      transition: 'transform 0.1s ease-out',
+    })
+  }, [])
+
+  const handleMouseLeave = useCallback(() => {
+    setTiltStyle({
+      transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)',
+      transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+    })
+    setIsHovered(false)
+  }, [])
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true)
+  }, [])
+
+  // Staggered entrance animation delay
+  const entranceDelay = index * 80
+
   return (
     <article
-      className="product-card"
-      style={style}
+      ref={cardRef}
+      className="product-card-premium"
+      style={{
+        ...style,
+        ...tiltStyle,
+        animationDelay: `${entranceDelay}ms`,
+      }}
       onClick={() => onViewDetails?.(product.id)}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={handleMouseEnter}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onViewDetails?.(product.id)}
     >
-      <figure className="product-image">
-        <img
-          src={imageUrl}
-          alt={product.title}
-          loading="lazy"
-          decoding="async"
-        />
+      {/* Floating glow effect */}
+      <div className="product-card-glow" />
+      
+      {/* Shimmer overlay on hover */}
+      <div className={`product-card-shimmer ${isHovered ? 'active' : ''}`} />
 
-        <div className="product-badges">
-          <span className="badge badge-condition">
-            {conditionIcon} {conditionLabel}
-          </span>
-          {hasDiscount && (
-            <span className="badge badge-discount">{discountPercent}折</span>
-          )}
-          {isHot && (
-            <span className="badge badge-hot">热门</span>
-          )}
+      <figure className="product-image-premium">
+        {/* Image container with 3D depth */}
+        <div className="product-image-3d-container">
+          <Image
+            src={imageUrl}
+            alt={product.title}
+            loading="lazy"
+            placeholder="blur"
+            className={`product-image-img ${imageLoaded ? 'loaded' : ''} ${isHovered ? 'hovered' : ''}`}
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            onLoad={() => setImageLoaded(true)}
+          />
+          
+          {/* Image reflection/shine effect */}
+          <div className={`product-image-shine ${isHovered ? 'active' : ''}`} />
+          
+          {/* Depth shadow overlay */}
+          <div className="product-image-depth" />
         </div>
 
-        <div className="product-quick-meta">
-          <span className="product-quick-pill">
-            <MapPin size={13} strokeWidth={2.5} /> {quickLocation}
+        {/* Badges - floating with glass effect */}
+        <div className="product-badges-premium">
+          <span className="badge-premium badge-condition-premium">
+            <Sparkles size={11} strokeWidth={2.5} />
+            {conditionLabel}
           </span>
-          {product.createTime && (
-            <span className="product-quick-pill">
-              <Clock size={13} strokeWidth={2.5} /> {formatRelativeTime(product.createTime)}
+          {hasDiscount && (
+            <span className="badge-premium badge-discount-premium">
+              -{discountPercent}%
+            </span>
+          )}
+          {isHot && (
+            <span className="badge-premium badge-hot-premium">
+              <span className="hot-pulse" />
+              热门
             </span>
           )}
         </div>
 
-        <div className="product-actions">
+        {/* Quick meta pills */}
+        <div className="product-quick-meta-premium">
+          <span className="product-quick-pill-premium">
+            <MapPin size={12} strokeWidth={2.5} /> {quickLocation}
+          </span>
+          {product.createTime && (
+            <span className="product-quick-pill-premium">
+              <Clock size={12} strokeWidth={2.5} /> {formatRelativeTime(product.createTime)}
+            </span>
+          )}
+        </div>
+
+        {/* Action buttons - slide in from right */}
+        <div className={`product-actions-premium ${isHovered ? 'visible' : ''}`}>
           <button
-            className={`action-icon favorite-btn ${isFavorited ? 'favorited' : ''}`}
+            className={`action-icon-premium favorite-btn-premium ${isFavorited ? 'favorited' : ''}`}
             onClick={handleFavoriteClick}
             aria-label={isFavorited ? '取消收藏' : '收藏'}
             aria-pressed={isFavorited}
           >
-            <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} strokeWidth={2} />
+            <Heart size={17} fill={isFavorited ? 'currentColor' : 'none'} strokeWidth={2} />
           </button>
           {product.sellerId && (
             <button
-              className="action-icon contact-btn"
+              className="action-icon-premium contact-btn-premium"
               onClick={(e) => { e.stopPropagation() }}
               aria-label="联系卖家"
             >
-              <MessageCircle size={18} strokeWidth={2} />
+              <MessageCircle size={17} strokeWidth={2} />
             </button>
           )}
           <button
-            className="action-icon view-btn"
+            className="action-icon-premium view-btn-premium"
             onClick={(e) => { e.stopPropagation(); onViewDetails?.(product.id) }}
             aria-label="查看详情"
           >
-            <Eye size={18} strokeWidth={2} />
+            <Eye size={17} strokeWidth={2} />
           </button>
+        </div>
+
+        {/* Price tag floating on image */}
+        <div className={`product-image-price-tag ${isHovered ? 'visible' : ''}`}>
+          <span className="price-tag-current">¥{formatPrice(product.price)}</span>
+          {hasDiscount && (
+            <span className="price-tag-original">¥{formatPrice(product.originalPrice!)}</span>
+          )}
         </div>
       </figure>
 
-      <div className="product-info">
-        <div className="product-eyebrow">
+      {/* Product info section */}
+      <div className="product-info-premium">
+        <div className="product-eyebrow-premium">
           {(product.category || product.categoryName) && (
-            <span className="product-category">
+            <span className="product-category-premium">
               {product.category || product.categoryName}
             </span>
           )}
-          <span className={`product-signal ${isHot ? 'is-hot' : ''}`}>
+          <span className={`product-signal-premium ${isHot ? 'is-hot' : ''}`}>
             {product.favorites != null && product.favorites > 0
               ? `${product.favorites}人收藏`
               : isHot
@@ -133,49 +209,50 @@ export function ProductCard({
           </span>
         </div>
 
-        <h3 className="product-title">{product.title}</h3>
+        <h3 className="product-title-premium">{product.title}</h3>
 
-        <div className="product-stat-row">
-          <span className="product-info-chip">
-            <Eye size={13} strokeWidth={2.5} /> {product.views || 0} 浏览
+        <div className="product-stat-row-premium">
+          <span className="product-info-chip-premium">
+            <Eye size={12} strokeWidth={2.5} /> {product.views || 0} 浏览
           </span>
           {product.favorites != null && product.favorites > 0 && (
-            <span className="product-info-chip">
-              <Heart size={13} strokeWidth={2.5} /> {product.favorites} 收藏
+            <span className="product-info-chip-premium">
+              <Heart size={12} strokeWidth={2.5} /> {product.favorites} 收藏
             </span>
           )}
         </div>
 
-        <div className="product-footer">
-          <div className="product-price">
-            <div className="product-price-row">
-              <span className="price-current">¥{formatPrice(product.price)}</span>
+        <div className="product-footer-premium">
+          <div className="product-price-premium">
+            <div className="product-price-row-premium">
+              <span className="price-current-premium">¥{formatPrice(product.price)}</span>
               {hasDiscount && (
-                <span className="price-original">¥{formatPrice(product.originalPrice!)}</span>
+                <span className="price-original-premium">¥{formatPrice(product.originalPrice!)}</span>
               )}
             </div>
             {hasDiscount && (
-              <span className="price-note">
+              <span className="price-note-premium">
                 立省 ¥{formatPrice(product.originalPrice! - product.price)}
               </span>
             )}
           </div>
 
-          <div className="product-seller">
+          <div className="product-seller-premium">
             {product.sellerAvatar ? (
               <>
-                <div className="seller-avatar">
+                <div className="seller-avatar-premium">
                   <img src={product.sellerAvatar} alt={sellerName} />
+                  <div className="seller-avatar-ring" />
                 </div>
-                <div className="seller-body">
-                  <span className="seller-name">{sellerName}</span>
-                  <span className="seller-note">点击咨询</span>
+                <div className="seller-body-premium">
+                  <span className="seller-name-premium">{sellerName}</span>
+                  <span className="seller-note-premium">点击咨询</span>
                 </div>
               </>
             ) : (
-              <div className="seller-body">
-                <span className="seller-name">{sellerName}</span>
-                <span className="seller-note">匿名用户</span>
+              <div className="seller-body-premium">
+                <span className="seller-name-premium">{sellerName}</span>
+                <span className="seller-note-premium">匿名用户</span>
               </div>
             )}
           </div>

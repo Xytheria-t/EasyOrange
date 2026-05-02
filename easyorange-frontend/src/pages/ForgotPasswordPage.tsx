@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { userApi } from '@/api/userApi'
 import { ArrowLeft, KeyRound, Smartphone, ShieldCheck } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
+import { errorHandler } from '@/utils/errorHandler'
 import '@/styles/main.css'
 
 type Step = 1 | 2 | 3
@@ -42,7 +43,7 @@ export function ForgotPasswordPage() {
       setStep(2)
       addToast({ type: 'success', message: '验证码已发送' })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '发送验证码失败'
+      const msg = errorHandler.handle(err as Error)
       addToast({ type: 'error', message: msg })
     }
   }
@@ -74,7 +75,7 @@ export function ForgotPasswordPage() {
       addToast({ type: 'success', message: '密码重置成功，请使用新密码登录' })
       navigate('/login')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '重置密码失败'
+      const msg = errorHandler.handle(err as Error)
       addToast({ type: 'error', message: msg })
     } finally {
       setIsLoading(false)

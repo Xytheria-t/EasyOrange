@@ -66,7 +66,7 @@ export default function ServicesSection() {
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="1" y="3" width="15" height="13" />
-          <polygon points="16 8 20 8 23 11 23 16 16 16 8" />
+          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
           <circle cx="5.5" cy="18.5" r="2.5" />
           <circle cx="18.5" cy="18.5" r="2.5" />
         </svg>
@@ -77,14 +77,30 @@ export default function ServicesSection() {
 
   return (
     <section className="services-section">
+      {/* 顶部弥散光晕过渡 */}
+      <div className="orb-transition orb-transition-top">
+        <div className="transition-orb" style={{
+          width: '450px', height: '450px',
+          background: 'radial-gradient(circle, rgba(255, 180, 160, 0.1) 0%, transparent 70%)',
+          top: '-150px', left: '30%',
+          animationDelay: '-4s'
+        }} />
+        <div className="transition-orb" style={{
+          width: '300px', height: '300px',
+          background: 'radial-gradient(circle, rgba(249, 115, 22, 0.08) 0%, transparent 70%)',
+          top: '-100px', right: '20%',
+          animationDelay: '-8s'
+        }} />
+      </div>
+
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <span className="section-tag">服务保障</span>
           <h2 className="section-title">全方位的服务保障</h2>
           <p className="section-desc">六大核心服务，为您的校园交易保驾护航</p>
         </div>
 
-        <div className="services-grid">
+        <div className="services-grid reveal-stagger">
           {services.map((service) => (
             <div
               key={service.id}

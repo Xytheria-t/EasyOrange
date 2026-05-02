@@ -1,130 +1,136 @@
 :root {
-    --floating-nav-bg: rgba(255, 255, 255, 0.72);
-    --floating-nav-border: rgba(255, 255, 255, 0.4);
-    --floating-nav-shadow: 0 8px 32px rgba(249, 115, 22, 0.12), 0 2px 8px rgba(0, 0, 0, 0.04);
-    --floating-nav-text: #1a1a1a;
-    --floating-nav-text-muted: #666666;
-    --floating-nav-accent: #F97316;
-    --floating-nav-hover: rgba(249, 115, 22, 0.08);
-    --floating-nav-radius: 20px;
-    --floating-nav-height: 60px;
-    --floating-nav-glow: rgba(249, 115, 22, 0.15);
+    --island-bg: rgba(255, 255, 255, 0.78);
+    --island-border: rgba(255, 255, 255, 0.55);
+    --island-text: #2a2520;
+    --island-text-muted: #8b8279;
+    --island-accent: #F97316;
+    --island-radius: 24px;
+    --island-height: 64px;
+    --island-shadow: 0 12px 40px rgba(249, 115, 22, 0.1), 0 4px 12px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
+/* ===== 浮空岛容器 ===== */
 .floating-nav {
     position: fixed;
-    top: 16px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
-    height: var(--floating-nav-height);
-    max-width: 1200px;
-    width: calc(100% - 64px);
+    height: var(--island-height);
+    max-width: 720px;
+    width: calc(100% - 48px);
     background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.82) 0%,
-        rgba(255, 255, 255, 0.65) 50%,
-        rgba(255, 255, 255, 0.78) 100%
+        165deg,
+        rgba(255, 255, 255, 0.88) 0%,
+        rgba(255, 253, 250, 0.82) 40%,
+        rgba(255, 248, 240, 0.76) 100%
     );
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: var(--floating-nav-radius);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1.5px solid rgba(255, 255, 255, 0.65);
+    border-radius: var(--island-radius);
     box-shadow:
-        0 0 0 1px rgba(249, 115, 22, 0.05),
-        0 4px 16px rgba(249, 115, 22, 0.08),
-        0 8px 32px rgba(249, 115, 22, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8),
-        inset 0 -1px 0 rgba(249, 115, 22, 0.03);
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        0 0 0 1px rgba(249, 115, 22, 0.06),
+        0 8px 32px rgba(249, 115, 22, 0.08),
+        0 20px 60px rgba(0, 0, 0, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -1px 0 rgba(249, 115, 22, 0.04);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: visible;
+    animation: islandFloat 6s ease-in-out infinite;
 }
 
+/* 浮空岛悬浮动画 */
+@keyframes islandFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-4px); }
+}
+
+/* 底部云雾效果 */
 .floating-nav::before {
     content: '';
     position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.8) 0%,
-        rgba(255, 255, 255, 0.1) 30%,
-        rgba(249, 115, 22, 0.15) 70%,
-        rgba(255, 255, 255, 0.4) 100%
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 28px;
+    background: radial-gradient(
+        ellipse 50% 40% at 50% 50%,
+        rgba(249, 115, 22, 0.08) 0%,
+        rgba(255, 255, 255, 0.04) 40%,
+        transparent 70%
     );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
+    filter: blur(8px);
     pointer-events: none;
-    opacity: 0.6;
-    transition: opacity 0.4s ease;
+    animation: cloudPulse 4s ease-in-out infinite;
 }
 
+@keyframes cloudPulse {
+    0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+    50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+}
+
+/* 顶部高光 */
 .floating-nav::after {
     content: '';
     position: absolute;
     top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
+    left: 15%;
+    right: 15%;
+    height: 1px;
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0) 40%,
-        rgba(255, 255, 255, 0.4) 50%,
-        rgba(255, 255, 255, 0) 60%,
+        rgba(255, 255, 255, 0.9) 20%,
+        rgba(255, 255, 255, 0.6) 50%,
+        rgba(255, 255, 255, 0.9) 80%,
         transparent 100%
     );
-    transition: left 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: none;
 }
 
-.floating-nav:hover::after {
-    left: 100%;
-}
-
-.floating-nav:hover::before {
-    opacity: 1;
-}
-
+/* 悬停状态 - 岛屿上升 */
 .floating-nav:hover {
+    animation-play-state: paused;
+    transform: translateX(-50%) translateY(-6px);
     box-shadow:
         0 0 0 1px rgba(249, 115, 22, 0.1),
-        0 8px 32px rgba(249, 115, 22, 0.15),
-        0 16px 48px rgba(249, 115, 22, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9),
-        inset 0 -1px 0 rgba(249, 115, 22, 0.05);
-    transform: translateX(-50%) translateY(-2px);
+        0 12px 48px rgba(249, 115, 22, 0.14),
+        0 28px 80px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        inset 0 -1px 0 rgba(249, 115, 22, 0.06);
 }
 
+/* 滚动后状态 - 岛屿更实体化 */
 .floating-nav.scrolled {
     background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.92) 0%,
-        rgba(255, 255, 255, 0.85) 50%,
-        rgba(255, 255, 255, 0.88) 100%
+        165deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 254, 252, 0.92) 40%,
+        rgba(255, 252, 248, 0.88) 100%
     );
     box-shadow:
-        0 0 0 1px rgba(249, 115, 22, 0.08),
-        0 8px 32px rgba(249, 115, 22, 0.12),
-        0 16px 48px rgba(0, 0, 0, 0.06),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        0 0 0 1px rgba(249, 115, 22, 0.1),
+        0 12px 48px rgba(249, 115, 22, 0.12),
+        0 28px 80px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 1);
+    animation-play-state: paused;
 }
 
+/* 环境光晕 */
 .floating-nav__glow {
     position: absolute;
-    inset: -2px;
+    inset: -3px;
     border-radius: inherit;
     background: radial-gradient(
-        ellipse 80% 60% at 50% 0%,
-        rgba(249, 115, 22, 0.12) 0%,
-        rgba(244, 63, 94, 0.06) 50%,
-        transparent 70%
+        ellipse 70% 50% at 50% 0%,
+        rgba(249, 115, 22, 0.1) 0%,
+        rgba(244, 63, 94, 0.05) 40%,
+        transparent 65%
     );
     opacity: 0;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.5s ease;
     pointer-events: none;
     z-index: -1;
 }
@@ -133,79 +139,67 @@
     opacity: 1;
 }
 
+/* 外层氛围 */
 .floating-nav__ambient {
     position: absolute;
-    inset: -20px;
-    border-radius: 40px;
+    inset: -30px;
+    border-radius: 50px;
     background: radial-gradient(
-        ellipse 60% 40% at 50% 50%,
-        rgba(249, 115, 22, 0.04) 0%,
-        transparent 70%
+        ellipse 55% 35% at 50% 60%,
+        rgba(249, 115, 22, 0.03) 0%,
+        transparent 60%
     );
     pointer-events: none;
     z-index: -2;
-    animation: ambientPulse 4s ease-in-out infinite;
+    animation: ambientDrift 8s ease-in-out infinite;
 }
 
-@keyframes ambientPulse {
-    0%, 100% { opacity: 0.6; transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.02); }
+@keyframes ambientDrift {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.03); }
 }
 
+/* ===== 内部布局 ===== */
 .floating-nav__inner {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     height: 100%;
-    padding: 0 20px;
+    padding: 0 10px 0 16px;
     position: relative;
     z-index: 1;
 }
 
+/* ===== 品牌区域 ===== */
 .floating-nav__brand {
     display: flex;
     align-items: center;
     gap: 10px;
     text-decoration: none;
-    color: var(--floating-nav-text);
-    font-weight: 600;
+    color: var(--island-text);
+    font-weight: 700;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
-}
-
-.floating-nav__brand::after {
-    content: '';
-    position: absolute;
-    inset: -8px;
-    border-radius: 12px;
-    background: radial-gradient(
-        ellipse at center,
-        rgba(249, 115, 22, 0.1) 0%,
-        transparent 70%
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.floating-nav__brand:hover::after {
-    opacity: 1;
+    padding: 6px 10px 6px 6px;
+    border-radius: 16px;
 }
 
 .floating-nav__brand:hover {
+    background: rgba(249, 115, 22, 0.06);
     transform: scale(1.02);
 }
 
 .floating-nav__logo {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     position: relative;
     filter: drop-shadow(0 2px 4px rgba(249, 115, 22, 0.2));
-    transition: filter 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .floating-nav__brand:hover .floating-nav__logo {
     filter: drop-shadow(0 4px 8px rgba(249, 115, 22, 0.35));
+    transform: rotate(-5deg);
 }
 
 .floating-nav__logo svg {
@@ -214,41 +208,46 @@
 }
 
 .floating-nav__brand-name {
-    font-size: 18px;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #1a1a1a 0%, #F97316 100%);
+    font-size: 17px;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #EA580C 0%, #F97316 50%, #FB923C 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-weight: 700;
+    font-weight: 800;
 }
 
+/* ===== 分隔线 ===== */
 .floating-nav__divider {
     width: 1px;
-    height: 24px;
+    height: 28px;
     background: linear-gradient(
         180deg,
         transparent 0%,
+        rgba(249, 115, 22, 0.15) 30%,
         rgba(249, 115, 22, 0.2) 50%,
+        rgba(249, 115, 22, 0.15) 70%,
         transparent 100%
     );
-    margin: 0 12px;
+    margin: 0 10px;
     flex-shrink: 0;
+    opacity: 0.6;
 }
 
+/* ===== 导航链接 ===== */
 .floating-nav__links {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
 }
 
 .floating-nav__link {
     display: flex;
     align-items: center;
-    padding: 10px 18px;
-    border-radius: 12px;
+    padding: 10px 16px;
+    border-radius: 14px;
     text-decoration: none;
-    color: var(--floating-nav-text-muted);
+    color: var(--island-text-muted);
     font-size: 14px;
     font-weight: 500;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -263,15 +262,16 @@
     border-radius: inherit;
     background: linear-gradient(
         135deg,
-        rgba(249, 115, 22, 0.08) 0%,
-        rgba(244, 63, 94, 0.04) 100%
+        rgba(249, 115, 22, 0.1) 0%,
+        rgba(244, 63, 94, 0.05) 100%
     );
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
 .floating-nav__link:hover {
-    color: var(--floating-nav-text);
+    color: var(--island-text);
+    transform: translateY(-1px);
 }
 
 .floating-nav__link:hover::before {
@@ -279,15 +279,16 @@
 }
 
 .floating-nav__link.active {
-    color: var(--floating-nav-accent);
+    color: var(--island-accent);
     background: linear-gradient(
         135deg,
-        rgba(249, 115, 22, 0.12) 0%,
-        rgba(249, 115, 22, 0.06) 100%
+        rgba(249, 115, 22, 0.1) 0%,
+        rgba(249, 115, 22, 0.04) 100%
     );
     box-shadow:
-        inset 0 1px 0 rgba(249, 115, 22, 0.1),
-        0 0 12px rgba(249, 115, 22, 0.08);
+        inset 0 1px 0 rgba(249, 115, 22, 0.08),
+        0 2px 8px rgba(249, 115, 22, 0.06);
+    font-weight: 600;
 }
 
 .floating-nav__link-text {
@@ -298,27 +299,29 @@
     z-index: 1;
 }
 
+/* ===== 操作按钮区 ===== */
 .floating-nav__actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-left: auto;
 }
 
+/* 图标按钮 */
 .floating-nav__icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     border: none;
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.6) 0%,
-        rgba(255, 255, 255, 0.3) 100%
+        rgba(255, 255, 255, 0.7) 0%,
+        rgba(255, 255, 255, 0.4) 100%
     );
     border-radius: 12px;
-    color: var(--floating-nav-text-muted);
+    color: var(--island-text-muted);
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
@@ -327,37 +330,23 @@
         0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.floating-nav__icon-btn::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    background: linear-gradient(
-        135deg,
-        rgba(249, 115, 22, 0.3) 0%,
-        rgba(244, 63, 94, 0.2) 100%
-    );
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: -1;
-}
-
 .floating-nav__icon-btn:hover {
-    color: var(--floating-nav-accent);
-    transform: translateY(-2px);
+    color: var(--island-accent);
+    transform: translateY(-2px) scale(1.05);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.9),
         0 4px 12px rgba(249, 115, 22, 0.15),
-        0 0 20px rgba(249, 115, 22, 0.1);
-}
-
-.floating-nav__icon-btn:hover::before {
-    opacity: 1;
+        0 0 20px rgba(249, 115, 22, 0.08);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 255, 255, 0.6) 100%
+    );
 }
 
 .floating-nav__icon-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 19px;
+    height: 19px;
     transition: transform 0.3s ease;
 }
 
@@ -365,29 +354,27 @@
     transform: scale(1.1);
 }
 
+/* 通知红点 */
 .notification-dot {
     position: absolute;
-    top: 7px;
-    right: 7px;
+    top: 6px;
+    right: 6px;
     width: 8px;
     height: 8px;
     background: linear-gradient(135deg, #EF4444 0%, #F43F5E 100%);
     border-radius: 50%;
-    border: 2px solid white;
+    border: 2px solid rgba(255, 255, 255, 0.9);
     box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
     display: none;
     animation: notificationPulse 2s ease-in-out infinite;
 }
 
 @keyframes notificationPulse {
-    0%, 100% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
-    50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.6); }
+    0%, 100% { box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.6); }
 }
 
-.floating-nav__icon-btn:has(.notification-dot) {
-    display: flex;
-}
-
+/* ===== 用户菜单 ===== */
 .floating-nav__user {
     position: relative;
 }
@@ -395,15 +382,15 @@
 .floating-nav__user-btn {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 6px 12px 6px 6px;
+    gap: 8px;
+    padding: 5px 10px 5px 5px;
     background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.8) 0%,
         rgba(255, 255, 255, 0.5) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 14px;
+    border: 1.5px solid rgba(255, 255, 255, 0.6);
+    border-radius: 16px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow:
@@ -412,16 +399,16 @@
 }
 
 .floating-nav__user-btn:hover {
-    border-color: rgba(249, 115, 22, 0.4);
+    border-color: rgba(249, 115, 22, 0.3);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.9),
         0 4px 16px rgba(249, 115, 22, 0.12),
-        0 0 24px rgba(249, 115, 22, 0.08);
+        0 0 24px rgba(249, 115, 22, 0.06);
     transform: translateY(-1px);
 }
 
 .floating-nav__user.active .floating-nav__user-btn {
-    border-color: rgba(249, 115, 22, 0.4);
+    border-color: rgba(249, 115, 22, 0.35);
     background: linear-gradient(
         135deg,
         rgba(249, 115, 22, 0.08) 0%,
@@ -432,12 +419,12 @@
 .floating-nav__user-avatar {
     width: 30px;
     height: 30px;
-    border-radius: 10px;
+    border-radius: 12px;
     background: linear-gradient(
         135deg,
-        var(--floating-nav-accent) 0%,
+        var(--island-accent) 0%,
         #F43F5E 50%,
-        var(--floating-nav-accent) 100%
+        #FB923C 100%
     );
     background-size: 200% 200%;
     animation: gradientShift 3s ease infinite;
@@ -445,11 +432,11 @@
     align-items: center;
     justify-content: center;
     color: white;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
     box-shadow:
         0 2px 8px rgba(249, 115, 22, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 @keyframes gradientShift {
@@ -460,7 +447,7 @@
 .floating-nav__user-name {
     font-size: 13px;
     font-weight: 500;
-    color: var(--floating-nav-text);
+    color: var(--island-text);
     max-width: 80px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -468,49 +455,63 @@
 }
 
 .floating-nav__user-dropdown-icon {
-    width: 16px;
-    height: 16px;
-    color: var(--floating-nav-text-muted);
+    width: 15px;
+    height: 15px;
+    color: var(--island-text-muted);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .floating-nav__user.active .floating-nav__user-dropdown-icon {
     transform: rotate(180deg);
-    color: var(--floating-nav-accent);
+    color: var(--island-accent);
 }
 
+/* 下拉菜单 */
 .floating-nav__user-menu {
     position: absolute;
-    top: calc(100% + 10px);
+    top: calc(100% + 12px);
     right: 0;
     min-width: 200px;
     background: linear-gradient(
-        135deg,
+        165deg,
         rgba(255, 255, 255, 0.95) 0%,
-        rgba(255, 255, 255, 0.85) 100%
+        rgba(255, 253, 250, 0.92) 100%
     );
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 16px;
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    border: 1.5px solid rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
     box-shadow:
-        0 0 0 1px rgba(249, 115, 22, 0.05),
-        0 8px 32px rgba(249, 115, 22, 0.1),
-        0 16px 48px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        0 0 0 1px rgba(249, 115, 22, 0.06),
+        0 12px 40px rgba(249, 115, 22, 0.1),
+        0 24px 64px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.9);
     padding: 10px;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-12px) scale(0.96);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(-10px) scale(0.96);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     display: block;
+}
+
+/* 菜单小三角 */
+.floating-nav__user-menu::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    right: 24px;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 253, 250, 0.92) 100%);
+    border-left: 1.5px solid rgba(255, 255, 255, 0.7);
+    border-top: 1.5px solid rgba(255, 255, 255, 0.7);
+    transform: rotate(45deg);
 }
 
 .floating-nav__user.active .floating-nav__user-menu {
     opacity: 1;
     visibility: visible;
     transform: translateY(0) scale(1);
-    display: block;
 }
 
 .floating-nav__menu-item {
@@ -518,35 +519,57 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 12px 14px;
+    padding: 11px 14px;
     border: none;
     background: transparent;
-    border-radius: 10px;
-    color: var(--floating-nav-text);
+    border-radius: 12px;
+    color: var(--island-text);
     font-size: 14px;
     text-decoration: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.floating-nav__menu-item:hover {
+.floating-nav__menu-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
     background: linear-gradient(
         135deg,
         rgba(249, 115, 22, 0.1) 0%,
         rgba(244, 63, 94, 0.05) 100%
     );
-    transform: translateX(4px);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.floating-nav__menu-item:hover {
+    transform: translateX(3px);
+}
+
+.floating-nav__menu-item:hover::before {
+    opacity: 1;
 }
 
 .floating-nav__menu-item svg {
     width: 18px;
     height: 18px;
-    color: var(--floating-nav-text-muted);
-    transition: color 0.2s ease;
+    color: var(--island-text-muted);
+    transition: color 0.25s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .floating-nav__menu-item:hover svg {
-    color: var(--floating-nav-accent);
+    color: var(--island-accent);
+}
+
+.floating-nav__menu-item span {
+    position: relative;
+    z-index: 1;
 }
 
 .floating-nav__menu-divider {
@@ -554,7 +577,8 @@
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(249, 115, 22, 0.15) 50%,
+        rgba(249, 115, 22, 0.12) 30%,
+        rgba(249, 115, 22, 0.12) 70%,
         transparent 100%
     );
     margin: 8px 0;
@@ -568,7 +592,7 @@
     color: #EF4444;
 }
 
-.floating-nav__menu-item--logout:hover {
+.floating-nav__menu-item--logout:hover::before {
     background: linear-gradient(
         135deg,
         rgba(239, 68, 68, 0.1) 0%,
@@ -576,21 +600,22 @@
     );
 }
 
+/* ===== 登录按钮 ===== */
 .floating-nav__login-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
+    gap: 7px;
+    padding: 10px 18px;
     background: linear-gradient(
         135deg,
-        var(--floating-nav-accent) 0%,
+        var(--island-accent) 0%,
         #F43F5E 100%
     );
     background-size: 200% 200%;
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 14px;
+    border-radius: 14px;
+    font-size: 13px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
@@ -598,8 +623,8 @@
     position: relative;
     overflow: hidden;
     box-shadow:
-        0 2px 8px rgba(249, 115, 22, 0.25),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        0 3px 10px rgba(249, 115, 22, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .floating-nav__login-btn::before {
@@ -617,9 +642,9 @@
 
 .floating-nav__login-btn:hover {
     background-position: 100% 100%;
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     box-shadow:
-        0 6px 20px rgba(249, 115, 22, 0.35),
+        0 6px 20px rgba(249, 115, 22, 0.4),
         inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
@@ -628,8 +653,8 @@
 }
 
 .floating-nav__login-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 17px;
+    height: 17px;
     transition: transform 0.3s ease;
 }
 
@@ -637,22 +662,23 @@
     transform: scale(1.1);
 }
 
+/* ===== 发布按钮 ===== */
 .floating-nav__publish-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
+    gap: 7px;
+    padding: 10px 18px;
     background: linear-gradient(
         135deg,
-        var(--floating-nav-accent) 0%,
+        var(--island-accent) 0%,
         #EA580C 50%,
         #F43F5E 100%
     );
     background-size: 200% 200%;
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 14px;
+    border-radius: 14px;
+    font-size: 13px;
     font-weight: 600;
     text-decoration: none;
     cursor: pointer;
@@ -660,9 +686,9 @@
     position: relative;
     overflow: hidden;
     box-shadow:
-        0 2px 10px rgba(249, 115, 22, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+        0 3px 12px rgba(249, 115, 22, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.08);
 }
 
 .floating-nav__publish-btn::before {
@@ -697,12 +723,11 @@
 
 .floating-nav__publish-btn:hover {
     background-position: 100% 0%;
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     box-shadow:
-        0 6px 24px rgba(249, 115, 22, 0.4),
-        0 0 32px rgba(249, 115, 22, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+        0 6px 24px rgba(249, 115, 22, 0.45),
+        0 0 32px rgba(249, 115, 22, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .floating-nav__publish-btn:hover::before {
@@ -714,8 +739,8 @@
 }
 
 .floating-nav__publish-btn .plus-icon {
-    width: 16px;
-    height: 16px;
+    width: 15px;
+    height: 15px;
     transition: transform 0.3s ease;
 }
 
@@ -723,31 +748,43 @@
     transform: rotate(90deg);
 }
 
+/* ===== 工具类 ===== */
 .is-hidden {
     display: none !important;
 }
 
+/* ===== 响应式 ===== */
 @media (max-width: 768px) {
     .floating-nav {
-        top: 8px;
-        left: 12px;
-        right: 12px;
+        top: 12px;
+        left: 16px;
+        right: 16px;
         width: auto;
         max-width: none;
         transform: none;
         height: auto;
         min-height: 56px;
-        border-radius: 16px;
+        border-radius: 20px;
+        animation: islandFloatMobile 5s ease-in-out infinite;
+    }
+
+    @keyframes islandFloatMobile {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
     }
 
     .floating-nav:hover {
-        transform: translateY(-2px);
+        transform: translateY(-4px);
+    }
+
+    .floating-nav.scrolled {
+        animation-play-state: paused;
     }
 
     .floating-nav__inner {
         flex-wrap: wrap;
         padding: 10px 14px;
-        gap: 8px;
+        gap: 6px;
     }
 
     .floating-nav__brand-name {
@@ -762,6 +799,7 @@
         order: 3;
         width: 100%;
         justify-content: center;
+        padding-top: 4px;
     }
 
     .floating-nav__actions {
@@ -770,5 +808,33 @@
 
     .floating-nav__user-name {
         display: none;
+    }
+
+    .floating-nav__login-btn span,
+    .floating-nav__publish-btn span {
+        display: none;
+    }
+
+    .floating-nav__login-btn,
+    .floating-nav__publish-btn {
+        padding: 10px;
+        border-radius: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .floating-nav {
+        left: 12px;
+        right: 12px;
+        border-radius: 18px;
+    }
+
+    .floating-nav__inner {
+        padding: 8px 12px;
+    }
+
+    .floating-nav__link {
+        padding: 8px 12px;
+        font-size: 13px;
     }
 }

@@ -90,13 +90,15 @@
     --gray-900: #1A1612;
     --gray-950: #0D0B09;
 
-    /* Text colors - Warm tint */
+    /* Text colors - Warm tint with orange-pink harmony */
     --text-primary: #1E1A16;
     --text-secondary: #5A524A;
-    --text-tertiary: #9E968E;
+    --text-tertiary: #8B7E72;
     --text-inverse: #FFFFFF;
     --text-heading: #1A1612;
     --text-accent: #C2410C;
+    --text-warm: #A67C52;
+    --text-rose: #B76E79;
 
     /* Borders */
     --border-light: rgba(42, 37, 32, 0.05);
@@ -180,6 +182,11 @@
     /* Orange glow gradient */
     --gradient-orange-glow: linear-gradient(135deg, #F97316 0%, #FB923C 50%, #FDA4AF 100%);
 
+    /* Text gradient - Orange to Pink-Purple for headings/labels */
+    --gradient-text-primary: linear-gradient(135deg, #EA580C 0%, #F97316 30%, #FB7185 60%, #C39BD3 100%);
+    --gradient-text-soft: linear-gradient(135deg, #C2410C 0%, #F97316 40%, #C39BD3 100%);
+    --gradient-text-warm: linear-gradient(90deg, #9A3412 0%, #C2410C 35%, #F97316 70%, #FB7185 100%);
+
     /* Transitions - Ultra smooth */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
@@ -245,5 +252,5 @@
 
     /* Spacing */
     --container-max: 1280px;
-    --header-height: 76px;
+    --header-height: 96px;
 }

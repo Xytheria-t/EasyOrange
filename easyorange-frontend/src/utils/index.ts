@@ -57,5 +57,8 @@ export { getUserInitial, createAvatarElement } from './avatar.js';
 // 网络工具
 export { network, NetworkUtils } from './network.js';
 
+// 错误处理
+export { errorHandler } from './errorHandler.js';
+
 // 验证工具
 export { validator, ValidatorUtils } from './validator.js';

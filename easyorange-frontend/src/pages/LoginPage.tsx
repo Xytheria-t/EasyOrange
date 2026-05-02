@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLogin, useRegister } from '@/hooks'
 import { userApi } from '@/api/userApi'
-import { storage, toast, validator } from '@/utils'
+import { toast, validator, errorHandler } from '@/utils'
+import { ProfileSetupModal } from '@/components/ProfileSetupModal'
 import './LoginPage.css'
 
 type LoginMethod = 'password' | 'sms'
@@ -21,6 +22,8 @@ export function LoginPage() {
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showProfileSetup, setShowProfileSetup] = useState(false)
+  const [registeredUsername, setRegisteredUsername] = useState('')
   const navigate = useNavigate()
   const login = useLogin()
   const register = useRegister()
@@ -28,7 +31,7 @@ export function LoginPage() {
 
   useEffect(() => {
     return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current)
+      if (countdownRef.current) { clearInterval(countdownRef.current) }
     }
   }, [])
 
@@ -37,7 +40,7 @@ export function LoginPage() {
     countdownRef.current = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          if (countdownRef.current) clearInterval(countdownRef.current)
+          if (countdownRef.current) { clearInterval(countdownRef.current) }
           return 0
         }
         return prev - 1
@@ -57,7 +60,7 @@ export function LoginPage() {
       startCountdown()
       toast.success('验证码已发送')
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '发送验证码失败'
+      const msg = errorHandler.handle(err as Error, 'unknown')
       toast.error(msg)
     } finally {
       setIsSendingCode(false)
@@ -98,7 +101,7 @@ export function LoginPage() {
           toast.success('登录成功')
           navigate('/')
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : '登录失败，请检查账号密码'
+          const errorMessage = errorHandler.handle(err as Error)
           setError(errorMessage)
         } finally {
           setIsLoading(false)
@@ -125,7 +128,7 @@ export function LoginPage() {
           toast.success('登录成功')
           navigate('/')
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : '登录失败，请检查验证码'
+          const errorMessage = errorHandler.handle(err as Error)
           setError(errorMessage)
         } finally {
           setIsLoading(false)
@@ -173,12 +176,10 @@ export function LoginPage() {
           password: formData.password
         })
 
-        storage.set('needCompleteProfile', 'true')
-        setTimeout(() => {
-          navigate('/profile?firstLogin=1')
-        }, 500)
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : '注册失败，请稍后重试'
+        setRegisteredUsername(formData.account)
+        setShowProfileSetup(true)
+      } catch (err: unknown) {
+        const errorMessage = errorHandler.handle(err as Error, 'unknown')
         setError(errorMessage)
       } finally {
         setIsLoading(false)
@@ -473,6 +474,7 @@ export function LoginPage() {
                     autoComplete="username"
                   />
                 </div>
+                <div className="auth-page-input-hint">3-20位，仅支持字母、数字和下划线</div>
               </div>
 
               <div className="auth-page-input-group">
@@ -490,6 +492,7 @@ export function LoginPage() {
                     autoComplete="new-password"
                   />
                 </div>
+                <div className="auth-page-input-hint">6-20位，需包含大小写字母和数字</div>
               </div>
 
               <div className="auth-page-input-group">
@@ -542,6 +545,12 @@ export function LoginPage() {
           )}
         </div>
       </div>
+
+      <ProfileSetupModal
+        isOpen={showProfileSetup}
+        onClose={() => setShowProfileSetup(false)}
+        username={registeredUsername}
+      />
     </div>
   )
 }

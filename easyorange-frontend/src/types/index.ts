@@ -51,6 +51,7 @@ export interface Result<T = unknown> {
     code: ApiCode;
     message: string;
     data: T;
+    timestamp: number;
 }
 
 export interface PageParams {
@@ -83,15 +84,13 @@ export type Gender = 'MALE' | 'FEMALE' | 'UNKNOWN';
 export interface User {
     userId: number;
     username: string;
+    nickname?: string;
     email: string;
     phone: string | null;
     studentId: string | null;
     realName: string | null;
     avatar: string | null;
     status: number;
-    statusDesc: string | null;
-    gender: number | null;
-    userType: string | null;
     createTime: string;
     updateTime: string;
 }
@@ -140,21 +139,7 @@ export interface EmailLoginRequest {
 export interface LoginResponse {
     token: string;
     refreshToken: string;
-    user: UserInfo;
-}
-
-export interface UserInfo {
-    userId: number;
-    username: string;
-    email: string;
-    phone: string | null;
-    studentId: string | null;
-    realName: string | null;
-    avatar: string | null;
-    status: number;
-    gender: number | null;
-    createTime: string;
-    updateTime: string;
+    user: User;
 }
 
 export interface UserStats {
@@ -180,7 +165,7 @@ export interface Product {
     originalPrice: number | null;
     categoryId: number;
     categoryName: string;
-    condition: ProductCondition;
+    condition: number;
     conditionLevel: number;
     status: ProductStatus;
     images: string[];
@@ -228,8 +213,8 @@ export interface ProductQueryParams {
     status?: ProductStatus;
     sellerId?: number;
     sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
-    current?: number;
-    size?: number;
+    pageNum?: number;
+    pageSize?: number;
 }
 
 export interface CreateProductRequest {
@@ -267,10 +252,35 @@ export interface Category {
     productCount: number;
 }
 
+export interface FavoriteProduct {
+    id: number;
+    sellerId: number;
+    username: string;
+    userAvatar: string | null;
+    categoryId: number;
+    categoryName: string;
+    title: string;
+    description: string;
+    price: number;
+    originalPrice: number | null;
+    stock: number;
+    status: number;
+    statusDesc: string | null;
+    views: number;
+    condition: number;
+    conditionDesc: string | null;
+    location: string;
+    contactMethod: string | null;
+    images: string[];
+    mainImageUrl: string | null;
+    createTime: string;
+    updateTime: string;
+}
+
 export interface Favorite {
     id: number;
     productId: number;
-    product: Product;
+    product: FavoriteProduct;
     createTime: string;
 }
 
@@ -300,7 +310,6 @@ export type OrderStatus =
     | 'PENDING_PAYMENT'
     | 'PAID'
     | 'SHIPPED'
-    | 'DELIVERED'
     | 'COMPLETED'
     | 'CANCELLED'
     | 'REFUNDED';
@@ -309,17 +318,15 @@ export const ORDER_STATUS_CODE: Record<number, OrderStatus> = {
     0: 'PENDING_PAYMENT',
     1: 'PAID',
     2: 'SHIPPED',
-    3: 'DELIVERED',
-    4: 'COMPLETED',
-    5: 'CANCELLED',
-    6: 'REFUNDED',
+    3: 'COMPLETED',
+    4: 'CANCELLED',
+    5: 'REFUNDED',
 };
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
     PENDING_PAYMENT: '待付款',
     PAID: '待发货',
     SHIPPED: '已发货',
-    DELIVERED: '已送达',
     COMPLETED: '已完成',
     CANCELLED: '已取消',
     REFUNDED: '已退款',

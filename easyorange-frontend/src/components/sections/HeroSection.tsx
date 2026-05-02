@@ -62,14 +62,27 @@ export default function HeroSection() {
 
       <div className="container hero-inner">
         <div className="hero-content">
-          <div className="hero-badge animate-fade-in">
-            <span className="badge-dot"></span>
-            <span>校园专属二手交易平台</span>
+          <div className="hero-brand animate-fade-in">
+            <span className="brand-dot"></span>
+            <span>EasyOrange</span>
           </div>
 
-          <h1 className="hero-title animate-slide-up">
-            <span className="title-line">让闲置流转</span>
-            <span className="title-line gradient-text">让价值延续</span>
+          <h1 className="hero-title animate-title-reveal">
+            <span className="title-line title-line-1">
+              <span className="title-char">让</span>
+              <span className="title-char">闲</span>
+              <span className="title-char">置</span>
+              <span className="title-char">流</span>
+              <span className="title-char">转</span>
+            </span>
+            <span className="title-line title-line-2">
+              <span className="title-char">让</span>
+              <span className="title-char">价</span>
+              <span className="title-char">值</span>
+              <span className="title-char">延</span>
+              <span className="title-char">续</span>
+            </span>
+            <span className="title-glow"></span>
           </h1>
 
           <p className="hero-subtitle animate-slide-up delay-1">
@@ -160,6 +173,22 @@ export default function HeroSection() {
           </div>
           <span>向下滚动探索更多</span>
         </div>
+      </div>
+
+      {/* 底部波浪过渡 */}
+      <div className="hero-wave-bottom">
+        <svg viewBox="0 0 1440 80" preserveAspectRatio="none">
+          <path
+            d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 L1440,80 L0,80 Z"
+            fill="#FAF8F5"
+            opacity="0.8"
+          />
+          <path
+            d="M0,50 C360,90 720,10 1080,50 C1260,70 1350,60 1440,50 L1440,80 L0,80 Z"
+            fill="#FAF8F5"
+            opacity="0.5"
+          />
+        </svg>
       </div>
     </section>
   )

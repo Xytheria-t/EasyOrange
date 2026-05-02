@@ -6,7 +6,7 @@ export function useProductSearch(keyword: string, params?: Omit<ProductQueryPara
     return useQuery<PageResult<Product>>({
         queryKey: ['productSearch', keyword, params],
         queryFn: async () => {
-            const response = await productApi.searchProducts(keyword, params?.current, params?.size);
+            const response = await productApi.searchProducts(keyword, params?.pageNum, params?.pageSize);
             return response.data;
         },
         enabled: keyword.trim().length > 0,

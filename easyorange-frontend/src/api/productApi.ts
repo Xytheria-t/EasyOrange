@@ -60,10 +60,10 @@ export const productApi = {
         return request<PageResult<Product>>(`/products/category/${category}`);
     },
 
-    searchProducts(keyword: string, current?: number, size?: number) {
+    searchProducts(keyword: string, pageNum?: number, pageSize?: number) {
         return request<PageResult<Product>>('/products/search', {
             method: 'GET',
-            params: { keyword, current, size } as Record<string, unknown>
+            params: { keyword, pageNum, pageSize } as Record<string, unknown>
         });
     },
 

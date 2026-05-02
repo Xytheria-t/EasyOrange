@@ -1,7 +1,6 @@
 import { storage } from '../../utils/index.js';
 import { navigation } from '../../routes/navigation.js';
 import { request } from '../../api/core/request.js';
-import { isSuccessCode } from '../../types/index.js';
 import { useAuthStore } from '../../store/authStore.js';
 
 const TOKEN_STORAGE_KEY = 'token';
@@ -66,13 +65,13 @@ function getUnauthorizedRedirectQuery(): Record<string, string> | undefined {
 
 export function getStoredToken(): string | null {
     const zustandToken = useAuthStore.getState().token;
-    if (zustandToken) return zustandToken;
+    if (zustandToken) { return zustandToken; }
     return storage.get<string | null>(TOKEN_STORAGE_KEY, null);
 }
 
 export function getStoredUser(): AuthSessionUser | null {
     const zustandUser = useAuthStore.getState().user;
-    if (zustandUser) return zustandUser as unknown as AuthSessionUser;
+    if (zustandUser) { return zustandUser as unknown as AuthSessionUser; }
     return storage.get<AuthSessionUser | null>(USER_STORAGE_KEY, null);
 }
 
@@ -107,14 +106,15 @@ function cancelScheduledRefresh(): void {
     }
 }
 
-function syncAllStores(token: string, user: AuthSessionUser, expiresAt?: number): void {
+function syncAllStores(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
     storage.set(TOKEN_STORAGE_KEY, token);
     storage.set(USER_STORAGE_KEY, user);
 
+    const finalRefreshToken = refreshToken ?? useAuthStore.getState().refreshToken ?? '';
     useAuthStore.getState().login(
         user as unknown as import('../../types/index.js').User,
         token,
-        useAuthStore.getState().refreshToken ?? ''
+        finalRefreshToken
     );
 
     if (expiresAt) {
@@ -147,48 +147,42 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 
     isRefreshing = true;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     try {
         const refreshToken = useAuthStore.getState().refreshToken;
-        const response = await fetch('/api/auth/refresh', {
+        const response = await request<string>('/auth/refresh', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ refreshToken }),
-            signal: controller.signal
+            body: { refreshToken },
+            skipAuth: true,
+            timeout: 8000,
+            retries: 0,
+            dedupe: false
         });
 
-        if (!response.ok) {
-            throw new Error('Refresh failed');
-        }
-
-        const data = await response.json() as { code: number; data?: string };
-
-        if (!isSuccessCode(data.code) || !data.data) {
+        if (!response.data) {
             throw new Error('Refresh response invalid');
         }
 
         const expiresAt = Date.now() + TOKEN_EXPIRES_IN_MINUTES * 60 * 1000;
-        const user = getStoredUser() ?? { username: '', nickname: '' };
-        syncAllStores(data.data, user, expiresAt);
-        notifySubscribers(data.data);
+        const user = getStoredUser();
+        if (user) {
+            syncAllStores(response.data, user, expiresAt);
+        } else {
+            syncAllStores(response.data, { username: '', nickname: '' }, expiresAt);
+        }
+        notifySubscribers(response.data);
 
-        return data.data;
+        return response.data;
     } catch {
         handleUnauthorized();
         return null;
     } finally {
-        clearTimeout(timeoutId);
         isRefreshing = false;
     }
 }
 
-export function setSession(token: string, user: AuthSessionUser, expiresAt?: number): void {
-    syncAllStores(token, user, expiresAt);
+export function setSession(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
+    syncAllStores(token, user, expiresAt, refreshToken);
     unauthorizedRedirectInFlight = false;
     emitAuthSessionChange();
 }

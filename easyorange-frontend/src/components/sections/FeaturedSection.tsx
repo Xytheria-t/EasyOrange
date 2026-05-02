@@ -51,14 +51,30 @@ export default function FeaturedSection() {
 
   return (
     <section className="featured-section">
+      {/* 顶部弥散光晕过渡 */}
+      <div className="orb-transition orb-transition-top">
+        <div className="transition-orb" style={{
+          width: '400px', height: '400px',
+          background: 'radial-gradient(circle, rgba(195, 155, 211, 0.1) 0%, transparent 70%)',
+          top: '-120px', right: '15%',
+          animationDelay: '-3s'
+        }} />
+        <div className="transition-orb" style={{
+          width: '350px', height: '350px',
+          background: 'radial-gradient(circle, rgba(249, 115, 22, 0.06) 0%, transparent 70%)',
+          top: '-100px', left: '25%',
+          animationDelay: '-6s'
+        }} />
+      </div>
+
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <span className="section-tag">平台优势</span>
           <h2 className="section-title">为什么选择 EasyOrange</h2>
           <p className="section-desc">专为大学生打造的二手交易平台，让校园交易更简单、更安全</p>
         </div>
 
-        <div className="featured-grid">
+        <div className="featured-grid reveal-stagger">
           {features.map((feature) => (
             <a
               key={feature.id}

@@ -1,6 +1,5 @@
 import { isSuccessCode, type ApiCode, type Result, type RequestOptions } from '../../types/index.js';
-import { storage } from '../../utils/index.js';
-import { refreshAccessToken } from '../../app/authSession.js';
+import { refreshAccessToken, getStoredToken } from '../../app/authSession.js';
 
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT = 10000;
@@ -170,12 +169,18 @@ const parseError = async (response: Response): Promise<ApiClientError> => {
     let details: unknown = null;
 
     try {
-        const body = await response.json() as { message?: string; msg?: string; data?: unknown; errors?: unknown };
-        const rawMessage = body?.message ?? body?.msg ?? message;
-        message = escapeHtml(String(rawMessage));
+        const body = await response.json() as { message?: string; msg?: string; data?: unknown; errors?: unknown; code?: string | number };
+        
+        if (body?.message || body?.msg) {
+            message = escapeHtml(String(body.message ?? body.msg));
+        }
         details = body?.data ?? body?.errors ?? null;
     } catch {
-        // ignore
+        try {
+            await response.text();
+        } catch {
+            // ignore
+        }
     }
 
     return new ApiClientError(message, response.status, details);
@@ -246,14 +251,10 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
                 config.headers['Content-Type'] = 'application/json';
             }
         }
-    } else {
-        if (!config.headers['Content-Type']) {
-            config.headers['Content-Type'] = 'application/json';
-        }
     }
 
     if (!skipAuth) {
-        const token = storage.get<string>('token');
+        const token = getStoredToken();
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }

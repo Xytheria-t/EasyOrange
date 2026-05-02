@@ -5,6 +5,7 @@ import type {
     LoginResponse,
     User
 } from '../types/index.js';
+import { useAuthStore } from '../store';
 
 export const userApi = {
     login(data: LoginRequest) {
@@ -15,14 +16,22 @@ export const userApi = {
     },
 
     register(data: RegisterRequest) {
-        return request<void>('/auth/register', {
+        return request<number>('/auth/register', {
             method: 'POST',
             body: data
         });
     },
 
     logout() {
-        return request<void>('/auth/logout', { method: 'POST' });
+        const refreshToken = useAuthStore.getState().refreshToken;
+        const headers: Record<string, string> = {};
+        if (refreshToken) {
+            headers['X-Refresh-Token'] = `Bearer ${refreshToken}`;
+        }
+        return request<void>('/auth/logout', {
+            method: 'POST',
+            headers
+        });
     },
 
     refreshToken(refreshToken: string) {
@@ -50,7 +59,7 @@ export const userApi = {
         return request<User>('/users/me');
     },
 
-    updateProfile(data: { email?: string; phone?: string; gender?: number }) {
+    updateProfile(data: { nickname?: string; email?: string; phone?: string; gender?: number; realName?: string; studentId?: string }) {
         return request<User>('/users/me', {
             method: 'PUT',
             body: data

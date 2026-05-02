@@ -1,23 +1,47 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useProducts } from '@/hooks';
 import { ProductCard } from '@/components/sections/ProductCard';
-import { Button } from '@/components/ui/Button';
+
 import { ToolsPlaza } from '@/components/products/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/products/FilterSidebar';
+import { favoriteApi } from '@/api/favoriteApi';
+import { useAuthStore } from '@/store/authStore';
+import { useUIStore } from '@/store/uiStore';
 import type { ProductQueryParams, Product } from '@/types';
-import '@/styles/products.css';
+import '@/styles/products-premium.css';
 
 export function ProductsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { token } = useAuthStore();
+  const addToast = useUIStore((s) => s.addToast);
   const initialCategoryId = searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  const { data: favoritesData } = useQuery({
+    queryKey: ['favorites', 'ids'],
+    queryFn: async () => {
+      const res = await favoriteApi.getList({ pageNum: 1, pageSize: 200 });
+      return res.data;
+    },
+    enabled: !!token,
+    staleTime: 30 * 1000,
+  });
+
+  const favoriteIds = useMemo(() => {
+    if (!favoritesData?.records) {
+      return new Set<number>();
+    }
+    return new Set(favoritesData.records.map((f: { productId: number }) => f.productId));
+  }, [favoritesData]);
+
   const [params, setParams] = useState<ProductQueryParams>({
-    current: 1,
-    size: 20,
+    pageNum: 1,
+    pageSize: 20,
     keyword: initialKeyword || undefined,
     categoryId: initialCategoryId ? Number(initialCategoryId) : undefined,
     sort: 'newest',
@@ -35,7 +59,7 @@ export function ProductsPage() {
   ];
 
   const handleSortChange = (sort: NonNullable<ProductQueryParams['sort']>) => {
-    setParams((prev) => ({ ...prev, sort, current: 1 }));
+    setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
   };
 
   const handleFilterChange = (_filter: string) => {
@@ -49,17 +73,36 @@ export function ProductsPage() {
       priceMax: filters.priceMax,
       conditions: filters.conditions.length > 0 ? filters.conditions : undefined,
       sort: filters.sort as ProductQueryParams['sort'],
-      current: 1,
+      pageNum: 1,
     }));
     setIsFilterOpen(false);
   };
 
   const handleResetFilters = () => {
     setParams({
-      current: 1,
-      size: 20,
+      pageNum: 1,
+      pageSize: 20,
       sort: 'newest',
     });
+  };
+
+  const handleFavorite = async (productId: number, isFavorited: boolean) => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    try {
+      if (isFavorited) {
+        await favoriteApi.add(productId);
+        addToast({ type: 'success', message: '已收藏' });
+      } else {
+        await favoriteApi.remove(productId);
+        addToast({ type: 'success', message: '已取消收藏' });
+      }
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+    } catch {
+      addToast({ type: 'error', message: isFavorited ? '收藏失败' : '取消收藏失败' });
+    }
   };
 
   if (isLoading) {
@@ -71,10 +114,10 @@ export function ProductsPage() {
               <div className="skeleton-line" style={{ width: 80, height: 20 }} />
             </div>
           </div>
-          <div className="products-grid">
+          <div className="products-grid-premium">
             {[...Array(10)].map((_, i) => (
-              <div key={i} className="product-card-loading">
-                <div className="product-image-loading" />
+              <div key={i} className="product-card-loading-premium">
+                <div className="product-image-loading-premium" />
                 <div className="product-info-loading">
                   <div className="loading-line short" />
                   <div className="loading-line" />
@@ -137,26 +180,37 @@ export function ProductsPage() {
           </div>
         </div>
 
-        <div className="products-grid">
-          {products.map((product: Product) => (
-            <ProductCard key={product.id} product={product} onViewDetails={(id) => navigate(`/products/${id}`)} />
+        <div className="products-grid-premium">
+          {products.map((product: Product, index: number) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              index={index}
+              isFavorited={favoriteIds.has(product.id)}
+              onFavorite={handleFavorite}
+              onViewDetails={(id) => navigate(`/products/${id}`)}
+            />
           ))}
         </div>
 
         {products.length > 0 && (
-          <div className="load-more-section">
-            <Button
-              variant="outline"
-              onClick={() => setParams((prev) => ({ ...prev, size: (prev.size || 20) + 20 }))}
+          <div className="load-more-premium">
+            <button
+              className="btn-load-more"
+              onClick={() => setParams((prev) => ({ ...prev, pageSize: (prev.pageSize || 20) + 20 }))}
             >
-              加载更多
-            </Button>
+              <span>加载更多</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <polyline points="19 12 12 19 5 12" />
+              </svg>
+            </button>
           </div>
         )}
 
         {products.length === 0 && (
-          <div className="no-results">
-            <div className="no-results-icon">
+          <div className="no-results-premium">
+            <div className="no-results-icon-premium">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />

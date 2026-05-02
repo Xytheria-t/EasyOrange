@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { ProductCard } from './ProductCard'
 import { useProducts } from '@/hooks'
 import type { Product, ProductQueryParams } from '@/types'
@@ -6,10 +6,10 @@ import type { Product, ProductQueryParams } from '@/types'
 type FilterKey = 'all' | 'new' | 'hot' | 'discount'
 
 const FILTER_PARAMS: Record<FilterKey, ProductQueryParams> = {
-  all: { sort: 'newest', current: 1, size: 8 },
-  new: { sort: 'newest', current: 1, size: 8 },
-  hot: { sort: 'popular', current: 1, size: 8 },
-  discount: { sort: 'price_asc', current: 1, size: 8 },
+  all: { sort: 'newest', pageNum: 1, pageSize: 8 },
+  new: { sort: 'newest', pageNum: 1, pageSize: 8 },
+  hot: { sort: 'popular', pageNum: 1, pageSize: 8 },
+  discount: { sort: 'price_asc', pageNum: 1, pageSize: 8 },
 }
 
 export default function ProductsSection() {
@@ -25,23 +25,165 @@ export default function ProductsSection() {
     { id: 'discount', label: '超值优惠' },
   ]
 
+  const sectionRef = useRef<HTMLElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const indicatorRef = useRef<HTMLDivElement>(null)
+  const tabsRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  // Intersection Observer for scroll-triggered reveal
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.unobserve(section)
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  // Parallax effect on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const section = sectionRef.current
+      if (!section) return
+
+      const rect = section.getBoundingClientRect()
+      const scrollProgress = -rect.top / window.innerHeight
+
+      // Apply subtle parallax to orbs
+      const orbs = section.querySelectorAll('.transition-orb')
+      orbs.forEach((orb, index) => {
+        const el = orb as HTMLElement
+        const speed = 0.1 + index * 0.05
+        const yOffset = scrollProgress * 100 * speed
+        el.style.transform = `translateY(${yOffset}px)`
+      })
+
+      // Parallax on grid
+      if (gridRef.current && rect.top < window.innerHeight && rect.bottom > 0) {
+        const gridOffset = scrollProgress * 30
+        gridRef.current.style.transform = `translateY(${gridOffset}px)`
+      }
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Sliding indicator for filter tabs
+  const updateIndicator = useCallback((tabElement: HTMLButtonElement | null) => {
+    const indicator = indicatorRef.current
+    const tabs = tabsRef.current
+    if (!indicator || !tabs || !tabElement) return
+
+    const tabsRect = tabs.getBoundingClientRect()
+    const tabRect = tabElement.getBoundingClientRect()
+
+    indicator.style.width = `${tabRect.width}px`
+    indicator.style.transform = `translateX(${tabRect.left - tabsRect.left}px)`
+  }, [])
+
+  // Update indicator on mount and filter change
+  useEffect(() => {
+    const tabs = tabsRef.current
+    if (!tabs) return
+
+    const activeTab = tabs.querySelector(`[data-filter="${activeFilter}"]`) as HTMLButtonElement
+    if (activeTab) {
+      // Small delay to ensure layout is complete
+      requestAnimationFrame(() => updateIndicator(activeTab))
+    }
+  }, [activeFilter, updateIndicator])
+
+  // Update indicator on resize
+  useEffect(() => {
+    const handleResize = () => {
+      const tabs = tabsRef.current
+      if (!tabs) return
+      const activeTab = tabs.querySelector(`[data-filter="${activeFilter}"]`) as HTMLButtonElement
+      if (activeTab) updateIndicator(activeTab)
+    }
+
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [activeFilter, updateIndicator])
+
+  const handleFilterClick = useCallback(
+    (filterId: FilterKey) => (e: React.MouseEvent<HTMLButtonElement>) => {
+      setActiveFilter(filterId)
+      updateIndicator(e.currentTarget)
+    },
+    [updateIndicator]
+  )
+
   return (
-    <section className="products-section">
+    <section ref={sectionRef} className="products-section">
+      {/* 顶部弥散光晕过渡 */}
+      <div className="orb-transition orb-transition-top">
+        <div
+          className="transition-orb"
+          style={{
+            width: '500px',
+            height: '500px',
+            background: 'radial-gradient(circle, rgba(249, 115, 22, 0.08) 0%, transparent 70%)',
+            top: '-150px',
+            left: '60%',
+            animationDelay: '-3s',
+          }}
+        />
+        <div
+          className="transition-orb"
+          style={{
+            width: '350px',
+            height: '350px',
+            background: 'radial-gradient(circle, rgba(251, 191, 36, 0.06) 0%, transparent 70%)',
+            top: '-100px',
+            left: '20%',
+            animationDelay: '-7s',
+          }}
+        />
+      </div>
+
       <div className="container">
-        <div className="section-header">
+        <div className={`section-header ${isVisible ? 'revealed' : ''}`}>
           <span className="section-tag">精选推荐</span>
           <h2 className="section-title">热门好物</h2>
           <p className="section-desc">精心挑选的优质商品，总有一款适合你</p>
         </div>
 
-        <div className="products-filter">
-          <div className="filter-tabs">
-            {filters.map(filter => (
+        <div className={`products-filter ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '100ms' }}>
+          <div className="filter-tabs" ref={tabsRef}>
+            {/* Sliding indicator */}
+            <div
+              ref={indicatorRef}
+              className="filter-indicator"
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                height: '2px',
+                background: 'linear-gradient(90deg, #F97316, #FB7185)',
+                borderRadius: '2px',
+                transition: 'transform 0.3s var(--ease-spring), width 0.3s var(--ease-spring)',
+                boxShadow: '0 0 8px rgba(249, 115, 22, 0.4)',
+              }}
+            />
+            {filters.map((filter) => (
               <button
                 key={filter.id}
                 className={`filter-tab ${activeFilter === filter.id ? 'active' : ''}`}
                 data-filter={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
+                onClick={handleFilterClick(filter.id)}
+                aria-pressed={activeFilter === filter.id}
               >
                 {filter.label}
               </button>
@@ -56,20 +198,35 @@ export default function ProductsSection() {
           </a>
         </div>
 
-        <div className="products-grid" id="productsGrid">
+        <div
+          ref={gridRef}
+          className={`products-grid ${isVisible ? 'revealed' : ''}`}
+          id="productsGrid"
+          style={{ willChange: 'transform' }}
+        >
           {isLoading ? (
             <div className="skeleton-grid">
-              <div className="skeleton-card"><div className="skeleton-image"></div><div className="skeleton-content"><div className="skeleton-line"></div><div className="skeleton-line short"></div></div></div>
-              <div className="skeleton-card"><div className="skeleton-image"></div><div className="skeleton-content"><div className="skeleton-line"></div><div className="skeleton-line short"></div></div></div>
-              <div className="skeleton-card"><div className="skeleton-image"></div><div className="skeleton-content"><div className="skeleton-line"></div><div className="skeleton-line short"></div></div></div>
-              <div className="skeleton-card"><div className="skeleton-image"></div><div className="skeleton-content"><div className="skeleton-line"></div><div className="skeleton-line short"></div></div></div>
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="skeleton-card">
+                  <div className="skeleton-image" />
+                  <div className="skeleton-content">
+                    <div className="skeleton-line" />
+                    <div className="skeleton-line short" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : products.length > 0 ? (
             products.map((product: Product, index: number) => (
               <ProductCard
                 key={product.id}
                 product={product}
-                style={{ animationDelay: `${index * 80}ms` }}
+                style={{
+                  animationDelay: `${index * 80}ms`,
+                  opacity: isVisible ? 1 : 0,
+                  transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+                  transition: `opacity 0.6s var(--ease-out) ${index * 80}ms, transform 0.6s var(--ease-out) ${index * 80}ms`,
+                }}
               />
             ))
           ) : (
@@ -79,7 +236,7 @@ export default function ProductsSection() {
           )}
         </div>
 
-        <div className="products-more">
+        <div className={`products-more ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '400ms' }}>
           <a href="/products" className="btn btn-outline btn-lg">
             <span>查看更多商品</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

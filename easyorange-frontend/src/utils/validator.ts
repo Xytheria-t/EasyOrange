@@ -20,7 +20,8 @@ class ValidatorUtils {
      * 验证密码强度
      */
     isStrongPassword(password: string): boolean {
-        return password.length >= 6;
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,20}$/;
+        return passwordRegex.test(password);
     }
 
     /**
@@ -38,7 +39,8 @@ class ValidatorUtils {
      * 验证用户名
      */
     isValidUsername(username: string): boolean {
-        return username.length >= 3 && username.length <= 20;
+        const usernameRegex = /^[a-zA-Z0-9_]+$/;
+        return username.length >= 3 && username.length <= 20 && usernameRegex.test(username);
     }
 
     /**
@@ -76,11 +78,18 @@ class ValidatorUtils {
                 if (!trimmedValue) {return '用户名不能为空';}
                 if (trimmedValue.length < 3) {return '用户名至少需要 3 个字符';}
                 if (trimmedValue.length > 20) {return '用户名不能超过 20 个字符';}
+                if (!/^[a-zA-Z0-9_]+$/.test(trimmedValue)) {
+                    return '用户名只能包含字母、数字和下划线';
+                }
                 return '';
 
             case 'password':
                 if (!value) {return '密码不能为空';}
                 if (value.length < 6) {return '密码至少需要 6 个字符';}
+                if (value.length > 20) {return '密码不能超过 20 个字符';}
+                if (!/(?=.*[a-z])/.test(value)) {return '密码必须包含小写字母';}
+                if (!/(?=.*[A-Z])/.test(value)) {return '密码必须包含大写字母';}
+                if (!/(?=.*\d)/.test(value)) {return '密码必须包含数字';}
                 return '';
 
             case 'email':

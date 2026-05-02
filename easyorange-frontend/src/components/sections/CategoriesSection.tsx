@@ -124,14 +124,30 @@ export default function CategoriesSection() {
 
   return (
     <section className="categories-section" id="categories">
+      {/* 顶部弥散光晕过渡 */}
+      <div className="orb-transition orb-transition-top">
+        <div className="transition-orb" style={{
+          width: '400px', height: '400px',
+          background: 'radial-gradient(circle, rgba(249, 115, 22, 0.12) 0%, transparent 70%)',
+          top: '-100px', left: '10%',
+          animationDelay: '0s'
+        }} />
+        <div className="transition-orb" style={{
+          width: '300px', height: '300px',
+          background: 'radial-gradient(circle, rgba(251, 113, 133, 0.1) 0%, transparent 70%)',
+          top: '-80px', right: '15%',
+          animationDelay: '-5s'
+        }} />
+      </div>
+
       <div className="container">
-        <div className="section-header">
+        <div className="section-header reveal">
           <span className="section-tag">探索分类</span>
           <h2 className="section-title">发现你需要的</h2>
           <p className="section-desc">精选热门品类，快速找到心仪好物</p>
         </div>
 
-        <div className="categories-grid">
+        <div className="categories-grid reveal-stagger">
           {categories.map((category) => (
             <a
               key={category.id}

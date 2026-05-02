@@ -2,13 +2,17 @@
  * @fileoverview 收藏 API 模块
  */
 
-import type { PageResult } from '../types/index.js';
+import type { Favorite, PageResult } from '../types/index.js';
 import { request } from './core/request.js';
 
 export const favoriteApi = {
-    getList(_params?: Record<string, unknown>) {
-        return request<PageResult<Record<string, unknown>>>('/favorites', {
-            method: 'GET'
+    getList(params?: { pageNum?: number; pageSize?: number }) {
+        return request<PageResult<Favorite>>('/favorites', {
+            method: 'GET',
+            params: {
+                pageNum: params?.pageNum ?? 1,
+                pageSize: params?.pageSize ?? 20,
+            }
         });
     },
 
@@ -28,6 +32,18 @@ export const favoriteApi = {
         return request('/favorites/batch', {
             method: 'DELETE',
             body: { ids }
+        });
+    },
+
+    check(productId: number) {
+        return request<boolean>(`/favorites/check/${productId}`, {
+            method: 'GET'
+        });
+    },
+
+    getCount() {
+        return request<number>('/favorites/count', {
+            method: 'GET'
         });
     }
 };

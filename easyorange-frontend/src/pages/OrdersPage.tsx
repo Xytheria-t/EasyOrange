@@ -1,18 +1,63 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, RefreshCw } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, RefreshCw, ShoppingBag, Sparkles } from 'lucide-react';
 import { useMyOrders, useCancelOrder, usePayOrder, useReceiveOrder } from '@/hooks';
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/types';
 import type { Order, OrderStatus } from '@/types';
 
 const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
-  { id: 'all', label: '全部', icon: Package },
+  { id: 'all', label: '全部', icon: Package, statusCode: undefined },
   { id: 'PENDING_PAYMENT', label: '待付款', icon: Clock, statusCode: 0 },
   { id: 'PAID', label: '待发货', icon: Package, statusCode: 1 },
   { id: 'SHIPPED', label: '已发货', icon: Truck, statusCode: 2 },
-  { id: 'COMPLETED', label: '已完成', icon: CheckCircle, statusCode: 4 },
-  { id: 'CANCELLED', label: '已取消', icon: XCircle, statusCode: 5 },
+  { id: 'COMPLETED', label: '已完成', icon: CheckCircle, statusCode: 3 },
+  { id: 'CANCELLED', label: '已取消', icon: XCircle, statusCode: 4 },
 ];
+
+const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: string; glow: string; dot: string }> = {
+  PENDING_PAYMENT: {
+    bg: 'rgba(251, 191, 36, 0.08)',
+    text: '#D97706',
+    border: 'rgba(251, 191, 36, 0.2)',
+    glow: '0 0 20px rgba(251, 191, 36, 0.15)',
+    dot: '#FBBF24',
+  },
+  PAID: {
+    bg: 'rgba(59, 130, 246, 0.08)',
+    text: '#2563EB',
+    border: 'rgba(59, 130, 246, 0.2)',
+    glow: '0 0 20px rgba(59, 130, 246, 0.15)',
+    dot: '#3B82F6',
+  },
+  SHIPPED: {
+    bg: 'rgba(139, 92, 246, 0.08)',
+    text: '#7C3AED',
+    border: 'rgba(139, 92, 246, 0.2)',
+    glow: '0 0 20px rgba(139, 92, 246, 0.15)',
+    dot: '#8B5CF6',
+  },
+  COMPLETED: {
+    bg: 'rgba(16, 185, 129, 0.08)',
+    text: '#059669',
+    border: 'rgba(16, 185, 129, 0.2)',
+    glow: '0 0 20px rgba(16, 185, 129, 0.15)',
+    dot: '#10B981',
+  },
+  CANCELLED: {
+    bg: 'rgba(168, 160, 152, 0.08)',
+    text: '#787068',
+    border: 'rgba(168, 160, 152, 0.2)',
+    glow: '0 0 20px rgba(168, 160, 152, 0.1)',
+    dot: '#A8A098',
+  },
+  REFUNDED: {
+    bg: 'rgba(244, 63, 94, 0.08)',
+    text: '#E11D48',
+    border: 'rgba(244, 63, 94, 0.2)',
+    glow: '0 0 20px rgba(244, 63, 94, 0.15)',
+    dot: '#F43F5E',
+  },
+};
 
 export function OrdersPage() {
   const [activeTab, setActiveTab] = useState('all');
@@ -32,98 +77,94 @@ export function OrdersPage() {
   const orders = data?.records ?? [];
 
   const handleCancel = async (id: number) => {
-    try {
-      await cancelOrder.mutateAsync({ id });
-    } catch {
-      // error handled by mutation state
-    }
+    try { await cancelOrder.mutateAsync({ id }); } catch { /* handled */ }
   };
 
   const handlePay = async (id: number) => {
-    try {
-      await payOrder.mutateAsync(id);
-    } catch {
-      // error handled by mutation state
-    }
+    try { await payOrder.mutateAsync(id); } catch { /* handled */ }
   };
 
   const handleReceive = async (id: number) => {
-    try {
-      await receiveOrder.mutateAsync(id);
-    } catch {
-      // error handled by mutation state
-    }
+    try { await receiveOrder.mutateAsync(id); } catch { /* handled */ }
   };
 
   return (
-    <div className="py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">订单管理</h1>
-        <p className="mt-1 text-sm text-gray-500">查看和管理您的订单</p>
+    <div className="orders-page-premium">
+      <div className="orders-hero">
+        <div className="orders-hero-bg" />
+        <div className="orders-hero-content">
+          <h1 className="orders-hero-title">
+            <Sparkles size={20} className="orders-hero-icon" />
+            我的订单
+          </h1>
+          <p className="orders-hero-subtitle">追踪每一笔交易，掌控购物旅程</p>
+        </div>
       </div>
 
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-        {STATUS_TAB_MAP.map((tab) => {
+      <div className="orders-tabs-premium">
+        {STATUS_TAB_MAP.map((tab, index) => {
           const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium transition-all ${
-                activeTab === tab.id
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 shadow-sm'
-              }`}
+              className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
+              style={{ animationDelay: `${index * 60}ms` }}
             >
-              <Icon size={16} />
-              {tab.label}
+              <Icon size={15} className="orders-tab-icon" />
+              <span>{tab.label}</span>
+              {isActive && <div className="orders-tab-indicator" />}
             </button>
           );
         })}
       </div>
 
       {isLoading && (
-        <div className="flex items-center justify-center py-16">
-          <RefreshCw size={24} className="animate-spin text-primary-600" />
-          <span className="ml-2 text-gray-500">加载中...</span>
+        <div className="orders-loading">
+          <div className="orders-loading-spinner">
+            <RefreshCw size={28} />
+          </div>
+          <span className="orders-loading-text">正在加载订单...</span>
         </div>
       )}
 
       {isError && (
-        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200/50 text-center">
-          <p className="text-gray-500">加载失败，请重试</p>
-          <button
-            onClick={() => refetch()}
-            className="mt-4 rounded-xl bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700"
-          >
-            重试
+        <div className="orders-error-card">
+          <div className="orders-error-icon">!</div>
+          <p className="orders-error-text">加载失败，请稍后重试</p>
+          <button onClick={() => refetch()} className="orders-error-btn">
+            重新加载
           </button>
         </div>
       )}
 
       {!isLoading && !isError && orders.length === 0 && (
-        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200/50">
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-              <Package size={36} className="text-gray-400" />
+        <div className="orders-empty-premium">
+          <div className="orders-empty-visual">
+            <div className="orders-empty-orb orders-empty-orb-1" />
+            <div className="orders-empty-orb orders-empty-orb-2" />
+            <div className="orders-empty-icon-wrap">
+              <ShoppingBag size={40} />
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">暂无订单</h3>
-            <p className="mt-2 max-w-sm text-sm text-gray-500">
-              您还没有购买任何商品，快去挑选心仪的宝贝吧！
-            </p>
-            <button
-              onClick={() => navigate('/products')}
-              className="mt-6 rounded-xl bg-primary-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-primary-700 transition-all"
-            >
-              去购物
-            </button>
           </div>
+          <h3 className="orders-empty-title">暂无订单</h3>
+          <p className="orders-empty-desc">
+            还没有购买任何商品<br />去发现心仪的宝贝吧
+          </p>
+          <button
+            onClick={() => navigate('/products')}
+            className="orders-empty-cta"
+          >
+            探索好物
+            <ChevronRight size={16} />
+          </button>
         </div>
       )}
 
       {!isLoading && !isError && orders.length > 0 && (
-        <div className="space-y-4">
-          {orders.map((order) => (
+        <div className="orders-list-premium">
+          {orders.map((order, index) => (
             <OrderCard
               key={order.id}
               order={order}
@@ -136,6 +177,7 @@ export function OrdersPage() {
                 payOrder.isPending ||
                 receiveOrder.isPending
               }
+              index={index}
             />
           ))}
         </div>
@@ -151,79 +193,85 @@ interface OrderCardProps {
   onReceive: (id: number) => void;
   onClick: () => void;
   isActionLoading: boolean;
+  index: number;
 }
 
-function OrderCard({ order, onCancel, onPay, onReceive, onClick, isActionLoading }: OrderCardProps) {
+function OrderCard({ order, onCancel, onPay, onReceive, onClick, isActionLoading, index }: OrderCardProps) {
   const statusKey = getOrderStatusFromCode(order.status);
   const statusLabel = getOrderStatusLabel(order.status);
-
-  const statusColorMap: Record<OrderStatus, string> = {
-    PENDING_PAYMENT: 'bg-amber-100 text-amber-700',
-    PAID: 'bg-blue-100 text-blue-700',
-    SHIPPED: 'bg-indigo-100 text-indigo-700',
-    DELIVERED: 'bg-teal-100 text-teal-700',
-    COMPLETED: 'bg-green-100 text-green-700',
-    CANCELLED: 'bg-gray-100 text-gray-500',
-    REFUNDED: 'bg-red-100 text-red-700',
-  };
+  const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.CANCELLED;
 
   return (
     <div
-      className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200/50 hover:shadow-md transition-shadow cursor-pointer"
+      className="order-card-premium"
+      style={{ animationDelay: `${index * 80}ms` }}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-xs text-gray-400 font-mono">{order.orderNo}</span>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusColorMap[statusKey] ?? 'bg-gray-100 text-gray-500'}`}>
+      <div className="order-card-shine" />
+
+      <div className="order-card-header-premium">
+        <span className="order-card-order-no">{order.orderNo}</span>
+        <span
+          className="order-card-status-badge"
+          style={{
+            background: statusStyle.bg,
+            color: statusStyle.text,
+            borderColor: statusStyle.border,
+            boxShadow: statusStyle.glow,
+          }}
+        >
+          <span
+            className="order-card-status-dot"
+            style={{ background: statusStyle.dot }}
+          />
           {statusLabel}
         </span>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100">
+      <div className="order-card-body-premium">
+        <div className="order-card-image-wrap">
+          <div className="order-card-image-glow" />
           {order.productImage ? (
             <img
               src={order.productImage}
               alt={order.productTitle}
-              className="w-full h-full object-cover"
+              className="order-card-image-premium"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package size={24} className="text-gray-300" />
+            <div className="order-card-image-placeholder">
+              <Package size={24} />
             </div>
           )}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-medium text-gray-900 truncate">{order.productTitle}</h3>
-          <p className="mt-1 text-xs text-gray-400">卖家：{order.sellerUsername}</p>
-          <div className="mt-2 flex items-center justify-between">
-            <span className="text-base font-bold text-primary-600">¥{order.amount.toFixed(2)}</span>
-            <span className="text-xs text-gray-400">x{order.quantity}</span>
+        <div className="order-card-info-premium">
+          <h3 className="order-card-title-premium">{order.productTitle}</h3>
+          <p className="order-card-seller-premium">卖家：{order.sellerUsername}</p>
+          <div className="order-card-price-row">
+            <span className="order-card-price-premium">¥{order.amount.toFixed(2)}</span>
+            <span className="order-card-qty">×{order.quantity}</span>
           </div>
         </div>
 
-        <div className="flex items-center">
-          <ChevronRight size={18} className="text-gray-300" />
-        </div>
+        <ChevronRight size={18} className="order-card-arrow-premium" />
       </div>
 
-      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-xs text-gray-400">{order.createTime}</span>
-        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="order-card-footer-premium">
+        <span className="order-card-time-premium">{order.createTime}</span>
+        <div className="order-card-actions-premium" onClick={(e) => e.stopPropagation()}>
           {statusKey === 'PENDING_PAYMENT' && (
             <>
               <button
                 onClick={() => onCancel(order.id)}
                 disabled={isActionLoading}
-                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                className="order-btn-secondary"
               >
                 取消订单
               </button>
               <button
                 onClick={() => onPay(order.id)}
                 disabled={isActionLoading}
-                className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                className="order-btn-primary"
               >
                 立即支付
               </button>
@@ -233,7 +281,7 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isActionLoading
             <button
               onClick={() => onReceive(order.id)}
               disabled={isActionLoading}
-              className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+              className="order-btn-primary"
             >
               确认收货
             </button>

@@ -1414,7 +1414,7 @@
   font-family: var(--font-price);
   font-size: 1.55rem;
   font-weight: 700;
-  background: var(--gradient-luxury);
+  background: var(--gradient-text-primary);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1423,7 +1423,7 @@
 
 .price-original {
   font-size: 0.82rem;
-  color: var(--gray-400);
+  color: var(--text-tertiary);
   text-decoration: line-through;
   text-decoration-thickness: 1.5px;
 }
@@ -2136,7 +2136,10 @@
 .product-detail-modal .price-current {
   font-size: 2rem;
   font-weight: 900;
-  color: var(--primary-600);
+  background: var(--gradient-text-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-family: var(--font-display);
 }
 

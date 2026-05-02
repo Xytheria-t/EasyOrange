@@ -1,22 +1,30 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation } from 'react-router-dom';
-import HomePage from '@/pages/HomePage';
 import { Layout } from '@/components/layout/Layout';
-import { ProductsPage } from '@/pages/ProductsPage';
-import { ProductDetailPage } from '@/pages/ProductDetailPage';
-import { ProfilePage } from '@/pages/ProfilePage';
-import { FavoritesPage } from '@/pages/FavoritesPage';
-import { MessagesPage } from '@/pages/MessagesPage';
-import { OrdersPage } from '@/pages/OrdersPage';
-import { OrderDetailPage } from '@/pages/OrderDetailPage';
-import { PaymentPage } from '@/pages/PaymentPage';
-import { PaymentResultPage } from '@/pages/PaymentResultPage';
-import { PublishPage } from '@/pages/PublishPage';
-import { SearchPage } from '@/pages/SearchPage';
-import { EditProductPage } from '@/pages/EditProductPage';
-import { LoginPage } from '@/pages/LoginPage';
-import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
-import { NotFoundPage } from '@/pages/NotFoundPage';
 import { getStoredToken } from '@/features/auth/session';
+
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+  </div>
+);
+
+const HomePage = lazy(() => import('@/pages/HomePage'));
+const ProductsPage = lazy(() => import('@/pages/ProductsPage').then(m => ({ default: m.ProductsPage })));
+const ProductDetailPage = lazy(() => import('@/pages/ProductDetailPage').then(m => ({ default: m.ProductDetailPage })));
+const ProfilePage = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const FavoritesPage = lazy(() => import('@/pages/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
+const MessagesPage = lazy(() => import('@/pages/MessagesPage').then(m => ({ default: m.MessagesPage })));
+const OrdersPage = lazy(() => import('@/pages/OrdersPage').then(m => ({ default: m.OrdersPage })));
+const OrderDetailPage = lazy(() => import('@/pages/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })));
+const PaymentPage = lazy(() => import('@/pages/PaymentPage').then(m => ({ default: m.PaymentPage })));
+const PaymentResultPage = lazy(() => import('@/pages/PaymentResultPage').then(m => ({ default: m.PaymentResultPage })));
+const PublishPage = lazy(() => import('@/pages/PublishPage').then(m => ({ default: m.PublishPage })));
+const SearchPage = lazy(() => import('@/pages/SearchPage').then(m => ({ default: m.SearchPage })));
+const EditProductPage = lazy(() => import('@/pages/EditProductPage').then(m => ({ default: m.EditProductPage })));
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const ForgotPasswordPage = lazy(() => import('@/pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -24,28 +32,34 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return token ? <>{children}</> : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
 };
 
+const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType>) => (
+  <Suspense fallback={<LoadingFallback />}>
+    <Component />
+  </Suspense>
+);
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<Layout />}>
-      <Route index element={<HomePage />} />
-      <Route path="products" element={<ProductsPage />} />
-      <Route path="products/:id" element={<ProductDetailPage />} />
-      <Route path="search" element={<SearchPage />} />
+      <Route index element={withSuspense(HomePage)} />
+      <Route path="products" element={withSuspense(ProductsPage)} />
+      <Route path="products/:id" element={withSuspense(ProductDetailPage)} />
+      <Route path="search" element={withSuspense(SearchPage)} />
       <Route
         path="products/:id/edit"
         element={
           <ProtectedRoute>
-            <EditProductPage />
+            {withSuspense(EditProductPage)}
           </ProtectedRoute>
         }
       />
-      <Route path="login" element={<LoginPage />} />
-      <Route path="forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="login" element={withSuspense(LoginPage)} />
+      <Route path="forgot-password" element={withSuspense(ForgotPasswordPage)} />
       <Route
         path="profile"
         element={
           <ProtectedRoute>
-            <ProfilePage />
+            {withSuspense(ProfilePage)}
           </ProtectedRoute>
         }
       />
@@ -53,7 +67,7 @@ export const router = createBrowserRouter(
         path="favorites"
         element={
           <ProtectedRoute>
-            <FavoritesPage />
+            {withSuspense(FavoritesPage)}
           </ProtectedRoute>
         }
       />
@@ -61,7 +75,7 @@ export const router = createBrowserRouter(
         path="messages"
         element={
           <ProtectedRoute>
-            <MessagesPage />
+            {withSuspense(MessagesPage)}
           </ProtectedRoute>
         }
       />
@@ -69,7 +83,7 @@ export const router = createBrowserRouter(
         path="orders"
         element={
           <ProtectedRoute>
-            <OrdersPage />
+            {withSuspense(OrdersPage)}
           </ProtectedRoute>
         }
       />
@@ -77,7 +91,7 @@ export const router = createBrowserRouter(
         path="orders/:id"
         element={
           <ProtectedRoute>
-            <OrderDetailPage />
+            {withSuspense(OrderDetailPage)}
           </ProtectedRoute>
         }
       />
@@ -85,7 +99,7 @@ export const router = createBrowserRouter(
         path="payment"
         element={
           <ProtectedRoute>
-            <PaymentPage />
+            {withSuspense(PaymentPage)}
           </ProtectedRoute>
         }
       />
@@ -93,7 +107,7 @@ export const router = createBrowserRouter(
         path="payment/result"
         element={
           <ProtectedRoute>
-            <PaymentResultPage />
+            {withSuspense(PaymentResultPage)}
           </ProtectedRoute>
         }
       />
@@ -101,11 +115,11 @@ export const router = createBrowserRouter(
         path="publish"
         element={
           <ProtectedRoute>
-            <PublishPage />
+            {withSuspense(PublishPage)}
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<NotFoundPage />} />
+      <Route path="*" element={withSuspense(NotFoundPage)} />
     </Route>
   )
 );

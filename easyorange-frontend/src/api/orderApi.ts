@@ -1,4 +1,4 @@
-import type { PageResult, OrderQueryParams, CreateOrderRequest, PaymentMethod, OrderDetail } from '../types/index.js';
+import type { PageResult, OrderQueryParams, CreateOrderRequest, OrderDetail } from '../types/index.js';
 import { request } from './core/request.js';
 
 export const orderApi = {
@@ -30,13 +30,7 @@ export const orderApi = {
     cancel(id: number, reason?: string) {
         return request(`/orders/${id}/cancel`, {
             method: 'PUT',
-            body: reason ? { cancelReason: reason } : undefined
-        });
-    },
-
-    confirm(id: number) {
-        return request(`/orders/${id}/confirm`, {
-            method: 'PUT'
+            params: reason ? { reason } as Record<string, unknown> : undefined
         });
     },
 
@@ -46,10 +40,9 @@ export const orderApi = {
         });
     },
 
-    pay(id: number, paymentMethod?: PaymentMethod) {
+    pay(id: number) {
         return request(`/orders/${id}/pay`, {
-            method: 'PUT',
-            body: paymentMethod ? { paymentMethod } : undefined
+            method: 'PUT'
         });
     },
 
@@ -62,7 +55,7 @@ export const orderApi = {
     refund(id: number, reason?: string) {
         return request(`/orders/${id}/refund`, {
             method: 'PUT',
-            body: reason ? { refundReason: reason } : undefined
+            params: reason ? { reason } as Record<string, unknown> : undefined
         });
     }
 };

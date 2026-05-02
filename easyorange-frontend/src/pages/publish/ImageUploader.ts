@@ -12,6 +12,7 @@ import {
     MAX_IMAGES_ERROR
 } from './constants.js';
 import { toast } from '../../utils/index.js';
+import { errorHandler } from '../../utils/errorHandler.js';
 import { isSuccessCode } from '../../types';
 import { getStoredToken } from '../../features/auth/session.js';
 
@@ -360,7 +361,7 @@ export class ImageUploader {
                         throw new Error(result.message || '上传失败');
                     }
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : '未知错误';
+                    const errorMessage = errorHandler.handle(error as Error);
                     toast.error(`图片上传失败: ${errorMessage}`);
                     return null;
                 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X } from 'lucide-react';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useProduct } from '@/hooks';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { favoriteApi } from '@/api/favoriteApi';
@@ -8,7 +9,8 @@ import { productApi } from '@/api/productApi';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/types/product';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import '@/styles/main.css';
+import { Image } from '@/components/ui/Image';
+import '@/styles/products-premium.css';
 
 interface OrderFormData {
   address: string;
@@ -22,19 +24,28 @@ export function ProductDetailPage() {
   const { data: product, isLoading } = useProduct(Number(id));
   const { token, user } = useAuthStore();
   const addToast = useUIStore((s) => s.addToast);
+  const queryClient = useQueryClient();
   const createOrder = useCreateOrder();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isFavorited, setIsFavorited] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderForm, setOrderForm] = useState<OrderFormData>({ address: '', phone: '', remark: '' });
 
   const productId = Number(id);
 
+  const { data: isFavorited = false } = useQuery({
+    queryKey: ['favorite-check', productId],
+    queryFn: async () => {
+      const res = await favoriteApi.check(productId);
+      return res.data === true;
+    },
+    enabled: !!token && productId > 0,
+    staleTime: 30 * 1000,
+  });
+
   useEffect(() => {
     if (productId > 0) {
       productApi.incrementView(productId).catch(() => {
-        // 浏览量递增失败不影响用户体验，静默处理
       });
     }
   }, [productId]);
@@ -80,13 +91,15 @@ export function ProductDetailPage() {
     try {
       if (isFavorited) {
         await favoriteApi.remove(productId);
-        setIsFavorited(false);
+        addToast({ type: 'success', message: '已取消收藏' });
       } else {
         await favoriteApi.add(productId);
-        setIsFavorited(true);
+        addToast({ type: 'success', message: '已收藏' });
       }
+      queryClient.invalidateQueries({ queryKey: ['favorites'] });
+      queryClient.invalidateQueries({ queryKey: ['favorite-check', productId] });
     } catch {
-      // silently fail
+      addToast({ type: 'error', message: isFavorited ? '取消收藏失败' : '收藏失败' });
     } finally {
       setIsFavoriteLoading(false);
     }
@@ -158,39 +171,36 @@ export function ProductDetailPage() {
 
       <div className="product-detail-grid">
         <div className="product-image-container">
-          <div className="relative" style={{ overflow: 'hidden', borderRadius: 'var(--radius-lg)' }}>
-            <img
+          <div className="product-image-main-wrapper">
+            <Image
               src={images[currentImageIndex]}
               alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
               className="product-detail-image"
+              loading="eager"
+              fetchPriority="high"
+              placeholder="blur"
               style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }}
             />
             {images.length > 1 && (
               <>
                 <button
                   onClick={handlePrevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)' }}
+                  className="gallery-nav-btn prev"
                 >
                   <ChevronLeft size={18} />
                 </button>
                 <button
                   onClick={handleNextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(4px)' }}
+                  className="gallery-nav-btn next"
                 >
                   <ChevronRight size={18} />
                 </button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <div className="gallery-dots">
                   {images.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className="w-2 h-2 rounded-full"
-                      style={{
-                        background: idx === currentImageIndex ? '#fff' : 'rgba(255,255,255,0.5)',
-                        transform: idx === currentImageIndex ? 'scale(1.3)' : 'scale(1)',
-                      }}
+                      className={`gallery-dot ${idx === currentImageIndex ? 'active' : ''}`}
                     />
                   ))}
                 </div>
@@ -198,22 +208,20 @@ export function ProductDetailPage() {
             )}
           </div>
           {images.length > 1 && (
-            <div className="flex gap-2 mt-3 overflow-x-auto" style={{ paddingBottom: 4 }}>
+            <div className="gallery-thumbnails-premium">
               {images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentImageIndex(idx)}
-                  className="flex-shrink-0"
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    border: idx === currentImageIndex ? '2px solid var(--color-primary)' : '2px solid transparent',
-                    opacity: idx === currentImageIndex ? 1 : 0.7,
-                  }}
+                  className={`gallery-thumb-premium ${idx === currentImageIndex ? 'active' : ''}`}
                 >
-                  <img src={img} alt={`缩略图 ${idx + 1}`} className="w-full h-full object-cover" />
+                  <Image
+                    src={img}
+                    alt={`缩略图 ${idx + 1}`}
+                    loading="lazy"
+                    placeholder="skeleton"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 </button>
               ))}
             </div>
@@ -238,7 +246,7 @@ export function ProductDetailPage() {
             <div className="product-price-main">
               <span className="price-value-lg">¥{product.price.toFixed(2)}</span>
               {product.originalPrice && (
-                <span className="price-original">¥{product.originalPrice.toFixed(2)}</span>
+                <span className="price-original-lg">¥{product.originalPrice.toFixed(2)}</span>
               )}
             </div>
 
@@ -260,8 +268,8 @@ export function ProductDetailPage() {
               </div>
 
               <div className="product-detail-tags">
-                <span className="product-tag">{conditionLabel}</span>
-                <span className="product-tag">{product.categoryName}</span>
+                <span className="product-tag-premium">{conditionLabel}</span>
+                <span className="product-tag-premium">{product.categoryName}</span>
               </div>
             </div>
 
@@ -269,7 +277,7 @@ export function ProductDetailPage() {
               {isOwner ? (
                 <>
                   <button
-                    className="btn btn-primary flex-1"
+                    className="btn-premium btn-premium-primary flex-1"
                     onClick={() => navigate(`/products/${id}/edit`)}
                   >
                     <Pencil size={18} />
@@ -279,22 +287,22 @@ export function ProductDetailPage() {
               ) : (
                 <>
                   <button
-                    className="btn btn-primary flex-1"
+                    className="btn-premium btn-premium-primary flex-1"
                     onClick={handleBuyClick}
                     disabled={product?.status === 'SOLD'}
                   >
                     <ShoppingCart size={18} />
                     {product?.status === 'SOLD' ? '已售出' : '立即购买'}
                   </button>
-                  <button className="btn btn-outline flex-1">
+                  <button className="btn-premium btn-premium-outline flex-1">
                     <MessageCircle size={18} />
                     联系卖家
                   </button>
                   <button
-                    className={`btn ${isFavorited ? 'btn-primary' : 'btn-outline'}`}
+                    className={`btn-premium btn-premium-icon ${isFavorited ? 'favorited' : ''}`}
                     onClick={handleFavoriteToggle}
                     disabled={isFavoriteLoading}
-                    style={{ minWidth: 80 }}
+                    style={{ minWidth: 52 }}
                   >
                     <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
                   </button>
@@ -323,7 +331,13 @@ export function ProductDetailPage() {
             <div className="flex gap-3 mb-5 p-3 bg-gray-50 rounded-xl">
               <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                 {images.length > 0 ? (
-                  <img src={images[0]} alt={product.title} className="w-full h-full object-cover" />
+                  <Image
+                    src={images[0]}
+                    alt={product.title}
+                    loading="lazy"
+                    placeholder="skeleton"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
                 ) : (
                   <div className="w-full h-full bg-gray-200 flex items-center justify-center">
                     <ShoppingCart size={20} className="text-gray-400" />

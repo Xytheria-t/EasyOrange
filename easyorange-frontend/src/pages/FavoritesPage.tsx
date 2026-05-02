@@ -1,21 +1,32 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Heart, Package, Trash2, Loader2 } from 'lucide-react';
+import { Trash2, RefreshCw, ArrowRight, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { favoriteApi } from '@/api/favoriteApi';
 import { useUIStore } from '@/store/uiStore';
-import type { Favorite } from '@/types';
+import { CONDITION_LABEL_MAP, type Favorite } from '@/types';
+import '@/styles/favorites.css';
+
+const CONDITION_ICONS: Record<number, string> = {
+  1: '✨',
+  2: '💎',
+  3: '🌿',
+  4: '📦',
+};
 
 export function FavoritesPage() {
   const navigate = useNavigate();
   const addToast = useUIStore((s) => s.addToast);
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [removingId, setRemovingId] = useState<number | null>(null);
+  const [pageNum, setPageNum] = useState(1);
+  const pageSize = 20;
 
   const { data: favoritesData, isLoading, error } = useQuery({
-    queryKey: ['favorites'],
+    queryKey: ['favorites', pageNum, pageSize],
     queryFn: async () => {
-      const response = await favoriteApi.getList();
+      const response = await favoriteApi.getList({ pageNum, pageSize });
       return response.data;
     },
     staleTime: 30 * 1000,
@@ -28,9 +39,11 @@ export function FavoritesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
       addToast({ type: 'success', message: '已取消收藏' });
+      setRemovingId(null);
     },
     onError: () => {
       addToast({ type: 'error', message: '取消收藏失败' });
+      setRemovingId(null);
     },
   });
 
@@ -49,6 +62,8 @@ export function FavoritesPage() {
   });
 
   const favorites = favoritesData?.records ?? [];
+  const total = favoritesData?.total ?? 0;
+  const totalPages = favoritesData?.pages ?? Math.ceil(total / pageSize);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -67,15 +82,41 @@ export function FavoritesPage() {
     removeManyMutation.mutate(Array.from(selectedIds));
   };
 
+  const handleRemove = (e: React.MouseEvent, productId: number) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setRemovingId(productId);
+    removeMutation.mutate(productId);
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    if (days === 0) return '今天';
+    if (days === 1) return '昨天';
+    if (days < 7) return `${days}天前`;
+    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  };
+
   if (isLoading) {
     return (
-      <div className="py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">我的收藏</h1>
-          <p className="mt-1 text-sm text-gray-500">您收藏的商品</p>
+      <div className="favorites-body">
+        <div className="favorites-ambient">
+          <div className="ambient-orb ambient-orb-1" />
+          <div className="ambient-orb ambient-orb-2" />
+          <div className="ambient-orb ambient-orb-3" />
+          <div className="ambient-noise" />
         </div>
-        <div className="flex items-center justify-center py-20">
-          <Loader2 size={32} className="animate-spin text-primary-600" />
+        <div className="favorites-main">
+          <div className="favorites-container">
+            <div className="favorites-loading">
+              <div className="loading-ring" />
+              <span className="loading-text">正在加载你的收藏...</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -83,18 +124,30 @@ export function FavoritesPage() {
 
   if (error) {
     return (
-      <div className="py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">我的收藏</h1>
+      <div className="favorites-body">
+        <div className="favorites-ambient">
+          <div className="ambient-orb ambient-orb-1" />
+          <div className="ambient-orb ambient-orb-2" />
+          <div className="ambient-orb ambient-orb-3" />
+          <div className="ambient-noise" />
         </div>
-        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200/50 text-center">
-          <p className="text-red-500">加载收藏列表失败，请稍后重试</p>
-          <button
-            className="mt-4 btn btn-outline"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['favorites'] })}
-          >
-            重新加载
-          </button>
+        <div className="favorites-main">
+          <div className="favorites-container">
+            <div className="favorites-error">
+              <div className="error-icon">
+                <RefreshCw />
+              </div>
+              <h3>加载失败</h3>
+              <p>无法获取收藏列表，请检查网络后重试</p>
+              <button
+                className="retry-btn"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ['favorites'] })}
+              >
+                <RefreshCw />
+                重新加载
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -102,26 +155,45 @@ export function FavoritesPage() {
 
   if (favorites.length === 0) {
     return (
-      <div className="py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">我的收藏</h1>
-          <p className="mt-1 text-sm text-gray-500">您收藏的商品</p>
+      <div className="favorites-body">
+        <div className="favorites-ambient">
+          <div className="ambient-orb ambient-orb-1" />
+          <div className="ambient-orb ambient-orb-2" />
+          <div className="ambient-orb ambient-orb-3" />
+          <div className="ambient-noise" />
         </div>
-        <div className="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200/50">
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
-              <Heart size={36} className="text-gray-400" />
+        <div className="favorites-main">
+          <div className="favorites-container">
+            <div className="favorites-header">
+              <div className="favorites-header-left">
+                <div className="favorites-kicker">
+                  <span className="kicker-dot" />
+                  My Collection
+                </div>
+                <h1 className="favorites-title">我的收藏</h1>
+                <p className="favorites-subtitle">你精心挑选的心仪好物</p>
+              </div>
             </div>
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">暂无收藏商品</h3>
-            <p className="mt-2 max-w-sm text-sm text-gray-500">
-              还没有收藏任何商品，快去逛逛发现喜欢的宝贝吧！
-            </p>
-            <Link to="/products" className="mt-6 rounded-xl bg-primary-600 px-6 py-3 font-semibold text-white shadow-sm hover:bg-primary-700 transition-all">
-              <span className="flex items-center gap-2">
-                <Package size={18} />
-                开始购物
-              </span>
-            </Link>
+            <div className="favorites-empty">
+              <div className="empty-visual">
+                <div className="empty-orbit" />
+                <div className="empty-sparkle empty-sparkle-1" />
+                <div className="empty-sparkle empty-sparkle-2" />
+                <div className="empty-sparkle empty-sparkle-3" />
+                <div className="empty-heart">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                  </svg>
+                </div>
+              </div>
+              <h3>收藏夹空空如也</h3>
+              <p>去发现那些让你心动的宝贝，将它们收藏在这里吧</p>
+              <Link to="/products" className="explore-btn">
+                <Sparkles />
+                探索好物
+                <ArrowRight />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -129,78 +201,146 @@ export function FavoritesPage() {
   }
 
   return (
-    <div className="py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">我的收藏</h1>
-          <p className="mt-1 text-sm text-gray-500">共 {favorites.length} 件商品</p>
-        </div>
-        {selectedIds.size > 0 && (
-          <button
-            className="btn btn-outline text-red-600 hover:bg-red-50"
-            onClick={handleBatchRemove}
-            disabled={removeManyMutation.isPending}
-          >
-            <Trash2 size={16} />
-            删除选中 ({selectedIds.size})
-          </button>
-        )}
+    <div className="favorites-body">
+      <div className="favorites-ambient">
+        <div className="ambient-orb ambient-orb-1" />
+        <div className="ambient-orb ambient-orb-2" />
+        <div className="ambient-orb ambient-orb-3" />
+        <div className="ambient-noise" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {favorites.map((item) => {
-          const fav = item as unknown as Favorite;
-          const product = fav.product;
-          return (
-            <div
-              key={fav.id}
-              className="group relative rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200/50 hover:shadow-md transition-shadow"
-            >
-              <label className="absolute left-3 top-3 z-10 flex items-center">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(fav.id)}
-                  onChange={() => toggleSelect(fav.id)}
-                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-              </label>
-              {product && (
+      <div className="favorites-main">
+        <div className="favorites-container">
+          <div className="favorites-header">
+            <div className="favorites-header-left">
+              <div className="favorites-kicker">
+                <span className="kicker-dot" />
+                My Collection
+              </div>
+              <h1 className="favorites-title">我的收藏</h1>
+              <p className="favorites-subtitle">你精心挑选的心仪好物</p>
+            </div>
+            <div className="favorites-header-right">
+              <div className="favorites-count-badge">
+                <span className="count-num">{total}</span>
+                <span className="count-label">件商品</span>
+              </div>
+              {selectedIds.size > 0 && (
+                <button
+                  className="favorites-batch-btn"
+                  onClick={handleBatchRemove}
+                  disabled={removeManyMutation.isPending}
+                >
+                  <Trash2 />
+                  删除选中 ({selectedIds.size})
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="favorites-grid">
+            {favorites.map((item) => {
+              const fav = item as Favorite;
+              const product = fav.product;
+              if (!product) return null;
+
+              const conditionLabel = CONDITION_LABEL_MAP[product.condition] ?? '';
+              const conditionIcon = CONDITION_ICONS[product.condition] ?? '';
+
+              return (
                 <div
-                  className="cursor-pointer"
+                  key={fav.id}
+                  className={`fav-card${selectedIds.has(fav.id) ? ' selected' : ''}`}
                   onClick={() => navigate(`/products/${product.id}`)}
                 >
-                  <div className="aspect-square overflow-hidden rounded-xl bg-gray-100">
+                  <div className="fav-card-image">
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
                         alt={product.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform"
+                        loading="lazy"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center">
-                        <Package size={40} className="text-gray-300" />
+                      <div className="placeholder-icon">
+                        <ImageIcon />
+                      </div>
+                    )}
+
+                    <div className="fav-card-checkbox">
+                      <input
+                        type="checkbox"
+                        id={`fav-${fav.id}`}
+                        checked={selectedIds.has(fav.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelect(fav.id);
+                        }}
+                      />
+                      <label
+                        htmlFor={`fav-${fav.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    <button
+                      className={`fav-card-heart${removingId === product.id ? ' removing' : ''}`}
+                      onClick={(e) => handleRemove(e, product.id)}
+                      disabled={removeMutation.isPending}
+                    >
+                      <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                      </svg>
+                    </button>
+
+                    {conditionLabel && (
+                      <div className="fav-card-condition">
+                        {conditionIcon} {conditionLabel}
                       </div>
                     )}
                   </div>
-                  <div className="mt-3">
-                    <h3 className="text-sm font-medium text-gray-900 line-clamp-2">{product.title}</h3>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-lg font-bold text-primary-600">¥{product.price?.toFixed(2)}</span>
-                      <span className="text-xs text-gray-400">{product.categoryName}</span>
+
+                  <div className="fav-card-content">
+                    {product.categoryName && (
+                      <span className="fav-card-category">{product.categoryName}</span>
+                    )}
+                    <h3 className="fav-card-title">{product.title}</h3>
+                    <div className="fav-card-footer">
+                      <div className="fav-card-price">
+                        <span className="price-current">¥{product.price?.toFixed(2)}</span>
+                        {product.originalPrice && product.originalPrice > product.price && (
+                          <span className="price-original">¥{product.originalPrice.toFixed(2)}</span>
+                        )}
+                      </div>
+                      <span className="fav-card-time">{formatDate(fav.createTime)}</span>
                     </div>
                   </div>
                 </div>
-              )}
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="favorites-pagination">
               <button
-                className="absolute right-3 top-3 rounded-full bg-white/80 p-1.5 text-gray-400 hover:text-red-500 hover:bg-white shadow-sm backdrop-blur-sm transition-colors"
-                onClick={() => removeMutation.mutate(fav.productId)}
-                disabled={removeMutation.isPending}
+                className="pagination-btn"
+                onClick={() => setPageNum((p) => Math.max(1, p - 1))}
+                disabled={pageNum <= 1}
               >
-                <Heart size={16} fill="currentColor" />
+                上一页
+              </button>
+              <span className="pagination-info">
+                {pageNum} / {totalPages}
+              </span>
+              <button
+                className="pagination-btn"
+                onClick={() => setPageNum((p) => Math.min(totalPages, p + 1))}
+                disabled={pageNum >= totalPages}
+              >
+                下一页
               </button>
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,57 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MapPin, Phone, RefreshCw, User, FileText } from 'lucide-react';
+import { ArrowLeft, Package, MapPin, Phone, RefreshCw, User, FileText, Truck, CheckCircle, Clock, XCircle, CreditCard } from 'lucide-react';
 import { useOrderDetail, useCancelOrder, usePayOrder, useReceiveOrder, useRefundOrder } from '@/hooks';
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/types';
 import type { OrderStatus } from '@/types';
+
+const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Clock; hint: string }> = {
+  PENDING_PAYMENT: {
+    gradient: 'linear-gradient(135deg, #FBBF24 0%, #F97316 50%, #EA580C 100%)',
+    icon: Clock,
+    hint: '请尽快完成支付，超时订单将自动取消',
+  },
+  PAID: {
+    gradient: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)',
+    icon: Package,
+    hint: '卖家正在准备发货，请耐心等待',
+  },
+  SHIPPED: {
+    gradient: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C39BD3 100%)',
+    icon: Truck,
+    hint: '商品正在配送中，请注意查收',
+  },
+  COMPLETED: {
+    gradient: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
+    icon: CheckCircle,
+    hint: '交易已完成，感谢您的购买',
+  },
+  CANCELLED: {
+    gradient: 'linear-gradient(135deg, #A8A098 0%, #787068 50%, #5C544C 100%)',
+    icon: XCircle,
+    hint: '订单已取消',
+  },
+  REFUNDED: {
+    gradient: 'linear-gradient(135deg, #F43F5E 0%, #E11D48 50%, #BE123C 100%)',
+    icon: CreditCard,
+    hint: '退款处理中，请留意账户变动',
+  },
+};
+
+const TIMELINE_STEPS = [
+  { key: 'PENDING_PAYMENT', label: '下单' },
+  { key: 'PAID', label: '付款' },
+  { key: 'SHIPPED', label: '发货' },
+  { key: 'COMPLETED', label: '完成' },
+] as const;
+
+const STATUS_ORDER: Record<OrderStatus, number> = {
+  PENDING_PAYMENT: 0,
+  PAID: 1,
+  SHIPPED: 2,
+  COMPLETED: 3,
+  CANCELLED: -1,
+  REFUNDED: -1,
+};
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,22 +72,22 @@ export function OrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-24">
-        <RefreshCw size={24} className="animate-spin text-primary-600" />
-        <span className="ml-2 text-gray-500">加载中...</span>
+      <div className="order-detail-loading">
+        <div className="order-detail-loading-spinner">
+          <RefreshCw size={32} />
+        </div>
+        <span className="order-detail-loading-text">加载订单详情...</span>
       </div>
     );
   }
 
   if (isError || !order) {
     return (
-      <div className="py-6 text-center">
-        <p className="text-gray-500">订单不存在或加载失败</p>
-        <button
-          onClick={() => refetch()}
-          className="mt-4 rounded-xl bg-primary-600 px-4 py-2 text-sm text-white hover:bg-primary-700"
-        >
-          重试
+      <div className="order-detail-error">
+        <div className="order-detail-error-icon">!</div>
+        <p className="order-detail-error-text">订单不存在或加载失败</p>
+        <button onClick={() => refetch()} className="order-detail-error-btn">
+          重新加载
         </button>
       </div>
     );
@@ -46,16 +95,9 @@ export function OrderDetailPage() {
 
   const statusKey = getOrderStatusFromCode(order.status);
   const statusLabel = getOrderStatusLabel(order.status);
-
-  const statusColorMap: Record<OrderStatus, string> = {
-    PENDING_PAYMENT: 'bg-amber-100 text-amber-700',
-    PAID: 'bg-blue-100 text-blue-700',
-    SHIPPED: 'bg-indigo-100 text-indigo-700',
-    DELIVERED: 'bg-teal-100 text-teal-700',
-    COMPLETED: 'bg-green-100 text-green-700',
-    CANCELLED: 'bg-gray-100 text-gray-500',
-    REFUNDED: 'bg-red-100 text-red-700',
-  };
+  const heroStyle = STATUS_HERO_MAP[statusKey] ?? STATUS_HERO_MAP.CANCELLED;
+  const StatusIcon = heroStyle.icon;
+  const currentStep = STATUS_ORDER[statusKey];
 
   const handleCancel = async () => {
     try { await cancelOrder.mutateAsync({ id: orderId }); } catch { /* handled */ }
@@ -74,139 +116,187 @@ export function OrderDetailPage() {
   };
 
   return (
-    <div className="py-6">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="order-detail-premium">
+      <div className="order-detail-nav">
         <button
           onClick={() => navigate(-1)}
-          className="rounded-lg p-2 hover:bg-gray-100 transition-colors"
+          className="order-detail-back-btn"
         >
-          <ArrowLeft size={20} className="text-gray-600" />
+          <ArrowLeft size={20} />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">订单详情</h1>
+        <h1 className="order-detail-nav-title">订单详情</h1>
+        <div className="order-detail-nav-spacer" />
       </div>
 
-      <div className="space-y-4">
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200/50">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-sm text-gray-400 font-mono">{order.orderNo}</span>
-            <span className={`text-sm font-medium px-3 py-1 rounded-full ${statusColorMap[statusKey] ?? 'bg-gray-100 text-gray-500'}`}>
-              {statusLabel}
-            </span>
+      <div className="order-detail-status-hero" style={{ background: heroStyle.gradient }}>
+        <div className="order-detail-status-hero-glow" />
+        <div className="order-detail-status-hero-content">
+          <div className="order-detail-status-hero-icon">
+            <StatusIcon size={28} />
           </div>
+          <div className="order-detail-status-hero-text">
+            <h2 className="order-detail-status-hero-label">{statusLabel}</h2>
+            <p className="order-detail-status-hero-hint">{heroStyle.hint}</p>
+          </div>
+        </div>
+      </div>
 
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gray-100">
+      {currentStep >= 0 && (
+        <div className="order-detail-timeline-premium">
+          {TIMELINE_STEPS.map((step, index) => {
+            const isCompleted = currentStep > index;
+            const isCurrent = currentStep === index;
+            return (
+              <div
+                key={step.key}
+                className={`order-detail-timeline-step ${isCompleted ? 'timeline-completed' : ''} ${isCurrent ? 'timeline-current' : ''}`}
+              >
+                <div className="timeline-step-dot-wrap">
+                  <div className="timeline-step-dot">
+                    {isCompleted && <CheckCircle size={10} />}
+                  </div>
+                  {index < TIMELINE_STEPS.length - 1 && (
+                    <div className={`timeline-step-line ${isCompleted ? 'line-completed' : ''}`} />
+                  )}
+                </div>
+                <span className="timeline-step-label">{step.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="order-detail-sections">
+        <div className="order-detail-section">
+          <div className="order-detail-section-header">
+            <Package size={16} className="order-detail-section-icon" />
+            <h3 className="order-detail-section-title">商品信息</h3>
+          </div>
+          <div className="order-detail-product-premium">
+            <div className="order-detail-product-image-wrap">
+              <div className="order-detail-product-image-glow" />
               {order.productImage ? (
-                <img src={order.productImage} alt={order.productTitle} className="w-full h-full object-cover" />
+                <img src={order.productImage} alt={order.productTitle} className="order-detail-product-image" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Package size={28} className="text-gray-300" />
+                <div className="order-detail-product-image-placeholder">
+                  <Package size={32} />
                 </div>
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-medium text-gray-900">{order.productTitle}</h3>
-              <p className="mt-2 text-xl font-bold text-primary-600">¥{order.amount.toFixed(2)}</p>
-              <p className="mt-1 text-xs text-gray-400">数量：{order.quantity}</p>
+            <div className="order-detail-product-info">
+              <h4 className="order-detail-product-name">{order.productTitle}</h4>
+              <div className="order-detail-product-meta-row">
+                <span className="order-detail-product-price">¥{order.amount.toFixed(2)}</span>
+                <span className="order-detail-product-qty">×{order.quantity}</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200/50">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">收货信息</h3>
-          <div className="space-y-2.5">
-            <div className="flex items-start gap-3">
-              <MapPin size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
-              <span className="text-sm text-gray-600">{order.address || '未填写'}</span>
+        <div className="order-detail-section">
+          <div className="order-detail-section-header">
+            <MapPin size={16} className="order-detail-section-icon" />
+            <h3 className="order-detail-section-title">收货信息</h3>
+          </div>
+          <div className="order-detail-info-grid">
+            <div className="order-detail-info-item">
+              <MapPin size={14} className="order-detail-info-item-icon" />
+              <span className="order-detail-info-item-label">地址</span>
+              <span className="order-detail-info-item-value">{order.address || '未填写'}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <Phone size={16} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-600">{order.phone || '未填写'}</span>
+            <div className="order-detail-info-item">
+              <Phone size={14} className="order-detail-info-item-icon" />
+              <span className="order-detail-info-item-label">电话</span>
+              <span className="order-detail-info-item-value">{order.phone || '未填写'}</span>
             </div>
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200/50">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">交易信息</h3>
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-3">
-              <User size={16} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-600">买家：{order.buyerUsername}</span>
+        <div className="order-detail-section">
+          <div className="order-detail-section-header">
+            <User size={16} className="order-detail-section-icon" />
+            <h3 className="order-detail-section-title">交易信息</h3>
+          </div>
+          <div className="order-detail-info-grid">
+            <div className="order-detail-info-item">
+              <User size={14} className="order-detail-info-item-icon" />
+              <span className="order-detail-info-item-label">买家</span>
+              <span className="order-detail-info-item-value">{order.buyerUsername}</span>
             </div>
-            <div className="flex items-center gap-3">
-              <User size={16} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-600">卖家：{order.sellerUsername}</span>
+            <div className="order-detail-info-item">
+              <User size={14} className="order-detail-info-item-icon" />
+              <span className="order-detail-info-item-label">卖家</span>
+              <span className="order-detail-info-item-value">{order.sellerUsername}</span>
             </div>
             {order.remark && (
-              <div className="flex items-start gap-3">
-                <FileText size={16} className="text-gray-400 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-600">备注：{order.remark}</span>
+              <div className="order-detail-info-item">
+                <FileText size={14} className="order-detail-info-item-icon" />
+                <span className="order-detail-info-item-label">备注</span>
+                <span className="order-detail-info-item-value">{order.remark}</span>
               </div>
             )}
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200/50">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">时间信息</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">创建时间</span>
-              <span className="text-gray-600">{order.createTime}</span>
+        <div className="order-detail-section">
+          <div className="order-detail-section-header">
+            <Clock size={16} className="order-detail-section-icon" />
+            <h3 className="order-detail-section-title">时间信息</h3>
+          </div>
+          <div className="order-detail-info-grid">
+            <div className="order-detail-info-item">
+              <span className="order-detail-info-item-label">创建时间</span>
+              <span className="order-detail-info-item-value">{order.createTime}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">更新时间</span>
-              <span className="text-gray-600">{order.updateTime}</span>
+            <div className="order-detail-info-item">
+              <span className="order-detail-info-item-label">更新时间</span>
+              <span className="order-detail-info-item-value">{order.updateTime}</span>
+            </div>
+            <div className="order-detail-info-item">
+              <span className="order-detail-info-item-label">订单号</span>
+              <span className="order-detail-info-item-value order-detail-order-no">{order.orderNo}</span>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex gap-3 pt-2">
-          {statusKey === 'PENDING_PAYMENT' && (
-            <>
-              <button
-                onClick={handleCancel}
-                disabled={isActionLoading}
-                className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
-              >
-                取消订单
-              </button>
-              <button
-                onClick={handlePay}
-                disabled={isActionLoading}
-                className="flex-1 rounded-xl bg-primary-600 py-3 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-              >
-                立即支付
-              </button>
-            </>
-          )}
-          {statusKey === 'PAID' && (
+      <div className="order-detail-actions-premium">
+        {statusKey === 'PENDING_PAYMENT' && (
+          <>
             <button
-              onClick={handleRefund}
+              onClick={handleCancel}
               disabled={isActionLoading}
-              className="flex-1 rounded-xl border border-gray-300 py-3 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              className="order-detail-btn-secondary"
             >
-              申请退款
+              取消订单
             </button>
-          )}
-          {statusKey === 'SHIPPED' && (
             <button
-              onClick={handleReceive}
+              onClick={handlePay}
               disabled={isActionLoading}
-              className="flex-1 rounded-xl bg-primary-600 py-3 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+              className="order-detail-btn-primary"
             >
-              确认收货
+              立即支付
             </button>
-          )}
-          {statusKey === 'DELIVERED' && (
-            <button
-              onClick={handleReceive}
-              disabled={isActionLoading}
-              className="flex-1 rounded-xl bg-primary-600 py-3 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
-            >
-              确认完成
-            </button>
-          )}
-        </div>
+          </>
+        )}
+        {statusKey === 'PAID' && (
+          <button
+            onClick={handleRefund}
+            disabled={isActionLoading}
+            className="order-detail-btn-secondary"
+          >
+            申请退款
+          </button>
+        )}
+        {statusKey === 'SHIPPED' && (
+          <button
+            onClick={handleReceive}
+            disabled={isActionLoading}
+            className="order-detail-btn-primary"
+          >
+            确认收货
+          </button>
+        )}
       </div>
     </div>
   );

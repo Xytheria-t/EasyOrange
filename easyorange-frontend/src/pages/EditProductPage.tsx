@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Camera, X, Loader2 } from 'lucide-react';
 import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
+import { compressImage } from '@/utils/imageCompress';
 import { CONDITION_LABEL_MAP } from '@/types/product';
 import '@/styles/main.css';
 
@@ -70,9 +71,9 @@ export function EditProductPage() {
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
         if (!form.name.trim()) newErrors.name = '请输入商品名称';
-        if (!form.price || Number(form.price) <= 0) newErrors.price = '请输入有效价格';
-        if (!form.categoryId) newErrors.categoryId = '请选择商品类别';
-        if (!form.conditionLevel) newErrors.conditionLevel = '请选择新旧程度';
+        if (!form.price || Number(form.price) <= 0 || isNaN(Number(form.price))) newErrors.price = '请输入有效价格';
+        if (!form.categoryId || Number(form.categoryId) <= 0) newErrors.categoryId = '请选择商品类别';
+        if (!form.conditionLevel || Number(form.conditionLevel) <= 0) newErrors.conditionLevel = '请选择新旧程度';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -100,7 +101,8 @@ export function EditProductPage() {
             const index = form.imageUrls.length;
             setUploadingIndex(index);
             try {
-                const result = await uploadFile(file);
+                const compressed = await compressImage(file);
+                const result = await uploadFile(compressed);
                 if (result.data?.url) {
                     updateField('imageUrls', [...form.imageUrls, result.data.url]);
                 }
