@@ -47,7 +47,7 @@ public class User {
             .build();
     }
 
-    public User updateProfile(String email, String phone, Sex sex, Long operatorId) {
+    public User updateProfile(String email, String phone, Sex sex, String realName, String nickname, String studentId, Long operatorId) {
         UserProfile newProfile = this.profile;
 
         if (email != null && !email.isBlank()) {
@@ -59,11 +59,22 @@ public class User {
         if (sex != null) {
             newProfile = newProfile.updateSex(sex);
         }
+        if (realName != null && !realName.isBlank()) {
+            newProfile = newProfile.updateRealName(realName);
+        }
+        if (nickname != null && !nickname.isBlank()) {
+            newProfile = newProfile.updateNickName(nickname);
+        }
 
-        return this.toBuilder()
+        User.UserBuilder builder = this.toBuilder()
             .profile(newProfile)
-            .auditInfo(updateAuditInfo(operatorId))
-            .build();
+            .auditInfo(updateAuditInfo(operatorId));
+
+        if (studentId != null && !studentId.isBlank()) {
+            builder.studentId(studentId);
+        }
+
+        return builder.build();
     }
 
     public User changeAvatar(String avatarUrl, Long operatorId) {

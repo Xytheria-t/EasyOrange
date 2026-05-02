@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,9 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
 @Testcontainers
+@Tag("integration")
 @DisplayName("OrderCacheService 性能测试")
 class OrderCacheServicePerformanceTest {
 

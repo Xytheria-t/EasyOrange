@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.infrastructure.acl.ProductAclService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -209,11 +210,18 @@ class FavoriteServiceTest {
         when(productAclService.assembleProductVOs(any(), any()))
                 .thenReturn(List.of(vo1, vo2));
 
-        PageResult<ProductVO> result = favoriteService.queryFavorites(query);
+        PageResult<FavoriteVO> result = favoriteService.queryFavorites(query);
 
         assertThat(result).isNotNull();
         assertThat(result.total()).isEqualTo(2L);
         assertThat(result.records()).hasSize(2);
+        assertThat(result.records().get(0).getId()).isEqualTo(1L);
+        assertThat(result.records().get(0).getProductId()).isEqualTo(2001L);
+        assertThat(result.records().get(0).getProduct()).isNotNull();
+        assertThat(result.records().get(0).getProduct().getTitle()).isEqualTo("商品1");
+        assertThat(result.records().get(1).getId()).isEqualTo(2L);
+        assertThat(result.records().get(1).getProductId()).isEqualTo(2002L);
+        assertThat(result.records().get(1).getProduct().getTitle()).isEqualTo("商品2");
     }
 
     @Test
@@ -225,7 +233,7 @@ class FavoriteServiceTest {
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
                 .thenReturn(List.of());
 
-        PageResult<ProductVO> result = favoriteService.queryFavorites(query);
+        PageResult<FavoriteVO> result = favoriteService.queryFavorites(query);
 
         assertThat(result).isNotNull();
         assertThat(result.total()).isEqualTo(0L);

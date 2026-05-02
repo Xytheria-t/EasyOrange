@@ -7,12 +7,14 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
+@Mapper
 public interface ProductMapper extends BaseMapper<ProductDO> {
 
     Page<ProductDO> searchByFullText(Page<ProductDO> page,

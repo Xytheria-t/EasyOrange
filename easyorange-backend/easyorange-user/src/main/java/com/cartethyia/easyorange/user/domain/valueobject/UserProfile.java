@@ -38,4 +38,8 @@ public record UserProfile(
     public UserProfile updateRemark(String newRemark) {
         return new UserProfile(email, phone, realName, nickName, sex, avatar, newRemark);
     }
+
+    public UserProfile updateRealName(String newRealName) {
+        return new UserProfile(email, phone, newRealName, nickName, sex, avatar, remark);
+    }
 }

@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.application.idempotency;
 
 import com.cartethyia.easyorange.payment.domain.idempotency.IdempotencyKey;
 import com.cartethyia.easyorange.payment.domain.idempotency.IdempotencyKeyRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,6 @@ public class IdempotencyService {
             }
             
             if (key.getStatus().equals(IdempotencyKey.STATUS_COMPLETED)) {
-                log.info("幂等性键已处理，返回缓存结果 key={}", idempotencyKey);
                 T cachedResponse = deserializeResponse(key.getResponseData(), operation.getResponseType());
                 return Optional.of(cachedResponse);
             }
@@ -61,8 +60,6 @@ public class IdempotencyService {
         
         String responseData = serializeResponse(result);
         repository.updateResponse(idempotencyKey, responseData, IdempotencyKey.STATUS_COMPLETED);
-        
-        log.info("幂等性操作执行成功 key={}", idempotencyKey);
         
         return Optional.of(result);
     }

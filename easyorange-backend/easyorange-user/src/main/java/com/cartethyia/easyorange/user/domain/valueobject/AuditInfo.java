@@ -22,7 +22,7 @@ public record AuditInfo(
             createBy,
             operatorId,
             delFlag,
-            version + 1
+            version
         );
     }
 
@@ -33,7 +33,7 @@ public record AuditInfo(
             createBy,
             operatorId,
             1,
-            version + 1
+            version
         );
     }
 }

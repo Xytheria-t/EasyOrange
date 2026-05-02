@@ -22,12 +22,7 @@ public class OrderCompletedEventSubscriber implements DomainEventSubscriber<Orde
     @Override
     public void handle(OrderCompletedEvent event) {
         try {
-            log.info("开始处理 OrderCompletedEvent: eventId={} productId={}", 
-                event.getEventId(), event.getProductId());
-            
             productInventoryPort.markAsSold(event.getProductId());
-            
-            log.info("OrderCompletedEvent 处理完成：商品已标记为已售 productId={}", event.getProductId());
         } catch (Exception e) {
             log.error("OrderCompletedEvent 处理失败：eventId={} productId={}", 
                 event.getEventId(), event.getProductId(), e);

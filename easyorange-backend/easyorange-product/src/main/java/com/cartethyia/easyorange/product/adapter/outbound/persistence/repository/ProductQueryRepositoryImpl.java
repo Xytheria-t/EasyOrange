@@ -343,7 +343,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
             case "price_asc" -> wrapper.orderByAsc(ProductDO::getPrice);
             case "price_desc" -> wrapper.orderByDesc(ProductDO::getPrice);
             case "newest" -> wrapper.orderByDesc(ProductDO::getCreateTime);
-            case "view" -> wrapper.orderByDesc(ProductDO::getViewCount);
+            case "view", "popular" -> wrapper.orderByDesc(ProductDO::getViewCount);
             default -> wrapper.orderByDesc(ProductDO::getCreateTime);
         }
     }

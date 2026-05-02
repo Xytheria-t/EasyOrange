@@ -5,10 +5,8 @@ import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.shared.enums.UserResultCode;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SmsCodeDomainService {
@@ -37,8 +35,6 @@ public class SmsCodeDomainService {
     String code = generateCode();
     smsCodePort.saveCode(phone, code, CODE_EXPIRE_MINUTES);
     smsCodePort.setSendLimit(phone, SEND_INTERVAL_SECONDS);
-
-    log.info("action=sendSmsCode, phone={}, dailyCount={}", phone, dailyCount);
   }
 
   public void verifyCode(String phone, String code) {

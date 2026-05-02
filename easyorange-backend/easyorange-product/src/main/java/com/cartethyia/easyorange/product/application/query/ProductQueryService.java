@@ -55,8 +55,15 @@ public class ProductQueryService {
                 pageSize
         );
 
+        List<Long> productIds = page.getRecords().stream()
+                .map(ProductReadModel::id)
+                .collect(Collectors.toList());
+        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+                .findImagesByProductIds(productIds).stream()
+                .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
+
         List<ProductVO> vos = page.getRecords().stream()
-                .map(readModelAssembler::toProductVO)
+                .map(m -> voFromReadModel(m, imagesByProduct))
                 .collect(Collectors.toList());
 
         return PageResult.of(vos, page.getTotal(), pageNum, pageSize);
@@ -67,8 +74,15 @@ public class ProductQueryService {
         Page<ProductReadModel> page = productQueryRepository.findProductsBySellerId(
                 sellerId, null, pageNum, pageSize);
 
+        List<Long> productIds = page.getRecords().stream()
+                .map(ProductReadModel::id)
+                .collect(Collectors.toList());
+        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+                .findImagesByProductIds(productIds).stream()
+                .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
+
         List<ProductVO> vos = page.getRecords().stream()
-                .map(readModelAssembler::toProductVO)
+                .map(m -> voFromReadModel(m, imagesByProduct))
                 .collect(Collectors.toList());
 
         return PageResult.of(vos, page.getTotal(), pageNum, pageSize);
@@ -143,10 +157,19 @@ public class ProductQueryService {
         Page<ProductReadModel> page = productQueryRepository.searchProducts(
                 null, product.categoryId(), null, null, null, null, null, 1, effectiveLimit + 1);
 
+        List<Long> similarIds = page.getRecords().stream()
+                .filter(p -> !p.id().equals(productId))
+                .limit(effectiveLimit)
+                .map(ProductReadModel::id)
+                .collect(Collectors.toList());
+        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+                .findImagesByProductIds(similarIds).stream()
+                .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
+
         return page.getRecords().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
-                .map(readModelAssembler::toProductVO)
+                .map(m -> voFromReadModel(m, imagesByProduct))
                 .collect(Collectors.toList());
     }
 
@@ -197,5 +220,48 @@ public class ProductQueryService {
                 .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
 
         return readModelAssembler.toProductVO(product, imagesByProduct, categoryMap, detailMap, sellerMap);
+    }
+
+    private ProductVO voFromReadModel(ProductReadModel readModel,
+                                       Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct) {
+        List<ProductQueryRepository.ProductImageInfo> images = imagesByProduct.getOrDefault(readModel.id(), List.of());
+        List<String> imageUrls = images.stream()
+                .map(ProductQueryRepository.ProductImageInfo::imageUrl)
+                .collect(Collectors.toList());
+        String mainImageUrl = "";
+        for (ProductQueryRepository.ProductImageInfo img : images) {
+            if (img.isMain()) {
+                mainImageUrl = img.imageUrl();
+                break;
+            }
+        }
+        if (mainImageUrl.isEmpty() && !imageUrls.isEmpty()) {
+            mainImageUrl = imageUrls.getFirst();
+        }
+        ProductReadModel enriched = new ProductReadModel(
+                readModel.id(),
+                readModel.sellerId(),
+                readModel.username(),
+                readModel.userAvatar(),
+                readModel.categoryId(),
+                readModel.categoryName(),
+                readModel.title(),
+                readModel.description(),
+                readModel.price(),
+                readModel.originalPrice(),
+                readModel.stock(),
+                readModel.status(),
+                readModel.statusDesc(),
+                readModel.views(),
+                readModel.condition(),
+                readModel.conditionDesc(),
+                readModel.location(),
+                readModel.contactMethod(),
+                imageUrls,
+                mainImageUrl,
+                readModel.createTime(),
+                readModel.updateTime()
+        );
+        return readModelAssembler.toProductVO(enriched);
     }
 }

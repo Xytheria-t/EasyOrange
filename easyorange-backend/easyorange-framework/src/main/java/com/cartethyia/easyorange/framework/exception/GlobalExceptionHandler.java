@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        String message = extractFieldErrors(e.getBindingResult().getFieldErrors());
+        String message = extractAllErrors(e.getBindingResult());
         log.warn("action=validate_failed, msg={}", message);
         return Result.error(ResultCode.VALIDATE_FAILED, message);
     }
@@ -79,9 +79,37 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleBindException(BindException e) {
-        String message = extractFieldErrors(e.getBindingResult().getFieldErrors());
+        String message = extractAllErrors(e.getBindingResult());
         log.warn("action=bind_error, msg={}", message);
         return Result.error(ResultCode.VALIDATE_FAILED, message);
+    }
+
+    private String extractFieldErrors(List<org.springframework.validation.FieldError> errors) {
+        return errors.stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+    }
+
+    private String extractAllErrors(org.springframework.validation.BindingResult bindingResult) {
+        StringBuilder sb = new StringBuilder();
+        
+        List<org.springframework.validation.FieldError> fieldErrors = bindingResult.getFieldErrors();
+        if (!fieldErrors.isEmpty()) {
+            sb.append(extractFieldErrors(fieldErrors));
+        }
+        
+        List<org.springframework.validation.ObjectError> globalErrors = bindingResult.getGlobalErrors();
+        if (!globalErrors.isEmpty()) {
+            if (sb.length() > 0) {
+                sb.append("; ");
+            }
+            String globalMessages = globalErrors.stream()
+                    .map(org.springframework.validation.ObjectError::getDefaultMessage)
+                    .collect(Collectors.joining("; "));
+            sb.append(globalMessages);
+        }
+        
+        return sb.toString();
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -92,12 +120,6 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("; "));
         log.warn("action=constraint_error, msg={}", message);
         return Result.error(ResultCode.VALIDATE_FAILED, message);
-    }
-
-    private String extractFieldErrors(List<org.springframework.validation.FieldError> errors) {
-        return errors.stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

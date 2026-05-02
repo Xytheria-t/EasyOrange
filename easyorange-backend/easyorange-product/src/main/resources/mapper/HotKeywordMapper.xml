@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cartethyia.easyorange.product.infrastructure.persistence.mapper.HotKeywordMapper">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.HotKeywordMapper">
 
     <update id="batchInsertOrUpdate">
         INSERT INTO hot_keyword (keyword, search_count, last_search_time, create_time, update_time)

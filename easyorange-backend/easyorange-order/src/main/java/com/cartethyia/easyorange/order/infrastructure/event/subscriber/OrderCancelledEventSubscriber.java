@@ -22,12 +22,7 @@ public class OrderCancelledEventSubscriber implements DomainEventSubscriber<Orde
     @Override
     public void handle(OrderCancelledEvent event) {
         try {
-            log.info("开始处理 OrderCancelledEvent: eventId={} productId={}", 
-                event.getEventId(), event.getProductId());
-            
             productInventoryPort.restoreStock(event.getProductId());
-            
-            log.info("OrderCancelledEvent 处理完成：库存已恢复 productId={}", event.getProductId());
         } catch (Exception e) {
             log.error("OrderCancelledEvent 处理失败：eventId={} productId={}", 
                 event.getEventId(), event.getProductId(), e);

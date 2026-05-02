@@ -56,7 +56,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(securityProperties.getIgnorePaths().toArray(String[]::new)).permitAll()
-                .requestMatchers(securityProperties.getProductPaths().toArray(String[]::new)).permitAll()
+                .requestMatchers(HttpMethod.GET, securityProperties.getProductPaths().toArray(String[]::new)).permitAll()
                 .requestMatchers(securityProperties.getStaticPaths().toArray(String[]::new)).permitAll()
                 .anyRequest().authenticated()
             )

@@ -166,7 +166,7 @@ class UserAppServiceTest {
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").build();
             when(userAssembler.toVo(any(User.class))).thenReturn(userVO);
 
-            UpdateUserRequest request = new UpdateUserRequest("new@example.com", "13999999999", 1);
+            UpdateUserRequest request = new UpdateUserRequest(null, "new@example.com", "13999999999", 1, null, null);
 
             UserVO result = userAppService.updateUserInfo(request);
 
@@ -182,7 +182,7 @@ class UserAppServiceTest {
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-            UpdateUserRequest request = new UpdateUserRequest(null, null, null);
+            UpdateUserRequest request = new UpdateUserRequest(null, null, null, null, null, null);
 
             assertThatThrownBy(() -> userAppService.updateUserInfo(request))
                 .isInstanceOf(BusinessException.class)

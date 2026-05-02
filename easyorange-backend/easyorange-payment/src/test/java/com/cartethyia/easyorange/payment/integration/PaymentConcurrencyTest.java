@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
 import com.cartethyia.easyorange.payment.enums.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,8 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = com.cartethyia.easyorange.payment.PaymentTestApplication.class)
 @ActiveProfiles("test")
+@Tag("integration")
 @DisplayName("支付并发测试")
 class PaymentConcurrencyTest {
 

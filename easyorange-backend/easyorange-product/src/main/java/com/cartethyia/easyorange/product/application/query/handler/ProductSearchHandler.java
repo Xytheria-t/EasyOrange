@@ -65,7 +65,6 @@ public class ProductSearchHandler {
     public void deleteSearchHistory(Long historyId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         searchHistoryService.deleteSearchHistoryById(historyId, userId);
-        log.info("删除搜索历史: historyId={}, userId={}", historyId, userId);
     }
 
     @Transactional(readOnly = true)

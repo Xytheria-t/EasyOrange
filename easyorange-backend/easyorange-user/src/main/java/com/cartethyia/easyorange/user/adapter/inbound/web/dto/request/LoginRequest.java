@@ -1,17 +1,15 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request;
 
-import com.cartethyia.easyorange.user.domain.shared.constant.UserConstant;
 import com.cartethyia.easyorange.user.domain.shared.enums.ClientType;
 import com.cartethyia.easyorange.user.domain.shared.enums.LoginMethod;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(
     String clientType,
     String loginMethod,
-    @Size(min = UserConstant.USERNAME_MIN_LENGTH, max = UserConstant.USERNAME_MAX_LENGTH,
-            message = "账号长度必须在" + UserConstant.USERNAME_MIN_LENGTH + "-" + UserConstant.USERNAME_MAX_LENGTH + "位之间")
+    @NotBlank(message = "账号不能为空")
     String account,
-    @Size(min = 6, max = 20, message = "密码长度必须在 6-20 位之间")
+    @NotBlank(message = "凭证不能为空")
     String password
 ) {
     public LoginMethod getEffectiveLoginMethod() {

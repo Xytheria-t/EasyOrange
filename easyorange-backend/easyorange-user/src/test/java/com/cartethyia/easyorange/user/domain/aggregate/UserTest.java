@@ -152,7 +152,7 @@ class UserTest {
                 .profile(UserProfile.empty())
                 .build();
 
-            User updatedUser = user.updateProfile("new@example.com", "13999999999", Sex.FEMALE, 1L);
+            User updatedUser = user.updateProfile("new@example.com", "13999999999", Sex.FEMALE, null, null, null, 1L);
 
             assertThat(updatedUser.getProfile().email()).isEqualTo("new@example.com");
             assertThat(updatedUser.getProfile().phone()).isEqualTo("13999999999");
@@ -170,7 +170,7 @@ class UserTest {
                 .profile(profile)
                 .build();
 
-            User updatedUser = user.updateProfile("", "", null, 1L);
+            User updatedUser = user.updateProfile("", "", null, null, null, null, 1L);
 
             assertThat(updatedUser.getProfile().email()).isEqualTo("old@example.com");
             assertThat(updatedUser.getProfile().phone()).isEqualTo("13812345678");

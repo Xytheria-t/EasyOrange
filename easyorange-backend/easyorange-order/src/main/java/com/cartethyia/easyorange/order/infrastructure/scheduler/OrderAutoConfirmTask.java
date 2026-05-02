@@ -60,7 +60,6 @@ public class OrderAutoConfirmTask {
         orderRepository.update(result.aggregate());
         domainEventPublisher.publish(result.event());
 
-        log.info("订单自动确认收货: orderNo={}", aggregate.orderNo().value());
         return true;
     }
 }

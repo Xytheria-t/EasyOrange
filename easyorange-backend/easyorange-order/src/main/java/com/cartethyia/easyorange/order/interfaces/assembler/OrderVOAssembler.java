@@ -7,6 +7,9 @@ import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
 
 import java.util.*;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class OrderVOAssembler {
 
     public List<OrderVO> toOrderVOs(List<OrderReadModel> orders, Map<Long, ProductDetail> productMap) {

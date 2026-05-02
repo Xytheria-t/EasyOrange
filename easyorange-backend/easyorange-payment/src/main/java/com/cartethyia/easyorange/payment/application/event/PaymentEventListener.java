@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -71,7 +71,7 @@ public class PaymentEventListener {
                     .build();
             eventStore.store(storedEvent);
             log.debug("领域事件已持久化 eventType={} eventId={}", event.eventType(), event.getEventId());
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("领域事件持久化失败 eventType={} eventId={}", event.eventType(), event.getEventId(), e);
         }
     }

@@ -6,8 +6,8 @@ import com.cartethyia.easyorange.favorite.controller.request.BatchRemoveRequest;
 import com.cartethyia.easyorange.favorite.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,7 +27,7 @@ public class FavoriteController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public Result<PageResult<ProductVO>> getFavorites(
+    public Result<PageResult<FavoriteVO>> getFavorites(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         FavoritePageQuery query = FavoritePageQuery.builder()

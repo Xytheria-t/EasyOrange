@@ -1,8 +1,14 @@
 -- ===================================================================
 -- EasyOrange 校园二手交易平台 - 数据库结构基线
--- Version: V1
+-- Version: V1 (Consolidated)
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
+-- ===================================================================
+-- 整合内容：原 V1 基线 + V3 约束/字段补充 + V4 schema 修复
+-- ===================================================================
+
+-- ===================================================================
+-- 1. 用户模块
 -- ===================================================================
 
 CREATE TABLE `sys_user` (
@@ -16,8 +22,8 @@ CREATE TABLE `sys_user` (
     `real_name` VARCHAR(30) DEFAULT NULL COMMENT '真实姓名',
     `nick_name` VARCHAR(30) DEFAULT NULL COMMENT '用户昵称',
     `avatar` VARCHAR(500) DEFAULT NULL COMMENT '头像 URL',
-    `sex` VARCHAR(1) NOT NULL DEFAULT '0' COMMENT '用户性别（0 未知 1 男 2 女）',
-    `status` VARCHAR(1) NOT NULL DEFAULT '0' COMMENT '帐号状态（0 正常 1 禁用 2 锁定）',
+    `sex` CHAR(1) NOT NULL DEFAULT '0' COMMENT '用户性别（0 未知 1 男 2 女）',
+    `status` CHAR(1) NOT NULL DEFAULT '0' COMMENT '帐号状态（0 正常 1 禁用 2 锁定）',
     `login_ip` VARCHAR(128) DEFAULT NULL COMMENT '最后登录 IP',
     `login_date` DATETIME DEFAULT NULL COMMENT '最后登录时间',
     `pwd_update_date` DATETIME DEFAULT NULL COMMENT '密码最后更新时间',
@@ -34,8 +40,15 @@ CREATE TABLE `sys_user` (
     UNIQUE KEY `uk_sys_user_phone` (`phonenumber`),
     UNIQUE KEY `uk_sys_user_student_id` (`student_id`),
     KEY `idx_sys_user_status` (`status`),
-    KEY `idx_sys_user_create_time` (`create_time`)
+    KEY `idx_sys_user_create_time` (`create_time`),
+    CONSTRAINT `chk_user_status` CHECK (`status` IN ('0', '1', '2')),
+    CONSTRAINT `chk_user_sex` CHECK (`sex` IS NULL OR `sex` IN ('0', '1', '2')),
+    CONSTRAINT `chk_user_type` CHECK (`user_type` IN ('01', '02'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
+
+-- ===================================================================
+-- 2. 商品模块
+-- ===================================================================
 
 CREATE TABLE `category` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
@@ -53,7 +66,9 @@ CREATE TABLE `category` (
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
     KEY `idx_category_parent_id` (`parent_id`),
-    KEY `idx_category_status_sort` (`status`, `del_flag`, `sort_order`)
+    KEY `idx_category_status_sort` (`status`, `del_flag`, `sort_order`),
+    CONSTRAINT `chk_category_status` CHECK (`status` IN (0, 1)),
+    CONSTRAINT `fk_category_parent` FOREIGN KEY (`parent_id`) REFERENCES `category`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品分类表';
 
 CREATE TABLE `product` (
@@ -71,6 +86,7 @@ CREATE TABLE `product` (
     `contact_method` VARCHAR(200) DEFAULT NULL COMMENT '联系方式',
     `tags` VARCHAR(500) DEFAULT NULL COMMENT '标签',
     `search_text` TEXT DEFAULT NULL COMMENT '搜索文本冗余字段',
+    `price_update_time` DATETIME DEFAULT NULL COMMENT '价格最后更新时间',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
@@ -83,11 +99,17 @@ CREATE TABLE `product` (
     KEY `idx_product_status_price` (`status`, `price`),
     KEY `idx_product_status_del_time` (`status`, `del_flag`, `create_time` DESC),
     FULLTEXT KEY `ft_product_name` (`name`) WITH PARSER ngram,
-    FULLTEXT KEY `ft_product_search_text` (`search_text`) WITH PARSER ngram
+    FULLTEXT KEY `ft_product_search_text` (`search_text`) WITH PARSER ngram,
+    CONSTRAINT `chk_product_price` CHECK (`price` >= 0),
+    CONSTRAINT `chk_product_original_price` CHECK (`original_price` IS NULL OR `original_price` >= 0),
+    CONSTRAINT `chk_product_stock` CHECK (`stock` >= 0),
+    CONSTRAINT `chk_product_status` CHECK (`status` IN (0, 1, 2, 3)),
+    CONSTRAINT `chk_product_condition` CHECK (`condition_level` IS NULL OR (`condition_level` >= 1 AND `condition_level` <= 10)),
+    CONSTRAINT `chk_product_view_count` CHECK (`view_count` >= 0),
+    CONSTRAINT `fk_product_category` FOREIGN KEY (`category_id`) REFERENCES `category`(`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品信息表';
 
 CREATE TABLE `product_detail` (
-    `id` BIGINT NOT NULL COMMENT '主键 ID',
     `product_id` BIGINT NOT NULL COMMENT '商品 ID',
     `description` TEXT DEFAULT NULL COMMENT '商品详情描述',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -96,8 +118,8 @@ CREATE TABLE `product_detail` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_product_detail_product_id` (`product_id`)
+    PRIMARY KEY (`product_id`),
+    CONSTRAINT `fk_detail_product` FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品详情表';
 
 CREATE TABLE `product_image` (
@@ -114,7 +136,8 @@ CREATE TABLE `product_image` (
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
     KEY `idx_product_image_product_id` (`product_id`),
-    KEY `idx_product_image_product_sort` (`product_id`, `sort_order`)
+    KEY `idx_product_image_product_sort` (`product_id`, `sort_order`),
+    CONSTRAINT `fk_image_product` FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品图片表';
 
 CREATE TABLE `product_report` (
@@ -133,8 +156,33 @@ CREATE TABLE `product_report` (
     PRIMARY KEY (`id`),
     KEY `idx_product_report_product_id` (`product_id`),
     KEY `idx_product_report_reporter_id` (`reporter_id`),
-    KEY `idx_product_report_status` (`status`)
+    KEY `idx_product_report_status` (`status`),
+    CONSTRAINT `chk_report_status` CHECK (`status` IN (0, 1, 2)),
+    CONSTRAINT `fk_report_product` FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_report_reporter` FOREIGN KEY (`reporter_id`) REFERENCES `sys_user`(`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品举报表';
+
+CREATE TABLE `favorite` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户 ID',
+    `product_id` BIGINT NOT NULL COMMENT '商品 ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_favorite_user_product` (`user_id`, `product_id`),
+    KEY `idx_favorite_user_time` (`user_id`, `create_time` DESC),
+    KEY `idx_favorite_product_id` (`product_id`),
+    CONSTRAINT `fk_favorite_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user`(`user_id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_favorite_product` FOREIGN KEY (`product_id`) REFERENCES `product`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户收藏表';
+
+-- ===================================================================
+-- 3. 搜索模块
+-- ===================================================================
 
 CREATE TABLE `search_history` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
@@ -148,6 +196,7 @@ CREATE TABLE `search_history` (
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_search_user_keyword` (`user_id`, `keyword`),
     KEY `idx_search_history_user_time` (`user_id`, `search_time` DESC),
     KEY `idx_search_history_keyword` (`keyword`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='搜索历史表';
@@ -166,8 +215,13 @@ CREATE TABLE `hot_keyword` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_hot_keyword_keyword` (`keyword`),
     KEY `idx_hot_keyword_count` (`search_count` DESC),
-    KEY `idx_hot_keyword_last_time` (`last_search_time`)
+    KEY `idx_hot_keyword_last_time` (`last_search_time`),
+    CONSTRAINT `chk_hot_keyword_count` CHECK (`search_count` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='热门关键词表';
+
+-- ===================================================================
+-- 4. 订单模块
+-- ===================================================================
 
 CREATE TABLE `eo_order` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
@@ -181,6 +235,8 @@ CREATE TABLE `eo_order` (
     `address` VARCHAR(500) DEFAULT NULL COMMENT '收货地址',
     `phone` VARCHAR(20) DEFAULT NULL COMMENT '联系电话',
     `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
+    `cancel_reason` VARCHAR(500) DEFAULT NULL COMMENT '取消原因',
+    `cancel_time` DATETIME DEFAULT NULL COMMENT '取消时间',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
@@ -193,8 +249,18 @@ CREATE TABLE `eo_order` (
     KEY `idx_eo_order_seller_time` (`seller_id`, `create_time` DESC),
     KEY `idx_eo_order_product_id` (`product_id`),
     KEY `idx_eo_order_status_time` (`status`, `create_time` DESC),
-    KEY `idx_eo_order_payment_status` (`payment_status`)
+    KEY `idx_eo_order_payment_status` (`payment_status`),
+    CONSTRAINT `chk_order_amount` CHECK (`amount` >= 0),
+    CONSTRAINT `chk_order_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5)),
+    CONSTRAINT `chk_order_payment_status` CHECK (`payment_status` IN (0, 1, 2)),
+    CONSTRAINT `fk_order_buyer` FOREIGN KEY (`buyer_id`) REFERENCES `sys_user`(`user_id`),
+    CONSTRAINT `fk_order_seller` FOREIGN KEY (`seller_id`) REFERENCES `sys_user`(`user_id`),
+    CONSTRAINT `fk_order_product` FOREIGN KEY (`product_id`) REFERENCES `product`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='订单表';
+
+-- ===================================================================
+-- 5. 支付模块
+-- ===================================================================
 
 CREATE TABLE `eo_payment` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
@@ -202,8 +268,9 @@ CREATE TABLE `eo_payment` (
     `order_id` BIGINT NOT NULL COMMENT '订单 ID',
     `user_id` BIGINT NOT NULL COMMENT '用户 ID',
     `amount` DECIMAL(10,2) NOT NULL COMMENT '支付金额',
+    `refunded_amount` DECIMAL(10,2) DEFAULT 0 COMMENT '已退款金额',
     `payment_method` INT DEFAULT NULL COMMENT '支付方式（1 微信 2 支付宝 3 余额）',
-    `status` INT NOT NULL DEFAULT 0 COMMENT '支付状态（0 待支付 1 支付中 2 已支付 3 已退款 4 已关闭）',
+    `status` INT NOT NULL DEFAULT 0 COMMENT '支付状态（0 待支付 1 已支付 2 已退款 3 部分退款 4 支付失败 5 已关闭 6 支付中 7 退款中）',
     `transaction_id` VARCHAR(64) DEFAULT NULL COMMENT '第三方支付流水号',
     `refund_reason` VARCHAR(500) DEFAULT NULL COMMENT '退款原因',
     `refund_time` DATETIME DEFAULT NULL COMMENT '退款时间',
@@ -213,13 +280,19 @@ CREATE TABLE `eo_payment` (
     `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
-    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    `version` BIGINT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_eo_payment_payment_no` (`payment_no`),
     UNIQUE KEY `uk_eo_payment_transaction_id` (`transaction_id`),
     KEY `idx_eo_payment_order_id` (`order_id`),
     KEY `idx_eo_payment_user_time` (`user_id`, `create_time` DESC),
-    KEY `idx_eo_payment_status_time` (`status`, `create_time` DESC)
+    KEY `idx_eo_payment_status_time` (`status`, `create_time` DESC),
+    CONSTRAINT `chk_payment_amount` CHECK (`amount` >= 0),
+    CONSTRAINT `chk_payment_refunded_amount` CHECK (`refunded_amount` >= 0),
+    CONSTRAINT `chk_payment_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5, 6, 7)),
+    CONSTRAINT `chk_payment_method` CHECK (`payment_method` IS NULL OR `payment_method` IN (1, 2, 3)),
+    CONSTRAINT `fk_payment_order` FOREIGN KEY (`order_id`) REFERENCES `eo_order`(`id`),
+    CONSTRAINT `fk_payment_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user`(`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付记录表';
 
 CREATE TABLE `eo_payment_config` (
@@ -242,6 +315,10 @@ CREATE TABLE `eo_payment_config` (
     UNIQUE KEY `uk_eo_payment_config_channel` (`channel_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付渠道配置表';
 
+-- ===================================================================
+-- 6. 消息模块
+-- ===================================================================
+
 CREATE TABLE `eo_message` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
     `sender_id` BIGINT DEFAULT NULL COMMENT '发送者 ID',
@@ -263,7 +340,10 @@ CREATE TABLE `eo_message` (
     KEY `idx_eo_message_sender_time` (`sender_id`, `create_time` DESC),
     KEY `idx_eo_message_receiver_read_time` (`receiver_id`, `is_read`, `create_time` DESC),
     KEY `idx_eo_message_conversation_id` (`conversation_id`),
-    KEY `idx_eo_message_business_id` (`business_id`)
+    KEY `idx_eo_message_business_id` (`business_id`),
+    CONSTRAINT `chk_message_is_read` CHECK (`is_read` IN (0, 1)),
+    CONSTRAINT `fk_message_sender` FOREIGN KEY (`sender_id`) REFERENCES `sys_user`(`user_id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_message_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `sys_user`(`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息表';
 
 CREATE TABLE `eo_message_archive` (
@@ -344,8 +424,15 @@ CREATE TABLE `eo_offline_message` (
     PRIMARY KEY (`id`),
     KEY `idx_eo_offline_message_user_status` (`user_id`, `push_status`),
     KEY `idx_eo_offline_message_message_id` (`message_id`),
-    KEY `idx_eo_offline_message_retry` (`push_status`, `retry_count`, `create_time` DESC)
+    KEY `idx_eo_offline_message_retry` (`push_status`, `retry_count`, `create_time` DESC),
+    CONSTRAINT `chk_offline_message_push_status` CHECK (`push_status` IN (0, 1, 2)),
+    CONSTRAINT `fk_offline_user` FOREIGN KEY (`user_id`) REFERENCES `sys_user`(`user_id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_offline_message` FOREIGN KEY (`message_id`) REFERENCES `eo_message`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='离线消息表';
+
+-- ===================================================================
+-- 7. 文件模块
+-- ===================================================================
 
 CREATE TABLE `upload_file` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
@@ -369,8 +456,13 @@ CREATE TABLE `upload_file` (
     PRIMARY KEY (`id`),
     KEY `idx_upload_file_md5` (`md5`),
     KEY `idx_upload_file_business` (`business_type`, `business_id`),
-    KEY `idx_upload_file_uploader` (`uploader_id`)
+    KEY `idx_upload_file_uploader` (`uploader_id`),
+    CONSTRAINT `fk_file_uploader` FOREIGN KEY (`uploader_id`) REFERENCES `sys_user`(`user_id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文件上传记录表';
+
+-- ===================================================================
+-- 8. 日志模块
+-- ===================================================================
 
 CREATE TABLE `sys_oper_log` (
     `oper_id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '日志主键',
@@ -393,7 +485,8 @@ CREATE TABLE `sys_oper_log` (
     KEY `idx_sys_oper_log_time` (`oper_time`),
     KEY `idx_sys_oper_log_name_time` (`oper_name`, `oper_time` DESC),
     KEY `idx_sys_oper_log_status` (`status`),
-    KEY `idx_sys_oper_log_business_time` (`business_type`, `oper_time` DESC)
+    KEY `idx_sys_oper_log_business_time` (`business_type`, `oper_time` DESC),
+    CONSTRAINT `chk_oper_log_status` CHECK (`status` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志表';
 
 CREATE TABLE `sys_oper_log_archive` (

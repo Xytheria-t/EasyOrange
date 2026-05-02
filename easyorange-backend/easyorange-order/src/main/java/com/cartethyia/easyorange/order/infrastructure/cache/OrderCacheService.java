@@ -256,15 +256,11 @@ public class OrderCacheService {
     }
 
     public void warmUpCache(Long userId) {
-        log.info("开始预热用户订单缓存：userId={}", userId);
-        
         try {
             for (int status = 0; status <= 5; status++) {
                 String cacheKey = buildOrderListKey(userId, status, 1, 10);
                 redisTemplate.opsForValue().set(cacheKey, PageResult.empty(1, 10), ORDER_LIST_CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
             }
-            
-            log.info("用户订单缓存预热完成：userId={}", userId);
         } catch (Exception e) {
             log.error("用户订单缓存预热失败：userId={}", userId, e);
         }

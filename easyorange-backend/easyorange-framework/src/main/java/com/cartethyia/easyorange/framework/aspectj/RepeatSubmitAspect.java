@@ -67,6 +67,9 @@ public class RepeatSubmitAspect {
 
         try {
             return point.proceed();
+        } catch (Throwable ex) {
+            redisCache.delete(key);
+            throw ex;
         } finally {
             MD5_CACHE.remove();
         }

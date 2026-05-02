@@ -52,7 +52,6 @@ public class OrderTimeoutTask {
             try {
                 if (cancelExpiredOrder(aggregate)) {
                     cancelled++;
-                    log.info("订单超时自动取消: orderNo={}, productId={}", aggregate.orderNo().value(), aggregate.productId().value());
                 }
             } catch (Exception e) {
                 log.error("取消超时订单失败: orderId={}", aggregate.id().value(), e);

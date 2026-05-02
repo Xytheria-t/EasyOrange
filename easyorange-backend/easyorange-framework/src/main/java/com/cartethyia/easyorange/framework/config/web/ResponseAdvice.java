@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.config.web;
 
 import com.cartethyia.easyorange.common.result.Result;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;

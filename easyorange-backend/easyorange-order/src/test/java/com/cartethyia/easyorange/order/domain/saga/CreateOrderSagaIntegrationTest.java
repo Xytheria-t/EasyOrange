@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,8 +36,9 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
 @Testcontainers
+@Tag("integration")
 @DisplayName("CreateOrderSaga 端到端集成测试")
 class CreateOrderSagaIntegrationTest {
 

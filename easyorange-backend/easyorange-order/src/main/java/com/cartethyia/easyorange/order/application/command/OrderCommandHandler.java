@@ -13,11 +13,9 @@ import com.cartethyia.easyorange.order.enums.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.saga.CreateOrderSaga;
 import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderCommandHandler {
@@ -40,7 +38,6 @@ public class OrderCommandHandler {
 
         orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
-        log.info("订单已支付 orderId={}", command.getOrderId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -51,7 +48,6 @@ public class OrderCommandHandler {
 
         orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
-        log.info("订单已取消 orderId={} reason={}", command.getOrderId(), command.getReason());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -62,7 +58,6 @@ public class OrderCommandHandler {
 
         orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
-        log.info("订单已发货 orderId={}", command.getOrderId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -73,7 +68,6 @@ public class OrderCommandHandler {
 
         orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
-        log.info("订单已完成 orderId={}", command.getOrderId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -86,7 +80,6 @@ public class OrderCommandHandler {
         orderRepository.update(result.aggregate());
         orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
-        log.info("订单已退款 orderId={} reason={}", command.getOrderId(), command.getReason());
     }
 
     private OrderAggregate validateBuyerOrder(Long orderId) {

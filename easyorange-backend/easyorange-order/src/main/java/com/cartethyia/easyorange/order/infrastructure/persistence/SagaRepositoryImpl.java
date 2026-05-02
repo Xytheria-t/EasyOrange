@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.infrastructure.persistence;
 import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
 import com.cartethyia.easyorange.order.domain.saga.SagaState;
 import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;

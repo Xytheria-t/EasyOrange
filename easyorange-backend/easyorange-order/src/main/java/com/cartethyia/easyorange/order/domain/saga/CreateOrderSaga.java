@@ -21,7 +21,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.enums.OrderStatus;
 import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -99,9 +99,6 @@ public class CreateOrderSaga {
             sagaStatus = sagaStatus.withState(SagaState.COMPLETED).withStep("COMPLETED");
             sagaRepository.update(sagaStatus);
 
-            log.info("订单创建 Saga 完成 sagaId={} orderId={} orderNo={}", 
-                sagaId, aggregate.id().value(), aggregate.orderNo().value());
-
             return new CreateOrderResult(aggregate.id().value(), aggregate.orderNo().value());
 
         } catch (Exception e) {
@@ -175,7 +172,6 @@ public class CreateOrderSaga {
 
         orderRepository.save(result.aggregate());
         eventPublisher.publish(result.event());
-        log.info("Saga: 订单创建成功 orderId={}", result.aggregate().id().value());
 
         return result;
     }
@@ -193,10 +189,8 @@ public class CreateOrderSaga {
         for (int i = compensations.size() - 1; i >= 0; i--) {
             int stepIndex = compensations.size() - i;
             try {
-                log.info("执行补偿操作 step={}/{}", stepIndex, compensations.size());
                 compensations.get(i).compensate();
                 compensationResults.add(String.format("Step %d: SUCCESS", stepIndex));
-                log.info("补偿操作成功 step={}", stepIndex);
             } catch (Exception e) {
                 compensationResults.add(String.format("Step %d: FAILED - %s", stepIndex, e.getMessage()));
                 log.error("补偿操作失败 step={}，将继续执行其他补偿", stepIndex, e);
@@ -214,7 +208,6 @@ public class CreateOrderSaga {
                         if (aggregate.canCancel()) {
                             OrderAggregate.OrderCancelledResult result = aggregate.cancel("Saga 补偿取消");
                             orderRepository.update(result.aggregate());
-                            log.info("Saga: 订单补偿成功 orderId={}", orderId.value());
                         } else {
                             log.warn("Saga: 订单状态不允许取消补偿 orderId={} status={}", orderId.value(), aggregate.status());
                         }
@@ -241,8 +234,6 @@ public class CreateOrderSaga {
             sagaRepository.update(sagaStatus);
             
             execute(command);
-            
-            log.info("Saga 重试成功 sagaId={}", sagaId);
         } catch (Exception e) {
             log.error("Saga 重试失败 sagaId={}", sagaId, e);
             sagaStatus = sagaStatus.withError(e.getMessage());

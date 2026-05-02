@@ -30,7 +30,6 @@ public class SagaOrchestrator {
         
         try {
             for (SagaStep step : steps) {
-                log.info("Saga step starting: {}", step.name);
                 SagaStepResult<?> result = step.action.get();
                 
                 if (!result.isSuccess()) {
@@ -42,7 +41,6 @@ public class SagaOrchestrator {
                     compensations.add(0, step.compensation);
                 }
                 executedSteps++;
-                log.info("Saga step completed: {}", step.name);
             }
         } catch (SagaExecutionException e) {
             log.error("Saga execution failed, starting compensation for {} steps", executedSteps);

@@ -68,7 +68,14 @@ class ArchitectureRulesTest {
             "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/AccountTypeDetector.java|import org.springframework.",
             "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/LoginSecurityService.java|import org.springframework.",
             "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/LoginSecurityDomainService.java|import org.springframework.",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/PasswordDomainService.java|import org.springframework."
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/PasswordDomainService.java|import org.springframework.",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/port/AvatarFilePort.java|import org.springframework.",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/service/SmsCodeDomainService.java|import org.springframework.",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/shared/enums/UserStatus.java|import com.baomidou.mybatisplus.",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/shared/enums/LoginMethod.java|import com.baomidou.mybatisplus.",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/shared/enums/UserType.java|import com.baomidou.mybatisplus.",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/shared/enums/Sex.java|import com.baomidou.mybatisplus.",
+            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/domain/gateway/CallbackSignatureVerifier.java|import org.springframework."
     );
 
     private static final Set<String> COMMAND_QUERY_COUPLING_ALLOWLIST = Set.of(

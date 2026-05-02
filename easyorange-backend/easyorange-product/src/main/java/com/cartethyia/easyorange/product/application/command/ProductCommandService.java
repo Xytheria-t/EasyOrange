@@ -58,7 +58,6 @@ public class ProductCommandService {
         productRepository.save(product);
         publishEvents(product);
 
-        log.info("创建商品成功：productId={}, userId={}", product.getId().value(), userId);
         return product.getId().value();
     }
 
@@ -88,7 +87,6 @@ public class ProductCommandService {
         publishEvents(product);
         productCachePort.evictProductCache(product.getId().value());
 
-        log.info("更新商品成功: productId={}, userId={}", command.getId(), userId);
         return product.getId().value();
     }
 
@@ -103,8 +101,6 @@ public class ProductCommandService {
         productRepository.delete(productId);
         publishEvents(product);
         productCachePort.evictProductCache(productId.value());
-
-        log.info("删除商品成功: productId={}, userId={}", command.getId(), userId);
     }
 
     public void decrementStock(DecrementStockCommand command) {
@@ -116,8 +112,6 @@ public class ProductCommandService {
         productRepository.update(product);
         publishEvents(product);
         productCachePort.evictProductCache(productId.value());
-
-        log.info("扣减库存成功: productId={}", command.getProductId());
     }
 
     public void restoreStock(RestoreStockCommand command) {
@@ -133,8 +127,6 @@ public class ProductCommandService {
         productRepository.update(product);
         publishEvents(product);
         productCachePort.evictProductCache(productId.value());
-
-        log.info("恢复库存成功: productId={}", command.getProductId());
     }
 
     public void putOnline(Long productId) {
@@ -148,7 +140,6 @@ public class ProductCommandService {
         productRepository.update(product);
         publishEvents(product);
         productCachePort.evictProductCache(productId);
-        log.info("商品上架成功: productId={}, userId={}", productId, userId);
     }
 
     public void takeOffline(Long productId) {
@@ -162,7 +153,6 @@ public class ProductCommandService {
         productRepository.update(product);
         publishEvents(product);
         productCachePort.evictProductCache(productId);
-        log.info("商品下架成功: productId={}, userId={}", productId, userId);
     }
 
     public void markAsSold(MarkAsSoldCommand command) {
@@ -178,8 +168,6 @@ public class ProductCommandService {
         productRepository.update(product);
         publishEvents(product);
         productCachePort.evictProductCache(productId.value());
-
-        log.info("标记售出成功: productId={}", command.getProductId());
     }
 
     private void publishEvents(Product product) {

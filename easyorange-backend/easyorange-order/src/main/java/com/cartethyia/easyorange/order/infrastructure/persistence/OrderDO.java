@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.infrastructure.persistence;
 
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = false)
+@TableName("eo_order")
 public class OrderDO extends BaseDO {
 
     private Long id;

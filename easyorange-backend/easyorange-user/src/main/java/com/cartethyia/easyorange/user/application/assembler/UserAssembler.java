@@ -14,10 +14,11 @@ import org.mapstruct.NullValueMappingStrategy;
 
 import java.util.Set;
 
-@Mapper(builder = @Builder(disableBuilder = true), nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
+@Mapper(componentModel = "spring", builder = @Builder(disableBuilder = true), nullValueMappingStrategy = NullValueMappingStrategy.RETURN_DEFAULT)
 public interface UserAssembler {
 
     @Mapping(target = "userId", source = "id")
+    @Mapping(target = "nickname", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "phone", ignore = true)
     @Mapping(target = "realName", ignore = true)
@@ -28,6 +29,7 @@ public interface UserAssembler {
     UserVO toVo(User user);
 
     @Mapping(target = "id", source = "user.id")
+    @Mapping(target = "nickname", ignore = true)
     @Mapping(target = "email", ignore = true)
     @Mapping(target = "phone", ignore = true)
     @Mapping(target = "realName", ignore = true)
@@ -36,6 +38,8 @@ public interface UserAssembler {
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "userType", ignore = true)
     @Mapping(target = "avatar", ignore = true)
+    @Mapping(target = "createTime", ignore = true)
+    @Mapping(target = "updateTime", ignore = true)
     UserProfileVO toProfileVo(User user, Set<String> roles, Set<String> permissions, Long loginTime);
 
     default LoginResponse toLoginResponse(User user, String accessToken, String refreshToken) {
@@ -52,8 +56,10 @@ public interface UserAssembler {
         String email = user.getProfile() != null ? user.getProfile().email() : null;
         String phone = user.getProfile() != null ? user.getProfile().phone() : null;
         String realName = user.getProfile() != null ? user.getProfile().realName() : null;
+        String nickName = user.getProfile() != null ? user.getProfile().nickName() : null;
         String avatar = user.getProfile() != null ? user.getProfile().avatar() : null;
 
+        vo.setNickname(nickName);
         vo.setEmail(MaskUtils.maskEmail(email));
         vo.setPhone(MaskUtils.maskPhone(phone));
         vo.setRealName(MaskUtils.maskName(realName));
@@ -74,6 +80,7 @@ public interface UserAssembler {
         String avatar = user.getProfile() != null ? user.getProfile().avatar() : null;
         var sex = user.getProfile() != null ? user.getProfile().sex() : null;
 
+        vo.setNickname(nickName);
         vo.setEmail(MaskUtils.maskEmail(email));
         vo.setPhone(MaskUtils.maskPhone(phone));
         vo.setRealName(MaskUtils.maskName(realName));

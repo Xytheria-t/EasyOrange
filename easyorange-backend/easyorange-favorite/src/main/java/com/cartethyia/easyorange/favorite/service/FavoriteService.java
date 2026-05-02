@@ -8,13 +8,12 @@ import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.infrastructure.acl.ProductAclService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,8 +24,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class FavoriteService {
-
-    private static final Logger log = LoggerFactory.getLogger(FavoriteService.class);
 
     private final FavoriteRepository favoriteRepository;
     private final ProductAclService productAclService;
@@ -51,8 +48,6 @@ public class FavoriteService {
 
         Favorite favorite = Favorite.create(userId, productId);
         favoriteRepository.save(favorite);
-
-        log.info("添加收藏成功: userId={}, productId={}", userId, productId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -65,7 +60,6 @@ public class FavoriteService {
 
         favorite.validateOwnership(userId);
         favoriteRepository.removeById(favorite.getId());
-        log.info("移除收藏成功: userId={}, productId={}", userId, productId);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -79,11 +73,10 @@ public class FavoriteService {
         List<Favorite> favorites = favoriteRepository.findByIds(ids);
         favorites.forEach(favorite -> favorite.validateOwnership(userId));
 
-        int removedCount = favoriteRepository.removeByIds(ids);
-        log.info("批量移除收藏成功: userId={}, count={}", userId, removedCount);
+        favoriteRepository.removeByIds(ids);
     }
 
-    public PageResult<ProductVO> queryFavorites(FavoritePageQuery query) {
+    public PageResult<FavoriteVO> queryFavorites(FavoritePageQuery query) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         int pageNum = query.getPageNum() != null ? query.getPageNum() : 1;
@@ -113,7 +106,30 @@ public class FavoriteService {
 
         Map<Long, SellerReadModel> sellerMap = productAclService.findSellersByIds(sellerIds);
 
-        List<ProductVO> voList = productAclService.assembleProductVOs(products, sellerMap);
+        List<ProductVO> productVOs = productAclService.assembleProductVOs(products, sellerMap);
+
+        Map<Long, ProductVO> productVOMap = productVOs.stream()
+                .collect(Collectors.toMap(ProductVO::getId, p -> p, (a, b) -> a));
+
+        Map<Long, Favorite> favoriteByProductId = favorites.stream()
+                .collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
+
+        List<FavoriteVO> voList = productIds.stream()
+                .map(productId -> {
+                    Favorite fav = favoriteByProductId.get(productId);
+                    ProductVO productVO = productVOMap.get(productId);
+                    if (fav == null || productVO == null) {
+                        return null;
+                    }
+                    return FavoriteVO.builder()
+                            .id(fav.getId())
+                            .productId(fav.getProductId())
+                            .product(productVO)
+                            .createTime(fav.getCreateTime())
+                            .build();
+                })
+                .filter(vo -> vo != null)
+                .collect(Collectors.toList());
 
         return PageResult.of(voList, total, pageNum, pageSize);
     }

@@ -22,6 +22,12 @@
             <artifactId>easyorange-framework</artifactId>
         </dependency>
 
+        <!-- 依赖 Common Domain 模块（领域事件基础设施） -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common-domain</artifactId>
+        </dependency>
+
         <!-- 依赖 User 模块（查询用户信息） -->
         <dependency>
             <groupId>com.cartethyia</groupId>

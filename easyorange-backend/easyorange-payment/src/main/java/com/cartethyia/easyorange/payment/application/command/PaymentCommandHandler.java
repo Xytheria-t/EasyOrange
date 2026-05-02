@@ -49,7 +49,6 @@ public class PaymentCommandHandler {
         
         saveEventsToOutbox(aggregate);
 
-        log.info("支付创建成功 paymentId={} paymentNo={}", aggregate.id(), aggregate.paymentNo());
         return aggregate.id();
     }
 
@@ -88,8 +87,6 @@ public class PaymentCommandHandler {
                 );
                 
                 saga.execute();
-                
-                log.info("支付完成 paymentNo={} paymentId={}", command.getPaymentNo(), paymentId);
             } catch (SagaExecutionException e) {
                 log.error("支付Saga执行失败 paymentNo={} step={}", command.getPaymentNo(), e.getFailedStep(), e);
                 throw PaymentGatewayException.of("支付失败: " + e.getMessage());
@@ -105,7 +102,6 @@ public class PaymentCommandHandler {
         aggregate.preparePay();
         paymentRepository.update(aggregate);
 
-        log.info("支付预处理完成 paymentId={} status=PAYING", aggregate.id());
         return aggregate.id();
     }
 
@@ -160,8 +156,6 @@ public class PaymentCommandHandler {
                 );
                 
                 saga.execute();
-                
-                log.info("支付退款完成 paymentId={} reason={}", command.getPaymentId(), command.getRefundReason());
             } catch (SagaExecutionException e) {
                 log.error("退款Saga执行失败 paymentId={} step={}", paymentId, e.getFailedStep(), e);
                 throw PaymentGatewayException.of("退款失败: " + e.getMessage());
@@ -181,7 +175,6 @@ public class PaymentCommandHandler {
         aggregate.prepareRefund(refundAmount);
         paymentRepository.update(aggregate);
 
-        log.info("退款预处理完成 paymentId={} status=REFUNDING", paymentId);
         return paymentId;
     }
 
@@ -213,8 +206,6 @@ public class PaymentCommandHandler {
         paymentRepository.update(aggregate);
         
         saveEventsToOutbox(aggregate);
-
-        log.info("支付关闭成功 paymentId={}", command.getPaymentId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -224,7 +215,6 @@ public class PaymentCommandHandler {
                     .orElseThrow(PaymentNotFoundException::of);
             aggregate.cancelPay();
             paymentRepository.update(aggregate);
-            log.info("支付状态回退成功 paymentId={} status=PENDING", paymentId);
         } catch (Exception e) {
             log.error("支付状态回退失败 paymentId={}", paymentId, e);
         }
@@ -237,7 +227,6 @@ public class PaymentCommandHandler {
                     .orElseThrow(PaymentNotFoundException::of);
             aggregate.cancelRefund();
             paymentRepository.update(aggregate);
-            log.info("退款状态回退成功 paymentId={} status=SUCCESS", paymentId);
         } catch (Exception e) {
             log.error("退款状态回退失败 paymentId={}", paymentId, e);
         }

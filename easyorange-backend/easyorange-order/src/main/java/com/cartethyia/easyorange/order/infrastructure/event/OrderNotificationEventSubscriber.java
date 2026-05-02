@@ -39,12 +39,10 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         String eventType = event.getClass().getSimpleName();
 
         if (idempotencyChecker.isDuplicate(eventType, eventId)) {
-            log.warn("action=skip_duplicate_notification eventType={} eventId={}", eventType, eventId);
             return;
         }
 
         if (!idempotencyChecker.tryMark(eventType, eventId)) {
-            log.warn("action=notification_already_processing eventType={} eventId={}", eventType, eventId);
             return;
         }
 
@@ -73,7 +71,6 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         if (email != null) {
             notificationService.sendEmail(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId());
         }
-        log.info("action=notify_order_created orderId={}", event.getOrderId());
     }
 
     private void handleOrderPaid(OrderPaidEvent event) {
@@ -81,7 +78,6 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         if (email != null) {
             notificationService.sendEmail(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId());
         }
-        log.info("action=notify_order_paid orderId={}", event.getOrderId());
     }
 
     private void handleOrderShipped(OrderShippedEvent event) {
@@ -89,7 +85,6 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         if (email != null) {
             notificationService.sendEmail(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId());
         }
-        log.info("action=notify_order_shipped orderId={}", event.getOrderId());
     }
 
     private void handleOrderCompleted(OrderCompletedEvent event) {
@@ -97,7 +92,6 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         if (email != null) {
             notificationService.sendEmail(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId());
         }
-        log.info("action=notify_order_completed orderId={}", event.getOrderId());
     }
 
     private void handleOrderCancelled(OrderCancelledEvent event) {
@@ -105,7 +99,6 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         if (email != null) {
             notificationService.sendEmail(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId());
         }
-        log.info("action=notify_order_cancelled orderId={}", event.getOrderId());
     }
 
     private void handleOrderRefunded(OrderRefundedEvent event) {
@@ -113,7 +106,6 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         if (email != null) {
             notificationService.sendEmail(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId());
         }
-        log.info("action=notify_order_refunded orderId={}", event.getOrderId());
     }
 
     private String getUserEmail(Long userId) {
@@ -122,10 +114,7 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         }
         return userInfoPort.getUserInfo(userId)
                 .map(UserInfo::email)
-                .orElseGet(() -> {
-                    log.warn("action=user_not_found userId={}", userId);
-                    return null;
-                });
+                .orElse(null);
     }
 
     private String getEmailFromOrder(Long orderId) {

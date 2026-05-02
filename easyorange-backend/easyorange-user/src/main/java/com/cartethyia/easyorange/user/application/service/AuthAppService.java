@@ -53,7 +53,7 @@ public class AuthAppService {
         return saved.getId();
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(rollbackFor = Exception.class)
     public LoginResponse login(LoginRequest loginRequest) {
         LoginMethod loginMethod = loginRequest.getEffectiveLoginMethod();
 
@@ -120,7 +120,7 @@ public class AuthAppService {
         );
 
         if (StringUtils.hasText(request.phone()) || StringUtils.hasText(request.email())) {
-            user = user.updateProfile(request.email(), request.phone(), null, null);
+            user = user.updateProfile(request.email(), request.phone(), null, null, null, null, null);
         }
 
         return user;
@@ -141,7 +141,7 @@ public class AuthAppService {
             loginSecurityDomainService.recordFailedAttempt(account);
             logAuthWarn("method", "password", "account", loginSecurityDomainService.maskAccount(account),
                 "result", "failed", "reason", "invalid_credentials");
-            throw BusinessException.of(UserResultCode.PASSWORD_ERROR, "账号或密码错误");
+            throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
         if (!user.isNormal()) {
@@ -177,10 +177,12 @@ public class AuthAppService {
 
     private void logAuthWarn(Object... kvs) {
         StringBuilder sb = new StringBuilder("action=login");
+        Object[] values = new Object[kvs.length / 2];
         for (int i = 0; i < kvs.length; i += 2) {
             sb.append(", ").append(kvs[i]).append("={}");
+            values[i / 2] = kvs[i + 1];
         }
-        log.warn(sb.toString(), kvs);
+        log.warn(sb.toString(), values);
     }
 
     private LoginResponse buildLoginResponse(User user) {
@@ -188,7 +190,11 @@ public class AuthAppService {
         String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), userTypeCode);
         String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), userTypeCode);
 
-        userRepository.updateLoginInfo(user.getId(), RequestUtil.getClientIp());
+        try {
+            userRepository.updateLoginInfo(user.getId(), RequestUtil.getClientIp());
+        } catch (Exception e) {
+            log.warn("action=login_info_update_failed, userId={}, error={}", user.getId(), e.getMessage());
+        }
 
         return userAssembler.toLoginResponse(user, accessToken, refreshToken);
     }

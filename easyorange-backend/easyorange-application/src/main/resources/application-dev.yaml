@@ -46,12 +46,17 @@ spring:
 logging:
   level:
     root: INFO
-    com.cartethyia.easyorange: DEBUG
+    com.cartethyia.easyorange: INFO
+    com.cartethyia.easyorange.payment.application.event: DEBUG
+    com.cartethyia.easyorange.payment.application: DEBUG
+    com.cartethyia.easyorange.order.application: DEBUG
+    com.cartethyia.easyorange.product.application: DEBUG
+    com.cartethyia.easyorange.user.application: DEBUG
+    com.baomidou.mybatisplus: WARN
+    org.mybatis: WARN
     org.springframework.boot: INFO
     org.springframework.web: WARN
     org.springframework.data: WARN
-    org.mybatis: WARN
-    com.baomidou.mybatisplus: WARN
     com.zaxxer.hikari: WARN
     io.lettuce: WARN
     org.apache: WARN

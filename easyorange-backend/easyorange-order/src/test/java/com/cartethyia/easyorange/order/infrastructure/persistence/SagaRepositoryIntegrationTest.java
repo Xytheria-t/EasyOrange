@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -22,8 +23,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
 @Testcontainers
+@Tag("integration")
 @DisplayName("SagaRepository 集成测试")
 class SagaRepositoryIntegrationTest {
 

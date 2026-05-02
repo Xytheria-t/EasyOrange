@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.favorite.controller.request.BatchRemoveRequest;
 import com.cartethyia.easyorange.favorite.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import org.junit.jupiter.api.DisplayName;
@@ -34,14 +35,18 @@ class FavoriteControllerTest {
     @Test
     @DisplayName("获取收藏列表成功")
     void testGetFavorites() {
-        ProductVO productVO = ProductVO.builder()
-                .id(2001L)
-                .title("测试商品")
-                .price(new BigDecimal("99.99"))
+        FavoriteVO favoriteVO = FavoriteVO.builder()
+                .id(1L)
+                .productId(2001L)
+                .product(ProductVO.builder()
+                        .id(2001L)
+                        .title("测试商品")
+                        .price(new BigDecimal("99.99"))
+                        .build())
                 .build();
 
-        PageResult<ProductVO> pageResult = PageResult.of(
-                List.of(productVO), 1L, 1, 10
+        PageResult<FavoriteVO> pageResult = PageResult.of(
+                List.of(favoriteVO), 1L, 1, 10
         );
 
         when(favoriteService.queryFavorites(any(FavoritePageQuery.class))).thenReturn(pageResult);
@@ -51,7 +56,9 @@ class FavoriteControllerTest {
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.data().total()).isEqualTo(1L);
-        assertThat(result.data().records().get(0).getId()).isEqualTo(2001L);
+        assertThat(result.data().records().get(0).getId()).isEqualTo(1L);
+        assertThat(result.data().records().get(0).getProductId()).isEqualTo(2001L);
+        assertThat(result.data().records().get(0).getProduct().getTitle()).isEqualTo("测试商品");
         verify(favoriteService).queryFavorites(any(FavoritePageQuery.class));
     }
 

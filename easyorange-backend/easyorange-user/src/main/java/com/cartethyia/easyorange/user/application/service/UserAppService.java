@@ -18,12 +18,10 @@ import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.port.UserEventPort;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserAppService {
@@ -50,9 +48,8 @@ public class UserAppService {
         BizRequire.requireTrue(hasAnyUpdate(request), "没有需要更新的字段");
 
         User updatedUser = currentUser.updateProfile(request.email(), request.phone(),
-            Sex.fromCode(request.gender()), currentUser.getId());
+            request.gender() != null ? Sex.fromCode(request.gender()) : null, request.realName(), request.nickname(), request.studentId(), currentUser.getId());
         BizRequire.requireTrue(userRepository.update(updatedUser), "更新用户信息失败");
-        log.info("action=updateUserInfo success userId={}", updatedUser.getId());
         return userAssembler.toVo(updatedUser);
     }
 
@@ -73,8 +70,6 @@ public class UserAppService {
         BizRequire.requireTrue(updated, "修改密码失败，请稍后重试");
 
         userEventPort.publishPasswordChanged(user.getId());
-
-        log.info("action=changePassword success userId={}", user.getId());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -96,17 +91,18 @@ public class UserAppService {
         User updatedUser = currentUser.changeAvatar(avatarUrl, currentUser.getId());
         BizRequire.requireTrue(userRepository.update(updatedUser), "更新头像失败");
 
-        log.info("action=uploadAvatar success userId={}, avatarUrl={}", updatedUser.getId(), avatarUrl);
-
         return userRepository.findById(updatedUser.getId())
             .map(userAssembler::toVo)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
     }
 
     private boolean hasAnyUpdate(UpdateUserRequest request) {
-        return request.email() != null && !request.email().isBlank()
+        return request.nickname() != null && !request.nickname().isBlank()
+            || request.email() != null && !request.email().isBlank()
             || request.phone() != null && !request.phone().isBlank()
-            || request.gender() != null;
+            || request.gender() != null
+            || request.realName() != null && !request.realName().isBlank()
+            || request.studentId() != null && !request.studentId().isBlank();
     }
 
     private User getCurrentUserOrThrow() {

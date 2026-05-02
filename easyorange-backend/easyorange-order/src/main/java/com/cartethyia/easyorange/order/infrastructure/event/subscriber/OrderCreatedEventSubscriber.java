@@ -22,12 +22,7 @@ public class OrderCreatedEventSubscriber implements DomainEventSubscriber<OrderC
     @Override
     public void handle(OrderCreatedEvent event) {
         try {
-            log.info("开始处理 OrderCreatedEvent: eventId={} productId={}", 
-                event.getEventId(), event.getProductId());
-            
             productInventoryPort.decreaseStock(event.getProductId());
-            
-            log.info("OrderCreatedEvent 处理完成：库存已扣减 productId={}", event.getProductId());
         } catch (Exception e) {
             log.error("OrderCreatedEvent 处理失败：eventId={} productId={}", 
                 event.getEventId(), event.getProductId(), e);

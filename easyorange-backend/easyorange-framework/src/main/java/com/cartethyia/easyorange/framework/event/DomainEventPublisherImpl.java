@@ -5,12 +5,14 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Slf4j
+@Primary
 @Component
 @RequiredArgsConstructor
 public class DomainEventPublisherImpl implements DomainEventPublisher {
@@ -20,7 +22,7 @@ public class DomainEventPublisherImpl implements DomainEventPublisher {
 
     @Override
     public void publish(BaseDomainEvent event) {
-        log.info("发布领域事件：type={} eventId={}", event.eventType(), event.getEventId());
+        log.debug("发布领域事件：type={} eventId={}", event.eventType(), event.getEventId());
         persistenceService.persist(event);
         applicationEventPublisher.publishEvent(event);
     }
@@ -37,7 +39,7 @@ public class DomainEventPublisherImpl implements DomainEventPublisher {
 
     @Async("domainEventExecutor")
     public void publishAsync(BaseDomainEvent event) {
-        log.info("异步发布领域事件：type={} eventId={}", event.eventType(), event.getEventId());
+        log.debug("异步发布领域事件：type={} eventId={}", event.eventType(), event.getEventId());
         persistenceService.persist(event);
         applicationEventPublisher.publishEvent(event);
     }

@@ -15,8 +15,10 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -110,10 +112,10 @@ class OrderCacheServiceTest {
     @DisplayName("buildOrderListKey 构建正确的缓存键")
     void testBuildOrderListKey() {
         String keyWithStatus = orderCacheService.buildOrderListKey(123L, 1);
-        assertThat(keyWithStatus).isEqualTo("order:list:123:1");
+        assertThat(keyWithStatus).isEqualTo("eo:order:list:123:status:1:page:1:size:10");
 
         String keyWithoutStatus = orderCacheService.buildOrderListKey(123L, null);
-        assertThat(keyWithoutStatus).isEqualTo("order:list:123:all");
+        assertThat(keyWithoutStatus).isEqualTo("eo:order:list:123:status:all:page:1:size:10");
     }
 
     @Test
@@ -130,32 +132,33 @@ class OrderCacheServiceTest {
     @DisplayName("删除买家订单缓存")
     void testDeleteBuyerOrderCache() {
         Long buyerId = 123456L;
+        String pattern = "eo:order:list:" + buyerId + ":*";
+        Set<String> matchedKeys = Set.of(
+            "eo:order:list:" + buyerId + ":status:0:page:1:size:10",
+            "eo:order:list:" + buyerId + ":status:1:page:1:size:10"
+        );
+        when(redisTemplate.keys(pattern)).thenReturn(matchedKeys);
 
         orderCacheService.deleteBuyerOrderCache(buyerId);
 
-        for (int status = 0; status <= 5; status++) {
-            String expectedKey = "order:list:" + buyerId + ":" + status;
-            verify(redisTemplate).delete(expectedKey);
-        }
-
-        String expectedAllKey = "order:list:" + buyerId + ":all";
-        verify(redisTemplate).delete(expectedAllKey);
+        verify(redisTemplate).keys(pattern);
+        verify(redisTemplate).delete(matchedKeys);
     }
 
     @Test
     @DisplayName("删除卖家订单缓存")
     void testDeleteSellerOrderCache() {
         Long sellerId = 789012L;
+        String pattern = "eo:order:list:" + sellerId + ":*";
+        Set<String> matchedKeys = Set.of(
+            "eo:order:list:" + sellerId + ":status:0:page:1:size:10"
+        );
+        when(redisTemplate.keys(pattern)).thenReturn(matchedKeys);
 
         orderCacheService.deleteSellerOrderCache(sellerId);
 
-        for (int status = 0; status <= 5; status++) {
-            String expectedKey = "order:list:" + sellerId + ":" + status;
-            verify(redisTemplate).delete(expectedKey);
-        }
-
-        String expectedAllKey = "order:list:" + sellerId + ":all";
-        verify(redisTemplate).delete(expectedAllKey);
+        verify(redisTemplate).keys(pattern);
+        verify(redisTemplate).delete(matchedKeys);
     }
 
     @Test
@@ -163,56 +166,49 @@ class OrderCacheServiceTest {
     void testDeleteOrderCache() {
         Long buyerId = 111222L;
         Long sellerId = 333444L;
+        String buyerPattern = "eo:order:list:" + buyerId + ":*";
+        String sellerPattern = "eo:order:list:" + sellerId + ":*";
+        Set<String> buyerKeys = Set.of("eo:order:list:" + buyerId + ":status:0:page:1:size:10");
+        Set<String> sellerKeys = Set.of("eo:order:list:" + sellerId + ":status:0:page:1:size:10");
+        when(redisTemplate.keys(buyerPattern)).thenReturn(buyerKeys);
+        when(redisTemplate.keys(sellerPattern)).thenReturn(sellerKeys);
 
         orderCacheService.deleteOrderCache(buyerId, sellerId);
 
-        for (int status = 0; status <= 5; status++) {
-            String expectedBuyerKey = "order:list:" + buyerId + ":" + status;
-            String expectedSellerKey = "order:list:" + sellerId + ":" + status;
-            verify(redisTemplate).delete(expectedBuyerKey);
-            verify(redisTemplate).delete(expectedSellerKey);
-        }
-
-        String expectedBuyerAllKey = "order:list:" + buyerId + ":all";
-        String expectedSellerAllKey = "order:list:" + sellerId + ":all";
-        verify(redisTemplate).delete(expectedBuyerAllKey);
-        verify(redisTemplate).delete(expectedSellerAllKey);
+        verify(redisTemplate).keys(buyerPattern);
+        verify(redisTemplate).delete(buyerKeys);
+        verify(redisTemplate).keys(sellerPattern);
+        verify(redisTemplate).delete(sellerKeys);
     }
 
     @Test
     @DisplayName("删除订单缓存时买家 ID 为 null")
     void testDeleteOrderCacheWithNullBuyerId() {
         Long sellerId = 555666L;
+        String sellerPattern = "eo:order:list:" + sellerId + ":*";
+        Set<String> sellerKeys = Set.of("eo:order:list:" + sellerId + ":status:0:page:1:size:10");
+        when(redisTemplate.keys(sellerPattern)).thenReturn(sellerKeys);
 
         orderCacheService.deleteOrderCache(null, sellerId);
 
-        for (int status = 0; status <= 5; status++) {
-            String expectedSellerKey = "order:list:" + sellerId + ":" + status;
-            verify(redisTemplate).delete(expectedSellerKey);
-        }
-
-        String expectedSellerAllKey = "order:list:" + sellerId + ":all";
-        verify(redisTemplate).delete(expectedSellerAllKey);
-
-        verifyNoMoreInteractions(redisTemplate);
+        verify(redisTemplate).keys(sellerPattern);
+        verify(redisTemplate).delete(sellerKeys);
+        verify(redisTemplate, never()).keys(contains("null"));
     }
 
     @Test
     @DisplayName("删除订单缓存时卖家 ID 为 null")
     void testDeleteOrderCacheWithNullSellerId() {
         Long buyerId = 777888L;
+        String buyerPattern = "eo:order:list:" + buyerId + ":*";
+        Set<String> buyerKeys = Set.of("eo:order:list:" + buyerId + ":status:0:page:1:size:10");
+        when(redisTemplate.keys(buyerPattern)).thenReturn(buyerKeys);
 
         orderCacheService.deleteOrderCache(buyerId, null);
 
-        for (int status = 0; status <= 5; status++) {
-            String expectedBuyerKey = "order:list:" + buyerId + ":" + status;
-            verify(redisTemplate).delete(expectedBuyerKey);
-        }
-
-        String expectedBuyerAllKey = "order:list:" + buyerId + ":all";
-        verify(redisTemplate).delete(expectedBuyerAllKey);
-
-        verifyNoMoreInteractions(redisTemplate);
+        verify(redisTemplate).keys(buyerPattern);
+        verify(redisTemplate).delete(buyerKeys);
+        verify(redisTemplate, never()).keys(contains("null"));
     }
 
     @Test
@@ -220,6 +216,7 @@ class OrderCacheServiceTest {
     void testDeleteOrderCacheWithNullIds() {
         orderCacheService.deleteOrderCache(null, null);
 
+        verify(redisTemplate, never()).keys(anyString());
         verify(redisTemplate, never()).delete(anyString());
     }
 }

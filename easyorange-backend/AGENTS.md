@@ -41,6 +41,11 @@ easyorange-backend/
     │
     ▼
 ┌─────────────────────────┐
+│ implementation-planner  │  ← 创建实施计划
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────┐
 │ springboot-tdd-expert   │  ← TDD 方式开发 Spring Boot 功能
 └────────┬────────────────┘
          │
@@ -60,9 +65,10 @@ easyorange-backend/
 用户: "实现用户注册功能，包含邮箱验证和密码加密"
 
 Agent 调用顺序:
-1. springboot-tdd-expert - 使用 TDD 方式实现注册功能
-2. java-code-reviewer - 审查 Spring Boot 最佳实践
-3. security-reviewer - 审查密码加密、输入验证等安全问题
+1. implementation-planner - 创建实施计划
+2. springboot-tdd-expert - 使用 TDD 方式实现注册功能
+3. java-code-reviewer - 审查 Spring Boot 最佳实践
+4. security-reviewer - 审查密码加密、输入验证等安全问题
 ```
 
 ### 2. Bug 修复 (Bug Fix)
@@ -121,9 +127,9 @@ Bug 报告
 数据库变更需求
     │
     ▼
-┌─────────────────────────┐
-│ database-migration-expert│  ← 规划安全的数据库迁移
-└────────┬────────────────┘
+┌──────────────────────────────┐
+│ database-migration-expert    │  ← 规划安全的数据库迁移
+└────────┬─────────────────────┘
          │
          ▼
 ┌─────────────────────────┐
@@ -220,6 +226,7 @@ API 设计需求
 
 | Agent | 主要用途 | 触发时机 |
 |-------|---------|---------|
+| `implementation-planner` | 实施规划 | 复杂功能、重构、多阶段任务 |
 | `springboot-tdd-expert` | Spring Boot TDD 开发 | 新功能、Bug 修复 |
 | `java-code-reviewer` | Java/Spring Boot 代码审查 | 代码修改后 |
 | `java-build-resolver` | Java 构建错误修复 | Maven 编译失败 |
@@ -248,7 +255,7 @@ public class Order extends BaseEntity {
     private OrderId id;
     private OrderStatus status;
     private List<OrderItem> items;
-    
+
     public void addItem(Product product, int quantity) {
         // 业务规则验证
         if (status != OrderStatus.DRAFT) {
@@ -278,7 +285,7 @@ public class Order extends BaseEntity {
 public class OrderCommandService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
-    
+
     public OrderId createOrder(CreateOrderCommand command) {
         // 编排业务流程
         Order order = Order.create(command.getUserId());
@@ -307,7 +314,7 @@ public class OrderCommandService {
 public class OrderController {
     private final OrderCommandService commandService;
     private final OrderQueryService queryService;
-    
+
     @PostMapping
     public Result<OrderId> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         CreateOrderCommand command = request.toCommand();
