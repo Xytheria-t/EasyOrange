@@ -64,6 +64,15 @@ public class MybatisFavoriteRepository extends ServiceImpl<FavoriteMapper, Favor
 
     @Override
     public Favorite save(Favorite favorite) {
+        FavoriteDO softDeleted = baseMapper.selectSoftDeletedByUserIdAndProductId(
+                favorite.getUserId(), favorite.getProductId());
+
+        if (softDeleted != null) {
+            baseMapper.reviveById(softDeleted.getId(), favorite.getUserId());
+            FavoriteDO revived = baseMapper.selectById(softDeleted.getId());
+            return Favorite.reconstitute(revived.getId(), revived.getUserId(), revived.getProductId(), revived.getCreateTime());
+        }
+
         FavoriteDO dataObject = toDataObject(favorite);
         baseMapper.insert(dataObject);
         return Favorite.reconstitute(dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());

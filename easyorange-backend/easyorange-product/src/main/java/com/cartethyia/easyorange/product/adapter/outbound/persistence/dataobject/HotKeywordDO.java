@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.entity.BaseDO;
 
 import java.time.LocalDateTime;
 
-@TableName("hot_keyword")
+@TableName("eo_hot_keyword")
 public class HotKeywordDO extends BaseDO {
 
     private String keyword;

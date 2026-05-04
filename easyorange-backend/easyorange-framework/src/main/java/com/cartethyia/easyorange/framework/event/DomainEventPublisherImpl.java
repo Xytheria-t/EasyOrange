@@ -22,7 +22,6 @@ public class DomainEventPublisherImpl implements DomainEventPublisher {
 
     @Override
     public void publish(BaseDomainEvent event) {
-        log.debug("发布领域事件：type={} eventId={}", event.eventType(), event.getEventId());
         persistenceService.persist(event);
         applicationEventPublisher.publishEvent(event);
     }
@@ -39,7 +38,6 @@ public class DomainEventPublisherImpl implements DomainEventPublisher {
 
     @Async("domainEventExecutor")
     public void publishAsync(BaseDomainEvent event) {
-        log.debug("异步发布领域事件：type={} eventId={}", event.eventType(), event.getEventId());
         persistenceService.persist(event);
         applicationEventPublisher.publishEvent(event);
     }

@@ -36,7 +36,6 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
                         Long userId = Long.parseLong(subject);
                         attributes.put("userId", userId);
                         attributes.put("username", subject);
-                        log.debug("WebSocket握手成功: userId={}, username={}", userId, subject);
                         return true;
                     }
                 }

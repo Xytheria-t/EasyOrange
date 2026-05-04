@@ -220,32 +220,6 @@ class UserRepositoryImplTest {
     }
 
     @Nested
-    @DisplayName("updatePassword")
-    class UpdatePasswordTests {
-
-        @Test
-        @DisplayName("应使用 update wrapper 更新密码")
-        void shouldUpdatePasswordWithWrapper() {
-            when(userMapper.update(isNull(), any())).thenReturn(1);
-
-            boolean result = userRepository.updatePassword(1L, "$2a$10$newEncoded");
-
-            assertThat(result).isTrue();
-            verify(userMapper).update(isNull(), any());
-        }
-
-        @Test
-        @DisplayName("更新失败时应返回 false")
-        void shouldReturnFalseWhenUpdateFails() {
-            when(userMapper.update(isNull(), any())).thenReturn(0);
-
-            boolean result = userRepository.updatePassword(999L, "$2a$10$newEncoded");
-
-            assertThat(result).isFalse();
-        }
-    }
-
-    @Nested
     @DisplayName("updateLoginInfo")
     class UpdateLoginInfoTests {
 

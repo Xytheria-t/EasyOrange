@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobjec
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 
-@TableName("product_image")
+@TableName("eo_product_image")
 public class ProductImageDO extends BaseDO {
 
     private Long productId;

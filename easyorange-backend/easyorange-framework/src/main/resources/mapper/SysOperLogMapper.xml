@@ -3,34 +3,34 @@
 <mapper namespace="com.cartethyia.easyorange.framework.operlog.mapper.SysOperLogMapper">
 
     <delete id="deleteExpiredLogs">
-        DELETE FROM sys_oper_log 
+        DELETE FROM eo_oper_log 
         WHERE oper_time &lt; #{expireDate}
     </delete>
 
     <delete id="deleteLogsBefore">
-        DELETE FROM sys_oper_log 
+        DELETE FROM eo_oper_log 
         WHERE oper_time &lt; #{targetDate}
     </delete>
 
     <delete id="deleteAllLogs">
-        DELETE FROM sys_oper_log
+        DELETE FROM eo_oper_log
     </delete>
 
     <select id="countTotalLogs" resultType="long">
-        SELECT COUNT(*) FROM sys_oper_log
+        SELECT COUNT(*) FROM eo_oper_log
     </select>
 
     <select id="countLogsByDateRange" resultType="long">
-        SELECT COUNT(*) FROM sys_oper_log 
+        SELECT COUNT(*) FROM eo_oper_log 
         WHERE oper_time BETWEEN #{startDate} AND #{endDate}
     </select>
 
     <select id="getOldestRecord" resultType="java.time.LocalDateTime">
-        SELECT MIN(oper_time) FROM sys_oper_log
+        SELECT MIN(oper_time) FROM eo_oper_log
     </select>
 
     <select id="getNewestRecord" resultType="java.time.LocalDateTime">
-        SELECT MAX(oper_time) FROM sys_oper_log
+        SELECT MAX(oper_time) FROM eo_oper_log
     </select>
 
     <select id="estimateStorageSize" resultType="long">
@@ -41,7 +41,7 @@
             ) AS size_kb
         FROM information_schema.tables 
         WHERE table_schema = DATABASE() 
-        AND table_name = 'sys_oper_log'
+        AND table_name = 'eo_oper_log'
     </select>
 
     <!-- 查询指定时间之前的日志（用于归档） -->
@@ -49,7 +49,7 @@
         SELECT oper_id, title, business_type, method, request_method, 
                operator_type, oper_name, oper_url, oper_ip, oper_location,
                oper_param, json_result, status, error_msg, oper_time, cost_time
-        FROM sys_oper_log 
+        FROM eo_oper_log 
         WHERE oper_time &lt; #{targetDate}
         ORDER BY oper_time ASC
         LIMIT 1000
@@ -57,7 +57,7 @@
 
     <!-- 批量插入归档日志 -->
     <insert id="batchInsertArchive">
-        INSERT INTO sys_oper_log_archive (
+        INSERT INTO eo_oper_log_archive (
             title, business_type, method, request_method, operator_type,
             oper_name, oper_url, oper_ip, oper_location, oper_param,
             json_result, status, error_msg, oper_time, cost_time

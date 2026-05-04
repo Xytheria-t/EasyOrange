@@ -45,17 +45,18 @@ public class AuthController {
     @PostMapping("/logout")
     @RepeatSubmit(message = "请勿重复提交")
     public Result<Void> logout(
-            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestHeader(value = "Authorization") String authHeader,
             @RequestHeader(value = "X-Refresh-Token", required = false) String refreshTokenHeader) {
-        String accessToken = null;
+        BizRequire.notBlank(authHeader, ResultCode.UNAUTHORIZED);
+        BizRequire.requireTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
+
+        String accessToken = extractToken(authHeader);
         String refreshToken = null;
-        if (authHeader != null) {
-            BizRequire.requireTrue(authHeader.startsWith(jwtProperties.getTokenPrefix()), ResultCode.UNAUTHORIZED);
-            accessToken = extractToken(authHeader);
-            if (refreshTokenHeader != null && refreshTokenHeader.startsWith(jwtProperties.getTokenPrefix())) {
-                refreshToken = extractToken(refreshTokenHeader);
-            }
+
+        if (refreshTokenHeader != null && refreshTokenHeader.startsWith(jwtProperties.getTokenPrefix())) {
+            refreshToken = extractToken(refreshTokenHeader);
         }
+
         authAppService.logout(accessToken, refreshToken);
         return Result.success();
     }

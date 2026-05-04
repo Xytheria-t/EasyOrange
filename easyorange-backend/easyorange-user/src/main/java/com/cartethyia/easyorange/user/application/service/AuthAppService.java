@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.framework.service.TokenService;
@@ -12,19 +11,18 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RegisterRe
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
+import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
 import com.cartethyia.easyorange.user.domain.port.UserEventPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import com.cartethyia.easyorange.user.domain.service.LoginSecurityDomainService;
-import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
+import com.cartethyia.easyorange.user.domain.service.AuthenticationDomainService;
 import com.cartethyia.easyorange.user.domain.service.SmsCodeDomainService;
-import com.cartethyia.easyorange.user.domain.shared.enums.LoginMethod;
-import com.cartethyia.easyorange.user.domain.shared.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.service.UserRegistrationDomainService;
 import com.cartethyia.easyorange.user.infrastructure.util.NicknameGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -32,32 +30,34 @@ import org.springframework.util.StringUtils;
 public class AuthAppService {
 
     private final UserRepository userRepository;
-    private final PasswordDomainService passwordDomainService;
-    private final LoginSecurityDomainService loginSecurityDomainService;
     private final SmsCodeDomainService smsCodeDomainService;
     private final TokenService tokenService;
     private final UserAssembler userAssembler;
     private final UserEventPort userEventPort;
     private final NicknameGenerator nicknameGenerator;
+    private final AuthenticationDomainService authenticationDomainService;
+    private final UserRegistrationDomainService userRegistrationDomainService;
 
     @Transactional(rollbackFor = Exception.class)
     public Long register(RegisterRequest request) {
-        validateUsernameNotExists(request.username());
-        validateUniqueContactInfo(request.phone(), request.email());
+        String nickname = nicknameGenerator.generate();
+        User user = userRegistrationDomainService.register(
+            request.username(), 
+            request.password(), 
+            request.phone(), 
+            request.email(), 
+            nickname
+        );
 
-        User user = createUser(request);
         User saved = userRepository.save(user);
-
-        userEventPort.publishUserRegistered(saved.getId(), saved.getUsername());
+        userEventPort.publish(new UserRegisteredEvent(saved.getId(), saved.getUsername()));
 
         return saved.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public LoginResponse login(LoginRequest loginRequest) {
-        LoginMethod loginMethod = loginRequest.getEffectiveLoginMethod();
-
-        return switch (loginMethod) {
+        return switch (loginRequest.getEffectiveLoginMethod()) {
             case PASSWORD -> loginByPassword(loginRequest);
             case SMS -> loginBySms(loginRequest);
         };
@@ -80,121 +80,62 @@ public class AuthAppService {
 
     @Transactional(rollbackFor = Exception.class)
     public Long forgotPassword(ForgotPasswordRequest request) {
-        smsCodeDomainService.verifyCode(request.phone(), request.verifyCode());
+        User user = authenticationDomainService.resetPassword(
+            request.phone(), 
+            request.verifyCode(), 
+            request.newPassword(),
+            smsCodeDomainService
+        );
 
-        User user = userRepository.findByPhone(request.phone())
-            .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND, "该手机号未注册"));
+        if (user == null) {
+            log.info("Password reset processed for phone: {}", maskPhone(request.phone()));
+            return null;
+        }
 
-        String encodedPassword = passwordDomainService.encode(request.newPassword());
-        boolean updated = userRepository.updatePassword(user.getId(), encodedPassword);
-
-        BizRequire.requireTrue(updated, "重置密码失败，请稍后重试");
-
-        userEventPort.publishForgotPassword(user.getId(), request.phone());
+        userRepository.update(user);
+        userEventPort.publish(new ForgotPasswordEvent(user.getId(), request.phone()));
 
         return user.getId();
     }
 
-    private void validateUsernameNotExists(String username) {
-        userRepository.findByUsername(username)
-            .ifPresent(ignored -> { throw BusinessException.of(UserResultCode.USERNAME_EXISTS); });
-    }
-
-    private void validateUniqueContactInfo(String phone, String email) {
-        if (StringUtils.hasText(phone)) {
-            userRepository.findByPhone(phone)
-                .ifPresent(ignored -> { throw BusinessException.of(UserResultCode.PHONE_EXISTS); });
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 7) {
+            return "***";
         }
-        if (StringUtils.hasText(email)) {
-            userRepository.findByEmail(email)
-                .ifPresent(ignored -> { throw BusinessException.of(UserResultCode.EMAIL_EXISTS); });
-        }
-    }
-
-    private User createUser(RegisterRequest request) {
-        String nickname = nicknameGenerator.generate();
-        User user = User.register(
-            request.username(),
-            passwordDomainService.encode(request.password()),
-            nickname
-        );
-
-        if (StringUtils.hasText(request.phone()) || StringUtils.hasText(request.email())) {
-            user = user.updateProfile(request.email(), request.phone(), null, null, null, null, null);
-        }
-
-        return user;
+        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
     }
 
     private LoginResponse loginByPassword(LoginRequest loginRequest) {
-        String account = loginRequest.account();
-        String password = loginRequest.password();
+        User user = authenticationDomainService.authenticateByPassword(
+            loginRequest.account(), 
+            loginRequest.password()
+        );
 
-        BizRequire.notBlank(account, "账号不能为空");
-        BizRequire.notBlank(password, "密码不能为空");
+        String clientIp = RequestUtil.getClientIp();
+        userRepository.updateLoginInfo(user.getId(), clientIp);
+        User loggedIn = user.recordLogin(clientIp);
 
-        loginSecurityDomainService.checkLoginAttempts(account);
-
-        User user = userRepository.findByAccount(account).orElse(null);
-
-        if (user == null || !passwordDomainService.matches(password, user.getPassword())) {
-            loginSecurityDomainService.recordFailedAttempt(account);
-            logAuthWarn("method", "password", "account", loginSecurityDomainService.maskAccount(account),
-                "result", "failed", "reason", "invalid_credentials");
-            throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
-        }
-
-        if (!user.isNormal()) {
-            loginSecurityDomainService.recordFailedAttempt(account);
-            logAuthWarn("method", "password", "account", loginSecurityDomainService.maskAccount(account),
-                "userId", user.getId(), "result", "failed", "reason", "user_disabled");
-            throw BusinessException.of(UserResultCode.USER_DISABLED);
-        }
-
-        loginSecurityDomainService.clearLoginAttempts(account);
-
-        return buildLoginResponse(user);
+        return buildLoginResponse(loggedIn);
     }
 
     private LoginResponse loginBySms(LoginRequest loginRequest) {
-        String phone = loginRequest.account();
-        String verifyCode = loginRequest.password();
+        User user = authenticationDomainService.authenticateBySms(
+            loginRequest.account(), 
+            loginRequest.password(),
+            smsCodeDomainService
+        );
 
-        BizRequire.notBlank(phone, "手机号不能为空");
-        BizRequire.notBlank(verifyCode, "验证码不能为空");
+        String clientIp = RequestUtil.getClientIp();
+        userRepository.updateLoginInfo(user.getId(), clientIp);
+        User loggedIn = user.recordLogin(clientIp);
 
-        smsCodeDomainService.verifyCode(phone, verifyCode);
-
-        User user = userRepository.findByPhone(phone)
-            .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND, "该手机号未注册"));
-
-        if (!user.isNormal()) {
-            throw BusinessException.of(UserResultCode.USER_DISABLED);
-        }
-
-        return buildLoginResponse(user);
-    }
-
-    private void logAuthWarn(Object... kvs) {
-        StringBuilder sb = new StringBuilder("action=login");
-        Object[] values = new Object[kvs.length / 2];
-        for (int i = 0; i < kvs.length; i += 2) {
-            sb.append(", ").append(kvs[i]).append("={}");
-            values[i / 2] = kvs[i + 1];
-        }
-        log.warn(sb.toString(), values);
+        return buildLoginResponse(loggedIn);
     }
 
     private LoginResponse buildLoginResponse(User user) {
         String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
         String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), userTypeCode);
         String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), userTypeCode);
-
-        try {
-            userRepository.updateLoginInfo(user.getId(), RequestUtil.getClientIp());
-        } catch (Exception e) {
-            log.warn("action=login_info_update_failed, userId={}, error={}", user.getId(), e.getMessage());
-        }
 
         return userAssembler.toLoginResponse(user, accessToken, refreshToken);
     }

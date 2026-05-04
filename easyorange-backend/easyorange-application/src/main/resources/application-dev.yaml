@@ -7,13 +7,6 @@
 
 spring:
   # -------------------------------------------------------------------
-  # 自动配置排除
-  # -------------------------------------------------------------------
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
-
-  # -------------------------------------------------------------------
   # 数据源配置 - 开发环境使用较小的连接池
   # -------------------------------------------------------------------
   datasource:
@@ -28,6 +21,14 @@ spring:
   # -------------------------------------------------------------------
   flyway:
     locations: classpath:db/migration,classpath:db/dev
+
+  # -------------------------------------------------------------------
+  # SQL 初始化配置 - 加载种子数据
+  # 说明：种子数据通过 Flyway Repeatable 迁移加载，此处仅作备用
+  # -------------------------------------------------------------------
+  sql:
+    init:
+      mode: never  # 使用 Flyway 管理数据初始化，不使用 Spring Boot 默认的 data.sql
 
   # -------------------------------------------------------------------
   # Redis 配置 - 开发环境使用较小的连接池
@@ -79,7 +80,7 @@ springdoc:
 # JWT Token 配置
 # -------------------------------------------------------------------
 jwt:
-  secret-key: ${JWT_SECRET_KEY:dev-secret-key-must-be-at-least-32-characters-long}  # JWT 密钥，开发环境默认值，生产必须通过环境变量设置
+  secret-key: ${JWT_SECRET_KEY}  # JWT 密钥，必须通过环境变量设置，禁止使用默认值
   access-token-expiration: 120            # Access Token 过期时间（分钟）
   refresh-token-expiration: 7             # Refresh Token 过期时间（天）
   token-prefix: "Bearer "                 # Token 前缀
@@ -104,3 +105,10 @@ management:
     metrics:
       export:
         enabled: true
+
+# -------------------------------------------------------------------
+# 速率限制器配置 - 开发环境启用但使用更高阈值
+# -------------------------------------------------------------------
+rate-limiter:
+  enabled: true  # 开发环境启用速率限制，使用更高阈值便于测试
+  default-limit: 1000  # 开发环境使用更高的限制

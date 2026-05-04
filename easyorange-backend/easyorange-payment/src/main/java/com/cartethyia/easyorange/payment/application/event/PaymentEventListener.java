@@ -70,7 +70,6 @@ public class PaymentEventListener {
                     .createdAt(event.getOccurredOn() != null ? event.getOccurredOn() : Instant.now())
                     .build();
             eventStore.store(storedEvent);
-            log.debug("领域事件已持久化 eventType={} eventId={}", event.eventType(), event.getEventId());
         } catch (JacksonException e) {
             log.error("领域事件持久化失败 eventType={} eventId={}", event.eventType(), event.getEventId(), e);
         }

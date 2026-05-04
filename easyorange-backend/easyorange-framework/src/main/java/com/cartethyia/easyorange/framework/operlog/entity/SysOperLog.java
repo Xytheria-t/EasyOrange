@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("sys_oper_log")
+@TableName("eo_oper_log")
 public class SysOperLog {
 
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long operId;
 
     private String title;
@@ -37,6 +37,8 @@ public class SysOperLog {
 
     private String operUrl;
 
+    private String operLocation;
+
     private String operParam;
 
     private String jsonResult;
@@ -48,5 +50,5 @@ public class SysOperLog {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime operTime;
 
-    private Long costTime;
+    private Integer costTime;
 }

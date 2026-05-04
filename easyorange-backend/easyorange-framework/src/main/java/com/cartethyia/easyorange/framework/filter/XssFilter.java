@@ -22,11 +22,6 @@ public class XssFilter implements Filter {
     private final SecurityProperties securityProperties;
 
     @Override
-    public void init(FilterConfig filterConfig) throws ServletException {
-        log.debug("XSS Filter initialized - Enabled: {}", securityProperties.isXssProtectionEnabled());
-    }
-
-    @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
@@ -37,10 +32,5 @@ public class XssFilter implements Filter {
         } else {
             chain.doFilter(httpRequest, response);
         }
-    }
-
-    @Override
-    public void destroy() {
-        log.debug("XSS Filter destroyed");
     }
 }

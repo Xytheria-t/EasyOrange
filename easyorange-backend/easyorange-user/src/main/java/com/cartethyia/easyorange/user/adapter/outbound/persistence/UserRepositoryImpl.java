@@ -56,6 +56,11 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByStudentId(String studentId) {
+        return findOneBy(UserEntity::getStudentId, studentId);
+    }
+
+    @Override
     public Optional<User> findByAccount(String account) {
         if (account == null || account.isBlank()) {
             return Optional.empty();
@@ -85,15 +90,6 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
-    public boolean updatePassword(Long userId, String encodedPassword) {
-        LambdaUpdateWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaUpdate()
-            .eq(UserEntity::getId, userId)
-            .set(UserEntity::getPassword, encodedPassword)
-            .set(UserEntity::getPwdUpdateDate, LocalDateTime.now());
-        return userMapper.update(null, wrapper) > 0;
-    }
-
-    @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public boolean updateLoginInfo(Long userId, String loginIp) {
         LambdaUpdateWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaUpdate()
@@ -106,6 +102,11 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public void deleteById(Long id) {
         userMapper.deleteById(id);
+    }
+
+    @Override
+    public long count() {
+        return userMapper.selectCount(null);
     }
 
     private <X> Optional<User> findOneBy(SFunction<UserEntity, X> column, X value) {

@@ -11,4 +11,6 @@ public interface OrderReadRepository {
     Optional<OrderReadModel> findById(OrderId id);
 
     PageResult<OrderReadModel> findPage(OrderQueryCondition condition);
+
+    long countByStatus(Integer status);
 }

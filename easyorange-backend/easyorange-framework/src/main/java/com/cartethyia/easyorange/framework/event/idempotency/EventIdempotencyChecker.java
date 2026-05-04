@@ -32,7 +32,6 @@ public class EventIdempotencyChecker {
         String key = EVENT_KEY_PREFIX + eventType + ":" + eventId;
         Boolean success = redisCache.setIfAbsent(key, "1", DEFAULT_EXPIRE_HOURS, TimeUnit.HOURS);
         if (Boolean.TRUE.equals(success)) {
-            log.debug("action=mark_event_processed eventType={} eventId={}", eventType, eventId);
             return true;
         }
         log.warn("action=duplicate_event_detected eventType={} eventId={}", eventType, eventId);
@@ -45,7 +44,6 @@ public class EventIdempotencyChecker {
         }
         String key = EVENT_KEY_PREFIX + eventType + ":" + eventId;
         redisCache.set(key, "1", DEFAULT_EXPIRE_HOURS, TimeUnit.HOURS);
-        log.debug("action=mark_event_processed eventType={} eventId={}", eventType, eventId);
     }
 
     public void remove(String eventType, String eventId) {

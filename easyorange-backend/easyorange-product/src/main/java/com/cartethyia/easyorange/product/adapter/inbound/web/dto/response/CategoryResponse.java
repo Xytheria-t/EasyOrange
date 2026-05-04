@@ -1,14 +1,13 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CategoryResponse {
 
     private Long id;
@@ -26,4 +25,8 @@ public class CategoryResponse {
     private Integer status;
 
     private LocalDateTime createTime;
+
+    private Integer productCount;
+
+    private List<CategoryResponse> children;
 }

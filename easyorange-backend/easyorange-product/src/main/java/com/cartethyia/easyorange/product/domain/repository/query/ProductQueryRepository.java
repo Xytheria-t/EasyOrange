@@ -47,6 +47,8 @@ public interface ProductQueryRepository {
 
     void deleteSearchHistoryById(Long historyId, Long userId);
 
+    long countByStatus(Integer status);
+
     record CategoryInfo(Long id, String name, Long parentId, Integer level, Integer sortOrder) { }
 
     record ProductDetailInfo(Long productId, String description) { }

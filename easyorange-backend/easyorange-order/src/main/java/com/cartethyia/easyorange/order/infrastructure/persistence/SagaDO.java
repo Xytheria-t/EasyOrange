@@ -8,7 +8,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("saga_status")
+@TableName("eo_saga_status")
 public class SagaDO {
     @TableId(type = IdType.ASSIGN_UUID)
     private String sagaId;

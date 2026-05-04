@@ -7,7 +7,7 @@
                status, view_count, condition_level, location, contact_method,
                create_time, update_time, create_by, update_by, del_flag, version,
                MATCH(name) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) AS relevance
-        FROM product
+        FROM eo_product
         WHERE MATCH(name) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
           AND status = #{status}
           <if test="minPrice != null">
@@ -24,7 +24,7 @@
 
     <select id="selectDetailsByProductIds" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO">
         SELECT product_id, description, create_time, update_time
-        FROM product_detail
+        FROM eo_product_detail
         WHERE product_id IN
         <foreach collection="productIds" item="id" open="(" separator="," close=")">
             #{id}
@@ -33,7 +33,7 @@
 
     <select id="selectImagesByProductIds" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO">
         SELECT id, product_id, image_url, sort_order, is_main, create_time
-        FROM product_image
+        FROM eo_product_image
         WHERE product_id IN
         <foreach collection="productIds" item="id" open="(" separator="," close=")">
             #{id}
@@ -44,7 +44,7 @@
     <select id="selectCategoriesByIds" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO">
         SELECT id, name, parent_id, level, icon, sort_order, status, 
                create_time, update_time, create_by, update_by, del_flag
-        FROM category
+        FROM eo_category
         WHERE id IN
         <foreach collection="categoryIds" item="id" open="(" separator="," close=")">
             #{id}
@@ -54,7 +54,7 @@
 
     <select id="selectSellersByIds" resultType="com.cartethyia.easyorange.product.application.query.dto.SellerInfo">
         SELECT user_id, username, nick_name, avatar
-        FROM sys_user
+        FROM eo_user
         WHERE user_id IN
         <foreach collection="sellerIds" item="id" open="(" separator="," close=")">
             #{id}

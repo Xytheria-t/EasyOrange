@@ -1,0 +1,60 @@
+spring:
+  main:
+    banner-mode: off
+  datasource:
+    url: jdbc:tc:mysql:8.0:///easyorange_test?TC_DAEMON=true&TC_REUSABLE=true
+    username: test
+    password: test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    clean-disabled: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+logging:
+  level:
+    root: WARN
+    org.testcontainers: INFO
+    com.github.dockerjava: WARN
+
+jwt:
+  secret-key: integration-test-secret-key-at-least-32-characters-long-for-testing
+  access-token-expiration: 120
+  refresh-token-expiration: 7
+  token-prefix: "Bearer "
+  issuer: easyorange-integration-test
+
+security:
+  ignore-paths:
+    - /api/auth/login
+    - /api/auth/logout
+    - /api/auth/refresh
+    - /api/auth/sms-code
+    - /api/auth/register
+    - /api/auth/password-reset
+    - /api/health
+    - /openapi/**
+    - /swagger-ui/**
+  product-paths: []
+  static-paths:
+    - /static/**
+    - /public/**
+    - /upload/**
+    - /favicon.ico
+    - /error
+  allowed-origins: "http://localhost:5173"
+
+thread-pool:
+  core-pool-size: 2
+  max-pool-size: 4
+  queue-capacity: 50
+  keep-alive-seconds: 30
+  thread-name-prefix: integration-test-async-

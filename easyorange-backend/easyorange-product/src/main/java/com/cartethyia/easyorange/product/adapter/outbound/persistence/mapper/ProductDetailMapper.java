@@ -12,7 +12,7 @@ import java.util.List;
 public interface ProductDetailMapper extends BaseMapper<ProductDetailDO> {
 
     @Select("<script>" +
-            "SELECT * FROM product_detail WHERE product_id IN " +
+            "SELECT * FROM eo_product_detail WHERE product_id IN " +
             "<foreach collection='productIds' item='id' open='(' separator=',' close=')'>" +
             "#{id}" +
             "</foreach>" +

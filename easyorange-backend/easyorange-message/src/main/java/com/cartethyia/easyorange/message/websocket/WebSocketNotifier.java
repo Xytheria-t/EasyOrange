@@ -22,7 +22,6 @@ public class WebSocketNotifier {
                     "/queue/message",
                     message
             );
-            log.debug("WebSocket 发送消息成功，用户 ID：{}", userId);
         } catch (Exception e) {
             log.error("action=send_websocket_message_failed userId={} error={}", userId, e.getMessage());
         }
@@ -35,7 +34,6 @@ public class WebSocketNotifier {
                     "/queue/notification",
                     notification
             );
-            log.debug("WebSocket 发送通知成功，用户 ID：{}", userId);
         } catch (Exception e) {
             log.error("action=send_websocket_notification_failed userId={} error={}", userId, e.getMessage());
         }
@@ -44,7 +42,6 @@ public class WebSocketNotifier {
     public void broadcast(String destination, Object message) {
         try {
             messagingTemplate.convertAndSend(destination, message);
-            log.debug("WebSocket 广播消息成功，目的地：{}", destination);
         } catch (Exception e) {
             log.error("action=broadcast_websocket_message_failed destination={} error={}", destination, e.getMessage());
         }

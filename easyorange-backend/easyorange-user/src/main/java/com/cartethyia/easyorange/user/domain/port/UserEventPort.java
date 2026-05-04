@@ -1,10 +1,25 @@
 package com.cartethyia.easyorange.user.domain.port;
 
-public interface UserEventPort {
+import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 
-    void publishUserRegistered(Long userId, String username);
+/**
+ * 用户领域事件端口 - 发布用户相关领域事件
+ * <p>
+ * 职责：
+ * <ul>
+ *   <li>发布用户注册事件</li>
+ *   <li>发布密码修改事件</li>
+ *   <li>发布忘记密码事件</li>
+ * </ul>
+ * 
+ * <p>实现类通常委托给通用的 {@link com.cartethyia.easyorange.common.event.DomainEventPublisher}
+ */
+public interface UserEventPort extends OutboundPort {
 
-    void publishPasswordChanged(Long userId);
-
-    void publishForgotPassword(Long userId, String phone);
+    /**
+     * 发布领域事件
+     * 
+     * @param event 领域事件
+     */
+    void publish(BaseDomainEvent event);
 }

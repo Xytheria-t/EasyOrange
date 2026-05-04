@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-@TableName("product_report")
+@TableName("eo_product_report")
 public class ProductReportDO extends BaseDO {
 
     private Long productId;
@@ -23,4 +23,6 @@ public class ProductReportDO extends BaseDO {
     private String reason;
 
     private Integer status;
+
+    private String handleResult;
 }

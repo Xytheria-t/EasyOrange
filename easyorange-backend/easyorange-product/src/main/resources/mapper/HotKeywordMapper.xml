@@ -3,7 +3,7 @@
 <mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.HotKeywordMapper">
 
     <update id="batchInsertOrUpdate">
-        INSERT INTO hot_keyword (keyword, search_count, last_search_time, create_time, update_time)
+        INSERT INTO eo_hot_keyword (keyword, search_count, last_search_time, create_time, update_time)
         VALUES
         <foreach collection="list" item="item" separator=",">
             (#{item.keyword}, #{item.searchCount}, #{item.lastSearchTime}, NOW(), NOW())

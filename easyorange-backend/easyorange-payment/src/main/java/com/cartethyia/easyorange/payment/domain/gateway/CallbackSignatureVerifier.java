@@ -41,8 +41,6 @@ public class CallbackSignatureVerifier {
             log.warn("回调签名验证失败 paymentNo={}", paymentNo);
             throw CallbackSignInvalidException.of();
         }
-
-        log.debug("回调签名验证通过 paymentNo={}", paymentNo);
     }
 
     private String hmacSha256(String data, String key) {

@@ -67,7 +67,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
         MDC.put("uri", uri);
         MDC.put("fullUrl", RequestUtil.getFullRequestUrl(request));
 
-        log.debug("action=request traceId={} method={} uri={} fullUrl={}", traceId, request.getMethod(), uri, RequestUtil.getFullRequestUrl(request));
         return true;
     }
 
@@ -101,8 +100,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
             meterRegistry.counter("http.requests.errors", "uri", uri, "method", method, "status", String.valueOf(status))
                     .increment();
-        } else {
-            log.debug("action=request_end traceId={} status={} cost={}ms", traceId, status, costTime);
         }
 
         meterRegistry.timer("http.server.request", "uri", uri, "method", method)

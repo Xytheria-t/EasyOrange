@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.aspectj;
 import com.cartethyia.easyorange.common.annotation.RateLimiter;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.config.properties.RateLimiterProperties;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.common.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -46,13 +47,20 @@ public class RateLimiterAspect {
     }
 
     private final RedisCache redisCache;
+    private final RateLimiterProperties rateLimiterProperties;
 
-    public RateLimiterAspect(RedisCache redisCache) {
+    public RateLimiterAspect(RedisCache redisCache, RateLimiterProperties rateLimiterProperties) {
         this.redisCache = redisCache;
+        this.rateLimiterProperties = rateLimiterProperties;
     }
 
     @Before("@annotation(rateLimiter)")
     public void doBefore(JoinPoint point, RateLimiter rateLimiter) {
+        if (!rateLimiterProperties.isEnabled()) {
+            log.trace("action=rate_limit_disabled, key={}", rateLimiter.key());
+            return;
+        }
+
         int count = rateLimiter.count();
         long timeInSeconds = rateLimiter.timeUnit().toSeconds(rateLimiter.time());
 

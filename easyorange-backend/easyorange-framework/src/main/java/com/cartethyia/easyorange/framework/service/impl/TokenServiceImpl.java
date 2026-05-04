@@ -99,9 +99,11 @@ public class TokenServiceImpl implements TokenService {
         if (userId == null) {
             return null;
         }
+
+        delToken(refreshToken);
+
         String username = jwtUtil.getClaim(refreshToken, "username", String.class).orElse(null);
         String userType = jwtUtil.getClaim(refreshToken, "userType", String.class).orElse(null);
-        delToken(refreshToken);
         return createAccessToken(userId, username, userType);
     }
 

@@ -13,7 +13,7 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-@TableName("upload_file")
+@TableName("eo_upload_file")
 public class UploadFile extends BaseDO {
 
     private String fileName;

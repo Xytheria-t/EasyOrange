@@ -10,8 +10,10 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
@@ -35,8 +37,10 @@ public class ProductQueryService {
     private final ProductRepository productRepository;
     private final ProductQueryRepository productQueryRepository;
     private final CategoryQueryRepository categoryQueryRepository;
+    private final CategoryCachePort categoryCachePort;
     private final ProductReadModelAssembler readModelAssembler;
     private final ProductCachePort productCachePort;
+    private final ProductViewCountService viewCountService;
 
     @Transactional(readOnly = true)
     public PageResult<ProductVO> listProducts(ProductQueryRequest request) {
@@ -92,12 +96,33 @@ public class ProductQueryService {
     public List<CategoryResponse> getCategories(Long parentId) {
         List<CategoryDO> categories;
         if (parentId != null) {
-            categories = categoryQueryRepository.findByParentId(parentId);
+            categories = categoryCachePort.getCategoriesByParentId(parentId);
         } else {
-            categories = categoryQueryRepository.findByLevel(1);
+            categories = categoryCachePort.getCategoriesByLevel(1);
         }
+
+        if (categories == null || categories.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> categoryIds = categories.stream()
+                .map(CategoryDO::getId)
+                .toList();
+
+        Map<Long, Long> productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
+
         return categories.stream()
-                .map(this::toCategoryResponse)
+                .map(cat -> CategoryResponse.builder()
+                        .id(cat.getId())
+                        .name(cat.getName())
+                        .parentId(cat.getParentId())
+                        .level(cat.getLevel())
+                        .icon(cat.getIcon())
+                        .sortOrder(cat.getSortOrder())
+                        .status(cat.getStatus())
+                        .createTime(cat.getCreateTime())
+                        .productCount(productCountMap.getOrDefault(cat.getId(), 0L).intValue())
+                        .build())
                 .collect(Collectors.toList());
     }
 
@@ -123,17 +148,13 @@ public class ProductQueryService {
         }
         List<ProductId> productIds = ids.stream().map(ProductId::of).collect(Collectors.toList());
         List<Product> products = productRepository.findByIds(productIds);
-        return products.stream()
-                .map(this::assembleProductVO)
-                .collect(Collectors.toList());
+        return assembleProductVOs(products);
     }
 
     @Transactional(readOnly = true)
     public List<ProductVO> getProductsBySellerId(Long sellerId) {
         List<Product> products = productRepository.findBySellerId(SellerId.of(sellerId));
-        return products.stream()
-                .map(this::assembleProductVO)
-                .collect(Collectors.toList());
+        return assembleProductVOs(products);
     }
 
     @Transactional(readOnly = true)
@@ -173,13 +194,8 @@ public class ProductQueryService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
     public void incrementViewCount(Long id) {
-        Product product = productRepository.findById(ProductId.of(id))
-                .orElseThrow(() -> new ProductNotFoundException(id));
-        product.incrementViewCount();
-        productRepository.update(product);
-        productCachePort.evictProductCache(id);
+        viewCountService.incrementViewCount(id);
     }
 
     private CategoryResponse toCategoryResponse(CategoryDO category) {
@@ -220,6 +236,44 @@ public class ProductQueryService {
                 .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
 
         return readModelAssembler.toProductVO(product, imagesByProduct, categoryMap, detailMap, sellerMap);
+    }
+
+    private List<ProductVO> assembleProductVOs(List<Product> products) {
+        if (products == null || products.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> productIds = products.stream()
+                .map(p -> p.getId().value())
+                .collect(Collectors.toList());
+        List<Long> categoryIds = products.stream()
+                .filter(p -> p.getCategoryId() != null)
+                .map(p -> p.getCategoryId().value())
+                .distinct()
+                .collect(Collectors.toList());
+        Set<Long> sellerIds = products.stream()
+                .filter(p -> p.getSellerId() != null)
+                .map(p -> p.getSellerId().value())
+                .collect(Collectors.toSet());
+
+        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+                .findImagesByProductIds(productIds).stream()
+                .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
+        Map<Long, ProductQueryRepository.CategoryInfo> categoryMap = categoryIds.isEmpty()
+                ? Map.of()
+                : productQueryRepository.findCategoriesByIds(categoryIds).stream()
+                        .collect(Collectors.toMap(ProductQueryRepository.CategoryInfo::id, c -> c, (a, b) -> a));
+        Map<Long, ProductQueryRepository.ProductDetailInfo> detailMap = productQueryRepository
+                .findDetailsByProductIds(productIds).stream()
+                .collect(Collectors.toMap(ProductQueryRepository.ProductDetailInfo::productId, d -> d, (a, b) -> a));
+        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+                ? Map.of()
+                : productQueryRepository.findSellersByIds(sellerIds).stream()
+                        .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
+
+        return products.stream()
+                .map(product -> readModelAssembler.toProductVO(product, imagesByProduct, categoryMap, detailMap, sellerMap))
+                .collect(Collectors.toList());
     }
 
     private ProductVO voFromReadModel(ProductReadModel readModel,

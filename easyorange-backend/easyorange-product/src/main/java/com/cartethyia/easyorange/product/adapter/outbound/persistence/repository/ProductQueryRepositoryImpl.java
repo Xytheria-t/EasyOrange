@@ -221,7 +221,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
             return List.of();
         }
         return productMapper.selectSellersByIds(sellerIds).stream()
-                .map(s -> new SellerReadModel(s.id(), s.username(), s.nickName()))
+                .map(s -> new SellerReadModel(s.id(), s.username(), s.nickName(), s.avatar()))
                 .collect(Collectors.toList());
     }
 
@@ -297,6 +297,13 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                         .eq(SearchHistoryDO::getId, historyId)
                         .eq(SearchHistoryDO::getUserId, userId)
         );
+    }
+
+    @Override
+    public long countByStatus(Integer status) {
+        LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductDO::getStatus, status);
+        return productMapper.selectCount(wrapper);
     }
 
     private Page<ProductReadModel> convertToReadModelPage(Page<ProductDO> productPage) {

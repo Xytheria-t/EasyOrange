@@ -7,7 +7,7 @@
 -- 1. 用户数据（10个用户：不同类型、性别、状态）
 -- ===================================================================
 
-INSERT INTO `sys_user` (
+INSERT INTO `eo_user` (
     `user_id`, `username`, `password`, `user_type`, `nick_name`,
     `sex`, `status`, `del_flag`, `email`, `phonenumber`, `student_id`,
     `real_name`, `avatar`, `create_time`, `update_time`
@@ -33,7 +33,7 @@ ON DUPLICATE KEY UPDATE
 -- 2. 子分类数据
 -- ===================================================================
 
-INSERT INTO `category` (
+INSERT INTO `eo_category` (
     `id`, `name`, `parent_id`, `level`, `sort_order`, `status`,
     `del_flag`, `create_time`, `update_time`
 ) VALUES
@@ -65,7 +65,7 @@ ON DUPLICATE KEY UPDATE
 -- 3. 商品数据（30+商品：覆盖所有分类、多种状态、不同卖家）
 -- ===================================================================
 
-INSERT INTO `product` (
+INSERT INTO `eo_product` (
     `id`, `user_id`, `category_id`, `name`, `price`, `original_price`,
     `stock`, `status`, `view_count`, `condition_level`, `location`,
     `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
@@ -153,7 +153,7 @@ ON DUPLICATE KEY UPDATE
 -- 4. 商品图片数据
 -- ===================================================================
 
-INSERT INTO `product_image` (
+INSERT INTO `eo_product_image` (
     `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
 ) VALUES
 -- iPhone 14 Pro Max
@@ -254,54 +254,54 @@ ON DUPLICATE KEY UPDATE
 -- 5. 商品详情数据
 -- ===================================================================
 
-INSERT INTO `product_detail` (
-    `id`, `product_id`, `description`, `create_time`, `update_time`
+INSERT INTO `eo_product_detail` (
+    `product_id`, `description`, `create_time`, `update_time`
 ) VALUES
-(1,  1,  'iPhone 14 Pro Max 256G 暗紫色 国行正品 在保<br><br>【配置】256G存储、暗紫色、灵动岛、全网通5G<br><br>【成色】9成新，轻微使用痕迹，屏幕无划痕，电池健康度92%<br><br>【配件】原装充电线、说明书<br><br>【购买渠道】官网购入，有购买凭证', NOW(), NOW()),
-(2,  2,  '华为 Mate 60 Pro 512G 雅丹黑 国行在保<br><br>【配置】512G存储、雅丹黑、昆仑玻璃、卫星通话<br><br>【成色】8成新，屏幕贴膜使用，无划痕<br><br>【配件】原装充电器、数据线、手机壳<br><br>【特色】支持卫星通话、XMAGE影像', NOW(), NOW()),
-(3,  3,  '小米14 Ultra 16+512 白色 徕卡影像旗舰<br><br>【配置】骁龙8Gen3、16G+512G、1英寸徕卡主摄<br><br>【成色】7成新，边框有轻微磕碰，屏幕完好<br><br>【配件】原装充电器、手机壳、说明书<br><br>【影像】徕卡Summilux镜头，摄影爱好者首选', NOW(), NOW()),
-(4,  4,  'OPPO Find X7 Ultra 天青蓝 哈苏影像<br><br>【配置】骁龙8Gen3、16G+256G、双潜望长焦<br><br>【成色】8成新，屏幕无划痕，功能正常<br><br>【配件】原装充电器、数据线<br><br>【已售出】此商品已售出，仅供展示', NOW(), NOW()),
-(5,  5,  'MacBook Air M2 13寸轻薄笔记本 深空灰 16+512<br><br>【配置】M2芯片、16G内存、512G固态硬盘<br><br>【成色】8成新，A面有轻微划痕，功能全部正常<br><br>【配件】原装充电器、包装盒<br><br>【电池循环】仅78次，性能依旧强劲', NOW(), NOW()),
-(6,  6,  'ThinkPad X1 Carbon Gen11 14寸商务旗舰<br><br>【配置】i7-1365U、16G内存、512G固态<br><br>【成色】7成新，键盘使用痕迹，屏幕无亮点<br><br>【配件】原装充电器、小红帽<br><br>【适合】商务办公、编程开发', NOW(), NOW()),
-(7,  7,  '华为 MateBook X Pro 2024 全新未激活<br><br>【配置】Ultra 9处理器、32G+1T、14.2寸OLED触控屏<br><br>【成色】全新未拆封，还在保修期内<br><br>【配件】原装充电器、包装盒<br><br>【注意】此商品还在草稿状态，暂未上架', NOW(), NOW()),
-(8,  8,  'AirPods Pro 2 代 全新未拆封 正品保障<br><br>【型号】AirPods Pro (第二代) 带MagSafe充电盒<br><br>【成色】全新未拆封，原厂塑封完整<br><br>【配件】原装耳机、充电盒、充电线、说明书<br><br>【保修】未激活，在保', NOW(), NOW()),
-(9,  9,  'Sony WH-1000XM5 头戴式降噪耳机 银色<br><br>【型号】WH-1000XM5 行货正品<br><br>【成色】8成新，耳罩无破损，降噪功能正常<br><br>【配件】原装收纳盒、充电线、飞机转接头<br><br>【续航】约30小时，支持快充', NOW(), NOW()),
-(10, 10, 'JBL Charge 5 蓝牙音箱 黑色 防水便携<br><br>【型号】JBL Charge 5 IP67防水<br><br>【成色】7成新，外观有轻微磨损，音质正常<br><br>【配件】原装充电线<br><br>【续航】约20小时，支持PartyBoost串联', NOW(), NOW()),
-(11, 11, '小米手环8 NFC版 黑色 原装配件齐全<br><br>【功能】NFC门禁、NFC支付、心率监测、睡眠监测、血氧饱和度<br><br>【成色】8成新，屏幕无划痕，腕带无破损<br><br>【配件】原装充电器、说明书<br><br>【电池续航】约7天', NOW(), NOW()),
-(12, 12, 'Apple Watch SE 2代 40mm 星光色 GPS版<br><br>【配置】S8芯片、GPS版、星光色铝金属表壳<br><br>【成色】8成新，屏幕无划痕，表带有使用痕迹<br><br>【配件】原装磁力充电线、运动表带<br><br>【功能】心率监测、运动追踪、消息通知', NOW(), NOW()),
-(13, 13, 'Switch OLED 白色 含底座手柄 64G<br><br>【配置】7寸OLED屏、64G存储、白色Joy-Con手柄<br><br>【成色】8成新，屏幕无划痕，底座完好<br><br>【配件】主机、底座、手柄、充电线、腕带<br><br>【备注】掌机/主机双模式，适合宿舍娱乐', NOW(), NOW()),
-(14, 14, 'PS5 光驱版 国行主机 含手柄<br><br>【配置】光驱版、825G SSD、DualSense手柄<br><br>【成色】7成新，主机有轻微灰尘，运行正常<br><br>【配件】主机、手柄、HDMI线、电源线、底座<br><br>【备注】国行版本，可备份港服账号', NOW(), NOW()),
-(15, 15, '高等数学教材全套 上下册第七版 同济大学<br><br>【版本】第七版，同济大学数学系编<br><br>【成色】7成新，笔记较多但不影响阅读<br><br>【内容】上册：函数与极限、导数与微分等；下册：积分、空间解析几何等<br><br>【适合】大一新生考研复习', NOW(), NOW()),
-(16, 16, '线性代数及其应用 第五版 戴维·C·莱<br><br>【版本】第五版，机械工业出版社<br><br>【成色】6成新，有少量笔记和划线<br><br>【内容】线性方程组、矩阵、行列式、特征值等<br><br>【适合】工科学生、考研数学', NOW(), NOW()),
-(17, 17, '大学物理 上下册 第四版 张三慧<br><br>【版本】第四版，清华大学出版社<br><br>【成色】5成新，有较多笔记，部分页面折角<br><br>【内容】力学、热学、电磁学、光学、量子物理<br><br>【适合】理工科大学物理课程', NOW(), NOW()),
-(18, 18, '考研英语词汇红宝书 2025版 考研必备<br><br>【版本】2025最新版，包含5500+核心词汇<br><br>【成色】6成新，有部分笔记划线<br><br>【内容】词汇分类、真题例句、记忆方法<br><br>【适合】考研英语一、英语二备考', NOW(), NOW()),
-(19, 19, '张宇考研数学基础30讲 2025版<br><br>【作者】张宇，北京理工大学出版社<br><br>【成色】7成新，有少量笔记<br><br>【内容】高数+线代+概率论基础知识点全覆盖<br><br>【适合】考研数学一/二/三基础阶段', NOW(), NOW()),
-(20, 20, '肖秀荣考研政治全套 2025 含精讲精练+1000题+真题<br><br>【版本】2025最新版全套四本<br><br>【成色】8成新，精讲精练有笔记，1000题未做<br><br>【内容】精讲精练、1000题、讲真题、形势与政策<br><br>【适合】考研政治全程复习', NOW(), NOW()),
-(21, 21, '人类简史 从动物到上帝 尤瓦尔·赫拉利<br><br>【版本】中信出版社 精装版<br><br>【成色】9成新，几乎全新，无折痕<br><br>【内容】从认知革命到科学革命，重新审视人类历史<br><br>【推荐】豆瓣9.1分，全球畅销书', NOW(), NOW()),
-(22, 22, '算法导论 第三版 中文版 MIT经典教材<br><br>【版本】第三版，机械工业出版社<br><br>【成色】7成新，书脊有折痕，内容完整<br><br>【内容】排序、图算法、动态规划、NP完全性等<br><br>【适合】计算机专业学生、算法竞赛、面试准备', NOW(), NOW()),
-(23, 23, 'Nike Air Jordan 1 High OG 黑白熊猫 42码<br><br>【型号】AJ1 High OG 黑白配色<br><br>【尺码】42码（US 8.5）<br><br>【成色】7成新，鞋底轻微磨损，鞋面干净<br><br>【来源】得物购入，正品保障', NOW(), NOW()),
-(24, 24, 'New Balance 990v6 灰色 38码 美产<br><br>【型号】990v6 元祖灰 美国制造<br><br>【尺码】38码（US 6.5）<br><br>【成色】8成新，鞋底磨损正常，鞋面干净<br><br>【特点】猪巴革+网面鞋面，ENCAP中底', NOW(), NOW()),
-(25, 25, '阿迪达斯 UltraBoost 22 42码 黑色<br><br>【型号】UltraBoost 22 跑鞋<br><br>【尺码】42码，适合脚长26cm左右<br><br>【成色】6成新，鞋底磨损明显，仍可穿着<br><br>【技术】Boost中底，Continental橡胶外底', NOW(), NOW()),
-(26, 26, '北面冲锋衣 黑色 M码 防水透气<br><br>【型号】The North Face DryVent冲锋衣<br><br>【尺码】M码，适合身高170-175cm<br><br>【成色】8成新，无破损，拉链顺畅<br><br>【功能】防水透气、可调节帽、多口袋设计', NOW(), NOW()),
-(27, 27, '优衣库羽绒服 黑色 L码 轻薄保暖<br><br>【型号】优衣库Ultra Light Down 短款<br><br>【尺码】L码，适合身高170-175cm<br><br>【成色】7成新，有轻微使用痕迹，保暖性良好<br><br>【特点】可收纳便携、90%白鸭绒填充', NOW(), NOW()),
-(28, 28, 'Nike 运动双肩背包 黑色 30L大容量<br><br>【容量】30L，可放置15.6寸笔记本<br><br>【成色】8成新，整体清洁，无明显破损<br><br>【功能】多口袋设计、透气背垫、电脑隔层<br><br>【适用】上学、旅行、健身', NOW(), NOW()),
-(29, 29, '懒人加湿器 超声波静音款 4.5L大容量<br><br>【容量】4.5L，持续加湿12小时<br><br>【特点】超声波静音技术，运行时噪音低于35dB<br><br>【成色】9成新，使用时间不超过1个月<br><br>【功能】智能恒湿、定时关机、过夜保护', NOW(), NOW()),
-(30, 30, '小米台灯Pro 护眼阅读灯 国AA级<br><br>【功能】国AA级照度、无频闪、蓝光防护<br><br>【成色】8成新，使用约3个月<br><br>【特点】智能调光、定时关灯、米家APP控制<br><br>【适用】学生学习、办公阅读', NOW(), NOW()),
-(31, 31, '宿舍收纳架 桌面多层置物架 白色 2个装<br><br>【尺寸】每层30*20*15cm，共3层<br><br>【材质】加厚碳钢+环保喷塑<br><br>【成色】8成新，无锈迹，承重良好<br><br>【适合】宿舍桌面收纳、化妆品/书籍/杂物', NOW(), NOW()),
-(32, 32, '电热水杯 便携旅行烧水杯 300ml 白色<br><br>【容量】300ml，304不锈钢内胆<br><br>【功率】300W，宿舍可用不跳闸<br><br>【成色】9成新，使用不到1个月<br><br>【功能】多段温控、防干烧、自动断电', NOW(), NOW()),
-(33, 33, 'Anker 65W 氮化镓充电器 三口 黑色<br><br>【规格】2C1A三口输出，最大65W<br><br>【技术】GaN II氮化镓，体积小巧<br><br>【成色】9成新，几乎全新<br><br>【兼容】MacBook/iPad/手机/Switch全兼容', NOW(), NOW()),
-(34, 34, '绿联 Type-C 扩展坞 7合1 银色<br><br>【接口】HDMI 4K+3*USB3.0+SD/TF+PD100W<br><br>【成色】8成新，接口完好，无松动<br><br>【兼容】MacBook/笔记本/平板通用<br><br>【适合】外接显示器、U盘读取、充电扩展', NOW(), NOW()),
-(35, 35, '健身瑜伽垫加厚加宽防滑 TPE材质 送收纳绑带<br><br>【尺寸】183cm*80cm*10mm加宽加厚款<br><br>【材质】TPE环保材质，无异味<br><br>【成色】8成新，表面防滑性能良好<br><br>【适用】瑜伽、普拉提、健身训练', NOW(), NOW()),
-(36, 36, '可调节哑铃 20kg单只 快调式 黑色<br><br>【重量】2.5-20kg可调节，15档快调<br><br>【成色】7成新，调节机构顺畅<br><br>【特点】一秒切换重量，节省空间<br><br>【适合】宿舍健身、家庭训练', NOW(), NOW()),
-(37, 37, '迪卡侬山地自行车 Rockrider ST520 27速<br><br>【型号】Rockrider ST520 铝合金车架<br><br>【变速】27速禧玛诺变速系统<br><br>【成色】7成新，轮胎磨损正常<br><br>【配置】前后碟刹、避震前叉、水壶架', NOW(), NOW()),
-(38, 38, '尤尼克斯羽毛球拍 ARC-7 进攻型<br><br>【型号】Arcsaber 7 全碳素<br><br>【规格】4UG5，适合进攻打法<br><br>【成色】8成新，线已断需重新穿线<br><br>【适合】中高级球友，进攻型打法', NOW(), NOW()),
-(39, 39, '原神 60级全图鉴账号 官服<br><br>【等级】冒险等阶60级<br><br>【角色】全图鉴含限定角色，满命座多角色<br><br>【武器】5星武器20+，含限定武器<br><br>【备注】官服可改绑，安全交易', NOW(), NOW()),
-(40, 40, '网易云音乐年卡VIP 官方直充<br><br>【类型】黑胶VIP年卡<br><br>【功能】无损音质、免广告、专属皮肤<br><br>【有效期】充值后12个月<br><br>【备注】官方直充，秒到账', NOW(), NOW()),
-(41, 41, '一加12 16+512 岩息黑 全新未拆封（草稿）<br><br>【配置】骁龙8Gen3、16G+512G、2K东方屏<br><br>【成色】全新未拆封<br><br>【配件】原装全套<br><br>【注意】此商品还在编辑中，暂未上架', NOW(), NOW()),
-(42, 42, '联想小新Pro16 2023 锐龙版（已下架）<br><br>【配置】R7-7840HS、16G+1T、16寸2.5K屏<br><br>【成色】7成新，键盘有使用痕迹<br><br>【下架原因】已换新电脑，暂时下架<br><br>【备注】如需购买可私信重新上架', NOW(), NOW()),
-(43, 43, 'Vans 经典款帆布鞋 39码 黑白（已售出）<br><br>【型号】Old Skool 经典黑白<br><br>【尺码】39码<br><br>【成色】6成新，已售出<br><br>【备注】此商品已售出', NOW(), NOW()),
-(44, 44, '飞利浦电动牙刷 HX6730 粉色（已售出）<br><br>【型号】Sonicare HX6730 声波震动<br><br>【成色】8成新，已售出<br><br>【功能】3种清洁模式、2分钟智能计时<br><br>【备注】此商品已售出', NOW(), NOW()),
-(45, 45, '汤家凤考研数学1800题 2024版（已售出）<br><br>【作者】汤家凤<br><br>【成色】5成新，大量笔记，已售出<br><br>【内容】基础篇+提高篇全覆盖<br><br>【备注】此商品已售出', NOW(), NOW())
+(1,  'iPhone 14 Pro Max 256G 暗紫色 国行正品 在保<br><br>【配置】256G存储、暗紫色、灵动岛、全网通5G<br><br>【成色】9成新，轻微使用痕迹，屏幕无划痕，电池健康度92%<br><br>【配件】原装充电线、说明书<br><br>【购买渠道】官网购入，有购买凭证', NOW(), NOW()),
+(2,  '华为 Mate 60 Pro 512G 雅丹黑 国行在保<br><br>【配置】512G存储、雅丹黑、昆仑玻璃、卫星通话<br><br>【成色】8成新，屏幕贴膜使用，无划痕<br><br>【配件】原装充电器、数据线、手机壳<br><br>【特色】支持卫星通话、XMAGE影像', NOW(), NOW()),
+(3,  '小米14 Ultra 16+512 白色 徕卡影像旗舰<br><br>【配置】骁龙8Gen3、16G+512G、1英寸徕卡主摄<br><br>【成色】7成新，边框有轻微磕碰，屏幕完好<br><br>【配件】原装充电器、手机壳、说明书<br><br>【影像】徕卡Summilux镜头，摄影爱好者首选', NOW(), NOW()),
+(4,  'OPPO Find X7 Ultra 天青蓝 哈苏影像<br><br>【配置】骁龙8Gen3、16G+256G、双潜望长焦<br><br>【成色】8成新，屏幕无划痕，功能正常<br><br>【配件】原装充电器、数据线<br><br>【已售出】此商品已售出，仅供展示', NOW(), NOW()),
+(5,  'MacBook Air M2 13寸轻薄笔记本 深空灰 16+512<br><br>【配置】M2芯片、16G内存、512G固态硬盘<br><br>【成色】8成新，A面有轻微划痕，功能全部正常<br><br>【配件】原装充电器、包装盒<br><br>【电池循环】仅78次，性能依旧强劲', NOW(), NOW()),
+(6,  'ThinkPad X1 Carbon Gen11 14寸商务旗舰<br><br>【配置】i7-1365U、16G内存、512G固态<br><br>【成色】7成新，键盘使用痕迹，屏幕无亮点<br><br>【配件】原装充电器、小红帽<br><br>【适合】商务办公、编程开发', NOW(), NOW()),
+(7,  '华为 MateBook X Pro 2024 全新未激活<br><br>【配置】Ultra 9处理器、32G+1T、14.2寸OLED触控屏<br><br>【成色】全新未拆封，还在保修期内<br><br>【配件】原装充电器、包装盒<br><br>【注意】此商品还在草稿状态，暂未上架', NOW(), NOW()),
+(8,  'AirPods Pro 2 代 全新未拆封 正品保障<br><br>【型号】AirPods Pro (第二代) 带MagSafe充电盒<br><br>【成色】全新未拆封，原厂塑封完整<br><br>【配件】原装耳机、充电盒、充电线、说明书<br><br>【保修】未激活，在保', NOW(), NOW()),
+(9,  'Sony WH-1000XM5 头戴式降噪耳机 银色<br><br>【型号】WH-1000XM5 行货正品<br><br>【成色】8成新，耳罩无破损，降噪功能正常<br><br>【配件】原装收纳盒、充电线、飞机转接头<br><br>【续航】约30小时，支持快充', NOW(), NOW()),
+(10, 'JBL Charge 5 蓝牙音箱 黑色 防水便携<br><br>【型号】JBL Charge 5 IP67防水<br><br>【成色】7成新，外观有轻微磨损，音质正常<br><br>【配件】原装充电线<br><br>【续航】约20小时，支持PartyBoost串联', NOW(), NOW()),
+(11, '小米手环8 NFC版 黑色 原装配件齐全<br><br>【功能】NFC门禁、NFC支付、心率监测、睡眠监测、血氧饱和度<br><br>【成色】8成新，屏幕无划痕，腕带无破损<br><br>【配件】原装充电器、说明书<br><br>【电池续航】约7天', NOW(), NOW()),
+(12, 'Apple Watch SE 2代 40mm 星光色 GPS版<br><br>【配置】S8芯片、GPS版、星光色铝金属表壳<br><br>【成色】8成新，屏幕无划痕，表带有使用痕迹<br><br>【配件】原装磁力充电线、运动表带<br><br>【功能】心率监测、运动追踪、消息通知', NOW(), NOW()),
+(13, 'Switch OLED 白色 含底座手柄 64G<br><br>【配置】7寸OLED屏、64G存储、白色Joy-Con手柄<br><br>【成色】8成新，屏幕无划痕，底座完好<br><br>【配件】主机、底座、手柄、充电线、腕带<br><br>【备注】掌机/主机双模式，适合宿舍娱乐', NOW(), NOW()),
+(14, 'PS5 光驱版 国行主机 含手柄<br><br>【配置】光驱版、825G SSD、DualSense手柄<br><br>【成色】7成新，主机有轻微灰尘，运行正常<br><br>【配件】主机、手柄、HDMI线、电源线、底座<br><br>【备注】国行版本，可备份港服账号', NOW(), NOW()),
+(15, '高等数学教材全套 上下册第七版 同济大学<br><br>【版本】第七版，同济大学数学系编<br><br>【成色】7成新，笔记较多但不影响阅读<br><br>【内容】上册：函数与极限、导数与微分等；下册：积分、空间解析几何等<br><br>【适合】大一新生考研复习', NOW(), NOW()),
+(16, '线性代数及其应用 第五版 戴维·C·莱<br><br>【版本】第五版，机械工业出版社<br><br>【成色】6成新，有少量笔记和划线<br><br>【内容】线性方程组、矩阵、行列式、特征值等<br><br>【适合】工科学生、考研数学', NOW(), NOW()),
+(17, '大学物理 上下册 第四版 张三慧<br><br>【版本】第四版，清华大学出版社<br><br>【成色】5成新，有较多笔记，部分页面折角<br><br>【内容】力学、热学、电磁学、光学、量子物理<br><br>【适合】理工科大学物理课程', NOW(), NOW()),
+(18, '考研英语词汇红宝书 2025版 考研必备<br><br>【版本】2025最新版，包含5500+核心词汇<br><br>【成色】6成新，有部分笔记划线<br><br>【内容】词汇分类、真题例句、记忆方法<br><br>【适合】考研英语一、英语二备考', NOW(), NOW()),
+(19, '张宇考研数学基础30讲 2025版<br><br>【作者】张宇，北京理工大学出版社<br><br>【成色】7成新，有少量笔记<br><br>【内容】高数+线代+概率论基础知识点全覆盖<br><br>【适合】考研数学一/二/三基础阶段', NOW(), NOW()),
+(20, '肖秀荣考研政治全套 2025 含精讲精练+1000题+真题<br><br>【版本】2025最新版全套四本<br><br>【成色】8成新，精讲精练有笔记，1000题未做<br><br>【内容】精讲精练、1000题、讲真题、形势与政策<br><br>【适合】考研政治全程复习', NOW(), NOW()),
+(21, '人类简史 从动物到上帝 尤瓦尔·赫拉利<br><br>【版本】中信出版社 精装版<br><br>【成色】9成新，几乎全新，无折痕<br><br>【内容】从认知革命到科学革命，重新审视人类历史<br><br>【推荐】豆瓣9.1分，全球畅销书', NOW(), NOW()),
+(22, '算法导论 第三版 中文版 MIT经典教材<br><br>【版本】第三版，机械工业出版社<br><br>【成色】7成新，书脊有折痕，内容完整<br><br>【内容】排序、图算法、动态规划、NP完全性等<br><br>【适合】计算机专业学生、算法竞赛、面试准备', NOW(), NOW()),
+(23, 'Nike Air Jordan 1 High OG 黑白熊猫 42码<br><br>【型号】AJ1 High OG 黑白配色<br><br>【尺码】42码（US 8.5）<br><br>【成色】7成新，鞋底轻微磨损，鞋面干净<br><br>【来源】得物购入，正品保障', NOW(), NOW()),
+(24, 'New Balance 990v6 灰色 38码 美产<br><br>【型号】990v6 元祖灰 美国制造<br><br>【尺码】38码（US 6.5）<br><br>【成色】8成新，鞋底磨损正常，鞋面干净<br><br>【特点】猪巴革+网面鞋面，ENCAP中底', NOW(), NOW()),
+(25, '阿迪达斯 UltraBoost 22 42码 黑色<br><br>【型号】UltraBoost 22 跑鞋<br><br>【尺码】42码，适合脚长26cm左右<br><br>【成色】6成新，鞋底磨损明显，仍可穿着<br><br>【技术】Boost中底，Continental橡胶外底', NOW(), NOW()),
+(26, '北面冲锋衣 黑色 M码 防水透气<br><br>【型号】The North Face DryVent冲锋衣<br><br>【尺码】M码，适合身高170-175cm<br><br>【成色】8成新，无破损，拉链顺畅<br><br>【功能】防水透气、可调节帽、多口袋设计', NOW(), NOW()),
+(27, '优衣库羽绒服 黑色 L码 轻薄保暖<br><br>【型号】优衣库Ultra Light Down 短款<br><br>【尺码】L码，适合身高170-175cm<br><br>【成色】7成新，有轻微使用痕迹，保暖性良好<br><br>【特点】可收纳便携、90%白鸭绒填充', NOW(), NOW()),
+(28, 'Nike 运动双肩背包 黑色 30L大容量<br><br>【容量】30L，可放置15.6寸笔记本<br><br>【成色】8成新，整体清洁，无明显破损<br><br>【功能】多口袋设计、透气背垫、电脑隔层<br><br>【适用】上学、旅行、健身', NOW(), NOW()),
+(29, '懒人加湿器 超声波静音款 4.5L大容量<br><br>【容量】4.5L，持续加湿12小时<br><br>【特点】超声波静音技术，运行时噪音低于35dB<br><br>【成色】9成新，使用时间不超过1个月<br><br>【功能】智能恒湿、定时关机、过夜保护', NOW(), NOW()),
+(30, '小米台灯Pro 护眼阅读灯 国AA级<br><br>【功能】国AA级照度、无频闪、蓝光防护<br><br>【成色】8成新，使用约3个月<br><br>【特点】智能调光、定时关灯、米家APP控制<br><br>【适用】学生学习、办公阅读', NOW(), NOW()),
+(31, '宿舍收纳架 桌面多层置物架 白色 2个装<br><br>【尺寸】每层30*20*15cm，共3层<br><br>【材质】加厚碳钢+环保喷塑<br><br>【成色】8成新，无锈迹，承重良好<br><br>【适合】宿舍桌面收纳、化妆品/书籍/杂物', NOW(), NOW()),
+(32, '电热水杯 便携旅行烧水杯 300ml 白色<br><br>【容量】300ml，304不锈钢内胆<br><br>【功率】300W，宿舍可用不跳闸<br><br>【成色】9成新，使用不到1个月<br><br>【功能】多段温控、防干烧、自动断电', NOW(), NOW()),
+(33, 'Anker 65W 氮化镓充电器 三口 黑色<br><br>【规格】2C1A三口输出，最大65W<br><br>【技术】GaN II氮化镓，体积小巧<br><br>【成色】9成新，几乎全新<br><br>【兼容】MacBook/iPad/手机/Switch全兼容', NOW(), NOW()),
+(34, '绿联 Type-C 扩展坞 7合1 银色<br><br>【接口】HDMI 4K+3*USB3.0+SD/TF+PD100W<br><br>【成色】8成新，接口完好，无松动<br><br>【兼容】MacBook/笔记本/平板通用<br><br>【适合】外接显示器、U盘读取、充电扩展', NOW(), NOW()),
+(35, '健身瑜伽垫加厚加宽防滑 TPE材质 送收纳绑带<br><br>【尺寸】183cm*80cm*10mm加宽加厚款<br><br>【材质】TPE环保材质，无异味<br><br>【成色】8成新，表面防滑性能良好<br><br>【适用】瑜伽、普拉提、健身训练', NOW(), NOW()),
+(36, '可调节哑铃 20kg单只 快调式 黑色<br><br>【重量】2.5-20kg可调节，15档快调<br><br>【成色】7成新，调节机构顺畅<br><br>【特点】一秒切换重量，节省空间<br><br>【适合】宿舍健身、家庭训练', NOW(), NOW()),
+(37, '迪卡侬山地自行车 Rockrider ST520 27速<br><br>【型号】Rockrider ST520 铝合金车架<br><br>【变速】27速禧玛诺变速系统<br><br>【成色】7成新，轮胎磨损正常<br><br>【配置】前后碟刹、避震前叉、水壶架', NOW(), NOW()),
+(38, '尤尼克斯羽毛球拍 ARC-7 进攻型<br><br>【型号】Arcsaber 7 全碳素<br><br>【规格】4UG5，适合进攻打法<br><br>【成色】8成新，线已断需重新穿线<br><br>【适合】中高级球友，进攻型打法', NOW(), NOW()),
+(39, '原神 60级全图鉴账号 官服<br><br>【等级】冒险等阶60级<br><br>【角色】全图鉴含限定角色，满命座多角色<br><br>【武器】5星武器20+，含限定武器<br><br>【备注】官服可改绑，安全交易', NOW(), NOW()),
+(40, '网易云音乐年卡VIP 官方直充<br><br>【类型】黑胶VIP年卡<br><br>【功能】无损音质、免广告、专属皮肤<br><br>【有效期】充值后12个月<br><br>【备注】官方直充，秒到账', NOW(), NOW()),
+(41, '一加12 16+512 岩息黑 全新未拆封（草稿）<br><br>【配置】骁龙8Gen3、16G+512G、2K东方屏<br><br>【成色】全新未拆封<br><br>【配件】原装全套<br><br>【注意】此商品还在编辑中，暂未上架', NOW(), NOW()),
+(42, '联想小新Pro16 2023 锐龙版（已下架）<br><br>【配置】R7-7840HS、16G+1T、16寸2.5K屏<br><br>【成色】7成新，键盘有使用痕迹<br><br>【下架原因】已换新电脑，暂时下架<br><br>【备注】如需购买可私信重新上架', NOW(), NOW()),
+(43, 'Vans 经典款帆布鞋 39码 黑白（已售出）<br><br>【型号】Old Skool 经典黑白<br><br>【尺码】39码<br><br>【成色】6成新，已售出<br><br>【备注】此商品已售出', NOW(), NOW()),
+(44, '飞利浦电动牙刷 HX6730 粉色（已售出）<br><br>【型号】Sonicare HX6730 声波震动<br><br>【成色】8成新，已售出<br><br>【功能】3种清洁模式、2分钟智能计时<br><br>【备注】此商品已售出', NOW(), NOW()),
+(45, '汤家凤考研数学1800题 2024版（已售出）<br><br>【作者】汤家凤<br><br>【成色】5成新，大量笔记，已售出<br><br>【内容】基础篇+提高篇全覆盖<br><br>【备注】此商品已售出', NOW(), NOW())
 AS new
 ON DUPLICATE KEY UPDATE
     `description` = new.`description`,
@@ -311,7 +311,7 @@ ON DUPLICATE KEY UPDATE
 -- 6. 收藏数据
 -- ===================================================================
 
-INSERT INTO `favorite` (
+INSERT INTO `eo_favorite` (
     `id`, `user_id`, `product_id`, `create_time`, `update_time`
 ) VALUES
 (1,  3, 1,  NOW() - INTERVAL 20 DAY, NOW()),
@@ -442,7 +442,7 @@ ON DUPLICATE KEY UPDATE
 -- 10. 搜索历史数据
 -- ===================================================================
 
-INSERT INTO `search_history` (
+INSERT INTO `eo_search_history` (
     `id`, `user_id`, `keyword`, `search_time`, `create_time`, `update_time`
 ) VALUES
 (1,  1, 'iPhone',       NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 30 DAY, NOW()),
@@ -474,7 +474,7 @@ ON DUPLICATE KEY UPDATE
 -- 11. 热门关键词数据
 -- ===================================================================
 
-INSERT INTO `hot_keyword` (
+INSERT INTO `eo_hot_keyword` (
     `id`, `keyword`, `search_count`, `last_search_time`, `create_time`, `update_time`
 ) VALUES
 (1,  'iPhone',     356, NOW() - INTERVAL 1 DAY,  NOW() - INTERVAL 90 DAY, NOW()),
@@ -577,7 +577,7 @@ ON DUPLICATE KEY UPDATE
 -- 15. 补充用户数据（8个新用户：不同专业、年级、活跃度）
 -- ===================================================================
 
-INSERT INTO `sys_user` (
+INSERT INTO `eo_user` (
     `user_id`, `username`, `password`, `user_type`, `nick_name`,
     `sex`, `status`, `del_flag`, `email`, `phonenumber`, `student_id`,
     `real_name`, `avatar`, `create_time`, `update_time`
@@ -601,7 +601,7 @@ ON DUPLICATE KEY UPDATE
 -- 16. 补充商品数据（25个新商品：更多品类、价格区间、卖家）
 -- ===================================================================
 
-INSERT INTO `product` (
+INSERT INTO `eo_product` (
     `id`, `user_id`, `category_id`, `name`, `price`, `original_price`,
     `stock`, `status`, `view_count`, `condition_level`, `location`,
     `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
@@ -666,7 +666,7 @@ ON DUPLICATE KEY UPDATE
 -- 17. 补充商品图片数据
 -- ===================================================================
 
-INSERT INTO `product_image` (
+INSERT INTO `eo_product_image` (
     `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
 ) VALUES
 -- 三星 Galaxy S24 Ultra
@@ -732,7 +732,7 @@ ON DUPLICATE KEY UPDATE
 -- 18. 补充商品详情数据
 -- ===================================================================
 
-INSERT INTO `product_detail` (
+INSERT INTO `eo_product_detail` (
     `product_id`, `description`, `create_time`, `update_time`
 ) VALUES
 (46, '三星 Galaxy S24 Ultra 12+256 钛灰 国行在保<br><br>【配置】骁龙8Gen3、12G+256G、S Pen手写笔<br><br>【成色】8成新，屏幕无划痕，钛金属边框轻微磨损<br><br>【特色】2亿像素主摄、Galaxy AI、S Pen<br><br>【配件】原装充电器、S Pen、手机壳', NOW(), NOW()),
@@ -769,7 +769,7 @@ ON DUPLICATE KEY UPDATE
 -- 19. 补充收藏数据
 -- ===================================================================
 
-INSERT INTO `favorite` (
+INSERT INTO `eo_favorite` (
     `id`, `user_id`, `product_id`, `create_time`, `update_time`
 ) VALUES
 (21, 11, 5,  NOW() - INTERVAL 12 DAY, NOW()),
@@ -897,7 +897,7 @@ ON DUPLICATE KEY UPDATE
 -- 23. 补充搜索历史数据
 -- ===================================================================
 
-INSERT INTO `search_history` (
+INSERT INTO `eo_search_history` (
     `id`, `user_id`, `keyword`, `search_time`, `create_time`, `update_time`
 ) VALUES
 (21, 11, '游戏本',       NOW() - INTERVAL 18 DAY, NOW() - INTERVAL 18 DAY, NOW()),
@@ -924,7 +924,7 @@ ON DUPLICATE KEY UPDATE
 -- 24. 补充热门关键词数据
 -- ===================================================================
 
-INSERT INTO `hot_keyword` (
+INSERT INTO `eo_hot_keyword` (
     `id`, `keyword`, `search_count`, `last_search_time`, `create_time`, `update_time`
 ) VALUES
 (16, '游戏本',     198, NOW() - INTERVAL 1 DAY,  NOW() - INTERVAL 60 DAY, NOW()),
@@ -942,7 +942,7 @@ ON DUPLICATE KEY UPDATE
 -- 25. 商品举报数据（新数据类型）
 -- ===================================================================
 
-INSERT INTO `product_report` (
+INSERT INTO `eo_product_report` (
     `id`, `product_id`, `reporter_id`, `reason`, `status`, `handle_result`,
     `create_time`, `update_time`
 ) VALUES
@@ -961,7 +961,7 @@ ON DUPLICATE KEY UPDATE
 -- 26. 操作日志数据（新数据类型）
 -- ===================================================================
 
-INSERT INTO `sys_oper_log` (
+INSERT INTO `eo_oper_log` (
     `title`, `business_type`, `method`, `request_method`, `operator_type`,
     `oper_name`, `oper_url`, `oper_ip`, `oper_location`,
     `status`, `cost_time`, `oper_time`
@@ -1016,4 +1016,329 @@ INSERT INTO `eo_message_subscription` (
 AS new
 ON DUPLICATE KEY UPDATE
     `enabled` = new.`enabled`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 28. 补充商品数据（ID 71-100，来自原 test-data.sql）
+-- 注意：分类ID已修正为现有分类
+--   - 教材类(101) → 20(教材)
+--   - 考研类(102) → 21(考研资料)
+--   - 课外读物(103,104) → 22(课外读物)
+--   - 手机类(201) → 10(手机)
+--   - 电脑类(202) → 11(电脑)
+--   - 平板类(203) → 13(智能穿戴)
+--   - 耳机音箱(204) → 12(耳机音箱)
+--   - 相机无人机(205) → 14(游戏设备)
+--   - 游戏机(206) → 14(游戏设备)
+--   - 女装(301) → 31(服装)
+--   - 男装(302) → 31(服装)
+--   - 鞋靴(303) → 30(鞋靴)
+--   - 护肤(601) → 40(宿舍好物)
+--   - 彩妆(602) → 40(宿舍好物)
+--   - 香水(603) → 40(宿舍好物)
+--   - 美发(604) → 40(宿舍好物)
+-- ===================================================================
+
+INSERT INTO `eo_product` (
+    `id`, `user_id`, `category_id`, `name`, `search_text`, `price`, `original_price`,
+    `stock`, `status`, `view_count`, `condition_level`, `location`,
+    `tags`, `contact_method`, `del_flag`, `create_time`, `update_time`, `version`
+) VALUES
+-- 更多图书教材类商品
+(71, 2, 20, '线性代数 第五版', '线性代数 第五版 数学教材', 12.00, 32.00, 1, 1, 89, 2, '图书馆', '教材,数学,线性代数', '微信', 0, NOW(), NOW(), 0),
+(72, 2, 20, '概率论与数理统计', '概率论与数理统计 数学教材', 15.00, 38.00, 1, 1, 78, 2, '图书馆', '教材,数学,概率论', '微信', 0, NOW(), NOW(), 0),
+(73, 2, 20, '大学物理实验教程', '大学物理实验教程 物理教材', 18.00, 42.00, 1, 1, 56, 2, '教学楼', '教材,物理,实验', 'QQ', 0, NOW(), NOW(), 0),
+(74, 5, 21, '考研数学真题大全解', '考研数学真题大全解 考研资料', 32.00, 78.00, 1, 1, 167, 2, '图书馆', '考研,数学,真题', '微信', 0, NOW(), NOW(), 0),
+(75, 5, 21, '考研英语词汇红宝书', '考研英语词汇红宝书 考研资料', 25.00, 58.00, 1, 1, 145, 2, '图书馆', '考研,英语,词汇', '微信', 0, NOW(), NOW(), 0),
+(76, 5, 21, '考研政治核心考点', '考研政治核心考点 考研资料', 22.00, 48.00, 1, 1, 134, 2, '图书馆', '考研,政治,考点', '微信', 0, NOW(), NOW(), 0),
+(77, 11, 22, '围城 钱钟书', '围城 钱钟书 文学名著', 18.00, 39.00, 1, 1, 89, 2, '宿舍楼下', '小说,文学,名著', '微信', 0, NOW(), NOW(), 0),
+(78, 11, 22, '活着 余华', '活着 余华 文学名著', 15.00, 35.00, 1, 1, 112, 2, '宿舍楼下', '小说,文学,名著', '微信', 0, NOW(), NOW(), 0),
+(79, 11, 22, 'Python编程从入门到实践', 'Python编程从入门到实践 编程书籍', 45.00, 89.00, 1, 1, 234, 2, '教学楼', '编程,Python,入门', 'QQ', 0, NOW(), NOW(), 0),
+(80, 11, 22, '算法导论 第三版', '算法导论 第三版 计算机经典', 78.00, 128.00, 1, 1, 189, 2, '教学楼', '计算机,算法,经典', 'QQ', 0, NOW(), NOW(), 0),
+-- 更多电子产品类商品
+(81, 3, 10, 'OPPO Find X3 Pro', 'OPPO Find X3 Pro 安卓手机', 2500.00, 4999.00, 1, 1, 189, 2, '南门', '手机,OPPO,安卓', '微信', 0, NOW(), NOW(), 0),
+(82, 3, 10, 'vivo X70 Pro+', 'vivo X70 Pro+ 安卓手机', 2800.00, 5499.00, 1, 1, 156, 2, '南门', '手机,vivo,安卓', '微信', 0, NOW(), NOW(), 0),
+(83, 3, 11, '华硕ROG幻14 游戏本', '华硕ROG幻14 游戏本 电竞笔记本', 7500.00, 10999.00, 1, 1, 234, 2, '宿舍楼下', '电脑,华硕,游戏', 'QQ', 0, NOW(), NOW(), 0),
+(84, 3, 11, '机械革命Code01 程序员本', '机械革命Code01 程序员笔记本', 4500.00, 6999.00, 1, 1, 145, 2, '图书馆', '电脑,机械革命,程序员', '微信', 0, NOW(), NOW(), 0),
+(85, 10, 13, '华为MatePad Pro 11', '华为MatePad Pro 11 安卓平板', 2200.00, 4199.00, 1, 1, 189, 2, '食堂', '平板,华为,MatePad', '微信', 0, NOW(), NOW(), 0),
+(86, 10, 12, 'Bose QC45 降噪耳机', 'Bose QC45 降噪耳机 头戴式', 1300.00, 2499.00, 1, 1, 178, 2, '教学楼', '耳机,Bose,降噪', 'QQ', 0, NOW(), NOW(), 0),
+(87, 10, 12, 'JBL蓝牙音箱', 'JBL蓝牙音箱 便携音箱', 280.00, 599.00, 1, 1, 134, 2, '宿舍楼下', '音箱,JBL,蓝牙', '微信', 0, NOW(), NOW(), 0),
+(88, 12, 14, '大疆DJI Mini 2 无人机', '大疆DJI Mini 2 无人机 航拍', 2800.00, 4199.00, 1, 1, 167, 2, '北门', '相机,大疆,无人机', '微信', 0, NOW(), NOW(), 0),
+(89, 12, 14, 'GoPro Hero10 运动相机', 'GoPro Hero10 运动相机', 1800.00, 3398.00, 1, 1, 123, 2, '北门', '相机,GoPro,运动', '微信', 0, NOW(), NOW(), 0),
+(90, 10, 14, 'Xbox Series X 国行', 'Xbox Series X 国行 游戏机', 3500.00, 3899.00, 1, 1, 189, 1, '宿舍楼下', '游戏机,Xbox,微软', 'QQ', 0, NOW(), NOW(), 0),
+-- 更多服装鞋包类商品
+(91, 6, 31, 'H&M针织开衫 M码', 'H&M针织开衫 M码 女装', 59.00, 149.00, 1, 1, 89, 2, '宿舍楼下', '女装,开衫,H&M', '微信', 0, NOW(), NOW(), 0),
+(92, 6, 31, 'ONLY牛仔裤 26码', 'ONLY牛仔裤 26码 女装', 89.00, 299.00, 1, 1, 78, 2, '宿舍楼下', '女装,牛仔裤,ONLY', '微信', 0, NOW(), NOW(), 0),
+(93, 6, 31, 'Levi\'s牛仔裤 30码', 'Levi\'s牛仔裤 30码 男装', 150.00, 599.00, 1, 1, 112, 2, '宿舍楼下', '男装,牛仔裤,Levi\'s', 'QQ', 0, NOW(), NOW(), 0),
+(94, 6, 31, 'Gap卫衣 L码', 'Gap卫衣 L码 男装', 79.00, 299.00, 1, 1, 98, 2, '宿舍楼下', '男装,卫衣,Gap', 'QQ', 0, NOW(), NOW(), 0),
+(95, 4, 30, 'Converse帆布鞋 41码', 'Converse帆布鞋 41码 休闲鞋', 180.00, 499.00, 1, 1, 145, 2, '体育馆', '鞋子,帆布鞋,Converse', '微信', 0, NOW(), NOW(), 0),
+-- 美妆护肤类商品（归类到生活用品-宿舍好物）
+(96, 9, 40, '兰蔻小黑瓶精华 50ml', '兰蔻小黑瓶精华 50ml 护肤', 380.00, 1080.00, 1, 1, 234, 1, '宿舍楼下', '护肤,精华,兰蔻', '微信', 0, NOW(), NOW(), 0),
+(97, 9, 40, 'SK-II神仙水 230ml', 'SK-II神仙水 230ml 护肤', 650.00, 1540.00, 1, 1, 189, 2, '宿舍楼下', '护肤,神仙水,SK-II', '微信', 0, NOW(), NOW(), 0),
+(98, 9, 40, 'MAC口红 Chili小辣椒', 'MAC口红 Chili小辣椒 彩妆', 89.00, 180.00, 1, 1, 267, 1, '宿舍楼下', '彩妆,口红,MAC', '微信', 0, NOW(), NOW(), 0),
+(99, 9, 40, '祖玛珑香水 蓝风铃30ml', '祖玛珑香水 蓝风铃30ml 香水', 280.00, 600.00, 1, 1, 145, 1, '宿舍楼下', '香水,祖玛珑,蓝风铃', '微信', 0, NOW(), NOW(), 0),
+(100, 9, 40, '戴森吹风机 HD08', '戴森吹风机 HD08 美发', 2200.00, 3290.00, 1, 1, 123, 2, '宿舍楼下', '美发,吹风机,戴森', '微信', 0, NOW(), NOW(), 0)
+AS new
+ON DUPLICATE KEY UPDATE
+    `name` = new.`name`,
+    `price` = new.`price`,
+    `original_price` = new.`original_price`,
+    `stock` = new.`stock`,
+    `status` = new.`status`,
+    `view_count` = new.`view_count`,
+    `condition_level` = new.`condition_level`,
+    `location` = new.`location`,
+    `tags` = new.`tags`,
+    `search_text` = new.`search_text`,
+    `del_flag` = new.`del_flag`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 29. 补充商品数据（ID 1001-1012，来自原 test_data.sql）
+-- ===================================================================
+
+INSERT INTO `eo_product` (
+    `id`, `user_id`, `category_id`, `name`, `price`, `original_price`,
+    `stock`, `status`, `view_count`, `condition_level`, `location`,
+    `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
+) VALUES
+(1001, 1, 11, 'MacBook Pro 14寸 M3芯片 深空灰', 11999.00, 14999.00, 1, 1, 256, 2, '图书馆', '微信联系', '苹果,笔记本,高性能', 'MacBook Pro 14寸 M3芯片 苹果 笔记本 高性能', 0, NOW(), NOW()),
+(1002, 1, 13, 'iPad Air 5 256G WiFi 蓝色', 3299.00, 4799.00, 1, 1, 189, 2, '校园内', '微信联系', '苹果,平板,学习', 'iPad Air 5 256G 苹果 平板 学习', 0, NOW(), NOW()),
+(1003, 1, 12, 'AirPods Pro 2 全新未拆封', 1299.00, 1899.00, 1, 1, 312, 1, '宿舍区', '微信联系', '苹果,耳机,降噪', 'AirPods Pro 2 苹果 耳机 降噪', 0, NOW(), NOW()),
+(1004, 1, 10, '小米13 Pro 256G 黑色', 2999.00, 4999.00, 1, 1, 145, 3, '教学楼', '微信联系', '小米,手机,拍照', '小米13 Pro 手机 拍照', 0, NOW(), NOW()),
+(1005, 1, 14, 'Switch OLED 游戏机 白色', 1599.00, 2599.00, 1, 1, 198, 2, '体育馆', '微信联系', '游戏机,任天堂,娱乐', 'Switch OLED 游戏机 任天堂 娱乐', 0, NOW(), NOW()),
+(1006, 1, 21, '考研英语词汇红宝书 2024版', 35.00, 68.00, 1, 1, 88, 3, '考研自习室', '微信联系', '考研,英语,词汇', '考研英语词汇 红宝书 考研 英语', 0, NOW(), NOW()),
+(1007, 1, 20, '高等数学同济第七版 上下册', 45.00, 89.00, 1, 1, 67, 3, '数学楼', '微信联系', '教材,数学,高数', '高等数学 同济第七版 教材 数学', 0, NOW(), NOW()),
+(1008, 1, 22, '数据结构与算法 Python版', 55.00, 99.00, 1, 1, 76, 2, '计算机学院', '微信联系', '计算机,算法,编程', '数据结构 算法 Python 计算机', 0, NOW(), NOW()),
+(1009, 1, 30, 'Nike Air Jordan 1 经典黑白 42码', 699.00, 1299.00, 1, 1, 156, 2, '操场', '微信联系', 'Nike,球鞋,经典', 'Nike Air Jordan 1 球鞋 经典', 0, NOW(), NOW()),
+(1010, 1, 31, '北面冲锋衣 黑色 M码 防水', 399.00, 899.00, 1, 1, 123, 2, '宿舍区', '微信联系', '北面,外套,户外', '北面 冲锋衣 外套 户外', 0, NOW(), NOW()),
+(1011, 1, 40, '小米台灯Pro 护眼阅读灯', 89.00, 149.00, 1, 1, 95, 2, '图书馆', '微信联系', '小米,台灯,护眼', '小米台灯Pro 护眼 台灯 阅读', 0, NOW(), NOW()),
+(1012, 1, 51, '迪卡侬山地自行车 27速', 899.00, 1599.00, 1, 1, 112, 2, '停车场', '微信联系', '自行车,运动,出行', '迪卡侬 山地自行车 运动 出行', 0, NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `name` = new.`name`,
+    `price` = new.`price`,
+    `original_price` = new.`original_price`,
+    `stock` = new.`stock`,
+    `status` = new.`status`,
+    `view_count` = new.`view_count`,
+    `condition_level` = new.`condition_level`,
+    `location` = new.`location`,
+    `contact_method` = new.`contact_method`,
+    `tags` = new.`tags`,
+    `search_text` = new.`search_text`,
+    `del_flag` = new.`del_flag`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 30. 补充商品图片数据（ID 71-100）
+-- ===================================================================
+
+INSERT INTO `eo_product_image` (
+    `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
+) VALUES
+-- 线性代数
+(75, 71, 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 概率论
+(76, 72, 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 大学物理实验
+(77, 73, 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 考研数学真题
+(78, 74, 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 考研英语红宝书
+(79, 75, 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 考研政治核心考点
+(80, 76, 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 围城
+(81, 77, 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 活着
+(82, 78, 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Python编程
+(83, 79, 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 算法导论
+(84, 80, 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- OPPO Find X3
+(85, 81, 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- vivo X70
+(86, 82, 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 华硕ROG幻14
+(87, 83, 'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 机械革命
+(88, 84, 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 华为MatePad
+(89, 85, 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Bose QC45
+(90, 86, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- JBL音箱
+(91, 87, 'https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 大疆无人机
+(92, 88, 'https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- GoPro
+(93, 89, 'https://images.unsplash.com/photo-1564466809058-bf4114d55352?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Xbox Series X
+(94, 90, 'https://images.unsplash.com/photo-1621259182978-fbf93132d53d?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- H&M针织开衫
+(95, 91, 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- ONLY牛仔裤
+(96, 92, 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Levi's牛仔裤
+(97, 93, 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Gap卫衣
+(98, 94, 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Converse帆布鞋
+(99, 95, 'https://images.unsplash.com/photo-1607522370275-f14206abe5d3?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 兰蔻小黑瓶
+(100, 96, 'https://images.unsplash.com/photo-1617897903246-719242758050?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- SK-II神仙水
+(101, 97, 'https://images.unsplash.com/photo-1617897903246-719242758050?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- MAC口红
+(102, 98, 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 祖玛珑香水
+(103, 99, 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 戴森吹风机
+(104, 100, 'https://images.unsplash.com/photo-1522338140262-f46f5913618a?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `image_url` = new.`image_url`,
+    `sort_order` = new.`sort_order`,
+    `is_main` = new.`is_main`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 31. 补充商品图片数据（ID 1001-1012）
+-- ===================================================================
+
+INSERT INTO `eo_product_image` (
+    `id`, `product_id`, `image_url`, `sort_order`, `is_main`, `create_time`, `update_time`
+) VALUES
+-- MacBook Pro
+(2001, 1001, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2002, 1001, 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+-- iPad Air
+(2003, 1002, 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2004, 1002, 'https://images.unsplash.com/photo-1561154464-82e9b9a6f1c1?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+-- AirPods Pro
+(2005, 1003, 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2006, 1003, 'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+-- 小米13 Pro
+(2007, 1004, 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2008, 1004, 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+-- Switch OLED
+(2009, 1005, 'https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2010, 1005, 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+-- 考研英语词汇红宝书
+(2011, 1006, 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 高等数学
+(2012, 1007, 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 数据结构
+(2013, 1008, 'https://images.unsplash.com/photo-1532012197267-da84d127e765?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Nike AJ1
+(2014, 1009, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2015, 1009, 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW()),
+-- 北面冲锋衣
+(2016, 1010, 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 小米台灯
+(2017, 1011, 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 自行车
+(2018, 1012, 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+(2019, 1012, 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800&auto=format&fit=crop', 1, 0, NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `image_url` = new.`image_url`,
+    `sort_order` = new.`sort_order`,
+    `is_main` = new.`is_main`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 32. 补充商品详情数据（ID 71-100）
+-- ===================================================================
+
+INSERT INTO `eo_product_detail` (
+    `product_id`, `description`, `create_time`, `update_time`
+) VALUES
+(71, '线性代数第五版，同济大学出版。内容完整，有少量笔记，不影响阅读。适合理工科学生使用。', NOW(), NOW()),
+(72, '概率论与数理统计，浙大版。内容完整，有少量笔记，不影响阅读。适合理工科学生使用。', NOW(), NOW()),
+(73, '大学物理实验教程，内容完整，有少量笔记。适合物理课程学习使用。', NOW(), NOW()),
+(74, '考研数学真题大全解，包含近三十年真题，解析详细。适合考研数学复习使用。', NOW(), NOW()),
+(75, '考研英语词汇红宝书，包含5500+核心词汇。适合考研英语复习使用。', NOW(), NOW()),
+(76, '考研政治核心考点，内容全面，重点突出。适合考研政治复习使用。', NOW(), NOW()),
+(77, '围城，钱钟书著，文学名著。品相良好，适合文学爱好者收藏。', NOW(), NOW()),
+(78, '活着，余华著，文学名著。品相良好，适合文学爱好者收藏。', NOW(), NOW()),
+(79, 'Python编程从入门到实践，经典编程书籍。内容详实，适合Python学习者使用。', NOW(), NOW()),
+(80, '算法导论第三版，MIT经典教材。适合计算机专业学生学习使用。', NOW(), NOW()),
+(81, 'OPPO Find X3 Pro，国行正品，使用一年。屏幕完好，电池健康，配件齐全。', NOW(), NOW()),
+(82, 'vivo X70 Pro+，国行正品，使用半年。屏幕无划痕，电池健康，配件齐全。', NOW(), NOW()),
+(83, '华硕ROG幻14游戏本，配置高，适合游戏和设计。使用半年，性能良好。', NOW(), NOW()),
+(84, '机械革命Code01程序员笔记本，轻薄便携。使用一年，性能稳定。', NOW(), NOW()),
+(85, '华为MatePad Pro 11，国行正品，屏幕完好，电池健康。适合学习和娱乐使用。', NOW(), NOW()),
+(86, 'Bose QC45降噪耳机，头戴式，降噪效果一流。使用半年，配件齐全。', NOW(), NOW()),
+(87, 'JBL蓝牙音箱，便携音箱，音质出色。使用三个月，配件齐全。', NOW(), NOW()),
+(88, '大疆DJI Mini 2无人机，航拍神器。使用半年，配件齐全。', NOW(), NOW()),
+(89, 'GoPro Hero10运动相机，防水防抖。使用三个月，配件齐全。', NOW(), NOW()),
+(90, 'Xbox Series X国行，次世代游戏主机，性能强劲。配件齐全，游戏光盘另算。', NOW(), NOW()),
+(91, 'H&M针织开衫M码，穿着舒适，百搭款式。适合日常穿搭。', NOW(), NOW()),
+(92, 'ONLY牛仔裤26码，版型修身，穿着舒适。适合日常穿搭。', NOW(), NOW()),
+(93, 'Levi\'s牛仔裤30码，经典款式，百搭百搭。适合日常穿搭。', NOW(), NOW()),
+(94, 'Gap卫衣L码，穿着舒适，百搭款式。适合日常穿搭。', NOW(), NOW()),
+(95, 'Converse帆布鞋41码，经典款式，百搭鞋款。穿着舒适，适合日常搭配。', NOW(), NOW()),
+(96, '兰蔻小黑瓶精华50ml，全新未拆封。适合护肤使用。', NOW(), NOW()),
+(97, 'SK-II神仙水230ml，使用少量，剩余90%。适合护肤使用。', NOW(), NOW()),
+(98, 'MAC口红Chili小辣椒，全新未拆封。适合日常妆容。', NOW(), NOW()),
+(99, '祖玛珑香水蓝风铃30ml，全新未拆封。适合日常使用。', NOW(), NOW()),
+(100, '戴森吹风机HD08，国行正品，使用半年。配件齐全，功能正常。', NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `description` = new.`description`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 33. 补充商品详情数据（ID 1001-1012）
+-- ===================================================================
+
+INSERT INTO `eo_product_detail` (
+    `product_id`, `description`, `create_time`, `update_time`
+) VALUES
+(1001, 'MacBook Pro 14寸 M3芯片 深空灰 16G+512G<br><br>【配置】M3 Pro芯片、16GB内存、512GB固态硬盘<br><br>【成色】9成新，仅使用3个月，电池循环42次<br><br>【配件】原装充电器、包装盒、说明书<br><br>【购买渠道】苹果官网购入，全国联保', NOW(), NOW()),
+(1002, 'iPad Air 5 256G WiFi版 蓝色<br><br>【配置】M1芯片、256GB存储、10.9寸Liquid视网膜屏<br><br>【成色】8成新，屏幕无划痕，边框轻微使用痕迹<br><br>【配件】原装充电器、数据线<br><br>【用途】学习笔记、绘画、视频剪辑', NOW(), NOW()),
+(1003, 'AirPods Pro 2 代 全新未拆封<br><br>【型号】AirPods Pro (第二代) 带MagSafe充电盒<br><br>【成色】全新未拆封，原厂塑封完整<br><br>【配件】耳机、充电盒、充电线、说明书<br><br>【保修】未激活，享受完整保修', NOW(), NOW()),
+(1004, '小米13 Pro 256G 黑色<br><br>【配置】骁龙8Gen2、256GB存储、6.73寸2K屏<br><br>【成色】7成新，背面有轻微划痕，屏幕完好<br><br>【配件】原装充电器、手机壳<br><br>【功能】莱卡影像、无线充电、IP68防水', NOW(), NOW()),
+(1005, 'Switch OLED 游戏机 白色<br><br>【配置】7寸OLED屏幕、64GB存储、可拆卸手柄<br><br>【成色】8成新，屏幕无划痕，底座完好<br><br>【配件】主机、底座、手柄、充电线<br><br>【游戏】不含游戏卡带，需单独购买', NOW(), NOW()),
+(1006, '考研英语词汇红宝书 2024版<br><br>【版本】2024最新版，包含5500+核心词汇<br><br>【成色】6成新，有部分笔记划线<br><br>【内容】词汇分类、真题例句、记忆方法<br><br>【适合】考研英语一、英语二备考', NOW(), NOW()),
+(1007, '高等数学同济第七版 上下册<br><br>【版本】第七版，同济大学数学系编<br><br>【成色】7成新，有少量笔记<br><br>【内容】函数极限、微积分、级数、空间解析几何<br><br>【适合】大一高数课程、考研数学复习', NOW(), NOW()),
+(1008, '数据结构与算法 Python版<br><br>【作者】Goodrich等，机械工业出版社<br><br>【成色】8成新，书脊完好<br><br>【内容】数组、链表、树、图、排序、查找算法<br><br>【适合】计算机专业学生、算法竞赛、考研', NOW(), NOW()),
+(1009, 'Nike Air Jordan 1 经典黑白 42码<br><br>【型号】AJ1 High OG 黑白熊猫配色<br><br>【尺码】42码（US 8.5）<br><br>【成色】7成新，鞋底轻微磨损，鞋面干净<br><br>【来源】得物购入，正品保障', NOW(), NOW()),
+(1010, '北面冲锋衣 黑色 M码<br><br>【型号】The North Face 防水冲锋衣<br><br>【尺码】M码，适合身高170-175cm<br><br>【成色】8成新，无破损，拉链顺畅<br><br>【功能】防水透气、可拆卸内胆、多口袋设计', NOW(), NOW()),
+(1011, '小米台灯Pro 护眼阅读灯<br><br>【功能】国AA级照度、无频闪、蓝光防护<br><br>【成色】9成新，使用不到2个月<br><br>【特点】智能调光、定时关灯、米家APP控制<br><br>【适用】学生学习、办公阅读', NOW(), NOW()),
+(1012, '迪卡侬山地自行车 27速<br><br>【型号】Rockrider ST520 铝合金车架<br><br>【变速】27速禧玛诺变速系统<br><br>【成色】7成新，轮胎磨损正常<br><br>【配置】前后碟刹、避震前叉、水壶架', NOW(), NOW())
+AS new
+ON DUPLICATE KEY UPDATE
+    `description` = new.`description`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 34. 补充热门关键词数据
+-- ===================================================================
+
+INSERT INTO `eo_hot_keyword` (
+    `id`, `keyword`, `search_count`, `last_search_time`, `del_flag`, `create_time`, `update_time`, `version`
+) VALUES
+(21, 'iPad', 734, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(22, '自行车', 654, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(23, '教材', 534, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(24, '运动鞋', 456, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(25, '耳机', 423, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(26, '电脑', 398, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(27, '手机', 378, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(28, '电动车', 356, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(29, '相机', 334, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(30, '高等数学', 312, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(31, 'PS5', 289, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(32, 'Java', 267, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(33, '瑜伽垫', 245, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(34, '护肤', 234, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0),
+(35, 'Nike', 223, NOW(), 0, NOW() - INTERVAL 30 DAY, NOW(), 0)
+AS new
+ON DUPLICATE KEY UPDATE
+    `search_count` = new.`search_count`,
+    `last_search_time` = new.`last_search_time`,
     `update_time` = new.`update_time`;

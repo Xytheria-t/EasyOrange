@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobjec
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 
-@TableName("category")
+@TableName("eo_category")
 public class CategoryDO extends BaseDO {
 
     private String name;

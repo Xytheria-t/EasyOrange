@@ -2,8 +2,10 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
+import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
@@ -40,10 +42,16 @@ class ProductQueryServiceTest {
     private CategoryQueryRepository categoryQueryRepository;
 
     @Mock
+    private CategoryCachePort categoryCachePort;
+
+    @Mock
     private ProductReadModelAssembler readModelAssembler;
 
     @Mock
     private ProductCachePort productCachePort;
+
+    @Mock
+    private ProductViewCountService viewCountService;
 
     private ProductQueryService queryService;
 
@@ -52,7 +60,7 @@ class ProductQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        queryService = new ProductQueryService(productRepository, productQueryRepository, categoryQueryRepository, readModelAssembler, productCachePort);
+        queryService = new ProductQueryService(productRepository, productQueryRepository, categoryQueryRepository, categoryCachePort, readModelAssembler, productCachePort, viewCountService);
 
         testProduct = Product.create(
                 SellerId.of(1L),

@@ -179,7 +179,7 @@ public class OperLogAspect {
         operLog.setOperTime(LocalDateTime.now());
 
         Long startTime = (Long) request.getAttribute("requestStartTime");
-        operLog.setCostTime(System.currentTimeMillis() - (startTime != null ? startTime : System.currentTimeMillis()));
+        operLog.setCostTime((int)(System.currentTimeMillis() - (startTime != null ? startTime : System.currentTimeMillis())));
 
         return operLog;
     }

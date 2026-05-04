@@ -234,6 +234,13 @@ public class Product {
         touch();
     }
 
+    public void addViewCount(int count) {
+        if (count > 0) {
+            this.viewCount = this.viewCount != null ? this.viewCount + count : count;
+            touch();
+        }
+    }
+
     public void decrementStock() {
         if (!hasStock()) {
             throw new InsufficientStockException("商品库存不足", id, stock);

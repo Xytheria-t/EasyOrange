@@ -32,7 +32,6 @@ public class DistributedLockWrapper {
                 throw new IllegalStateException("系统繁忙，请稍后重试");
             }
             
-            log.debug("获取分布式锁成功: key={}", fullKey);
             return operation.get();
         } finally {
             if (locked) {
@@ -60,7 +59,6 @@ public class DistributedLockWrapper {
                 throw new IllegalStateException("系统繁忙，请稍后重试");
             }
             
-            log.debug("获取分布式锁成功: key={}", fullKey);
             return operation.get();
         } finally {
             if (locked) {
@@ -86,9 +84,7 @@ public class DistributedLockWrapper {
     private void releaseLock(String key, String value) {
         try {
             Boolean result = redisCache.unlock(key, value);
-            if (Boolean.TRUE.equals(result)) {
-                log.debug("释放分布式锁成功: key={}", key);
-            } else {
+            if (!Boolean.TRUE.equals(result)) {
                 log.warn("释放分布式锁失败: key={}", key);
             }
         } catch (Exception e) {

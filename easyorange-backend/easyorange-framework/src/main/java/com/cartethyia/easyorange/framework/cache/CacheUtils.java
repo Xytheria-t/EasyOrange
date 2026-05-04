@@ -28,7 +28,6 @@ public class CacheUtils {
     public void set(String key, Object value, long timeout, TimeUnit unit) {
         try {
             redisTemplate.opsForValue().set(key, value, timeout, unit);
-            log.debug("设置缓存：key={}", key);
         } catch (Exception e) {
             log.error("设置缓存失败：key={}, error={}", key, e.getMessage());
         }
@@ -58,7 +57,6 @@ public class CacheUtils {
         }
         try {
             redisTemplate.delete(keys);
-            log.debug("批量删除缓存：keys={}", keys);
         } catch (Exception e) {
             log.error("批量删除缓存失败：error={}", e.getMessage());
         }
@@ -96,7 +94,6 @@ public class CacheUtils {
             Set<String> keys = redisTemplate.keys(prefix + "*");
             if (keys != null && !keys.isEmpty()) {
                 redisTemplate.delete(keys);
-                log.debug("按前缀删除缓存：prefix={}, count={}", prefix, keys.size());
             }
         } catch (Exception e) {
             log.error("按前缀删除缓存失败：prefix={}, error={}", prefix, e.getMessage());

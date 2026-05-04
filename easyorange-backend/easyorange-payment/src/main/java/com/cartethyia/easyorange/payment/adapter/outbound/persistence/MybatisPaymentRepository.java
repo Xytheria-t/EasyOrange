@@ -37,8 +37,6 @@ public class MybatisPaymentRepository implements PaymentRepository, PaymentQuery
             log.error("乐观锁冲突: paymentId={}, version={}", aggregate.id(), aggregate.version());
             throw OptimisticLockException.concurrentUpdate(aggregate.id());
         }
-        
-        log.debug("支付记录更新成功: paymentId={}, newVersion={}", aggregate.id(), aggregate.version());
     }
 
     @Override

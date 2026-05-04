@@ -18,15 +18,17 @@ public interface UserRepository {
 
     Optional<User> findByEmail(String email);
 
+    Optional<User> findByStudentId(String studentId);
+
     Optional<User> findByAccount(String account);
 
     User save(User user);
 
     boolean update(User user);
 
-    boolean updatePassword(Long userId, String encodedPassword);
-
     boolean updateLoginInfo(Long userId, String loginIp);
 
     void deleteById(Long id);
+
+    long count();
 }

@@ -47,4 +47,11 @@ public class MybatisOrderReadRepository implements OrderReadRepository {
                 doPage.total(), doPage.current(), doPage.size()
         );
     }
+
+    @Override
+    public long countByStatus(Integer status) {
+        LambdaQueryWrapper<OrderDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(OrderDO::getStatus, status);
+        return orderMapper.selectCount(wrapper);
+    }
 }

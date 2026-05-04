@@ -9,10 +9,6 @@ spring:
     date-format: yyyy-MM-dd'T'HH:mm:ss
     time-zone: Asia/Shanghai
 
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
-
   main:
     banner-mode: console
 
@@ -112,12 +108,15 @@ webmvc:
     - /static/**
     - /public/**
     - /upload/**
+    - /api/file/**
     - /favicon.ico
     - /error
     - /actuator/**
   skip-logging-paths:
     - /api/health
+    - /api/stats/platform
     - /actuator/**
+    - /api/file/**
   interceptor-order: 0
 
 security:
@@ -129,9 +128,12 @@ security:
     - /api/auth/register
     - /api/auth/password-reset
     - /api/health
+    - /api/stats/platform
     - /openapi/**
     - /swagger-ui/**
     - /swagger-ui.html
+    - /api/products/{id}/view
+    - /api/products/batch
   product-paths:
     - /api/products
     - /api/products/{id}
@@ -139,12 +141,11 @@ security:
     - /api/products/search
     - /api/products/search/**
     - /api/products/{id}/similar
-    - /api/products/batch
-    - /api/products/{id}/view
   static-paths:
     - /static/**
     - /public/**
     - /upload/**
+    - /api/file/**
     - /favicon.ico
     - /error
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:5178,http://localhost:3000,http://127.0.0.1:5173}

@@ -74,6 +74,10 @@ public class JwtProperties {
         if (secretKey.length() < 32) {
             throw new IllegalStateException("JWT 密钥长度必须至少 32 字符，请检查配置项 jwt.secret-key 或环境变量 JWT_SECRET_KEY");
         }
+        if (secretKey.contains("dev-secret") || secretKey.contains("test-secret") || 
+            secretKey.contains("example") || secretKey.contains("default")) {
+            log.warn("警告：检测到弱 JWT 密钥，请确保仅在开发环境使用，生产环境必须使用强密钥");
+        }
         log.info("JWT 配置加载完成 - 发行者：{}, Access Token 过期时间：{}分钟", issuer, accessTokenExpiration);
     }
 }

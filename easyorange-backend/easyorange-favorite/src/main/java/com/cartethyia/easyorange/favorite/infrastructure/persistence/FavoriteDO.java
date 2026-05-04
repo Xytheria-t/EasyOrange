@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-@TableName("favorite")
+@TableName("eo_favorite")
 @SuperBuilder(toBuilder = true)
 @Getter
 @Setter

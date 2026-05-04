@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.entity.BaseDO;
 
 import java.time.LocalDateTime;
 
-@TableName("search_history")
+@TableName("eo_search_history")
 public class SearchHistoryDO extends BaseDO {
 
     private Long userId;

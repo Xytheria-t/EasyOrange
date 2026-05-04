@@ -29,7 +29,6 @@ public class ProductCacheService implements ProductCachePort {
         try {
             Object cacheValue = redisTemplate.opsForValue().get(key);
             if (cacheValue instanceof ProductVO productVO) {
-                log.debug("命中商品缓存：productId={}", productId);
                 return productVO;
             }
         } catch (Exception e) {
@@ -46,7 +45,6 @@ public class ProductCacheService implements ProductCachePort {
         String key = ProductConstant.infoKey(productId);
         try {
             redisTemplate.opsForValue().set(key, productVO, PRODUCT_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
-            log.debug("设置商品缓存：productId={}", productId);
         } catch (Exception e) {
             log.error("设置商品缓存失败：productId={}, error={}", productId, e.getMessage());
         }
@@ -59,10 +57,7 @@ public class ProductCacheService implements ProductCachePort {
         }
         String key = ProductConstant.infoKey(productId);
         try {
-            Boolean deleted = redisTemplate.delete(key);
-            if (Boolean.TRUE.equals(deleted)) {
-                log.debug("删除商品缓存：productId={}", productId);
-            }
+            redisTemplate.delete(key);
         } catch (Exception e) {
             log.error("删除商品缓存失败：productId={}, error={}", productId, e.getMessage());
         }
@@ -76,7 +71,6 @@ public class ProductCacheService implements ProductCachePort {
         String key = ProductConstant.listKey(categoryId);
         try {
             redisTemplate.delete(key);
-            log.debug("删除商品列表缓存：categoryId={}", categoryId);
         } catch (Exception e) {
             log.error("删除商品列表缓存失败：categoryId={}, error={}", categoryId, e.getMessage());
         }

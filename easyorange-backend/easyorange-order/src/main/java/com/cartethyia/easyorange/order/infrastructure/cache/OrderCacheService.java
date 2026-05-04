@@ -36,7 +36,6 @@ public class OrderCacheService {
             try {
                 Object cacheValue = redisTemplate.opsForValue().get(cacheKey);
                 if (cacheValue instanceof PageResult pageResult) {
-                    log.debug("命中订单列表缓存：key={}", cacheKey);
                     return Optional.of(pageResult);
                 }
                 return Optional.empty();
@@ -60,7 +59,6 @@ public class OrderCacheService {
         for (int retry = 0; retry < MAX_RETRY_COUNT; retry++) {
             try {
                 redisTemplate.opsForValue().set(cacheKey, pageResult, ORDER_LIST_CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
-                log.debug("设置订单列表缓存：key={}", cacheKey);
                 return;
             } catch (Exception e) {
                 log.warn("设置订单列表缓存失败（重试 {}/{}）：key={}, error={}", 
@@ -84,7 +82,6 @@ public class OrderCacheService {
             try {
                 Object cacheValue = redisTemplate.opsForValue().get(cacheKey);
                 if (cacheValue instanceof OrderVO orderVO) {
-                    log.debug("命中订单详情缓存：key={}", cacheKey);
                     return Optional.of(orderVO);
                 }
                 return Optional.empty();
@@ -110,7 +107,6 @@ public class OrderCacheService {
         for (int retry = 0; retry < MAX_RETRY_COUNT; retry++) {
             try {
                 redisTemplate.opsForValue().set(cacheKey, orderVO, ORDER_DETAIL_CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES);
-                log.debug("设置订单详情缓存：key={}", cacheKey);
                 return;
             } catch (Exception e) {
                 log.warn("设置订单详情缓存失败（重试 {}/{}）：key={}, error={}", 
@@ -153,9 +149,6 @@ public class OrderCacheService {
         
         try {
             Boolean deleted = redisTemplate.delete(cacheKey);
-            if (Boolean.TRUE.equals(deleted)) {
-                log.debug("删除订单列表缓存：key={}", cacheKey);
-            }
         } catch (Exception e) {
             log.error("删除订单列表缓存失败：key={}, error={}", cacheKey, e.getMessage());
         }
@@ -170,9 +163,6 @@ public class OrderCacheService {
         
         try {
             Boolean deleted = redisTemplate.delete(cacheKey);
-            if (Boolean.TRUE.equals(deleted)) {
-                log.debug("删除订单详情缓存：key={}", cacheKey);
-            }
         } catch (Exception e) {
             log.error("删除订单详情缓存失败：key={}, error={}", cacheKey, e.getMessage());
         }
@@ -204,15 +194,12 @@ public class OrderCacheService {
     }
 
     private void deleteOrderCacheByRole(Long roleId, String roleType) {
-        log.debug("开始清除用户订单缓存：roleId={}, roleType={}", roleId, roleType);
-        
         String pattern = ORDER_LIST_CACHE_KEY_PREFIX + roleId + ":*";
         
         try {
             Collection<String> keys = redisTemplate.keys(pattern);
             if (keys != null && !keys.isEmpty()) {
-                Long deleted = redisTemplate.delete(keys);
-                log.debug("清除用户订单缓存：roleId={}, deletedCount={}", roleId, deleted);
+                redisTemplate.delete(keys);
             }
         } catch (Exception e) {
             log.error("清除用户订单缓存失败：roleId={}, error={}", roleId, e.getMessage());
@@ -222,8 +209,6 @@ public class OrderCacheService {
             }
             deleteOrderListCache(buildOrderListKey(roleId, null, 1, 10));
         }
-        
-        log.debug("用户订单缓存清除完成：roleId={}, roleType={}", roleId, roleType);
     }
 
     public String buildOrderListKey(Long userId, Integer status, Integer pageNum, Integer pageSize) {

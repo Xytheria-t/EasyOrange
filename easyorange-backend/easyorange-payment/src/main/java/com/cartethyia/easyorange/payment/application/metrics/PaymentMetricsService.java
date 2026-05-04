@@ -52,32 +52,26 @@ public class PaymentMetricsService {
 
     public void recordPaymentCreated() {
         paymentCreatedCounter.increment();
-        log.debug("Payment created metric recorded");
     }
 
     public void recordPaymentSuccess() {
         paymentSuccessCounter.increment();
-        log.debug("Payment success metric recorded");
     }
 
     public void recordPaymentFailed() {
         paymentFailedCounter.increment();
-        log.debug("Payment failed metric recorded");
     }
 
     public void recordRefund() {
         refundCounter.increment();
-        log.debug("Refund metric recorded");
     }
 
     public void recordPaymentProcessingTime(long durationMillis) {
         paymentProcessingTimer.record(durationMillis, TimeUnit.MILLISECONDS);
-        log.debug("Payment processing time recorded: {}ms", durationMillis);
     }
 
     public void recordConcurrentConflict() {
         concurrentPaymentConflictCounter.increment();
-        log.debug("Concurrent conflict metric recorded");
     }
 
     public Timer.Sample startTimer() {

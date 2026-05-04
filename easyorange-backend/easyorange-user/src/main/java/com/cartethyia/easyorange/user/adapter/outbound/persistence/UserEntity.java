@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -21,7 +22,7 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 import java.util.function.Function;
 
-@TableName("sys_user")
+@TableName("eo_user")
 @SuperBuilder
 @Data
 @NoArgsConstructor
@@ -29,7 +30,7 @@ import java.util.function.Function;
 @EqualsAndHashCode(callSuper = true)
 public class UserEntity extends BaseDO {
 
-    @TableId(value = "user_id")
+    @TableId(value = "user_id", type = IdType.ASSIGN_ID)
     private Long id;
 
     @TableField("username")

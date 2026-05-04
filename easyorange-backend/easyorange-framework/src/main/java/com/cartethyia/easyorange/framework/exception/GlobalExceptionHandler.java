@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.common.util.RequestUtil;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -40,7 +41,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ParamValidationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Map<String, String>> handleParamValidationException(ParamValidationException e) {
         log.warn("action=validate_error, errors={}", e.getFieldErrors());
         return Result.error(ResultCode.VALIDATE_FAILED, e.getFirstErrorMessage());
@@ -69,7 +69,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         String message = extractAllErrors(e.getBindingResult());
         log.warn("action=validate_failed, msg={}", message);
@@ -77,7 +76,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BindException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleBindException(BindException e) {
         String message = extractAllErrors(e.getBindingResult());
         log.warn("action=bind_error, msg={}", message);
@@ -113,7 +111,6 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleConstraintViolationException(ConstraintViolationException e) {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
@@ -123,21 +120,18 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         log.warn("action=missing_param, name={}", e.getParameterName());
         return Result.error(ResultCode.VALIDATE_FAILED, "缺少必填参数：" + e.getParameterName());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("action=body_parse_error");
         return Result.error(ResultCode.VALIDATE_FAILED, "请求体格式错误");
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
         log.warn("参数类型转换失败[name={}, value={}]: {}", e.getName(), e.getValue(), e.getMessage());
         return Result.error(ResultCode.VALIDATE_FAILED, "参数 '" + e.getName() + "' 类型错误");
@@ -151,10 +145,38 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleIllegalArgumentException(IllegalArgumentException e) {
         log.warn("非法参数: {}", e.getMessage());
         return Result.error(ResultCode.VALIDATE_FAILED, e.getMessage());
+    }
+
+    @ExceptionHandler(DuplicateKeyException.class)
+    public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) {
+        log.warn("action=duplicate_key, path={}, msg={}", RequestUtil.getRequestPath(), e.getMessage());
+        String userMessage = extractDuplicateFieldMessage(e.getMessage());
+        return Result.error(ResultCode.VALIDATE_FAILED, userMessage);
+    }
+
+    private String extractDuplicateFieldMessage(String errorMessage) {
+        if (errorMessage == null) {
+            return "数据已存在，请检查输入";
+        }
+        if (errorMessage.contains("uk_eo_user_email")) {
+            return "邮箱已被注册";
+        }
+        if (errorMessage.contains("uk_eo_user_phone")) {
+            return "手机号已被注册";
+        }
+        if (errorMessage.contains("uk_eo_user_student_id")) {
+            return "学号已被注册";
+        }
+        if (errorMessage.contains("uk_eo_user_username")) {
+            return "用户名已存在";
+        }
+        if (errorMessage.contains("uk_eo_favorite_user_product")) {
+            return "已收藏过该商品";
+        }
+        return "数据已存在，请检查输入";
     }
 
     @ExceptionHandler(Exception.class)

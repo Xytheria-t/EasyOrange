@@ -52,8 +52,26 @@ public class ProductAclServiceImpl implements ProductAclService {
     @Override
     public List<ProductVO> assembleProductVOs(List<ProductReadModel> products,
                                                Map<Long, SellerReadModel> sellerMap) {
+        List<Long> productIds = products.stream()
+                .map(ProductReadModel::id)
+                .collect(Collectors.toList());
+
+        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+                .findImagesByProductIds(productIds).stream()
+                .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
+
         return products.stream()
                 .map(product -> {
+                    List<ProductQueryRepository.ProductImageInfo> images = imagesByProduct.getOrDefault(product.id(), List.of());
+                    List<String> imageUrls = images.stream()
+                            .map(ProductQueryRepository.ProductImageInfo::imageUrl)
+                            .collect(Collectors.toList());
+                    String mainImageUrl = images.stream()
+                            .filter(ProductQueryRepository.ProductImageInfo::isMain)
+                            .findFirst()
+                            .map(ProductQueryRepository.ProductImageInfo::imageUrl)
+                            .orElse(imageUrls.isEmpty() ? "" : imageUrls.getFirst());
+
                     ProductVO.ProductVOBuilder builder = ProductVO.builder()
                             .id(product.id())
                             .sellerId(product.sellerId())
@@ -70,8 +88,8 @@ public class ProductAclServiceImpl implements ProductAclService {
                             .conditionDesc(product.conditionDesc())
                             .location(product.location())
                             .contactMethod(product.contactMethod())
-                            .images(product.images())
-                            .mainImageUrl(product.mainImageUrl())
+                            .images(imageUrls)
+                            .mainImageUrl(mainImageUrl)
                             .createTime(product.createTime())
                             .updateTime(product.updateTime());
 
@@ -79,6 +97,7 @@ public class ProductAclServiceImpl implements ProductAclService {
                         SellerReadModel seller = sellerMap.get(product.sellerId());
                         if (seller != null) {
                             builder.username(seller.nickName() != null ? seller.nickName() : seller.username());
+                            builder.userAvatar(seller.avatar());
                         }
                     }
                     return builder.build();

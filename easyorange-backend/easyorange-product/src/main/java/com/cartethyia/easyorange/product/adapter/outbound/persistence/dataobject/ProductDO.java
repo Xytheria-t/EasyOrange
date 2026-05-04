@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.common.entity.BaseDO;
 
 import java.math.BigDecimal;
 
-@TableName("product")
+@TableName("eo_product")
 public class ProductDO extends BaseDO {
 
     private Long userId;

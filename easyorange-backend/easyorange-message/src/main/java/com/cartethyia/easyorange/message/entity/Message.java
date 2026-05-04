@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.springframework.web.util.HtmlUtils;
 
+import java.time.LocalDateTime;
+
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -28,6 +30,7 @@ public class Message extends BaseDO {
     private String title;
     private String content;
     private Integer isRead;
+    private LocalDateTime readTime;
     private Long businessId;
     private Long conversationId;
 
@@ -66,6 +69,7 @@ public class Message extends BaseDO {
             return null;
         }
         this.isRead = MessageStatus.READ.getCode();
+        this.readTime = LocalDateTime.now();
         return new MessageReadEvent(this.getId(), userId);
     }
 
@@ -86,6 +90,7 @@ public class Message extends BaseDO {
 
     public void markAsRead() {
         this.isRead = MessageStatus.READ.getCode();
+        this.readTime = LocalDateTime.now();
     }
 
     public Long getSenderId() { return senderId; }

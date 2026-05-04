@@ -41,6 +41,7 @@ public class ProductReadModelAssembler {
         SellerReadModel seller = sellerMap.get(product.getSellerId().value());
         if (seller != null) {
             builder.username(seller.nickName() != null ? seller.nickName() : seller.username());
+            builder.userAvatar(seller.avatar());
         }
 
         ProductQueryRepository.ProductDetailInfo detail = detailMap.get(product.getId().value());

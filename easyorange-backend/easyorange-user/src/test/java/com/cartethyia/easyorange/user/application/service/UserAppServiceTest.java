@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
+import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.port.UserEventPort;
 import org.junit.jupiter.api.AfterEach;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
@@ -103,6 +105,7 @@ class UserAppServiceTest {
             .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
             .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
             .profile(profile)
+            .loginInfo(com.cartethyia.easyorange.user.domain.valueobject.LoginInfo.initial())
             .build();
     }
 
@@ -161,6 +164,8 @@ class UserAppServiceTest {
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+            when(userRepository.findByPhone("13999999999")).thenReturn(Optional.empty());
             when(userRepository.update(any(User.class))).thenReturn(true);
 
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").build();
@@ -190,6 +195,79 @@ class UserAppServiceTest {
 
             verify(userRepository, never()).update(any());
         }
+
+        @Test
+        @DisplayName("更新邮箱为已存在的邮箱时应抛出异常")
+        void shouldThrowWhenEmailAlreadyExists() {
+            setSecurityContext(1L);
+            User user = buildTestUser();
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            User otherUser = buildTestUser();
+            when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(otherUser));
+
+            UpdateUserRequest request = new UpdateUserRequest(null, "taken@example.com", null, null, null, null);
+
+            assertThatThrownBy(() -> userAppService.updateUserInfo(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("邮箱已被注册");
+
+            verify(userRepository, never()).update(any());
+        }
+
+        @Test
+        @DisplayName("更新邮箱为当前用户自己的邮箱时不应抛出异常")
+        void shouldNotThrowWhenEmailBelongsToCurrentUser() {
+            setSecurityContext(1L);
+            User user = buildTestUser();
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            when(userRepository.update(any(User.class))).thenReturn(true);
+
+            UserVO userVO = UserVO.builder().userId(1L).username("testuser").build();
+            when(userAssembler.toVo(any(User.class))).thenReturn(userVO);
+
+            UpdateUserRequest request = new UpdateUserRequest(null, "test@example.com", null, null, null, null);
+
+            UserVO result = userAppService.updateUserInfo(request);
+
+            assertThat(result).isNotNull();
+            verify(userRepository).update(any(User.class));
+        }
+
+        @Test
+        @DisplayName("更新手机号为已存在的手机号时应抛出异常")
+        void shouldThrowWhenPhoneAlreadyExists() {
+            setSecurityContext(1L);
+            User user = buildTestUser();
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            User otherUser = buildTestUser();
+            when(userRepository.findByPhone("13800000000")).thenReturn(Optional.of(otherUser));
+
+            UpdateUserRequest request = new UpdateUserRequest(null, null, "13800000000", null, null, null);
+
+            assertThatThrownBy(() -> userAppService.updateUserInfo(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("手机号已被注册");
+
+            verify(userRepository, never()).update(any());
+        }
+
+        @Test
+        @DisplayName("更新学号为已存在的学号时应抛出异常")
+        void shouldThrowWhenStudentIdAlreadyExists() {
+            setSecurityContext(1L);
+            User user = buildTestUser();
+            when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+            User otherUser = buildTestUser();
+            when(userRepository.findByStudentId("2024001")).thenReturn(Optional.of(otherUser));
+
+            UpdateUserRequest request = new UpdateUserRequest(null, null, null, null, null, "2024001");
+
+            assertThatThrownBy(() -> userAppService.updateUserInfo(request))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("学号已被注册");
+
+            verify(userRepository, never()).update(any());
+        }
     }
 
     @Nested
@@ -204,7 +282,7 @@ class UserAppServiceTest {
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
             when(passwordDomainService.matches("OldPassword123", "$2a$10$encoded")).thenReturn(true);
             when(passwordDomainService.encode("NewPassword456")).thenReturn("$2a$10$newEncoded");
-            when(userRepository.updatePassword(1L, "$2a$10$newEncoded")).thenReturn(true);
+            when(userRepository.update(any(User.class))).thenReturn(true);
 
             ChangePasswordRequest request = new ChangePasswordRequest("OldPassword123", "NewPassword456");
 
@@ -213,8 +291,12 @@ class UserAppServiceTest {
             verify(passwordDomainService).validateDifferentPassword("OldPassword123", "NewPassword456");
             verify(passwordDomainService).matches("OldPassword123", "$2a$10$encoded");
             verify(passwordDomainService).encode("NewPassword456");
-            verify(userRepository).updatePassword(1L, "$2a$10$newEncoded");
-            verify(userEventPort).publishPasswordChanged(1L);
+            verify(userRepository).update(any(User.class));
+            
+            ArgumentCaptor<PasswordChangedEvent> eventCaptor = ArgumentCaptor.forClass(PasswordChangedEvent.class);
+            verify(userEventPort).publish(eventCaptor.capture());
+            PasswordChangedEvent event = eventCaptor.getValue();
+            assertThat(event.getUserId()).isEqualTo(1L);
         }
 
         @Test
@@ -231,8 +313,8 @@ class UserAppServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("密码错误");
 
-            verify(userRepository, never()).updatePassword(any(), any());
-            verify(userEventPort, never()).publishPasswordChanged(any());
+            verify(userRepository, never()).update(any());
+            verify(userEventPort, never()).publish(any());
         }
 
         @Test
@@ -283,7 +365,7 @@ class UserAppServiceTest {
                 "avatar", "new.jpg", "image/jpeg", "fake-image".getBytes());
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user)).thenReturn(Optional.of(updatedUser));
-            when(avatarFilePort.uploadAvatar(file, 1L)).thenReturn("/avatar/new.png");
+            when(avatarFilePort.upload(any(byte[].class), eq("image/jpeg"), eq("new.jpg"), eq(1L))).thenReturn("/avatar/new.png");
             when(userRepository.update(any(User.class))).thenReturn(true);
 
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").avatar("/avatar/new.png").build();
@@ -294,7 +376,7 @@ class UserAppServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.getAvatar()).isEqualTo("/avatar/new.png");
             verify(avatarFilePort).deleteIfExists("/avatar/old.png");
-            verify(avatarFilePort).uploadAvatar(file, 1L);
+            verify(avatarFilePort).upload(any(byte[].class), eq("image/jpeg"), eq("new.jpg"), eq(1L));
         }
 
         @Test

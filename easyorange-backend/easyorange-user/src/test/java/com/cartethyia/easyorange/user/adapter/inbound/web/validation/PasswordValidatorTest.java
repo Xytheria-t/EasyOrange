@@ -10,21 +10,22 @@ class PasswordValidatorTest {
     private final PasswordValidator validator = new PasswordValidator();
 
     @Test
-    @DisplayName("valid password - lowercase, uppercase, digit, length 6")
+    @DisplayName("valid password - lowercase, uppercase, digit, special char, length 8")
     void isValid_validPassword_returnsTrue() {
-        assertThat(validator.isValid("aA1234", null)).isTrue();
+        assertThat(validator.isValid("aA1234!@", null)).isTrue();
     }
 
     @Test
-    @DisplayName("valid password - exactly 20 chars")
+    @DisplayName("valid password - exactly 128 chars")
     void isValid_validPasswordMaxLen_returnsTrue() {
-        assertThat(validator.isValid("aA1" + "x".repeat(17), null)).isTrue();
+        String password = "aA1!" + "x".repeat(124);
+        assertThat(validator.isValid(password, null)).isTrue();
     }
 
     @Test
-    @DisplayName("valid password - all lowercase, uppercase, digits")
+    @DisplayName("valid password - all lowercase, uppercase, digits, special char")
     void isValid_validPasswordComplex_returnsTrue() {
-        assertThat(validator.isValid("abcXYZ789", null)).isTrue();
+        assertThat(validator.isValid("abcXYZ789!@", null)).isTrue();
     }
 
     @Test
@@ -64,15 +65,22 @@ class PasswordValidatorTest {
     }
 
     @Test
-    @DisplayName("too short - invalid")
-    void isValid_tooShort_returnsFalse() {
-        assertThat(validator.isValid("aA1", null)).isFalse();
+    @DisplayName("missing special char - invalid")
+    void isValid_missingSpecialChar_returnsFalse() {
+        assertThat(validator.isValid("abcABCDEF123", null)).isFalse();
     }
 
     @Test
-    @DisplayName("too long - invalid (21 chars)")
+    @DisplayName("too short - invalid (7 chars)")
+    void isValid_tooShort_returnsFalse() {
+        assertThat(validator.isValid("aA1!@#", null)).isFalse();
+    }
+
+    @Test
+    @DisplayName("too long - invalid (129 chars)")
     void isValid_tooLong_returnsFalse() {
-        assertThat(validator.isValid("aA1" + "x".repeat(18), null)).isFalse();
+        String password = "aA1!" + "x".repeat(125);
+        assertThat(validator.isValid(password, null)).isFalse();
     }
 
     @Test
@@ -82,14 +90,14 @@ class PasswordValidatorTest {
     }
 
     @Test
-    @DisplayName("contains special chars - valid (special chars allowed)")
+    @DisplayName("contains special chars - valid")
     void isValid_withSpecialChars_returnsTrue() {
-        assertThat(validator.isValid("aA1!@#", null)).isTrue();
+        assertThat(validator.isValid("aA1234!@", null)).isTrue();
     }
 
     @Test
-    @DisplayName("unicode characters - valid (regex . matches any char including unicode)")
+    @DisplayName("unicode characters with special char - valid")
     void isValid_unicodeChars_returnsTrue() {
-        assertThat(validator.isValid("密码123Ab", null)).isTrue();
+        assertThat(validator.isValid("密码123Ab!", null)).isTrue();
     }
 }

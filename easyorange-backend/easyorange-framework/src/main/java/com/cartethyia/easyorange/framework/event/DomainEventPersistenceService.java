@@ -38,8 +38,6 @@ public class DomainEventPersistenceService {
             String typeKey = EVENT_KEY_PREFIX + "type:" + event.eventType();
             redisTemplate.opsForZSet().add(typeKey, event.getEventId(), System.currentTimeMillis());
 
-            log.debug("事件持久化成功：eventId={}", event.getEventId());
-
         } catch (Exception e) {
             log.error("事件持久化失败：eventId={}", event.getEventId(), e);
         }
