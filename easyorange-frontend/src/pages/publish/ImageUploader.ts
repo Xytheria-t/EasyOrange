@@ -11,10 +11,16 @@ import {
     FILE_SIZE_ERROR,
     MAX_IMAGES_ERROR
 } from './constants.js';
-import { toast } from '../../utils/index.js';
 import { errorHandler } from '../../utils/errorHandler.js';
 import { isSuccessCode } from '../../types';
 import { getStoredToken } from '../../features/auth/session.js';
+
+type ToastType = 'success' | 'error' | 'warning' | 'info';
+
+interface ToastMessage {
+    type: ToastType;
+    message: string;
+}
 
 /** 图片数据接口 */
 export interface ImageData {
@@ -30,6 +36,7 @@ export interface ImageUploaderOptions {
     maxImages?: number;
     maxFileSize?: number;
     onImagesChange?: (images: ImageData[]) => void;
+    showToast?: (toast: ToastMessage) => void;
 }
 
 /** 图片上传器元素接口 */
@@ -50,18 +57,16 @@ export class ImageUploader {
     private maxFileSize: number;
     private images: ImageData[];
     private onImagesChange: (images: ImageData[]) => void;
+    private showToast: (toast: ToastMessage) => void;
     private draggedItem: number | null;
     private elements: ImageUploaderElements;
 
-    /**
-     * 创建图片上传器实例
-     * @param options - 配置选项
-     */
     constructor(options: ImageUploaderOptions = {}) {
         this.maxImages = options.maxImages || MAX_IMAGES;
         this.maxFileSize = options.maxFileSize || MAX_FILE_SIZE;
         this.images = [];
         this.onImagesChange = options.onImagesChange || (() => {});
+        this.showToast = options.showToast || ((t) => console.log(`[${t.type}] ${t.message}`));
         this.draggedItem = null;
         this.elements = {
             uploadArea: null,
@@ -165,17 +170,17 @@ export class ImageUploader {
 
         for (const file of Array.from(files)) {
             if (this.images.length + validFiles.length >= this.maxImages) {
-                toast.warning(MAX_IMAGES_ERROR);
+                this.showToast({ type: 'warning', message: MAX_IMAGES_ERROR });
                 break;
             }
 
             if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-                toast.error(IMAGE_TYPE_ERROR);
+                this.showToast({ type: 'error', message: IMAGE_TYPE_ERROR });
                 continue;
             }
 
             if (file.size > this.maxFileSize) {
-                toast.error(FILE_SIZE_ERROR);
+                this.showToast({ type: 'error', message: FILE_SIZE_ERROR });
                 continue;
             }
 
@@ -362,7 +367,7 @@ export class ImageUploader {
                     }
                 } catch (error) {
                     const errorMessage = errorHandler.handle(error as Error);
-                    toast.error(`图片上传失败: ${errorMessage}`);
+                    this.showToast({ type: 'error', message: `图片上传失败: ${errorMessage}` });
                     return null;
                 }
             }

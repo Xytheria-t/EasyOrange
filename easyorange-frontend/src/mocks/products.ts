@@ -51,6 +51,22 @@ const MOCK_PRODUCT_TITLES = [
   '索尼降噪耳机', '富士拍立得', '健身哑铃', '保温杯',
 ];
 
+const CATEGORY_COLORS: Record<string, string> = {
+  '图书教材': '3B82F6',
+  '电子产品': '8B5CF6',
+  '服装鞋包': 'EC4899',
+  '生活用品': 'F97316',
+  '运动户外': '22C55E',
+  '美妆护肤': 'A855F7',
+  '交通工具': '06B6D4',
+  '其他': '6B7280',
+};
+
+function generateProductImageUrl(categoryName: string, index: number, variant: number): string {
+  const bg = CATEGORY_COLORS[categoryName] || CATEGORY_COLORS['其他'];
+  return `https://dummyimage.com/400x400/${bg}/fff.png&text=${encodeURIComponent(categoryName)}+${index + 1}-${variant}`;
+}
+
 const MOCK_LOCATIONS = ['图书馆', '食堂', '宿舍楼下', '教学楼', '南门', '北门'];
 
 export function generateMockProducts(count: number): MockProduct[] {
@@ -74,8 +90,8 @@ export function generateMockProducts(count: number): MockProduct[] {
       conditionName: condition.name,
       status: 'ONLINE',
       images: [
-        `https://picsum.photos/seed/product${i}a/400/400`,
-        `https://picsum.photos/seed/product${i}b/400/400`,
+        generateProductImageUrl(category.name, i, 1),
+        generateProductImageUrl(category.name, i, 2),
       ],
       location: MOCK_LOCATIONS[Math.floor(Math.random() * MOCK_LOCATIONS.length)],
       views: Math.floor(Math.random() * 500),

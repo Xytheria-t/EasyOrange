@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#f3f4f6"/>
+  <rect x="140" y="140" width="120" height="120" rx="8" fill="#e5e7eb"/>
+  <circle cx="180" cy="180" r="20" fill="#d1d5db"/>
+  <path d="M160 220L200 180L240 220" stroke="#d1d5db" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="200" y="300" text-anchor="middle" fill="#9ca3af" font-size="16" font-family="system-ui, sans-serif">图片加载中</text>
+</svg>

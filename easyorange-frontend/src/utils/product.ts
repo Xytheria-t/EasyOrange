@@ -3,6 +3,44 @@
  * @description 提供商品相关的工具函数
  */
 
+import type { Product, ProductStatus } from '@/types';
+
+const STATUS_CODE_MAP: Record<number, ProductStatus> = {
+    0: 'DRAFT',
+    1: 'ONLINE',
+    2: 'SOLD',
+    3: 'OFFLINE',
+};
+
+export function normalizeProduct(raw: Record<string, unknown>): Product {
+    const status = typeof raw.status === 'number' ? raw.status : 1;
+    const condition = typeof raw.condition === 'number' ? raw.condition : 0;
+    return {
+        id: raw.id as number,
+        title: (raw.title as string) ?? '',
+        description: (raw.description as string) ?? '',
+        price: raw.price as number,
+        originalPrice: (raw.originalPrice as number | null) ?? null,
+        categoryId: raw.categoryId as number,
+        categoryName: (raw.categoryName as string) ?? '',
+        condition,
+        conditionLevel: condition,
+        status: STATUS_CODE_MAP[status] ?? 'ONLINE',
+        images: (raw.images as string[]) ?? [],
+        location: (raw.location as string) ?? '',
+        views: (raw.views as number) ?? 0,
+        favorites: (raw.favorites as number) ?? 0,
+        sellerId: raw.sellerId as number,
+        sellerName: ((raw.sellerName as string) || (raw.username as string)) ?? '匿名用户',
+        sellerAvatar: ((raw.sellerAvatar as string | null) || (raw.userAvatar as string | null)) ?? null,
+        sellerRating: (raw.sellerRating as number) ?? 0,
+        createTime: (raw.createTime as string) ?? '',
+        updateTime: (raw.updateTime as string) ?? '',
+        stock: raw.stock as number | undefined,
+        contactMethod: (raw.contactMethod as string) ?? undefined,
+    };
+}
+
 export function calculateDiscount(
     currentPrice: number,
     originalPrice?: number | null

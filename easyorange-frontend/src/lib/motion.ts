@@ -112,16 +112,27 @@ export class MotionController {
     }
 
     private initMutationObserver(): void {
+        let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
         this.mutationObserver = new MutationObserver((mutations) => {
-            mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                    if (!(node instanceof HTMLElement)) {return;}
-                    this.refresh(node);
+            const hasElementChanges = mutations.some(mutation =>
+                Array.from(mutation.addedNodes).some(node => node instanceof HTMLElement)
+            );
+            if (!hasElementChanges) return;
+
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                mutations.forEach(mutation => {
+                    mutation.addedNodes.forEach(node => {
+                        if (!(node instanceof HTMLElement)) {return;}
+                        this.refresh(node);
+                    });
                 });
-            });
+            }, 200);
         });
 
-        this.mutationObserver.observe(document.body, {
+        const targetNode = document.querySelector('#root') || document.body;
+        this.mutationObserver.observe(targetNode, {
             childList: true,
             subtree: true
         });

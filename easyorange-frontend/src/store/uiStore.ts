@@ -16,13 +16,20 @@ interface UIState {
   hideLoading: () => void;
 }
 
+let toastCounter = 0;
+
+function generateToastId(): string {
+  toastCounter += 1;
+  return `toast-${Date.now()}-${toastCounter}`;
+}
+
 export const useUIStore = create<UIState>()((set) => ({
   toasts: [],
   isLoading: false,
   loadingMessage: '',
 
   addToast: (toast) => {
-    const id = Math.random().toString(36).substring(7);
+    const id = generateToastId();
     set((state) => ({
       toasts: [...state.toasts, { ...toast, id }],
     }));

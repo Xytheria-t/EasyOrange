@@ -126,9 +126,10 @@ export function ForgotPasswordPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     maxLength={11}
+                    data-testid="input-forgot-phone"
                   />
                 </div>
-                <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleSendCode} disabled={countdown > 0}>
+                <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleSendCode} disabled={countdown > 0} data-testid="btn-send-code">
                   {countdown > 0 ? `${countdown}s 后重新发送` : '发送验证码'}
                 </button>
               </>
@@ -147,6 +148,7 @@ export function ForgotPasswordPage() {
                       onChange={(e) => setVerifyCode(e.target.value)}
                       maxLength={6}
                       style={{ flex: 1 }}
+                      data-testid="input-verify-code"
                     />
                     <button
                       className="btn btn-secondary btn-md"
@@ -158,7 +160,7 @@ export function ForgotPasswordPage() {
                     </button>
                   </div>
                 </div>
-                <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleVerifyCode}>
+                <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleVerifyCode} data-testid="btn-verify-next">
                   下一步
                 </button>
               </>
@@ -174,6 +176,7 @@ export function ForgotPasswordPage() {
                     placeholder="需包含大小写字母和数字，6-20位"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    data-testid="input-new-password"
                   />
                 </div>
                 <div className="form-group">
@@ -184,9 +187,10 @@ export function ForgotPasswordPage() {
                     placeholder="再次输入新密码"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
+                    data-testid="input-confirm-new-password"
                   />
                 </div>
-                <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleResetPassword} disabled={isLoading}>
+                <button className="btn btn-primary btn-lg" style={{ width: '100%' }} onClick={handleResetPassword} disabled={isLoading} data-testid="btn-reset-password">
                   {isLoading ? '重置中...' : '重置密码'}
                 </button>
               </>

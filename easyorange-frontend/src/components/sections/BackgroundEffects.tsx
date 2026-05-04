@@ -14,6 +14,7 @@ export default function BackgroundEffects() {
   const timeRef = useRef(0);
   const mouseRef = useRef({ x: 0.5, y: 0.5 });
   const smoothMouseRef = useRef({ x: 0.5, y: 0.5 });
+  const isVisibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -39,7 +40,22 @@ export default function BackgroundEffects() {
       ctx!.scale(dpr, dpr);
     }
 
-    function draw() {
+    let lastFrameTime = 0;
+    const targetFrameInterval = 1000 / 30; // 限制 30fps，减少 CPU 占用
+
+    function draw(currentTime: number) {
+      if (!isVisibleRef.current) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+
+      // 帧率控制
+      if (currentTime - lastFrameTime < targetFrameInterval) {
+        animationRef.current = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrameTime = currentTime;
+
       if (!ctx || !canvas) return;
       const width = window.innerWidth;
       const height = window.innerHeight;
@@ -56,7 +72,7 @@ export default function BackgroundEffects() {
         const time = timeRef.current * wave.speed + wave.offset;
         const mouseInfluence = (index % 2 === 0 ? 1 : -1) * 20;
 
-        for (let x = 0; x <= width; x += 4) {
+        for (let x = 0; x <= width; x += 6) { // 增大步长，减少计算量
           const normalizedX = x / width;
           const distToMouse = Math.abs(normalizedX - smoothMouseRef.current.x);
           const mouseEffect = Math.max(0, 1 - distToMouse * 3) * mouseInfluence;
@@ -93,16 +109,22 @@ export default function BackgroundEffects() {
       };
     }
 
+    function handleVisibilityChange() {
+      isVisibleRef.current = !document.hidden;
+    }
+
     resize();
-    draw();
+    draw(0);
 
     window.addEventListener('resize', resize);
     window.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelAnimationFrame(animationRef.current);
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

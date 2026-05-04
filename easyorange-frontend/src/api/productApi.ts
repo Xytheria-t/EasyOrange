@@ -94,7 +94,8 @@ export const productApi = {
 
     incrementView(id: number) {
         return request<void>(`/products/${id}/view`, {
-            method: 'POST'
+            method: 'POST',
+            skipAuth: true
         });
     }
 };

@@ -50,7 +50,7 @@ export function createImage(
     }
     if (options.className) {img.className = options.className;}
     img.onerror = () => {
-        img.src = 'https://picsum.photos/seed/placeholder/400/400';
+        img.src = 'https://dummyimage.com/400x400/cccccc/999999.png&text=Image+Error';
         img.classList.add('image-error');
         options.onError?.();
     };

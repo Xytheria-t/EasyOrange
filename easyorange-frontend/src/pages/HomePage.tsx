@@ -1,7 +1,6 @@
 import HeroSection from '@/components/sections/HeroSection'
 import CategoriesSection from '@/components/sections/CategoriesSection'
 import ProductsSection from '@/components/sections/ProductsSection'
-import FeaturedSection from '@/components/sections/FeaturedSection'
 import ServicesSection from '@/components/sections/ServicesSection'
 import { useScrollReveal } from '@/hooks'
 
@@ -18,11 +17,8 @@ function HomePage() {
       {/* 热门商品 */}
       <ProductsSection />
 
-      {/* 服务保障 */}
+      {/* 平台保障 */}
       <ServicesSection />
-
-      {/* 平台优势 */}
-      <FeaturedSection />
     </>
   )
 }

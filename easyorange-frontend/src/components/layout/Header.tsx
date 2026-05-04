@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
+import { useUIStore } from '@/store/uiStore'
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -12,6 +13,7 @@ export function Header() {
   const location = useLocation()
   const navigate = useNavigate()
   const { token, user, logout } = useAuthStore()
+  const addToast = useUIStore((s) => s.addToast)
   const isLoggedIn = !!token
 
   const handleLoginClick = () => {
@@ -20,6 +22,8 @@ export function Header() {
 
   const handleLogoutClick = () => {
     logout()
+    setIsUserMenuOpen(false)
+    addToast({ type: 'success', message: '已退出登录' })
     navigate('/')
   }
 
@@ -122,9 +126,14 @@ export function Header() {
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               aria-expanded={isUserMenuOpen}
               aria-haspopup="true"
+              data-testid="btn-user-menu"
             >
               <div className="floating-nav__user-avatar">
-                {(user?.nickname || user?.username || '用').charAt(0)}
+                {user?.avatar ? (
+                  <img src={user.avatar} alt="头像" className="floating-nav__user-avatar-img" />
+                ) : (
+                  (user?.nickname || user?.username || '用').charAt(0)
+                )}
               </div>
               <span className="floating-nav__user-name">
                 {user?.nickname || user?.username || '用户'}
@@ -141,7 +150,7 @@ export function Header() {
             </button>
 
             <div className="floating-nav__user-menu">
-              <Link to="/profile" className="floating-nav__menu-item" onClick={() => setIsUserMenuOpen(false)}>
+              <Link to="/profile" className="floating-nav__menu-item" onClick={() => setIsUserMenuOpen(false)} data-testid="menu-item-profile">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
@@ -162,7 +171,7 @@ export function Header() {
                 <span>我的订单</span>
               </Link>
               <div className="floating-nav__menu-divider" />
-              <button className="floating-nav__menu-item floating-nav__menu-item--logout" onClick={handleLogoutClick}>
+              <button className="floating-nav__menu-item floating-nav__menu-item--logout" onClick={handleLogoutClick} data-testid="btn-logout">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
@@ -175,7 +184,7 @@ export function Header() {
 
           {/* 登录按钮 */}
           {isLoggedIn ? null : (
-            <button className="floating-nav__login-btn" onClick={handleLoginClick}>
+            <button className="floating-nav__login-btn" onClick={handleLoginClick} data-testid="btn-login">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />

@@ -11,14 +11,16 @@ export const userApi = {
     login(data: LoginRequest) {
         return request<LoginResponse>('/auth/login', {
             method: 'POST',
-            body: { ...data, clientType: 'web' }
+            body: { ...data, clientType: 'web' },
+            skipAuth: true
         });
     },
 
     register(data: RegisterRequest) {
         return request<number>('/auth/register', {
             method: 'POST',
-            body: data
+            body: data,
+            skipAuth: true
         });
     },
 

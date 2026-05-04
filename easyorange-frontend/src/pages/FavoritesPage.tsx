@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Trash2, RefreshCw, ArrowRight, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Trash2, RefreshCw, ArrowRight, Sparkles, MapPin, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { favoriteApi } from '@/api/favoriteApi';
 import { useUIStore } from '@/store/uiStore';
 import { CONDITION_LABEL_MAP, type Favorite } from '@/types';
+import { Image } from '@/components/ui/Image';
 import '@/styles/favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -89,12 +90,20 @@ export function FavoritesPage() {
     removeMutation.mutate(productId);
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatPrice = (price: number) => {
+    return price % 1 === 0 ? price.toString() : price.toFixed(2);
+  };
+
+  const formatRelativeTime = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (days === 0) return '今天';
+    const minutes = Math.floor(diff / (1000 * 60));
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}小时前`;
+    const days = Math.floor(hours / 24);
     if (days === 1) return '昨天';
     if (days < 7) return `${days}天前`;
     if (days < 30) return `${Math.floor(days / 7)}周前`;
@@ -246,6 +255,13 @@ export function FavoritesPage() {
 
               const conditionLabel = CONDITION_LABEL_MAP[product.condition] ?? '';
               const conditionIcon = CONDITION_ICONS[product.condition] ?? '';
+              const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
+              const discountPercent = hasDiscount
+                ? Math.round((1 - product.price / product.originalPrice!) * 100)
+                : 0;
+              const isHot = product.views != null && product.views > 200;
+              const quickLocation = product.location?.trim() || '校内面交';
+              const sellerName = product.username || '匿名用户';
 
               return (
                 <div
@@ -254,17 +270,14 @@ export function FavoritesPage() {
                   onClick={() => navigate(`/products/${product.id}`)}
                 >
                   <div className="fav-card-image">
-                    {product.images?.[0] ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.title}
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="placeholder-icon">
-                        <ImageIcon />
-                      </div>
-                    )}
+                    <Image
+                      src={product.images?.[0] || ''}
+                      alt={product.title}
+                      loading="lazy"
+                      placeholder="blur"
+                      containerClassName="fav-card-img-wrap"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
 
                     <div className="fav-card-checkbox">
                       <input
@@ -292,26 +305,83 @@ export function FavoritesPage() {
                       </svg>
                     </button>
 
-                    {conditionLabel && (
-                      <div className="fav-card-condition">
-                        {conditionIcon} {conditionLabel}
-                      </div>
-                    )}
+                    <div className="fav-card-badges">
+                      {conditionLabel && (
+                        <span className="fav-badge fav-badge-condition">
+                          {conditionIcon} {conditionLabel}
+                        </span>
+                      )}
+                      {hasDiscount && (
+                        <span className="fav-badge fav-badge-discount">
+                          -{discountPercent}%
+                        </span>
+                      )}
+                      {isHot && (
+                        <span className="fav-badge fav-badge-hot">
+                          <span className="hot-pulse" />
+                          热门
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="fav-card-quick-meta">
+                      <span className="fav-quick-pill">
+                        <MapPin size={11} strokeWidth={2.5} /> {quickLocation}
+                      </span>
+                      <span className="fav-quick-pill">
+                        <Clock size={11} strokeWidth={2.5} /> {formatRelativeTime(product.createTime)}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="fav-card-content">
-                    {product.categoryName && (
-                      <span className="fav-card-category">{product.categoryName}</span>
-                    )}
+                    <div className="fav-card-eyebrow">
+                      {product.categoryName && (
+                        <span className="fav-card-category">{product.categoryName}</span>
+                      )}
+                      <span className={`fav-card-signal${isHot ? ' is-hot' : ''}`}>
+                        {product.views != null && product.views > 0
+                          ? `${product.views}次浏览`
+                          : '新上架'}
+                      </span>
+                    </div>
+
                     <h3 className="fav-card-title">{product.title}</h3>
-                    <div className="fav-card-footer">
+
+                    <div className="fav-card-price-row">
                       <div className="fav-card-price">
-                        <span className="price-current">¥{product.price?.toFixed(2)}</span>
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="price-original">¥{product.originalPrice.toFixed(2)}</span>
+                        <span className="price-current">¥{formatPrice(product.price)}</span>
+                        {hasDiscount && (
+                          <span className="price-original">¥{formatPrice(product.originalPrice!)}</span>
                         )}
                       </div>
-                      <span className="fav-card-time">{formatDate(fav.createTime)}</span>
+                      {hasDiscount && (
+                        <span className="fav-card-savings">
+                          省 ¥{formatPrice(product.originalPrice! - product.price)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="fav-card-seller">
+                      {product.userAvatar ? (
+                        <>
+                          <div className="fav-seller-avatar">
+                            <Image
+                              src={product.userAvatar}
+                              alt={sellerName}
+                              loading="lazy"
+                              placeholder="skeleton"
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                            />
+                          </div>
+                          <span className="fav-seller-name">{sellerName}</span>
+                        </>
+                      ) : (
+                        <span className="fav-seller-name fav-seller-anon">{sellerName}</span>
+                      )}
+                      <span className="fav-card-fav-time">
+                        <Clock size={11} strokeWidth={2} /> {formatRelativeTime(fav.createTime)}收藏
+                      </span>
                     </div>
                   </div>
                 </div>

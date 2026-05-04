@@ -1,52 +1,161 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { Image } from '@/components/ui/Image'
+import { statsApi, type PlatformStats } from '@/api/statsApi'
+
+const HERO_PRODUCT = {
+  image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
+  tag: '热门',
+  name: 'MacBook Pro 14寸 M3芯片 深空灰',
+  price: '¥11,999',
+  originalPrice: '¥14,999'
+}
+
+const DEFAULT_STATS: PlatformStats = {
+  activeUsers: 0,
+  onlineProducts: 0,
+  completedOrders: 0
+}
+
+function animateCounter(el: HTMLSpanElement, target: number) {
+  if (!target) {
+    el.textContent = '0'
+    return
+  }
+
+  const duration = 2000
+  const startTime = performance.now()
+
+  const animate = (currentTime: number) => {
+    const elapsed = currentTime - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+    const current = Math.floor(eased * target)
+
+    const shouldUpdate = progress === 1 || elapsed % 48 < 16
+    if (shouldUpdate) {
+      el.textContent = current.toLocaleString()
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      el.textContent = `${target.toLocaleString()}+`
+    }
+  }
+
+  requestAnimationFrame(animate)
+}
 
 export default function HeroSection() {
   const heroRef = useRef<HTMLElement>(null)
   const statRefs = useRef<(HTMLSpanElement | null)[]>([])
-  const [countersStarted, setCountersStarted] = useState(false)
+  const floatCardsRef = useRef<(HTMLDivElement | null)[]>([])
+  const [stats, setStats] = useState<PlatformStats>(DEFAULT_STATS)
+  const statsFetchedRef = useRef(false)
 
   useEffect(() => {
-    if (countersStarted) return
-    setCountersStarted(true)
+    if (statsFetchedRef.current) { return }
+    statsFetchedRef.current = true
+
+    statsApi.getPlatformStats()
+      .then((res) => {
+        if (res.data) {
+          setStats(res.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const startCounters = useCallback(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) { return }
+          const el = entry.target as HTMLSpanElement
+          const target = parseInt(el.dataset.count || '0', 10)
+          animateCounter(el, target)
+          observer.unobserve(el)
+        })
+      },
+      { threshold: 0.5 }
+    )
 
     statRefs.current.forEach((el) => {
-      if (!el) return
-      const target = parseInt(el.dataset.count || '0', 10)
-      if (!target) return
+      if (el) { observer.observe(el) }
+    })
 
-      const duration = 2000
-      const startTime = performance.now()
+    return () => observer.disconnect()
+  }, [])
 
-      const animate = (currentTime: number) => {
-        const elapsed = currentTime - startTime
-        const progress = Math.min(elapsed / duration, 1)
-        const eased = 1 - Math.pow(1 - progress, 3)
-        const current = Math.floor(eased * target)
+  useEffect(() => {
+    const cleanup = startCounters()
+    return cleanup
+  }, [startCounters, stats])
 
-        el.textContent = current.toLocaleString()
+  useEffect(() => {
+    const cards = floatCardsRef.current.filter(Boolean)
+    const visualCard = document.querySelector('.visual-card') as HTMLElement
 
-        if (progress < 1) {
-          requestAnimationFrame(animate)
-        } else {
-          el.textContent = target.toLocaleString()
-          if (target === 100) el.textContent = target + '+'
-          else if (target === 10000) el.textContent = target.toLocaleString() + '+'
-          else if (target === 50000) el.textContent = target.toLocaleString() + '+'
-        }
+    const handleMouseMove = (e: MouseEvent, card: HTMLDivElement) => {
+      const rect = card.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+      const mouseX = e.clientX - centerX
+      const mouseY = e.clientY - centerY
+
+      const rotateX = (mouseY / (rect.height / 2)) * -12
+      const rotateY = (mouseX / (rect.width / 2)) * 12
+
+      card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.08) translateZ(20px)`
+    }
+
+    cards.forEach((card) => {
+      if (!card) { return }
+
+      const onMove = (e: MouseEvent) => handleMouseMove(e, card)
+      const onLeave = () => {
+        card.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
+        card.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)'
+        setTimeout(() => {
+          card.style.transition = ''
+        }, 500)
       }
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) {
-            requestAnimationFrame(animate)
-            observer.disconnect()
-          }
-        },
-        { threshold: 0.5 }
-      )
-      observer.observe(el)
+      card.addEventListener('mousemove', onMove)
+      card.addEventListener('mouseleave', onLeave)
     })
-  }, [countersStarted])
+
+    if (visualCard) {
+      const onMove = (e: MouseEvent) => {
+        const rect = visualCard.getBoundingClientRect()
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        const mouseX = e.clientX - centerX
+        const mouseY = e.clientY - centerY
+
+        const rotateX = (mouseY / (rect.height / 2)) * -6
+        const rotateY = (mouseX / (rect.width / 2)) * 6
+
+        visualCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`
+      }
+
+      const onLeave = () => {
+        visualCard.style.transition = 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)'
+        visualCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)'
+        setTimeout(() => {
+          visualCard.style.transition = ''
+        }, 600)
+      }
+
+      visualCard.addEventListener('mousemove', onMove)
+      visualCard.addEventListener('mouseleave', onLeave)
+
+      return () => {
+        visualCard.removeEventListener('mousemove', onMove)
+        visualCard.removeEventListener('mouseleave', onLeave)
+      }
+    }
+  }, [])
 
   return (
     <section className="hero-section" ref={heroRef}>
@@ -115,18 +224,18 @@ export default function HeroSection() {
 
           <div className="hero-stats animate-slide-up delay-3">
             <div className="stat-item">
-              <span className="stat-value" data-count="10000" ref={(el) => { statRefs.current[0] = el }}>0</span>
+              <span className="stat-value" data-count={String(stats.activeUsers)} ref={(el) => { statRefs.current[0] = el }}>0</span>
               <span className="stat-label">活跃用户</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat-item">
-              <span className="stat-value" data-count="50000" ref={(el) => { statRefs.current[1] = el }}>0</span>
+              <span className="stat-value" data-count={String(stats.onlineProducts)} ref={(el) => { statRefs.current[1] = el }}>0</span>
               <span className="stat-label">在售商品</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat-item">
-              <span className="stat-value" data-count="100" ref={(el) => { statRefs.current[2] = el }}>0</span>
-              <span className="stat-label">合作高校</span>
+              <span className="stat-value" data-count={String(stats.completedOrders)} ref={(el) => { statRefs.current[2] = el }}>0</span>
+              <span className="stat-label">成功交易</span>
             </div>
           </div>
         </div>
@@ -138,30 +247,68 @@ export default function HeroSection() {
             <div className="card-content">
               <div className="product-preview">
                 <div className="preview-image">
-                  <img src="https://picsum.photos/seed/hero-product/400/400" alt="热门商品" loading="lazy" />
+                  <Image
+                    src={HERO_PRODUCT.image}
+                    alt={HERO_PRODUCT.name}
+                    containerClassName="w-full h-full"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    placeholder="blur"
+                  />
                 </div>
                 <div className="preview-info">
-                  <span className="preview-tag">热门</span>
-                  <h4>MacBook Pro 2023</h4>
-                  <p className="preview-price">¥6,999</p>
-                  <span className="preview-original">原价 ¥12,999</span>
+                  <span className="preview-tag">{HERO_PRODUCT.tag}</span>
+                  <h4>{HERO_PRODUCT.name}</h4>
+                  <p className="preview-price">{HERO_PRODUCT.price}</p>
+                  <span className="preview-original">原价 {HERO_PRODUCT.originalPrice}</span>
                 </div>
               </div>
             </div>
           </div>
           <div className="floating-cards">
-            <div className="float-card float-card-1 glass-card-premium">
-              <span className="float-icon">📚</span>
-              <span>教材资料</span>
+            <div className="float-card float-card-1 glass-card-premium" ref={(el) => { floatCardsRef.current[0] = el }}>
+              <div className="float-card-glow"></div>
+              <div className="float-card-inner">
+                <span className="float-icon">📚</span>
+                <span className="float-text">教材资料</span>
+                <span className="float-particles"></span>
+              </div>
             </div>
-            <div className="float-card float-card-2 glass-card-premium">
-              <span className="float-icon">💻</span>
-              <span>电子产品</span>
+            <div className="float-card float-card-2 glass-card-premium" ref={(el) => { floatCardsRef.current[1] = el }}>
+              <div className="float-card-glow"></div>
+              <div className="float-card-inner">
+                <span className="float-icon">💻</span>
+                <span className="float-text">电子产品</span>
+                <span className="float-particles"></span>
+              </div>
             </div>
-            <div className="float-card float-card-3 glass-card-premium">
-              <span className="float-icon">🚴</span>
-              <span>交通工具</span>
+            <div className="float-card float-card-3 glass-card-premium" ref={(el) => { floatCardsRef.current[2] = el }}>
+              <div className="float-card-glow"></div>
+              <div className="float-card-inner">
+                <span className="float-icon">🚴</span>
+                <span className="float-text">交通工具</span>
+                <span className="float-particles"></span>
+              </div>
             </div>
+            <svg className="float-connections" viewBox="0 0 400 400" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="lineGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(249, 115, 22, 0.15)" />
+                  <stop offset="100%" stopColor="rgba(249, 115, 22, 0.05)" />
+                </linearGradient>
+                <linearGradient id="lineGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(244, 63, 94, 0.12)" />
+                  <stop offset="100%" stopColor="rgba(244, 63, 94, 0.03)" />
+                </linearGradient>
+                <linearGradient id="lineGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(251, 191, 36, 0.12)" />
+                  <stop offset="100%" stopColor="rgba(251, 191, 36, 0.03)" />
+                </linearGradient>
+              </defs>
+              <path className="connection-line line-1" d="M 60 80 Q 120 120 180 140" stroke="url(#lineGrad1)" strokeWidth="1" fill="none" strokeDasharray="4 6" />
+              <path className="connection-line line-2" d="M 340 160 Q 280 180 220 200" stroke="url(#lineGrad2)" strokeWidth="1" fill="none" strokeDasharray="4 6" />
+              <path className="connection-line line-3" d="M 80 320 Q 140 280 180 260" stroke="url(#lineGrad3)" strokeWidth="1" fill="none" strokeDasharray="4 6" />
+            </svg>
           </div>
         </div>
       </div>
@@ -175,21 +322,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* 底部波浪过渡 */}
-      <div className="hero-wave-bottom">
-        <svg viewBox="0 0 1440 80" preserveAspectRatio="none">
-          <path
-            d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 L1440,80 L0,80 Z"
-            fill="#FAF8F5"
-            opacity="0.8"
-          />
-          <path
-            d="M0,50 C360,90 720,10 1080,50 C1260,70 1350,60 1440,50 L1440,80 L0,80 Z"
-            fill="#FAF8F5"
-            opacity="0.5"
-          />
-        </svg>
-      </div>
+
     </section>
   )
 }

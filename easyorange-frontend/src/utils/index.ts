@@ -22,9 +22,6 @@ export {
 // 类名工具
 export { cn } from './cn.js';
 
-// Toast 消息提示
-export { toast, ToastUtils } from './toast.js';
-
 // 模态框管理
 export { modalManager, ModalManager } from './modalManager.js';
 
@@ -36,7 +33,7 @@ export { debounce, throttle } from './function.js';
 export type { DebounceOptions } from './function.js';
 
 // 商品工具
-export { calculateDiscount, getConditionNameFromString, isHotProduct } from './product.js';
+export { calculateDiscount, getConditionNameFromString, isHotProduct, normalizeProduct } from './product.js';
 
 // 元素创建工具
 export {

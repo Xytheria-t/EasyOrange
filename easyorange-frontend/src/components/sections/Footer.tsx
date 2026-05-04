@@ -1,4 +1,34 @@
+import { useEffect, useRef, useState } from 'react'
+import { statsApi, type PlatformStats } from '@/api/statsApi'
+
+const DEFAULT_STATS: PlatformStats = {
+  activeUsers: 0,
+  onlineProducts: 0,
+  completedOrders: 0
+}
+
+function formatStatValue(value: number): string {
+  if (value === 0) { return '0' }
+  return `${value.toLocaleString()}+`
+}
+
 export default function Footer() {
+  const [stats, setStats] = useState<PlatformStats>(DEFAULT_STATS)
+  const statsFetchedRef = useRef(false)
+
+  useEffect(() => {
+    if (statsFetchedRef.current) { return }
+    statsFetchedRef.current = true
+
+    statsApi.getPlatformStats()
+      .then((res) => {
+        if (res.data) {
+          setStats(res.data)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   return (
     <footer className="footer-editorial">
       <div className="footer-gradient-bg"></div>
@@ -59,13 +89,13 @@ export default function Footer() {
           <div className="footer-right-column">
             <div className="footer-stats-row">
               <div className="stat-item-compact">
-                <span className="stat-value-lg">1000+</span>
+                <span className="stat-value-lg">{formatStatValue(stats.activeUsers)}</span>
                 <span className="stat-label-sm">活跃用户</span>
               </div>
               <div className="stat-divider-vertical"></div>
               <div className="stat-item-compact">
-                <span className="stat-value-lg">500+</span>
-                <span className="stat-label-sm">每日上新</span>
+                <span className="stat-value-lg">{formatStatValue(stats.completedOrders)}</span>
+                <span className="stat-label-sm">成功交易</span>
               </div>
             </div>
             <div className="footer-nav-compact">

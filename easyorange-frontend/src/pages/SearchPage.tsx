@@ -1,25 +1,26 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Search, X, TrendingUp, ArrowLeft, Clock, Sparkles, PackageSearch,
-    Zap, ShoppingBag, Smartphone, BookOpen, Home, Gift, Gamepad2,
-    Palette, Dumbbell, Flame, Star, ChevronRight, History, Trash2
+    Zap, ShoppingBag, Smartphone, BookOpen, Home, Gift,
+    Dumbbell, Flame, Star, ChevronRight, History, Trash2
 } from 'lucide-react';
-import { useProductSearch, useSearchSuggestions, useHotKeywords } from '@/hooks';
+import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories } from '@/hooks';
 import { ProductCard } from '@/components/sections/ProductCard';
+import { debounce } from '@/utils';
 import '@/styles/main.css';
 import './SearchPage.css';
 
-const CATEGORY_ICONS = [
-    { name: '数码电子', icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
-    { name: '服饰穿搭', icon: ShoppingBag, color: '#EC4899', bg: '#FDF2F8' },
-    { name: '图书文具', icon: BookOpen, color: '#10B981', bg: '#ECFDF5' },
-    { name: '家居生活', icon: Home, color: '#F59E0B', bg: '#FFFBEB' },
-    { name: '美妆护肤', icon: Palette, color: '#8B5CF6', bg: '#F5F3FF' },
-    { name: '运动户外', icon: Dumbbell, color: '#EF4444', bg: '#FEF2F2' },
-    { name: '游戏娱乐', icon: Gamepad2, color: '#6366F1', bg: '#EEF2FF' },
-    { name: '礼品周边', icon: Gift, color: '#F97316', bg: '#FFF7ED' },
-];
+const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
+    '电子数码': { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
+    '书籍教材': { icon: BookOpen, color: '#10B981', bg: '#ECFDF5' },
+    '服饰鞋包': { icon: ShoppingBag, color: '#EC4899', bg: '#FDF2F8' },
+    '生活用品': { icon: Home, color: '#F59E0B', bg: '#FFFBEB' },
+    '运动健身': { icon: Dumbbell, color: '#EF4444', bg: '#FEF2F2' },
+    '虚拟物品': { icon: Gift, color: '#8B5CF6', bg: '#F5F3FF' },
+};
+
+const DEFAULT_CATEGORY_ICON = { icon: Gift, color: '#F97316', bg: '#FFF7ED' };
 
 const TRENDING_TOPICS = [
     { title: '春季新品', subtitle: '焕新季', desc: '发现最新潮流单品', color: '#F97316', icon: Flame },
@@ -44,15 +45,24 @@ export function SearchPage() {
         }
     });
 
+    const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword);
+
     const { data: searchResult, isLoading: isSearching } = useProductSearch(submittedKeyword, {
         pageNum: 1,
         pageSize: 20,
     });
-    const { data: suggestions } = useSearchSuggestions(keyword);
+    const { data: suggestions } = useSearchSuggestions(debouncedKeyword);
     const { data: hotKeywords } = useHotKeywords(10);
+    const { data: categories } = useCategories();
 
     const products = searchResult?.records ?? [];
     const total = searchResult?.total ?? 0;
+
+    // 防抖处理搜索输入，避免频繁请求建议
+    const debouncedSetKeyword = useMemo(
+        () => debounce((value: unknown) => { setDebouncedKeyword(value as string); }, 300),
+        []
+    );
 
     useEffect(() => {
         inputRef.current?.focus();
@@ -94,6 +104,7 @@ export function SearchPage() {
 
     const handleSuggestionClick = (suggestion: string) => {
         setKeyword(suggestion);
+        setDebouncedKeyword(suggestion);
         setSubmittedKeyword(suggestion);
         setShowSuggestions(false);
         addToHistory(suggestion);
@@ -101,16 +112,29 @@ export function SearchPage() {
 
     const handleHotKeywordClick = (kw: string) => {
         setKeyword(kw);
+        setDebouncedKeyword(kw);
         setSubmittedKeyword(kw);
         setShowSuggestions(false);
         addToHistory(kw);
     };
 
+    const handleCategoryClick = (categoryId: number) => {
+        navigate(`/products?category=${categoryId}`);
+    };
+
     const handleClear = () => {
         setKeyword('');
+        setDebouncedKeyword('');
         setSubmittedKeyword('');
         inputRef.current?.focus();
     };
+
+    const handleKeywordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setKeyword(value);
+        setShowSuggestions(true);
+        debouncedSetKeyword(value);
+    }, [debouncedSetKeyword]);
 
     const handleMouseMove = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -146,10 +170,7 @@ export function SearchPage() {
                                 ref={inputRef}
                                 type="text"
                                 value={keyword}
-                                onChange={e => {
-                                    setKeyword(e.target.value);
-                                    setShowSuggestions(true);
-                                }}
+                                onChange={handleKeywordChange}
                                 onFocus={() => setShowSuggestions(true)}
                                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                 placeholder="搜索你想要的商品..."
@@ -265,19 +286,23 @@ export function SearchPage() {
                                 <h3 className="search-section-title-compact">分类浏览</h3>
                             </div>
                             <div className="search-categories-grid">
-                                {CATEGORY_ICONS.map(cat => (
-                                    <button
-                                        key={cat.name}
-                                        className="search-category-card"
-                                        onClick={() => handleHotKeywordClick(cat.name)}
-                                        style={{ '--cat-color': cat.color, '--cat-bg': cat.bg } as React.CSSProperties}
-                                    >
-                                        <div className="search-category-icon">
-                                            <cat.icon size={20} />
-                                        </div>
-                                        <span className="search-category-name">{cat.name}</span>
-                                    </button>
-                                ))}
+                                {categories?.map(cat => {
+                                    const iconConfig = CATEGORY_ICON_MAP[cat.name] || DEFAULT_CATEGORY_ICON;
+                                    const IconComponent = iconConfig.icon;
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            className="search-category-card"
+                                            onClick={() => handleCategoryClick(cat.id)}
+                                            style={{ '--cat-color': iconConfig.color, '--cat-bg': iconConfig.bg } as React.CSSProperties}
+                                        >
+                                            <div className="search-category-icon">
+                                                <IconComponent size={20} />
+                                            </div>
+                                            <span className="search-category-name">{cat.name}</span>
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 

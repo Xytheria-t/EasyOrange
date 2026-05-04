@@ -3,8 +3,6 @@
  * @description 提供网络状态检测功能
  */
 
-import { toast } from './toast.js';
-
 export type NetworkChangeCallback = (online: boolean) => void;
 export type Unsubscribe = () => void;
 
@@ -28,9 +26,31 @@ class NetworkUtils {
             this._notifyListeners(false);
         });
 
-        this._checkInterval = setInterval(() => {
-            this.checkConnectivity();
-        }, 30000);
+        // 页面可见时才启动轮询，减少后台资源占用
+        const startPolling = () => {
+            if (this._checkInterval) clearInterval(this._checkInterval);
+            this._checkInterval = setInterval(() => {
+                this.checkConnectivity();
+            }, 30000);
+        };
+
+        const stopPolling = () => {
+            if (this._checkInterval) {
+                clearInterval(this._checkInterval);
+                this._checkInterval = null;
+            }
+        };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopPolling();
+            } else {
+                startPolling();
+                this.checkConnectivity();
+            }
+        });
+
+        startPolling();
     }
 
     private _notifyListeners(online: boolean): void {
@@ -58,7 +78,6 @@ class NetworkUtils {
             this._online = response.ok;
 
             if (wasOffline && this._online) {
-                toast.success('网络连接已恢复');
                 this._notifyListeners(true);
             }
 
@@ -68,7 +87,6 @@ class NetworkUtils {
             this._online = false;
 
             if (wasOnline) {
-                toast.error('网络连接已断开');
                 this._notifyListeners(false);
             }
 

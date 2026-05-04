@@ -1,5 +1,4 @@
 import { storage } from '../../utils/index.js';
-import { navigation } from '../../routes/navigation.js';
 import { request } from '../../api/core/request.js';
 import { useAuthStore } from '../../store/authStore.js';
 
@@ -31,6 +30,8 @@ let unauthorizedRedirectInFlight = false;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 let isRefreshing = false;
 let refreshSubscribers: Array<(token: string) => void> = [];
+let lastLoginTimestamp = 0;
+const LOGIN_GRACE_PERIOD_MS = 5000;
 
 export function subscribeTokenRefresh(callback: (token: string) => void): () => void {
     refreshSubscribers.push(callback);
@@ -53,14 +54,6 @@ function emitAuthSessionChange(reason?: AuthSessionClearReason): void {
     };
 
     window.dispatchEvent(new CustomEvent<AuthSessionDetail>(AUTH_SESSION_CHANGE_EVENT, { detail }));
-}
-
-function getUnauthorizedRedirectQuery(): Record<string, string> | undefined {
-    const currentPath = `${window.location.pathname}${window.location.search}`;
-    if (!currentPath || currentPath === '/') {
-        return undefined;
-    }
-    return { redirect: currentPath };
 }
 
 export function getStoredToken(): string | null {
@@ -174,7 +167,13 @@ export async function refreshAccessToken(): Promise<string | null> {
 
         return response.data;
     } catch {
-        handleUnauthorized();
+        clearAllStores('unauthorized');
+        useAuthStore.setState({
+            user: null,
+            token: null,
+            refreshToken: null,
+            isAuthenticated: false,
+        });
         return null;
     } finally {
         isRefreshing = false;
@@ -183,6 +182,7 @@ export async function refreshAccessToken(): Promise<string | null> {
 
 export function setSession(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
     syncAllStores(token, user, expiresAt, refreshToken);
+    lastLoginTimestamp = Date.now();
     unauthorizedRedirectInFlight = false;
     emitAuthSessionChange();
 }
@@ -213,10 +213,21 @@ export function handleUnauthorized(): void {
         return;
     }
 
+    const timeSinceLogin = Date.now() - lastLoginTimestamp;
+    if (lastLoginTimestamp > 0 && timeSinceLogin < LOGIN_GRACE_PERIOD_MS) {
+        return;
+    }
+
     unauthorizedRedirectInFlight = true;
     useAuthStore.getState().logout();
     clearSession('unauthorized');
-    navigation.replace('home', getUnauthorizedRedirectQuery());
+
+    const currentPath = `${window.location.pathname}${window.location.search}`;
+    const redirectQuery = currentPath && currentPath !== '/' ? { redirect: currentPath } : undefined;
+    const loginPath = redirectQuery
+        ? `/login?redirect=${encodeURIComponent(redirectQuery.redirect)}`
+        : '/login';
+    window.location.href = loginPath;
 }
 
 export function initTokenRefresh(): void {

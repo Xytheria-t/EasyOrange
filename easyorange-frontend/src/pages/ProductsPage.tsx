@@ -1,7 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { useProducts } from '@/hooks';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { X } from 'lucide-react';
+import { useProducts, useCategories } from '@/hooks';
 import { ProductCard } from '@/components/sections/ProductCard';
 
 import { ToolsPlaza } from '@/components/products/ToolsPlaza';
@@ -12,13 +14,39 @@ import { useUIStore } from '@/store/uiStore';
 import type { ProductQueryParams, Product } from '@/types';
 import '@/styles/products-premium.css';
 
+function useColumnCount() {
+  const [columnCount, setColumnCount] = useState(() => {
+    if (typeof window === 'undefined') return 4;
+    const width = window.innerWidth;
+    if (width <= 480) return 2;
+    if (width <= 768) return 2;
+    if (width <= 1200) return 3;
+    return 4;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width <= 480) setColumnCount(2);
+      else if (width <= 768) setColumnCount(2);
+      else if (width <= 1200) setColumnCount(3);
+      else setColumnCount(4);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return columnCount;
+}
+
 export function ProductsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { token } = useAuthStore();
   const addToast = useUIStore((s) => s.addToast);
-  const initialCategoryId = searchParams.get('categoryId');
+  const initialCategoryId = searchParams.get('category') || searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -51,6 +79,32 @@ export function ProductsPage() {
   const products = data?.records ?? [];
   const total = data?.total ?? 0;
 
+  const { data: categories } = useCategories();
+  const currentCategory = useMemo(() => {
+    if (!params.categoryId || !categories) return null;
+    return categories.find(c => c.id === params.categoryId) || null;
+  }, [params.categoryId, categories]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const COLUMN_COUNT = useColumnCount();
+
+  const rows = useMemo(() => {
+    const result: Product[][] = [];
+    for (let i = 0; i < products.length; i += COLUMN_COUNT) {
+      result.push(products.slice(i, i + COLUMN_COUNT));
+    }
+    return result;
+  }, [products, COLUMN_COUNT]);
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 450,
+    overscan: 3,
+    measureElement: (el) => el?.getBoundingClientRect().height ?? 450,
+  });
+
   const sortOptions: { value: NonNullable<ProductQueryParams['sort']>; label: string }[] = [
     { value: 'newest', label: '最新发布' },
     { value: 'price_asc', label: '价格从低到高' },
@@ -58,14 +112,14 @@ export function ProductsPage() {
     { value: 'popular', label: '最受欢迎' },
   ];
 
-  const handleSortChange = (sort: NonNullable<ProductQueryParams['sort']>) => {
+  const handleSortChange = useCallback((sort: NonNullable<ProductQueryParams['sort']>) => {
     setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
-  };
+  }, []);
 
-  const handleFilterChange = (_filter: string) => {
-  };
+  const handleFilterChange = useCallback((_filter: string) => {
+  }, []);
 
-  const handleApplyFilters = (filters: FilterState) => {
+  const handleApplyFilters = useCallback((filters: FilterState) => {
     setParams(prev => ({
       ...prev,
       categoryId: filters.categories.length === 1 ? filters.categories[0] : undefined,
@@ -76,23 +130,27 @@ export function ProductsPage() {
       pageNum: 1,
     }));
     setIsFilterOpen(false);
-  };
+  }, []);
 
-  const handleResetFilters = () => {
+  const handleResetFilters = useCallback(() => {
     setParams({
       pageNum: 1,
       pageSize: 20,
       sort: 'newest',
     });
-  };
+  }, []);
 
-  const handleFavorite = async (productId: number, isFavorited: boolean) => {
+  const handleClearCategory = useCallback(() => {
+    setParams(prev => ({ ...prev, categoryId: undefined, pageNum: 1 }));
+  }, []);
+
+  const handleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
     if (!token) {
       navigate('/login');
       return;
     }
     try {
-      if (isFavorited) {
+      if (shouldFavorite) {
         await favoriteApi.add(productId);
         addToast({ type: 'success', message: '已收藏' });
       } else {
@@ -101,9 +159,13 @@ export function ProductsPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
     } catch {
-      addToast({ type: 'error', message: isFavorited ? '收藏失败' : '取消收藏失败' });
+      addToast({ type: 'error', message: shouldFavorite ? '收藏失败' : '取消收藏失败' });
     }
-  };
+  }, [token, navigate, addToast, queryClient]);
+
+  const handleLoadMore = useCallback(() => {
+    setParams((prev) => ({ ...prev, pageNum: (prev.pageNum || 1) + 1 }));
+  }, []);
 
   if (isLoading) {
     return (
@@ -146,6 +208,13 @@ export function ProductsPage() {
 
         <div className="products-toolbar">
           <div className="results-info">
+            {currentCategory && (
+              <button className="results-category" onClick={handleClearCategory}>
+                <span className="category-label">分类：</span>
+                <span className="category-name">{currentCategory.name}</span>
+                <X size={12} className="category-clear" />
+              </button>
+            )}
             <span className="results-count">{total}</span>
             <span className="results-text"> 件商品</span>
           </div>
@@ -180,24 +249,59 @@ export function ProductsPage() {
           </div>
         </div>
 
-        <div className="products-grid-premium">
-          {products.map((product: Product, index: number) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              index={index}
-              isFavorited={favoriteIds.has(product.id)}
-              onFavorite={handleFavorite}
-              onViewDetails={(id) => navigate(`/products/${id}`)}
-            />
-          ))}
+        <div
+          ref={parentRef}
+          style={{
+            height: 'calc(100vh - 300px)',
+            overflow: 'auto',
+            width: '100%',
+          }}
+        >
+          <div
+            style={{
+              height: `${virtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const row = rows[virtualRow.index];
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <div className="products-grid-premium">
+                    {row.map((product: Product, colIndex: number) => (
+                      <ProductCard
+                        key={product.id}
+                        product={product}
+                        index={virtualRow.index * COLUMN_COUNT + colIndex}
+                        isFavorited={favoriteIds.has(product.id)}
+                        onFavorite={handleFavorite}
+                        onViewDetails={(id) => navigate(`/products/${id}`)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
-        {products.length > 0 && (
+        {products.length > 0 && products.length < total && (
           <div className="load-more-premium">
             <button
               className="btn-load-more"
-              onClick={() => setParams((prev) => ({ ...prev, pageSize: (prev.pageSize || 20) + 20 }))}
+              onClick={handleLoadMore}
             >
               <span>加载更多</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">

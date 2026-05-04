@@ -249,7 +249,7 @@ export interface Category {
     icon: string | null;
     parentId: number | null;
     children?: Category[];
-    productCount: number;
+    productCount?: number;
 }
 
 export interface FavoriteProduct {

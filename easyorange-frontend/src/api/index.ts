@@ -13,6 +13,7 @@ import { reviewApi } from './reviewApi.js';
 import { activityApi, ACTIVITY_STATUS, ACTIVITY_TYPE_NAMES, ACTIVITY_STATUS_NAMES, type Activity, type ActivityType, type ActivityStatus, type CreateActivityRequest } from './activityApi.js';
 import { insuranceApi, INSURANCE_TYPE_NAMES, type Insurance, type InsuranceType, type InsuranceStatus, type ClaimStatus, calculatePremiumLocal } from './insuranceApi.js';
 import { paymentApi, type PaymentInfo, type CreatePaymentRequest, type PaymentResponse, type PaymentStatusResponse } from './paymentApi.js';
+import { statsApi, type PlatformStats } from './statsApi.js';
 
 export { ApiClientError } from './core/request.js';
 
@@ -28,6 +29,7 @@ export {
     activityApi,
     insuranceApi,
     paymentApi,
+    statsApi,
     uploadFile,
     uploadFiles,
     calculatePremiumLocal,
@@ -49,7 +51,8 @@ export type {
     PaymentInfo,
     CreatePaymentRequest,
     PaymentResponse,
-    PaymentStatusResponse
+    PaymentStatusResponse,
+    PlatformStats
 };
 
 // Default export for backward compatibility
@@ -69,7 +72,8 @@ const api = {
     activity: activityApi,
     activities: activityApi,
     insurance: insuranceApi,
-    payment: paymentApi
+    payment: paymentApi,
+    stats: statsApi
 };
 
 export default api;

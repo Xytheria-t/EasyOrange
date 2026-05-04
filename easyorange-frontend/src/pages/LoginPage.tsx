@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLogin, useRegister } from '@/hooks'
 import { userApi } from '@/api/userApi'
-import { toast, validator, errorHandler } from '@/utils'
+import { validator, errorHandler } from '@/utils'
+import { useUIStore } from '@/store/uiStore'
 import { ProfileSetupModal } from '@/components/ProfileSetupModal'
 import './LoginPage.css'
 
@@ -27,7 +28,13 @@ export function LoginPage() {
   const navigate = useNavigate()
   const login = useLogin()
   const register = useRegister()
+  const addToast = useUIStore((s) => s.addToast)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const getLoginRedirect = () => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('redirect') || '/'
+  }
 
   useEffect(() => {
     return () => {
@@ -51,17 +58,17 @@ export function LoginPage() {
   const handleSendSmsCode = async () => {
     const phoneError = validator.getErrorMessage('phone', formData.account)
     if (phoneError) {
-      toast.error(phoneError)
+      addToast({ type: 'error', message: phoneError })
       return
     }
     setIsSendingCode(true)
     try {
       await userApi.sendSmsCode(formData.account)
       startCountdown()
-      toast.success('验证码已发送')
+      addToast({ type: 'success', message: '验证码已发送' })
     } catch (err) {
       const msg = errorHandler.handle(err as Error, 'unknown')
-      toast.error(msg)
+      addToast({ type: 'error', message: msg })
     } finally {
       setIsSendingCode(false)
     }
@@ -82,13 +89,13 @@ export function LoginPage() {
       if (loginMethod === 'password') {
         const usernameError = validator.getErrorMessage('username', formData.account)
         if (usernameError) {
-          toast.error(usernameError)
+          addToast({ type: 'error', message: usernameError })
           return
         }
 
         const passwordError = validator.getErrorMessage('password', formData.password)
         if (passwordError) {
-          toast.error(passwordError)
+          addToast({ type: 'error', message: passwordError })
           return
         }
 
@@ -98,8 +105,8 @@ export function LoginPage() {
             account: formData.account,
             password: formData.password,
           })
-          toast.success('登录成功')
-          navigate('/')
+          addToast({ type: 'success', message: '登录成功' })
+          navigate(getLoginRedirect(), { replace: true })
         } catch (err) {
           const errorMessage = errorHandler.handle(err as Error)
           setError(errorMessage)
@@ -109,12 +116,12 @@ export function LoginPage() {
       } else {
         const phoneError = validator.getErrorMessage('phone', formData.account)
         if (phoneError) {
-          toast.error(phoneError)
+          addToast({ type: 'error', message: phoneError })
           return
         }
 
         if (!smsCode) {
-          toast.error('请输入验证码')
+          addToast({ type: 'error', message: '请输入验证码' })
           return
         }
 
@@ -125,8 +132,8 @@ export function LoginPage() {
             password: smsCode,
             loginMethod: 'sms',
           })
-          toast.success('登录成功')
-          navigate('/')
+          addToast({ type: 'success', message: '登录成功' })
+          navigate(getLoginRedirect(), { replace: true })
         } catch (err) {
           const errorMessage = errorHandler.handle(err as Error)
           setError(errorMessage)
@@ -136,29 +143,29 @@ export function LoginPage() {
       }
     } else {
       if (!formData.account || !formData.password || !formData.confirmPassword) {
-        toast.error('请填写完整信息')
+        addToast({ type: 'error', message: '请填写完整信息' })
         return
       }
 
       if (!formData.agreeTerms) {
-        toast.error('请同意服务条款和隐私政策')
+        addToast({ type: 'error', message: '请同意服务条款和隐私政策' })
         return
       }
 
       if (formData.password !== formData.confirmPassword) {
-        toast.error('两次输入的密码不一致')
+        addToast({ type: 'error', message: '两次输入的密码不一致' })
         return
       }
 
       const usernameError = validator.getErrorMessage('username', formData.account)
       if (usernameError) {
-        toast.error(usernameError)
+        addToast({ type: 'error', message: usernameError })
         return
       }
 
       const passwordError = validator.getErrorMessage('password', formData.password)
       if (passwordError) {
-        toast.error(passwordError)
+        addToast({ type: 'error', message: passwordError })
         return
       }
 
@@ -169,7 +176,7 @@ export function LoginPage() {
           password: formData.password
         })
 
-        toast.success('注册成功！正在登录...')
+        addToast({ type: 'success', message: '注册成功！正在登录...' })
 
         await login.mutateAsync({
           account: formData.account,
@@ -271,6 +278,7 @@ export function LoginPage() {
               type="button"
               className={`auth-page-tab ${activeTab === 'login' ? 'auth-page-tab--active' : ''}`}
               onClick={() => setActiveTab('login')}
+              data-testid="tab-login"
             >
               <span>登录</span>
             </button>
@@ -278,6 +286,7 @@ export function LoginPage() {
               type="button"
               className={`auth-page-tab ${activeTab === 'register' ? 'auth-page-tab--active' : ''}`}
               onClick={() => setActiveTab('register')}
+              data-testid="tab-register"
             >
               <span>注册</span>
             </button>
@@ -344,6 +353,7 @@ export function LoginPage() {
                     required
                     autoComplete={loginMethod === 'sms' ? 'tel' : 'username'}
                     maxLength={loginMethod === 'sms' ? 11 : undefined}
+                    data-testid="input-account"
                   />
                 </div>
               </div>
@@ -362,6 +372,7 @@ export function LoginPage() {
                       onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                       required
                       autoComplete="current-password"
+                      data-testid="input-password"
                     />
                   </div>
                 </div>
@@ -400,7 +411,7 @@ export function LoginPage() {
                       <span className="auth-page-checkbox-custom"></span>
                       <span>记住我</span>
                     </label>
-                    <button type="button" className="auth-page-forgot-link" onClick={() => navigate('/forgot-password')}>忘记密码？</button>
+                    <button type="button" className="auth-page-forgot-link" onClick={() => navigate('/forgot-password')} data-testid="link-forgot-password">忘记密码？</button>
                   </>
                 ) : (
                   <button type="button" className="auth-page-forgot-link" onClick={() => handleLoginMethodChange('password')}>使用密码登录</button>
@@ -408,7 +419,7 @@ export function LoginPage() {
               </div>
 
               {error && activeTab === 'login' && (
-                <div className="auth-page-error-message">
+                <div className="auth-page-error-message" data-testid="login-error">
                   {error}
                 </div>
               )}
@@ -417,6 +428,7 @@ export function LoginPage() {
                 type="submit"
                 className="auth-page-btn btn-primary-gradient"
                 disabled={isLoading}
+                data-testid="btn-login-submit"
               >
                 <span className="btn-text">{isLoading ? '登录中...' : '登 录'}</span>
                 {isLoading && <span className="btn-loader"><span className="loader"></span></span>}
@@ -472,6 +484,7 @@ export function LoginPage() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value }))}
                     required
                     autoComplete="username"
+                    data-testid="input-register-username"
                   />
                 </div>
                 <div className="auth-page-input-hint">3-20位，仅支持字母、数字和下划线</div>
@@ -490,6 +503,7 @@ export function LoginPage() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                     required
                     autoComplete="new-password"
+                    data-testid="input-register-password"
                   />
                 </div>
                 <div className="auth-page-input-hint">6-20位，需包含大小写字母和数字</div>
@@ -508,6 +522,7 @@ export function LoginPage() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                     required
                     autoComplete="new-password"
+                    data-testid="input-register-confirm-password"
                   />
                 </div>
               </div>
@@ -524,7 +539,7 @@ export function LoginPage() {
               </label>
 
               {error && activeTab === 'register' && (
-                <div className="auth-page-error-message">
+                <div className="auth-page-error-message" data-testid="register-error">
                   {error}
                 </div>
               )}
@@ -533,6 +548,7 @@ export function LoginPage() {
                 type="submit"
                 className="auth-page-btn btn-primary-gradient"
                 disabled={isLoading}
+                data-testid="btn-register-submit"
               >
                 <span className="btn-text">{isLoading ? '注册中...' : '注 册'}</span>
                 {isLoading && <span className="btn-loader"><span className="loader"></span></span>}

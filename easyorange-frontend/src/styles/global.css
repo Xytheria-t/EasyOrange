@@ -97,6 +97,7 @@ input, textarea, select {
 
 /* ============ SCROLL PROGRESS BAR ============ */
 .scroll-progress-container {
+    --progress: 0%;
     position: fixed;
     top: 0;
     left: 0;
@@ -106,6 +107,12 @@ input, textarea, select {
     cursor: pointer;
     transition: height 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
     opacity: 0;
+    outline: none;
+}
+
+.scroll-progress-container:focus-visible {
+    outline: 2px solid var(--primary-400);
+    outline-offset: 2px;
 }
 
 .scroll-progress-container[data-visible='true'] {
@@ -128,9 +135,12 @@ input, textarea, select {
     top: 0;
     left: 0;
     height: 100%;
+    width: 100%;
     background: linear-gradient(90deg, #F97316 0%, #FB7185 50%, #C39BD3 100%);
-    transition: width 0.1s linear;
     border-radius: 0 2px 2px 0;
+    transform: scaleX(calc(var(--progress) / 100));
+    transform-origin: left;
+    will-change: transform;
 }
 
 .scroll-progress-shine {
@@ -138,6 +148,7 @@ input, textarea, select {
     top: 0;
     left: 0;
     height: 100%;
+    width: 100%;
     background: linear-gradient(
         90deg,
         transparent 0%,
@@ -149,16 +160,19 @@ input, textarea, select {
     animation: scrollProgressShine 2.5s ease-in-out infinite;
     border-radius: 0 2px 2px 0;
     pointer-events: none;
+    transform: scaleX(calc(var(--progress) / 100));
+    transform-origin: left;
 }
 
 @keyframes scrollProgressShine {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% { transform: scaleX(calc(var(--progress) / 100)) translateX(-100%); }
+    100% { transform: scaleX(calc(var(--progress) / 100)) translateX(100%); }
 }
 
 .scroll-progress-thumb {
     position: absolute;
     top: 50%;
+    left: calc(var(--progress) * 1%);
     transform: translate(-50%, -50%) scale(0);
     width: 12px;
     height: 12px;
@@ -169,6 +183,7 @@ input, textarea, select {
         0 0 20px rgba(249, 115, 22, 0.2);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
+    will-change: transform, left;
 }
 
 .scroll-progress-container[data-hovering='true'] .scroll-progress-thumb {
@@ -180,10 +195,14 @@ input, textarea, select {
     top: 0;
     left: 0;
     height: 100%;
+    width: 100%;
     background: linear-gradient(90deg, rgba(249, 115, 22, 0.3), rgba(251, 113, 133, 0.2));
     filter: blur(6px);
     pointer-events: none;
     border-radius: 0 4px 4px 0;
+    transform: scaleX(calc(var(--progress) / 100));
+    transform-origin: left;
+    will-change: transform;
 }
 
 /* ============ UTILITY CLASSES ============ */

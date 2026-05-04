@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X } from 'lucide-react';
+import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep } from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useProduct } from '@/hooks';
 import { useCreateOrder } from '@/hooks/useOrders';
@@ -30,6 +30,7 @@ export function ProductDetailPage() {
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderForm, setOrderForm] = useState<OrderFormData>({ address: '', phone: '', remark: '' });
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const productId = Number(id);
 
@@ -50,17 +51,36 @@ export function ProductDetailPage() {
     }
   }, [productId]);
 
+  useEffect(() => {
+    setImageLoaded(false);
+    setCurrentImageIndex(0);
+  }, [productId]);
+
   if (isLoading) return (
-    <div className="loading-container">
-      <div className="loading-spinner-lg"></div>
-      <span className="loading-text">加载中...</span>
+    <div className="pdp-loading">
+      <div className="pdp-loading-ambient">
+        <div className="pdp-ambient-orb pdp-ambient-orb-1" />
+        <div className="pdp-ambient-orb pdp-ambient-orb-2" />
+      </div>
+      <div className="pdp-loading-content">
+        <div className="pdp-loading-ring" />
+        <span className="pdp-loading-text">加载商品详情...</span>
+      </div>
     </div>
   );
 
   if (!product) return (
-    <div className="empty-state-container">
-      <div className="empty-state-icon">📦</div>
-      <p className="empty-state-text">商品不存在</p>
+    <div className="pdp-empty">
+      <div className="pdp-empty-visual">
+        <div className="pdp-empty-icon">📦</div>
+        <div className="pdp-empty-ring" />
+      </div>
+      <h3 className="pdp-empty-title">商品不存在</h3>
+      <p className="pdp-empty-desc">该商品可能已下架或被删除</p>
+      <button className="pdp-empty-btn" onClick={() => navigate('/products')}>
+        <ArrowLeft size={16} />
+        返回商城
+      </button>
     </div>
   );
 
@@ -73,6 +93,12 @@ export function ProductDetailPage() {
     ? CONDITION_LABEL_MAP[product.conditionLevel] ?? product.condition
     : product.condition;
   const statusLabel = STATUS_LABEL_MAP[product.status as keyof typeof STATUS_LABEL_MAP] ?? product.status;
+  const isOnline = product.status === 'ONLINE';
+  const isSold = product.status === 'SOLD';
+  const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
+  const discountPercent = hasDiscount
+    ? Math.round((1 - product.price / product.originalPrice!) * 100)
+    : 0;
 
   const handlePrevImage = () => {
     setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length);
@@ -84,7 +110,7 @@ export function ProductDetailPage() {
 
   const handleFavoriteToggle = async () => {
     if (!token) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     setIsFavoriteLoading(true);
@@ -107,7 +133,7 @@ export function ProductDetailPage() {
 
   const handleBuyClick = () => {
     if (!token) {
-      navigate('/login');
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     if (!product || isOwner) return;
@@ -144,192 +170,272 @@ export function ProductDetailPage() {
     }
   };
 
+  const formatRelativeTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}小时前`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return '昨天';
+    if (days < 7) return `${days}天前`;
+    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    return `${date.getMonth() + 1}月${date.getDate()}日`;
+  };
+
   return (
-    <div className="product-detail-page">
-      <div className="product-detail-header">
-        <h1 className="product-detail-title">{product.title}</h1>
-        <div className="product-detail-meta">
-          <span className="product-meta-item">
-            <Eye size={14} />
-            {product.views} 次浏览
-          </span>
-          <span className="product-meta-item">
-            <Heart size={14} />
-            {product.favorites} 人收藏
-          </span>
-          <span className="product-meta-item" style={{
-            fontSize: '0.8rem',
-            padding: '2px 8px',
-            borderRadius: 4,
-            background: product.status === 'ONLINE' ? 'var(--color-success)' : product.status === 'SOLD' ? 'var(--color-danger)' : 'var(--bg-tertiary)',
-            color: '#fff',
-          }}>
-            {statusLabel}
-          </span>
-        </div>
+    <div className="pdp-page">
+      <div className="pdp-ambient">
+        <div className="pdp-ambient-orb pdp-ambient-orb-1" />
+        <div className="pdp-ambient-orb pdp-ambient-orb-2" />
+        <div className="pdp-ambient-orb pdp-ambient-orb-3" />
+        <div className="pdp-ambient-noise" />
       </div>
 
-      <div className="product-detail-grid">
-        <div className="product-image-container">
-          <div className="product-image-main-wrapper">
-            <Image
-              src={images[currentImageIndex]}
-              alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
-              className="product-detail-image"
-              loading="eager"
-              fetchPriority="high"
-              placeholder="blur"
-              style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }}
-            />
-            {images.length > 1 && (
+      <div className="pdp-container">
+        <nav className="pdp-breadcrumb">
+          <button className="pdp-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} />
+            返回
+          </button>
+          <div className="pdp-breadcrumb-trail">
+            <span className="pdp-breadcrumb-item" onClick={() => navigate('/products')}>商城</span>
+            <BreadcrumbSep size={14} className="pdp-breadcrumb-sep" />
+            {product.categoryName && (
               <>
-                <button
-                  onClick={handlePrevImage}
-                  className="gallery-nav-btn prev"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <button
-                  onClick={handleNextImage}
-                  className="gallery-nav-btn next"
-                >
-                  <ChevronRight size={18} />
-                </button>
-                <div className="gallery-dots">
-                  {images.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`gallery-dot ${idx === currentImageIndex ? 'active' : ''}`}
-                    />
-                  ))}
-                </div>
+                <span className="pdp-breadcrumb-item">{product.categoryName}</span>
+                <BreadcrumbSep size={14} className="pdp-breadcrumb-sep" />
               </>
             )}
+            <span className="pdp-breadcrumb-current">{product.title}</span>
           </div>
-          {images.length > 1 && (
-            <div className="gallery-thumbnails-premium">
-              {images.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentImageIndex(idx)}
-                  className={`gallery-thumb-premium ${idx === currentImageIndex ? 'active' : ''}`}
-                >
-                  <Image
-                    src={img}
-                    alt={`缩略图 ${idx + 1}`}
-                    loading="lazy"
-                    placeholder="skeleton"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="product-image-actions">
-            <button
-              className={`image-action-btn ${isFavorited ? 'favorited' : ''}`}
-              onClick={handleFavoriteToggle}
-              disabled={isFavoriteLoading}
-              style={{ color: isFavorited ? 'var(--color-danger)' : undefined }}
-            >
-              <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-            </button>
-            <button className="image-action-btn">
-              <Share2 size={18} />
-            </button>
-          </div>
-        </div>
+        </nav>
 
-        <div className="product-detail-info">
-          <div className="product-price-card">
-            <div className="product-price-main">
-              <span className="price-value-lg">¥{product.price.toFixed(2)}</span>
-              {product.originalPrice && (
-                <span className="price-original-lg">¥{product.originalPrice.toFixed(2)}</span>
+        <div className="pdp-hero">
+          <div className="pdp-gallery">
+            <div className="pdp-gallery-main">
+              <div className={`pdp-gallery-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
+                <Image
+                  src={images[currentImageIndex]}
+                  alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
+                  className="pdp-gallery-image"
+                  loading="eager"
+                  fetchPriority="high"
+                  placeholder="blur"
+                  onLoad={() => setImageLoaded(true)}
+                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }}
+                />
+              </div>
+
+              {isSold && (
+                <div className="pdp-sold-overlay">
+                  <span className="pdp-sold-badge">已售出</span>
+                </div>
               )}
-            </div>
 
-            <div className="product-details-list">
-              <div className="product-detail-row">
-                <MapPin size={18} className="detail-icon" />
-                <div className="detail-content">
-                  <p className="detail-label">交易地点</p>
-                  <p className="detail-value">{product.location || '未指定'}</p>
-                </div>
-              </div>
-
-              <div className="product-detail-row">
-                <User size={18} className="detail-icon" />
-                <div className="detail-content">
-                  <p className="detail-label">卖家</p>
-                  <p className="detail-value">{product.sellerName}</p>
-                </div>
-              </div>
-
-              <div className="product-detail-tags">
-                <span className="product-tag-premium">{conditionLabel}</span>
-                <span className="product-tag-premium">{product.categoryName}</span>
-              </div>
-            </div>
-
-            <div className="product-action-buttons">
-              {isOwner ? (
+              {images.length > 1 && (
                 <>
+                  <button onClick={handlePrevImage} className="pdp-gallery-nav pdp-gallery-prev">
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button onClick={handleNextImage} className="pdp-gallery-nav pdp-gallery-next">
+                    <ChevronRight size={20} />
+                  </button>
+                  <div className="pdp-gallery-counter">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                </>
+              )}
+
+              <div className="pdp-gallery-actions">
+                <button
+                  className={`pdp-action-fab ${isFavorited ? 'favorited' : ''}`}
+                  onClick={handleFavoriteToggle}
+                  disabled={isFavoriteLoading}
+                >
+                  <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
+                </button>
+                <button className="pdp-action-fab">
+                  <Share2 size={18} />
+                </button>
+              </div>
+            </div>
+
+            {images.length > 1 && (
+              <div className="pdp-gallery-thumbs">
+                {images.map((img, idx) => (
                   <button
-                    className="btn-premium btn-premium-primary flex-1"
+                    key={idx}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
+                  >
+                    <Image
+                      src={img}
+                      alt={`缩略图 ${idx + 1}`}
+                      loading="lazy"
+                      placeholder="skeleton"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <div className="pdp-thumb-indicator" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="pdp-info">
+            <div className="pdp-info-sticky">
+              <div className="pdp-title-section">
+                <div className="pdp-title-badges">
+                  <span className={`pdp-status-chip ${isOnline ? 'online' : isSold ? 'sold' : 'offline'}`}>
+                    {statusLabel}
+                  </span>
+                  {conditionLabel && (
+                    <span className="pdp-condition-chip">{conditionLabel}</span>
+                  )}
+                  {product.categoryName && (
+                    <span className="pdp-category-chip">
+                      <Tag size={12} />
+                      {product.categoryName}
+                    </span>
+                  )}
+                </div>
+                <h1 className="pdp-title">{product.title}</h1>
+                <div className="pdp-meta-row">
+                  <span className="pdp-meta-item">
+                    <Eye size={14} />
+                    {product.views} 次浏览
+                  </span>
+                  <span className="pdp-meta-item">
+                    <Heart size={14} />
+                    {product.favorites} 人收藏
+                  </span>
+                  <span className="pdp-meta-item">
+                    <Clock size={14} />
+                    {formatRelativeTime(product.createTime)}发布
+                  </span>
+                </div>
+              </div>
+
+              <div className="pdp-price-card">
+                <div className="pdp-price-main">
+                  <span className="pdp-price-value">¥{product.price.toFixed(2)}</span>
+                  {hasDiscount && (
+                    <div className="pdp-price-discount">
+                      <span className="pdp-price-original">¥{product.originalPrice!.toFixed(2)}</span>
+                      <span className="pdp-discount-badge">-{discountPercent}%</span>
+                    </div>
+                  )}
+                </div>
+                {hasDiscount && (
+                  <div className="pdp-savings">
+                    比原价省 <strong>¥{(product.originalPrice! - product.price).toFixed(2)}</strong>
+                  </div>
+                )}
+              </div>
+
+              <div className="pdp-details-card">
+                <div className="pdp-detail-item">
+                  <div className="pdp-detail-icon-wrap">
+                    <MapPin size={16} />
+                  </div>
+                  <div className="pdp-detail-content">
+                    <span className="pdp-detail-label">交易地点</span>
+                    <span className="pdp-detail-value">{product.location || '未指定'}</span>
+                  </div>
+                </div>
+
+                <div className="pdp-detail-item">
+                  <div className="pdp-detail-icon-wrap">
+                    <Shield size={16} />
+                  </div>
+                  <div className="pdp-detail-content">
+                    <span className="pdp-detail-label">商品成色</span>
+                    <span className="pdp-detail-value">{conditionLabel || '未标注'}</span>
+                  </div>
+                </div>
+
+                <div className="pdp-detail-item pdp-seller-item">
+                  <div className="pdp-detail-icon-wrap pdp-seller-avatar-wrap">
+                    <User size={16} />
+                  </div>
+                  <div className="pdp-detail-content">
+                    <span className="pdp-detail-label">卖家</span>
+                    <span className="pdp-detail-value">{product.sellerName}</span>
+                  </div>
+                  <button
+                    className="pdp-contact-btn"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <MessageCircle size={14} />
+                    联系
+                  </button>
+                </div>
+              </div>
+
+              <div className="pdp-actions">
+                {isOwner ? (
+                  <button
+                    className="pdp-btn pdp-btn-primary"
                     onClick={() => navigate(`/products/${id}/edit`)}
                   >
                     <Pencil size={18} />
                     编辑商品
                   </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    className="btn-premium btn-premium-primary flex-1"
-                    onClick={handleBuyClick}
-                    disabled={product?.status === 'SOLD'}
-                  >
-                    <ShoppingCart size={18} />
-                    {product?.status === 'SOLD' ? '已售出' : '立即购买'}
-                  </button>
-                  <button className="btn-premium btn-premium-outline flex-1">
-                    <MessageCircle size={18} />
-                    联系卖家
-                  </button>
-                  <button
-                    className={`btn-premium btn-premium-icon ${isFavorited ? 'favorited' : ''}`}
-                    onClick={handleFavoriteToggle}
-                    disabled={isFavoriteLoading}
-                    style={{ minWidth: 52 }}
-                  >
-                    <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-                  </button>
-                </>
-              )}
+                ) : (
+                  <>
+                    <button
+                      className="pdp-btn pdp-btn-primary"
+                      onClick={handleBuyClick}
+                      disabled={isSold}
+                    >
+                      <ShoppingCart size={18} />
+                      {isSold ? '已售出' : '立即购买'}
+                    </button>
+                    <button className="pdp-btn pdp-btn-secondary">
+                      <MessageCircle size={18} />
+                      联系卖家
+                    </button>
+                    <button
+                      className={`pdp-btn pdp-btn-fav ${isFavorited ? 'favorited' : ''}`}
+                      onClick={handleFavoriteToggle}
+                      disabled={isFavoriteLoading}
+                    >
+                      <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="product-description-card">
-            <h3 className="description-title">商品描述</h3>
-            <p className="description-text">{product.description || '暂无描述'}</p>
+        <div className="pdp-description-section">
+          <div className="pdp-section-header">
+            <div className="pdp-section-accent" />
+            <h3 className="pdp-section-title">商品描述</h3>
+          </div>
+          <div className="pdp-description-body">
+            <p className="pdp-description-text">{product.description || '暂无描述'}</p>
           </div>
         </div>
       </div>
 
       {showOrderModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.5)' }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-bold text-gray-900">确认购买</h2>
-              <button onClick={() => setShowOrderModal(false)} className="p-1 rounded-lg hover:bg-gray-100">
-                <X size={20} className="text-gray-400" />
+        <div className="pdp-modal-overlay" onClick={() => setShowOrderModal(false)}>
+          <div className="pdp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pdp-modal-header">
+              <h2 className="pdp-modal-title">确认购买</h2>
+              <button className="pdp-modal-close" onClick={() => setShowOrderModal(false)}>
+                <X size={20} />
               </button>
             </div>
 
-            <div className="flex gap-3 mb-5 p-3 bg-gray-50 rounded-xl">
-              <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+            <div className="pdp-modal-product">
+              <div className="pdp-modal-product-image">
                 {images.length > 0 ? (
                   <Image
                     src={images[0]}
@@ -339,33 +445,33 @@ export function ProductDetailPage() {
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <ShoppingCart size={20} className="text-gray-400" />
+                  <div className="pdp-modal-product-placeholder">
+                    <ShoppingCart size={20} />
                   </div>
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{product.title}</p>
-                <p className="text-lg font-bold text-primary-600 mt-1">¥{product.price.toFixed(2)}</p>
+              <div className="pdp-modal-product-info">
+                <p className="pdp-modal-product-name">{product.title}</p>
+                <p className="pdp-modal-product-price">¥{product.price.toFixed(2)}</p>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  收货地址 <span className="text-red-500">*</span>
+            <div className="pdp-modal-form">
+              <div className="pdp-form-group">
+                <label className="pdp-form-label">
+                  收货地址 <span className="pdp-form-required">*</span>
                 </label>
                 <input
                   type="text"
                   value={orderForm.address}
                   onChange={(e) => handleOrderFormChange('address', e.target.value)}
                   placeholder="请输入收货地址"
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  className="pdp-form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  联系电话 <span className="text-red-500">*</span>
+              <div className="pdp-form-group">
+                <label className="pdp-form-label">
+                  联系电话 <span className="pdp-form-required">*</span>
                 </label>
                 <input
                   type="tel"
@@ -373,32 +479,32 @@ export function ProductDetailPage() {
                   onChange={(e) => handleOrderFormChange('phone', e.target.value)}
                   placeholder="请输入手机号"
                   maxLength={11}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
+                  className="pdp-form-input"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">备注</label>
+              <div className="pdp-form-group">
+                <label className="pdp-form-label">备注</label>
                 <textarea
                   value={orderForm.remark}
                   onChange={(e) => handleOrderFormChange('remark', e.target.value)}
                   placeholder="选填，对卖家留言"
-                  rows={2}
-                  className="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none resize-none"
+                  rows={3}
+                  className="pdp-form-textarea"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="pdp-modal-footer">
               <button
                 onClick={() => setShowOrderModal(false)}
-                className="flex-1 rounded-xl border border-gray-300 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                className="pdp-modal-btn pdp-modal-btn-cancel"
               >
                 取消
               </button>
               <button
                 onClick={handleSubmitOrder}
                 disabled={createOrder.isPending}
-                className="flex-1 rounded-xl bg-primary-600 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
+                className="pdp-modal-btn pdp-modal-btn-submit"
               >
                 {createOrder.isPending ? '提交中...' : '提交订单'}
               </button>

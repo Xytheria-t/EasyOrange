@@ -66,17 +66,8 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
     <>
       {isOpen && (
         <div
-          className="filter-overlay"
+          className="filter-overlay active"
           onClick={onClose}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0, 0, 0, 0.4)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 199,
-            opacity: 1,
-            visibility: 'visible',
-          }}
         />
       )}
       
@@ -112,7 +103,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                   />
                   <span className="checkbox-custom" />
                   <span className="checkbox-label">{category.name}</span>
-                  {category.productCount > 0 && (
+                  {(category.productCount ?? 0) > 0 && (
                     <span className="condition-icon" style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
                       ({category.productCount})
                     </span>

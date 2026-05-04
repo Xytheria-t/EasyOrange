@@ -1,16 +1,8 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, memo, useEffect } from 'react'
 import { Heart, MessageCircle, Eye, MapPin, Clock, Sparkles } from 'lucide-react'
-import { Product } from '@/types'
+import { Product, CONDITION_LABEL_MAP } from '@/types'
 import { formatPrice, formatRelativeTime } from '@/utils'
 import { Image } from '@/components/ui/Image'
-
-const CONDITION_LABELS: Record<number, string> = {
-  1: '全新',
-  2: '几乎全新',
-  3: '轻微使用',
-  4: '明显使用',
-}
-
 
 interface ProductCardProps {
   product: Product
@@ -21,7 +13,7 @@ interface ProductCardProps {
   index?: number
 }
 
-export function ProductCard({
+export const ProductCard = memo(function ProductCard({
   product,
   onFavorite,
   isFavorited = false,
@@ -30,12 +22,13 @@ export function ProductCard({
   index = 0,
 }: ProductCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
-  const [tiltStyle, setTiltStyle] = useState<React.CSSProperties>({})
+  const tiltStyleRef = useRef<React.CSSProperties>({})
+  const rafRef = useRef<number | null>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const imageUrl = product.images?.[0] || '/placeholder.png'
-  const conditionLabel = CONDITION_LABELS[product.condition] || product.condition
+  const conditionLabel = CONDITION_LABEL_MAP[product.condition] || product.condition
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price
   const discountPercent = hasDiscount
     ? Math.round((1 - product.price / product.originalPrice!) * 100)
@@ -49,28 +42,45 @@ export function ProductCard({
     onFavorite?.(product.id, !isFavorited)
   }
 
-  // 3D tilt effect
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+      }
+    }
+  }, [])
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return
-    const rect = cardRef.current.getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
-    const centerX = rect.width / 2
-    const centerY = rect.height / 2
-    const rotateX = (y - centerY) / 20
-    const rotateY = (centerX - x) / 20
 
-    setTiltStyle({
-      transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) scale(1.02)`,
-      transition: 'transform 0.1s ease-out',
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current)
+    }
+
+    rafRef.current = requestAnimationFrame(() => {
+      if (!cardRef.current) return
+      
+      const rect = cardRef.current.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const centerX = rect.width / 2
+      const centerY = rect.height / 2
+      const rotateX = (y - centerY) / 20
+      const rotateY = (centerX - x) / 20
+
+      const transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) scale(1.02)`
+      cardRef.current.style.transform = transform
+      cardRef.current.style.transition = 'transform 0.1s ease-out'
     })
   }, [])
 
   const handleMouseLeave = useCallback(() => {
-    setTiltStyle({
-      transform: 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)',
-      transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
-    })
+    if (cardRef.current) {
+      const resetStyle = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)'
+      cardRef.current.style.transform = resetStyle
+      cardRef.current.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
+      tiltStyleRef.current = { transform: resetStyle }
+    }
     setIsHovered(false)
   }, [])
 
@@ -87,7 +97,6 @@ export function ProductCard({
       className="product-card-premium"
       style={{
         ...style,
-        ...tiltStyle,
         animationDelay: `${entranceDelay}ms`,
       }}
       onClick={() => onViewDetails?.(product.id)}
@@ -260,4 +269,4 @@ export function ProductCard({
       </div>
     </article>
   )
-}
+})

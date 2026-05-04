@@ -29,6 +29,7 @@ export default function ProductsSection() {
   const gridRef = useRef<HTMLDivElement>(null)
   const indicatorRef = useRef<HTMLDivElement>(null)
   const tabsRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
   // Intersection Observer for scroll-triggered reveal
@@ -53,30 +54,39 @@ export default function ProductsSection() {
   // Parallax effect on scroll
   useEffect(() => {
     const handleScroll = () => {
-      const section = sectionRef.current
-      if (!section) return
-
-      const rect = section.getBoundingClientRect()
-      const scrollProgress = -rect.top / window.innerHeight
-
-      // Apply subtle parallax to orbs
-      const orbs = section.querySelectorAll('.transition-orb')
-      orbs.forEach((orb, index) => {
-        const el = orb as HTMLElement
-        const speed = 0.1 + index * 0.05
-        const yOffset = scrollProgress * 100 * speed
-        el.style.transform = `translateY(${yOffset}px)`
-      })
-
-      // Parallax on grid
-      if (gridRef.current && rect.top < window.innerHeight && rect.bottom > 0) {
-        const gridOffset = scrollProgress * 30
-        gridRef.current.style.transform = `translateY(${gridOffset}px)`
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
       }
+
+      rafRef.current = requestAnimationFrame(() => {
+        const section = sectionRef.current
+        if (!section) return
+
+        const rect = section.getBoundingClientRect()
+        const scrollProgress = -rect.top / window.innerHeight
+
+        const orbs = section.querySelectorAll('.transition-orb')
+        orbs.forEach((orb, index) => {
+          const el = orb as HTMLElement
+          const speed = 0.1 + index * 0.05
+          const yOffset = scrollProgress * 100 * speed
+          el.style.transform = `translateY(${yOffset}px)`
+        })
+
+        if (gridRef.current && rect.top < window.innerHeight && rect.bottom > 0) {
+          const gridOffset = scrollProgress * 30
+          gridRef.current.style.transform = `translateY(${gridOffset}px)`
+        }
+      })
     }
 
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current)
+      }
+    }
   }, [])
 
   // Sliding indicator for filter tabs

@@ -3,8 +3,6 @@
  * @description 提供统一的错误处理和友好提示功能
  */
 
-import { toast } from './toast.js';
-
 export type ErrorTypeValue = 'network' | 'api' | 'validation' | 'auth' | 'permission' | 'not_found' | 'server' | 'timeout' | 'unknown';
 export type ErrorSeverityValue = 'low' | 'medium' | 'high' | 'fatal';
 
@@ -96,7 +94,6 @@ const errorHandler = {
             message = status !== undefined ? (httpErrorMessages[status] ?? fallbackTypeMessages[type]) : fallbackTypeMessages[type];
         }
 
-        toast.error(message);
         return message;
     }
 };
