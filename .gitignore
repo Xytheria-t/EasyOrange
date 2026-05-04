@@ -196,6 +196,12 @@ easyorange-frontend/.rpt2_cache/
 # ESLint/Prettier 缓存
 easyorange-frontend/.eslintcache
 
+# Playwright 测试产物（不上传）
+easyorange-frontend/test-results/
+easyorange-frontend/playwright-report/
+easyorange-frontend/blob-report/
+easyorange-frontend/tests/e2e/reports/
+
 # ==================== OpenCode / AI 工具 ====================
 .opencode/machine-memory/
 .opencode/sessions/
@@ -221,6 +227,10 @@ easyorange-backend/logs/
 easyorange-backend/log/
 easyorange-backend/*/logs/
 easyorange-backend/*/log/
+
+# AI 生成的报告文件（不上传）
+easyorange-backend/DATABASE_OPTIMIZATION_REPORT.md
+easyorange-backend/**/*_REPORT.md
 
 # 编辑器配置（上传 IDE 配置）
 # easyorange-backend/.idea/
