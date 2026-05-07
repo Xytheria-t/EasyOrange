@@ -1,0 +1,65 @@
+# ==================== 行尾符设置 ====================
+# 统一使用 LF，避免跨平台问题
+
+# 所有文本文件使用 LF
+* text=auto
+
+# 强制使用 LF（防止意外转换）
+*.java text eol=lf
+*.xml text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.properties text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.sh text eol=lf
+*.bat text eol=lf
+*.cmd text eol=lf
+*.ps1 text eol=lf
+
+# TypeScript/JavaScript
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+
+# SQL
+*.sql text eol=lf
+
+# Gradle/Maven
+*.gradle text eol=lf
+*.gradlew text eol=lf
+pom.xml text eol=lf
+
+# ==================== 二进制文件 ====================
+# 不进行任何行尾符转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.jar binary
+*.war binary
+*.ear binary
+*.class binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+*.eot binary
+
+# 数据库文件
+*.db binary
+*.sqlite binary
+*.h2.db binary
+*.mv.db binary
+
+# 忽略 Dockerfile（Docker 容器内需要保持原有格式）
+Dockerfile text eol=lf
+*.dockerfile text eol=lf
