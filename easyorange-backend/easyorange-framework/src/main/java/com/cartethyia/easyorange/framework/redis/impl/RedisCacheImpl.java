@@ -58,6 +58,24 @@ public class RedisCacheImpl implements RedisCache {
         if (type.isInstance(value)) {
             return (T) value;
         }
+        if (type == Long.class && value instanceof Number number) {
+            return (T) Long.valueOf(number.longValue());
+        }
+        if (type == Integer.class && value instanceof Number number) {
+            return (T) Integer.valueOf(number.intValue());
+        }
+        if (type == Double.class && value instanceof Number number) {
+            return (T) Double.valueOf(number.doubleValue());
+        }
+        if (type == Float.class && value instanceof Number number) {
+            return (T) Float.valueOf(number.floatValue());
+        }
+        if (type == Short.class && value instanceof Number number) {
+            return (T) Short.valueOf(number.shortValue());
+        }
+        if (type == Byte.class && value instanceof Number number) {
+            return (T) Byte.valueOf(number.byteValue());
+        }
         throw new CacheTypeMismatchException(key, type, value.getClass());
     }
 
@@ -381,5 +399,25 @@ public class RedisCacheImpl implements RedisCache {
     @Override
     public Long executeLuaScript(DefaultRedisScript<Long> script, List<String> keys, Object... args) {
         return redisTemplate.execute(script, keys, args);
+    }
+
+    @Override
+    public Set<String> keys(String pattern) {
+        Set<String> rawKeys = redisTemplate.keys(pattern);
+        if (rawKeys == null) {
+            return Collections.emptySet();
+        }
+        return rawKeys.stream()
+                .map(key -> {
+                    if (keyPrefix.isEmpty()) {
+                        return key;
+                    }
+                    String prefixWithColon = keyPrefix + ":";
+                    if (key.startsWith(prefixWithColon)) {
+                        return key.substring(prefixWithColon.length());
+                    }
+                    return key;
+                })
+                .collect(Collectors.toSet());
     }
 }

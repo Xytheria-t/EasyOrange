@@ -105,4 +105,6 @@ public interface RedisCache {
     Long zsetSize(String key);
 
     Long executeLuaScript(DefaultRedisScript<Long> script, List<String> keys, Object... args);
+
+    Set<String> keys(String pattern);
 }

@@ -29,7 +29,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private final MeterRegistry meterRegistry;
     private final Counter requestCounter;
-    private final Counter errorCounter;
     private final Timer requestTimer;
     private final List<String> skipLoggingPaths;
 
@@ -39,10 +38,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
         this.requestCounter = Counter.builder("http.requests.total")
                 .description("Total HTTP requests")
-                .register(meterRegistry);
-
-        this.errorCounter = Counter.builder("http.requests.errors")
-                .description("Total HTTP errors")
                 .register(meterRegistry);
 
         this.requestTimer = Timer.builder("http.requests.duration")
@@ -88,7 +83,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
         requestTimer.record(costTime, TimeUnit.MILLISECONDS);
 
         if (ex != null || status >= 500) {
-            errorCounter.increment();
             log.error("action=request_error traceId={} method={} uri={} status={} cost={}ms error={}",
                     traceId, method, uri, status, costTime, ex != null ? ex.getMessage() : "server_error");
 

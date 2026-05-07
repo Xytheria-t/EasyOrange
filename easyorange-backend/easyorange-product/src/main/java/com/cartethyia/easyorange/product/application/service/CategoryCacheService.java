@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.service;
 
+import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
@@ -8,7 +9,6 @@ import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRe
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 public class CategoryCacheService implements CategoryCachePort {
 
     private final CategoryQueryRepository categoryQueryRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisCache redisCache;
 
     private final Cache<String, List<CategoryReadModel>> localCache;
 
@@ -33,9 +33,9 @@ public class CategoryCacheService implements CategoryCachePort {
     private static final long LOCAL_CACHE_EXPIRE_MINUTES = 30;
 
     public CategoryCacheService(CategoryQueryRepository categoryQueryRepository,
-                                RedisTemplate<String, Object> redisTemplate) {
+                                RedisCache redisCache) {
         this.categoryQueryRepository = categoryQueryRepository;
-        this.redisTemplate = redisTemplate;
+        this.redisCache = redisCache;
         this.localCache = Caffeine.newBuilder()
                 .maximumSize(LOCAL_CACHE_MAX_SIZE)
                 .expireAfterWrite(LOCAL_CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
@@ -52,7 +52,7 @@ public class CategoryCacheService implements CategoryCachePort {
         }
 
         try {
-            Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
+            Object redisRaw = redisCache.get(cacheKey);
             if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
                 @SuppressWarnings("unchecked")
                 List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
@@ -71,7 +71,7 @@ public class CategoryCacheService implements CategoryCachePort {
 
         localCache.put(cacheKey, models);
         try {
-            redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            redisCache.set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.warn("设置分类Redis缓存失败: level={}, error={}", level, e.getMessage());
         }
@@ -89,7 +89,7 @@ public class CategoryCacheService implements CategoryCachePort {
         }
 
         try {
-            Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
+            Object redisRaw = redisCache.get(cacheKey);
             if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
                 @SuppressWarnings("unchecked")
                 List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
@@ -108,7 +108,7 @@ public class CategoryCacheService implements CategoryCachePort {
 
         localCache.put(cacheKey, models);
         try {
-            redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            redisCache.set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.warn("设置分类Redis缓存失败: parentId={}, error={}", parentId, e.getMessage());
         }
@@ -125,7 +125,7 @@ public class CategoryCacheService implements CategoryCachePort {
         String cacheKey = CACHE_KEY_ID + id;
 
         try {
-            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            Object cached = redisCache.get(cacheKey);
             if (cached instanceof CategoryReadModel readModel) {
                 return Optional.of(readModel);
             }
@@ -137,7 +137,7 @@ public class CategoryCacheService implements CategoryCachePort {
         if (allCategories != null && !allCategories.isEmpty()) {
             CategoryReadModel model = toReadModel(allCategories.getFirst());
             try {
-                redisTemplate.opsForValue().set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+                redisCache.set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
             } catch (Exception e) {
                 log.warn("设置分类Redis缓存失败: id={}, error={}", id, e.getMessage());
             }
@@ -151,9 +151,9 @@ public class CategoryCacheService implements CategoryCachePort {
     public void evictAll() {
         localCache.invalidateAll();
         try {
-            var keys = redisTemplate.keys(ProductConstant.CATEGORY_LIST_KEY + "*");
+            var keys = redisCache.keys(ProductConstant.CATEGORY_LIST_KEY + "*");
             if (keys != null && !keys.isEmpty()) {
-                redisTemplate.delete(keys);
+                redisCache.delete(keys);
             }
         } catch (Exception e) {
             log.warn("清除分类Redis缓存失败: error={}", e.getMessage());
@@ -165,7 +165,7 @@ public class CategoryCacheService implements CategoryCachePort {
         String cacheKey = CACHE_KEY_LEVEL + level;
         localCache.invalidate(cacheKey);
         try {
-            redisTemplate.delete(cacheKey);
+            redisCache.delete(cacheKey);
         } catch (Exception e) {
             log.warn("清除分类Redis缓存失败: level={}, error={}", level, e.getMessage());
         }
@@ -176,7 +176,7 @@ public class CategoryCacheService implements CategoryCachePort {
         String cacheKey = CACHE_KEY_PARENT + parentId;
         localCache.invalidate(cacheKey);
         try {
-            redisTemplate.delete(cacheKey);
+            redisCache.delete(cacheKey);
         } catch (Exception e) {
             log.warn("清除分类Redis缓存失败: parentId={}, error={}", parentId, e.getMessage());
         }

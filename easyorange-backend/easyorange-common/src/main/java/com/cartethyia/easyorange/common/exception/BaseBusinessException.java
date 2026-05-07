@@ -43,7 +43,7 @@ public abstract class BaseBusinessException extends RuntimeException {
     }
 
     protected HttpStatus defaultHttpStatus() {
-        return HttpStatus.INTERNAL_SERVER_ERROR;
+        return HttpStatus.BAD_REQUEST;
     }
 
     public String getCode() {
