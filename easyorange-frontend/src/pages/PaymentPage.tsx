@@ -41,7 +41,7 @@ export function PaymentPage() {
   }
 
   const handleSubmit = async () => {
-    if (!orderId || !selectedMethod) return;
+    if (!orderId || !selectedMethod) {return;}
 
     setIsSubmitting(true);
     try {

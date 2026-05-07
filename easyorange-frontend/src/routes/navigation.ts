@@ -1,6 +1,6 @@
-import { routes, type RouteName } from './config.js';
-import { router } from './index.js';
-import { useAuthStore } from '../store/authStore.js';
+import { routes, type RouteName } from './config';
+import { router } from './index';
+import { useAuthStore } from '@/store/authStore';
 
 export type QueryValue = string | number | boolean | null | undefined;
 

@@ -194,7 +194,7 @@ export function ProfileOverview({
                       value={editValue}
                       onChange={(e) => onEditValueChange(e.target.value)}
                       autoFocus
-                      onKeyDown={(e) => { if (e.key === 'Enter') onSave(); if (e.key === 'Escape') onCancel() }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') {onSave();} if (e.key === 'Escape') {onCancel()} }}
                     />
                     <button className="profile-action-btn profile-action-save" onClick={onSave} disabled={isSaving}>
                       <Check size={14} />

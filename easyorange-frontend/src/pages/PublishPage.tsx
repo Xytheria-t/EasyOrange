@@ -9,7 +9,7 @@ import { useCreateProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
 import { productApi } from '@/api/productApi';
 import { compressImage } from '@/utils/imageCompress';
-import { CONDITION_LABEL_MAP } from '@/types/product';
+import { CONDITION_LABEL_MAP } from '@/types';
 import '@/styles/publish.css';
 
 interface FormState {
@@ -117,7 +117,7 @@ export function PublishPage() {
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files) {return;}
     await processFiles(Array.from(files));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -126,9 +126,9 @@ export function PublishPage() {
 
   const processFiles = async (files: File[]) => {
     for (const file of files) {
-      if (form.imageUrls.length >= 9) break;
-      if (!file.type.startsWith('image/')) continue;
-      if (file.size > 10 * 1024 * 1024) continue;
+      if (form.imageUrls.length >= 9) {break;}
+      if (!file.type.startsWith('image/')) {continue;}
+      if (file.size > 10 * 1024 * 1024) {continue;}
 
       const index = form.imageUrls.length;
       setUploadingIndex(index);
@@ -163,7 +163,7 @@ export function PublishPage() {
     e.preventDefault();
     setDragOverIndex(null);
     const draggedIndex = dragItemRef.current;
-    if (draggedIndex === null || draggedIndex === index) return;
+    if (draggedIndex === null || draggedIndex === index) {return;}
 
     setForm(prev => {
       const newUrls = [...prev.imageUrls];
@@ -201,7 +201,7 @@ export function PublishPage() {
   };
 
   const handleSubmit = async (isDraft: boolean) => {
-    if (!validate()) return;
+    if (!validate()) {return;}
 
     const payload = {
       name: form.name.trim(),

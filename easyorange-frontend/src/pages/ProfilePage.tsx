@@ -54,7 +54,7 @@ export function ProfilePage() {
   }, [])
 
   const handleSave = useCallback(async () => {
-    if (!editingField) return
+    if (!editingField) {return}
     setIsSaving(true)
     try {
       const data: Record<string, unknown> = {}

@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { Image } from '@/components/ui/Image'
-import { statsApi, type PlatformStats } from '@/api/statsApi'
+import { usePlatformStats } from '@/hooks'
+import type { PlatformStats } from '@/api/statsApi'
 
 const HERO_PRODUCT = {
   image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
@@ -24,6 +25,7 @@ function animateCounter(el: HTMLSpanElement, target: number) {
 
   const duration = 2000
   const startTime = performance.now()
+  let lastValue = -1
 
   const animate = (currentTime: number) => {
     const elapsed = currentTime - startTime
@@ -31,8 +33,8 @@ function animateCounter(el: HTMLSpanElement, target: number) {
     const eased = 1 - Math.pow(1 - progress, 3)
     const current = Math.floor(eased * target)
 
-    const shouldUpdate = progress === 1 || elapsed % 48 < 16
-    if (shouldUpdate) {
+    if (current !== lastValue) {
+      lastValue = current
       el.textContent = current.toLocaleString()
     }
 
@@ -50,21 +52,7 @@ export default function HeroSection() {
   const heroRef = useRef<HTMLElement>(null)
   const statRefs = useRef<(HTMLSpanElement | null)[]>([])
   const floatCardsRef = useRef<(HTMLDivElement | null)[]>([])
-  const [stats, setStats] = useState<PlatformStats>(DEFAULT_STATS)
-  const statsFetchedRef = useRef(false)
-
-  useEffect(() => {
-    if (statsFetchedRef.current) { return }
-    statsFetchedRef.current = true
-
-    statsApi.getPlatformStats()
-      .then((res) => {
-        if (res.data) {
-          setStats(res.data)
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const { data: stats = DEFAULT_STATS } = usePlatformStats()
 
   const startCounters = useCallback(() => {
     const observer = new IntersectionObserver(
@@ -93,67 +81,103 @@ export default function HeroSection() {
   }, [startCounters, stats])
 
   useEffect(() => {
-    const cards = floatCardsRef.current.filter(Boolean)
-    const visualCard = document.querySelector('.visual-card') as HTMLElement
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReducedMotion) {return}
 
-    const handleMouseMove = (e: MouseEvent, card: HTMLDivElement) => {
-      const rect = card.getBoundingClientRect()
-      const centerX = rect.left + rect.width / 2
-      const centerY = rect.top + rect.height / 2
-      const mouseX = e.clientX - centerX
-      const mouseY = e.clientY - centerY
+    const cards = floatCardsRef.current.filter(Boolean) as HTMLDivElement[]
+    const visualCard = document.querySelector('.visual-card') as HTMLDivElement
 
-      const rotateX = (mouseY / (rect.height / 2)) * -12
-      const rotateY = (mouseX / (rect.width / 2)) * 12
+    let rafId: number | null = null
+    let lastProcessTime = 0
+    const throttleMs = 16
+    const pendingMouseEvents: Map<HTMLElement, { x: number; y: number }> = new Map()
+    const rectCache: WeakMap<HTMLElement, DOMRect> = new WeakMap()
+    const abortController = new AbortController()
 
-      card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.08) translateZ(20px)`
+    const getCachedRect = (el: HTMLElement): DOMRect => {
+      let rect = rectCache.get(el)
+      if (!rect) {
+        rect = el.getBoundingClientRect()
+        rectCache.set(el, rect)
+      }
+      return rect
+    }
+
+    const processMouseMoves = (timestamp: number) => {
+      if (timestamp - lastProcessTime < throttleMs) {
+        rafId = requestAnimationFrame(processMouseMoves)
+        return
+      }
+      lastProcessTime = timestamp
+
+      pendingMouseEvents.forEach((pos, card) => {
+        const rect = getCachedRect(card)
+        const centerX = rect.left + rect.width / 2
+        const centerY = rect.top + rect.height / 2
+        const mouseX = pos.x - centerX
+        const mouseY = pos.y - centerY
+
+        if (card.classList.contains('visual-card')) {
+          const rotateX = (mouseY / (rect.height / 2)) * -6
+          const rotateY = (mouseX / (rect.width / 2)) * 6
+          card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`
+        } else {
+          const rotateX = (mouseY / (rect.height / 2)) * -12
+          const rotateY = (mouseX / (rect.width / 2)) * 12
+          card.style.transform = `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.08) translateZ(20px)`
+        }
+      })
+      pendingMouseEvents.clear()
+      rafId = null
     }
 
     cards.forEach((card) => {
-      if (!card) { return }
+      if (!card) {return}
 
-      const onMove = (e: MouseEvent) => handleMouseMove(e, card)
-      const onLeave = () => {
-        card.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
-        card.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)'
-        setTimeout(() => {
-          card.style.transition = ''
-        }, 500)
-      }
-
-      card.addEventListener('mousemove', onMove)
-      card.addEventListener('mouseleave', onLeave)
-    })
-
-    if (visualCard) {
       const onMove = (e: MouseEvent) => {
-        const rect = visualCard.getBoundingClientRect()
-        const centerX = rect.left + rect.width / 2
-        const centerY = rect.top + rect.height / 2
-        const mouseX = e.clientX - centerX
-        const mouseY = e.clientY - centerY
-
-        const rotateX = (mouseY / (rect.height / 2)) * -6
-        const rotateY = (mouseX / (rect.width / 2)) * 6
-
-        visualCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`
+        pendingMouseEvents.set(card, { x: e.clientX, y: e.clientY })
+        if (!rafId) {
+          rafId = requestAnimationFrame(processMouseMoves)
+        }
       }
-
       const onLeave = () => {
-        visualCard.style.transition = 'transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)'
-        visualCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)'
+        card.classList.add('is-resetting')
+        if (card.classList.contains('visual-card')) {
+          card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)'
+        } else {
+          card.style.transform = 'perspective(600px) rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px)'
+        }
         setTimeout(() => {
-          visualCard.style.transition = ''
+          card.classList.remove('is-resetting')
         }, 600)
       }
 
-      visualCard.addEventListener('mousemove', onMove)
-      visualCard.addEventListener('mouseleave', onLeave)
+      card.addEventListener('mousemove', onMove, { passive: true, signal: abortController.signal })
+      card.addEventListener('mouseleave', onLeave, { signal: abortController.signal })
+    })
 
-      return () => {
-        visualCard.removeEventListener('mousemove', onMove)
-        visualCard.removeEventListener('mouseleave', onLeave)
+    if (visualCard && !cards.includes(visualCard)) {
+      const onMove = (e: MouseEvent) => {
+        pendingMouseEvents.set(visualCard, { x: e.clientX, y: e.clientY })
+        if (!rafId) {
+          rafId = requestAnimationFrame(processMouseMoves)
+        }
       }
+      const onLeave = () => {
+        visualCard.classList.add('is-resetting')
+        visualCard.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)'
+        setTimeout(() => {
+          visualCard.classList.remove('is-resetting')
+        }, 600)
+      }
+
+      visualCard.addEventListener('mousemove', onMove, { passive: true, signal: abortController.signal })
+      visualCard.addEventListener('mouseleave', onLeave, { signal: abortController.signal })
+    }
+
+    return () => {
+      abortController.abort()
+      if (rafId) {cancelAnimationFrame(rafId)}
     }
   }, [])
 

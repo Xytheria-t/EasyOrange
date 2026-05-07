@@ -3,7 +3,7 @@
  * @version 2.0.0
  */
 
-import { storage } from '../../utils/index.js';
+import { storage } from '@/utils';
 
 /** 草稿数据接口 */
 export interface DraftData {

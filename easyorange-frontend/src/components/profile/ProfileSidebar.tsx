@@ -43,7 +43,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
+    if (!file) {return}
     if (file.size > 5 * 1024 * 1024) {
       addToast({ type: 'warning', message: '头像文件不能超过 5MB' })
       return

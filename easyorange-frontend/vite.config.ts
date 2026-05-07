@@ -12,7 +12,7 @@ export default defineConfig({
         react(),
         ...(process.env.NODE_ENV === 'production' ? [
             visualizer({
-                open: true,
+                open: false,
                 gzipSize: true,
                 brotliSize: true,
                 filename: 'dist/stats.html'
@@ -38,20 +38,38 @@ export default defineConfig({
     build: {
         target: 'es2020',
         outDir: 'dist',
-        sourcemap: true,
+        sourcemap: false,
+        minify: 'terser',
+        terserOptions: {
+            compress: {
+                drop_console: true,
+                drop_debugger: true,
+                pure_funcs: ['console.log', 'console.info', 'console.debug']
+            }
+        },
         rolldownOptions: {
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
-                        if (id.includes('react') || id.includes('react-router-dom')) {
-                            return 'vendor';
+                        if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+                            return 'vendor-react';
                         }
                         if (id.includes('@tanstack/react-query')) {
-                            return 'query';
+                            return 'vendor-query';
                         }
                         if (id.includes('zustand')) {
-                            return 'ui';
+                            return 'vendor-state';
                         }
+                        if (id.includes('lucide-react')) {
+                            return 'vendor-icons';
+                        }
+                        return 'vendor';
+                    }
+                    if (id.includes('/components/sections/')) {
+                        return 'sections';
+                    }
+                    if (id.includes('/components/ui/')) {
+                        return 'ui-components';
                     }
                 },
                 chunkFileNames: 'assets/js/[name]-[hash].js',
@@ -67,6 +85,6 @@ export default defineConfig({
                 }
             }
         },
-        chunkSizeWarningLimit: 1000,
+        chunkSizeWarningLimit: 500,
     },
 });

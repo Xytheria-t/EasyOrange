@@ -1,7 +1,6 @@
-import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { X } from 'lucide-react';
 import { useProducts, useCategories } from '@/hooks';
 import { ProductCard } from '@/components/sections/ProductCard';
@@ -12,25 +11,24 @@ import { favoriteApi } from '@/api/favoriteApi';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import type { ProductQueryParams, Product } from '@/types';
-import '@/styles/products-premium.css';
 
 function useColumnCount() {
   const [columnCount, setColumnCount] = useState(() => {
-    if (typeof window === 'undefined') return 4;
+    if (typeof window === 'undefined') {return 4;}
     const width = window.innerWidth;
-    if (width <= 480) return 2;
-    if (width <= 768) return 2;
-    if (width <= 1200) return 3;
+    if (width <= 480) {return 2;}
+    if (width <= 768) {return 2;}
+    if (width <= 1200) {return 3;}
     return 4;
   });
 
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
-      if (width <= 480) setColumnCount(2);
-      else if (width <= 768) setColumnCount(2);
-      else if (width <= 1200) setColumnCount(3);
-      else setColumnCount(4);
+      if (width <= 480) {setColumnCount(2);}
+      else if (width <= 768) {setColumnCount(2);}
+      else if (width <= 1200) {setColumnCount(3);}
+      else {setColumnCount(4);}
     };
 
     window.addEventListener('resize', handleResize);
@@ -81,11 +79,9 @@ export function ProductsPage() {
 
   const { data: categories } = useCategories();
   const currentCategory = useMemo(() => {
-    if (!params.categoryId || !categories) return null;
+    if (!params.categoryId || !categories) {return null;}
     return categories.find(c => c.id === params.categoryId) || null;
   }, [params.categoryId, categories]);
-
-  const parentRef = useRef<HTMLDivElement>(null);
 
   const COLUMN_COUNT = useColumnCount();
 
@@ -96,14 +92,6 @@ export function ProductsPage() {
     }
     return result;
   }, [products, COLUMN_COUNT]);
-
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 450,
-    overscan: 3,
-    measureElement: (el) => el?.getBoundingClientRect().height ?? 450,
-  });
 
   const sortOptions: { value: NonNullable<ProductQueryParams['sort']>; label: string }[] = [
     { value: 'newest', label: '最新发布' },
@@ -249,52 +237,25 @@ export function ProductsPage() {
           </div>
         </div>
 
-        <div
-          ref={parentRef}
-          style={{
-            height: 'calc(100vh - 300px)',
-            overflow: 'auto',
-            width: '100%',
-          }}
-        >
-          <div
-            style={{
-              height: `${virtualizer.getTotalSize()}px`,
-              width: '100%',
-              position: 'relative',
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = rows[virtualRow.index];
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <div className="products-grid-premium">
-                    {row.map((product: Product, colIndex: number) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        index={virtualRow.index * COLUMN_COUNT + colIndex}
-                        isFavorited={favoriteIds.has(product.id)}
-                        onFavorite={handleFavorite}
-                        onViewDetails={(id) => navigate(`/products/${id}`)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <div>
+          {rows.map((row, rowIndex) => (
+            <div
+              key={rowIndex}
+              className="products-grid-premium"
+              style={{ marginBottom: '1.5rem' }}
+            >
+              {row.map((product: Product, colIndex: number) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  index={rowIndex * COLUMN_COUNT + colIndex}
+                  isFavorited={favoriteIds.has(product.id)}
+                  onFavorite={handleFavorite}
+                  onViewDetails={(id) => navigate(`/products/${id}`)}
+                />
+              ))}
+            </div>
+          ))}
         </div>
 
         {products.length > 0 && products.length < total && (

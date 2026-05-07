@@ -1,6 +1,6 @@
-import { storage } from '../../utils/index.js';
-import { request } from '../../api/core/request.js';
-import { useAuthStore } from '../../store/authStore.js';
+import { storage } from '@/utils';
+import { request } from '@/api/core/request';
+import { useAuthStore } from '@/store/authStore';
 
 const TOKEN_STORAGE_KEY = 'token';
 const TOKEN_EXPIRES_KEY = 'token_expires';

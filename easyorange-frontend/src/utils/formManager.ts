@@ -4,7 +4,7 @@
  * @version 1.0.0
  */
 
-import { validator } from './validator.js';
+import { validator } from './validator';
 
 interface FormField {
     name: string;

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { Search } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
+import { throttle } from '@/utils/function'
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -27,13 +28,17 @@ export function Header() {
     navigate('/')
   }
 
-  useEffect(() => {
-    const handleScroll = () => {
+  const handleScroll = useCallback(
+    throttle(() => {
       setIsScrolled(window.scrollY > 20)
-    }
+    }, 60),
+    []
+  )
+
+  useEffect(() => {
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, [handleScroll])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

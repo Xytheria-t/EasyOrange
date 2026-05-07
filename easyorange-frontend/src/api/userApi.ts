@@ -4,8 +4,8 @@ import type {
     RegisterRequest,
     LoginResponse,
     User
-} from '../types/index.js';
-import { useAuthStore } from '../store';
+} from '@/types';
+import { useAuthStore } from '@/store';
 
 export const userApi = {
     login(data: LoginRequest) {

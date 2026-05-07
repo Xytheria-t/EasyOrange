@@ -4,7 +4,7 @@ import '@/styles/main.css';
 export function GlobalLoading() {
   const { isLoading, loadingMessage } = useUIStore();
 
-  if (!isLoading) return null;
+  if (!isLoading) {return null;}
 
   return (
     <div className="global-loading-overlay">

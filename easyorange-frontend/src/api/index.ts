@@ -3,19 +3,19 @@
  * @description 从子模块重新导出所有 API，保持向后兼容
  */
 
-import { userApi } from './userApi.js';
-import { productApi } from './productApi.js';
-import { orderApi } from './orderApi.js';
-import { messageApi } from './messageApi.js';
-import { favoriteApi } from './favoriteApi.js';
-import { uploadApi, uploadFile, uploadFiles } from './uploadApi.js';
-import { reviewApi } from './reviewApi.js';
-import { activityApi, ACTIVITY_STATUS, ACTIVITY_TYPE_NAMES, ACTIVITY_STATUS_NAMES, type Activity, type ActivityType, type ActivityStatus, type CreateActivityRequest } from './activityApi.js';
-import { insuranceApi, INSURANCE_TYPE_NAMES, type Insurance, type InsuranceType, type InsuranceStatus, type ClaimStatus, calculatePremiumLocal } from './insuranceApi.js';
-import { paymentApi, type PaymentInfo, type CreatePaymentRequest, type PaymentResponse, type PaymentStatusResponse } from './paymentApi.js';
-import { statsApi, type PlatformStats } from './statsApi.js';
+import { userApi } from './userApi';
+import { productApi } from './productApi';
+import { orderApi } from './orderApi';
+import { messageApi } from './messageApi';
+import { favoriteApi } from './favoriteApi';
+import { uploadApi, uploadFile, uploadFiles } from './uploadApi';
+import { reviewApi } from './reviewApi';
+import { activityApi, ACTIVITY_STATUS, ACTIVITY_TYPE_NAMES, ACTIVITY_STATUS_NAMES, type Activity, type ActivityType, type ActivityStatus, type CreateActivityRequest } from './activityApi';
+import { insuranceApi, INSURANCE_TYPE_NAMES, type Insurance, type InsuranceType, type InsuranceStatus, type ClaimStatus, calculatePremiumLocal } from './insuranceApi';
+import { paymentApi, type PaymentInfo, type CreatePaymentRequest, type PaymentResponse, type PaymentStatusResponse } from './paymentApi';
+import { statsApi, type PlatformStats } from './statsApi';
 
-export { ApiClientError } from './core/request.js';
+export { ApiClientError } from './core/request';
 
 // Re-export all APIs as named exports
 export {

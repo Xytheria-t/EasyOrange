@@ -6,11 +6,11 @@ import { useProduct } from '@/hooks';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { favoriteApi } from '@/api/favoriteApi';
 import { productApi } from '@/api/productApi';
-import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/types/product';
+import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Image } from '@/components/ui/Image';
-import '@/styles/products-premium.css';
+import placeholderImage from '@/assets/placeholder.png';
 
 interface OrderFormData {
   address: string;
@@ -56,7 +56,7 @@ export function ProductDetailPage() {
     setCurrentImageIndex(0);
   }, [productId]);
 
-  if (isLoading) return (
+  if (isLoading) {return (
     <div className="pdp-loading">
       <div className="pdp-loading-ambient">
         <div className="pdp-ambient-orb pdp-ambient-orb-1" />
@@ -67,9 +67,9 @@ export function ProductDetailPage() {
         <span className="pdp-loading-text">加载商品详情...</span>
       </div>
     </div>
-  );
+  );}
 
-  if (!product) return (
+  if (!product) {return (
     <div className="pdp-empty">
       <div className="pdp-empty-visual">
         <div className="pdp-empty-icon">📦</div>
@@ -82,11 +82,11 @@ export function ProductDetailPage() {
         返回商城
       </button>
     </div>
-  );
+  );}
 
   const images = product.images?.length > 0
     ? product.images
-    : ['/placeholder-product.png'];
+    : [placeholderImage];
 
   const isOwner = user && product.sellerId === user.userId;
   const conditionLabel = product.conditionLevel
@@ -136,7 +136,7 @@ export function ProductDetailPage() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    if (!product || isOwner) return;
+    if (!product || isOwner) {return;}
     setShowOrderModal(true);
   };
 
@@ -175,14 +175,14 @@ export function ProductDetailPage() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
+    if (minutes < 1) {return '刚刚';}
+    if (minutes < 60) {return `${minutes}分钟前`;}
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}小时前`;
+    if (hours < 24) {return `${hours}小时前`;}
     const days = Math.floor(hours / 24);
-    if (days === 1) return '昨天';
-    if (days < 7) return `${days}天前`;
-    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    if (days === 1) {return '昨天';}
+    if (days < 7) {return `${days}天前`;}
+    if (days < 30) {return `${Math.floor(days / 7)}周前`;}
     return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
 

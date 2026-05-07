@@ -5,7 +5,7 @@ import { userApi } from '@/api/userApi'
 import { validator, errorHandler } from '@/utils'
 import { useUIStore } from '@/store/uiStore'
 import { ProfileSetupModal } from '@/components/ProfileSetupModal'
-import './LoginPage.css'
+import '@/styles/login.css'
 
 type LoginMethod = 'password' | 'sms'
 
@@ -244,7 +244,7 @@ export function LoginPage() {
               </svg>
             </div>
             <h2 className="auth-page-brand-title">EasyOrange</h2>
-            <p className="auth-page-brand-subtitle">校园二手交易平台</p>
+            <p className="auth-page-brand-subtitle">易橙坊</p>
             <div className="auth-page-brand-features">
               <div className="auth-page-brand-feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

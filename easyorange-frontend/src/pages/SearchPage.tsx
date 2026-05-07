@@ -9,7 +9,7 @@ import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories }
 import { ProductCard } from '@/components/sections/ProductCard';
 import { debounce } from '@/utils';
 import '@/styles/main.css';
-import './SearchPage.css';
+import '@/styles/search.css';
 
 const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
     '电子数码': { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
@@ -69,7 +69,7 @@ export function SearchPage() {
     }, []);
 
     const addToHistory = useCallback((kw: string) => {
-        if (!kw.trim()) return;
+        if (!kw.trim()) {return;}
         setSearchHistory(prev => {
             const filtered = prev.filter(h => h !== kw);
             const next = [kw, ...filtered].slice(0, 10);

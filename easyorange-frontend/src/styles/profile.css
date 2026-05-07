@@ -1614,6 +1614,10 @@ input:checked + .switch-slider:before {
     min-width: 500px;
 }
 
+.modal-content-large {
+    min-width: 560px;
+}
+
 .modal-lg {
     min-width: 680px;
 }

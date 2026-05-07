@@ -10,7 +10,7 @@ interface PasswordModalProps {
 }
 
 export function PasswordModal({ show, form, isLoading, onFormChange, onClose, onSubmit }: PasswordModalProps) {
-  if (!show) return null
+  if (!show) {return null}
 
   return (
     <div className="modal-overlay active" onClick={onClose}>

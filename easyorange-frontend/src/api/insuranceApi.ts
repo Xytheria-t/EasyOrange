@@ -2,8 +2,8 @@
  * @fileoverview 保险 API 模块
  */
 
-import type { PageResult } from '../types/index.js';
-import { request } from './core/request.js';
+import type { PageResult } from '@/types';
+import { request } from './core/request';
 
 export const INSURANCE_TYPE_NAMES: Record<string, string> = {};
 

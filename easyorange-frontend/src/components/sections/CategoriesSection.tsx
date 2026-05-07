@@ -1,4 +1,4 @@
-import { useCategories } from '@/hooks';
+import { useCategories, useScrollReveal } from '@/hooks';
 
 interface CategoryDisplay {
   id: number;
@@ -97,6 +97,7 @@ function getCategoryDesc(name: string): string {
 }
 
 export default function CategoriesSection() {
+  useScrollReveal();
   const { data: categories } = useCategories();
 
   const displayCategories: CategoryDisplay[] = categories?.map(cat => {

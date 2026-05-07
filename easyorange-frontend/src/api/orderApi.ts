@@ -1,5 +1,5 @@
-import type { PageResult, OrderQueryParams, CreateOrderRequest, OrderDetail } from '../types/index.js';
-import { request } from './core/request.js';
+import type { PageResult, OrderQueryParams, CreateOrderRequest, OrderDetail } from '@/types';
+import { request } from './core/request';
 
 export const orderApi = {
     createOrder(data: CreateOrderRequest) {

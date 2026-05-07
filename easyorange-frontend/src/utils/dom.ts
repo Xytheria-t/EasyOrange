@@ -4,7 +4,7 @@
  * @version 1.0.0
  */
 
-import type { Unsubscribe } from '../types';
+import type { Unsubscribe } from '@/types';
 
 /**
  * DOM 操作工具类

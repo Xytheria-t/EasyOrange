@@ -1,4 +1,4 @@
-# EasyOrange 校园二手交易平台 - 前端
+# 易橙坊 - 让闲置流转，让价值延续
 
 > 基于原生 TypeScript + Vite 构建的轻量级前端项目
 
@@ -213,7 +213,7 @@ npm run preview
 #### 开发环境 (`.env.development`)
 ```env
 VITE_API_BASE_URL=/api
-VITE_APP_TITLE=EasyOrange - 校园二手交易平台
+VITE_APP_TITLE=易橙坊 - 让闲置流转，让价值延续
 VITE_API_TIMEOUT=10000
 VITE_PAGE_SIZE=20
 VITE_MAX_IMAGE_SIZE=5
@@ -224,7 +224,7 @@ VITE_AUTO_SAVE_INTERVAL=30
 #### 生产环境 (`.env.production`)
 ```env
 VITE_API_BASE_URL=https://api.easyorange.com
-VITE_APP_TITLE=EasyOrange - 校园二手交易平台
+VITE_APP_TITLE=易橙坊 - 让闲置流转，让价值延续
 VITE_API_TIMEOUT=10000
 VITE_PAGE_SIZE=20
 VITE_MAX_IMAGE_SIZE=5

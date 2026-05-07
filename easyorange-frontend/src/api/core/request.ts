@@ -1,5 +1,5 @@
-import { isSuccessCode, type ApiCode, type Result, type RequestOptions } from '../../types/index.js';
-import { refreshAccessToken, getStoredToken, handleUnauthorized } from '../../app/authSession.js';
+import { isSuccessCode, type ApiCode, type Result, type RequestOptions } from '@/types';
+import { refreshAccessToken, getStoredToken, handleUnauthorized } from '@/features/auth/session';
 
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT = 10000;

@@ -2,8 +2,8 @@
  * @fileoverview 消息 API 模块
  */
 
-import type { PageResult, ChatMessage } from '../types/index.js';
-import { request } from './core/request.js';
+import type { PageResult, ChatMessage } from '@/types';
+import { request } from './core/request';
 
 export const messageApi = {
     getList(_params?: Record<string, unknown>) {

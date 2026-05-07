@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '@/api/userApi';
 import { useAuthStore } from '@/store';
-import { setSession, clearSession, type AuthSessionUser } from '@/app/authSession';
+import { setSession, clearSession, type AuthSessionUser } from '@/features/auth/session';
 import type { LoginRequest, RegisterRequest } from '@/types';
 
 const AUTH_KEYS = {

@@ -1,24 +1,35 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 function ScrollProgressBar() {
-  const [progress, setProgress] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const progressRef = useRef(0);
+  const isVisibleRef = useRef(false);
 
   const updateProgress = useCallback(() => {
     const scrollTop = window.scrollY;
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
 
+    const newVisible = scrollTop > 20;
+    if (newVisible !== isVisibleRef.current) {
+      isVisibleRef.current = newVisible;
+      containerRef.current?.setAttribute('data-visible', String(newVisible));
+    }
+
     if (docHeight <= 0) {
-      setProgress(0);
-      setIsVisible(false);
+      if (progressRef.current !== 0) {
+        progressRef.current = 0;
+        containerRef.current?.style.setProperty('--progress', '0%');
+      }
       return;
     }
 
     const scrollPercent = Math.min((scrollTop / docHeight) * 100, 100);
-    setProgress(scrollPercent);
-    setIsVisible(scrollTop > 20);
+    if (Math.abs(scrollPercent - progressRef.current) > 0.5) {
+      progressRef.current = scrollPercent;
+      containerRef.current?.style.setProperty('--progress', `${scrollPercent}%`);
+    }
   }, []);
 
   const handleScroll = useCallback(() => {
@@ -57,18 +68,18 @@ function ScrollProgressBar() {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const step = 10;
-    let newPercent = progress;
+    let newPercent = progressRef.current;
 
     switch (e.key) {
       case 'ArrowRight':
       case 'ArrowDown':
         e.preventDefault();
-        newPercent = Math.min(100, progress + step);
+        newPercent = Math.min(100, progressRef.current + step);
         break;
       case 'ArrowLeft':
       case 'ArrowUp':
         e.preventDefault();
-        newPercent = Math.max(0, progress - step);
+        newPercent = Math.max(0, progressRef.current - step);
         break;
       case 'Home':
         e.preventDefault();
@@ -87,20 +98,19 @@ function ScrollProgressBar() {
 
   return (
     <div
+      ref={containerRef}
       className="scroll-progress-container"
-      data-visible={isVisible}
+      data-visible={false}
       data-hovering={isHovering}
       role="progressbar"
       aria-label="页面滚动进度"
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={Math.round(progress)}
       tabIndex={0}
       onClick={handleClick}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       onKeyDown={handleKeyDown}
-      style={{ '--progress': `${progress}%` } as React.CSSProperties}
     >
       <div className="scroll-progress-track">
         <div className="scroll-progress-fill" />

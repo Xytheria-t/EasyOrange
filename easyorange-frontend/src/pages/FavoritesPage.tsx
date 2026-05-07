@@ -79,7 +79,7 @@ export function FavoritesPage() {
   };
 
   const handleBatchRemove = () => {
-    if (selectedIds.size === 0) return;
+    if (selectedIds.size === 0) {return;}
     removeManyMutation.mutate(Array.from(selectedIds));
   };
 
@@ -99,14 +99,14 @@ export function FavoritesPage() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
+    if (minutes < 1) {return '刚刚';}
+    if (minutes < 60) {return `${minutes}分钟前`;}
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}小时前`;
+    if (hours < 24) {return `${hours}小时前`;}
     const days = Math.floor(hours / 24);
-    if (days === 1) return '昨天';
-    if (days < 7) return `${days}天前`;
-    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    if (days === 1) {return '昨天';}
+    if (days < 7) {return `${days}天前`;}
+    if (days < 30) {return `${Math.floor(days / 7)}周前`;}
     return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
 
@@ -251,7 +251,7 @@ export function FavoritesPage() {
             {favorites.map((item) => {
               const fav = item as Favorite;
               const product = fav.product;
-              if (!product) return null;
+              if (!product) {return null;}
 
               const conditionLabel = CONDITION_LABEL_MAP[product.condition] ?? '';
               const conditionIcon = CONDITION_ICONS[product.condition] ?? '';

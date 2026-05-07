@@ -18,9 +18,9 @@ export async function compressImage(
 ): Promise<File> {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  if (!file.type.startsWith('image/')) return file;
-  if (file.type === 'image/gif') return file;
-  if (file.size < 200 * 1024) return file;
+  if (!file.type.startsWith('image/')) {return file;}
+  if (file.type === 'image/gif') {return file;}
+  if (file.size < 200 * 1024) {return file;}
 
   const bitmap = await createImageBitmap(file);
   const { width, height } = bitmap;

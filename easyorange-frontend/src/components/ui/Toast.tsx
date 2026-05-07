@@ -4,7 +4,7 @@ import '@/styles/main.css';
 export function ToastContainer() {
   const { toasts, removeToast } = useUIStore();
 
-  if (toasts.length === 0) return null;
+  if (toasts.length === 0) {return null;}
 
   return (
     <div className="toast-container">

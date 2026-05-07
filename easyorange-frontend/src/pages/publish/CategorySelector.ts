@@ -3,7 +3,7 @@
  * @version 2.0.0
  */
 
-import type { Category } from '../../types';
+import type { Category } from '@/types';
 
 /** 分类选择器选项 */
 export interface CategorySelectorOptions {

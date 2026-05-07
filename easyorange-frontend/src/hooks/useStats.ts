@@ -1,0 +1,15 @@
+import { useQuery } from '@tanstack/react-query';
+import { statsApi, type PlatformStats } from '@/api/statsApi';
+
+export function usePlatformStats() {
+  return useQuery<PlatformStats>({
+    queryKey: ['platform', 'stats'],
+    queryFn: async () => {
+      const res = await statsApi.getPlatformStats();
+      return res.data ?? { activeUsers: 0, onlineProducts: 0, completedOrders: 0 };
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+}

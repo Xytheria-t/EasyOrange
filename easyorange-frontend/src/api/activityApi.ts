@@ -2,8 +2,8 @@
  * @fileoverview 活动 API 模块
  */
 
-import type { PageResult } from '../types/index.js';
-import { request } from './core/request.js';
+import type { PageResult } from '@/types';
+import { request } from './core/request';
 
 export const ACTIVITY_STATUS = { ONGOING: 1, ENDED: 0, CANCELLED: -1 } as const;
 export const ACTIVITY_TYPE_NAMES: Record<string, string> = {};

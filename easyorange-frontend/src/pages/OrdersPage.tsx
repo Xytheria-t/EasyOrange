@@ -65,7 +65,7 @@ export function OrdersPage() {
 
   const queryParams = useMemo(() => {
     const tab = STATUS_TAB_MAP.find(t => t.id === activeTab);
-    if (!tab?.statusCode && tab?.statusCode !== 0) return {};
+    if (!tab?.statusCode && tab?.statusCode !== 0) {return {};}
     return { status: tab.statusCode };
   }, [activeTab]);
 

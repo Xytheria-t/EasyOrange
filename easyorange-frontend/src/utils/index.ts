@@ -4,8 +4,8 @@
  */
 
 // 存储工具
-export { storage, StorageUtils } from './storage.js';
-export type { StorageItem } from './storage.js';
+export { storage, StorageUtils } from './storage';
+export type { StorageItem } from './storage';
 
 // 格式化工具
 export {
@@ -17,23 +17,23 @@ export {
   escapeHtml,
   parseQueryString,
   buildQueryString
-} from './format.js';
+} from './format';
 
 // 类名工具
-export { cn } from './cn.js';
+export { cn } from './cn';
 
 // 模态框管理
-export { modalManager, ModalManager } from './modalManager.js';
+export { modalManager, ModalManager } from './modalManager';
 
 // DOM 操作
-export { dom, DomUtils } from './dom.js';
+export { dom, DomUtils } from './dom';
 
 // 函数工具
-export { debounce, throttle } from './function.js';
-export type { DebounceOptions } from './function.js';
+export { debounce, throttle } from './function';
+export type { DebounceOptions } from './function';
 
 // 商品工具
-export { calculateDiscount, getConditionNameFromString, isHotProduct, normalizeProduct } from './product.js';
+export { calculateDiscount, getConditionNameFromString, isHotProduct, normalizeProduct } from './product';
 
 // 元素创建工具
 export {
@@ -45,17 +45,11 @@ export {
   appendChildren,
   clearChildren,
   createEmptyState
-} from './element.js';
-export type { ElementOptions } from './element.js';
-
-// 头像工具
-export { getUserInitial, createAvatarElement } from './avatar.js';
-
-// 网络工具
-export { network, NetworkUtils } from './network.js';
+} from './element';
+export type { ElementOptions } from './element';
 
 // 错误处理
-export { errorHandler } from './errorHandler.js';
+export { errorHandler } from './errorHandler';
 
 // 验证工具
-export { validator, ValidatorUtils } from './validator.js';
+export { validator, ValidatorUtils } from './validator';

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import placeholderImage from '@/assets/placeholder.png';
 
 interface ImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, 'src' | 'srcSet'> {
   src: string | undefined;
@@ -18,7 +19,7 @@ class LRUCache<T> {
   private cache = new Set<T>();
   private maxSize: number;
 
-  constructor(maxSize: number = 100) {
+  constructor(maxSize = 100) {
     this.maxSize = maxSize;
   }
 
@@ -68,7 +69,7 @@ const BLUR_STYLE: React.CSSProperties = {
 const DEFAULT_WIDTHS = [150, 300, 600, 1200];
 
 function extractFileId(src: string | undefined): string | null {
-  if (!src) return null;
+  if (!src) {return null;}
   
   const match = src.match(/\/api\/file\/([^/]+)/);
   if (match) {
@@ -83,7 +84,7 @@ function extractFileId(src: string | undefined): string | null {
 }
 
 function resolveImageUrl(src: string | undefined): string {
-  if (!src) return '';
+  if (!src) {return '';}
 
   const lowerSrc = src.toLowerCase().trim();
   const dangerousProtocols = ['javascript:', 'vbscript:', 'file:'];
@@ -97,9 +98,9 @@ function resolveImageUrl(src: string | undefined): string {
     }
     return src;
   }
-  if (src.startsWith('http://') || src.startsWith('https://')) return src;
-  if (src.startsWith('/api/')) return src;
-  if (src.startsWith('/')) return src;
+  if (src.startsWith('http://') || src.startsWith('https://')) {return src;}
+  if (src.startsWith('/api/')) {return src;}
+  if (src.startsWith('/')) {return src;}
   return `/api/file/${encodeURIComponent(src)}`;
 }
 
@@ -109,12 +110,12 @@ function buildResponsiveUrl(fileId: string, width: number, format: string, quali
 
 function buildViewUrl(fileId: string, width?: number, height?: number, format?: string, quality?: number): string {
   const params = new URLSearchParams();
-  if (width) params.set('w', String(width));
-  if (height) params.set('h', String(height));
-  if (format) params.set('format', format);
-  if (quality) params.set('q', String(quality));
+  if (width) {params.set('w', String(width));}
+  if (height) {params.set('h', String(height));}
+  if (format) {params.set('format', format);}
+  if (quality) {params.set('q', String(quality));}
   const queryString = params.toString();
-  return `/api/file/${fileId}/view${queryString ? '?' + queryString : ''}`;
+  return `/api/file/${fileId}/view${queryString ? `?${  queryString}` : ''}`;
 }
 
 function buildThumbnailUrl(fileId: string, size: number): string {
@@ -122,7 +123,7 @@ function buildThumbnailUrl(fileId: string, size: number): string {
 }
 
 function getRetryUrl(url: string, retry: number): string {
-  if (retry === 0) return url;
+  if (retry === 0) {return url;}
   const separator = url.includes('?') ? '&' : '?';
   return `${url}${separator}_retry=${retry}`;
 }
@@ -144,7 +145,7 @@ function useSupportsWebP(): boolean {
 export function Image({
   src,
   alt,
-  fallback = '/placeholder.png',
+  fallback = placeholderImage,
   placeholder = 'blur',
   retryCount = 2,
   retryDelay = 1000,
@@ -172,8 +173,8 @@ export function Image({
   const wasLoadedBefore = resolvedSrc ? imageCache.has(resolvedSrc) : false;
 
   const actualFormat = useMemo(() => {
-    if (format === 'original') return 'original';
-    if (format === 'webp' && !supportsWebP) return 'jpeg';
+    if (format === 'original') {return 'original';}
+    if (format === 'webp' && !supportsWebP) {return 'jpeg';}
     return format;
   }, [format, supportsWebP]);
 
@@ -186,10 +187,10 @@ export function Image({
       `${buildResponsiveUrl(fileId, w, actualFormat, quality)} ${w}w`
     );
     
-    const sizesAttr = `(max-width: ${widths[0]}px) ${widths[0]}px, ` +
+    const sizesAttr = `(max-width: ${widths[0]}px) ${widths[0]}px, ${ 
       widths.slice(1).map((w, i) => 
         `(max-width: ${w}px) ${widths[i]}px`
-      ).join(', ') + `, ${widths[widths.length - 1]}px`;
+      ).join(', ')  }, ${widths[widths.length - 1]}px`;
 
     return {
       mainSrc: buildResponsiveUrl(fileId, widths[widths.length - 1], actualFormat, quality),
@@ -208,7 +209,7 @@ export function Image({
   }, []);
 
   useEffect(() => {
-    if (!resolvedSrc) return;
+    if (!resolvedSrc) {return;}
 
     if (prevSrcRef.current !== resolvedSrc) {
       prevSrcRef.current = resolvedSrc;

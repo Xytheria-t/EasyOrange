@@ -1,8 +1,9 @@
-import { useRef, useState, useCallback, memo, useEffect } from 'react'
+import { useRef, useState, useCallback, memo } from 'react'
 import { Heart, MessageCircle, Eye, MapPin, Clock, Sparkles } from 'lucide-react'
 import { Product, CONDITION_LABEL_MAP } from '@/types'
 import { formatPrice, formatRelativeTime } from '@/utils'
 import { Image } from '@/components/ui/Image'
+import placeholderImage from '@/assets/placeholder.png'
 
 interface ProductCardProps {
   product: Product
@@ -13,21 +14,19 @@ interface ProductCardProps {
   index?: number
 }
 
-export const ProductCard = memo(function ProductCard({
+export const ProductCard = memo(({
   product,
   onFavorite,
   isFavorited = false,
   onViewDetails,
   style,
   index = 0,
-}: ProductCardProps) {
+}: ProductCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null)
-  const tiltStyleRef = useRef<React.CSSProperties>({})
-  const rafRef = useRef<number | null>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
-  const imageUrl = product.images?.[0] || '/placeholder.png'
+  const imageUrl = product.images?.[0] || placeholderImage
   const conditionLabel = CONDITION_LABEL_MAP[product.condition] || product.condition
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price
   const discountPercent = hasDiscount
@@ -42,49 +41,32 @@ export const ProductCard = memo(function ProductCard({
     onFavorite?.(product.id, !isFavorited)
   }
 
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-      }
-    }
-  }, [])
-
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return
+    if (!cardRef.current) {return}
 
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current)
-    }
+    const rect = cardRef.current.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+    const rotateX = (y - centerY) / 20
+    const rotateY = (centerX - x) / 20
 
-    rafRef.current = requestAnimationFrame(() => {
-      if (!cardRef.current) return
-      
-      const rect = cardRef.current.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      const centerX = rect.width / 2
-      const centerY = rect.height / 2
-      const rotateX = (y - centerY) / 20
-      const rotateY = (centerX - x) / 20
-
-      const transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) scale(1.02)`
-      cardRef.current.style.transform = transform
-      cardRef.current.style.transition = 'transform 0.1s ease-out'
-    })
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) scale(1.02)`
   }, [])
 
   const handleMouseLeave = useCallback(() => {
     if (cardRef.current) {
-      const resetStyle = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)'
-      cardRef.current.style.transform = resetStyle
-      cardRef.current.style.transition = 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)'
-      tiltStyleRef.current = { transform: resetStyle }
+      cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0px) scale(1)'
+      cardRef.current.dataset.tiltActive = 'false'
     }
     setIsHovered(false)
   }, [])
 
   const handleMouseEnter = useCallback(() => {
+    if (cardRef.current) {
+      cardRef.current.dataset.tiltActive = 'true'
+    }
     setIsHovered(true)
   }, [])
 

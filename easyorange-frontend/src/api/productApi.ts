@@ -2,7 +2,7 @@
  * @fileoverview 商品 API 模块
  */
 
-import type { PageResult, Category, Product, ProductQueryParams, CreateProductRequest, UpdateProductRequest } from '../types/index.js';
+import type { PageResult, Category, Product, ProductQueryParams, CreateProductRequest, UpdateProductRequest } from '@/types';
 import { request } from './core/request';
 
 export const productApi = {

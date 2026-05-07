@@ -1,10 +1,3 @@
-/**
- * @fileoverview Shared motion controller
- * @description Coordinates header scroll state and reveal animations.
- */
-
-import { throttle } from '../utils/index.js';
-
 type RevealVariant = 'up' | 'soft' | 'card';
 
 const REVEAL_SELECTORS = [
@@ -32,21 +25,17 @@ const REVEAL_SELECTORS = [
 ].join(', ');
 
 export class MotionController {
-    private header: HTMLElement | null = null;
     private initialized = false;
     private revealObserver: IntersectionObserver | null = null;
     private mutationObserver: MutationObserver | null = null;
-    private scrollHandler: (() => void) | null = null;
     private reduceMotionMedia: MediaQueryList | null = null;
 
     init(): void {
         if (this.initialized) {return;}
 
-        this.header = document.querySelector('.unified-header');
         this.reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
         document.documentElement.classList.add('motion-enabled');
 
-        this.initHeaderMotion();
         this.initRevealMotion();
         this.initialized = true;
     }
@@ -57,31 +46,13 @@ export class MotionController {
     }
 
     destroy(): void {
-        if (this.scrollHandler) {
-            window.removeEventListener('scroll', this.scrollHandler);
-            this.scrollHandler = null;
-        }
-
         this.revealObserver?.disconnect();
         this.revealObserver = null;
 
         this.mutationObserver?.disconnect();
         this.mutationObserver = null;
 
-        this.header = null;
         this.initialized = false;
-    }
-
-    private initHeaderMotion(): void {
-        if (!this.header) {return;}
-
-        const applyHeaderState = () => {
-            this.header?.classList.toggle('scrolled', window.scrollY > 18);
-        };
-
-        this.scrollHandler = throttle(applyHeaderState, 60);
-        window.addEventListener('scroll', this.scrollHandler, { passive: true });
-        applyHeaderState();
     }
 
     private initRevealMotion(): void {
@@ -118,9 +89,9 @@ export class MotionController {
             const hasElementChanges = mutations.some(mutation =>
                 Array.from(mutation.addedNodes).some(node => node instanceof HTMLElement)
             );
-            if (!hasElementChanges) return;
+            if (!hasElementChanges) {return;}
 
-            if (debounceTimer) clearTimeout(debounceTimer);
+            if (debounceTimer) {clearTimeout(debounceTimer);}
             debounceTimer = setTimeout(() => {
                 mutations.forEach(mutation => {
                     mutation.addedNodes.forEach(node => {

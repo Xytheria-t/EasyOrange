@@ -10,10 +10,10 @@ import {
     IMAGE_TYPE_ERROR,
     FILE_SIZE_ERROR,
     MAX_IMAGES_ERROR
-} from './constants.js';
-import { errorHandler } from '../../utils/errorHandler.js';
-import { isSuccessCode } from '../../types';
-import { getStoredToken } from '../../features/auth/session.js';
+} from './constants';
+import { errorHandler } from '@/utils/errorHandler';
+import { isSuccessCode } from '@/types';
+import { getStoredToken } from '@/features/auth/session';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -66,7 +66,7 @@ export class ImageUploader {
         this.maxFileSize = options.maxFileSize || MAX_FILE_SIZE;
         this.images = [];
         this.onImagesChange = options.onImagesChange || (() => {});
-        this.showToast = options.showToast || ((t) => console.log(`[${t.type}] ${t.message}`));
+        this.showToast = options.showToast || (() => {});
         this.draggedItem = null;
         this.elements = {
             uploadArea: null,

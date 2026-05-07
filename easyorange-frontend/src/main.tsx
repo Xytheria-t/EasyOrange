@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from './lib/queryClient';
 import App from './App';
-import { initTokenRefresh } from './app/authSession';
+import { initTokenRefresh } from './features/auth/session';
 import './styles/tailwind.css';
 import './styles/main.css';
 import './styles/floating-nav.css';

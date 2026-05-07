@@ -4,7 +4,7 @@ import { Camera, X, Loader2 } from 'lucide-react';
 import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
 import { compressImage } from '@/utils/imageCompress';
-import { CONDITION_LABEL_MAP } from '@/types/product';
+import { CONDITION_LABEL_MAP } from '@/types';
 import '@/styles/main.css';
 
 interface FormState {
@@ -70,10 +70,10 @@ export function EditProductPage() {
 
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
-        if (!form.name.trim()) newErrors.name = '请输入商品名称';
-        if (!form.price || Number(form.price) <= 0 || isNaN(Number(form.price))) newErrors.price = '请输入有效价格';
-        if (!form.categoryId || Number(form.categoryId) <= 0) newErrors.categoryId = '请选择商品类别';
-        if (!form.conditionLevel || Number(form.conditionLevel) <= 0) newErrors.conditionLevel = '请选择新旧程度';
+        if (!form.name.trim()) {newErrors.name = '请输入商品名称';}
+        if (!form.price || Number(form.price) <= 0 || isNaN(Number(form.price))) {newErrors.price = '请输入有效价格';}
+        if (!form.categoryId || Number(form.categoryId) <= 0) {newErrors.categoryId = '请选择商品类别';}
+        if (!form.conditionLevel || Number(form.conditionLevel) <= 0) {newErrors.conditionLevel = '请选择新旧程度';}
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -91,12 +91,12 @@ export function EditProductPage() {
 
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (!files) return;
+        if (!files) {return;}
 
         for (const file of Array.from(files)) {
-            if (form.imageUrls.length >= 9) break;
-            if (!file.type.startsWith('image/')) continue;
-            if (file.size > 10 * 1024 * 1024) continue;
+            if (form.imageUrls.length >= 9) {break;}
+            if (!file.type.startsWith('image/')) {continue;}
+            if (file.size > 10 * 1024 * 1024) {continue;}
 
             const index = form.imageUrls.length;
             setUploadingIndex(index);
@@ -123,7 +123,7 @@ export function EditProductPage() {
     };
 
     const handleSubmit = async () => {
-        if (!validate()) return;
+        if (!validate()) {return;}
         try {
             await updateProduct.mutateAsync({
                 name: form.name.trim(),

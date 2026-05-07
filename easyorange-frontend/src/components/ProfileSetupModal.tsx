@@ -5,7 +5,7 @@ import { userApi } from '@/api/userApi'
 import { useQueryClient } from '@tanstack/react-query'
 import { useUIStore } from '@/store/uiStore'
 import { errorHandler } from '@/utils/errorHandler'
-import { openOverlayLayer, closeOverlayLayer } from '@/stores/overlayStore'
+import { openOverlayLayer, closeOverlayLayer } from '@/store/overlayStore'
 
 interface ProfileSetupModalProps {
   isOpen: boolean
@@ -35,8 +35,8 @@ const formFields: FormField[] = [
     required: true,
     type: 'text',
     validate: (value) => {
-      if (!value || value.trim().length < 2) return '真实姓名至少需要2个字符'
-      if (!/^[\u4e00-\u9fa5a-zA-Z\s]+$/.test(value)) return '姓名只能包含中文、英文字母和空格'
+      if (!value || value.trim().length < 2) {return '真实姓名至少需要2个字符'}
+      if (!/^[\u4e00-\u9fa5a-zA-Z\s]+$/.test(value)) {return '姓名只能包含中文、英文字母和空格'}
       return null
     }
   },
@@ -48,7 +48,7 @@ const formFields: FormField[] = [
     required: true,
     type: 'text',
     validate: (value) => {
-      if (!value || value.trim().length < 5) return '请输入有效的学号'
+      if (!value || value.trim().length < 5) {return '请输入有效的学号'}
       return null
     }
   },
@@ -60,8 +60,8 @@ const formFields: FormField[] = [
     required: true,
     type: 'email',
     validate: (value) => {
-      if (!value) return '邮箱不能为空'
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return '请输入有效的邮箱地址'
+      if (!value) {return '邮箱不能为空'}
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {return '请输入有效的邮箱地址'}
       return null
     }
   },
@@ -74,8 +74,8 @@ const formFields: FormField[] = [
     type: 'tel',
     maxLength: 11,
     validate: (value) => {
-      if (!value) return '手机号不能为空'
-      if (!/^1[3-9]\d{9}$/.test(value)) return '请输入有效的11位手机号'
+      if (!value) {return '手机号不能为空'}
+      if (!/^1[3-9]\d{9}$/.test(value)) {return '请输入有效的11位手机号'}
       return null
     }
   }
@@ -113,7 +113,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
   }, [isOpen])
 
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {return}
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         handleClose()
@@ -127,7 +127,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, handleClose, isSubmitting])
 
-  if (!isOpen) return null
+  if (!isOpen) {return null}
 
   const validateField = (field: FormField, value: string): string | null => {
     if (field.required && !value.trim()) {

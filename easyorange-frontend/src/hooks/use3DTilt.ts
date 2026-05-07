@@ -30,7 +30,7 @@ export function use3DTilt(config: TiltConfig = {}) {
 
   const applyTransform = useCallback(() => {
     const el = elementRef.current
-    if (!el) return
+    if (!el) {return}
     const { rotateX, rotateY, scale } = stateRef.current
     el.style.transform = `perspective(${perspective}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(${scale}, ${scale}, ${scale})`
   }, [perspective])
@@ -61,7 +61,7 @@ export function use3DTilt(config: TiltConfig = {}) {
         }
       }
 
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      if (rafRef.current) {cancelAnimationFrame(rafRef.current)}
       rafRef.current = requestAnimationFrame(animate)
     },
     [transitionDuration, applyTransform]
@@ -70,7 +70,7 @@ export function use3DTilt(config: TiltConfig = {}) {
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       const el = elementRef.current
-      if (!el || !isHoveringRef.current) return
+      if (!el || !isHoveringRef.current) {return}
 
       const rect = el.getBoundingClientRect()
       const centerX = rect.left + rect.width / 2
@@ -108,7 +108,7 @@ export function use3DTilt(config: TiltConfig = {}) {
 
   useEffect(() => {
     const el = elementRef.current
-    if (!el) return
+    if (!el) {return}
 
     el.addEventListener('mouseenter', handleMouseEnter)
     el.addEventListener('mousemove', handleMouseMove)
@@ -118,7 +118,7 @@ export function use3DTilt(config: TiltConfig = {}) {
       el.removeEventListener('mouseenter', handleMouseEnter)
       el.removeEventListener('mousemove', handleMouseMove)
       el.removeEventListener('mouseleave', handleMouseLeave)
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      if (rafRef.current) {cancelAnimationFrame(rafRef.current)}
     }
   }, [handleMouseEnter, handleMouseMove, handleMouseLeave])
 

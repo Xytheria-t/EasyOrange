@@ -26,16 +26,13 @@ export default function ProductsSection() {
   ]
 
   const sectionRef = useRef<HTMLElement>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
   const indicatorRef = useRef<HTMLDivElement>(null)
   const tabsRef = useRef<HTMLDivElement>(null)
-  const rafRef = useRef<number | null>(null)
   const [isVisible, setIsVisible] = useState(false)
 
-  // Intersection Observer for scroll-triggered reveal
   useEffect(() => {
     const section = sectionRef.current
-    if (!section) return
+    if (!section) {return}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -51,49 +48,11 @@ export default function ProductsSection() {
     return () => observer.disconnect()
   }, [])
 
-  // Parallax effect on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-      }
-
-      rafRef.current = requestAnimationFrame(() => {
-        const section = sectionRef.current
-        if (!section) return
-
-        const rect = section.getBoundingClientRect()
-        const scrollProgress = -rect.top / window.innerHeight
-
-        const orbs = section.querySelectorAll('.transition-orb')
-        orbs.forEach((orb, index) => {
-          const el = orb as HTMLElement
-          const speed = 0.1 + index * 0.05
-          const yOffset = scrollProgress * 100 * speed
-          el.style.transform = `translateY(${yOffset}px)`
-        })
-
-        if (gridRef.current && rect.top < window.innerHeight && rect.bottom > 0) {
-          const gridOffset = scrollProgress * 30
-          gridRef.current.style.transform = `translateY(${gridOffset}px)`
-        }
-      })
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', handleScroll)
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current)
-      }
-    }
-  }, [])
-
   // Sliding indicator for filter tabs
   const updateIndicator = useCallback((tabElement: HTMLButtonElement | null) => {
     const indicator = indicatorRef.current
     const tabs = tabsRef.current
-    if (!indicator || !tabs || !tabElement) return
+    if (!indicator || !tabs || !tabElement) {return}
 
     const tabsRect = tabs.getBoundingClientRect()
     const tabRect = tabElement.getBoundingClientRect()
@@ -105,7 +64,7 @@ export default function ProductsSection() {
   // Update indicator on mount and filter change
   useEffect(() => {
     const tabs = tabsRef.current
-    if (!tabs) return
+    if (!tabs) {return}
 
     const activeTab = tabs.querySelector(`[data-filter="${activeFilter}"]`) as HTMLButtonElement
     if (activeTab) {
@@ -118,9 +77,9 @@ export default function ProductsSection() {
   useEffect(() => {
     const handleResize = () => {
       const tabs = tabsRef.current
-      if (!tabs) return
+      if (!tabs) {return}
       const activeTab = tabs.querySelector(`[data-filter="${activeFilter}"]`) as HTMLButtonElement
-      if (activeTab) updateIndicator(activeTab)
+      if (activeTab) {updateIndicator(activeTab)}
     }
 
     window.addEventListener('resize', handleResize)
@@ -164,13 +123,13 @@ export default function ProductsSection() {
       </div>
 
       <div className="container">
-        <div className={`section-header ${isVisible ? 'revealed' : ''}`}>
+        <div className={`section-header reveal ${isVisible ? 'revealed' : ''}`}>
           <span className="section-tag">精选推荐</span>
           <h2 className="section-title">热门好物</h2>
           <p className="section-desc">精心挑选的优质商品，总有一款适合你</p>
         </div>
 
-        <div className={`products-filter ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '100ms' }}>
+        <div className={`products-filter reveal ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '100ms' }}>
           <div className="filter-tabs" ref={tabsRef}>
             {/* Sliding indicator */}
             <div
@@ -209,10 +168,8 @@ export default function ProductsSection() {
         </div>
 
         <div
-          ref={gridRef}
-          className={`products-grid ${isVisible ? 'revealed' : ''}`}
+          className={`products-grid reveal ${isVisible ? 'revealed' : ''}`}
           id="productsGrid"
-          style={{ willChange: 'transform' }}
         >
           {isLoading ? (
             <div className="skeleton-grid">
@@ -246,7 +203,7 @@ export default function ProductsSection() {
           )}
         </div>
 
-        <div className={`products-more ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '400ms' }}>
+        <div className={`products-more reveal ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '400ms' }}>
           <a href="/products" className="btn btn-outline btn-lg">
             <span>查看更多商品</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

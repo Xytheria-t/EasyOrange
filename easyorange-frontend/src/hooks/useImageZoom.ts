@@ -30,7 +30,7 @@ export function useImageZoom(config: ZoomConfig = {}) {
     (e: MouseEvent) => {
       const container = containerRef.current
       const image = imageRef.current
-      if (!container || !image) return
+      if (!container || !image) {return}
 
       const rect = container.getBoundingClientRect()
       const x = e.clientX - rect.left
@@ -65,7 +65,7 @@ export function useImageZoom(config: ZoomConfig = {}) {
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return
+    if (!container) {return}
 
     container.addEventListener('mousemove', handleMouseMove)
     container.addEventListener('mouseenter', handleMouseEnter)

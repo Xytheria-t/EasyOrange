@@ -2,8 +2,8 @@
  * @fileoverview 收藏 API 模块
  */
 
-import type { Favorite, PageResult } from '../types/index.js';
-import { request } from './core/request.js';
+import type { Favorite, PageResult } from '@/types';
+import { request } from './core/request';
 
 export const favoriteApi = {
     getList(params?: { pageNum?: number; pageSize?: number }) {

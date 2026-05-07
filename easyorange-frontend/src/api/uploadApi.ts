@@ -1,4 +1,4 @@
-import { request } from './core/request.js';
+import { request } from './core/request';
 
 interface UploadResponse {
     url: string;

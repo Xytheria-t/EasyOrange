@@ -1,5 +1,5 @@
-import { request } from './core/request.js';
-import type { PaymentMethod } from '../types/index.js';
+import { request } from './core/request';
+import type { PaymentMethod } from '@/types';
 
 export interface PaymentInfo {
     id: number;

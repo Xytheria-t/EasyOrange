@@ -1,24 +1,42 @@
+import { lazy, Suspense } from 'react'
 import HeroSection from '@/components/sections/HeroSection'
-import CategoriesSection from '@/components/sections/CategoriesSection'
-import ProductsSection from '@/components/sections/ProductsSection'
-import ServicesSection from '@/components/sections/ServicesSection'
-import { useScrollReveal } from '@/hooks'
+
+const CategoriesSection = lazy(() => import('@/components/sections/CategoriesSection'))
+const ProductsSection = lazy(() => import('@/components/sections/ProductsSection'))
+const ServicesSection = lazy(() => import('@/components/sections/ServicesSection'))
+
+const SectionSkeleton = () => (
+  <div className="section-skeleton">
+    <div className="skeleton-content">
+      <div className="skeleton-title" />
+      <div className="skeleton-grid">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="skeleton-card">
+            <div className="skeleton-image" />
+            <div className="skeleton-text" />
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)
 
 function HomePage() {
-  useScrollReveal()
-
   return (
     <>
       <HeroSection />
 
-      {/* 分类导航 */}
-      <CategoriesSection />
+      <Suspense fallback={<SectionSkeleton />}>
+        <CategoriesSection />
+      </Suspense>
 
-      {/* 热门商品 */}
-      <ProductsSection />
+      <Suspense fallback={<SectionSkeleton />}>
+        <ProductsSection />
+      </Suspense>
 
-      {/* 平台保障 */}
-      <ServicesSection />
+      <Suspense fallback={<SectionSkeleton />}>
+        <ServicesSection />
+      </Suspense>
     </>
   )
 }
