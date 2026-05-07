@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.application.service;
 
-import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -19,11 +18,10 @@ import java.util.concurrent.TimeUnit;
 public class ProductViewCountService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final ProductRepository productRepository;
+    private final ProductMapper productMapper;
 
     private static final String VIEW_COUNT_KEY = "eo:product:views:pending";
     private static final String VIEW_COUNT_LOCK = "eo:product:views:lock";
-    private static final int BATCH_SIZE = 100;
 
     public void incrementViewCount(Long productId) {
         if (productId == null) {
@@ -51,35 +49,21 @@ public class ProductViewCountService {
                 return;
             }
 
-            Map<Long, Long> viewCountMap = new HashMap<>();
+            Map<Long, Integer> viewCountMap = new HashMap<>();
             for (Map.Entry<Object, Object> entry : pendingViews.entrySet()) {
                 try {
                     Long productId = Long.parseLong(String.valueOf(entry.getKey()));
-                    Long count = Long.parseLong(String.valueOf(entry.getValue()));
+                    Integer count = Integer.parseInt(String.valueOf(entry.getValue()));
                     viewCountMap.put(productId, count);
                 } catch (NumberFormatException e) {
                     log.warn("解析浏览量数据失败: key={}, value={}", entry.getKey(), entry.getValue());
                 }
             }
 
-            int processed = 0;
-            for (Map.Entry<Long, Long> entry : viewCountMap.entrySet()) {
-                try {
-                    productRepository.findById(ProductId.of(entry.getKey()))
-                            .ifPresent(product -> {
-                                product.addViewCount(entry.getValue().intValue());
-                                productRepository.update(product);
-                            });
-                    processed++;
-                } catch (Exception e) {
-                    log.warn("更新商品浏览量失败: productId={}, error={}", entry.getKey(), e.getMessage());
-                }
-            }
-
-            if (processed > 0) {
-                Set<Object> keys = pendingViews.keySet();
-                redisTemplate.opsForHash().delete(VIEW_COUNT_KEY, keys.toArray(new Object[0]));
-                log.debug("批量更新浏览量完成: processed={}", processed);
+            if (!viewCountMap.isEmpty()) {
+                productMapper.batchAddViewCounts(viewCountMap);
+                redisTemplate.opsForHash().delete(VIEW_COUNT_KEY, pendingViews.keySet().toArray(new Object[0]));
+                log.debug("批量更新浏览量完成: processed={}", viewCountMap.size());
             }
         } catch (Exception e) {
             log.error("批量更新浏览量失败: error={}", e.getMessage(), e);

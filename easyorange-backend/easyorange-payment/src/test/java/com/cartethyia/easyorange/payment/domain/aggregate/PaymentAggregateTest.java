@@ -9,10 +9,10 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentInvalidStatusException;
 import com.cartethyia.easyorange.payment.domain.exception.RefundNotAllowedException;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("PaymentAggregate 聚合根测试")
 class PaymentAggregateTest {
 
-    private final PaymentGateway mockGateway = new PaymentGateway() {
+    private final PaymentGatewayPort mockGateway = new PaymentGatewayPort() {
         @Override
         public PaymentResult pay(PaymentAggregate aggregate) {
             return PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis());

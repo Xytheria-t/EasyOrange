@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter
 
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 
 import java.math.BigDecimal;
 

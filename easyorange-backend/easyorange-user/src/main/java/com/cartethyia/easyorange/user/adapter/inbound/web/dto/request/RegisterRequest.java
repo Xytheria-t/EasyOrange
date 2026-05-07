@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request;
 
-import com.cartethyia.easyorange.user.domain.shared.constant.UserConstant;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Password;
 import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Unique;
 import jakarta.validation.constraints.*;

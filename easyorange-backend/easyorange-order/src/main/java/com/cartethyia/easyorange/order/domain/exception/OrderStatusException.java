@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.domain.exception;
 
-import com.cartethyia.easyorange.order.enums.OrderResultCode;
-import com.cartethyia.easyorange.order.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 
 public class OrderStatusException extends OrderDomainException {
 

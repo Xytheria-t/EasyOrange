@@ -8,7 +8,11 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUser
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
+import com.cartethyia.easyorange.user.domain.constant.Sex;
+import com.cartethyia.easyorange.user.domain.constant.UserStatus;
+import com.cartethyia.easyorange.user.domain.constant.UserType;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
@@ -93,7 +97,7 @@ class UserAppServiceTest {
             "13812345678",
             "张三",
             null,
-            com.cartethyia.easyorange.user.domain.shared.enums.Sex.MALE,
+            Sex.MALE,
             "/avatar/old.png",
             null
         );
@@ -102,8 +106,8 @@ class UserAppServiceTest {
             .id(1L)
             .username("testuser")
             .password("$2a$10$encoded")
-            .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
-            .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
+            .userType(UserType.NORMAL)
+            .status(UserStatus.NORMAL)
             .profile(profile)
             .loginInfo(com.cartethyia.easyorange.user.domain.valueobject.LoginInfo.initial())
             .build();
@@ -348,7 +352,7 @@ class UserAppServiceTest {
                 "13812345678",
                 "张三",
                 null,
-                com.cartethyia.easyorange.user.domain.shared.enums.Sex.MALE,
+                Sex.MALE,
                 "/avatar/new.png",
                 null
             );
@@ -356,8 +360,8 @@ class UserAppServiceTest {
                 .id(1L)
                 .username("testuser")
                 .password("$2a$10$encoded")
-                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
-                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
                 .profile(newProfile)
                 .build();
 

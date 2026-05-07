@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.application.query.PaymentView;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class PaymentQueryHandlerTest {
 
     @Mock
-    private PaymentQueryRepository paymentQueryRepository;
+    private PaymentQueryRepositoryPort paymentQueryRepository;
 
     @InjectMocks
     private PaymentQueryHandler queryHandler;

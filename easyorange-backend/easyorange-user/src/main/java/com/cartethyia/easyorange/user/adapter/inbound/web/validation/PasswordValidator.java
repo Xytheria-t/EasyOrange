@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 
-import com.cartethyia.easyorange.user.domain.shared.constant.UserConstant;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

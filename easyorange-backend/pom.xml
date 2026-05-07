@@ -19,8 +19,6 @@
     <description>easyorange-backend</description>
 
     <modules>
-        <module>easyorange-common-core</module>
-        <module>easyorange-common-domain</module>
         <module>easyorange-common</module>
         <module>easyorange-framework</module>
         <module>easyorange-user</module>
@@ -47,21 +45,10 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <jetbrains.annotations.version>26.0.2</jetbrains.annotations.version>
         <testcontainers.version>1.21.0</testcontainers.version>
-        <thumbnailator.version>0.4.20</thumbnailator.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.cartethyia</groupId>
-                <artifactId>easyorange-common-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.cartethyia</groupId>
-                <artifactId>easyorange-common-domain</artifactId>
-                <version>${project.version}</version>
-            </dependency>
             <dependency>
                 <groupId>com.cartethyia</groupId>
                 <artifactId>easyorange-common</artifactId>
@@ -201,12 +188,6 @@
                 <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>net.coobird</groupId>
-                <artifactId>thumbnailator</artifactId>
-                <version>${thumbnailator.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

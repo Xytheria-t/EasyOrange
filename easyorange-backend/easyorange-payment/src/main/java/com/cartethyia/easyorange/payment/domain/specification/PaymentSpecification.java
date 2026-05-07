@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.specification;
 
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 
 public final class PaymentSpecification {
 

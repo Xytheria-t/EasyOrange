@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.domain.exception;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
-import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 
 public class PaymentDomainException extends BaseBusinessException {
 

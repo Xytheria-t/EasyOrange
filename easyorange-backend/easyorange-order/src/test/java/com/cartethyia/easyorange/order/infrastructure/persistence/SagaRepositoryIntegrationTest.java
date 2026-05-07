@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.infrastructure.persistence;
+package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
 import com.cartethyia.easyorange.order.domain.saga.SagaState;

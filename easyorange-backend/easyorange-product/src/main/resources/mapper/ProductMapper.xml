@@ -61,4 +61,10 @@
         </foreach>
     </select>
 
+    <update id="batchAddViewCounts">
+        <foreach collection="viewCounts" item="count" index="productId" separator=";">
+            UPDATE eo_product SET view_count = view_count + #{count} WHERE id = #{productId}
+        </foreach>
+    </update>
+
 </mapper>

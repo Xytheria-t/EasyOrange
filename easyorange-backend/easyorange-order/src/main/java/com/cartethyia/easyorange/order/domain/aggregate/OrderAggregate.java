@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.SnowflakeIdGenerator;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
@@ -15,8 +17,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.enums.OrderResultCode;
-import com.cartethyia.easyorange.order.enums.OrderStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request;
 
-import com.cartethyia.easyorange.user.domain.shared.enums.ClientType;
-import com.cartethyia.easyorange.user.domain.shared.enums.LoginMethod;
+import com.cartethyia.easyorange.user.domain.constant.ClientType;
+import com.cartethyia.easyorange.user.domain.constant.LoginMethod;
 import jakarta.validation.constraints.NotBlank;
 
 public record LoginRequest(

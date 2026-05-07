@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.application.event;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.payment.domain.event.DomainEventStore;
+import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
 import com.cartethyia.easyorange.payment.domain.event.StoredEvent;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DomainEventCompensator {
 
-    private final DomainEventStore eventStore;
+    private final DomainEventStorePort eventStore;
     private final DomainEventPublisher domainEventPublisher;
     private final ObjectMapper objectMapper;
 

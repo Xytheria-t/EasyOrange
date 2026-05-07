@@ -35,4 +35,6 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
     List<CategoryDO> selectCategoriesByIds(@Param("categoryIds") List<Long> categoryIds);
 
     List<SellerInfo> selectSellersByIds(@Param("sellerIds") Set<Long> sellerIds);
+
+    void batchAddViewCounts(@Param("viewCounts") java.util.Map<Long, Integer> viewCounts);
 }

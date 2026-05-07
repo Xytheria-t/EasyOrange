@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.order.infrastructure.cache;
 
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.order.constant.OrderConstant;
-import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

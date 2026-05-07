@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
-import com.cartethyia.easyorange.payment.enums.PaymentMethod;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PaymentQueryHandler {
 
-    private final PaymentQueryRepository paymentQueryRepository;
+    private final PaymentQueryRepositoryPort paymentQueryRepository;
 
     public PaymentView getPaymentById(Long paymentId) {
         PaymentAggregate aggregate = paymentQueryRepository.findAggregateById(paymentId)

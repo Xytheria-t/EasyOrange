@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.PaymentCall
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
-import com.cartethyia.easyorange.payment.domain.gateway.CallbackSignatureVerifier;
+import com.cartethyia.easyorange.payment.domain.port.output.CallbackSignatureVerifierPort;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentCommandController {
 
     private final PaymentCommandHandler commandHandler;
-    private final CallbackSignatureVerifier signatureVerifier;
+    private final CallbackSignatureVerifierPort signatureVerifier;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")

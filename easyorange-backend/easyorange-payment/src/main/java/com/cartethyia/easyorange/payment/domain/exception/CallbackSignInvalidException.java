@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.exception;
 
-import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 
 public class CallbackSignInvalidException extends PaymentDomainException {
 

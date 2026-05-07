@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.enums.OrderStatus;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;

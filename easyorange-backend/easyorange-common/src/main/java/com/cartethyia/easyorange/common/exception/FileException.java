@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.common.exception;
 
 import com.cartethyia.easyorange.common.enums.FileResultCode;
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import org.springframework.http.HttpStatus;
 
 /**
  * 文件异常类
@@ -63,5 +64,10 @@ public class FileException extends BaseBusinessException {
     @Override
     protected String defaultCode() {
         return FileResultCode.FILE_UPLOAD_FAILED.getCode();
+    }
+
+    @Override
+    protected HttpStatus defaultHttpStatus() {
+        return HttpStatus.BAD_REQUEST;
     }
 }

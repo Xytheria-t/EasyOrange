@@ -9,10 +9,10 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentGatewayException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.factory.PaymentFactory;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
 import com.cartethyia.easyorange.payment.domain.saga.SagaExecutionException;
 import com.cartethyia.easyorange.payment.domain.saga.SagaOrchestrator;
 import com.cartethyia.easyorange.payment.domain.saga.SagaStepResult;
@@ -28,9 +28,9 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class PaymentCommandHandler {
 
-    private final PaymentRepository paymentRepository;
+    private final PaymentRepositoryPort paymentRepository;
     private final DomainEventPublisher domainEventPublisher;
-    private final PaymentGateway paymentGateway;
+    private final PaymentGatewayPort paymentGateway;
     private final DistributedLockWrapper lockWrapper;
 
     @Transactional(rollbackFor = Exception.class)

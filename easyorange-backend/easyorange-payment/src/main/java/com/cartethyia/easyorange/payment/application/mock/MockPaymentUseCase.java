@@ -5,10 +5,10 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentRes
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.factory.PaymentFactory;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
-import com.cartethyia.easyorange.payment.enums.PaymentMethod;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,8 +19,8 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class MockPaymentUseCase {
 
-    private final PaymentRepository paymentRepository;
-    private final PaymentGateway paymentGateway;
+    private final PaymentRepositoryPort paymentRepository;
+    private final PaymentGatewayPort paymentGateway;
 
     public PaymentResponse createMockPayment(Long orderId, Integer paymentMethod, BigDecimal amount) {
         PaymentAggregate aggregate = PaymentFactory.create(orderId, 0L, amount, paymentMethod, null);

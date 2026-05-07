@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.domain.exception;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.order.enums.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 
 public class OrderDomainException extends BusinessException {
 

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.domain.valueobject;
 
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 
 public record PaymentMethodVO(Integer code) {
     public PaymentMethodVO {

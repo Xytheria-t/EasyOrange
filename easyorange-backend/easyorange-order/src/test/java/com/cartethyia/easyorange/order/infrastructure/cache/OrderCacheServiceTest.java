@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.infrastructure.cache;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

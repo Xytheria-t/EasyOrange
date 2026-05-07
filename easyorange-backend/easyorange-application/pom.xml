@@ -113,8 +113,9 @@
                     <user>easyorange_app</user>
                     <password>easyorange_app_dev</password>
                     <locations>
-                        <location>classpath:db/migration</location>
+                        <location>filesystem:src/main/resources/db/migration</location>
                     </locations>
+                    <placeholderReplacement>false</placeholderReplacement>
                 </configuration>
             </plugin>
         </plugins>

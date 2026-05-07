@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.service;
 
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
@@ -22,7 +23,7 @@ public class CategoryCacheService implements CategoryCachePort {
     private final CategoryQueryRepository categoryQueryRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private final Cache<String, List<CategoryDO>> localCache;
+    private final Cache<String, List<CategoryReadModel>> localCache;
 
     private static final String CACHE_KEY_LEVEL = ProductConstant.CATEGORY_LIST_KEY + ":level:";
     private static final String CACHE_KEY_PARENT = ProductConstant.CATEGORY_LIST_KEY + ":parent:";
@@ -42,19 +43,19 @@ public class CategoryCacheService implements CategoryCachePort {
     }
 
     @Override
-    public List<CategoryDO> getCategoriesByLevel(Integer level) {
+    public List<CategoryReadModel> getCategoriesByLevel(Integer level) {
         String cacheKey = CACHE_KEY_LEVEL + level;
 
-        List<CategoryDO> cached = localCache.getIfPresent(cacheKey);
+        List<CategoryReadModel> cached = localCache.getIfPresent(cacheKey);
         if (cached != null) {
             return cached;
         }
 
         try {
             Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
-            if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryDO) {
+            if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
                 @SuppressWarnings("unchecked")
-                List<CategoryDO> redisCached = (List<CategoryDO>) rawList;
+                List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
                 localCache.put(cacheKey, redisCached);
                 return redisCached;
             }
@@ -66,31 +67,32 @@ public class CategoryCacheService implements CategoryCachePort {
         if (categories == null) {
             categories = Collections.emptyList();
         }
+        List<CategoryReadModel> models = categories.stream().map(this::toReadModel).toList();
 
-        localCache.put(cacheKey, categories);
+        localCache.put(cacheKey, models);
         try {
-            redisTemplate.opsForValue().set(cacheKey, categories, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.warn("设置分类Redis缓存失败: level={}, error={}", level, e.getMessage());
         }
 
-        return categories;
+        return models;
     }
 
     @Override
-    public List<CategoryDO> getCategoriesByParentId(Long parentId) {
+    public List<CategoryReadModel> getCategoriesByParentId(Long parentId) {
         String cacheKey = CACHE_KEY_PARENT + parentId;
 
-        List<CategoryDO> cached = localCache.getIfPresent(cacheKey);
+        List<CategoryReadModel> cached = localCache.getIfPresent(cacheKey);
         if (cached != null) {
             return cached;
         }
 
         try {
             Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
-            if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryDO) {
+            if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
                 @SuppressWarnings("unchecked")
-                List<CategoryDO> redisCached = (List<CategoryDO>) rawList;
+                List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
                 localCache.put(cacheKey, redisCached);
                 return redisCached;
             }
@@ -102,19 +104,20 @@ public class CategoryCacheService implements CategoryCachePort {
         if (categories == null) {
             categories = Collections.emptyList();
         }
+        List<CategoryReadModel> models = categories.stream().map(this::toReadModel).toList();
 
-        localCache.put(cacheKey, categories);
+        localCache.put(cacheKey, models);
         try {
-            redisTemplate.opsForValue().set(cacheKey, categories, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
             log.warn("设置分类Redis缓存失败: parentId={}, error={}", parentId, e.getMessage());
         }
 
-        return categories;
+        return models;
     }
 
     @Override
-    public Optional<CategoryDO> getCategoryById(Long id) {
+    public Optional<CategoryReadModel> getCategoryById(Long id) {
         if (id == null) {
             return Optional.empty();
         }
@@ -123,8 +126,8 @@ public class CategoryCacheService implements CategoryCachePort {
 
         try {
             Object cached = redisTemplate.opsForValue().get(cacheKey);
-            if (cached instanceof CategoryDO categoryDO) {
-                return Optional.of(categoryDO);
+            if (cached instanceof CategoryReadModel readModel) {
+                return Optional.of(readModel);
             }
         } catch (Exception e) {
             log.warn("读取分类Redis缓存失败: id={}, error={}", id, e.getMessage());
@@ -132,13 +135,13 @@ public class CategoryCacheService implements CategoryCachePort {
 
         List<CategoryDO> allCategories = categoryQueryRepository.findByIds(List.of(id));
         if (allCategories != null && !allCategories.isEmpty()) {
-            CategoryDO category = allCategories.getFirst();
+            CategoryReadModel model = toReadModel(allCategories.getFirst());
             try {
-                redisTemplate.opsForValue().set(cacheKey, category, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
             } catch (Exception e) {
                 log.warn("设置分类Redis缓存失败: id={}, error={}", id, e.getMessage());
             }
-            return Optional.of(category);
+            return Optional.of(model);
         }
 
         return Optional.empty();
@@ -177,5 +180,19 @@ public class CategoryCacheService implements CategoryCachePort {
         } catch (Exception e) {
             log.warn("清除分类Redis缓存失败: parentId={}, error={}", parentId, e.getMessage());
         }
+    }
+
+    private CategoryReadModel toReadModel(CategoryDO category) {
+        return new CategoryReadModel(
+                category.getId(),
+                category.getName(),
+                category.getParentId(),
+                category.getLevel(),
+                category.getIcon(),
+                category.getSortOrder(),
+                category.getStatus(),
+                category.getCreateTime(),
+                0
+        );
     }
 }

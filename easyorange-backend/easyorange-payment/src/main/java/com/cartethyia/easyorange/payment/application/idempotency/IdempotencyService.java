@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.application.idempotency;
 
-import com.cartethyia.easyorange.payment.domain.idempotency.IdempotencyKey;
-import com.cartethyia.easyorange.payment.domain.idempotency.IdempotencyKeyRepository;
+import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
+import com.cartethyia.easyorange.payment.domain.port.output.IdempotencyKeyRepositoryPort;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class IdempotencyService {
 
-    private final IdempotencyKeyRepository repository;
+    private final IdempotencyKeyRepositoryPort repository;
     private final ObjectMapper objectMapper;
 
     private static final int EXPIRY_HOURS = 24;

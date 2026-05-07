@@ -8,6 +8,6 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @ComponentScan(basePackages = "com.cartethyia.easyorange.order")
-@MapperScan("com.cartethyia.easyorange.order.infrastructure.persistence")
+@MapperScan("com.cartethyia.easyorange.order.adapter.outbound.persistence")
 public class OrderTestApplication {
 }

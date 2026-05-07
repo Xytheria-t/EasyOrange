@@ -16,18 +16,6 @@
     </description>
 
     <dependencies>
-        <!-- Core 模块 - 纯 Java 工具类 -->
-        <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-common-core</artifactId>
-        </dependency>
-
-        <!-- Domain 模块 - 领域概念 -->
-        <dependency>
-            <groupId>com.cartethyia</groupId>
-            <artifactId>easyorange-common-domain</artifactId>
-        </dependency>
-
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -41,10 +29,22 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
-        <!-- Jackson 3 - JSON 处理（内置 Java 8 时间类型支持） -->
+        <!-- Jackson 3 - JSON 处理 -->
         <dependency>
-            <groupId>tools.jackson.core</groupId>
+            <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+
+        <!-- Jetbrains Annotations -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Servlet API -->

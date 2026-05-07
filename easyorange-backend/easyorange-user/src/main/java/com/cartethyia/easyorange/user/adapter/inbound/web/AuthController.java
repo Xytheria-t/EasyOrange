@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RefreshTok
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RegisterRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
-import com.cartethyia.easyorange.user.domain.shared.constant.UserConstant;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

@@ -117,11 +117,7 @@ public class ProductCommandService {
     public void restoreStock(RestoreStockCommand command) {
         ProductId productId = ProductId.of(command.getProductId());
         Product product = productRepository.findById(productId)
-                .orElse(null);
-        if (product == null) {
-            log.warn("库存恢复失败: productId={}", command.getProductId());
-            return;
-        }
+                .orElseThrow(() -> new ProductNotFoundException(productId));
 
         product.restoreStock();
         productRepository.update(product);
@@ -158,11 +154,7 @@ public class ProductCommandService {
     public void markAsSold(MarkAsSoldCommand command) {
         ProductId productId = ProductId.of(command.getProductId());
         Product product = productRepository.findById(productId)
-                .orElse(null);
-        if (product == null) {
-            log.warn("标记售出失败: productId={}", command.getProductId());
-            return;
-        }
+                .orElseThrow(() -> new ProductNotFoundException(productId));
 
         product.markAsSold();
         productRepository.update(product);

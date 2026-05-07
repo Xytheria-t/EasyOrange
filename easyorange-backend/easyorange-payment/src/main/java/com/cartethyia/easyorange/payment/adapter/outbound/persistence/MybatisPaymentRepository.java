@@ -7,8 +7,8 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.Pay
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.OptimisticLockException;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepository;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -19,7 +19,7 @@ import java.util.Optional;
 @Slf4j
 @Repository
 @RequiredArgsConstructor
-public class MybatisPaymentRepository implements PaymentRepository, PaymentQueryRepository {
+public class MybatisPaymentRepository implements PaymentRepositoryPort, PaymentQueryRepositoryPort {
 
     private final PaymentMapper paymentMapper;
 

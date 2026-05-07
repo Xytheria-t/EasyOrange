@@ -7,11 +7,11 @@ import com.cartethyia.easyorange.payment.application.command.CreatePaymentComman
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,13 +38,13 @@ import static org.mockito.Mockito.*;
 class PaymentCommandHandlerTest {
 
     @Mock
-    private PaymentRepository paymentRepository;
+    private PaymentRepositoryPort paymentRepository;
 
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private PaymentGateway paymentGateway;
+    private PaymentGatewayPort paymentGateway;
 
     @InjectMocks
     private PaymentCommandHandler commandHandler;

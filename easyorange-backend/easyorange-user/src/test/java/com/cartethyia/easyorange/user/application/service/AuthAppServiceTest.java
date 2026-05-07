@@ -8,7 +8,10 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RegisterRe
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
+import com.cartethyia.easyorange.user.domain.constant.UserStatus;
+import com.cartethyia.easyorange.user.domain.constant.UserType;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationDomainService;
@@ -27,12 +30,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,8 +96,8 @@ class AuthAppServiceTest {
                 .username("newuser")
                 .password("$2a$10$encoded")
                 .profile(profile)
-                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
-                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
                 .build();
 
             User savedUser = User.builder()
@@ -103,8 +105,8 @@ class AuthAppServiceTest {
                 .username("newuser")
                 .password("$2a$10$encoded")
                 .profile(profile)
-                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
-                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
                 .build();
 
             when(userRegistrationDomainService.register("newuser", "Password123", null, null, "阳光橙子"))
@@ -154,9 +156,9 @@ class AuthAppServiceTest {
                 .id(1L)
                 .username("testuser")
                 .password("$2a$10$encoded")
-                .userType(com.cartethyia.easyorange.user.domain.shared.enums.UserType.NORMAL)
-                .status(com.cartethyia.easyorange.user.domain.shared.enums.UserStatus.NORMAL)
-                .loginInfo(com.cartethyia.easyorange.user.domain.valueobject.LoginInfo.initial())
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .loginInfo(LoginInfo.initial())
                 .build();
 
             when(authenticationDomainService.authenticateByPassword("testuser", "Password123"))

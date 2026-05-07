@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.order.domain.exception;
 
-import com.cartethyia.easyorange.order.enums.OrderResultCode;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 
 public class OrderNotFoundException extends OrderDomainException {
 

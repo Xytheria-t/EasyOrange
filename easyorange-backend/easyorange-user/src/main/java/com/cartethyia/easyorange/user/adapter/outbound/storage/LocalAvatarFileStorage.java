@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.util.FileUtils;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
-import com.cartethyia.easyorange.user.domain.shared.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.constant.UserResultCode;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

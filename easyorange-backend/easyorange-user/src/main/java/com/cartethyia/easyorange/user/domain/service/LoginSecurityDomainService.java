@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
-import com.cartethyia.easyorange.user.domain.shared.constant.UserConstant;
+import com.cartethyia.easyorange.user.constant.UserConstant;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

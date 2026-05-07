@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.payment.application.command.CreatePaymentComman
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentRepository;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class PaymentConcurrencyTest {
     private PaymentCommandHandler commandHandler;
 
     @Autowired
-    private PaymentRepository paymentRepository;
+    private PaymentRepositoryPort paymentRepository;
 
     @Test
     @DisplayName("并发支付应该只有一个成功（乐观锁测试）")

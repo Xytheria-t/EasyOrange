@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.user.domain.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
-import com.cartethyia.easyorange.user.domain.shared.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.constant.UserResultCode;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;

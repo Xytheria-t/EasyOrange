@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.DomainEventConverter;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.DomainEventMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.DomainEventPO;
-import com.cartethyia.easyorange.payment.domain.event.DomainEventStore;
+import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
 import com.cartethyia.easyorange.payment.domain.event.StoredEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -14,7 +14,7 @@ import java.util.UUID;
 
 @Repository
 @RequiredArgsConstructor
-public class JdbcDomainEventStore implements DomainEventStore {
+public class JdbcDomainEventStore implements DomainEventStorePort {
 
     private final DomainEventMapper domainEventMapper;
 

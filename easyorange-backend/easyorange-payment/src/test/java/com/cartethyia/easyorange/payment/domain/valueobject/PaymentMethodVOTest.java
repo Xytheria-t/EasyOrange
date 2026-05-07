@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.domain.valueobject;
 
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.enums.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

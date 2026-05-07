@@ -59,6 +59,7 @@ spring:
     validate-on-migrate: true
     clean-disabled: true
     table: flyway_schema_history
+    placeholder-replacement: false
 
   lifecycle:
     timeout-per-shutdown-phase: 90s

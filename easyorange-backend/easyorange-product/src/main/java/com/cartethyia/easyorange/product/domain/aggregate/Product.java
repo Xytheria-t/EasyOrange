@@ -223,7 +223,10 @@ public class Product {
 
     public void delete(Long userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new IllegalStateException("无权删除此商品");
+            throw new InvalidProductStatusException("无权删除此商品", id, status);
+        }
+        if (!status.canDelete()) {
+            throw new InvalidProductStatusException("已售商品不能删除", id, status);
         }
         touch();
         addDomainEvent(new ProductDeletedEvent(id.value(), userId));
@@ -251,6 +254,9 @@ public class Product {
     }
 
     public void restoreStock() {
+        if (status.isSold() || status.isOffline()) {
+            throw new InvalidProductStatusException("已售或下架商品不能恢复库存", id, status);
+        }
         this.stock = stock.increase();
         touch();
         addDomainEvent(new StockRestoredEvent(id.value()));

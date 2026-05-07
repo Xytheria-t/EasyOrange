@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.IdempotencyKeyMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.IdempotencyKeyPO;
-import com.cartethyia.easyorange.payment.domain.idempotency.IdempotencyKey;
-import com.cartethyia.easyorange.payment.domain.idempotency.IdempotencyKeyRepository;
+import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
+import com.cartethyia.easyorange.payment.domain.port.output.IdempotencyKeyRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
-public class MybatisIdempotencyKeyRepository implements IdempotencyKeyRepository {
+public class MybatisIdempotencyKeyRepository implements IdempotencyKeyRepositoryPort {
 
     private final IdempotencyKeyMapper mapper;
 

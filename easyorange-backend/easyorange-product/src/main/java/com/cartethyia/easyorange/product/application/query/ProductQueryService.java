@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductQueryRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
 import lombok.RequiredArgsConstructor;
@@ -94,7 +94,7 @@ public class ProductQueryService {
 
     @Transactional(readOnly = true)
     public List<CategoryResponse> getCategories(Long parentId) {
-        List<CategoryDO> categories;
+        List<CategoryReadModel> categories;
         if (parentId != null) {
             categories = categoryCachePort.getCategoriesByParentId(parentId);
         } else {
@@ -106,22 +106,22 @@ public class ProductQueryService {
         }
 
         List<Long> categoryIds = categories.stream()
-                .map(CategoryDO::getId)
+                .map(CategoryReadModel::id)
                 .toList();
 
         Map<Long, Long> productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
 
         return categories.stream()
                 .map(cat -> CategoryResponse.builder()
-                        .id(cat.getId())
-                        .name(cat.getName())
-                        .parentId(cat.getParentId())
-                        .level(cat.getLevel())
-                        .icon(cat.getIcon())
-                        .sortOrder(cat.getSortOrder())
-                        .status(cat.getStatus())
-                        .createTime(cat.getCreateTime())
-                        .productCount(productCountMap.getOrDefault(cat.getId(), 0L).intValue())
+                        .id(cat.id())
+                        .name(cat.name())
+                        .parentId(cat.parentId())
+                        .level(cat.level())
+                        .icon(cat.icon())
+                        .sortOrder(cat.sortOrder())
+                        .status(cat.status())
+                        .createTime(cat.createTime())
+                        .productCount(productCountMap.getOrDefault(cat.id(), 0L).intValue())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -196,19 +196,6 @@ public class ProductQueryService {
 
     public void incrementViewCount(Long id) {
         viewCountService.incrementViewCount(id);
-    }
-
-    private CategoryResponse toCategoryResponse(CategoryDO category) {
-        return CategoryResponse.builder()
-                .id(category.getId())
-                .name(category.getName())
-                .parentId(category.getParentId())
-                .level(category.getLevel())
-                .icon(category.getIcon())
-                .sortOrder(category.getSortOrder())
-                .status(category.getStatus())
-                .createTime(category.getCreateTime())
-                .build();
     }
 
     private ProductVO assembleProductVO(Product product) {

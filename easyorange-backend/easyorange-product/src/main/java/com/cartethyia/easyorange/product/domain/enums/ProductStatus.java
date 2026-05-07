@@ -67,4 +67,8 @@ public enum ProductStatus {
     public boolean canMarkAsSold() {
         return this == ONLINE;
     }
+
+    public boolean canDelete() {
+        return this != SOLD;
+    }
 }

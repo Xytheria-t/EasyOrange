@@ -3,21 +3,21 @@ package com.cartethyia.easyorange.payment.domain.aggregate;
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
 import com.cartethyia.easyorange.common.util.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.payment.domain.specification.PaymentSpecification;
 import com.cartethyia.easyorange.payment.domain.valueobject.PaymentAmount;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentInvalidStatusException;
 import com.cartethyia.easyorange.payment.domain.exception.RefundNotAllowedException;
-import com.cartethyia.easyorange.payment.enums.PaymentResultCode;
-import com.cartethyia.easyorange.payment.enums.PaymentStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -94,7 +94,7 @@ public class PaymentAggregate {
         return aggregate;
     }
 
-    public void pay(PaymentGateway gateway) {
+    public void pay(PaymentGatewayPort gateway) {
         if (!PaymentSpecification.canPay(this.status)) {
             throw PaymentInvalidStatusException.of("当前状态不允许支付: " + this.status);
         }
@@ -146,7 +146,7 @@ public class PaymentAggregate {
         }
     }
 
-    public void refund(BigDecimal refundAmount, PaymentGateway gateway) {
+    public void refund(BigDecimal refundAmount, PaymentGatewayPort gateway) {
         if (!PaymentSpecification.canRefund(this.status)) {
             throw RefundNotAllowedException.of("当前状态不允许退款: " + this.status);
         }

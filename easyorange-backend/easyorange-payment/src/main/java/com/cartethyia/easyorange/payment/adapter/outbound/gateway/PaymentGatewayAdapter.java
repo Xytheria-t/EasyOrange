@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.gateway;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentGateway;
-import com.cartethyia.easyorange.payment.domain.gateway.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.gateway.RefundResult;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
 import com.cartethyia.easyorange.payment.constant.PaymentConstant;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
@@ -13,7 +13,7 @@ import java.util.UUID;
 
 @Component
 @Profile("dev")
-public class PaymentGatewayAdapter implements PaymentGateway {
+public class PaymentGatewayAdapter implements PaymentGatewayPort {
 
     @Override
     public PaymentResult pay(PaymentAggregate aggregate) {

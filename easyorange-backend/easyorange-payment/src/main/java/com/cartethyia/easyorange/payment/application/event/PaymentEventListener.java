@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.application.event;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
-import com.cartethyia.easyorange.payment.domain.event.DomainEventStore;
+import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
 import com.cartethyia.easyorange.payment.domain.event.StoredEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PaymentEventListener {
 
-    private final DomainEventStore eventStore;
+    private final DomainEventStorePort eventStore;
     private final ObjectMapper objectMapper;
 
     @Async

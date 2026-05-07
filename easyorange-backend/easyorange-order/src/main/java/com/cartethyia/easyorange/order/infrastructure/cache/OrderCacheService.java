@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.order.infrastructure.cache;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.enums.OrderStatus;
-import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

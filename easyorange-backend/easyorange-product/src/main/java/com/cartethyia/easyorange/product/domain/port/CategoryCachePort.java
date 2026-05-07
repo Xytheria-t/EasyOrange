@@ -1,17 +1,17 @@
 package com.cartethyia.easyorange.product.domain.port;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface CategoryCachePort {
 
-    List<CategoryDO> getCategoriesByLevel(Integer level);
+    List<CategoryReadModel> getCategoriesByLevel(Integer level);
 
-    List<CategoryDO> getCategoriesByParentId(Long parentId);
+    List<CategoryReadModel> getCategoriesByParentId(Long parentId);
 
-    Optional<CategoryDO> getCategoryById(Long id);
+    Optional<CategoryReadModel> getCategoryById(Long id);
 
     void evictAll();
 

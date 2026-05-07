@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.order.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.domain.port.outbound.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.outbound.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.repository.OrderQueryCondition;
-import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.interfaces.assembler.OrderVOAssembler;
-import com.cartethyia.easyorange.order.interfaces.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.domain.port.output.OrderQueryCondition;
+import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.application.assembler.OrderVOAssembler;
+import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
