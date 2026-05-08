@@ -4,6 +4,9 @@ import HeroSection from '@/components/sections/HeroSection'
 const CategoriesSection = lazy(() => import('@/components/sections/CategoriesSection'))
 const ProductsSection = lazy(() => import('@/components/sections/ProductsSection'))
 const ServicesSection = lazy(() => import('@/components/sections/ServicesSection'))
+const UserStoriesSection = lazy(() => import('@/components/sections/UserStoriesSection'))
+const AchievementsSection = lazy(() => import('@/components/sections/AchievementsSection'))
+const ReviewsSection = lazy(() => import('@/components/sections/ReviewsSection'))
 
 const SectionSkeleton = () => (
   <div className="section-skeleton">
@@ -35,7 +38,19 @@ function HomePage() {
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
+        <UserStoriesSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
         <ServicesSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <AchievementsSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <ReviewsSection />
       </Suspense>
     </>
   )

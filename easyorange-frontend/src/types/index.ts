@@ -37,7 +37,7 @@ export interface PaginationResponse<T> {
 }
 
 // ============ API 响应类型 ============
-export const SUCCESS_CODES = ['A0000', 0, 200] as const;
+export const SUCCESS_CODES = ['A0000', '0', 0, 200] as const;
 export type ApiCode = string | number;
 export type SuccessCode = typeof SUCCESS_CODES[number];
 
@@ -46,6 +46,58 @@ export const isSuccessCode = (code: ApiCode | null | undefined): code is Success
 };
 
 export const RETRYABLE_STATUS = [0, 408, 429] as const;
+
+export const ERROR_CODE_MAP: Record<string, string> = {
+    '1': '操作失败',
+    '1000': '业务异常',
+    '1001': '参数错误',
+    '1002': '未授权',
+    '1003': '禁止访问',
+    '1004': '资源不存在',
+    '1005': '内部服务器错误',
+    '1006': '服务不可用',
+    '1007': '参数校验失败',
+    '1008': '请求方法不允许',
+    '2001': '文件大小超过限制',
+    '2002': '无效的文件类型',
+    '2003': '文件上传失败',
+    'B1001': '用户不存在',
+    'B1002': '账户已被禁用',
+    'B1003': '账户已被锁定',
+    'B1004': '用户名已存在',
+    'B1005': '邮箱已被注册',
+    'B1006': '手机号已被注册',
+    'B1007': '密码错误',
+    'B1008': '验证码无效或已过期',
+    'B1009': '验证码发送过于频繁',
+    'B1010': '验证码验证次数过多，请重新获取',
+    'B1011': '账号或密码错误',
+    'B1012': '学号已被注册',
+    'B2001': '商品不存在',
+    'B2002': '商品已下架',
+    'B2003': '商品库存不足',
+    'B2004': '商品已售出',
+    'B2005': '非商品所有者',
+    'B2006': '商品已审核',
+    'B5001': '文件上传失败',
+    'B5002': '文件删除失败',
+    'B5003': '文件不存在',
+    'B5004': '文件类型不允许',
+    'B5005': '文件大小超出限制',
+    'B5006': '文件名无效',
+    'B7001': '消息不存在',
+    'B7002': '非消息接收者',
+    'B7003': '消息模板不存在',
+    'B7004': '模板编码已存在',
+    'B7005': '消息模板已禁用',
+    'B7006': '模板渲染失败',
+    'B7007': '模板变量缺失',
+};
+
+export const getErrorMessage = (code: ApiCode, fallback?: string): string => {
+    const codeStr = String(code);
+    return ERROR_CODE_MAP[codeStr] ?? fallback ?? '请求失败';
+};
 
 export interface Result<T = unknown> {
     code: ApiCode;
@@ -78,8 +130,48 @@ export interface ApiResponse<T = unknown> {
 }
 
 // ============ 用户类型 ============
-export type UserStatus = 'NORMAL' | 'DISABLED' | 'BANNED';
-export type Gender = 'MALE' | 'FEMALE' | 'UNKNOWN';
+export type UserStatusType = 'NORMAL' | 'DISABLED' | 'LOCKED';
+export type GenderType = 'MALE' | 'FEMALE' | 'UNKNOWN';
+
+export const USER_STATUS_CODE: Record<number, UserStatusType> = {
+    0: 'NORMAL',
+    1: 'DISABLED',
+    2: 'LOCKED',
+};
+
+export const USER_STATUS_LABEL: Record<UserStatusType, string> = {
+    NORMAL: '正常',
+    DISABLED: '禁用',
+    LOCKED: '锁定',
+};
+
+export const getUserStatusLabel = (status: number | UserStatusType): string => {
+    if (typeof status === 'number') {
+        const key = USER_STATUS_CODE[status];
+        return key ? USER_STATUS_LABEL[key] : '未知状态';
+    }
+    return USER_STATUS_LABEL[status] ?? '未知状态';
+};
+
+export const GENDER_CODE: Record<number, GenderType> = {
+    0: 'FEMALE',
+    1: 'MALE',
+    2: 'UNKNOWN',
+};
+
+export const GENDER_LABEL: Record<GenderType, string> = {
+    MALE: '男',
+    FEMALE: '女',
+    UNKNOWN: '未知',
+};
+
+export const getGenderLabel = (code: number | GenderType): string => {
+    if (typeof code === 'number') {
+        const key = GENDER_CODE[code];
+        return key ? GENDER_LABEL[key] : '未知';
+    }
+    return GENDER_LABEL[code] ?? '未知';
+};
 
 export interface User {
     userId: number;
@@ -248,6 +340,9 @@ export interface Category {
     name: string;
     icon: string | null;
     parentId: number | null;
+    level?: number;
+    sortOrder?: number;
+    status?: number;
     children?: Category[];
     productCount?: number;
 }
@@ -303,6 +398,25 @@ export const STATUS_LABEL_MAP: Record<ProductStatus, string> = {
     ONLINE: '在售',
     SOLD: '已售出',
     OFFLINE: '已下架',
+};
+
+export const PRODUCT_STATUS_CODE: Record<number, ProductStatus> = {
+    0: 'DRAFT',
+    1: 'ONLINE',
+    2: 'SOLD',
+    3: 'OFFLINE',
+};
+
+export const getProductStatusFromCode = (code: number): ProductStatus => {
+    return PRODUCT_STATUS_CODE[code] ?? 'ONLINE';
+};
+
+export const getProductStatusLabel = (status: number | ProductStatus): string => {
+    if (typeof status === 'number') {
+        const key = PRODUCT_STATUS_CODE[status];
+        return key ? STATUS_LABEL_MAP[key] : '未知状态';
+    }
+    return STATUS_LABEL_MAP[status] ?? '未知状态';
 };
 
 // ============ 订单类型 ============
@@ -392,22 +506,67 @@ export interface OrderQueryParams {
 }
 
 // ============ 消息类型 ============
-export type MessageType = 'SYSTEM' | 'ORDER' | 'CHAT' | 'ACTIVITY';
-export type MessageStatus = 'UNREAD' | 'READ';
+export type MessageTypeType = 'SYSTEM' | 'CHAT' | 'ORDER' | 'PAYMENT' | 'ACTIVITY';
+export type MessageStatusType = 'UNREAD' | 'READ';
+
+export const MESSAGE_TYPE_CODE: Record<number, MessageTypeType> = {
+    1: 'SYSTEM',
+    2: 'CHAT',
+    3: 'ORDER',
+    4: 'PAYMENT',
+    5: 'ACTIVITY',
+};
+
+export const MESSAGE_TYPE_LABEL: Record<MessageTypeType, string> = {
+    SYSTEM: '系统通知',
+    CHAT: '聊天消息',
+    ORDER: '订单消息',
+    PAYMENT: '支付消息',
+    ACTIVITY: '活动通知',
+};
+
+export const getMessageTypeLabel = (code: number | MessageTypeType): string => {
+    if (typeof code === 'number') {
+        const key = MESSAGE_TYPE_CODE[code];
+        return key ? MESSAGE_TYPE_LABEL[key] : '未知类型';
+    }
+    return MESSAGE_TYPE_LABEL[code] ?? '未知类型';
+};
+
+export const MESSAGE_STATUS_CODE: Record<number, MessageStatusType> = {
+    0: 'UNREAD',
+    1: 'READ',
+};
+
+export const MESSAGE_STATUS_LABEL: Record<MessageStatusType, string> = {
+    UNREAD: '未读',
+    READ: '已读',
+};
+
+export const getMessageStatusLabel = (code: number | MessageStatusType): string => {
+    if (typeof code === 'number') {
+        const key = MESSAGE_STATUS_CODE[code];
+        return key ? MESSAGE_STATUS_LABEL[key] : '未知状态';
+    }
+    return MESSAGE_STATUS_LABEL[code] ?? '未知状态';
+};
 
 export interface Message {
     id: number;
-    type: MessageType;
+    type: number;
+    typeDesc?: string;
     title: string;
     content: string;
-    status: MessageStatus;
+    isRead: number;
+    readDesc?: string;
     senderId: number | null;
     senderName: string | null;
     senderAvatar: string | null;
     receiverId: number;
+    receiverName?: string;
+    businessId?: number;
     createTime: string;
-    readTime: string | null;
-    extra: Record<string, unknown> | null;
+    updateTime?: string;
 }
 
 export interface ChatSession {

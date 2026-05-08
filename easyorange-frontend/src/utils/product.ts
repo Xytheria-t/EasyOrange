@@ -3,14 +3,8 @@
  * @description 提供商品相关的工具函数
  */
 
-import type { Product, ProductStatus } from '@/types';
-
-const STATUS_CODE_MAP: Record<number, ProductStatus> = {
-    0: 'DRAFT',
-    1: 'ONLINE',
-    2: 'SOLD',
-    3: 'OFFLINE',
-};
+import type { Product } from '@/types';
+import { PRODUCT_STATUS_CODE } from '@/types';
 
 export function normalizeProduct(raw: Record<string, unknown>): Product {
     const status = typeof raw.status === 'number' ? raw.status : 1;
@@ -25,7 +19,7 @@ export function normalizeProduct(raw: Record<string, unknown>): Product {
         categoryName: (raw.categoryName as string) ?? '',
         condition,
         conditionLevel: condition,
-        status: STATUS_CODE_MAP[status] ?? 'ONLINE',
+        status: PRODUCT_STATUS_CODE[status] ?? 'ONLINE',
         images: (raw.images as string[]) ?? [],
         location: (raw.location as string) ?? '',
         views: (raw.views as number) ?? 0,
