@@ -31,7 +31,8 @@ public class ProductSnapshotPortImpl implements ProductSnapshotPort {
                 product.getPrice(),
                 product.getStatus(),
                 product.getStock(),
-                product.getVersion() != null ? product.getVersion().value().longValue() : null
+                product.getVersion() != null ? product.getVersion().value().longValue() : null,
+                product.getLocation() != null ? product.getLocation().value() : null
         );
     }
 }

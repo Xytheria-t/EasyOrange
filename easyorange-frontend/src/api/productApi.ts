@@ -9,7 +9,8 @@ export const productApi = {
     getProducts(params?: ProductQueryParams) {
         return request<PageResult<Product>>('/products', {
             method: 'GET',
-            params: params as Record<string, unknown>
+            params: params as Record<string, unknown>,
+            skipAuth: true
         });
     },
 
@@ -52,44 +53,49 @@ export const productApi = {
     getCategories(parentId?: number) {
         return request<Category[]>('/products/categories', {
             method: 'GET',
-            params: parentId != null ? { parentId } : undefined
+            params: parentId != null ? { parentId } : undefined,
+            skipAuth: true
         });
     },
 
     getProductsByCategory(category: string | number) {
-        return request<PageResult<Product>>(`/products/category/${category}`);
+        return request<PageResult<Product>>(`/products/category/${category}`, { skipAuth: true });
     },
 
     searchProducts(keyword: string, pageNum?: number, pageSize?: number) {
         return request<PageResult<Product>>('/products/search', {
             method: 'GET',
-            params: { keyword, pageNum, pageSize } as Record<string, unknown>
+            params: { keyword, pageNum, pageSize } as Record<string, unknown>,
+            skipAuth: true
         });
     },
 
     getSearchSuggestions(keyword: string) {
         return request<string[]>('/products/search/suggestions', {
             method: 'GET',
-            params: { keyword }
+            params: { keyword },
+            skipAuth: true
         });
     },
 
     getHotKeywords(limit?: number) {
         return request<Array<{ keyword: string; searchCount: number }>>('/products/search/hot', {
             method: 'GET',
-            params: limit != null ? { limit } : undefined
+            params: limit != null ? { limit } : undefined,
+            skipAuth: true
         });
     },
 
     getProductsByIds(ids: number[]) {
         return request<Product[]>('/products/batch', {
             method: 'POST',
-            body: ids
+            body: ids,
+            skipAuth: true
         });
     },
 
     getSimilarProducts(id: number) {
-        return request<Product[]>(`/products/${id}/similar`);
+        return request<Product[]>(`/products/${id}/similar`, { skipAuth: true });
     },
 
     incrementView(id: number) {

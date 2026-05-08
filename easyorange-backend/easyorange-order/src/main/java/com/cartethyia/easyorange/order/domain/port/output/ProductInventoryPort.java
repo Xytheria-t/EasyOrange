@@ -18,6 +18,7 @@ public interface ProductInventoryPort {
             Long sellerId,
             BigDecimal price,
             boolean isOnline,
-            boolean hasStock
+            boolean hasStock,
+            String location
     ) {}
 }

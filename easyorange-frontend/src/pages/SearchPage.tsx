@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
     Search, X, TrendingUp, ArrowLeft, Clock, Sparkles, PackageSearch,
     Zap, ShoppingBag, Smartphone, BookOpen, Home, Gift,
@@ -146,6 +147,15 @@ export function SearchPage() {
 
     const hasResults = submittedKeyword && products.length > 0;
     const noResults = submittedKeyword && !isSearching && products.length === 0;
+
+    const searchResultsParentRef = useRef<HTMLDivElement>(null);
+
+    const searchVirtualizer = useVirtualizer({
+        count: Math.ceil(products.length / 2),
+        getScrollElement: () => (typeof window !== 'undefined' ? window.document.documentElement : null) as HTMLElement | null,
+        estimateSize: () => 520,
+        overscan: 3,
+    });
 
     return (
         <div className="search-page-wrapper">
@@ -427,14 +437,35 @@ export function SearchPage() {
                         )}
 
                         {hasResults && !isSearching && (
-                            <div className="products-grid">
-                                {products.map(product => (
-                                    <ProductCard
-                                        key={product.id}
-                                        product={product}
-                                        onViewDetails={(id) => navigate(`/products/${id}`)}
-                                    />
-                                ))}
+                            <div ref={searchResultsParentRef} style={{ position: 'relative', height: `${searchVirtualizer.getTotalSize()}px`, width: '100%' }}>
+                                {searchVirtualizer.getVirtualItems().map((virtualRow) => {
+                                    const startIdx = virtualRow.index * 2;
+                                    const rowProducts = products.slice(startIdx, startIdx + 2);
+                                    return (
+                                        <div
+                                            key={virtualRow.index}
+                                            style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                width: '100%',
+                                                height: virtualRow.size,
+                                                transform: `translateY(${virtualRow.start}px)`,
+                                                display: 'grid',
+                                                gridTemplateColumns: 'repeat(2, 1fr)',
+                                                gap: '1.1rem',
+                                                padding: '0 0 1.1rem 0',
+                                            }}
+                                        >
+                                            {rowProducts.map(product => (
+                                                <ProductCard
+                                                    key={product.id}
+                                                    product={product}
+                                                />
+                                            ))}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
 

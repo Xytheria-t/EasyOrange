@@ -70,7 +70,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<>();
         if (categoryId != null) {
-            wrapper.eq(ProductDO::getCategoryId, categoryId);
+            List<Long> categoryIds = resolveCategoryIdsWithChildren(categoryId);
+            wrapper.in(ProductDO::getCategoryId, categoryIds);
         }
         if (status != null) {
             wrapper.eq(ProductDO::getStatus, status);
@@ -91,6 +92,18 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         Page<ProductDO> productPage = productMapper.selectPage(page, wrapper);
         return convertToReadModelPage(productPage);
+    }
+
+    private List<Long> resolveCategoryIdsWithChildren(Long categoryId) {
+        List<CategoryDO> children = categoryMapper.selectList(
+                new LambdaQueryWrapper<CategoryDO>()
+                        .eq(CategoryDO::getParentId, categoryId)
+                        .eq(CategoryDO::getStatus, 1)
+        );
+        List<Long> ids = new java.util.ArrayList<>();
+        ids.add(categoryId);
+        children.forEach(c -> ids.add(c.getId()));
+        return ids;
     }
 
     @Override

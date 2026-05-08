@@ -18,6 +18,7 @@ public interface ProductSnapshotPort {
             Money price,
             ProductStatus status,
             StockQuantity stock,
-            Long version
+            Long version,
+            String location
     ) { }
 }

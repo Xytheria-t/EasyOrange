@@ -168,7 +168,7 @@ CREATE TABLE `eo_favorite` (
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_favorite_user_product` (`user_id`, `product_id`),
+    UNIQUE KEY `uk_eo_favorite_user_product_del` (`user_id`, `product_id`, `del_flag`),
     KEY `idx_eo_favorite_user_time` (`user_id`, `create_time` DESC),
     KEY `idx_eo_favorite_product_count` (`product_id`, `del_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户收藏表';

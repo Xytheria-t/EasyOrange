@@ -1,4 +1,5 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Image } from '@/components/ui/Image'
 import { usePlatformStats } from '@/hooks'
 import type { PlatformStats } from '@/api/statsApi'
@@ -53,6 +54,20 @@ export default function HeroSection() {
   const statRefs = useRef<(HTMLSpanElement | null)[]>([])
   const floatCardsRef = useRef<(HTMLDivElement | null)[]>([])
   const { data: stats = DEFAULT_STATS } = usePlatformStats()
+  const navigate = useNavigate()
+  const [searchKeyword, setSearchKeyword] = useState('')
+
+  const handleSearchSubmit = useCallback((e?: React.FormEvent) => {
+    e?.preventDefault()
+    const trimmed = searchKeyword.trim()
+    if (trimmed) {
+      navigate(`/search?keyword=${encodeURIComponent(trimmed)}`)
+    }
+  }, [searchKeyword, navigate])
+
+  const handleHotTagClick = useCallback((tag: string) => {
+    navigate(`/search?keyword=${encodeURIComponent(tag)}`)
+  }, [navigate])
 
   const startCounters = useCallback(() => {
     const observer = new IntersectionObserver(
@@ -223,26 +238,33 @@ export default function HeroSection() {
           </p>
 
           <div className="hero-search animate-slide-up delay-2">
-            <div className="search-wrapper glass-card">
+            <form className="search-wrapper glass-card" onSubmit={handleSearchSubmit}>
               <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <input type="text" className="search-input" placeholder="搜索你想要的商品..." aria-label="搜索商品" />
-              <button className="search-btn btn btn-primary">
+              <input
+                type="text"
+                className="search-input"
+                placeholder="搜索你想要的商品..."
+                aria-label="搜索商品"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+              />
+              <button type="submit" className="search-btn btn btn-primary">
                 <span>搜索</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
               </button>
-            </div>
+            </form>
             <div className="search-tags">
               <span className="tag-label">热门搜索:</span>
-              <button className="tag-btn">教材</button>
-              <button className="tag-btn">自行车</button>
-              <button className="tag-btn">电子产品</button>
-              <button className="tag-btn">考研资料</button>
+              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('教材')}>教材</button>
+              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('自行车')}>自行车</button>
+              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('电子产品')}>电子产品</button>
+              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('考研资料')}>考研资料</button>
             </div>
           </div>
 

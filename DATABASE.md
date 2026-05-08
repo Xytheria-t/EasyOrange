@@ -11,7 +11,7 @@
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
 | 外键 | 无物理外键，通过应用层保证一致性 |
-| 全文索引 | ngram 分词器（需 MySQL 配置 ngram_token_size=2） |
+| 全文索引 | ngram 分词器（docker-compose.yml 已配置 ngram_token_size=2） |
 
 ## 表总览
 
@@ -238,7 +238,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 | 名称 | 类型 | 列 |
 |------|------|----|
-| uk_eo_favorite_user_product | UNIQUE | user_id, product_id |
+| uk_eo_favorite_user_product_del | UNIQUE | user_id, product_id, del_flag |
 | idx_eo_favorite_user_time | KEY | user_id, create_time DESC |
 | idx_eo_favorite_product_count | KEY | product_id, del_flag |
 

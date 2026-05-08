@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ProductCard } from './ProductCard'
-import { useProducts } from '@/hooks'
+import { useProducts, useFavoriteCheck } from '@/hooks'
+import { useAuthStore } from '@/store/authStore'
 import type { Product, ProductQueryParams } from '@/types'
 
 type FilterKey = 'all' | 'new' | 'hot' | 'discount'
@@ -15,8 +17,25 @@ const FILTER_PARAMS: Record<FilterKey, ProductQueryParams> = {
 export default function ProductsSection() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
   const { data, isLoading } = useProducts(FILTER_PARAMS[activeFilter])
+  const { token } = useAuthStore()
+  const navigate = useNavigate()
+  const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck()
 
   const products = data?.records ?? []
+
+  useEffect(() => {
+    if (products.length > 0 && token) {
+      checkFavorites(products.map(p => p.id))
+    }
+  }, [products, token, checkFavorites])
+
+  const handleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
+    if (!token) {
+      navigate('/login')
+      return
+    }
+    toggleFavorite(productId, shouldFavorite)
+  }, [token, navigate, toggleFavorite])
 
   const filters: { id: FilterKey; label: string }[] = [
     { id: 'all', label: '全部' },
@@ -168,7 +187,7 @@ export default function ProductsSection() {
         </div>
 
         <div
-          className={`products-grid reveal ${isVisible ? 'revealed' : ''}`}
+          className={`products-grid-premium reveal ${isVisible ? 'revealed' : ''}`}
           id="productsGrid"
         >
           {isLoading ? (
@@ -188,6 +207,8 @@ export default function ProductsSection() {
               <ProductCard
                 key={product.id}
                 product={product}
+                isFavorited={isFavorited(product.id)}
+                onFavorite={handleFavorite}
                 style={{
                   animationDelay: `${index * 80}ms`,
                   opacity: isVisible ? 1 : 0,

@@ -269,4 +269,28 @@ class FavoriteServiceTest {
 
         assertThat(count).isEqualTo(5L);
     }
+
+    @Test
+    @DisplayName("批量检查收藏状态")
+    void batchCheckFavorited_success() {
+        List<Long> productIds = List.of(2001L, 2002L, 2003L);
+        when(favoriteRepository.findFavoritedProductIds(TEST_USER_ID, productIds))
+                .thenReturn(Set.of(2001L, 2003L));
+
+        Map<Long, Boolean> result = favoriteService.batchCheckFavorited(productIds);
+
+        assertThat(result).hasSize(3);
+        assertThat(result.get(2001L)).isTrue();
+        assertThat(result.get(2002L)).isFalse();
+        assertThat(result.get(2003L)).isTrue();
+    }
+
+    @Test
+    @DisplayName("批量检查收藏状态 - 空列表")
+    void batchCheckFavorited_emptyList() {
+        Map<Long, Boolean> result = favoriteService.batchCheckFavorited(List.of());
+
+        assertThat(result).isEmpty();
+        verify(favoriteRepository, never()).findFavoritedProductIds(any(), any());
+    }
 }

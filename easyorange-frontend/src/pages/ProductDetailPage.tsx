@@ -11,11 +11,10 @@ import { messageApi } from '@/api/messageApi';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { Image } from '@/components/ui/Image';
+import { Image, preloadImages, buildThumbnailUrl } from '@/components/ui/Image';
 import placeholderImage from '@/assets/placeholder.png';
 
 interface OrderFormData {
-  address: string;
   phone: string;
   remark: string;
 }
@@ -41,6 +40,18 @@ export function ProductDetailPage() {
   const { data: similarProducts } = useSimilarProducts(Number(id));
   const { token, user } = useAuthStore();
   const addToast = useUIStore((s) => s.addToast);
+
+  useEffect(() => {
+    if (similarProducts && similarProducts.length > 0) {
+      const similarImages = similarProducts.slice(0, 4)
+        .map(item => item.images?.[0])
+        .filter(Boolean) as string[];
+      if (similarImages.length > 0) {
+        preloadImages(similarImages, { width: 300, format: 'webp', quality: 75 }).catch(() => {});
+      }
+    }
+  }, [similarProducts]);
+
   const queryClient = useQueryClient();
   const createOrder = useCreateOrder();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -49,7 +60,7 @@ export function ProductDetailPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [orderForm, setOrderForm] = useState<OrderFormData>({ address: '', phone: '', remark: '' });
+  const [orderForm, setOrderForm] = useState<OrderFormData>({ phone: '', remark: '' });
   const [reviewForm, setReviewForm] = useState<ReviewFormData>({ rating: 5, content: '' });
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -98,7 +109,7 @@ export function ProductDetailPage() {
   const loadChatHistory = useCallback(async () => {
     if (!product?.sellerId || !token) return;
     try {
-      const res = await messageApi.getConversation(product.sellerId, 50);
+      const res = await messageApi.getConversation(product.sellerId);
       const rawData = res.data as unknown as Record<string, unknown>[];
       const messages = (rawData ?? []).map((msg) => ({
         id: msg.id as number,
@@ -119,6 +130,31 @@ export function ProductDetailPage() {
       loadChatHistory();
     }
   }, [showChatModal, loadChatHistory]);
+
+  const submitReview = useMutation({
+    mutationFn: async () => {
+      await reviewApi.create(productId, {
+        rating: reviewForm.rating,
+        content: reviewForm.content,
+      });
+    },
+    onSuccess: () => {
+      addToast({ type: 'success', message: '评价提交成功' });
+      setShowReviewModal(false);
+      setReviewForm({ rating: 5, content: '' });
+      queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
+    },
+    onError: () => {
+      addToast({ type: 'error', message: '评价提交失败' });
+    },
+  });
+
+  const preloadAdjacentImages = useCallback((centerIdx: number, allImages: string[]) => {
+    if (allImages.length <= 1) return;
+    const prevIdx = (centerIdx - 1 + allImages.length) % allImages.length;
+    const nextIdx = (centerIdx + 1) % allImages.length;
+    preloadImages([allImages[prevIdx], allImages[nextIdx]], { width: 600, format: 'webp', quality: 80 }).catch(() => {});
+  }, []);
 
   if (isLoading) {
     return (
@@ -166,11 +202,15 @@ export function ProductDetailPage() {
     : 0;
 
   const handlePrevImage = () => {
-    setCurrentImageIndex(prev => (prev - 1 + images.length) % images.length);
+    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
+    setCurrentImageIndex(prevIndex);
+    preloadAdjacentImages(prevIndex, images);
   };
 
   const handleNextImage = () => {
-    setCurrentImageIndex(prev => (prev + 1) % images.length);
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    setCurrentImageIndex(nextIndex);
+    preloadAdjacentImages(nextIndex, images);
   };
 
   const handleFavoriteToggle = async () => {
@@ -255,24 +295,6 @@ export function ProductDetailPage() {
     setChatMessage(text);
   };
 
-  const submitReview = useMutation({
-    mutationFn: async () => {
-      await reviewApi.create(productId, {
-        rating: reviewForm.rating,
-        content: reviewForm.content,
-      });
-    },
-    onSuccess: () => {
-      addToast({ type: 'success', message: '评价提交成功' });
-      setShowReviewModal(false);
-      setReviewForm({ rating: 5, content: '' });
-      queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
-    },
-    onError: () => {
-      addToast({ type: 'error', message: '评价提交失败' });
-    },
-  });
-
   const handleSubmitReview = () => {
     if (!reviewForm.content.trim()) {
       addToast({ type: 'error', message: '请填写评价内容' });
@@ -286,10 +308,6 @@ export function ProductDetailPage() {
   };
 
   const handleSubmitOrder = async () => {
-    if (!orderForm.address.trim()) {
-      addToast({ type: 'error', message: '请填写收货地址' });
-      return;
-    }
     if (!orderForm.phone.trim() || !/^1[3-9]\d{9}$/.test(orderForm.phone)) {
       addToast({ type: 'error', message: '请填写正确的手机号' });
       return;
@@ -297,12 +315,11 @@ export function ProductDetailPage() {
     try {
       const order = await createOrder.mutateAsync({
         productId: product.id,
-        address: orderForm.address.trim(),
         phone: orderForm.phone.trim(),
         remark: orderForm.remark.trim() || undefined,
       });
       setShowOrderModal(false);
-      setOrderForm({ address: '', phone: '', remark: '' });
+      setOrderForm({ phone: '', remark: '' });
       addToast({ type: 'success', message: '订单创建成功' });
       navigate(`/orders/${order.id}`);
     } catch {
@@ -365,16 +382,43 @@ export function ProductDetailPage() {
           <div className="pdp-gallery">
             <div className="pdp-gallery-main">
               <div className={`pdp-gallery-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
-                <Image
-                  src={images[currentImageIndex]}
-                  alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
-                  className="pdp-gallery-image"
-                  loading="eager"
-                  fetchPriority="high"
-                  placeholder="blur"
-                  onLoad={() => setImageLoaded(true)}
-                  style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }}
-                />
+                {(() => {
+                  const fileIdMatch = images[currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
+                  const fileId = fileIdMatch?.[1];
+                  const thumbSrc = fileId ? buildThumbnailUrl(fileId, 400) : images[currentImageIndex];
+                  return (
+                    <>
+                      {!imageLoaded && (
+                        <Image
+                          src={thumbSrc}
+                          alt={`${product.title} - 缩略预览`}
+                          className="pdp-gallery-image"
+                          loading="eager"
+                          fetchPriority="high"
+                          placeholder="blur"
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', inset: 0 }}
+                        />
+                      )}
+                      <Image
+                        src={images[currentImageIndex]}
+                        alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
+                        className="pdp-gallery-image"
+                        loading="eager"
+                        fetchPriority="high"
+                        placeholder={imageLoaded ? 'none' : 'none'}
+                        onLoad={() => setImageLoaded(true)}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          position: imageLoaded ? 'relative' : 'absolute',
+                          inset: 0,
+                          zIndex: imageLoaded ? 1 : 0,
+                        }}
+                      />
+                    </>
+                  );
+                })()}
               </div>
 
               {isSold && (
@@ -606,15 +650,17 @@ export function ProductDetailPage() {
             <h3 className="pdp-section-title">商品描述</h3>
           </div>
           <div className="pdp-description-body">
-            <p className="pdp-description-text">{product.description || '暂无描述'}</p>
+            <p className="pdp-description-text">{product.description || '卖家暂未填写详细描述，可通过下方「联系卖家」了解更多信息'}</p>
           </div>
         </div>
+
+        <div className="pdp-section-divider" />
 
         <div className="pdp-reviews-section">
           <div className="pdp-section-header">
             <div className="pdp-section-accent" />
             <h3 className="pdp-section-title">
-              <MessageSquare size={18} />
+              <MessageSquare size={20} />
               商品评价
             </h3>
             <div className="pdp-reviews-stats">
@@ -647,7 +693,7 @@ export function ProductDetailPage() {
                         {[1, 2, 3, 4, 5].map(star => (
                           <Star
                             key={star}
-                            size={12}
+                            size={14}
                             fill={star <= ((review.rating as number) || 5) ? 'currentColor' : 'none'}
                           />
                         ))}
@@ -669,9 +715,9 @@ export function ProductDetailPage() {
             </div>
           ) : (
             <div className="pdp-reviews-empty">
-              <MessageSquare size={32} />
+              <MessageSquare size={36} />
               <p>暂无评价</p>
-              <span>购买后可以发表评价</span>
+              <span>成为第一个评价的人吧</span>
             </div>
           )}
 
@@ -685,11 +731,13 @@ export function ProductDetailPage() {
           )}
         </div>
 
+        <div className="pdp-section-divider" />
+
         <div className="pdp-similar-section">
           <div className="pdp-section-header">
             <div className="pdp-section-accent" />
             <h3 className="pdp-section-title">
-              <Sparkles size={18} />
+              <Sparkles size={20} />
               AI推荐相似商品
             </h3>
             <span className="pdp-section-badge">基于商品特征智能匹配</span>
@@ -734,10 +782,12 @@ export function ProductDetailPage() {
           )}
         </div>
 
+        <div className="pdp-section-divider" />
+
         <div className="pdp-ai-tips-section">
           <div className="pdp-ai-tips-card">
             <div className="pdp-ai-tips-icon">
-              <Info size={18} />
+              <Info size={20} />
             </div>
             <div className="pdp-ai-tips-content">
               <h4 className="pdp-ai-tips-title">AI助手温馨提示</h4>
@@ -785,16 +835,15 @@ export function ProductDetailPage() {
 
             <div className="pdp-modal-form">
               <div className="pdp-form-group">
-                <label className="pdp-form-label">
-                  收货地址 <span className="pdp-form-required">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={orderForm.address}
-                  onChange={(e) => handleOrderFormChange('address', e.target.value)}
-                  placeholder="请输入收货地址"
+                <label className="pdp-form-label">交易地点</label>
+                <div
                   className="pdp-form-input"
-                />
+                  style={{ background: 'rgba(21, 30, 52, 0.04)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                  onClick={() => { setShowOrderModal(false); setShowChatModal(true); }}
+                >
+                  <span style={{ color: '#64748b' }}>私聊卖家协商交易地点</span>
+                  <MessageCircle size={16} style={{ color: '#64748b' }} />
+                </div>
               </div>
               <div className="pdp-form-group">
                 <label className="pdp-form-label">

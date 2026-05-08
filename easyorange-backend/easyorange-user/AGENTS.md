@@ -1,475 +1,148 @@
-# easyorange-user Module Agents
+# easyorange-user 模块指南
 
-Professional agent configuration for the user management module.
+用户管理模块，完整 DDD 分层架构，处理认证、注册、密码管理、用户信息。
 
-## Module Overview
-
-The `easyorange-user` module handles all user-related functionality including:
-- User authentication (login/logout/register)
-- User profile management
-- Password management (change/forgot)
-- Token-based JWT authentication
-- Event-driven architecture for user events
-
-## Available Agents
-
-### 1. **user-auth-agent**
-
-**Purpose**: Handle authentication-related tasks
-
-**When to use**:
-- Implementing new login methods (OAuth, SSO, etc.)
-- Modifying authentication flows
-- Adding token refresh logic
-- Implementing logout strategies
-- Rate limiting or security enhancements
-
-**Capabilities**:
-- Login strategy pattern implementation
-- JWT token management
-- Session handling
-- Authentication security best practices
-
-**Example**:
-```
-"Add WeChat OAuth login support"
-"Implement remember-me functionality"
-"Add multi-factor authentication"
-```
-
-### 2. **user-management-agent**
-
-**Purpose**: Handle user CRUD operations and profile management
-
-**When to use**:
-- Creating new user endpoints
-- Modifying user entity or DTOs
-- Implementing user search/filter
-- Adding user profile features
-- User data validation
-
-**Capabilities**:
-- User entity design (MyBatis Plus)
-- DTO/VO mapping
-- Validation rules
-- Business logic implementation
-
-**Example**:
-```
-"Add user avatar upload endpoint"
-"Implement user search by nickname"
-"Add user role assignment"
-```
-
-### 3. **user-security-agent**
-
-**Purpose**: Handle security-sensitive user operations
-
-**When to use**:
-- Password-related changes
-- Account security features
-- Sensitive data handling
-- Security audit logging
-- Rate limiting configuration
-
-**Capabilities**:
-- BCrypt password encoding
-- Security best practices (OWASP)
-- Audit trail implementation
-- Rate limiter configuration
-- Repeat submission prevention
-
-**Example**:
-```
-"Implement password strength validation"
-"Add account lockout after failed attempts"
-"Implement password history check"
-```
-
-### 4. **user-event-agent**
-
-**Purpose**: Handle event-driven architecture for user events
-
-**When to use**:
-- Adding new domain events
-- Implementing event listeners
-- Event-driven notifications
-- Async user operations
-
-**Capabilities**:
-- Domain event pattern
-- Event publishing (@PublishEvent)
-- Event extraction
-- Event persistence
-
-**Example**:
-```
-"Add event when user email is verified"
-"Send welcome email on registration"
-"Log user activity events"
-```
-
-### 5. **user-cache-agent**
-
-**Purpose**: Handle user-related caching strategies
-
-**When to use**:
-- Implementing user cache
-- Cache invalidation logic
-- Performance optimization
-- Redis integration for user data
-
-**Capabilities**:
-- Redis cache patterns
-- Cache-aside strategy
-- Cache invalidation
-- TTL management
-
-**Example**:
-```
-"Cache user profile data"
-"Invalidate cache on user update"
-"Add distributed session cache"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
-
-```
-1. Identify the feature/bug
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with security-reviewer
-   ↓
-6. Test and verify
-```
-
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| New login method | user-auth-agent | user-security-agent |
-| User registration | user-auth-agent | user-event-agent |
-| Forgot password | user-auth-agent | user-event-agent |
-| Password change (logged in) | user-security-agent | user-event-agent |
-| Profile update | user-management-agent | user-cache-agent |
-| Token refresh | user-auth-agent | user-cache-agent |
-| Account deletion | user-management-agent | user-security-agent |
-| User search | user-management-agent | user-cache-agent |
-| Security audit | user-security-agent | user-event-agent |
-
-## Architecture Patterns
-
-### DDD Layered Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Adapter Layer (适配器层)                   │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │   Inbound Adapters   │    │    Outbound Adapters     │  │
-│  │  ┌────────────────┐  │    │  ┌────────────────────┐  │  │
-│  │  │  Web (REST)    │  │    │  │  Persistence       │  │  │
-│  │  │  - Controllers │  │    │  │  - UserRepository  │  │  │
-│  │  │  - DTOs        │  │    │  │  - UserEntity      │  │  │
-│  │  │  - Validation  │  │    │  │  - UserMapper      │  │  │
-│  │  └────────────────┘  │    │  ├────────────────────┤  │  │
-│  │                      │    │  │  Cache             │  │  │
-│  │                      │    │  │  - RedisRepos      │  │  │
-│  │                      │    │  ├────────────────────┤  │  │
-│  │                      │    │  │  Messaging         │  │  │
-│  │                      │    │  │  - EventPublisher  │  │  │
-│  │                      │    │  ├────────────────────┤  │  │
-│  │                      │    │  │  Storage           │  │  │
-│  │                      │    │  │  - FileStorage     │  │  │
-│  └──────────────────────┘    │  └────────────────────┘  │  │
-│                              └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                  Application Layer (应用层)                   │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Application Services                                │  │
-│  │  - AuthAppService (认证用例编排)                      │  │
-│  │  - UserAppService (用户用例编排)                      │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Assemblers                                          │  │
-│  │  - UserAssembler (DTO 组装)                          │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Domain Layer (领域层)                      │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Domain Model                                        │  │
-│  │  - User (用户聚合根)                                  │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Domain Services                                     │  │
-│  │  - PasswordDomainService (密码策略)                   │  │
-│  │  - LoginSecurityDomainService (登录安全)              │  │
-│  │  - SmsCodeService (验证码服务)                        │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Repository Interfaces                               │  │
-│  │  - UserRepository                                    │  │
-│  │  - LoginAttemptRepository                            │  │
-│  │  - SmsCodeRepository                                 │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Domain Events                                       │  │
-│  │  - UserRegisteredEvent                               │  │
-│  │  - PasswordChangedEvent                              │  │
-│  │  - ForgotPasswordEvent                               │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Shared Kernel                                       │  │
-│  │  - Enums (UserType, UserStatus, Sex, etc.)          │  │
-│  │  - Constants (UserConstant)                          │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│               Infrastructure Layer (基础设施层)               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Utilities                                           │  │
-│  │  - NicknameGenerator                                 │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
+## 目录结构
 
 ```
 user/
-├── domain/                         # 领域层
-│   ├── model/                      # 领域模型
-│   │   └── User.java
-│   ├── service/                    # 领域服务
-│   │   ├── PasswordDomainService.java
-│   │   ├── LoginSecurityDomainService.java
-│   │   └── SmsCodeService.java
-│   ├── repository/                 # 仓储接口
-│   │   ├── UserRepository.java
-│   │   ├── LoginAttemptRepository.java
-│   │   └── SmsCodeRepository.java
-│   ├── event/                      # 领域事件
-│   │   ├── UserRegisteredEvent.java
-│   │   ├── PasswordChangedEvent.java
-│   │   └── ForgotPasswordEvent.java
-│   └── shared/                     # 领域共享
-│       ├── constant/
-│       │   └── UserConstant.java
-│       └── enums/
-│           ├── UserType.java
-│           ├── UserStatus.java
-│           ├── Sex.java
-│           ├── LoginMethod.java
-│           └── ClientType.java
-│
-├── application/                    # 应用层
-│   ├── service/                    # 应用服务
-│   │   ├── AuthAppService.java
-│   │   └── UserAppService.java
-│   └── assembler/                  # DTO组装器
-│       └── UserAssembler.java
-│
-├── adapter/                        # 适配器层
-│   ├── inbound/                    # 入站适配器
-│   │   └── web/
-│   │       ├── controller/
-│   │       │   ├── AuthController.java
-│   │       │   └── UserController.java
-│   │       ├── dto/
-│   │       │   ├── request/
-│   │       │   │   ├── LoginRequest.java
-│   │       │   │   ├── RegisterRequest.java
-│   │       │   │   └── ...
-│   │       │   └── response/
-│   │       │       ├── LoginResponse.java
-│   │       │       ├── UserVO.java
-│   │       │       └── ...
-│   │       └── validation/         # 输入验证
-│   │           ├── Password.java
-│   │           ├── PasswordValidator.java
-│   │           ├── Unique.java
-│   │           └── UniqueFieldValidator.java
-│   │
-│   └── outbound/                   # 出站适配器
-│       ├── persistence/            # 持久化
+├── adapter/
+│   ├── inbound/web/
+│   │   ├── AuthController.java          # 认证端点 (登录/注册/刷新/登出)
+│   │   ├── UserController.java          # 用户信息端点
+│   │   ├── dto/request/                 # 入站 DTO
+│   │   │   ├── LoginRequest.java
+│   │   │   ├── RegisterRequest.java
+│   │   │   ├── RefreshTokenRequest.java
+│   │   │   ├── ForgotPasswordRequest.java
+│   │   │   ├── ChangePasswordRequest.java
+│   │   │   └── UpdateUserRequest.java
+│   │   ├── dto/response/                # 出站 DTO
+│   │   │   ├── LoginResponse.java
+│   │   │   ├── UserVO.java
+│   │   │   └── UserProfileVO.java
+│   │   └── validation/                  # 自定义校验
+│   │       ├── Password.java + PasswordValidator.java
+│   │       └── Unique.java + UniqueFieldValidator.java
+│   └── outbound/
+│       ├── persistence/                 # 持久化适配器
 │       │   ├── UserEntity.java
 │       │   ├── UserMapper.java
 │       │   └── UserRepositoryImpl.java
-│       ├── cache/                  # 缓存
-│       │   ├── RedisLoginAttemptRepository.java
-│       │   └── RedisSmsCodeRepository.java
-│       ├── messaging/              # 消息
+│       ├── cache/                       # 缓存适配器
+│       │   ├── RedisLoginAttemptAdapter.java
+│       │   └── RedisSmsCodeAdapter.java
+│       ├── messaging/                   # 消息适配器
 │       │   └── UserEventPublisher.java
-│       └── storage/                # 存储
-│           └── FileStorageAdapter.java
-│
-└── infrastructure/                 # 基础设施层
-    └── util/
-        └── NicknameGenerator.java
+│       ├── security/                    # 安全适配器
+│       │   └── PasswordEncoderAdapter.java
+│       └── storage/                     # 存储适配器
+│           └── LocalAvatarFileStorage.java
+├── application/
+│   ├── service/                         # 应用服务
+│   │   ├── UserLoginAppService.java
+│   │   ├── UserRegistrationAppService.java
+│   │   ├── UserAppService.java
+│   │   ├── PasswordResetAppService.java
+│   │   └── SmsCodeAppService.java
+│   └── assembler/
+│       └── UserAssembler.java           # DTO 组装
+├── domain/
+│   ├── aggregate/
+│   │   └── User.java                    # 用户聚合根
+│   ├── valueobject/
+│   │   ├── AuditInfo.java
+│   │   ├── LoginInfo.java
+│   │   └── UserProfile.java
+│   ├── event/
+│   │   ├── UserRegisteredEvent.java
+│   │   ├── PasswordChangedEvent.java
+│   │   └── ForgotPasswordEvent.java
+│   ├── service/                         # 领域服务
+│   │   ├── AuthenticationDomainService.java
+│   │   ├── LoginSecurityDomainService.java
+│   │   ├── PasswordDomainService.java
+│   │   ├── SmsCodeDomainService.java
+│   │   └── UserRegistrationDomainService.java
+│   ├── repository/
+│   │   └── UserRepository.java
+│   ├── port/output/                     # 出站端口
+│   │   ├── OutboundPort.java            # 端口标记接口
+│   │   ├── AvatarFilePort.java
+│   │   ├── LoginAttemptPort.java
+│   │   ├── PasswordEncoderPort.java
+│   │   ├── SmsCodePort.java
+│   │   ├── SmsRateLimitPort.java
+│   │   └── UserEventPort.java
+│   ├── constants/
+│   │   ├── UserConstant.java
+│   │   └── UserSecurityConstant.java
+│   ├── enums/
+│   │   ├── UserType.java, UserStatus.java, Sex.java
+│   │   ├── LoginMethod.java, ClientType.java
+│   │   └── UserResultCode.java
+│   └── exception/
+│       └── UserDomainException.java
+└── infrastructure/
+    ├── config/UserDomainConfig.java
+    └── util/NicknameGenerator.java
 ```
 
-### Key Patterns Used
+## 核心模式
 
-1. **Strategy Pattern**: LoginStrategyContext for multiple login types
-2. **Event-Driven**: @PublishEvent annotation with aspect-oriented publishing
-3. **DTO/VO Separation**: Request DTOs and Response VOs
-4. **Validation**: Custom validators (@Password, @Unique)
-5. **Security**: BCrypt encoding, JWT tokens, rate limiting
+### 登录策略模式
 
-## Code Conventions
+`LoginMethod` 枚举定义登录方式（用户名/手机号），`AuthenticationDomainService` 根据策略分发认证逻辑。
 
-### Naming Conventions
-
-- **Controllers**: `*Controller` (e.g., `AuthController`)
-- **Services**: `*Service` (e.g., `UserService`)
-- **Service Implementations**: `*ServiceImpl` (e.g., `UserServiceImpl`)
-- **DTOs**: `*Request`, `*Response`, `*DTO` (e.g., `LoginRequest`)
-- **VOs**: `*VO` (e.g., `UserVO`)
-- **Entities**: Simple names (e.g., `User`)
-- **Enums**: `*Type`, `*Status`, `*ResultCode` (e.g., `UserStatus`)
-- **Events**: `*Event` (e.g., `UserRegisteredEvent`)
-- **Extractors**: `*EventExtractor` (e.g., `UserRegisteredEventExtractor`)
-
-### Transaction Management
-
-- Use `@Transactional(rollbackFor = Exception.class)` on service methods
-- Event publishing happens after transaction commit (via AspectJ)
-- Business exceptions throw `BusinessException` or use `BizRequire`
-
-### Event Publishing
+### 领域事件发布
 
 ```java
 @PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
 @Transactional(rollbackFor = Exception.class)
-public Long register(RegisterRequest request) {
-    // Business logic
-}
+public Long register(RegisterRequest request) { ... }
 ```
 
-### Validation
+### 出站端口隔离
 
-```java
-@Password(minLength = 8, requireDigit = true, requireSpecialChar = true)
-private String password;
+domain 层通过 `port/output/` 接口与基础设施解耦：
+- `PasswordEncoderPort` → `PasswordEncoderAdapter` (BCrypt)
+- `LoginAttemptPort` → `RedisLoginAttemptAdapter` (Redis)
+- `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
+- `UserEventPort` → `UserEventPublisher` (Spring Events)
 
-@Unique(field = "username", message = "用户名已存在")
-private String username;
-```
+### 自定义校验注解
 
-## Security Checklist
+- `@Password(minLength=8, requireDigit=true, requireSpecialChar=true)` — 密码强度
+- `@Unique(field="username", message="用户名已存在")` — 唯一性校验
 
-Before any commit:
-- [ ] Passwords are BCrypt encoded
-- [ ] No sensitive data in logs
-- [ ] Rate limiting on auth endpoints
-- [ ] Repeat submission prevention
-- [ ] Input validation on all endpoints
-- [ ] JWT token validation
-- [ ] SQL injection prevention (use parameterized queries)
-- [ ] XSS prevention (sanitize user input)
+## 安全要点
 
-## Testing Requirements
+- 密码: BCrypt 加密，禁止明文存储和日志输出
+- 登录限流: `@RateLimiter` + Redis 滑动窗口
+- 防重提交: `@RepeatSubmit` 防止重复注册
+- Token: Access Token 短期 + Refresh Token 长期，登出加入黑名单
 
-- **Unit Tests**: Service layer (80%+ coverage)
-- **Integration Tests**: Controller layer with MockMvc
-- **Event Tests**: Event publishing verification
-- **Security Tests**: Authentication/authorization tests
+## 常见开发任务
 
-## Common Tasks
+### 添加新用户字段
 
-### Adding a New User Field
+1. `User` 聚合根添加字段
+2. 创建 Flyway 迁移脚本
+3. 更新 `UserEntity` / `UserVO` / `UpdateUserRequest`
+4. 更新 `UserAssembler`
+5. 添加测试
 
-1. Update `User` entity
-2. Create database migration
-3. Update DTOs/VOs if needed
-4. Update `UserAssembler` if exists
-5. Update validation rules
-6. Add tests
+### 添加新登录方式
 
-### Adding a New Login Type
+1. `LoginMethod` 枚举新增值
+2. `AuthenticationDomainService` 添加对应认证逻辑
+3. `LoginRequest` 添加字段
+4. 添加测试
 
-1. Create new `LoginType` enum value
-2. Implement `LoginService` for the type
-3. Register in `LoginStrategyContext`
-4. Add tests
-5. Update documentation
+### 添加新领域事件
 
-### Adding a New User Event
-
-1. Create event class extending `BaseDomainEvent`
-2. Create event extractor implementing `EventExtractor`
-3. Use `@PublishEvent` on service method
-4. Create event listener if needed
-5. Add tests
-
-## Integration Points
-
-### With easyorange-common
-- `BaseDO` for base entity fields
-- `Result` for API responses
-- `BizRequire` for business validation
-- `RateLimiter`, `RepeatSubmit` annotations
-
-### With easyorange-framework
-- JWT authentication
-- Token management
-- Security configuration
-- MyBatis Plus configuration
-- Redis caching
-
-### With easyorange-message
-- User registration notifications
-- Password change notifications
-- System messages
-
-## Performance Considerations
-
-1. **Caching**: Cache frequently accessed user data
-2. **Lazy Loading**: Load user details only when needed
-3. **Batch Operations**: Use batch updates for bulk operations
-4. **Indexing**: Ensure proper database indexes on:
-   - `username` (unique)
-   - `phone` (unique)
-   - `email` (unique)
-   - `user_id` (primary key)
-
-## Monitoring
-
-Key metrics to track:
-- Login success/failure rate
-- Registration rate
-- Password reset rate
-- Token refresh rate
-- API response times
-- Cache hit/miss rate
-- Event publishing latency
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: Login fails with "Invalid credentials"
-**Solution**: Check BCrypt encoder configuration and password encoding
-
-**Issue**: Events not publishing
-**Solution**: Verify @PublishEvent annotation and extractor configuration
-
-**Issue**: Token validation fails
-**Solution**: Check JWT properties and token service
-
-**Issue**: Cache inconsistency
-**Solution**: Verify cache invalidation logic on updates
-
-## References
-
-- [Spring Security Documentation](https://spring.io/projects/spring-security)
-- [MyBatis Plus Documentation](https://baomidou.com/)
-- [JWT Specification](https://jwt.io/)
-- [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
-- [OWASP Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
+1. 创建事件类继承 `BaseDomainEvent`
+2. 创建 EventExtractor 实现
+3. 在应用服务方法上标注 `@PublishEvent`
+4. 添加事件监听器（如需）
+5. 添加测试

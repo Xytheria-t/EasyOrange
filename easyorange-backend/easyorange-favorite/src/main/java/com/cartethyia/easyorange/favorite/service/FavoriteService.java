@@ -17,9 +17,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadM
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -142,5 +140,15 @@ public class FavoriteService {
     public long getFavoriteCount() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return favoriteRepository.countByUserId(userId);
+    }
+
+    public Map<Long, Boolean> batchCheckFavorited(List<Long> productIds) {
+        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        if (productIds == null || productIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Set<Long> favoritedIds = favoriteRepository.findFavoritedProductIds(userId, productIds);
+        return productIds.stream()
+                .collect(Collectors.toMap(pid -> pid, favoritedIds::contains, (a, b) -> a, LinkedHashMap::new));
     }
 }

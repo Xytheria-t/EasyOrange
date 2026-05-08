@@ -160,12 +160,19 @@ public class CreateOrderSaga {
         BizRequire.ne(snapshot.sellerId(), buyerId, "不能购买自己的商品");
         BizRequire.requireTrue(snapshot.hasStock(), "商品库存不足");
 
+        String resolvedAddress = command.getAddress();
+        if (resolvedAddress == null || resolvedAddress.isBlank()) {
+            resolvedAddress = snapshot.location() != null && !snapshot.location().isBlank()
+                    ? snapshot.location()
+                    : "未指定";
+        }
+
         OrderAggregate.OrderCreatedResult result = OrderAggregate.createOrder(
                 UserId.of(buyerId),
                 UserId.of(snapshot.sellerId()),
                 ProductId.of(command.getProductId()),
                 Money.of(snapshot.price()),
-                Address.of(command.getAddress()),
+                Address.of(resolvedAddress),
                 Phone.of(command.getPhone()),
                 command.getRemark()
         );

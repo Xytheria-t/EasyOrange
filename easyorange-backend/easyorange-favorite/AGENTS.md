@@ -1,171 +1,58 @@
-# easyorange-favorite Module Agents
+# easyorange-favorite 模块指南
 
-Professional agent configuration for the user favorites module.
+收藏模块，DDD + ACL 架构，处理用户商品收藏的增删查。
 
-## Module Overview
-
-The `easyorange-favorite` module handles user product favorites including:
-- Add/remove product favorites
-- Batch remove favorites
-- Query user favorite list with pagination
-- Check if user has favorited a product
-- Get user favorite count
-- ACL (Anti-Corruption Layer) for product domain isolation
-
-## Available Agents
-
-### 1. **favorite-crud-agent**
-
-**Purpose**: Handle favorite CRUD operations
-
-**When to use**:
-- Adding favorite endpoints
-- Modifying favorite entity or DTOs
-- Implementing favorite validation
-- Adding batch operations
-
-**Capabilities**:
-- Favorite aggregate design
-- DTO/VO mapping
-- Validation rules
-- Batch operation handling
-
-**Example**:
-```
-"Add favorite folder/collection support"
-"Implement favorite notes/comments"
-"Add favorite sorting options"
-```
-
-### 2. **favorite-query-agent**
-
-**Purpose**: Handle favorite query optimization
-
-**When to use**:
-- Optimizing favorite list queries
-- Adding pagination strategies
-- Implementing filtering
-- Cache integration
-
-**Capabilities**:
-- Pagination optimization
-- Query performance tuning
-- Filter implementation
-- Cache-aside patterns
-
-**Example**:
-```
-"Optimize favorite list query with indexing"
-"Add favorite search by product name"
-"Implement favorite cache warming"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
-
-```
-1. Identify the feature/bug
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with java-code-reviewer
-   ↓
-6. Test and verify
-```
-
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| New favorite feature | favorite-crud-agent | favorite-query-agent |
-| Query optimization | favorite-query-agent | favorite-crud-agent |
-| Batch operations | favorite-crud-agent | favorite-query-agent |
-| Performance tuning | favorite-query-agent | favorite-crud-agent |
-
-## Architecture Patterns
-
-### DDD Layered Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Controller Layer                          │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  FavoriteController                                    │  │
-│  │  - POST /api/favorites                                 │  │
-│  │  - DELETE /api/favorites/{id}                          │  │
-│  │  - GET /api/favorites                                  │  │
-│  │  - GET /api/favorites/check                            │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                  Service Layer                               │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  FavoriteService                                       │  │
-│  │  - addFavorite(), removeFavorite()                     │  │
-│  │  - batchRemove(), getFavorites()                       │  │
-│  │  - checkFavorite(), getFavoriteCount()                 │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Domain Layer                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Favorite (Aggregate Root)                             │  │
-│  │  - create(), reconstitute()                            │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  FavoriteRepository (Interface)                        │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│               Infrastructure Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  Persistence         │    │  ACL                     │  │
-│  │  - MybatisFavoriteRepository                         │  │
-│  │  - FavoriteMapper      │    │  - ProductAclService     │  │
-│  │  - FavoriteDO          │    │  - ProductAclServiceImpl │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
+## 目录结构
 
 ```
 favorite/
-├── controller/
-│   ├── FavoriteController.java
+├── controller/                        # 控制器 (待迁移到 adapter/inbound/web/)
+│   ├── FavoriteController.java        # 收藏端点
 │   └── request/
 │       └── BatchRemoveRequest.java
+├── service/                           # 服务层 (待迁移到 application/)
+│   ├── FavoriteService.java           # 收藏业务逻辑
+│   └── dto/
+│       ├── AddFavoriteDTO.java
+│       ├── RemoveFavoriteDTO.java
+│       ├── FavoritePageQuery.java
+│       └── FavoriteVO.java
 ├── domain/
 │   ├── aggregate/
-│   │   └── Favorite.java
+│   │   └── Favorite.java              # 收藏聚合根 (不可变)
 │   └── repository/
-│       └── FavoriteRepository.java
+│       └── FavoriteRepository.java    # 仓储接口
 ├── infrastructure/
-│   ├── acl/
-│   │   ├── ProductAclService.java
-│   │   └── ProductAclServiceImpl.java
-│   └── persistence/
+│   ├── acl/                           # 防腐层
+│   │   ├── ProductAclService.java         # 商品信息 ACL 接口
+│   │   └── ProductAclServiceImpl.java     # 商品信息 ACL 实现
+│   └── persistence/                   # 持久化 (待迁移到 adapter/outbound/)
 │       ├── FavoriteDO.java
 │       ├── FavoriteMapper.java
 │       └── MybatisFavoriteRepository.java
-└── service/
-    ├── FavoriteService.java
-    └── dto/
-        ├── AddFavoriteDTO.java
-        ├── FavoritePageQuery.java
-        └── RemoveFavoriteDTO.java
+└── enums/ (无独立枚举，使用 common 枚举)
 ```
 
-## Code Conventions
+## ACL 模式
 
-### Immutable Favorite Aggregate
+通过 `ProductAclService` 隔离对 product 模块的依赖：
+
+```java
+// infrastructure/acl/ProductAclService.java
+public interface ProductAclService {
+    ProductInfo getProductInfo(Long productId);
+}
+
+// infrastructure/acl/ProductAclServiceImpl.java
+@Service
+public class ProductAclServiceImpl implements ProductAclService {
+    // 内部调用 product 模块服务，转换为目标模型
+}
+```
+
+这是项目中 ACL 模式的最佳实践示例，其他模块的跨模块依赖也应参照此模式演进。
+
+## Favorite 聚合根
 
 ```java
 public class Favorite {
@@ -174,38 +61,35 @@ public class Favorite {
     private final Long productId;
     private final LocalDateTime createTime;
 
-    public static Favorite create(Long userId, Long productId) {
-        return new Favorite(null, userId, productId, LocalDateTime.now());
-    }
-
-    public static Favorite reconstitute(Long id, Long userId, Long productId, LocalDateTime createTime) {
-        return new Favorite(id, userId, productId, createTime);
-    }
+    public static Favorite create(Long userId, Long productId) { ... }
+    public static Favorite reconstitute(Long id, Long userId, Long productId, LocalDateTime createTime) { ... }
 }
 ```
 
-### ACL Pattern
+- 不可变设计，通过静态工厂方法创建
+- `create()` 用于新建，`reconstitute()` 用于从持久化重建
 
-```java
-// Domain isolation through ACL
-public interface ProductAclService {
-    ProductInfo getProductInfo(Long productId);
-}
+## 演进路线
 
-@Service
-public class ProductAclServiceImpl implements ProductAclService {
-    // Calls product module internally
-}
-```
+当前为部分 DDD 结构，待完善：
 
-## Testing Requirements
+1. `controller/` → `adapter/inbound/web/controller/`
+2. `service/` → `application/service/`
+3. `infrastructure/persistence/` → `adapter/outbound/persistence/`
+4. `infrastructure/acl/` → `adapter/outbound/acl/`
+5. 添加 `domain/port/output/` 端口接口
 
-- **Unit Tests**: Service layer with Mockito
-- **Controller Tests**: MockMvc tests
-- **Coverage Target**: 80%+
+## 常见开发任务
 
-## Integration Points
+### 添加收藏新功能
 
-- **easyorange-product**: Product info via ACL
-- **easyorange-framework**: SecurityContextUtil, Result
-- **easyorange-common**: PageResult, BusinessException
+1. `FavoriteController` 添加端点
+2. `FavoriteService` 添加业务方法
+3. 如需新 DTO → `service/dto/`
+4. 添加测试
+
+### 修改 ACL 隔离
+
+1. `ProductAclService` 接口添加方法
+2. `ProductAclServiceImpl` 实现
+3. 注意：ACL 层负责模型转换，不暴露 product 模块的内部类型

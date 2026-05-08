@@ -15,7 +15,6 @@ public class CreateOrderRequest {
     @NotNull(message = "商品 ID 不能为空")
     private Long productId;
 
-    @NotBlank(message = "收货地址不能为空")
     private String address;
 
     @NotBlank(message = "联系电话不能为空")

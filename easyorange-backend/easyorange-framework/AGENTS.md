@@ -1,324 +1,128 @@
-# easyorange-framework Module Agents
+# easyorange-framework 模块指南
 
-Professional agent configuration for the framework infrastructure module.
+框架基础设施层，为所有业务模块提供技术支撑：Security、Redis、事件发布、AOP、文件、日志。
 
-## Module Overview
-
-The `easyorange-framework` module provides the technical foundation for all business modules including:
-- Spring Security configuration (JWT, CORS, HSTS)
-- WebMVC configuration (interceptors, unified response)
-- Redis caching abstraction and implementation
-- MyBatis Plus configuration
-- Thread pool and async configuration
-- File upload/download management
-- Operation logging (AOP-based)
-- Domain event publishing infrastructure
-- Rate limiting and repeat submit prevention
-- Global exception handling
-
-## Available Agents
-
-### 1. **framework-security-agent**
-
-**Purpose**: Handle security infrastructure
-
-**When to use**:
-- Modifying JWT authentication flow
-- Adding security filters
-- Configuring CORS or HSTS
-- Updating token service logic
-
-**Capabilities**:
-- JWT filter configuration
-- Security context management
-- Token lifecycle management
-- XSS filtering
-
-**Example**:
-```
-"Add refresh token rotation"
-"Implement JWT blacklist with Redis"
-"Add OAuth2 resource server support"
-```
-
-### 2. **framework-cache-agent**
-
-**Purpose**: Handle caching infrastructure
-
-**When to use**:
-- Adding new cache configurations
-- Optimizing Redis operations
-- Adding local cache (Caffeine)
-- Cache serialization changes
-
-**Capabilities**:
-- Redis cache abstraction
-- Local cache configuration
-- Cache serialization
-- Distributed locking
-
-**Example**:
-```
-"Add multi-level cache (Caffeine + Redis)"
-"Implement cache statistics monitoring"
-"Add cache key prefix strategy"
-```
-
-### 3. **framework-event-agent**
-
-**Purpose**: Handle domain event infrastructure
-
-**When to use**:
-- Modifying event publishing mechanism
-- Adding event persistence
-- Implementing event idempotency
-- Adding async event execution
-
-**Capabilities**:
-- Event publisher implementation
-- Event persistence service
-- Idempotency checking
-- Async event threading
-
-**Example**:
-```
-"Add event replay capability"
-"Implement event sourcing pattern"
-"Add event dead letter queue"
-```
-
-### 4. **framework-log-agent**
-
-**Purpose**: Handle operation logging and observability
-
-**When to use**:
-- Adding new log aspects
-- Modifying log storage
-- Adding performance metrics
-- Implementing tracing
-
-**Capabilities**:
-- AOP logging
-- Log storage optimization
-- Performance monitoring
-- Distributed tracing
-
-**Example**:
-```
-"Add structured logging with MDC"
-"Implement log aggregation"
-"Add performance timing aspects"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
-
-```
-1. Identify the infrastructure need
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with java-code-reviewer + security-reviewer
-   ↓
-6. Test and verify across dependent modules
-```
-
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| Security changes | framework-security-agent | framework-cache-agent |
-| Cache changes | framework-cache-agent | framework-event-agent |
-| Event system | framework-event-agent | framework-log-agent |
-| Logging/Observability | framework-log-agent | framework-cache-agent |
-| Async/Threading | framework-event-agent | framework-log-agent |
-| File handling | framework-log-agent | framework-security-agent |
-
-## Architecture Patterns
-
-### Infrastructure Layer
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Configuration Layer                       │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  SecurityConfig       │    │  WebMvcConfig            │  │
-│  │  - JWT Filter         │    │  - Interceptors          │  │
-│  │  - CORS/HSTS          │    │  - Response Advice       │  │
-│  ├──────────────────────┤    ├──────────────────────────┤  │
-│  │  RedisConfig          │    │  ThreadPoolConfig        │  │
-│  │  - Serialization      │    │  - Async Executor        │  │
-│  │  - Connection         │    │  - Event Executor        │  │
-│  ├──────────────────────┤    ├──────────────────────────┤  │
-│  │  MybatisPlusConfig    │    │  LocalCacheConfig        │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Service Layer                             │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  TokenServiceImpl     │    │  RedisCacheImpl          │  │
-│  │  - Create/Refresh     │    │  - String/Hash/List      │  │
-│  │  - Blacklist          │    │  - Distributed Lock      │  │
-│  ├──────────────────────┤    ├──────────────────────────┤  │
-│  │  FileServiceImpl      │    │  SysOperLogServiceImpl   │  │
-│  │  - Upload/Download    │    │  - Log persistence       │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Aspect Layer                              │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  OperLogAspect        │    │  RateLimiterAspect       │  │
-│  │  - Auto logging       │    │  - Redis + Lua           │  │
-│  ├──────────────────────┤    ├──────────────────────────┤  │
-│  │  RepeatSubmitAspect   │    │                          │  │
-│  │  - Duplicate prevention│   │                          │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Event Infrastructure                      │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  DomainEventPublisherImpl                              │  │
-│  │  - Persistence + Async publishing                      │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  DomainEventPersistenceService                         │  │
-│  │  - Event storage                                       │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  EventIdempotencyChecker                               │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
+## 目录结构
 
 ```
 framework/
-├── config/
-│   ├── async/
+├── aspectj/                 # AOP 切面
+│   ├── OperLogAspect.java       # 操作日志切面 (@Log)
+│   ├── RateLimiterAspect.java   # 限流切面 (@RateLimiter, Redis+Lua)
+│   └── RepeatSubmitAspect.java  # 防重提交切面 (@RepeatSubmit)
+├── config/                  # 框架配置
+│   ├── async/                   # 线程池 + Jackson
 │   │   ├── ThreadPoolConfig.java
+│   │   ├── JacksonConfig.java
 │   │   └── LoggingRejectedExecutionHandler.java
-│   ├── cache/
+│   ├── cache/                   # 本地缓存 (Caffeine)
 │   │   └── LocalCacheConfig.java
-│   ├── database/
+│   ├── database/                # MyBatis-Plus 配置
 │   │   └── MybatisPlusConfig.java
-│   ├── http/
+│   ├── http/                    # RestClient 配置
 │   │   └── RestClientConfig.java
-│   ├── properties/
+│   ├── properties/              # 配置属性类
 │   │   ├── JwtProperties.java
 │   │   ├── SecurityProperties.java
-│   │   └── ...
-│   ├── redis/
-│   │   └── RedisConfig.java
-│   ├── security/
+│   │   ├── RateLimiterProperties.java
+│   │   ├── OperLogProperties.java
+│   │   ├── ThreadPoolProperties.java
+│   │   └── WebMvcProperties.java
+│   ├── redis/                   # Redis 配置
+│   │   ├── RedisConfig.java
+│   │   └── CacheConfig.java
+│   ├── security/                # Spring Security 配置
 │   │   ├── SecurityConfig.java
 │   │   └── JsonLogoutSuccessHandler.java
-│   └── web/
-│       ├── RequestConfig.java
-│       ├── ResponseAdvice.java
-│       └── WebMvcConfig.java
-├── aspectj/
-│   ├── OperLogAspect.java
-│   ├── RateLimiterAspect.java
-│   └── RepeatSubmitAspect.java
+│   └── web/                     # WebMVC 配置
+│       ├── WebMvcConfig.java
+│       ├── ResponseAdvice.java      # 统一响应包装
+│       └── RequestConfig.java
 ├── entity/
-│   └── BaseDO.java
-├── event/
-│   ├── DomainEventPublisherImpl.java
-│   ├── DomainEventPersistenceService.java
+│   └── BaseDO.java              # 数据对象基类 (id, createTime, updateTime, delFlag, version)
+├── event/                   # 领域事件基础设施
+│   ├── DomainEventPublisherImpl.java    # 事件发布实现 (持久化+异步)
+│   ├── DomainEventPersistenceService.java # 事件持久化
 │   └── idempotency/
-│       └── EventIdempotencyChecker.java
+│       └── EventIdempotencyChecker.java  # 事件幂等校验
 ├── exception/
-│   └── GlobalExceptionHandler.java
-├── file/
-│   ├── controller/
-│   ├── service/
-│   └── ...
-├── filter/
-│   ├── JwtAuthenticationFilter.java
-│   └── XssFilter.java
-├── handler/
-│   ├── JsonAuthenticationEntryPoint.java
-│   ├── LoggingInterceptor.java
-│   └── CustomMetaObjectHandler.java
-├── operlog/
-│   ├── entity/
-│   ├── mapper/
-│   └── service/
-├── redis/
-│   ├── RedisCache.java
-│   └── impl/
-│       └── RedisCacheImpl.java
-├── service/
+│   ├── GlobalExceptionHandler.java  # 全局异常处理
+│   └── CacheTypeMismatchException.java
+├── file/                    # 文件上传下载
+│   ├── controller/FileController.java
+│   ├── service/FileService.java
+│   ├── service/impl/FileServiceImpl.java
+│   ├── service/ImageProcessingService.java
+│   ├── service/impl/ImageProcessingServiceImpl.java
+│   ├── dto/UploadFileVO.java
+│   ├── entity/UploadFile.java
+│   └── mapper/UploadFileMapper.java
+├── filter/                  # Servlet 过滤器
+│   ├── JwtAuthenticationFilter.java   # JWT 认证过滤器
+│   ├── XssFilter.java                 # XSS 过滤
+│   └── XssHttpServletRequestWrapper.java
+├── handler/                 # 处理器
+│   ├── CustomMetaObjectHandler.java   # MyBatis-Plus 自动填充
+│   ├── JsonAuthenticationEntryPoint.java # 未认证响应
+│   └── LoggingInterceptor.java        # 请求日志拦截
+├── manager/
+│   └── AsyncManager.java         # 异步任务管理器
+├── notification/
+│   └── DefaultNotificationServiceImpl.java # 通知默认实现
+├── operlog/                 # 操作日志
+│   ├── entity/SysOperLog.java
+│   ├── mapper/SysOperLogMapper.java
+│   ├── service/SysOperLogService.java
+│   ├── service/impl/SysOperLogServiceImpl.java
+│   ├── OperLogArchiveService.java
+│   └── dto/LogStorageStats.java
+├── redis/                   # Redis 缓存抽象
+│   ├── RedisCache.java           # 缓存接口
+│   └── impl/RedisCacheImpl.java  # 实现 (String/Hash/List + 分布式锁)
+├── service/                 # Token 服务
 │   ├── TokenService.java
-│   └── impl/
-│       └── TokenServiceImpl.java
-└── util/
-    ├── JwtUtil.java
-    ├── SecurityContextUtil.java
-    └── OperLogUtil.java
+│   └── impl/TokenServiceImpl.java
+└── util/                    # 工具类
+    ├── JwtUtil.java              # JWT 工具
+    ├── SecurityContextUtil.java  # 安全上下文工具
+    ├── OperLogUtil.java          # 操作日志工具
+    ├── RequestUtil.java          # 请求工具
+    └── FileUtils.java            # 文件工具
 ```
 
-## Code Conventions
+## 核心机制
 
-### BaseDO (All entities extend this)
+### JWT 认证流程
+
+1. `JwtAuthenticationFilter` 拦截请求，从 Header 提取 Token
+2. `TokenServiceImpl` 验证 Token，加载用户信息到 SecurityContext
+3. Access Token 过期后通过 Refresh Token 刷新
+4. 登出时 Token 加入 Redis 黑名单
+
+### 领域事件发布流程
+
+1. 业务方法标注 `@PublishEvent`
+2. AOP 切面拦截，事务提交后触发
+3. `DomainEventPublisherImpl` 持久化事件到 `eo_domain_event`
+4. 异步线程池发布事件到 Spring ApplicationEventBus
+5. `EventIdempotencyChecker` 保证幂等消费
+
+### Redis 缓存抽象
 
 ```java
-public class BaseDO {
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
-    @TableLogic(value = "0", delval = "2")
-    private Integer delFlag;
-    @Version
-    private Integer version;
-}
+RedisCache.set(key, value, timeout, unit)
+RedisCache.get(key, clazz)
+RedisCache.tryLock(key, value, timeout)  // 分布式锁
+RedisCache.unlock(key, value)
 ```
 
-### Redis Cache Abstraction
+### 统一响应包装
 
-```java
-public interface RedisCache {
-    <T> void set(String key, T value, long timeout, TimeUnit unit);
-    <T> T get(String key, Class<T> clazz);
-    boolean tryLock(String key, String value, long timeout);
-    void unlock(String key, String value);
-    // ... more operations
-}
-```
+`ResponseAdvice` 自动将 Controller 返回值包装为 `Result<T>`，无需手动包装。
 
-### Rate Limiter Aspect
+## 修改注意
 
-```java
-@Aspect
-@Component
-public class RateLimiterAspect {
-    @Around("@annotation(rateLimiter)")
-    public Object around(ProceedingJoinPoint point, RateLimiter rateLimiter) {
-        // Redis + Lua sliding window implementation
-    }
-}
-```
-
-## Testing Requirements
-
-- **Unit Tests**: Utility classes, Token service
-- **Integration Tests**: Filter chain, Cache operations
-- **Security Tests**: JWT validation, XSS filtering
-- **Coverage Target**: 80%+
-
-## Integration Points
-
-- **All business modules**: Depend on framework for infrastructure
-- **easyorange-common**: Result, PageResult, BaseDO
-- **easyorange-common-domain**: DomainEventPublisher
-- **External**: Redis, MySQL, JWT libraries
+- Security 配置变更需同步检查所有模块的接口权限
+- Redis Key 命名规范: `eo:模块:业务:标识`
+- 线程池配置影响事件发布和异步操作，调优需谨慎
+- 新增 AOP 切面需评估性能影响

@@ -1,15 +1,14 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { X } from 'lucide-react';
-import { useProducts, useCategories } from '@/hooks';
+import { useProducts, useCategories, useFavoriteCheck } from '@/hooks';
 import { ProductCard } from '@/components/sections/ProductCard';
+import { preloadImages } from '@/components/ui/Image';
 
 import { ToolsPlaza } from '@/components/products/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/products/FilterSidebar';
-import { favoriteApi } from '@/api/favoriteApi';
 import { useAuthStore } from '@/store/authStore';
-import { useUIStore } from '@/store/uiStore';
 import type { ProductQueryParams, Product } from '@/types';
 
 function useColumnCount() {
@@ -40,30 +39,12 @@ function useColumnCount() {
 
 export function ProductsPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { token } = useAuthStore();
-  const addToast = useUIStore((s) => s.addToast);
+  const navigate = useNavigate();
+  const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
   const initialCategoryId = searchParams.get('category') || searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  const { data: favoritesData } = useQuery({
-    queryKey: ['favorites', 'ids'],
-    queryFn: async () => {
-      const res = await favoriteApi.getList({ pageNum: 1, pageSize: 200 });
-      return res.data;
-    },
-    enabled: !!token,
-    staleTime: 30 * 1000,
-  });
-
-  const favoriteIds = useMemo(() => {
-    if (!favoritesData?.records) {
-      return new Set<number>();
-    }
-    return new Set(favoritesData.records.map((f: { productId: number }) => f.productId));
-  }, [favoritesData]);
 
   const [params, setParams] = useState<ProductQueryParams>({
     pageNum: 1,
@@ -77,6 +58,70 @@ export function ProductsPage() {
   const products = data?.records ?? [];
   const total = data?.total ?? 0;
 
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLooping, setIsLooping] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isLoading && products.length > 0) {
+      setAllProducts(prev => {
+        if (params.pageNum === 1 || isLooping) {
+          return [...products];
+        }
+        const existingIds = new Set(prev.map(p => p.id));
+        const newItems = products.filter(p => !existingIds.has(p.id));
+        const updated = [...prev, ...newItems];
+        if (newItems.length > 0) {
+          const upcomingImages = newItems.slice(0, 6).map((p: Product) => p.images?.[0]).filter(Boolean) as string[];
+          preloadImages(upcomingImages, { width: 300, format: 'webp', quality: 75 }).catch(() => {});
+        }
+        return updated;
+      });
+      setIsLooping(false);
+    }
+  }, [products, isLoading, params.pageNum, isLooping]);
+
+  useEffect(() => {
+    if (allProducts.length > 0 && token) {
+      checkFavorites(allProducts.map(p => p.id));
+    }
+  }, [allProducts, token, checkFavorites]);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isLoading) {
+          if (allProducts.length < total && total > 0) {
+            handleLoadNext();
+          } else if (!isLooping && allProducts.length > 0) {
+            handleLoopBack();
+          }
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [allProducts.length, total, isLoading, isLooping]);
+
+  const handleLoadNext = useCallback(() => {
+    setParams(prev => ({ ...prev, pageNum: (prev.pageNum || 1) + 1 }));
+  }, []);
+
+  const handleLoopBack = useCallback(() => {
+    setIsLooping(true);
+    setParams(prev => ({ ...prev, pageNum: 1 }));
+  }, []);
+
+  const resetAllProducts = useCallback(() => {
+    setAllProducts([]);
+    setIsLooping(false);
+  }, []);
+
   const { data: categories } = useCategories();
   const currentCategory = useMemo(() => {
     if (!params.categoryId || !categories) {return null;}
@@ -87,11 +132,20 @@ export function ProductsPage() {
 
   const rows = useMemo(() => {
     const result: Product[][] = [];
-    for (let i = 0; i < products.length; i += COLUMN_COUNT) {
-      result.push(products.slice(i, i + COLUMN_COUNT));
+    for (let i = 0; i < allProducts.length; i += COLUMN_COUNT) {
+      result.push(allProducts.slice(i, i + COLUMN_COUNT));
     }
     return result;
-  }, [products, COLUMN_COUNT]);
+  }, [allProducts, COLUMN_COUNT]);
+
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => (typeof window !== 'undefined' ? window.document.documentElement : null) as HTMLElement | null,
+    estimateSize: () => 520,
+    overscan: 3,
+  });
 
   const sortOptions: { value: NonNullable<ProductQueryParams['sort']>; label: string }[] = [
     { value: 'newest', label: '最新发布' },
@@ -101,13 +155,15 @@ export function ProductsPage() {
   ];
 
   const handleSortChange = useCallback((sort: NonNullable<ProductQueryParams['sort']>) => {
+    resetAllProducts();
     setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
-  }, []);
+  }, [resetAllProducts]);
 
   const handleFilterChange = useCallback((_filter: string) => {
   }, []);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
+    resetAllProducts();
     setParams(prev => ({
       ...prev,
       categoryId: filters.categories.length === 1 ? filters.categories[0] : undefined,
@@ -118,44 +174,31 @@ export function ProductsPage() {
       pageNum: 1,
     }));
     setIsFilterOpen(false);
-  }, []);
+  }, [resetAllProducts]);
 
   const handleResetFilters = useCallback(() => {
+    resetAllProducts();
     setParams({
       pageNum: 1,
       pageSize: 20,
       sort: 'newest',
     });
-  }, []);
+  }, [resetAllProducts]);
 
   const handleClearCategory = useCallback(() => {
+    resetAllProducts();
     setParams(prev => ({ ...prev, categoryId: undefined, pageNum: 1 }));
-  }, []);
+  }, [resetAllProducts]);
 
   const handleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
     if (!token) {
       navigate('/login');
       return;
     }
-    try {
-      if (shouldFavorite) {
-        await favoriteApi.add(productId);
-        addToast({ type: 'success', message: '已收藏' });
-      } else {
-        await favoriteApi.remove(productId);
-        addToast({ type: 'success', message: '已取消收藏' });
-      }
-      queryClient.invalidateQueries({ queryKey: ['favorites'] });
-    } catch {
-      addToast({ type: 'error', message: shouldFavorite ? '收藏失败' : '取消收藏失败' });
-    }
-  }, [token, navigate, addToast, queryClient]);
+    toggleFavorite(productId, shouldFavorite);
+  }, [token, navigate, toggleFavorite]);
 
-  const handleLoadMore = useCallback(() => {
-    setParams((prev) => ({ ...prev, pageNum: (prev.pageNum || 1) + 1 }));
-  }, []);
-
-  if (isLoading) {
+  if (isLoading && allProducts.length === 0) {
     return (
       <div className="products-page-wrapper">
         <div className="products-container">
@@ -237,43 +280,45 @@ export function ProductsPage() {
           </div>
         </div>
 
-        <div>
-          {rows.map((row, rowIndex) => (
-            <div
-              key={rowIndex}
-              className="products-grid-premium"
-              style={{ marginBottom: '1.5rem' }}
-            >
-              {row.map((product: Product, colIndex: number) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  index={rowIndex * COLUMN_COUNT + colIndex}
-                  isFavorited={favoriteIds.has(product.id)}
-                  onFavorite={handleFavorite}
-                  onViewDetails={(id) => navigate(`/products/${id}`)}
-                />
-              ))}
-            </div>
-          ))}
+        <div ref={parentRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const row = rows[virtualRow.index];
+            if (!row) return null;
+            return (
+              <div
+                key={virtualRow.index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: virtualRow.size,
+                  transform: `translateY(${virtualRow.start}px)`,
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${COLUMN_COUNT}, 1fr)`,
+                  gap: '1.75rem',
+                  padding: '0 0 1.75rem 0',
+                }}
+              >
+                {row.map((product: Product, colIndex: number) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    index={virtualRow.index * COLUMN_COUNT + colIndex}
+                    isFavorited={isFavorited(product.id)}
+                    onFavorite={handleFavorite}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </div>
 
-        {products.length > 0 && products.length < total && (
-          <div className="load-more-premium">
-            <button
-              className="btn-load-more"
-              onClick={handleLoadMore}
-            >
-              <span>加载更多</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <polyline points="19 12 12 19 5 12" />
-              </svg>
-            </button>
-          </div>
+        {allProducts.length > 0 && (
+          <div ref={sentinelRef} className="scroll-sentinel" />
         )}
 
-        {products.length === 0 && (
+        {!isLoading && allProducts.length === 0 && (
           <div className="no-results-premium">
             <div className="no-results-icon-premium">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">

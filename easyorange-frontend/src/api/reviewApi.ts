@@ -8,7 +8,8 @@ import { request } from './core/request';
 export const reviewApi = {
     getList(productId: number, _params?: Record<string, unknown>) {
         return request<PageResult<Record<string, unknown>>>(`/products/${productId}/reviews`, {
-            method: 'GET'
+            method: 'GET',
+            skipAuth: true
         });
     },
 

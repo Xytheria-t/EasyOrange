@@ -1,219 +1,107 @@
-# easyorange-application Module Agents
+# easyorange-application 模块指南
 
-Professional agent configuration for the application bootstrap module.
+应用启动入口，聚合所有业务模块，包含配置、Flyway 迁移、架构测试。
 
-## Module Overview
-
-The `easyorange-application` module is the Spring Boot application entry point that:
-- Boots the entire EasyOrange backend system
-- Aggregates all business modules as dependencies
-- Contains application-level configuration (YAML)
-- Houses database migration scripts (Flyway)
-- Provides integration and architecture tests
-- Contains health check endpoints
-
-## Available Agents
-
-### 1. **application-bootstrap-agent**
-
-**Purpose**: Handle application startup and configuration
-
-**When to use**:
-- Adding new configuration properties
-- Modifying application profiles
-- Adding startup initialization
-- Configuring Actuator endpoints
-
-**Capabilities**:
-- Spring Boot configuration
-- Profile-specific settings
-- Startup initialization
-- Health checks
-
-**Example**:
-```
-"Add new application profile for staging"
-"Implement graceful shutdown handler"
-"Add custom health indicators"
-```
-
-### 2. **application-migration-agent**
-
-**Purpose**: Handle database migrations
-
-**When to use**:
-- Creating new migration scripts
-- Modifying existing schema
-- Adding seed data
-- Handling migration versioning
-
-**Capabilities**:
-- Flyway migration scripts
-- Schema versioning
-- Data migration
-- Rollback strategies
-
-**Example**:
-```
-"Add migration for new product fields"
-"Create seed data for categories"
-"Add index migration for performance"
-```
-
-### 3. **application-test-agent**
-
-**Purpose**: Handle integration and architecture tests
-
-**When to use**:
-- Adding integration tests
-- Creating architecture rule tests
-- Adding contract tests
-- Performance testing setup
-
-**Capabilities**:
-- Integration test setup
-- ArchUnit architecture tests
-- Testcontainer configuration
-- Performance benchmarks
-
-**Example**:
-```
-"Add architecture test for DDD layering"
-"Create integration test for order flow"
-"Add API contract tests"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
+## 目录结构
 
 ```
-1. Identify the configuration/test need
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with java-code-reviewer
-   ↓
-6. Test and verify
+application/
+├── src/main/java/
+│   └── com/cartethyia/easyorange/
+│       ├── EasyOrangeApplication.java     # Spring Boot 主类
+│       └── controller/
+│           ├── HealthController.java      # 健康检查
+│           └── PlatformStatsController.java # 平台统计
+├── src/main/resources/
+│   ├── application.yaml                   # 基础配置
+│   ├── application-dev.yaml               # 开发环境
+│   ├── application-prod.yaml              # 生产环境
+│   ├── application-test.yaml              # 测试环境
+│   ├── logback-spring.xml                 # 日志配置
+│   ├── openapi.yaml                       # OpenAPI 文档
+│   └── db/
+│       ├── migration/                     # Flyway DDL 迁移
+│       │   ├── V1__init_schema.sql
+│       │   ├── V2__seed_categories.sql
+│       │   └── V3__payment_infrastructure.sql
+│       └── dev/                           # 开发环境数据
+│           └── test_data.sql
+└── src/test/java/
+    └── com/cartethyia/easyorange/
+        ├── architecture/
+        │   └── ArchitectureRulesTest.java # ArchUnit 架构守卫
+        └── controller/
+            └── HealthControllerTest.java
 ```
 
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| Configuration changes | application-bootstrap-agent | application-test-agent |
-| Database migrations | application-migration-agent | application-test-agent |
-| Integration tests | application-test-agent | application-bootstrap-agent |
-| Startup logic | application-bootstrap-agent | application-migration-agent |
-
-## Architecture Patterns
-
-### Module Aggregation
-
-```
-easyorange-application/
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/cartethyia/easyorange/
-│   │   │       ├── EasyOrangeApplication.java
-│   │   │       └── controller/
-│   │   │           └── HealthController.java
-│   │   └── resources/
-│   │       ├── application.yaml
-│   │       ├── application-dev.yaml
-│   │       ├── application-prod.yaml
-│   │       ├── application-test.yaml
-│   │       ├── db/
-│   │       │   ├── migration/
-│   │       │   │   ├── V1__init_schema.sql
-│   │       │   │   ├── V2__seed_categories.sql
-│   │       │   │   └── V3__payment_infrastructure.sql
-│   │       │   └── dev/
-│   │       │       └── test_data.sql
-│   │       ├── logback-spring.xml
-│   │       └── openapi.yaml
-│   └── test/
-│       ├── java/
-│       │   └── com/cartethyia/easyorange/
-│       │       ├── architecture/
-│       │       │   └── ArchitectureRulesTest.java
-│       │       └── controller/
-│       │           └── HealthControllerTest.java
-│       └── resources/
-│           └── application-test.yaml
-├── pom.xml
-└── .env.example
-```
-
-### Module Dependencies
+## 模块依赖
 
 ```
 easyorange-application
-├── easyorange-common-core
-├── easyorange-common-domain
-├── easyorange-common
 ├── easyorange-framework
 ├── easyorange-user
 ├── easyorange-product
 ├── easyorange-order
 ├── easyorange-payment
 ├── easyorange-message
-└── easyorange-favorite
+├── easyorange-favorite
+├── spring-boot-starter-actuator
+├── micrometer-registry-prometheus
+└── flyway-core + flyway-mysql
 ```
 
-## Code Conventions
+## 配置管理
 
-### Main Application Class
+### 多环境配置
 
-```java
-@SpringBootApplication
-@MapperScan("com.cartethyia.easyorange.**.mapper")
-public class EasyOrangeApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(EasyOrangeApplication.class, args);
-    }
-}
-```
+| 文件 | 用途 | 关键差异 |
+|------|------|---------|
+| `application.yaml` | 基础配置 | 数据源、Redis、MyBatis-Plus、线程池 |
+| `application-dev.yaml` | 开发环境 | 小连接池、详细日志、JWT 开发密钥 |
+| `application-prod.yaml` | 生产环境 | 大连接池、SSL、JSON 日志、Swagger 关闭、优雅停机 |
+| `application-test.yaml` | 测试环境 | Testcontainers 配置 |
 
-### Health Controller
+### 关键配置项
 
-```java
-@RestController
-@RequestMapping("/health")
-public class HealthController {
-    @GetMapping
-    public Result<String> health() {
-        return Result.success("UP");
-    }
-}
-```
+- `easyorange.jwt.secret` / `easyorange.jwt.access-token-expiration` — JWT 配置
+- `easyorange.security` — 安全相关 (白名单路径等)
+- `easyorange.rate-limiter` — 限流配置
+- `easyorange.thread-pool` — 线程池配置
 
-### Architecture Test Example
+## Flyway 迁移规范
 
-```java
-@ArchTest
-static final ArchRule domainShouldNotDependOnAdapter =
-    noClasses()
-        .that().resideInAPackage("..domain..")
-        .should().dependOnClassesThat()
-        .resideInAPackage("..adapter..");
-```
+- 版本号格式: `V{N}__description.sql` (N 为递增整数)
+- DDL 放 `db/migration/`，开发数据放 `db/dev/`
+- **禁止修改已执行的迁移脚本**
+- 新增字段必须可空或有默认值
+- 迁移脚本中不写业务逻辑
 
-## Testing Requirements
+## 架构守卫测试
 
-- **Integration Tests**: Full flow tests with Testcontainers
-- **Architecture Tests**: DDD layer compliance with ArchUnit
-- **Health Tests**: Endpoint availability
-- **Coverage Target**: 80%+
+`ArchitectureRulesTest.java` 使用 ArchUnit 验证 DDD 分层规则：
 
-## Integration Points
+- domain 层不依赖 adapter 层
+- domain 层不依赖 Spring 框架
+- 包依赖方向合规
+- 已知违规项在白名单中标注，附带演进计划
 
-- **All modules**: Aggregates all business modules
-- **Flyway**: Database migration management
-- **Spring Boot Actuator**: Health and metrics
-- **Testcontainers**: Integration test database
+## 常见开发任务
+
+### 添加新环境配置
+
+1. 创建 `application-{profile}.yaml`
+2. 在 `application.yaml` 中设置 `spring.profiles.active`
+3. 测试配置加载
+
+### 添加 Flyway 迁移
+
+1. 确认当前最大版本号
+2. 创建 `V{N+1}__description.sql`
+3. 本地运行验证
+4. 提交前确认迁移可重复执行
+
+### 添加架构守卫规则
+
+1. 在 `ArchitectureRulesTest.java` 添加 `@ArchTest` 规则
+2. 运行测试确认现有代码合规
+3. 不合规的添加白名单并标注演进计划

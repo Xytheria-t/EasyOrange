@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface FavoriteRepository {
 
@@ -24,4 +25,6 @@ public interface FavoriteRepository {
     int removeByIds(List<Long> ids);
 
     boolean existsByUserIdAndProductId(Long userId, Long productId);
+
+    Set<Long> findFavoritedProductIds(Long userId, List<Long> productIds);
 }

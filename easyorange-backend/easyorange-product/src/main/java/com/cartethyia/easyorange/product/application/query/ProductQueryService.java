@@ -66,8 +66,17 @@ public class ProductQueryService {
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
+        Set<Long> sellerIds = page.getRecords().stream()
+                .map(ProductReadModel::sellerId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+                ? Map.of()
+                : productQueryRepository.findSellersByIds(sellerIds).stream()
+                        .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
+
         List<ProductVO> vos = page.getRecords().stream()
-                .map(m -> voFromReadModel(m, imagesByProduct))
+                .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
 
         return PageResult.of(vos, page.getTotal(), pageNum, pageSize);
@@ -85,8 +94,17 @@ public class ProductQueryService {
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
+        Set<Long> sellerIds = page.getRecords().stream()
+                .map(ProductReadModel::sellerId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+                ? Map.of()
+                : productQueryRepository.findSellersByIds(sellerIds).stream()
+                        .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
+
         List<ProductVO> vos = page.getRecords().stream()
-                .map(m -> voFromReadModel(m, imagesByProduct))
+                .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
 
         return PageResult.of(vos, page.getTotal(), pageNum, pageSize);
@@ -187,10 +205,21 @@ public class ProductQueryService {
                 .findImagesByProductIds(similarIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
+        Set<Long> sellerIds = page.getRecords().stream()
+                .filter(p -> !p.id().equals(productId))
+                .limit(effectiveLimit)
+                .map(ProductReadModel::sellerId)
+                .filter(id -> id != null)
+                .collect(Collectors.toSet());
+        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+                ? Map.of()
+                : productQueryRepository.findSellersByIds(sellerIds).stream()
+                        .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
+
         return page.getRecords().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
-                .map(m -> voFromReadModel(m, imagesByProduct))
+                .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
     }
 
@@ -264,7 +293,14 @@ public class ProductQueryService {
     }
 
     private ProductVO voFromReadModel(ProductReadModel readModel,
-                                       Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct) {
+                                       Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
+                                       Map<Long, SellerReadModel> sellerMap) {
+        SellerReadModel seller = sellerMap.get(readModel.sellerId());
+        String username = seller != null
+                ? (seller.nickName() != null ? seller.nickName() : seller.username())
+                : readModel.username();
+        String userAvatar = seller != null ? seller.avatar() : readModel.userAvatar();
+
         List<ProductQueryRepository.ProductImageInfo> images = imagesByProduct.getOrDefault(readModel.id(), List.of());
         List<String> imageUrls = images.stream()
                 .map(ProductQueryRepository.ProductImageInfo::imageUrl)
@@ -282,8 +318,8 @@ public class ProductQueryService {
         ProductReadModel enriched = new ProductReadModel(
                 readModel.id(),
                 readModel.sellerId(),
-                readModel.username(),
-                readModel.userAvatar(),
+                username,
+                userAvatar,
                 readModel.categoryId(),
                 readModel.categoryName(),
                 readModel.title(),

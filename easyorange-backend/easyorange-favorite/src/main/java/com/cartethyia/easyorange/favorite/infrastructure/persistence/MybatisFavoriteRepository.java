@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
@@ -96,6 +97,19 @@ public class MybatisFavoriteRepository extends ServiceImpl<FavoriteMapper, Favor
                         .eq(FavoriteDO::getProductId, productId)
                         .eq(FavoriteDO::getDelFlag, 0)
         ) > 0;
+    }
+
+    @Override
+    public Set<Long> findFavoritedProductIds(Long userId, List<Long> productIds) {
+        List<FavoriteDO> dataObjects = baseMapper.selectList(
+                new LambdaQueryWrapper<FavoriteDO>()
+                        .eq(FavoriteDO::getUserId, userId)
+                        .in(FavoriteDO::getProductId, productIds)
+                        .eq(FavoriteDO::getDelFlag, 0)
+        );
+        return dataObjects.stream()
+                .map(FavoriteDO::getProductId)
+                .collect(Collectors.toSet());
     }
 
     private Favorite toDomain(FavoriteDO dataObject) {

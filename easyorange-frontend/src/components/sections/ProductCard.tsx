@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, memo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Heart, MessageCircle, Eye, MapPin, Clock, Sparkles } from 'lucide-react'
 import { Product, CONDITION_LABEL_MAP } from '@/types'
 import { formatPrice, formatRelativeTime } from '@/utils'
@@ -9,7 +10,6 @@ interface ProductCardProps {
   product: Product
   onFavorite?: (id: number, isFavorited: boolean) => void
   isFavorited?: boolean
-  onViewDetails?: (id: number) => void
   style?: React.CSSProperties
   index?: number
 }
@@ -18,15 +18,16 @@ export const ProductCard = memo(({
   product,
   onFavorite,
   isFavorited = false,
-  onViewDetails,
   style,
   index = 0,
 }: ProductCardProps) => {
+  const navigate = useNavigate()
   const cardRef = useRef<HTMLDivElement>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
 
   const imageUrl = product.images?.[0] || placeholderImage
+  const secondaryImageUrl = product.images?.[1] || null
   const conditionLabel = CONDITION_LABEL_MAP[product.condition] || product.condition
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price
   const discountPercent = hasDiscount
@@ -35,6 +36,7 @@ export const ProductCard = memo(({
   const isHot = product.isHot || (product.views != null && product.views > 200)
   const quickLocation = product.location?.trim() || '校内面交'
   const sellerName = product.sellerName || '匿名用户'
+  const hasDescription = !!product.description && product.description.trim().length > 0
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -49,10 +51,10 @@ export const ProductCard = memo(({
     const y = e.clientY - rect.top
     const centerX = rect.width / 2
     const centerY = rect.height / 2
-    const rotateX = (y - centerY) / 20
-    const rotateY = (centerX - x) / 20
+    const rotateX = (y - centerY) / 28
+    const rotateY = (centerX - x) / 28
 
-    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(20px) scale(1.02)`
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateZ(12px) scale(1.02)`
   }, [])
 
   const handleMouseLeave = useCallback(() => {
@@ -70,6 +72,23 @@ export const ProductCard = memo(({
     setIsHovered(true)
   }, [])
 
+  const handleButtonMouseMove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget
+    const rect = btn.getBoundingClientRect()
+    const x = e.clientX - rect.left - rect.width / 2
+    const y = e.clientY - rect.top - rect.height / 2
+    const maxDist = 6
+    const dist = Math.min(Math.sqrt(x * x + y * y), maxDist)
+    const angle = Math.atan2(y, x)
+    const tx = Math.cos(angle) * dist
+    const ty = Math.sin(angle) * dist
+    btn.style.transform = `translate(${tx}px, ${ty}px) scale(1.12)`
+  }, [])
+
+  const handleButtonMouseLeave = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.currentTarget.style.transform = ''
+  }, [])
+
   // Staggered entrance animation delay
   const entranceDelay = index * 80
 
@@ -81,17 +100,20 @@ export const ProductCard = memo(({
         ...style,
         animationDelay: `${entranceDelay}ms`,
       }}
-      onClick={() => onViewDetails?.(product.id)}
+      onClick={() => navigate(`/products/${product.id}`)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onMouseEnter={handleMouseEnter}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onViewDetails?.(product.id)}
+      onKeyDown={(e) => e.key === 'Enter' && navigate(`/products/${product.id}`)}
     >
+      {/* Gradient border glow */}
+      <div className="product-card-border-glow" />
+
       {/* Floating glow effect */}
       <div className="product-card-glow" />
-      
+
       {/* Shimmer overlay on hover */}
       <div className={`product-card-shimmer ${isHovered ? 'active' : ''}`} />
 
@@ -103,14 +125,26 @@ export const ProductCard = memo(({
             alt={product.title}
             loading="lazy"
             placeholder="blur"
-            className={`product-image-img ${imageLoaded ? 'loaded' : ''} ${isHovered ? 'hovered' : ''}`}
+            className={`product-image-img primary-img ${imageLoaded ? 'loaded' : ''} ${isHovered && !secondaryImageUrl ? 'hovered' : ''}`}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             onLoad={() => setImageLoaded(true)}
           />
-          
+
+          {/* Secondary image for dual-image crossfade */}
+          {secondaryImageUrl && (
+            <Image
+              src={secondaryImageUrl}
+              alt={`${product.title} - 第二张图`}
+              loading="lazy"
+              placeholder="blur"
+              className={`product-image-img secondary-img ${isHovered ? 'visible' : ''}`}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
+
           {/* Image reflection/shine effect */}
           <div className={`product-image-shine ${isHovered ? 'active' : ''}`} />
-          
+
           {/* Depth shadow overlay */}
           <div className="product-image-depth" />
         </div>
@@ -146,11 +180,13 @@ export const ProductCard = memo(({
           )}
         </div>
 
-        {/* Action buttons - slide in from right */}
+        {/* Action buttons - slide in from right with magnetic pull */}
         <div className={`product-actions-premium ${isHovered ? 'visible' : ''}`}>
           <button
             className={`action-icon-premium favorite-btn-premium ${isFavorited ? 'favorited' : ''}`}
             onClick={handleFavoriteClick}
+            onMouseMove={handleButtonMouseMove}
+            onMouseLeave={handleButtonMouseLeave}
             aria-label={isFavorited ? '取消收藏' : '收藏'}
             aria-pressed={isFavorited}
           >
@@ -160,6 +196,8 @@ export const ProductCard = memo(({
             <button
               className="action-icon-premium contact-btn-premium"
               onClick={(e) => { e.stopPropagation() }}
+              onMouseMove={handleButtonMouseMove}
+              onMouseLeave={handleButtonMouseLeave}
               aria-label="联系卖家"
             >
               <MessageCircle size={17} strokeWidth={2} />
@@ -167,7 +205,9 @@ export const ProductCard = memo(({
           )}
           <button
             className="action-icon-premium view-btn-premium"
-            onClick={(e) => { e.stopPropagation(); onViewDetails?.(product.id) }}
+            onClick={(e) => { e.stopPropagation(); navigate(`/products/${product.id}`) }}
+            onMouseMove={handleButtonMouseMove}
+            onMouseLeave={handleButtonMouseLeave}
             aria-label="查看详情"
           >
             <Eye size={17} strokeWidth={2} />
@@ -202,6 +242,13 @@ export const ProductCard = memo(({
 
         <h3 className="product-title-premium">{product.title}</h3>
 
+        {/* Description expand on hover */}
+        {hasDescription && (
+          <div className={`product-desc-expand ${isHovered ? 'expanded' : ''}`}>
+            <p>{product.description!.slice(0, 60)}{product.description!.length > 60 ? '...' : ''}</p>
+          </div>
+        )}
+
         <div className="product-stat-row-premium">
           <span className="product-info-chip-premium">
             <Eye size={12} strokeWidth={2.5} /> {product.views || 0} 浏览
@@ -215,6 +262,7 @@ export const ProductCard = memo(({
 
         <div className="product-footer-premium">
           <div className="product-price-premium">
+            <div className="price-accent-bar" />
             <div className="product-price-row-premium">
               <span className="price-current-premium">¥{formatPrice(product.price)}</span>
               {hasDiscount && (
@@ -222,7 +270,7 @@ export const ProductCard = memo(({
               )}
             </div>
             {hasDiscount && (
-              <span className="price-note-premium">
+              <span className="price-note-premium price-save-badge">
                 立省 ¥{formatPrice(product.originalPrice! - product.price)}
               </span>
             )}
@@ -233,7 +281,7 @@ export const ProductCard = memo(({
               <>
                 <div className="seller-avatar-premium">
                   <img src={product.sellerAvatar} alt={sellerName} />
-                  <div className="seller-avatar-ring" />
+                  <div className="seller-pulse-ring" />
                 </div>
                 <div className="seller-body-premium">
                   <span className="seller-name-premium">{sellerName}</span>

@@ -1,280 +1,170 @@
-# easyorange-order Module Agents
+# easyorange-order 模块指南
 
-Professional agent configuration for the order management module.
+订单管理模块，DDD + CQRS + Saga 架构，处理订单全生命周期。
 
-## Module Overview
-
-The `easyorange-order` module handles the complete order lifecycle including:
-- Order creation with Saga distributed transactions
-- Order payment, shipping, receipt confirmation, cancellation, refund
-- CQRS (Command Query Responsibility Segregation) architecture
-- Order timeout handling and auto-confirmation
-- Inventory deduction and restoration via domain events
-
-## Available Agents
-
-### 1. **order-saga-agent**
-
-**Purpose**: Handle distributed transaction orchestration
-
-**When to use**:
-- Implementing new Saga workflows
-- Modifying compensation logic
-- Adding retry mechanisms for failed Sagas
-- Distributed lock management
-
-**Capabilities**:
-- Saga pattern implementation
-- Compensation transaction design
-- Redis distributed locking
-- Saga state persistence and recovery
-
-**Example**:
-```
-"Add Saga workflow for bulk order creation"
-"Implement Saga retry for failed payments"
-"Add inventory reservation in order Saga"
-```
-
-### 2. **order-cqrs-agent**
-
-**Purpose**: Handle CQRS command and query separation
-
-**When to use**:
-- Adding new order commands (write operations)
-- Adding new order queries (read operations)
-- Optimizing read models
-- Cache invalidation strategies
-
-**Capabilities**:
-- Command handler design
-- Query handler optimization
-- Read model assembly
-- Cache-aside pattern with Redis
-
-**Example**:
-```
-"Add query for seller order statistics"
-"Optimize order list query with caching"
-"Add command for order batch cancellation"
-```
-
-### 3. **order-domain-agent**
-
-**Purpose**: Handle domain model and business rules
-
-**When to use**:
-- Modifying order aggregate root
-- Adding new order status transitions
-- Implementing domain invariants
-- Adding domain events
-
-**Capabilities**:
-- Aggregate root design
-- State machine implementation
-- Domain event publishing
-- Value object design
-
-**Example**:
-```
-"Add order dispute status and transitions"
-"Implement order splitting logic"
-"Add delivery tracking domain events"
-```
-
-### 4. **order-cache-agent**
-
-**Purpose**: Handle order caching and performance
-
-**When to use**:
-- Implementing order cache strategies
-- Cache invalidation logic
-- Performance optimization for queries
-- Redis integration for order data
-
-**Capabilities**:
-- Redis cache patterns
-- Cache invalidation on order changes
-- Read-through and write-through strategies
-- Cache warming strategies
-
-**Example**:
-```
-"Cache seller order list"
-"Implement cache for order details"
-"Add cache warming for hot orders"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
-
-```
-1. Identify the feature/bug
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with java-code-reviewer
-   ↓
-6. Test and verify
-```
-
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| New order workflow | order-saga-agent | order-domain-agent |
-| Order query optimization | order-cqrs-agent | order-cache-agent |
-| Status transition change | order-domain-agent | order-saga-agent |
-| Cache implementation | order-cache-agent | order-cqrs-agent |
-| Bulk order operations | order-saga-agent | order-cqrs-agent |
-| Order statistics | order-cqrs-agent | order-cache-agent |
-
-## Architecture Patterns
-
-### CQRS Layered Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Interface Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  OrderCommandController│   │  OrderQueryController    │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                  Application Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  OrderCommandHandler  │    │  OrderQueryHandler       │  │
-│  │  - CreateOrder        │    │  - GetOrderById          │  │
-│  │  - PayOrder           │    │  - ListMyOrders          │  │
-│  │  - CancelOrder        │    │  - ListSoldOrders        │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Domain Layer                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  OrderAggregate (Immutable)                          │  │
-│  │  - createOrder() → OrderAggregate                    │  │
-│  │  - pay() → OrderAggregate                            │  │
-│  │  - ship() → OrderAggregate                           │  │
-│  │  - cancel() → OrderAggregate                         │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  CreateOrderSaga                                     │  │
-│  │  - execute() with compensation                       │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Domain Events                                       │  │
-│  │  - OrderCreatedEvent, OrderPaidEvent, etc.           │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│               Infrastructure Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  Persistence         │    │  Cache                   │  │
-│  │  - MybatisOrderRepo  │    │  - OrderCacheService     │  │
-│  │  - MybatisOrderReadRepo│  │  - OrderReadCache        │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
+## 目录结构
 
 ```
 order/
+├── adapter/
+│   ├── inbound/
+│   │   ├── web/
+│   │   │   ├── controller/
+│   │   │   │   ├── OrderCommandController.java  # 写端点
+│   │   │   │   └── OrderQueryController.java    # 读端点
+│   │   │   ├── dto/request/
+│   │   │   │   └── CreateOrderRequest.java
+│   │   │   └── dto/response/
+│   │   │       └── OrderVO.java
+│   │   ├── job/                             # 定时任务
+│   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
+│   │   │   └── OrderAutoConfirmTask.java    # 自动确认收货
+│   │   └── mq/subscriber/                   # 事件订阅
+│   │       ├── OrderCreatedEventSubscriber.java
+│   │       ├── OrderCancelledEventSubscriber.java
+│   │       ├── OrderCompletedEventSubscriber.java
+│   │       ├── OrderRefundedEventSubscriber.java
+│   │       └── OrderNotificationEventSubscriber.java
+│   └── outbound/
+│       ├── persistence/                     # 持久化
+│       │   ├── MybatisOrderRepository.java
+│       │   ├── MybatisOrderReadRepository.java
+│       │   ├── SagaRepositoryImpl.java
+│       │   ├── OrderDO.java, SagaDO.java
+│       │   ├── OrderMapper.java, SagaMapper.java
+│       │   └── OrderDataConverter.java
+│       ├── cache/                           # 缓存
+│       │   └── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
+│       └── messaging/                       # 跨模块适配器
+│           ├── ProductInventoryAdapter.java  # → product 扣减库存
+│           ├── ProductQueryAdapter.java      # → product 查询
+│           ├── PaymentGatewayAdapter.java    # → payment 创建支付
+│           └── UserInfoAdapter.java          # → user 查询用户
 ├── application/
-│   ├── command/              # Command handlers
+│   ├── command/                             # 命令 (CQRS Write)
 │   │   ├── OrderCommandHandler.java
-│   │   ├── CreateOrderCommand.java
-│   │   └── ...
-│   └── query/                # Query handlers
-│       ├── OrderQueryHandler.java
-│       └── ...
+│   │   ├── CreateOrderCommand.java / CreateOrderResult.java
+│   │   ├── PayOrderCommand.java
+│   │   ├── CancelOrderCommand.java
+│   │   ├── ShipOrderCommand.java
+│   │   ├── ConfirmReceiptCommand.java
+│   │   └── RefundOrderCommand.java
+│   ├── query/                               # 查询 (CQRS Read)
+│   │   ├── OrderQueryHandler.java
+│   │   ├── OrderQuery.java
+│   │   └── QueryOrderRequest.java
+│   └── assembler/
+│       └── OrderVOAssembler.java
 ├── domain/
 │   ├── aggregate/
-│   │   └── OrderAggregate.java
+│   │   └── OrderAggregate.java             # 订单聚合根 (不可变)
 │   ├── saga/
-│   │   └── CreateOrderSaga.java
+│   │   ├── CreateOrderSaga.java            # 创建订单 Saga 编排
+│   │   ├── SagaRepository.java            # Saga 仓储接口
+│   │   ├── SagaState.java, SagaStatus.java
+│   │   └── OrderCreationException.java
+│   ├── valueobject/
+│   │   ├── OrderId.java, OrderNo.java
+│   │   ├── Money.java
+│   │   ├── Address.java, Phone.java
+│   │   ├── ProductId.java, UserId.java
 │   ├── event/
 │   │   ├── OrderCreatedEvent.java
-│   │   └── ...
-│   ├── valueobject/
-│   │   ├── OrderId.java
-│   │   ├── Money.java
-│   │   └── ...
-│   └── repository/
-│       ├── OrderRepository.java
-│       └── OrderReadRepository.java
-├── infrastructure/
-│   ├── persistence/
-│   │   ├── MybatisOrderRepository.java
-│   │   └── ...
-│   ├── cache/
-│   │   ├── OrderCacheService.java
-│   │   └── OrderReadCache.java
-│   └── scheduler/
-│       ├── OrderTimeoutTask.java
-│       └── OrderAutoConfirmTask.java
-└── interfaces/
-    ├── rest/
-    │   ├── OrderCommandController.java
-    │   └── OrderQueryController.java
-    └── assembler/
-        └── OrderVOAssembler.java
+│   │   ├── OrderPaidEvent.java
+│   │   ├── OrderShippedEvent.java
+│   │   ├── OrderCompletedEvent.java
+│   │   ├── OrderCancelledEvent.java
+│   │   └── OrderRefundedEvent.java
+│   ├── readmodel/
+│   │   └── OrderReadModel.java
+│   ├── port/output/                        # 出站端口
+│   │   ├── OrderRepository.java            # 写仓储
+│   │   ├── OrderReadRepository.java        # 读仓储
+│   │   ├── OrderCachePort.java             # 缓存端口
+│   │   ├── ProductInventoryPort.java       # 库存端口
+│   │   ├── ProductQueryPort.java           # 商品查询端口
+│   │   ├── PaymentGatewayPort.java         # 支付网关端口
+│   │   ├── UserInfoPort.java              # 用户信息端口
+│   │   └── OrderQueryCondition.java
+│   ├── constant/
+│   │   ├── OrderConstant.java
+│   │   ├── OrderStatus.java
+│   │   └── OrderResultCode.java
+│   └── exception/
+│       ├── OrderDomainException.java
+│       ├── OrderNotFoundException.java
+│       ├── OrderStatusException.java
+│       ├── OrderPermissionException.java
+│       └── OrderOperationException.java
+└── infrastructure/
+    ├── cache/OrderCacheConstant.java
+    └── config/OrderTimeoutProperties.java
 ```
 
-## Code Conventions
+## Saga 模式
 
-### Naming Conventions
+创建订单使用 Saga 编排分布式事务：
 
-- **Controllers**: `*CommandController`, `*QueryController`
-- **Handlers**: `*CommandHandler`, `*QueryHandler`
-- **Aggregates**: `*Aggregate` (e.g., `OrderAggregate`)
-- **Sagas**: `*Saga` (e.g., `CreateOrderSaga`)
-- **Events**: `*Event` (e.g., `OrderCreatedEvent`)
-- **Value Objects**: `*` (e.g., `OrderId`, `Money`)
-
-### Immutable Aggregates
-
-```java
-// OrderAggregate returns new instances on state changes
-public OrderAggregate pay(Money amount) {
-    if (!canPay()) {
-        throw new OrderStatusException("Cannot pay order in status: " + status);
-    }
-    return new OrderAggregate(this.id, OrderStatus.PAID, ...);
-}
+```
+CreateOrderSaga.execute():
+  1. 扣减库存 (ProductInventoryPort)  ← 补偿: 恢复库存
+  2. 创建支付 (PaymentGatewayPort)    ← 补偿: 关闭支付
+  3. 保存订单 (OrderRepository)
+  失败时按逆序执行补偿操作
 ```
 
-### Saga Pattern
+- `SagaState` 持久化到 `eo_saga` 表，支持故障恢复
+- `SagaStatus`: PENDING → EXECUTING → COMPENSATING → COMPLETED/FAILED
 
-```java
-// Saga with compensation
-public class CreateOrderSaga {
-    public void execute(CreateOrderCommand command) {
-        // 1. Deduct inventory
-        // 2. Create payment
-        // 3. Save order
-        // On failure: compensate in reverse order
-    }
-}
+## CQRS 架构
+
+**Command 侧**: `OrderCommandController` → `OrderCommandHandler` → `OrderAggregate` → `OrderRepository`
+
+**Query 侧**: `OrderQueryController` → `OrderQueryHandler` → `OrderReadRepository` → `OrderReadModel`
+
+## 跨模块通信
+
+通过 `port/output/` 接口解耦，`adapter/outbound/messaging/` 实现适配器：
+
+| 端口 | 适配器 | 目标模块 |
+|------|--------|---------|
+| `ProductInventoryPort` | `ProductInventoryAdapter` | product |
+| `ProductQueryPort` | `ProductQueryAdapter` | product |
+| `PaymentGatewayPort` | `PaymentGatewayAdapter` | payment |
+| `UserInfoPort` | `UserInfoAdapter` | user |
+| `OrderCachePort` | `RedisOrderCacheAdapter` | Redis |
+
+当前仍存在直接 Maven 依赖，演进方向为完全通过 Port 接口 + 事件驱动解耦。
+
+## 订单状态机
+
+```
+DRAFT → PAID → SHIPPED → COMPLETED
+  ↓       ↓       ↓
+CANCELLED CANCELLED REFUNDED
 ```
 
-## Testing Requirements
+## 定时任务
 
-- **Unit Tests**: Domain aggregate behavior, Saga logic
-- **Integration Tests**: Repository with Testcontainers
-- **Cache Tests**: Cache hit/miss scenarios
-- **Coverage Target**: 80%+
+- `OrderTimeoutTask`: 未支付订单超时自动取消
+- `OrderAutoConfirmTask`: 已发货订单超时自动确认收货
 
-## Integration Points
+## 常见开发任务
 
-- **easyorange-product**: Inventory deduction via events
-- **easyorange-payment**: Payment creation via ports
-- **easyorange-user**: User info via ports
-- **easyorange-framework**: Redis, Security, Event publishing
+### 添加订单新状态
+
+1. `OrderStatus` 枚举新增值
+2. `OrderAggregate` 添加状态转换方法和校验
+3. 添加对应领域事件
+4. `OrderCommandHandler` 添加命令处理
+5. 更新 Saga 补偿逻辑（如需）
+6. Flyway 迁移
+7. 测试
+
+### 添加新查询维度
+
+1. `OrderQuery` / `QueryOrderRequest` 添加字段
+2. `OrderReadRepository` 修改查询
+3. `OrderReadModel` 添加字段
+4. `OrderVOAssembler` 更新
+5. 测试

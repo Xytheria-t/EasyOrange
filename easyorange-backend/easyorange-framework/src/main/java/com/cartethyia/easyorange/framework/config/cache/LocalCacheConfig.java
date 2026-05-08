@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -17,6 +18,12 @@ public class LocalCacheConfig {
     @Value("${jwt.local-cache.expire-minutes:5}")
     private int tokenCacheExpireMinutes;
 
+    @Value("${image.cache.max-size:1000}")
+    private int imageCacheMaxSize;
+
+    @Value("${image.cache.expire-hours:24}")
+    private int imageCacheExpireHours;
+
     @Bean("tokenUuidCache")
     public Cache<String, Boolean> tokenUuidCache() {
         return Caffeine.newBuilder()
@@ -24,5 +31,17 @@ public class LocalCacheConfig {
                 .expireAfterWrite(tokenCacheExpireMinutes, TimeUnit.MINUTES)
                 .recordStats()
                 .build();
+    }
+
+    @Bean("imageProcessCache")
+    public Cache<String, ImageProcessingCacheEntry> imageProcessCache() {
+        return Caffeine.newBuilder()
+                .maximumSize(imageCacheMaxSize)
+                .expireAfterAccess(imageCacheExpireHours, TimeUnit.HOURS)
+                .recordStats()
+                .build();
+    }
+
+    public record ImageProcessingCacheEntry(File file, String mimeType, String eTag) {
     }
 }

@@ -41,6 +41,13 @@ export const favoriteApi = {
         });
     },
 
+    batchCheck(productIds: number[]) {
+        return request<Record<number, boolean>>('/favorites/batch-check', {
+            method: 'POST',
+            body: { productIds }
+        });
+    },
+
     getCount() {
         return request<number>('/favorites/count', {
             method: 'GET'

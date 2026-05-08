@@ -321,6 +321,47 @@ docker-compose logs -f
 docker-compose down
 ```
 
+### 数据库问题排查
+
+如果遇到 "表不存在" 或 Flyway 迁移未执行的问题，可能是数据卷处于不一致状态。
+
+**方案一：完全重置（删除所有数据）**
+
+```bash
+# 停止并删除数据卷
+docker compose down -v
+
+# 重新启动
+docker compose up -d
+
+# 等待数据库就绪后启动应用
+```
+
+**方案二：创建 Flyway 历史表（保留数据）**
+
+```bash
+# 进入 MySQL 容器
+docker exec -it easyorange-mysql mysql -uroot -proot123456 easyorange
+
+# 执行 SQL
+CREATE TABLE IF NOT EXISTS flyway_schema_history (
+    installed_rank INT NOT NULL,
+    version VARCHAR(50),
+    description VARCHAR(200) NOT NULL,
+    type VARCHAR(20) NOT NULL,
+    script VARCHAR(1000) NOT NULL,
+    checksum INT,
+    installed_by VARCHAR(100) NOT NULL,
+    installed_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    execution_time INT NOT NULL,
+    success TINYINT(1) NOT NULL,
+    PRIMARY KEY (installed_rank)
+);
+
+# 退出
+exit
+```
+
 ### 环境变量配置
 
 创建 `.env` 文件在项目根目录：

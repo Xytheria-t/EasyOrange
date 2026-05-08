@@ -16,12 +16,12 @@ export const messageApi = {
         return request<Record<string, unknown>[]>('/messages/conversations');
     },
 
-    getConversation(userId: string | number, limit?: number) {
-        return request<ChatMessage[]>(`/messages/conversation/${userId}?limit=${limit || 50}`);
+    getConversation(userId: string | number) {
+        return request<ChatMessage[]>(`/messages/conversation/${userId}`);
     },
 
     sendMessage(data: { receiverId: number; content: string }) {
-        return request('/messages/send', {
+        return request('/messages', {
             method: 'POST',
             body: data
         });
@@ -31,7 +31,7 @@ export const messageApi = {
         const idArray = Array.isArray(ids) ? ids : [ids];
         return request('/messages/read', {
             method: 'PUT',
-            body: { ids: idArray }
+            body: idArray
         });
     },
 

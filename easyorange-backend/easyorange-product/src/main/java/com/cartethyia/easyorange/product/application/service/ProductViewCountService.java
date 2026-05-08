@@ -34,7 +34,7 @@ public class ProductViewCountService {
         }
     }
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(initialDelay = 15000, fixedRate = 5000)
     public void flushViewCountBatch() {
         Boolean locked = false;
         try {

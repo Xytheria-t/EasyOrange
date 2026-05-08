@@ -173,7 +173,7 @@ public class GlobalExceptionHandler {
         if (errorMessage.contains("uk_eo_user_username")) {
             return "用户名已存在";
         }
-        if (errorMessage.contains("uk_eo_favorite_user_product")) {
+        if (errorMessage.contains("uk_eo_favorite_user_product_del")) {
             return "已收藏过该商品";
         }
         return "数据已存在，请检查输入";

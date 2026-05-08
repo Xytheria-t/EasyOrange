@@ -1,306 +1,155 @@
-# easyorange-product Module Agents
+# easyorange-product 模块指南
 
-Professional agent configuration for the product management module.
+商品管理模块，DDD + CQRS 架构，支持商品 CRUD、搜索、库存、分类、举报、评价。
 
-## Module Overview
-
-The `easyorange-product` module handles all product-related functionality including:
-- Product CRUD operations (create, update, delete, status changes)
-- Product search and discovery
-- Inventory management (stock decrement/restore)
-- Category management
-- Product reporting and moderation
-- Hot keyword tracking
-- CQRS with separate read/write models
-- Redis caching for product queries
-
-## Available Agents
-
-### 1. **product-catalog-agent**
-
-**Purpose**: Handle product catalog and CRUD operations
-
-**When to use**:
-- Adding new product fields or types
-- Modifying product status workflows
-- Implementing product validation rules
-- Adding product image handling
-
-**Capabilities**:
-- Product aggregate design
-- Status state machine
-- Validation rules
-- Image set management
-
-**Example**:
-```
-"Add product variant support (SKU)"
-"Implement product draft/publish workflow"
-"Add product image watermarking"
-```
-
-### 2. **product-search-agent**
-
-**Purpose**: Handle product search and discovery
-
-**When to use**:
-- Optimizing search queries
-- Adding search filters
-- Implementing search suggestions
-- Managing search history and hot keywords
-
-**Capabilities**:
-- Search query optimization
-- Full-text search patterns
-- Search history tracking
-- Hot keyword aggregation
-
-**Example**:
-```
-"Add faceted search by category and price"
-"Implement search autocomplete"
-"Add personalized search ranking"
-```
-
-### 3. **product-inventory-agent**
-
-**Purpose**: Handle inventory and stock management
-
-**When to use**:
-- Implementing stock operations
-- Adding inventory reservation
-- Handling stock concurrency
-- Adding low-stock alerts
-
-**Capabilities**:
-- Stock decrement/restore logic
-- Optimistic locking with @Version
-- Inventory reservation patterns
-- Stock event publishing
-
-**Example**:
-```
-"Add inventory reservation for cart items"
-"Implement stock pre-deduction"
-"Add low stock notification events"
-```
-
-### 4. **product-cache-agent**
-
-**Purpose**: Handle product caching strategies
-
-**When to use**:
-- Implementing product cache
-- Cache invalidation logic
-- Performance optimization
-- Cache warming strategies
-
-**Capabilities**:
-- Redis cache abstraction via ProductCachePort
-- Cache-aside strategy
-- Cache invalidation on updates
-- Read model caching
-
-**Example**:
-```
-"Cache product detail page data"
-"Implement cache for search results"
-"Add cache warming for featured products"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
-
-```
-1. Identify the feature/bug
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with java-code-reviewer
-   ↓
-6. Test and verify
-```
-
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| New product feature | product-catalog-agent | product-cache-agent |
-| Search enhancement | product-search-agent | product-cache-agent |
-| Inventory changes | product-inventory-agent | product-catalog-agent |
-| Performance optimization | product-cache-agent | product-search-agent |
-| Product reporting | product-catalog-agent | product-search-agent |
-| Category management | product-catalog-agent | product-cache-agent |
-
-## Architecture Patterns
-
-### CQRS + Hexagonal Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Adapter Layer (Inbound)                   │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  ProductController    │    │  ProductQueryController  │  │
-│  │  - create, update     │    │  - getById, list         │  │
-│  │  - delete, status     │    │  - search, category      │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  SearchController     │    │  ProductReportController │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                  Application Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  Command Services    │    │  Query Services          │  │
-│  │  - ProductCommandService│  │  - ProductQueryService   │  │
-│  │  - Report Handlers   │    │  - Search Handlers       │  │
-│  ├──────────────────────┤    ├──────────────────────────┤  │
-│  │  ProductCacheService │    │  ProductReadModelAssembler│  │
-│  │  SearchHistoryService│    │                          │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Domain Layer                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Product (Aggregate Root)                            │  │
-│  │  - create(), update(), markAsSold(), delete()        │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Value Objects                                       │  │
-│  │  - ProductId, Money, StockQuantity, ImageUrl         │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Domain Events                                       │  │
-│  │  - ProductCreatedEvent, StockDecreasedEvent, etc.    │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  ProductCachePort (Interface)                        │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│               Adapter Layer (Outbound)                       │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  Persistence         │    │  Cache Implementation    │  │
-│  │  - ProductRepositoryImpl│  │  - ProductCacheService   │  │
-│  │  - ProductConverter  │    │  (implements ProductCachePort)│
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
+## 目录结构
 
 ```
 product/
 ├── adapter/
-│   ├── inbound/
-│   │   └── web/
-│   │       ├── ProductController.java
-│   │       ├── ProductQueryController.java
-│   │       ├── SearchController.java
-│   │       ├── ProductReportController.java
-│   │       └── dto/
-│   │           ├── request/
-│   │           └── response/
+│   ├── inbound/web/
+│   │   ├── ProductController.java       # 商品写操作 (创建/更新/删除/状态)
+│   │   ├── ProductQueryController.java  # 商品读操作 (详情/列表)
+│   │   ├── SearchController.java        # 搜索 (关键词/历史/热词)
+│   │   ├── ProductReportController.java # 举报管理
+│   │   ├── ProductReviewController.java # 评价管理
+│   │   ├── dto/request/
+│   │   └── dto/response/
 │   └── outbound/
-│       └── persistence/
-│           ├── converter/
-│           ├── dataobject/
-│           ├── mapper/
-│           └── repository/
+│       ├── persistence/                 # 持久化
+│       │   ├── converter/ProductConverter.java
+│       │   ├── dataobject/              # DO: ProductDO, ProductDetailDO, CategoryDO, etc.
+│       │   ├── mapper/                  # MyBatis Mapper
+│       │   ├── repository/              # Repository 实现
+│       │   └── ProductSnapshotPortImpl.java
+│       └── cache/                       # 缓存适配器
+│           ├── ProductCacheAdapter.java     # 实现 ProductCachePort
+│           ├── CategoryCacheAdapter.java    # 实现 CategoryCachePort
+│           └── ProductCacheConstant.java
 ├── application/
-│   ├── command/
-│   │   └── ProductCommandService.java
-│   ├── query/
+│   ├── command/                         # 命令侧 (CQRS Write)
+│   │   ├── ProductCommandService.java
+│   │   ├── ProductReviewCommandService.java
+│   │   ├── dto/                         # Command DTOs
+│   │   └── handler/                     # 命令处理器
+│   ├── query/                           # 查询侧 (CQRS Read)
 │   │   ├── ProductQueryService.java
-│   │   ├── handler/
-│   │   └── readmodel/
+│   │   ├── ProductReviewQueryService.java
+│   │   ├── readmodel/                   # 读模型
+│   │   │   ├── ProductReadModel.java
+│   │   │   ├── CategoryReadModel.java
+│   │   │   ├── SellerReadModel.java
+│   │   │   └── ...
+│   │   ├── assembler/
+│   │   │   └── ProductReadModelAssembler.java
+│   │   ├── dto/                         # Query DTOs + VOs
+│   │   └── handler/                     # 查询处理器
 │   ├── event/
 │   │   └── ProductEventListener.java
 │   └── service/
-│       ├── ProductCacheService.java
+│       ├── ProductViewCountService.java
 │       └── SearchHistoryService.java
 ├── domain/
 │   ├── aggregate/
-│   │   └── Product.java
+│   │   └── Product.java                 # 商品聚合根
 │   ├── entity/
 │   │   ├── ProductDetail.java
-│   │   └── ProductReport.java
+│   │   ├── ProductReport.java
+│   │   ├── HotKeyword.java
+│   │   └── SearchHistory.java
+│   ├── valueobject/
+│   │   ├── ProductId.java, CategoryId.java, SellerId.java
+│   │   ├── Money.java, StockQuantity.java, Version.java
+│   │   ├── ProductTitle.java, ProductDescription.java
+│   │   ├── ImageUrl.java, ImageSet.java, TagSet.java
+│   │   ├── ContactMethod.java, TradeLocation.java
+│   │   └── ProductSnapshotPort.java (接口)
 │   ├── event/
 │   │   ├── ProductCreatedEvent.java
-│   │   └── ...
+│   │   ├── ProductUpdatedEvent.java
+│   │   ├── ProductDeletedEvent.java
+│   │   ├── ProductMarkedSoldEvent.java
+│   │   ├── StockDecreasedEvent.java
+│   │   └── StockRestoredEvent.java
 │   ├── port/
-│   │   └── ProductCachePort.java
+│   │   ├── ProductCachePort.java        # 缓存端口 (domain 定义, application 实现)
+│   │   ├── CategoryCachePort.java
+│   │   └── ProductSnapshotPort.java
 │   ├── repository/
-│   │   ├── ProductRepository.java
+│   │   ├── ProductRepository.java       # 写仓储
+│   │   ├── ProductReportRepository.java
 │   │   └── query/
-│   └── valueobject/
-│       ├── ProductId.java
-│       ├── Money.java
-│       └── ...
-└── enums/
+│   │       ├── ProductQueryRepository.java  # 读仓储
+│   │       └── CategoryQueryRepository.java
+│   ├── service/
+│   │   └── ProductReportDomainService.java
+│   ├── enums/
+│   │   ├── ProductStatus.java, ConditionLevel.java
+│   │   ├── ProductReportStatus.java
+│   │   └── ProductResultCode.java
+│   ├── constant/
+│   │   └── ProductConstant.java
+│   └── exception/
+│       ├── InsufficientStockException.java
+│       ├── InvalidProductStatusException.java
+│       └── ProductNotFoundException.java
+└── config/
+    └── ProductDomainConfig.java
 ```
 
-## Code Conventions
+## CQRS 架构
 
-### Product Aggregate
+**Command 侧 (写)**:
+`ProductController` → `ProductCommandService` → `Product` 聚合根 → `ProductRepository`
 
-```java
-public class Product {
-    private final ProductId id;
-    private final ProductStatus status;
-    private final StockQuantity stock;
+**Query 侧 (读)**:
+`ProductQueryController` → `ProductQueryService` → `ProductQueryRepository` → `ProductReadModel`
 
-    public Product decreaseStock(int quantity) {
-        if (stock.value() < quantity) {
-            throw new InsufficientStockException();
-        }
-        return new Product(this.id, this.status, stock.subtract(quantity));
-    }
-}
-```
+读写使用不同的 Repository 接口和数据模型，查询侧使用 ReadModel 组装响应。
 
-### Cache Port Pattern
+## 缓存端口模式
+
+domain 层定义缓存端口接口，application 层实现：
 
 ```java
-// Domain layer defines the port
+// domain/port/ProductCachePort.java
 public interface ProductCachePort {
     Optional<ProductReadModel> getProduct(ProductId id);
     void putProduct(ProductId id, ProductReadModel product);
     void invalidateProduct(ProductId id);
 }
 
-// Application layer implements it
-@Service
-public class ProductCacheService implements ProductCachePort {
-    // Redis implementation
-}
+// adapter/outbound/cache/ProductCacheAdapter.java — Redis 实现
 ```
 
-### Optimistic Locking
+## 库存并发控制
 
-```java
-@TableName("eo_product")
-public class ProductDO extends BaseDO {
-    @Version
-    private Integer version;
-}
-```
+- `@Version` 乐观锁防止超卖
+- `StockQuantity` 值对象封装库存操作
+- `StockDecreasedEvent` / `StockRestoredEvent` 通知下游模块
 
-## Testing Requirements
+## 常见开发任务
 
-- **Unit Tests**: Aggregate behavior, Value object validation
-- **Integration Tests**: Repository, Cache service
-- **Search Tests**: Query performance, Result relevance
-- **Coverage Target**: 80%+
+### 添加商品新字段
 
-## Integration Points
+1. `Product` 聚合根 + 对应值对象
+2. Flyway 迁移脚本
+3. `ProductDO` + `ProductConverter`
+4. `ProductReadModel` + `ProductReadModelAssembler`
+5. Request/Response DTO
+6. 缓存失效逻辑
+7. 测试
 
-- **easyorange-order**: Stock events, Product query port
-- **easyorange-favorite**: Product ACL service
-- **easyorange-framework**: Redis, Security, File upload
-- **easyorange-common**: Result, PageResult, BaseDO
+### 添加新搜索维度
+
+1. `ProductSearchRequest` 添加字段
+2. `ProductQueryRepository` 修改查询
+3. `ProductReadModel` 添加字段
+4. 缓存 Key 调整
+5. 测试
+
+## 跨模块交互
+
+- **order 模块**: 通过 `ProductInventoryPort` 扣减/恢复库存
+- **favorite 模块**: 通过 `ProductAclService` 查询商品信息
+- 当前 order/favorite 直接依赖 product Maven 模块，通过 Port/ACL 接口隔离领域模型

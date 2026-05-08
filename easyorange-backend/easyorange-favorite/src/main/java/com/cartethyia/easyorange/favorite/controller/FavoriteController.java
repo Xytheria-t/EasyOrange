@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.favorite.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.favorite.controller.request.BatchCheckRequest;
 import com.cartethyia.easyorange.favorite.controller.request.BatchRemoveRequest;
 import com.cartethyia.easyorange.favorite.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
@@ -15,6 +16,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -68,5 +70,11 @@ public class FavoriteController {
     @PreAuthorize("isAuthenticated()")
     public Result<Long> getFavoriteCount() {
         return Result.success(favoriteService.getFavoriteCount());
+    }
+
+    @PostMapping("/batch-check")
+    @PreAuthorize("isAuthenticated()")
+    public Result<Map<Long, Boolean>> batchCheckFavorited(@RequestBody @Validated BatchCheckRequest request) {
+        return Result.success(favoriteService.batchCheckFavorited(request.getProductIds()));
     }
 }

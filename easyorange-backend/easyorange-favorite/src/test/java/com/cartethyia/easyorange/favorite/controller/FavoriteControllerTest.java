@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.favorite.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.favorite.controller.request.BatchCheckRequest;
 import com.cartethyia.easyorange.favorite.controller.request.BatchRemoveRequest;
 import com.cartethyia.easyorange.favorite.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
@@ -17,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -134,5 +136,22 @@ class FavoriteControllerTest {
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.data()).isEqualTo(5L);
+    }
+
+    @Test
+    @DisplayName("批量检查收藏状态")
+    void testBatchCheckFavorited() {
+        Map<Long, Boolean> checkResult = Map.of(2001L, true, 2002L, false);
+        when(favoriteService.batchCheckFavorited(List.of(2001L, 2002L))).thenReturn(checkResult);
+
+        BatchCheckRequest request = new BatchCheckRequest();
+        request.setProductIds(List.of(2001L, 2002L));
+        var result = favoriteController.batchCheckFavorited(request);
+
+        assertThat(result).isNotNull();
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(result.data()).hasSize(2);
+        assertThat(result.data().get(2001L)).isTrue();
+        assertThat(result.data().get(2002L)).isFalse();
     }
 }

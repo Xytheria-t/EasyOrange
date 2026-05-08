@@ -1,300 +1,144 @@
-# easyorange-message Module Agents
+# easyorange-message 模块指南
 
-Professional agent configuration for the messaging and notification module.
+消息通知模块，混合架构（部分 DDD + 传统分层），支持站内消息、WebSocket 实时推送、消息模板。
 
-## Module Overview
+> **架构现状**: 本模块尚未完全迁移到 DDD 六边形架构。domain/repository 中存在 MyBatis 实现类
+> (`MybatisMessageRepository` 等)，controller/service 层仍为传统分层结构。
+> 演进方向：逐步将 MyBatis 实现迁移到 adapter/outbound/persistence/，controller 迁移到 adapter/inbound/。
 
-The `easyorange-message` module handles all messaging functionality including:
-- Internal messaging (user-to-user, system notifications)
-- WebSocket real-time messaging (STOMP protocol)
-- Message template management
-- Message subscription preferences
-- Offline message storage and retry
-- Unread message counting
-- CQRS for message commands and queries
-
-## Available Agents
-
-### 1. **message-websocket-agent**
-
-**Purpose**: Handle WebSocket real-time messaging
-
-**When to use**:
-- Implementing new WebSocket endpoints
-- Modifying message routing logic
-- Adding real-time notifications
-- Optimizing WebSocket performance
-
-**Capabilities**:
-- STOMP protocol configuration
-- WebSocket message handlers
-- Real-time push notifications
-- Connection management
-
-**Example**:
-```
-"Add WebSocket endpoint for typing indicators"
-"Implement real-time notification broadcasting"
-"Add WebSocket connection pooling"
-```
-
-### 2. **message-routing-agent**
-
-**Purpose**: Handle message routing and delivery
-
-**When to use**:
-- Adding new message types
-- Modifying message delivery rules
-- Implementing message filtering
-- Adding subscription-based routing
-
-**Capabilities**:
-- Message routing service
-- Online/offline detection
-- Subscription preference checking
-- Multi-channel delivery
-
-**Example**:
-```
-"Add message routing by user preferences"
-"Implement priority message queue"
-"Add message filtering by content type"
-```
-
-### 3. **message-offline-agent**
-
-**Purpose**: Handle offline message storage and retry
-
-**When to use**:
-- Implementing offline storage
-- Adding retry mechanisms
-- Optimizing offline message cleanup
-- Handling message delivery guarantees
-
-**Capabilities**:
-- Offline message persistence
-- Retry scheduling
-- Message expiration
-- Delivery confirmation tracking
-
-**Example**:
-```
-"Add offline message storage for push notifications"
-"Implement exponential backoff retry"
-"Add message delivery confirmation"
-```
-
-### 4. **message-template-agent**
-
-**Purpose**: Handle message template management
-
-**When to use**:
-- Adding new message templates
-- Implementing template rendering
-- Adding multi-language support
-- Template variable validation
-
-**Capabilities**:
-- Template CRUD operations
-- Template rendering engine
-- Variable substitution
-- Template versioning
-
-**Example**:
-```
-"Add email template for order confirmation"
-"Implement template variable validation"
-"Add multi-language template support"
-```
-
-## Agent Usage Patterns
-
-### Standard Development Workflow
-
-```
-1. Identify the feature/bug
-   ↓
-2. Choose appropriate agent
-   ↓
-3. Agent analyzes existing patterns
-   ↓
-4. Agent implements following TDD
-   ↓
-5. Code review with java-code-reviewer + security-reviewer
-   ↓
-6. Test and verify
-```
-
-### Agent Selection Matrix
-
-| Task Type | Primary Agent | Secondary Agent |
-|-----------|--------------|-----------------|
-| Real-time messaging | message-websocket-agent | message-routing-agent |
-| Message delivery | message-routing-agent | message-offline-agent |
-| Offline support | message-offline-agent | message-websocket-agent |
-| Template system | message-template-agent | message-routing-agent |
-| Notification system | message-routing-agent | message-websocket-agent |
-| Message history | message-offline-agent | message-template-agent |
-
-## Architecture Patterns
-
-### WebSocket + CQRS Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                        │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  REST Controllers    │    │  WebSocket Layer         │  │
-│  │  - MessageCommandController                     │  │
-│  │  - MessageQueryController  │    - WebSocketMessageHandler│  │
-│  └──────────────────────┘    │    - WebSocketNotifier     │  │
-│                              └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                  Application Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  Command Handlers    │    │  Query Handlers          │  │
-│  │  - MessageCommandHandler  │  - MessageQueryHandler   │  │
-│  │  - SendMessage       │    │  - GetUnreadCount        │  │
-│  │  - MarkAsRead        │    │  - ListMessages          │  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│                    Domain Layer                              │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Message (Entity with behavior)                      │  │
-│  │  - create(), send(), read(), delete()                │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Domain Services                                     │  │
-│  │  - MessageRoutingService                             │  │
-│  │  - OfflineMessageStoreService                        │  │
-│  ├──────────────────────────────────────────────────────┤  │
-│  │  Domain Events                                       │  │
-│  │  - MessageSentEvent, MessageReadEvent, etc.          │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              ↓ ↑
-┌─────────────────────────────────────────────────────────────┐
-│               Infrastructure Layer                           │
-│  ┌──────────────────────┐    ┌──────────────────────────┐  │
-│  │  Persistence         │    │  WebSocket Config        │  │
-│  │  - MybatisMessageRepo│    │  - WebSocketConfig       │  │
-│  │  - MybatisOfflineRepo│    │  - WebSocketAuthInterceptor│  │
-│  └──────────────────────┘    └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Directory Structure
+## 目录结构
 
 ```
 message/
-├── application/
+├── controller/                        # [传统] 控制器 (待迁移到 adapter/inbound/web/)
+│   ├── MessageCommandController.java  # 消息写端点
+│   ├── MessageQueryController.java    # 消息读端点
+│   └── request/                       # 请求 DTO (待迁移到 dto/request/)
+├── service/                           # [传统] 服务层 (待迁移到 application/service/)
+│   ├── MessageSubscriptionService.java
+│   ├── MessageTemplateService.java
+│   ├── OfflineMessageService.java
+│   └── impl/                          # 实现类
+├── dto/                               # DTO
+│   ├── request/                       # 请求 DTO
+│   │   ├── SendMessageRequest.java
+│   │   ├── QueryMessageRequest.java
+│   │   ├── SubscriptionRequest.java
+│   │   ├── TemplateMessageRequest.java
+│   │   └── WsMessage.java
+│   └── vo/                            # 视图对象
+│       ├── MessageVO.java
+│       ├── ConversationVO.java
+│       ├── UnreadCountVO.java
+│       ├── MessageSubscriptionVO.java
+│       └── MessageTemplateVO.java
+├── application/                       # [DDD] 应用层 (CQRS)
 │   ├── command/
 │   │   ├── MessageCommandHandler.java
 │   │   ├── SendMessageCommand.java
-│   │   └── ...
+│   │   ├── SendSystemMessageCommand.java
+│   │   ├── MarkAsReadCommand.java
+│   │   ├── MarkAsReadBatchCommand.java
+│   │   └── DeleteMessageCommand.java
 │   └── query/
 │       ├── MessageQueryHandler.java
-│       └── ...
-├── controller/
-│   ├── MessageCommandController.java
-│   └── MessageQueryController.java
-├── domain/
+│       ├── ConversationQueryHandler.java
+│       ├── MessageQuery.java
+│       └── UnreadCountQuery.java
+├── domain/                            # [DDD] 领域层
 │   ├── event/
 │   │   ├── MessageSentEvent.java
-│   │   └── ...
-│   ├── repository/
-│   │   ├── MessageRepository.java
-│   │   └── query/
+│   │   ├── MessageReadEvent.java
+│   │   └── MessageDeletedEvent.java
+│   ├── repository/                    # ⚠️ 包含 MyBatis 实现类 (应迁移到 adapter/outbound/)
+│   │   ├── MessageRepository.java         # 接口
+│   │   ├── MybatisMessageRepository.java  # 实现类 (待迁移)
+│   │   ├── MessageQueryRepository.java
+│   │   ├── MybatisMessageQueryRepository.java # 实现类 (待迁移)
+│   │   ├── OfflineMessageRepository.java
+│   │   ├── MybatisOfflineMessageRepository.java # 实现类 (待迁移)
+│   │   ├── MessageSubscriptionRepository.java
+│   │   ├── MybatisMessageSubscriptionRepository.java # 实现类 (待迁移)
+│   │   ├── MessageTemplateRepository.java
+│   │   └── MybatisMessageTemplateRepository.java # 实现类 (待迁移)
 │   ├── service/
-│   │   ├── MessageRoutingService.java
-│   │   └── OfflineMessageStoreService.java
-│   └── valueobject/
-│       ├── MessageContent.java
-│       └── ...
-├── entity/
+│   │   ├── MessageRoutingService.java     # 消息路由
+│   │   └── OfflineMessageStoreService.java # 离线消息存储
+│   ├── valueobject/
+│   │   ├── MessageContent.java
+│   │   ├── MessageType.java
+│   │   └── Recipient.java
+│   └── exception/
+│       ├── MessageDomainException.java
+│       ├── MessageNotFoundException.java
+│       └── UnauthorizedOperationException.java
+├── entity/                            # [传统] 实体类 (待迁移到 domain/aggregate + adapter/outbound/persistence/)
 │   ├── Message.java
+│   ├── MessageSubscription.java
 │   ├── MessageTemplate.java
 │   └── OfflineMessage.java
-├── mapper/
+├── mapper/                            # [传统] MyBatis Mapper (待迁移到 adapter/outbound/persistence/)
 │   ├── MessageMapper.java
-│   └── ...
-├── service/
-│   ├── MessageSubscriptionService.java
-│   ├── MessageTemplateService.java
-│   └── OfflineMessageService.java
-└── websocket/
-    ├── WebSocketConfig.java
-    ├── WebSocketMessageHandler.java
-    ├── WebSocketNotifier.java
-    └── WebSocketAuthInterceptor.java
+│   ├── MessageSubscriptionMapper.java
+│   ├── MessageTemplateMapper.java
+│   └── OfflineMessageMapper.java
+├── enums/
+│   ├── MessageStatus.java
+│   ├── MessageType.java
+│   ├── ReadStatus.java
+│   └── MessageResultCode.java
+├── constant/
+│   └── MessageConstant.java
+└── websocket/                         # WebSocket 实时推送
+    ├── WebSocketConfig.java               # STOMP 配置
+    ├── WebSocketAuthInterceptor.java      # JWT 认证拦截
+    ├── WebSocketMessageHandler.java       # 消息处理
+    ├── WebSocketNotifier.java             # 实时通知推送
+    └── WebSocketEventListener.java        # 连接/断开事件
 ```
 
-## Code Conventions
+## WebSocket 架构
 
-### Message Entity with Behavior
+- 协议: STOMP over WebSocket
+- 认证: `WebSocketAuthInterceptor` 从 STOMP Header 提取 JWT Token
+- 推送: `WebSocketNotifier` 向在线用户实时推送消息
+- 离线: `OfflineMessageStoreService` 存储离线消息，上线后重推
 
-```java
-public class Message {
-    private Long id;
-    private Long senderId;
-    private Long receiverId;
-    private MessageContent content;
-    private MessageStatus status;
+## 消息路由
 
-    public void send() {
-        this.status = MessageStatus.SENT;
-        registerEvent(new MessageSentEvent(this));
-    }
+`MessageRoutingService` 根据用户订阅偏好决定推送方式：
+- 在线 → WebSocket 实时推送
+- 离线 → 存储为离线消息，上线后推送
+- 订阅检查 → 用户可关闭某类消息通知
 
-    public void read() {
-        this.status = MessageStatus.READ;
-        registerEvent(new MessageReadEvent(this));
-    }
-}
-```
+## 安全要点
 
-### WebSocket Security
+- WebSocket 连接必须 JWT 认证
+- 消息内容 XSS 过滤 (`HtmlUtils.htmlEscape`)
+- 用户只能读取/删除自己的消息
+- 消息发送限流
 
-```java
-@Component
-public class WebSocketAuthInterceptor implements ChannelInterceptor {
-    @Override
-    public Message<?> preSend(Message<?> message, MessageChannel channel) {
-        // Validate JWT token from STOMP headers
-        // Reject unauthorized connections
-    }
-}
-```
+## 演进路线
 
-### XSS Prevention
+1. 将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`
+2. 将 `mapper/` 迁移到 `adapter/outbound/persistence/mapper/`
+3. 将 `domain/repository/` 中的 MyBatis 实现类迁移到 `adapter/outbound/persistence/repository/`
+4. 将 `controller/` 迁移到 `adapter/inbound/web/controller/`
+5. 将 `service/` 迁移到 `application/service/`
+6. 添加 `domain/port/output/` 端口接口
 
-```java
-public static String sanitizeContent(String content) {
-    return HtmlUtils.htmlEscape(content);
-}
-```
+## 常见开发任务
 
-## Security Checklist
+### 添加新消息类型
 
-- [ ] WebSocket connections authenticated via JWT
-- [ ] Message content sanitized (XSS prevention)
-- [ ] Users can only read/delete their own messages
-- [ ] Rate limiting on message sending
-- [ ] Sensitive data not logged
-- [ ] Offline messages encrypted at rest
+1. `MessageType` 枚举新增值
+2. `MessageRoutingService` 添加路由规则
+3. 如需新模板 → `MessageTemplate` 添加记录
+4. 添加测试
 
-## Testing Requirements
+### 添加 WebSocket 事件
 
-- **Unit Tests**: Message entity behavior, Routing logic
-- **Integration Tests**: WebSocket connections, Repository
-- **Security Tests**: Auth interceptor, XSS prevention
-- **Coverage Target**: 80%+
-
-## Integration Points
-
-- **easyorange-user**: User info for messaging
-- **easyorange-framework**: WebSocket, Security, Events
-- **easyorange-common-domain**: DomainEventPublisher
+1. `WebSocketMessageHandler` 添加消息类型处理
+2. `WebSocketNotifier` 添加推送方法
+3. 前端添加对应监听
+4. 测试

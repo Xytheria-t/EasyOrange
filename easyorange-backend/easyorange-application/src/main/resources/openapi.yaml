@@ -52,6 +52,8 @@ tags:
     description: 消息发送、标记已读、删除
   - name: 消息查询
     description: 消息列表、未读消息、未读数量
+  - name: favorite
+    description: 收藏管理
 
 components:
   securitySchemes:
@@ -715,6 +717,25 @@ components:
           type: integer
         chat:
           type: integer
+
+    FavoriteVO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        productId:
+          type: integer
+          format: int64
+        productName:
+          type: string
+        productImage:
+          type: string
+        productPrice:
+          type: number
+        createTime:
+          type: string
+          format: date-time
 
     # 搜索相关
     SearchHistoryVO:
@@ -2781,5 +2802,243 @@ paths:
                   - properties:
                       data:
                         $ref: "#/components/schemas/UnreadCountVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ===================================================================
+  # 收藏管理
+  # ===================================================================
+  /api/favorites:
+    get:
+      tags:
+        - favorite
+      summary: 获取收藏列表
+      description: 分页获取当前用户的收藏列表
+      operationId: getFavoriteList
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: pageNum
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          records:
+                            type: array
+                            items:
+                              $ref: "#/components/schemas/FavoriteVO"
+                          total:
+                            type: integer
+                          pageNum:
+                            type: integer
+                          pageSize:
+                            type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/favorites/count:
+    get:
+      tags:
+        - favorite
+      summary: 获取收藏数量
+      description: 获取当前用户的收藏总数
+      operationId: getFavoriteCount
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/favorites/check/{productId}:
+    get:
+      tags:
+        - favorite
+      summary: 检查商品是否已收藏
+      description: 检查当前用户是否已收藏指定商品
+      operationId: checkFavorite
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/favorites/batch-check:
+    post:
+      tags:
+        - favorite
+      summary: 批量检查商品收藏状态
+      description: 批量检查当前用户是否已收藏指定商品列表
+      operationId: batchCheckFavorite
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - productIds
+              properties:
+                productIds:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  minItems: 1
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: object
+                        additionalProperties:
+                          type: boolean
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/favorites/{productId}:
+    post:
+      tags:
+        - favorite
+      summary: 添加收藏
+      description: 收藏指定商品
+      operationId: addFavorite
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    delete:
+      tags:
+        - favorite
+      summary: 取消收藏
+      description: 取消收藏指定商品
+      operationId: removeFavorite
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/favorites/batch:
+    delete:
+      tags:
+        - favorite
+      summary: 批量取消收藏
+      description: 批量取消收藏指定商品
+      operationId: batchRemoveFavorite
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - ids
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+                  minItems: 1
+      responses:
+        "200":
+          description: 成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Result"
+                  - properties:
+                      data:
+                        type: object
         "401":
           $ref: "#/components/responses/Unauthorized"
