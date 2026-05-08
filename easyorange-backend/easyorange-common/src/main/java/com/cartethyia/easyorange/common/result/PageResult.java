@@ -3,9 +3,6 @@ package com.cartethyia.easyorange.common.result;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * 分页响应结果封装
- */
 public record PageResult<T>(
         List<T> records,
         Long total,
@@ -23,20 +20,6 @@ public record PageResult<T>(
                 pageSize,
                 pages
         );
-    }
-
-    public static <T> PageResult<T> fromIPage(com.baomidou.mybatisplus.core.metadata.IPage<?> page, List<T> data) {
-        if (page == null) {
-            return empty(1, 10);
-        }
-        return of(data, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
-    }
-
-    public static <T> PageResult<T> fromIPage(com.baomidou.mybatisplus.core.metadata.IPage<T> page) {
-        if (page == null) {
-            return empty(1, 10);
-        }
-        return fromIPage(page, page.getRecords());
     }
 
     public static <T> PageResult<T> empty(int pageNum, int pageSize) {

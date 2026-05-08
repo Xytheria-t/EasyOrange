@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.user.domain.aggregate;
 
-import com.cartethyia.easyorange.user.domain.constant.Sex;
-import com.cartethyia.easyorange.user.domain.constant.UserStatus;
-import com.cartethyia.easyorange.user.domain.constant.UserType;
+import com.cartethyia.easyorange.user.domain.enums.Sex;
+import com.cartethyia.easyorange.user.domain.enums.UserStatus;
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;

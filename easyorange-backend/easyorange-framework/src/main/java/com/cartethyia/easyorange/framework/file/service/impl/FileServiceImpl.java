@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.FileUtils;
+import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.entity.UploadFile;

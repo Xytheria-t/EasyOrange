@@ -68,14 +68,14 @@ class ArchitectureRulesTest {
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/JdbcDomainEventStore.java|import org.springframework.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import com.baomidou.mybatisplus.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import org.springframework.",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/UserStatus.java|import com.baomidou.mybatisplus.annotation.EnumValue",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/UserStatus.java|import com.baomidou.mybatisplus.annotation.IEnum",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/LoginMethod.java|import com.baomidou.mybatisplus.annotation.EnumValue",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/LoginMethod.java|import com.baomidou.mybatisplus.annotation.IEnum",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/UserType.java|import com.baomidou.mybatisplus.annotation.EnumValue",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/UserType.java|import com.baomidou.mybatisplus.annotation.IEnum",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/Sex.java|import com.baomidou.mybatisplus.annotation.EnumValue",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/constant/Sex.java|import com.baomidou.mybatisplus.annotation.IEnum"
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/UserStatus.java|import com.baomidou.mybatisplus.annotation.EnumValue",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/UserStatus.java|import com.baomidou.mybatisplus.annotation.IEnum",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/LoginMethod.java|import com.baomidou.mybatisplus.annotation.EnumValue",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/LoginMethod.java|import com.baomidou.mybatisplus.annotation.IEnum",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/UserType.java|import com.baomidou.mybatisplus.annotation.EnumValue",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/UserType.java|import com.baomidou.mybatisplus.annotation.IEnum",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/Sex.java|import com.baomidou.mybatisplus.annotation.EnumValue",
+            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/Sex.java|import com.baomidou.mybatisplus.annotation.IEnum"
     );
 
     private static final Set<String> COMMAND_QUERY_COUPLING_ALLOWLIST = Set.of(

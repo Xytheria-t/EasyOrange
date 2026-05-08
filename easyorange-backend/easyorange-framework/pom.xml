@@ -80,6 +80,12 @@
             <artifactId>mybatis-plus-jsqlparser</artifactId>
         </dependency>
 
+        <!-- MyBatis-Plus Spring Boot Starter -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
+        </dependency>
+
         <!-- Logstash Logback Encoder - 结构化日志 -->
         <dependency>
             <groupId>net.logstash.logback</groupId>

@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileException;
 import com.cartethyia.easyorange.common.exception.ParamValidationException;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.common.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;

@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.config.properties.RateLimiterProperties;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
-import com.cartethyia.easyorange.common.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;

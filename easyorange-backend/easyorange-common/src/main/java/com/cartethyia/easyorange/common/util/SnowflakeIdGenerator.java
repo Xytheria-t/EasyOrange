@@ -1,13 +1,10 @@
 package com.cartethyia.easyorange.common.util;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 
-@Slf4j
 public class SnowflakeIdGenerator {
 
     private static final long EPOCH = LocalDate.of(2024, 1, 1)

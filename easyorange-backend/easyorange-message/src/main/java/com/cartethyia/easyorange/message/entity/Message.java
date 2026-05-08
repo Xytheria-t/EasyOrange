@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.framework.entity.BaseDO;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;

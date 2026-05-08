@@ -7,7 +7,7 @@
 -- 重置所有普通用户密码为 "Password123"
 -- BCrypt 加密强度: 10
 -- 加密后长度: 60 字符
-UPDATE `eo_user` SET `password` = '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG'
+UPDATE `eo_user` SET `password` = '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK'
 WHERE `del_flag` = 0;
 
 -- 清除被锁定的用户状态（status = 2 -> 0）

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.handler;
 
-import com.cartethyia.easyorange.common.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;

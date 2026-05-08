@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.common.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ForgotPasswordRequest;

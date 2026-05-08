@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.config.web;
 
-import com.cartethyia.easyorange.common.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

@@ -40,11 +40,10 @@ public class MybatisOrderReadRepository implements OrderReadRepository {
         wrapper.orderByDesc(OrderDO::getCreateTime);
 
         Page<OrderDO> orderPage = orderMapper.selectPage(page, wrapper);
-        PageResult<OrderDO> doPage = PageResult.fromIPage(orderPage);
 
         return PageResult.of(
-                doPage.records().stream().map(converter::toReadModel).toList(),
-                doPage.total(), doPage.current(), doPage.size()
+                orderPage.getRecords().stream().map(converter::toReadModel).toList(),
+                orderPage.getTotal(), (int) orderPage.getCurrent(), (int) orderPage.getSize()
         );
     }
 

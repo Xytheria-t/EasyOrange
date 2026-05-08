@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.domain.valueobject;
 
-import com.cartethyia.easyorange.user.domain.constant.Sex;
+import com.cartethyia.easyorange.user.domain.enums.Sex;
 
 public record UserProfile(
     String email,

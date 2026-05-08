@@ -41,7 +41,7 @@ public class ProductSearchHandler {
                 .map(this::toProductResponse)
                 .collect(Collectors.toList());
 
-        return PageResult.fromIPage(page, responses);
+        return PageResult.of(responses, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 
     @Transactional(readOnly = true)

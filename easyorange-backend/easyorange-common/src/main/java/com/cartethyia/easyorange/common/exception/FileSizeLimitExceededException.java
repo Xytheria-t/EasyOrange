@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.common.exception;
 
 import com.cartethyia.easyorange.common.enums.FileResultCode;
-import com.cartethyia.easyorange.common.util.FileUtils;
+import com.cartethyia.easyorange.common.util.FileSizeFormat;
 import lombok.Getter;
 
 /**
@@ -18,8 +18,8 @@ public class FileSizeLimitExceededException extends FileException {
 
     public FileSizeLimitExceededException(long maxSizeBytes, long actualSizeBytes) {
         super(FileResultCode.FILE_SIZE_EXCEEDED,
-                "文件大小超过限制：最大 " + FileUtils.formatFileSize(maxSizeBytes)
-                        + "，当前 " + FileUtils.formatFileSize(actualSizeBytes));
+                "文件大小超过限制：最大 " + FileSizeFormat.formatFileSize(maxSizeBytes)
+                        + "，当前 " + FileSizeFormat.formatFileSize(actualSizeBytes));
         this.maxSizeBytes = maxSizeBytes;
         this.actualSizeBytes = actualSizeBytes;
     }

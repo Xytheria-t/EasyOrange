@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.user.domain.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import com.cartethyia.easyorange.user.domain.constant.UserResultCode;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RegisterRe
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
-import com.cartethyia.easyorange.user.domain.constant.UserStatus;
-import com.cartethyia.easyorange.user.domain.constant.UserType;
+import com.cartethyia.easyorange.user.domain.enums.UserStatus;
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;

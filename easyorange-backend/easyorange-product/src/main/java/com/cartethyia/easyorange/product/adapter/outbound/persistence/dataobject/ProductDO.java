@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobjec
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
-import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.framework.entity.BaseDO;
 
 import java.math.BigDecimal;
 

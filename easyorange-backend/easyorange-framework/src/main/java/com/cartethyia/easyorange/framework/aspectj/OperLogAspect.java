@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.framework.aspectj;
 import com.cartethyia.easyorange.common.annotation.Log;
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.BusinessType;
-import com.cartethyia.easyorange.common.util.RequestUtil;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.framework.config.properties.OperLogProperties;
 import com.cartethyia.easyorange.framework.operlog.entity.SysOperLog;

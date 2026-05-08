@@ -10,8 +10,8 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUser
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
-import com.cartethyia.easyorange.user.domain.constant.Sex;
-import com.cartethyia.easyorange.user.domain.constant.UserResultCode;
+import com.cartethyia.easyorange.user.domain.enums.Sex;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;

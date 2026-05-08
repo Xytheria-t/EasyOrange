@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.framework.entity.BaseDO;
 
 @TableName("eo_category")
 public class CategoryDO extends BaseDO {
