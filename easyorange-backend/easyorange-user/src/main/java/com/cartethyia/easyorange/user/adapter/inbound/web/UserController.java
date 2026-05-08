@@ -43,6 +43,13 @@ public class UserController {
     @RepeatSubmit(interval = 3000, message = "请勿重复提交")
     @PostMapping("/avatar")
     public Result<UserVO> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
-        return Result.success(userAppService.uploadAvatar(avatar));
+        try {
+            byte[] content = avatar.getBytes();
+            String contentType = avatar.getContentType();
+            String originalFilename = avatar.getOriginalFilename();
+            return Result.success(userAppService.uploadAvatar(content, contentType, originalFilename));
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("头像读取失败", e);
+        }
     }
 }

@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
-import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
+import com.cartethyia.easyorange.user.domain.port.output.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

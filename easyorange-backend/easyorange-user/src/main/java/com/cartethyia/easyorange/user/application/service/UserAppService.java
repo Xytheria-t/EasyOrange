@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.exception.FileSizeLimitExceededException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
@@ -10,18 +9,17 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUser
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
+import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
-import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
-import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
-import com.cartethyia.easyorange.user.domain.port.UserEventPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -77,12 +75,12 @@ public class UserAppService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public UserVO uploadAvatar(MultipartFile avatar) {
-        BizRequire.notNull(avatar, "头像不能为空");
-        BizRequire.requireTrue(!avatar.isEmpty(), "头像不能为空");
+    public UserVO uploadAvatar(byte[] content, String contentType, String filename) {
+        BizRequire.notNull(content, "头像不能为空");
+        BizRequire.requireTrue(content.length > 0, "头像不能为空");
 
-        if (avatar.getSize() > AVATAR_MAX_SIZE) {
-            throw new FileSizeLimitExceededException(AVATAR_MAX_SIZE, avatar.getSize());
+        if (content.length > AVATAR_MAX_SIZE) {
+            throw BusinessException.of("头像大小超过限制，最大允许5MB");
         }
 
         User currentUser = getCurrentUserOrThrow();
@@ -91,11 +89,7 @@ public class UserAppService {
         avatarFilePort.deleteIfExists(currentAvatar);
 
         try {
-            byte[] content = avatar.getBytes();
-            String contentType = avatar.getContentType();
-            String originalFilename = avatar.getOriginalFilename();
-            
-            String avatarUrl = avatarFilePort.upload(content, contentType, originalFilename, currentUser.getId());
+            String avatarUrl = avatarFilePort.upload(content, contentType, filename, currentUser.getId());
 
             User updatedUser = currentUser.changeAvatar(avatarUrl, currentUser.getId());
             BizRequire.requireTrue(userRepository.update(updatedUser), "更新头像失败");

@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.storage;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.service.FileService;
-import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
 
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;

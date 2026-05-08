@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
+import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
@@ -131,7 +132,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     public List<SearchHistoryReadModel> findSearchHistoryByUserId(Long userId, Integer limit) {
         int lim = limit != null ? limit : 20;
 
-        String key = ProductConstant.SEARCH_HISTORY_KEY_PREFIX + userId;
+        String key = ProductCacheConstant.SEARCH_HISTORY_KEY_PREFIX + userId;
         List<Object> history = redisTemplate.opsForList().range(key, 0, lim - 1);
 
         if (history != null && !history.isEmpty()) {
@@ -163,12 +164,12 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         int lim = limit != null ? limit : 10;
 
         Set<Object> topKeywords = redisTemplate.opsForZSet()
-                .reverseRange(ProductConstant.HOT_KEYWORD_ZSET_KEY, 0, lim - 1);
+                .reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, lim - 1);
 
         if (topKeywords != null && !topKeywords.isEmpty()) {
             List<HotKeywordReadModel> result = new ArrayList<>();
             for (Object keyword : topKeywords) {
-                Double score = redisTemplate.opsForZSet().score(ProductConstant.HOT_KEYWORD_ZSET_KEY, keyword);
+                Double score = redisTemplate.opsForZSet().score(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, keyword);
                 int count = score != null ? score.intValue() : 0;
                 result.add(new HotKeywordReadModel(null, keyword.toString(), count, calculateHotLevel(count)));
             }
@@ -192,7 +193,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
 
         Set<Object> allKeywords = redisTemplate.opsForZSet()
-                .reverseRange(ProductConstant.HOT_KEYWORD_ZSET_KEY, 0, -1);
+                .reverseRange(ProductCacheConstant.HOT_KEYWORD_ZSET_KEY, 0, -1);
 
         if (allKeywords != null && !allKeywords.isEmpty()) {
             String lowerKeyword = keyword.toLowerCase();
@@ -268,7 +269,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
             return;
         }
 
-        String key = ProductConstant.searchHistoryKey(userId);
+        String key = ProductCacheConstant.searchHistoryKey(userId);
         redisTemplate.opsForList().remove(key, 0, keyword);
         redisTemplate.opsForList().leftPush(key, keyword);
         redisTemplate.opsForList().trim(key, 0, 19);
@@ -281,7 +282,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
     @Override
     public void clearSearchHistory(Long userId) {
-        String key = ProductConstant.searchHistoryKey(userId);
+        String key = ProductCacheConstant.searchHistoryKey(userId);
         redisTemplate.delete(key);
 
         searchHistoryMapper.delete(

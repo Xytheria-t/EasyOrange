@@ -9,9 +9,11 @@ import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductQueryRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
+import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +31,7 @@ import java.util.List;
 public class ProductQueryController {
 
     private final ProductQueryService queryService;
+    private final CategoryCachePort categoryCachePort;
 
     @GetMapping
     @RateLimiter(key = "product_list", count = 30, time = 60, limitType = LimitType.IP)
@@ -84,5 +87,11 @@ public class ProductQueryController {
     public Result<List<CategoryResponse>> getCategories(
             @RequestParam(required = false) Long parentId) {
         return Result.success(queryService.getCategories(parentId));
+    }
+
+    @DeleteMapping("/categories/cache")
+    public Result<Void> evictCategoryCache() {
+        categoryCachePort.evictAll();
+        return Result.success();
     }
 }

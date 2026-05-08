@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.output.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
@@ -28,7 +28,7 @@ public class OrderQueryHandler {
 
     private final OrderReadRepository orderReadRepository;
     private final ProductQueryPort productQueryPort;
-    private final OrderCacheService orderCacheService;
+    private final OrderCachePort orderCachePort;
     private final OrderVOAssembler orderVOAssembler;
 
     @Transactional(readOnly = true)
@@ -79,14 +79,14 @@ public class OrderQueryHandler {
     private PageResult<OrderVO> queryOrdersWithCache(QueryOrderRequest request, Long buyerId, Long sellerId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        String cacheKey = orderCacheService.buildOrderListKey(userId, request.getStatus());
-        Optional<PageResult<OrderVO>> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        String cacheKey = orderCachePort.buildOrderListKey(userId, request.getStatus());
+        Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
         if (cachedResult.isPresent()) {
             return cachedResult.get();
         }
 
         PageResult<OrderVO> result = queryOrdersByRole(request, buyerId, sellerId);
-        orderCacheService.setOrderListCache(cacheKey, result);
+        orderCachePort.putOrderList(cacheKey, result);
         return result;
     }
 

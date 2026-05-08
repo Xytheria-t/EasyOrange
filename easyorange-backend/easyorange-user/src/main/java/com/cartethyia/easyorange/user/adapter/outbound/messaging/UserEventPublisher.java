@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.messaging;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.user.domain.port.UserEventPort;
+import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

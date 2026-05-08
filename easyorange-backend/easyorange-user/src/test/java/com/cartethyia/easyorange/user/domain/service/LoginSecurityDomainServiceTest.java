@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
-import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
+import com.cartethyia.easyorange.user.domain.port.output.LoginAttemptPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.saga.CreateOrderSaga;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public class OrderCommandHandler {
     private final DomainEventPublisher domainEventPublisher;
     private final CreateOrderSaga createOrderSaga;
     private final PaymentGatewayPort paymentGatewayPort;
-    private final OrderCacheService orderCacheService;
+    private final OrderCachePort orderCachePort;
 
     public CreateOrderResult handle(CreateOrderCommand command) {
         return createOrderSaga.execute(command);
@@ -36,7 +36,7 @@ public class OrderCommandHandler {
         OrderAggregate.OrderPaidResult result = aggregate.pay();
         orderRepository.update(result.aggregate());
 
-        orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
+        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
     }
 
@@ -46,7 +46,7 @@ public class OrderCommandHandler {
         OrderAggregate.OrderCancelledResult result = aggregate.cancel(command.getReason());
         orderRepository.update(result.aggregate());
 
-        orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
+        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
     }
 
@@ -56,7 +56,7 @@ public class OrderCommandHandler {
         OrderAggregate.OrderShippedResult result = aggregate.ship();
         orderRepository.update(result.aggregate());
 
-        orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
+        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
     }
 
@@ -66,7 +66,7 @@ public class OrderCommandHandler {
         OrderAggregate.OrderCompletedResult result = aggregate.confirmReceipt();
         orderRepository.update(result.aggregate());
 
-        orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
+        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
     }
 
@@ -78,7 +78,7 @@ public class OrderCommandHandler {
         paymentGatewayPort.refundPayment(aggregate.id().value(), command.getReason());
 
         orderRepository.update(result.aggregate());
-        orderCacheService.deleteOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
+        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
     }
 

@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 /**
  * 创建订单命令
  *
- * @author cartethyia
- * @date 2026/04/17
  */
 @Data
 @Builder

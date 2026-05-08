@@ -2,78 +2,78 @@ package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
 public class AuthenticationDomainService {
 
     private final UserRepository userRepository;
     private final PasswordDomainService passwordDomainService;
     private final LoginSecurityDomainService loginSecurityDomainService;
+    private final SmsCodeDomainService smsCodeDomainService;
 
-    public User authenticateByPassword(String account, String password) {
+    public AuthenticationDomainService(
+            UserRepository userRepository,
+            PasswordDomainService passwordDomainService,
+            LoginSecurityDomainService loginSecurityDomainService,
+            SmsCodeDomainService smsCodeDomainService) {
+        this.userRepository = userRepository;
+        this.passwordDomainService = passwordDomainService;
+        this.loginSecurityDomainService = loginSecurityDomainService;
+        this.smsCodeDomainService = smsCodeDomainService;
+    }
+
+    public User authenticateByPassword(String account, String password, String clientIp) {
         loginSecurityDomainService.checkLoginAttempts(account);
 
         User user = userRepository.findByAccount(account).orElse(null);
 
         if (user == null || !passwordDomainService.matches(password, user.getPassword())) {
             loginSecurityDomainService.recordFailedAttempt(account);
-            logAuthFailure(loginSecurityDomainService.maskAccount(account), "invalid_credentials");
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
         if (!user.isNormal()) {
             loginSecurityDomainService.recordFailedAttempt(account);
-            logAuthFailure(loginSecurityDomainService.maskAccount(account), "user_disabled");
             throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
 
         loginSecurityDomainService.clearLoginAttempts(account);
-        return user;
+
+        User loggedIn = user.recordLogin(clientIp);
+        userRepository.update(loggedIn);
+
+        return loggedIn;
     }
 
-    public User authenticateBySms(String phone, String verifyCode, SmsCodeDomainService smsCodeDomainService) {
+    public User authenticateBySms(String phone, String verifyCode, String clientIp) {
         smsCodeDomainService.verifyCode(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone).orElse(null);
 
         if (user == null || !user.isNormal()) {
-            logAuthFailure(maskPhone(phone), "invalid_credentials");
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
-        return user;
+        User loggedIn = user.recordLogin(clientIp);
+        userRepository.update(loggedIn);
+
+        return loggedIn;
     }
 
-    public User resetPassword(String phone, String verifyCode, String newPassword, 
-                              SmsCodeDomainService smsCodeDomainService) {
+    public User resetPassword(String phone, String verifyCode, String newPassword) {
         smsCodeDomainService.verifyCode(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone).orElse(null);
 
         if (user == null) {
-            log.warn("Password reset attempted for non-existent phone: {}", maskPhone(phone));
             return null;
         }
 
         String encodedPassword = passwordDomainService.encode(newPassword);
-        return user.changePassword(encodedPassword, null);
-    }
+        User updated = user.changePassword(encodedPassword, null);
+        userRepository.update(updated);
 
-    private void logAuthFailure(String maskedAccount, String reason) {
-        log.warn("action=login, method=password, account={}, result=failed, reason={}", maskedAccount, reason);
-    }
-
-    private String maskPhone(String phone) {
-        if (phone == null || phone.length() < 7) {
-            return "***";
-        }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+        return updated;
     }
 }

@@ -1,26 +1,24 @@
 package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
+import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
 
-@Service
 public class PasswordDomainService {
 
     private static final String PASSWORD_SAME_ERROR = "新密码不能与旧密码相同";
 
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoderPort passwordEncoderPort;
 
-    public PasswordDomainService(PasswordEncoder passwordEncoder) {
-        this.passwordEncoder = passwordEncoder;
+    public PasswordDomainService(PasswordEncoderPort passwordEncoderPort) {
+        this.passwordEncoderPort = passwordEncoderPort;
     }
 
     public String encode(String rawPassword) {
-        return passwordEncoder.encode(rawPassword);
+        return passwordEncoderPort.encode(rawPassword);
     }
 
     public boolean matches(String rawPassword, String encodedPassword) {
-        return passwordEncoder.matches(rawPassword, encodedPassword);
+        return passwordEncoderPort.matches(rawPassword, encodedPassword);
     }
 
     public void validateDifferentPassword(String oldPassword, String newPassword) {

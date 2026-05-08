@@ -1,7 +1,7 @@
 -- ===================================================================
 -- EasyOrange 校园二手交易平台 - 数据库初始化
 -- Version: V1
--- 职责: 仅创建表结构，不包含索引、约束（按 Flyway 最佳实践分层）
+-- 职责: 创建初始表结构、索引、约束（纯 DDL）
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
 -- ===================================================================
@@ -33,7 +33,17 @@ CREATE TABLE `eo_user` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`user_id`)
+    PRIMARY KEY (`user_id`),
+    UNIQUE KEY `uk_eo_user_username` (`username`),
+    UNIQUE KEY `uk_eo_user_email` (`email`),
+    UNIQUE KEY `uk_eo_user_phone` (`phonenumber`),
+    UNIQUE KEY `uk_eo_user_student_id` (`student_id`),
+    KEY `idx_eo_user_status_del` (`status`, `del_flag`, `create_time` DESC),
+    KEY `idx_eo_user_type_status` (`user_type`, `status`, `del_flag`),
+    KEY `idx_eo_user_create_time` (`create_time`),
+    CONSTRAINT `chk_eo_user_status` CHECK (`status` IN (0, 1, 2)),
+    CONSTRAINT `chk_eo_user_sex` CHECK (`sex` IS NULL OR `sex` IN (0, 1, 2)),
+    CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('01', '02'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
 
 -- ===================================================================
@@ -54,7 +64,10 @@ CREATE TABLE `eo_category` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_category_parent_id` (`parent_id`),
+    KEY `idx_eo_category_status_sort` (`status`, `del_flag`, `sort_order`),
+    CONSTRAINT `chk_eo_category_status` CHECK (`status` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品分类表';
 
 CREATE TABLE `eo_product` (
@@ -79,7 +92,21 @@ CREATE TABLE `eo_product` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_product_user_time` (`user_id`, `create_time` DESC),
+    KEY `idx_eo_product_category_status_time` (`category_id`, `status`, `create_time` DESC),
+    KEY `idx_eo_product_status_price` (`status`, `price`),
+    KEY `idx_eo_product_search` (`status`, `del_flag`, `category_id`, `create_time` DESC),
+    KEY `idx_eo_product_status_del_price` (`status`, `del_flag`, `price`),
+    KEY `idx_eo_product_user_status_del` (`user_id`, `status`, `del_flag`, `create_time` DESC),
+    FULLTEXT KEY `ft_eo_product_name` (`name`) WITH PARSER ngram,
+    FULLTEXT KEY `ft_eo_product_search_text` (`search_text`) WITH PARSER ngram,
+    CONSTRAINT `chk_eo_product_price` CHECK (`price` >= 0),
+    CONSTRAINT `chk_eo_product_original_price` CHECK (`original_price` IS NULL OR `original_price` >= 0),
+    CONSTRAINT `chk_eo_product_stock` CHECK (`stock` >= 0),
+    CONSTRAINT `chk_eo_product_status` CHECK (`status` IN (0, 1, 2, 3)),
+    CONSTRAINT `chk_eo_product_condition` CHECK (`condition_level` IS NULL OR (`condition_level` >= 1 AND `condition_level` <= 10)),
+    CONSTRAINT `chk_eo_product_view_count` CHECK (`view_count` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品信息表';
 
 CREATE TABLE `eo_product_detail` (
@@ -106,7 +133,8 @@ CREATE TABLE `eo_product_image` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_product_image_product_sort` (`product_id`, `sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品图片表';
 
 CREATE TABLE `eo_product_report` (
@@ -122,7 +150,11 @@ CREATE TABLE `eo_product_report` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_product_report_product_id` (`product_id`),
+    KEY `idx_eo_product_report_reporter_id` (`reporter_id`),
+    KEY `idx_eo_product_report_status_time` (`status`, `create_time` DESC),
+    CONSTRAINT `chk_eo_product_report_status` CHECK (`status` IN (0, 1, 2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品举报表';
 
 CREATE TABLE `eo_favorite` (
@@ -135,7 +167,10 @@ CREATE TABLE `eo_favorite` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_favorite_user_product` (`user_id`, `product_id`),
+    KEY `idx_eo_favorite_user_time` (`user_id`, `create_time` DESC),
+    KEY `idx_eo_favorite_product_count` (`product_id`, `del_flag`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户收藏表';
 
 -- ===================================================================
@@ -153,7 +188,10 @@ CREATE TABLE `eo_search_history` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_search_history_user_keyword` (`user_id`, `keyword`),
+    KEY `idx_eo_search_history_user_time` (`user_id`, `search_time` DESC),
+    KEY `idx_eo_search_history_keyword` (`keyword`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='搜索历史表';
 
 CREATE TABLE `eo_hot_keyword` (
@@ -167,7 +205,11 @@ CREATE TABLE `eo_hot_keyword` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_hot_keyword_keyword` (`keyword`),
+    KEY `idx_eo_hot_keyword_count` (`search_count` DESC),
+    KEY `idx_eo_hot_keyword_last_time` (`last_search_time`),
+    CONSTRAINT `chk_eo_hot_keyword_count` CHECK (`search_count` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='热门关键词表';
 
 -- ===================================================================
@@ -194,7 +236,16 @@ CREATE TABLE `eo_order` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_order_order_no` (`order_no`),
+    KEY `idx_eo_order_buyer_status_time` (`buyer_id`, `status`, `del_flag`, `create_time` DESC),
+    KEY `idx_eo_order_seller_status_time` (`seller_id`, `status`, `del_flag`, `create_time` DESC),
+    KEY `idx_eo_order_product_id` (`product_id`),
+    KEY `idx_eo_order_payment_status` (`payment_status`),
+    KEY `idx_eo_order_status_payment` (`status`, `payment_status`, `create_time` DESC),
+    CONSTRAINT `chk_eo_order_amount` CHECK (`amount` >= 0),
+    CONSTRAINT `chk_eo_order_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5)),
+    CONSTRAINT `chk_eo_order_payment_status` CHECK (`payment_status` IN (0, 1, 2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='订单表';
 
 -- ===================================================================
@@ -220,7 +271,17 @@ CREATE TABLE `eo_payment` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_payment_payment_no` (`payment_no`),
+    UNIQUE KEY `uk_eo_payment_transaction_id` (`transaction_id`),
+    KEY `idx_eo_payment_order_id` (`order_id`),
+    KEY `idx_eo_payment_user_time` (`user_id`, `create_time` DESC),
+    KEY `idx_eo_payment_status_method` (`status`, `payment_method`, `create_time` DESC),
+    KEY `idx_eo_payment_user_status` (`user_id`, `status`, `create_time` DESC),
+    CONSTRAINT `chk_eo_payment_amount` CHECK (`amount` >= 0),
+    CONSTRAINT `chk_eo_payment_refunded_amount` CHECK (`refunded_amount` >= 0),
+    CONSTRAINT `chk_eo_payment_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5, 6, 7)),
+    CONSTRAINT `chk_eo_payment_method` CHECK (`payment_method` IS NULL OR `payment_method` IN (1, 2, 3))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付记录表';
 
 CREATE TABLE `eo_payment_config` (
@@ -239,7 +300,8 @@ CREATE TABLE `eo_payment_config` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_payment_config_channel` (`channel_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付渠道配置表';
 
 -- ===================================================================
@@ -263,7 +325,12 @@ CREATE TABLE `eo_message` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_message_sender_time` (`sender_id`, `create_time` DESC),
+    KEY `idx_eo_message_receiver_read_time` (`receiver_id`, `is_read`, `create_time` DESC),
+    KEY `idx_eo_message_conversation_time` (`conversation_id`, `create_time` DESC),
+    KEY `idx_eo_message_business_id` (`business_id`),
+    CONSTRAINT `chk_eo_message_is_read` CHECK (`is_read` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息表';
 
 CREATE TABLE `eo_message_archive` (
@@ -282,7 +349,9 @@ CREATE TABLE `eo_message_archive` (
     `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `archived_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '归档时间',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_message_archive_receiver` (`receiver_id`),
+    KEY `idx_eo_message_archive_time` (`archived_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息归档表';
 
 CREATE TABLE `eo_message_subscription` (
@@ -297,7 +366,9 @@ CREATE TABLE `eo_message_subscription` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_message_subscription_user_type_channel` (`user_id`, `message_type`, `push_channel`),
+    KEY `idx_eo_message_subscription_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息订阅表';
 
 CREATE TABLE `eo_message_template` (
@@ -316,7 +387,9 @@ CREATE TABLE `eo_message_template` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_message_template_code` (`template_code`),
+    KEY `idx_eo_message_template_type` (`template_type`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='消息模板表';
 
 CREATE TABLE `eo_offline_message` (
@@ -335,7 +408,11 @@ CREATE TABLE `eo_offline_message` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_offline_message_user_status` (`user_id`, `push_status`),
+    KEY `idx_eo_offline_message_message_id` (`message_id`),
+    KEY `idx_eo_offline_message_retry` (`push_status`, `retry_count`, `create_time` DESC),
+    CONSTRAINT `chk_eo_offline_message_push_status` CHECK (`push_status` IN (0, 1, 2))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='离线消息表';
 
 -- ===================================================================
@@ -361,7 +438,10 @@ CREATE TABLE `eo_upload_file` (
     `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_upload_file_md5` (`md5`),
+    KEY `idx_eo_upload_file_business` (`business_type`, `business_id`),
+    KEY `idx_eo_upload_file_uploader` (`uploader_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='文件上传记录表';
 
 -- ===================================================================
@@ -385,7 +465,12 @@ CREATE TABLE `eo_oper_log` (
     `error_msg` VARCHAR(2000) DEFAULT NULL COMMENT '错误消息',
     `oper_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
     `cost_time` INT NOT NULL DEFAULT 0 COMMENT '消耗时间（毫秒）',
-    PRIMARY KEY (`oper_id`)
+    PRIMARY KEY (`oper_id`),
+    KEY `idx_eo_oper_log_time` (`oper_time`),
+    KEY `idx_eo_oper_log_name_time` (`oper_name`, `oper_time` DESC),
+    KEY `idx_eo_oper_log_business_time` (`business_type`, `oper_time` DESC),
+    KEY `idx_eo_oper_log_status_time` (`status`, `oper_time` DESC),
+    CONSTRAINT `chk_eo_oper_log_status` CHECK (`status` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志表';
 
 CREATE TABLE `eo_oper_log_archive` (
@@ -406,7 +491,10 @@ CREATE TABLE `eo_oper_log_archive` (
     `oper_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
     `cost_time` INT NOT NULL DEFAULT 0 COMMENT '消耗时间（毫秒）',
     `archived_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '归档时间',
-    PRIMARY KEY (`oper_id`)
+    PRIMARY KEY (`oper_id`),
+    KEY `idx_eo_oper_log_archive_time` (`oper_time`),
+    KEY `idx_eo_oper_log_archive_name` (`oper_name`),
+    KEY `idx_eo_oper_log_archive_archived_at` (`archived_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志归档表';
 
 -- ===================================================================
@@ -429,7 +517,12 @@ CREATE TABLE `eo_domain_event` (
     `create_by`       BIGINT          DEFAULT NULL             COMMENT '创建人ID',
     `update_by`       BIGINT          DEFAULT NULL             COMMENT '更新人ID',
     `version`         INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_domain_event_event_id` (`event_id`),
+    KEY `idx_eo_domain_event_aggregate` (`aggregate_type`, `aggregate_id`),
+    KEY `idx_eo_domain_event_status_created` (`status`, `created_at`),
+    KEY `idx_eo_domain_event_event_type` (`event_type`),
+    CONSTRAINT `chk_eo_domain_event_status` CHECK (`status` IN ('PENDING', 'PUBLISHED', 'FAILED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='领域事件表';
 
 -- ===================================================================
@@ -447,7 +540,13 @@ CREATE TABLE `eo_saga_status` (
     `retry_count`       INT             NOT NULL DEFAULT 0       COMMENT '重试次数',
     `created_at`        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Saga 创建时间',
     `updated_at`        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'Saga 更新时间',
-    PRIMARY KEY (`saga_id`)
+    PRIMARY KEY (`saga_id`),
+    KEY `idx_eo_saga_status_type_state` (`saga_type`, `state`),
+    KEY `idx_eo_saga_status_state_created` (`state`, `created_at`),
+    KEY `idx_eo_saga_status_created_at` (`created_at`),
+    CONSTRAINT `chk_eo_saga_status_state` CHECK (
+        `state` IN ('STARTED', 'ORDER_CREATED', 'PAYMENT_CREATED', 'COMPLETED', 'COMPENSATING', 'COMPENSATED', 'FAILED')
+    )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Saga 分布式事务状态表';
 
 -- ===================================================================
@@ -468,5 +567,8 @@ CREATE TABLE `eo_idempotency_key` (
     `create_by`       BIGINT          DEFAULT NULL             COMMENT '创建人ID',
     `update_by`       BIGINT          DEFAULT NULL             COMMENT '更新人ID',
     `version`         INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`)
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_idempotency_key_key` (`idempotency_key`),
+    KEY `idx_eo_idempotency_key_user_expires` (`user_id`, `expires_at`),
+    CONSTRAINT `chk_eo_idempotency_key_status` CHECK (`status` IN ('PENDING', 'COMPLETED', 'FAILED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='幂等性键表';

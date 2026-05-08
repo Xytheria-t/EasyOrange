@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.order.constant.OrderConstant;
-import com.cartethyia.easyorange.order.constant.OrderTimeoutProperties;
+import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
+import com.cartethyia.easyorange.order.infrastructure.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;

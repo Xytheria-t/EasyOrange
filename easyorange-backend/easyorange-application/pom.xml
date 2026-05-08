@@ -116,6 +116,7 @@
                         <location>filesystem:src/main/resources/db/migration</location>
                     </locations>
                     <placeholderReplacement>false</placeholderReplacement>
+                    <cleanDisabled>true</cleanDisabled>
                 </configuration>
             </plugin>
         </plugins>

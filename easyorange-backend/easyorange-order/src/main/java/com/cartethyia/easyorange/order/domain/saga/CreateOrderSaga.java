@@ -20,7 +20,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,7 @@ public class CreateOrderSaga {
     private final ProductInventoryPort productInventoryPort;
     private final PaymentGatewayPort paymentGatewayPort;
     private final DomainEventPublisher eventPublisher;
-    private final OrderCacheService orderCacheService;
+    private final OrderCachePort orderCachePort;
     private final RedisCache redisCache;
     private final SagaRepository sagaRepository;
     private final ObjectMapper objectMapper;
@@ -94,7 +94,7 @@ public class CreateOrderSaga {
                     "订单支付"
             ));
 
-            orderCacheService.deleteSellerOrderCache(aggregate.sellerId().value());
+            orderCachePort.evictSellerOrders(aggregate.sellerId().value());
 
             sagaStatus = sagaStatus.withState(SagaState.COMPLETED).withStep("COMPLETED");
             sagaRepository.update(sagaStatus);

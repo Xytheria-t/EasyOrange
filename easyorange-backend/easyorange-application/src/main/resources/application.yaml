@@ -13,7 +13,7 @@ spring:
     banner-mode: console
 
   datasource:
-    url: jdbc:mysql://${EASYORANGE_DB_HOST:localhost}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_DB_NAME:easyorange}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=30000
+    url: jdbc:mysql://${EASYORANGE_DB_HOST:localhost}:${EASYORANGE_DB_PORT:3306}/${EASYORANGE_DB_NAME:easyorange}?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&connectTimeout=5000&socketTimeout=30000&connectionCollation=utf8mb4_0900_ai_ci
     username: ${EASYORANGE_DB_USERNAME:easyorange_app}
     password: ${EASYORANGE_DB_PASSWORD:easyorange_app_dev}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -55,11 +55,14 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: false
+    baseline-on-migrate: true
+    baseline-version: 0
     validate-on-migrate: true
     clean-disabled: true
     table: flyway_schema_history
     placeholder-replacement: false
+    out-of-order: false
+    ignore-migration-patterns: '*:ignored'
 
   lifecycle:
     timeout-per-shutdown-phase: 90s
@@ -135,6 +138,7 @@ security:
     - /swagger-ui.html
     - /api/products/{id}/view
     - /api/products/batch
+    - /api/products/categories/cache
   product-paths:
     - /api/products
     - /api/products/{id}

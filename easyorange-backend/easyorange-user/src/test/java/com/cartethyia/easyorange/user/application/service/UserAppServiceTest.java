@@ -15,8 +15,8 @@ import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
 import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
-import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
-import com.cartethyia.easyorange.user.domain.port.UserEventPort;
+import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -363,8 +362,7 @@ class UserAppServiceTest {
                 .profile(newProfile)
                 .build();
 
-            MockMultipartFile file = new MockMultipartFile(
-                "avatar", "new.jpg", "image/jpeg", "fake-image".getBytes());
+            byte[] content = "fake-image".getBytes();
 
             when(userRepository.findById(1L)).thenReturn(Optional.of(user)).thenReturn(Optional.of(updatedUser));
             when(avatarFilePort.upload(any(byte[].class), eq("image/jpeg"), eq("new.jpg"), eq(1L))).thenReturn("/avatar/new.png");
@@ -373,7 +371,7 @@ class UserAppServiceTest {
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").avatar("/avatar/new.png").build();
             when(userAssembler.toVo(updatedUser)).thenReturn(userVO);
 
-            UserVO result = userAppService.uploadAvatar(file);
+            UserVO result = userAppService.uploadAvatar(content, "image/jpeg", "new.jpg");
 
             assertThat(result).isNotNull();
             assertThat(result.getAvatar()).isEqualTo("/avatar/new.png");
@@ -384,7 +382,7 @@ class UserAppServiceTest {
         @Test
         @DisplayName("头像为 null 时应抛出异常")
         void shouldThrowWhenAvatarIsNull() {
-            assertThatThrownBy(() -> userAppService.uploadAvatar(null))
+            assertThatThrownBy(() -> userAppService.uploadAvatar(null, null, null))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("头像不能为空");
         }
@@ -392,10 +390,7 @@ class UserAppServiceTest {
         @Test
         @DisplayName("头像文件为空时应抛出异常")
         void shouldThrowWhenAvatarIsEmpty() {
-            MockMultipartFile emptyFile = new MockMultipartFile(
-                "avatar", "empty.jpg", "image/jpeg", new byte[0]);
-
-            assertThatThrownBy(() -> userAppService.uploadAvatar(emptyFile))
+            assertThatThrownBy(() -> userAppService.uploadAvatar(new byte[0], "image/jpeg", "empty.jpg"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("头像不能为空");
         }

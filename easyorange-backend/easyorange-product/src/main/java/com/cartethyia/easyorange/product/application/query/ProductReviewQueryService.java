@@ -1,0 +1,139 @@
+package com.cartethyia.easyorange.product.application.query;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.dto.PageRequest;
+import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
+import com.cartethyia.easyorange.product.application.query.dto.ProductReviewVO;
+import com.cartethyia.easyorange.product.application.query.dto.ReviewStatsVO;
+import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ProductReviewQueryService {
+
+    private final ProductReviewMapper reviewMapper;
+    private final UserRepository userRepository;
+
+    @Transactional(readOnly = true)
+    public PageResult<ProductReviewVO> listReviews(Long productId, Integer pageNum, Integer pageSize) {
+        PageRequest normalized = PageRequest.builder()
+                .pageNum(pageNum != null ? pageNum : 1)
+                .pageSize(pageSize != null ? pageSize : 10)
+                .build()
+                .normalized();
+
+        Page<ProductReviewDO> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
+        LambdaQueryWrapper<ProductReviewDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductReviewDO::getProductId, productId)
+                .eq(ProductReviewDO::getStatus, 1)
+                .orderByDesc(ProductReviewDO::getCreateTime);
+
+        Page<ProductReviewDO> reviewPage = reviewMapper.selectPage(page, wrapper);
+
+        if (reviewPage.getRecords().isEmpty()) {
+            return PageResult.empty(normalized.getPageNum(), normalized.getPageSize());
+        }
+
+        Map<Long, User> userMap = resolveUsers(reviewPage.getRecords());
+
+        List<ProductReviewVO> vos = reviewPage.getRecords().stream()
+                .map(r -> toReviewVO(r, userMap))
+                .collect(Collectors.toList());
+
+        return PageResult.of(vos, reviewPage.getTotal(), normalized.getPageNum(), normalized.getPageSize());
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewStatsVO getReviewStats(Long productId) {
+        LambdaQueryWrapper<ProductReviewDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductReviewDO::getProductId, productId)
+                .eq(ProductReviewDO::getStatus, 1);
+
+        List<ProductReviewDO> reviews = reviewMapper.selectList(wrapper);
+
+        long totalCount = reviews.size();
+        if (totalCount == 0) {
+            return ReviewStatsVO.builder()
+                    .productId(productId)
+                    .totalCount(0L)
+                    .averageRating(BigDecimal.ZERO)
+                    .ratingDistribution(Map.of(1, 0L, 2, 0L, 3, 0L, 4, 0L, 5, 0L))
+                    .build();
+        }
+
+        double avg = reviews.stream()
+                .mapToInt(ProductReviewDO::getRating)
+                .average()
+                .orElse(0.0);
+
+        Map<Integer, Long> distribution = reviews.stream()
+                .collect(Collectors.groupingBy(
+                        ProductReviewDO::getRating,
+                        Collectors.counting()
+                ));
+
+        for (int i = 1; i <= 5; i++) {
+            distribution.putIfAbsent(i, 0L);
+        }
+
+        return ReviewStatsVO.builder()
+                .productId(productId)
+                .totalCount(totalCount)
+                .averageRating(BigDecimal.valueOf(avg).setScale(1, RoundingMode.HALF_UP))
+                .ratingDistribution(distribution)
+                .build();
+    }
+
+    private Map<Long, User> resolveUsers(List<ProductReviewDO> reviews) {
+        Set<Long> userIds = reviews.stream()
+                .map(ProductReviewDO::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (userIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+    }
+
+    private ProductReviewVO toReviewVO(ProductReviewDO review, Map<Long, User> userMap) {
+        User user = userMap.get(review.getUserId());
+        String userAvatar = null;
+        if (user != null && user.getProfile() != null) {
+            userAvatar = user.getProfile().avatar();
+        }
+        return ProductReviewVO.builder()
+                .id(review.getId())
+                .productId(review.getProductId())
+                .userId(review.getUserId())
+                .username(user != null ? user.getUsername() : "未知用户")
+                .userAvatar(userAvatar)
+                .rating(review.getRating())
+                .content(review.getContent())
+                .likes(review.getLikes())
+                .status(review.getStatus())
+                .createTime(review.getCreateTime())
+                .updateTime(review.getUpdateTime())
+                .build();
+    }
+}

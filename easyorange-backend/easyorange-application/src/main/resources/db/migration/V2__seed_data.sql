@@ -1,8 +1,8 @@
 -- ===================================================================
 -- EasyOrange 校园二手交易平台 - 种子数据
 -- Version: V2
--- 职责: 插入系统启动所需的基础数据（分类、支付配置、消息模板）
--- 注意: 使用 ON DUPLICATE KEY UPDATE 确保幂等性
+-- 职责: 插入系统启动所需的基础数据（纯 DML）
+-- 注意: 使用 MySQL 8.0.20+ 推荐的别名语法替代已弃用的 VALUES() 函数
 -- ===================================================================
 
 -- ===================================================================
@@ -19,10 +19,11 @@ INSERT INTO `eo_category` (
 (4, '生活用品', 0, 1, 4, 1, 0, NOW(), NOW()),
 (5, '运动健身', 0, 1, 5, 1, 0, NOW(), NOW()),
 (6, '虚拟物品', 0, 1, 6, 1, 0, NOW(), NOW())
+AS new
 ON DUPLICATE KEY UPDATE
-    `name` = VALUES(`name`),
-    `sort_order` = VALUES(`sort_order`),
-    `status` = VALUES(`status`),
+    `name` = new.`name`,
+    `sort_order` = new.`sort_order`,
+    `status` = new.`status`,
     `update_time` = NOW();
 
 -- ===================================================================
@@ -50,12 +51,13 @@ INSERT INTO `eo_category` (
 (51, '户外运动', 5, 2, 2, 1, 0, NOW(), NOW()),
 (60, '游戏账号', 6, 2, 1, 1, 0, NOW(), NOW()),
 (61, '会员卡券', 6, 2, 2, 1, 0, NOW(), NOW())
+AS new
 ON DUPLICATE KEY UPDATE
-    `name` = VALUES(`name`),
-    `parent_id` = VALUES(`parent_id`),
-    `level` = VALUES(`level`),
-    `sort_order` = VALUES(`sort_order`),
-    `status` = VALUES(`status`),
+    `name` = new.`name`,
+    `parent_id` = new.`parent_id`,
+    `level` = new.`level`,
+    `sort_order` = new.`sort_order`,
+    `status` = new.`status`,
     `update_time` = NOW();
 
 -- ===================================================================
@@ -67,10 +69,11 @@ INSERT INTO `eo_payment_config` (
 ) VALUES
 (1, 'wechat', '微信支付', 'wx_dev_test_app_id',    1, 1, '微信支付沙箱环境', NOW(), NOW()),
 (2, 'alipay', '支付宝',   'alipay_dev_test_app_id', 1, 1, '支付宝沙箱环境',   NOW(), NOW())
+AS new
 ON DUPLICATE KEY UPDATE
-    `channel_name` = VALUES(`channel_name`),
-    `status` = VALUES(`status`),
-    `remark` = VALUES(`remark`),
+    `channel_name` = new.`channel_name`,
+    `status` = new.`status`,
+    `remark` = new.`remark`,
     `update_time` = NOW();
 
 -- ===================================================================
@@ -92,9 +95,10 @@ INSERT INTO `eo_message_template` (
 (10, 'PRODUCT_OFFLINE', '商品下架通知',   'system','商品已下架',     '你的商品「${productName}」已下架，原因：${reason}。',                         '["productName","reason"]',       1, NOW(), NOW()),
 (11, 'USER_REGISTER',   '注册欢迎通知',   'system','欢迎加入',       '欢迎来到EasyOrange校园二手交易平台！在这里你可以轻松买卖二手商品~',             '[]',                              1, NOW(), NOW()),
 (12, 'PRICE_DROP',      '降价提醒',        'system','收藏商品降价',   '你收藏的商品「${productName}」已降价至 ${price} 元，快去看看吧！',              '["productName","price"]',        1, NOW(), NOW())
+AS new
 ON DUPLICATE KEY UPDATE
-    `template_name` = VALUES(`template_name`),
-    `content` = VALUES(`content`),
-    `variables` = VALUES(`variables`),
-    `status` = VALUES(`status`),
+    `template_name` = new.`template_name`,
+    `content` = new.`content`,
+    `variables` = new.`variables`,
+    `status` = new.`status`,
     `update_time` = NOW();

@@ -19,7 +19,7 @@ import com.cartethyia.easyorange.user.domain.service.SmsCodeDomainService;
 import com.cartethyia.easyorange.user.domain.service.UserRegistrationDomainService;
 import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
 import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
-import com.cartethyia.easyorange.user.domain.port.UserEventPort;
+import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
 import com.cartethyia.easyorange.user.infrastructure.util.NicknameGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

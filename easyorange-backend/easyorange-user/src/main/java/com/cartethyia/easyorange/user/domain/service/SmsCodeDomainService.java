@@ -1,26 +1,12 @@
 package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
-import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
+import com.cartethyia.easyorange.user.domain.port.output.SmsCodePort;
+import com.cartethyia.easyorange.user.domain.port.output.SmsRateLimitPort;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 
-/**
- * 短信验证码领域服务
- * <p>
- * 职责：
- * <ul>
- *   <li>验证码生成和发送</li>
- *   <li>验证码校验</li>
- *   <li>发送频率和配额控制</li>
- * </ul>
- */
-@Service
-@RequiredArgsConstructor
 public class SmsCodeDomainService {
 
     private static final int CODE_LENGTH = 6;
@@ -32,12 +18,11 @@ public class SmsCodeDomainService {
     private final SmsCodePort smsCodePort;
     private final SmsRateLimitPort rateLimitPort;
 
-    /**
-     * 发送验证码
-     * 
-     * @param phone 手机号
-     * @throws BusinessException 当发送受限时抛出
-     */
+    public SmsCodeDomainService(SmsCodePort smsCodePort, SmsRateLimitPort rateLimitPort) {
+        this.smsCodePort = smsCodePort;
+        this.rateLimitPort = rateLimitPort;
+    }
+
     public void sendCode(String phone) {
         if (rateLimitPort.isSendLimited(phone)) {
             throw BusinessException.of(UserResultCode.SMS_CODE_SEND_TOO_FREQUENT);
@@ -56,13 +41,6 @@ public class SmsCodeDomainService {
         rateLimitPort.setSendInterval(phone, SEND_INTERVAL);
     }
 
-    /**
-     * 验证验证码
-     * 
-     * @param phone 手机号
-     * @param code 验证码
-     * @throws BusinessException 当验证失败时抛出
-     */
     public void verifyCode(String phone, String code) {
         if (code == null || code.isBlank()) {
             throw BusinessException.of(UserResultCode.SMS_CODE_INVALID);

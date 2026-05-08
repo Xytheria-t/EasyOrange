@@ -2,13 +2,17 @@ package com.cartethyia.easyorange.message.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.message.application.query.ConversationQueryHandler;
 import com.cartethyia.easyorange.message.application.query.MessageQueryHandler;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
+import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.dto.vo.MessageVO;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/messages")
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 public class MessageQueryController {
 
     private final MessageQueryHandler queryHandler;
+    private final ConversationQueryHandler conversationQueryHandler;
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
@@ -39,5 +44,11 @@ public class MessageQueryController {
     @PreAuthorize("isAuthenticated()")
     public Result<UnreadCountVO> getUnreadCount() {
         return Result.success(queryHandler.getUnreadCount());
+    }
+
+    @GetMapping("/conversation/{userId}")
+    @PreAuthorize("isAuthenticated()")
+    public Result<List<ConversationVO>> getConversation(@PathVariable Long userId) {
+        return Result.success(conversationQueryHandler.getConversation(userId));
     }
 }
