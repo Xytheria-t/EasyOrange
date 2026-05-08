@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Package, ArrowLeft } from 'lucide-react';
-import '@/styles/main.css';
+import { CheckCircle, XCircle, Clock, Package, ArrowLeft, Sparkles, Home, ShoppingBag, Brain, RefreshCw } from 'lucide-react';
+import '@/styles/payment-result.css';
 
 export function PaymentResultPage() {
   const [searchParams] = useSearchParams();
@@ -14,7 +14,13 @@ export function PaymentResultPage() {
   const isPending = !isSuccess && !isFailed;
 
   return (
-    <div className="payment-result-page">
+    <div className="payment-result-page-v2">
+      <div className="payment-result-bg">
+        <div className="result-orb result-orb-1"></div>
+        <div className="result-orb result-orb-2"></div>
+        <div className="result-orb result-orb-3"></div>
+      </div>
+
       <div className="payment-result-header">
         <button className="payment-back-btn" onClick={() => navigate('/orders')}>
           <ArrowLeft size={20} />
@@ -24,8 +30,19 @@ export function PaymentResultPage() {
       </div>
 
       <div className="payment-result-content">
-        <div className={`payment-result-icon ${isSuccess ? 'result-success' : isFailed ? 'result-failed' : 'result-pending'}`}>
-          {isSuccess ? <CheckCircle size={64} /> : isFailed ? <XCircle size={64} /> : <Clock size={64} />}
+        <div className={`payment-result-icon-wrap ${isSuccess ? 'result-success' : isFailed ? 'result-failed' : 'result-pending'}`}>
+          <div className="result-icon-glow"></div>
+          <div className="result-icon-ring"></div>
+          <div className="result-icon-inner">
+            {isSuccess ? <CheckCircle size={48} /> : isFailed ? <XCircle size={48} /> : <Clock size={48} />}
+          </div>
+          {isSuccess && (
+            <div className="result-sparkles">
+              <Sparkles size={16} className="sparkle-1" />
+              <Sparkles size={12} className="sparkle-2" />
+              <Sparkles size={14} className="sparkle-3" />
+            </div>
+          )}
         </div>
 
         <h2 className="payment-result-title">
@@ -47,46 +64,69 @@ export function PaymentResultPage() {
           </div>
         )}
 
+        {isSuccess && (
+          <div className="payment-result-ai-section">
+            <div className="ai-section-header">
+              <div className="ai-section-icon">
+                <Brain size={18} />
+              </div>
+              <div className="ai-section-title">
+                <h3>智能推荐</h3>
+                <span>为你精选相似好物</span>
+              </div>
+            </div>
+            <div className="ai-section-hint">
+              <Sparkles size={14} />
+              <span>AI正在为你寻找更多好物...</span>
+            </div>
+          </div>
+        )}
+
         <div className="payment-result-actions">
           {isSuccess && (
             <button
-              className="btn btn-primary payment-result-btn"
+              className="result-btn result-btn-primary"
               onClick={() => navigate(orderId ? `/orders/${orderId}` : '/orders')}
             >
+              <Package size={18} />
               查看订单
             </button>
           )}
 
           {isFailed && (
             <button
-              className="btn btn-primary payment-result-btn"
+              className="result-btn result-btn-primary"
               onClick={() => navigate(orderId ? `/payment?orderId=${orderId}` : '/orders')}
             >
+              <RefreshCw size={18} />
               重新支付
             </button>
           )}
 
           {isPending && (
             <button
-              className="btn btn-primary payment-result-btn"
+              className="result-btn result-btn-primary"
               onClick={() => navigate('/orders')}
             >
+              <Package size={18} />
               查看订单
             </button>
           )}
 
           <button
-            className="btn btn-outline payment-result-btn"
+            className="result-btn result-btn-secondary"
             onClick={() => navigate('/products')}
           >
+            <ShoppingBag size={18} />
             继续购物
           </button>
 
           <button
-            className="btn btn-ghost payment-result-btn"
-            onClick={() => navigate('/orders')}
+            className="result-btn result-btn-ghost"
+            onClick={() => navigate('/')}
           >
-            返回订单列表
+            <Home size={18} />
+            返回首页
           </button>
         </div>
       </div>

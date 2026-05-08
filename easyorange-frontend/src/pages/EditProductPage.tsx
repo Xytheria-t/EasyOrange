@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { Camera, X, Loader2, ArrowLeft, Package, Tag, MapPin, FileText, Settings, Trash2, AlertTriangle, Sparkles, Brain } from 'lucide-react';
 import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
 import { compressImage } from '@/utils/imageCompress';
 import { CONDITION_LABEL_MAP } from '@/types';
-import '@/styles/main.css';
+import '@/styles/edit-product.css';
 
 interface FormState {
     name: string;
@@ -107,7 +107,6 @@ export function EditProductPage() {
                     updateField('imageUrls', [...form.imageUrls, result.data.url]);
                 }
             } catch {
-                // upload failed, skip
             } finally {
                 setUploadingIndex(null);
             }
@@ -139,7 +138,6 @@ export function EditProductPage() {
             });
             navigate(`/products/${id}`);
         } catch {
-            // error handled by mutation state
         }
     };
 
@@ -148,24 +146,30 @@ export function EditProductPage() {
             await deleteProduct.mutateAsync(Number(id));
             navigate('/products');
         } catch {
-            // error handled by mutation state
         }
     };
 
     if (isLoadingProduct) {
         return (
-            <div className="loading-container">
-                <div className="loading-spinner-lg"></div>
-                <span className="loading-text">加载中...</span>
+            <div className="edit-product-loading">
+                <div className="edit-loading-spinner">
+                    <Loader2 size={32} />
+                </div>
+                <span className="edit-loading-text">加载商品信息...</span>
             </div>
         );
     }
 
     if (!product) {
         return (
-            <div className="empty-state-container">
-                <div className="empty-state-icon">📦</div>
-                <p className="empty-state-text">商品不存在</p>
+            <div className="edit-product-empty">
+                <div className="edit-empty-icon">
+                    <Package size={48} />
+                </div>
+                <p className="edit-empty-text">商品不存在</p>
+                <button className="edit-empty-btn" onClick={() => navigate('/products')}>
+                    返回商品列表
+                </button>
             </div>
         );
     }
@@ -173,158 +177,309 @@ export function EditProductPage() {
     const isSubmitting = updateProduct.isPending;
 
     return (
-        <div className="container py-6">
-            <div className="mb-6">
-                <h1 className="page-title-lg">编辑商品</h1>
-                <p className="page-subtitle">修改商品信息</p>
+        <div className="edit-product-page">
+            <div className="edit-product-bg">
+                <div className="edit-orb edit-orb-1"></div>
+                <div className="edit-orb edit-orb-2"></div>
             </div>
 
-            <div className="card-elevated">
-                <div className="mb-6">
-                    <label className="form-label">商品图片</label>
-                    <div className="flex flex-wrap gap-3">
-                        {form.imageUrls.map((url, index) => (
-                            <div key={index} className="relative" style={{ width: 100, height: 100 }}>
-                                <img src={url} alt={`商品图片 ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
-                                <button
-                                    type="button"
-                                    onClick={() => handleImageUrlRemove(index)}
-                                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                                    style={{ background: 'var(--color-danger)', color: '#fff', fontSize: 12 }}
-                                >
-                                    <X size={12} />
-                                </button>
+            <div className="edit-product-nav">
+                <button onClick={() => navigate(-1)} className="edit-back-btn">
+                    <ArrowLeft size={20} />
+                </button>
+                <h1 className="edit-nav-title">编辑商品</h1>
+                <button 
+                    className="edit-delete-btn-nav"
+                    onClick={() => setShowDeleteConfirm(true)}
+                >
+                    <Trash2 size={18} />
+                </button>
+            </div>
+
+            <div className="edit-product-content">
+                <div className="edit-header-section">
+                    <div className="edit-header-icon">
+                        <Package size={24} />
+                    </div>
+                    <div className="edit-header-text">
+                        <h2>修改商品信息</h2>
+                        <p>更新商品详情后点击保存</p>
+                    </div>
+                </div>
+
+                <div className="edit-ai-tip">
+                    <div className="edit-ai-tip-icon">
+                        <Brain size={16} />
+                    </div>
+                    <span>AI智能助手：完善商品信息可获得更多曝光</span>
+                    <Sparkles size={14} className="edit-ai-sparkle" />
+                </div>
+
+                <div className="edit-form-card">
+                    <div className="edit-form-section">
+                        <div className="edit-section-header">
+                            <div className="edit-section-icon">
+                                <Camera size={18} />
                             </div>
-                        ))}
-                        {form.imageUrls.length < 9 && (
-                            <>
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleImageSelect}
-                                    style={{ display: 'none' }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="upload-zone"
-                                    style={{ width: 100, height: 100, minHeight: 'auto' }}
-                                    disabled={uploadingIndex !== null}
-                                >
-                                    <div className="upload-content" style={{ padding: 0 }}>
+                            <div className="edit-section-title">
+                                <h3>商品图片</h3>
+                                <span>最多上传9张，第一张为封面</span>
+                            </div>
+                        </div>
+                        <div className="edit-image-grid">
+                            {form.imageUrls.map((url, index) => (
+                                <div key={index} className={`edit-image-item ${index === 0 ? 'is-cover' : ''}`}>
+                                    <img src={url} alt={`商品图片 ${index + 1}`} />
+                                    {index === 0 && <span className="edit-cover-badge">封面</span>}
+                                    <button
+                                        type="button"
+                                        onClick={() => handleImageUrlRemove(index)}
+                                        className="edit-image-remove"
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                            {form.imageUrls.length < 9 && (
+                                <>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageSelect}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="edit-image-add"
+                                        disabled={uploadingIndex !== null}
+                                    >
                                         {uploadingIndex !== null ? (
                                             <Loader2 size={24} className="animate-spin" />
                                         ) : (
                                             <>
                                                 <Camera size={24} />
-                                                <span className="upload-text" style={{ fontSize: '0.7rem' }}>添加图片</span>
+                                                <span>添加图片</span>
                                             </>
                                         )}
-                                    </div>
-                                </button>
-                            </>
-                        )}
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="edit-form-section">
+                        <div className="edit-section-header">
+                            <div className="edit-section-icon">
+                                <FileText size={18} />
+                            </div>
+                            <div className="edit-section-title">
+                                <h3>基本信息</h3>
+                            </div>
+                        </div>
+                        <div className="edit-form-fields">
+                            <div className="edit-field-group">
+                                <label className="edit-field-label">
+                                    商品名称 <span className="edit-required">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    className={`edit-input ${errors.name ? 'has-error' : ''}`}
+                                    value={form.name}
+                                    onChange={e => updateField('name', e.target.value)}
+                                    maxLength={200}
+                                    placeholder="请输入商品名称"
+                                />
+                                {errors.name && <span className="edit-error-text">{errors.name}</span>}
+                            </div>
+
+                            <div className="edit-field-group">
+                                <label className="edit-field-label">商品描述</label>
+                                <textarea
+                                    rows={4}
+                                    className="edit-textarea"
+                                    value={form.description}
+                                    onChange={e => updateField('description', e.target.value)}
+                                    maxLength={2000}
+                                    placeholder="详细描述商品特点、使用情况等..."
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="edit-form-section">
+                        <div className="edit-section-header">
+                            <div className="edit-section-icon">
+                                <Tag size={18} />
+                            </div>
+                            <div className="edit-section-title">
+                                <h3>价格与分类</h3>
+                            </div>
+                        </div>
+                        <div className="edit-form-fields">
+                            <div className="edit-field-row">
+                                <div className="edit-field-group">
+                                    <label className="edit-field-label">
+                                        售价 (¥) <span className="edit-required">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        className={`edit-input ${errors.price ? 'has-error' : ''}`}
+                                        value={form.price}
+                                        onChange={e => updateField('price', e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                    {errors.price && <span className="edit-error-text">{errors.price}</span>}
+                                </div>
+                                <div className="edit-field-group">
+                                    <label className="edit-field-label">原价 (¥)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        className="edit-input"
+                                        value={form.originalPrice}
+                                        onChange={e => updateField('originalPrice', e.target.value)}
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="edit-field-row">
+                                <div className="edit-field-group">
+                                    <label className="edit-field-label">
+                                        商品类别 <span className="edit-required">*</span>
+                                    </label>
+                                    <select
+                                        className={`edit-select ${errors.categoryId ? 'has-error' : ''}`}
+                                        value={form.categoryId}
+                                        onChange={e => updateField('categoryId', e.target.value)}
+                                    >
+                                        <option value="">请选择类别</option>
+                                        {categories?.map(cat => (
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                        ))}
+                                    </select>
+                                    {errors.categoryId && <span className="edit-error-text">{errors.categoryId}</span>}
+                                </div>
+                                <div className="edit-field-group">
+                                    <label className="edit-field-label">
+                                        新旧程度 <span className="edit-required">*</span>
+                                    </label>
+                                    <select
+                                        className={`edit-select ${errors.conditionLevel ? 'has-error' : ''}`}
+                                        value={form.conditionLevel}
+                                        onChange={e => updateField('conditionLevel', e.target.value)}
+                                    >
+                                        <option value="">请选择</option>
+                                        {Object.entries(CONDITION_LABEL_MAP).map(([code, label]) => (
+                                            <option key={code} value={code}>{label}</option>
+                                        ))}
+                                    </select>
+                                    {errors.conditionLevel && <span className="edit-error-text">{errors.conditionLevel}</span>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="edit-form-section">
+                        <div className="edit-section-header">
+                            <div className="edit-section-icon">
+                                <Settings size={18} />
+                            </div>
+                            <div className="edit-section-title">
+                                <h3>其他信息</h3>
+                            </div>
+                        </div>
+                        <div className="edit-form-fields">
+                            <div className="edit-field-row">
+                                <div className="edit-field-group">
+                                    <label className="edit-field-label">库存数量</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        className="edit-input"
+                                        value={form.stock}
+                                        onChange={e => updateField('stock', e.target.value)}
+                                    />
+                                </div>
+                                <div className="edit-field-group">
+                                    <label className="edit-field-label">联系方式</label>
+                                    <input
+                                        type="text"
+                                        className="edit-input"
+                                        value={form.contactMethod}
+                                        onChange={e => updateField('contactMethod', e.target.value)}
+                                        maxLength={50}
+                                        placeholder="微信/手机号"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="edit-field-group">
+                                <label className="edit-field-label">
+                                    <MapPin size={14} style={{ marginRight: 4 }} />
+                                    交易地点
+                                </label>
+                                <input
+                                    type="text"
+                                    className="edit-input"
+                                    value={form.location}
+                                    onChange={e => updateField('location', e.target.value)}
+                                    maxLength={100}
+                                    placeholder="如：图书馆门口、食堂等"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {updateProduct.isError && (
+                        <div className="edit-submit-error">
+                            <AlertTriangle size={18} />
+                            更新失败，请稍后重试
+                        </div>
+                    )}
+
+                    <div className="edit-form-actions">
+                        <button className="edit-btn edit-btn-secondary" onClick={() => navigate(-1)}>
+                            取消
+                        </button>
+                        <button className="edit-btn edit-btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+                            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : '保存修改'}
+                        </button>
                     </div>
                 </div>
 
-                <div className="mb-6">
-                    <label className="form-label">商品名称</label>
-                    <input type="text" className={`form-input ${errors.name ? 'is-error' : ''}`} value={form.name} onChange={e => updateField('name', e.target.value)} maxLength={200} />
-                    {errors.name && <p style={{ color: 'var(--color-danger)', fontSize: '0.8rem', marginTop: 4 }}>{errors.name}</p>}
-                </div>
-
-                <div className="mb-6">
-                    <label className="form-label">商品描述</label>
-                    <textarea rows={4} className="form-textarea" value={form.description} onChange={e => updateField('description', e.target.value)} maxLength={2000} />
-                </div>
-
-                <div className="mb-6 grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="form-label">价格 (¥)</label>
-                        <input type="number" step="0.01" min="0.01" className={`form-input ${errors.price ? 'is-error' : ''}`} value={form.price} onChange={e => updateField('price', e.target.value)} />
-                        {errors.price && <p style={{ color: 'var(--color-danger)', fontSize: '0.8rem', marginTop: 4 }}>{errors.price}</p>}
+                <div className="edit-danger-zone">
+                    <div className="edit-danger-header">
+                        <AlertTriangle size={18} />
+                        <span>危险操作</span>
                     </div>
-                    <div>
-                        <label className="form-label">原价 (¥)</label>
-                        <input type="number" step="0.01" min="0.01" className="form-input" value={form.originalPrice} onChange={e => updateField('originalPrice', e.target.value)} />
-                    </div>
-                </div>
-
-                <div className="mb-6 grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="form-label">商品类别</label>
-                        <select className={`form-input ${errors.categoryId ? 'is-error' : ''}`} value={form.categoryId} onChange={e => updateField('categoryId', e.target.value)}>
-                            <option value="">请选择类别</option>
-                            {categories?.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
-                        {errors.categoryId && <p style={{ color: 'var(--color-danger)', fontSize: '0.8rem', marginTop: 4 }}>{errors.categoryId}</p>}
-                    </div>
-                    <div>
-                        <label className="form-label">新旧程度</label>
-                        <select className={`form-input ${errors.conditionLevel ? 'is-error' : ''}`} value={form.conditionLevel} onChange={e => updateField('conditionLevel', e.target.value)}>
-                            <option value="">请选择</option>
-                            {Object.entries(CONDITION_LABEL_MAP).map(([code, label]) => (
-                                <option key={code} value={code}>{label}</option>
-                            ))}
-                        </select>
-                        {errors.conditionLevel && <p style={{ color: 'var(--color-danger)', fontSize: '0.8rem', marginTop: 4 }}>{errors.conditionLevel}</p>}
-                    </div>
-                </div>
-
-                <div className="mb-6 grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="form-label">库存数量</label>
-                        <input type="number" min="1" className="form-input" value={form.stock} onChange={e => updateField('stock', e.target.value)} />
-                    </div>
-                    <div>
-                        <label className="form-label">联系方式</label>
-                        <input type="text" className="form-input" value={form.contactMethod} onChange={e => updateField('contactMethod', e.target.value)} maxLength={50} />
-                    </div>
-                </div>
-
-                <div className="mb-6">
-                    <label className="form-label">交易地点</label>
-                    <input type="text" className="form-input" value={form.location} onChange={e => updateField('location', e.target.value)} maxLength={100} />
-                </div>
-
-                {updateProduct.isError && (
-                    <p style={{ color: 'var(--color-danger)', fontSize: '0.85rem', marginTop: 12 }}>更新失败，请稍后重试</p>
-                )}
-
-                <div className="mt-6 flex gap-3">
-                    <button className="btn btn-primary flex-1" onClick={handleSubmit} disabled={isSubmitting}>
-                        {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : '保存修改'}
-                    </button>
-                    <button className="btn btn-secondary flex-1" onClick={() => navigate(-1)}>
-                        取消
-                    </button>
-                </div>
-            </div>
-
-            <div className="card-elevated mt-4" style={{ borderColor: 'var(--color-danger)', borderWidth: 1 }}>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 style={{ color: 'var(--color-danger)', fontWeight: 600 }}>删除商品</h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>删除后无法恢复，请谨慎操作</p>
-                    </div>
-                    <button className="btn btn-ghost" style={{ color: 'var(--color-danger)' }} onClick={() => setShowDeleteConfirm(true)}>
+                    <p>删除商品后数据将无法恢复，请谨慎操作</p>
+                    <button className="edit-delete-btn" onClick={() => setShowDeleteConfirm(true)}>
+                        <Trash2 size={16} />
                         删除商品
                     </button>
                 </div>
             </div>
 
             {showDeleteConfirm && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
-                    <div className="card-elevated" style={{ maxWidth: 400, width: '90%' }}>
-                        <h3 style={{ fontWeight: 600, marginBottom: 8 }}>确认删除</h3>
-                        <p style={{ color: 'var(--text-secondary)', marginBottom: 16 }}>确定要删除这个商品吗？此操作不可撤销。</p>
-                        <div className="flex gap-3">
-                            <button className="btn btn-ghost flex-1" onClick={() => setShowDeleteConfirm(false)}>取消</button>
-                            <button className="btn flex-1" style={{ background: 'var(--color-danger)', color: '#fff' }} onClick={handleDelete} disabled={deleteProduct.isPending}>
+                <div className="edit-modal-overlay">
+                    <div className="edit-modal">
+                        <div className="edit-modal-icon">
+                            <AlertTriangle size={32} />
+                        </div>
+                        <h3>确认删除</h3>
+                        <p>确定要删除这个商品吗？此操作不可撤销。</p>
+                        <div className="edit-modal-actions">
+                            <button className="edit-btn edit-btn-secondary" onClick={() => setShowDeleteConfirm(false)}>
+                                取消
+                            </button>
+                            <button className="edit-btn edit-btn-danger" onClick={handleDelete} disabled={deleteProduct.isPending}>
                                 {deleteProduct.isPending ? <Loader2 size={18} className="animate-spin" /> : '确认删除'}
                             </button>
                         </div>

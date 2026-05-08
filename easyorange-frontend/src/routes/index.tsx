@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation } from 'react-router-dom';
 import { Layout } from '@/components/layout/Layout';
+import { MinimalLayout } from '@/components/layout/MinimalLayout';
 import { getStoredToken } from '@/features/auth/session';
 
 const LoadingFallback = () => (
@@ -40,86 +41,90 @@ const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType>)
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
-    <Route path="/" element={<Layout />}>
-      <Route index element={withSuspense(HomePage)} />
-      <Route path="products" element={withSuspense(ProductsPage)} />
-      <Route path="products/:id" element={withSuspense(ProductDetailPage)} />
-      <Route path="search" element={withSuspense(SearchPage)} />
-      <Route
-        path="products/:id/edit"
-        element={
-          <ProtectedRoute>
-            {withSuspense(EditProductPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route path="login" element={withSuspense(LoginPage)} />
-      <Route path="forgot-password" element={withSuspense(ForgotPasswordPage)} />
-      <Route
-        path="profile"
-        element={
-          <ProtectedRoute>
-            {withSuspense(ProfilePage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="favorites"
-        element={
-          <ProtectedRoute>
-            {withSuspense(FavoritesPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="messages"
-        element={
-          <ProtectedRoute>
-            {withSuspense(MessagesPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="orders"
-        element={
-          <ProtectedRoute>
-            {withSuspense(OrdersPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="orders/:id"
-        element={
-          <ProtectedRoute>
-            {withSuspense(OrderDetailPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="payment"
-        element={
-          <ProtectedRoute>
-            {withSuspense(PaymentPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="payment/result"
-        element={
-          <ProtectedRoute>
-            {withSuspense(PaymentResultPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="publish"
-        element={
-          <ProtectedRoute>
-            {withSuspense(PublishPage)}
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={withSuspense(NotFoundPage)} />
-    </Route>
+    <>
+      <Route path="/" element={<Layout />}>
+        <Route index element={withSuspense(HomePage)} />
+      </Route>
+      <Route path="/" element={<MinimalLayout />}>
+        <Route path="products" element={withSuspense(ProductsPage)} />
+        <Route path="products/:id" element={withSuspense(ProductDetailPage)} />
+        <Route path="search" element={withSuspense(SearchPage)} />
+        <Route
+          path="products/:id/edit"
+          element={
+            <ProtectedRoute>
+              {withSuspense(EditProductPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route path="login" element={withSuspense(LoginPage)} />
+        <Route path="forgot-password" element={withSuspense(ForgotPasswordPage)} />
+        <Route
+          path="profile"
+          element={
+            <ProtectedRoute>
+              {withSuspense(ProfilePage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="favorites"
+          element={
+            <ProtectedRoute>
+              {withSuspense(FavoritesPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="messages"
+          element={
+            <ProtectedRoute>
+              {withSuspense(MessagesPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="orders"
+          element={
+            <ProtectedRoute>
+              {withSuspense(OrdersPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="orders/:id"
+          element={
+            <ProtectedRoute>
+              {withSuspense(OrderDetailPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="payment"
+          element={
+            <ProtectedRoute>
+              {withSuspense(PaymentPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="payment/result"
+          element={
+            <ProtectedRoute>
+              {withSuspense(PaymentResultPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="publish"
+          element={
+            <ProtectedRoute>
+              {withSuspense(PublishPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={withSuspense(NotFoundPage)} />
+      </Route>
+    </>
   )
 );

@@ -1,4 +1,6 @@
 import { Component, type ReactNode } from 'react';
+import { AlertTriangle, RefreshCw, Home, Bug, Sparkles } from 'lucide-react';
+import '@/styles/error-boundary.css';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -39,26 +41,52 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       }
 
       return (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
-          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-50">
-            <span className="text-4xl">⚠️</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">页面出错了</h1>
-          <p className="mt-2 max-w-md text-sm text-gray-500">
-            抱歉，页面渲染时发生了错误。请尝试刷新页面或返回首页。
-          </p>
-          {import.meta.env.DEV && this.state.error && (
-            <pre className="mt-4 max-w-lg overflow-auto rounded-lg bg-gray-100 p-4 text-left text-xs text-red-600">
-              {this.state.error.message}
-            </pre>
-          )}
-          <div className="mt-8 flex gap-4">
-            <button className="btn btn-outline" onClick={this.handleReset}>
-              重试
-            </button>
-            <button className="btn btn-primary" onClick={this.handleReload}>
-              刷新页面
-            </button>
+        <div className="error-boundary-page">
+          <div className="error-boundary-bg"></div>
+
+          <div className="error-boundary-content">
+            <div className="error-boundary-illustration">
+              <div className="error-boundary-icon-wrapper">
+                <AlertTriangle />
+              </div>
+              <div className="error-boundary-glow"></div>
+            </div>
+
+            <h1 className="error-boundary-title">页面出错了</h1>
+            <p className="error-boundary-subtitle">
+              抱歉，页面渲染时发生了错误。请尝试刷新页面或返回首页。
+            </p>
+
+            {import.meta.env.DEV && this.state.error && (
+              <div className="error-boundary-debug">
+                <div className="error-boundary-debug-header">
+                  <Bug size={14} />
+                  <span>开发者信息</span>
+                </div>
+                <pre className="error-boundary-debug-content">
+                  {this.state.error.message}
+                </pre>
+              </div>
+            )}
+
+            <div className="error-boundary-actions">
+              <button className="error-boundary-btn error-boundary-btn-secondary" onClick={this.handleReset}>
+                <RefreshCw size={18} />
+                重试
+              </button>
+              <button className="error-boundary-btn error-boundary-btn-primary" onClick={this.handleReload}>
+                <Home size={18} />
+                刷新页面
+              </button>
+            </div>
+
+            <div className="error-boundary-tips">
+              <div className="error-boundary-tips-header">
+                <Sparkles size={14} />
+                <span>小贴士</span>
+              </div>
+              <p>如果问题持续存在，请尝试清除浏览器缓存或联系技术支持</p>
+            </div>
           </div>
         </div>
       );

@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info } from 'lucide-react';
-import { useQueryClient, useQuery } from '@tanstack/react-query';
-import { useProduct } from '@/hooks';
+import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
+import { useProduct, useSimilarProducts } from '@/hooks';
 import { useCreateOrder } from '@/hooks/useOrders';
 import { favoriteApi } from '@/api/favoriteApi';
 import { productApi } from '@/api/productApi';
+import { reviewApi } from '@/api/reviewApi';
+import { messageApi } from '@/api/messageApi';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -18,10 +20,25 @@ interface OrderFormData {
   remark: string;
 }
 
+interface ReviewFormData {
+  rating: number;
+  content: string;
+}
+
+interface ChatMessage {
+  id: number;
+  senderId: number;
+  receiverId: number;
+  content: string;
+  createTime: string;
+  isMine: boolean;
+}
+
 export function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading } = useProduct(Number(id));
+  const { data: similarProducts } = useSimilarProducts(Number(id));
   const { token, user } = useAuthStore();
   const addToast = useUIStore((s) => s.addToast);
   const queryClient = useQueryClient();
@@ -29,7 +46,14 @@ export function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [orderForm, setOrderForm] = useState<OrderFormData>({ address: '', phone: '', remark: '' });
+  const [reviewForm, setReviewForm] = useState<ReviewFormData>({ rating: 5, content: '' });
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const productId = Number(id);
@@ -44,10 +68,25 @@ export function ProductDetailPage() {
     staleTime: 30 * 1000,
   });
 
+  const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
+    queryKey: ['reviews', productId],
+    queryFn: async () => {
+      const res = await reviewApi.getList(productId, { pageNum: 1, pageSize: 10 });
+      return res.data;
+    },
+    enabled: productId > 0,
+    staleTime: 60 * 1000,
+  });
+
+  const reviews = reviewsData?.records ?? [];
+  const reviewTotal = reviewsData?.total ?? 0;
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((sum: number, r: Record<string, unknown>) => sum + ((r.rating as number) || 5), 0) / reviews.length).toFixed(1)
+    : '5.0';
+
   useEffect(() => {
     if (productId > 0) {
-      productApi.incrementView(productId).catch(() => {
-      });
+      productApi.incrementView(productId).catch(() => {});
     }
   }, [productId]);
 
@@ -56,38 +95,64 @@ export function ProductDetailPage() {
     setCurrentImageIndex(0);
   }, [productId]);
 
-  if (isLoading) {return (
-    <div className="pdp-loading">
-      <div className="pdp-loading-ambient">
-        <div className="pdp-ambient-orb pdp-ambient-orb-1" />
-        <div className="pdp-ambient-orb pdp-ambient-orb-2" />
-      </div>
-      <div className="pdp-loading-content">
-        <div className="pdp-loading-ring" />
-        <span className="pdp-loading-text">加载商品详情...</span>
-      </div>
-    </div>
-  );}
+  const loadChatHistory = useCallback(async () => {
+    if (!product?.sellerId || !token) return;
+    try {
+      const res = await messageApi.getConversation(product.sellerId, 50);
+      const rawData = res.data as unknown as Record<string, unknown>[];
+      const messages = (rawData ?? []).map((msg) => ({
+        id: msg.id as number,
+        senderId: msg.senderId as number,
+        receiverId: msg.receiverId as number,
+        content: msg.content as string,
+        createTime: msg.createTime as string,
+        isMine: msg.senderId === user?.userId,
+      }));
+      setChatMessages(messages.reverse());
+    } catch {
+      setChatMessages([]);
+    }
+  }, [product?.sellerId, token, user?.userId]);
 
-  if (!product) {return (
-    <div className="pdp-empty">
-      <div className="pdp-empty-visual">
-        <div className="pdp-empty-icon">📦</div>
-        <div className="pdp-empty-ring" />
+  useEffect(() => {
+    if (showChatModal) {
+      loadChatHistory();
+    }
+  }, [showChatModal, loadChatHistory]);
+
+  if (isLoading) {
+    return (
+      <div className="pdp-loading">
+        <div className="pdp-loading-ambient">
+          <div className="pdp-ambient-orb pdp-ambient-orb-1" />
+          <div className="pdp-ambient-orb pdp-ambient-orb-2" />
+        </div>
+        <div className="pdp-loading-content">
+          <div className="pdp-loading-ring" />
+          <span className="pdp-loading-text">加载商品详情...</span>
+        </div>
       </div>
-      <h3 className="pdp-empty-title">商品不存在</h3>
-      <p className="pdp-empty-desc">该商品可能已下架或被删除</p>
-      <button className="pdp-empty-btn" onClick={() => navigate('/products')}>
-        <ArrowLeft size={16} />
-        返回商城
-      </button>
-    </div>
-  );}
+    );
+  }
 
-  const images = product.images?.length > 0
-    ? product.images
-    : [placeholderImage];
+  if (!product) {
+    return (
+      <div className="pdp-empty">
+        <div className="pdp-empty-visual">
+          <div className="pdp-empty-icon">📦</div>
+          <div className="pdp-empty-ring" />
+        </div>
+        <h3 className="pdp-empty-title">商品不存在</h3>
+        <p className="pdp-empty-desc">该商品可能已下架或被删除</p>
+        <button className="pdp-empty-btn" onClick={() => navigate('/products')}>
+          <ArrowLeft size={16} />
+          返回商城
+        </button>
+      </div>
+    );
+  }
 
+  const images = product.images?.length > 0 ? product.images : [placeholderImage];
   const isOwner = user && product.sellerId === user.userId;
   const conditionLabel = product.conditionLevel
     ? CONDITION_LABEL_MAP[product.conditionLevel] ?? product.condition
@@ -136,8 +201,84 @@ export function ProductDetailPage() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    if (!product || isOwner) {return;}
+    if (!product || isOwner) return;
     setShowOrderModal(true);
+  };
+
+  const handleContactSeller = () => {
+    if (!token) {
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    if (isOwner) return;
+    setShowChatModal(true);
+  };
+
+  const handleShare = () => {
+    setShowShareModal(true);
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      addToast({ type: 'success', message: '链接已复制到剪贴板' });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      addToast({ type: 'error', message: '复制失败，请手动复制' });
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!chatMessage.trim() || !product?.sellerId) return;
+    try {
+      await messageApi.sendMessage({
+        receiverId: product.sellerId,
+        content: chatMessage.trim(),
+      });
+      setChatMessages(prev => [...prev, {
+        id: Date.now(),
+        senderId: user?.userId || 0,
+        receiverId: product.sellerId,
+        content: chatMessage.trim(),
+        createTime: new Date().toISOString(),
+        isMine: true,
+      }]);
+      setChatMessage('');
+      addToast({ type: 'success', message: '消息已发送' });
+    } catch {
+      addToast({ type: 'error', message: '发送失败，请重试' });
+    }
+  };
+
+  const handleQuickReply = (text: string) => {
+    setChatMessage(text);
+  };
+
+  const submitReview = useMutation({
+    mutationFn: async () => {
+      await reviewApi.create(productId, {
+        rating: reviewForm.rating,
+        content: reviewForm.content,
+      });
+    },
+    onSuccess: () => {
+      addToast({ type: 'success', message: '评价提交成功' });
+      setShowReviewModal(false);
+      setReviewForm({ rating: 5, content: '' });
+      queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
+    },
+    onError: () => {
+      addToast({ type: 'error', message: '评价提交失败' });
+    },
+  });
+
+  const handleSubmitReview = () => {
+    if (!reviewForm.content.trim()) {
+      addToast({ type: 'error', message: '请填写评价内容' });
+      return;
+    }
+    submitReview.mutate();
   };
 
   const handleOrderFormChange = (field: keyof OrderFormData, value: string) => {
@@ -153,7 +294,6 @@ export function ProductDetailPage() {
       addToast({ type: 'error', message: '请填写正确的手机号' });
       return;
     }
-
     try {
       const order = await createOrder.mutateAsync({
         productId: product.id,
@@ -175,16 +315,23 @@ export function ProductDetailPage() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));
-    if (minutes < 1) {return '刚刚';}
-    if (minutes < 60) {return `${minutes}分钟前`;}
+    if (minutes < 1) return '刚刚';
+    if (minutes < 60) return `${minutes}分钟前`;
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) {return `${hours}小时前`;}
+    if (hours < 24) return `${hours}小时前`;
     const days = Math.floor(hours / 24);
-    if (days === 1) {return '昨天';}
-    if (days < 7) {return `${days}天前`;}
-    if (days < 30) {return `${Math.floor(days / 7)}周前`;}
+    if (days === 1) return '昨天';
+    if (days < 7) return `${days}天前`;
+    if (days < 30) return `${Math.floor(days / 7)}周前`;
     return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
+
+  const quickReplies = [
+    '这个商品还在吗？',
+    '能便宜点吗？',
+    '可以面交吗？',
+    '商品有什么瑕疵吗？',
+  ];
 
   return (
     <div className="pdp-page">
@@ -258,7 +405,7 @@ export function ProductDetailPage() {
                 >
                   <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
                 </button>
-                <button className="pdp-action-fab">
+                <button className="pdp-action-fab" onClick={handleShare}>
                   <Share2 size={18} />
                 </button>
               </div>
@@ -407,13 +554,12 @@ export function ProductDetailPage() {
                     <span className="pdp-detail-label">卖家</span>
                     <span className="pdp-detail-value">{product.sellerName}</span>
                   </div>
-                  <button
-                    className="pdp-contact-btn"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MessageCircle size={14} />
-                    联系
-                  </button>
+                  {!isOwner && (
+                    <button className="pdp-contact-btn" onClick={handleContactSeller}>
+                      <MessageCircle size={14} />
+                      联系
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -436,7 +582,7 @@ export function ProductDetailPage() {
                       <ShoppingCart size={18} />
                       {isSold ? '已售出' : '立即购买'}
                     </button>
-                    <button className="pdp-btn pdp-btn-secondary">
+                    <button className="pdp-btn pdp-btn-secondary" onClick={handleContactSeller}>
                       <MessageCircle size={18} />
                       联系卖家
                     </button>
@@ -464,6 +610,81 @@ export function ProductDetailPage() {
           </div>
         </div>
 
+        <div className="pdp-reviews-section">
+          <div className="pdp-section-header">
+            <div className="pdp-section-accent" />
+            <h3 className="pdp-section-title">
+              <MessageSquare size={18} />
+              商品评价
+            </h3>
+            <div className="pdp-reviews-stats">
+              <span className="pdp-reviews-avg">
+                <Star size={14} fill="currentColor" />
+                {avgRating}
+              </span>
+              <span className="pdp-reviews-count">{reviewTotal} 条评价</span>
+            </div>
+          </div>
+          
+          {reviewsLoading ? (
+            <div className="pdp-reviews-loading">
+              <div className="pdp-loading-ring" />
+              <span>加载评价中...</span>
+            </div>
+          ) : reviews.length > 0 ? (
+            <div className="pdp-reviews-list">
+              {reviews.slice(0, 5).map((review: Record<string, unknown>) => (
+                <div key={review.id as number} className="pdp-review-item">
+                  <div className="pdp-review-header">
+                    <div className="pdp-review-user">
+                      <div className="pdp-review-avatar">
+                        <User size={16} />
+                      </div>
+                      <span className="pdp-review-username">{(review.username as string) || '匿名用户'}</span>
+                    </div>
+                    <div className="pdp-review-meta">
+                      <div className="pdp-review-rating">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <Star
+                            key={star}
+                            size={12}
+                            fill={star <= ((review.rating as number) || 5) ? 'currentColor' : 'none'}
+                          />
+                        ))}
+                      </div>
+                      <span className="pdp-review-time">{formatRelativeTime((review.createTime as string) || new Date().toISOString())}</span>
+                    </div>
+                  </div>
+                  <p className="pdp-review-content">{(review.content as string) || '用户未填写评价内容'}</p>
+                  {(review.likes as number) > 0 && (
+                    <div className="pdp-review-footer">
+                      <button className="pdp-review-like">
+                        <ThumbsUp size={14} />
+                        <span>{String(review.likes)}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="pdp-reviews-empty">
+              <MessageSquare size={32} />
+              <p>暂无评价</p>
+              <span>购买后可以发表评价</span>
+            </div>
+          )}
+
+          {token && !isOwner && (
+            <div className="pdp-reviews-action">
+              <button className="pdp-btn pdp-btn-secondary" onClick={() => setShowReviewModal(true)}>
+                <Star size={16} />
+                发表评价
+              </button>
+            </div>
+          )}
+        </div>
+
         <div className="pdp-similar-section">
           <div className="pdp-section-header">
             <div className="pdp-section-accent" />
@@ -473,44 +694,44 @@ export function ProductDetailPage() {
             </h3>
             <span className="pdp-section-badge">基于商品特征智能匹配</span>
           </div>
-          <div className="pdp-similar-grid">
-            {[
-              { id: 1, title: product.title + ' 同款', price: product.price * 1.1, match: 98, image: images[0] },
-              { id: 2, title: '相似商品推荐', price: product.price * 0.95, match: 92, image: images[Math.min(1, images.length - 1)] },
-              { id: 3, title: '同类热门商品', price: product.price * 1.05, match: 88, image: images[Math.min(2, images.length - 1)] },
-              { id: 4, title: '性价比之选', price: product.price * 0.85, match: 85, image: images[0] },
-            ].map((item) => (
-              <div
-                key={item.id}
-                className="pdp-similar-card"
-                onClick={() => navigate(`/products/${product.id + item.id}`)}
-              >
-                <div className="pdp-similar-image">
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    loading="lazy"
-                    placeholder="skeleton"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                  <div className="pdp-similar-match">
-                    <Star size={10} />
-                    <span>{item.match}%匹配</span>
+          
+          {similarProducts && similarProducts.length > 0 ? (
+            <>
+              <div className="pdp-similar-grid">
+                {similarProducts.slice(0, 4).map((item) => (
+                  <div
+                    key={item.id}
+                    className="pdp-similar-card"
+                    onClick={() => navigate(`/products/${item.id}`)}
+                  >
+                    <div className="pdp-similar-image">
+                      <Image
+                        src={item.images?.[0] || placeholderImage}
+                        alt={item.title}
+                        loading="lazy"
+                        placeholder="skeleton"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                    <div className="pdp-similar-content">
+                      <h4 className="pdp-similar-title">{item.title}</h4>
+                      <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
+                    </div>
                   </div>
-                </div>
-                <div className="pdp-similar-content">
-                  <h4 className="pdp-similar-title">{item.title}</h4>
-                  <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="pdp-similar-footer">
-            <button className="pdp-similar-more" onClick={() => navigate('/products')}>
-              <span>查看更多相似商品</span>
-              <ChevronRight size={16} />
-            </button>
-          </div>
+              <div className="pdp-similar-footer">
+                <button className="pdp-similar-more" onClick={() => navigate('/products')}>
+                  <span>查看更多相似商品</span>
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="pdp-similar-empty">
+              <p>暂无相似商品推荐</p>
+            </div>
+          )}
         </div>
 
         <div className="pdp-ai-tips-section">
@@ -613,6 +834,208 @@ export function ProductDetailPage() {
                 className="pdp-modal-btn pdp-modal-btn-submit"
               >
                 {createOrder.isPending ? '提交中...' : '提交订单'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showShareModal && (
+        <div className="pdp-modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="pdp-modal pdp-share-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pdp-modal-header">
+              <h2 className="pdp-modal-title">分享商品</h2>
+              <button className="pdp-modal-close" onClick={() => setShowShareModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pdp-share-content">
+              <div className="pdp-share-platforms">
+                <button className="pdp-share-platform pdp-share-wechat">
+                  <div className="pdp-share-icon">
+                    <MessageCircle size={24} />
+                  </div>
+                  <span>微信</span>
+                </button>
+                <button className="pdp-share-platform pdp-share-qq">
+                  <div className="pdp-share-icon">Q</div>
+                  <span>QQ</span>
+                </button>
+                <button className="pdp-share-platform pdp-share-weibo">
+                  <div className="pdp-share-icon">微</div>
+                  <span>微博</span>
+                </button>
+                <button className="pdp-share-platform pdp-share-copy" onClick={handleCopyLink}>
+                  <div className="pdp-share-icon">
+                    {copied ? <Check size={24} /> : <Copy size={24} />}
+                  </div>
+                  <span>{copied ? '已复制' : '复制链接'}</span>
+                </button>
+              </div>
+
+              <div className="pdp-share-link">
+                <label className="pdp-form-label">商品链接</label>
+                <div className="pdp-share-link-box">
+                  <input
+                    type="text"
+                    value={window.location.href}
+                    readOnly
+                    className="pdp-form-input"
+                  />
+                  <button className="pdp-share-copy-btn" onClick={handleCopyLink}>
+                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showChatModal && (
+        <div className="pdp-modal-overlay" onClick={() => setShowChatModal(false)}>
+          <div className="pdp-modal pdp-chat-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pdp-modal-header">
+              <h2 className="pdp-modal-title">
+                <MessageCircle size={18} />
+                联系卖家
+              </h2>
+              <button className="pdp-modal-close" onClick={() => setShowChatModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pdp-chat-seller">
+              <div className="pdp-chat-seller-avatar">
+                <User size={20} />
+              </div>
+              <div className="pdp-chat-seller-info">
+                <span className="pdp-chat-seller-name">{product.sellerName}</span>
+                <span className="pdp-chat-product">{product.title}</span>
+              </div>
+            </div>
+
+            <div className="pdp-chat-messages">
+              {chatMessages.length > 0 ? (
+                chatMessages.map((msg) => (
+                  <div key={msg.id} className={`pdp-chat-message ${msg.isMine ? 'mine' : 'theirs'}`}>
+                    <div className="pdp-chat-bubble">{msg.content}</div>
+                    <span className="pdp-chat-time">{formatRelativeTime(msg.createTime)}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="pdp-chat-empty">
+                  <MessageCircle size={32} />
+                  <p>开始与卖家聊天吧</p>
+                </div>
+              )}
+            </div>
+
+            <div className="pdp-chat-quick-replies">
+              {quickReplies.map((text, idx) => (
+                <button
+                  key={idx}
+                  className="pdp-chat-quick-reply"
+                  onClick={() => handleQuickReply(text)}
+                >
+                  {text}
+                </button>
+              ))}
+            </div>
+
+            <div className="pdp-chat-input">
+              <input
+                type="text"
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                placeholder="输入消息..."
+                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                className="pdp-form-input"
+              />
+              <button
+                className="pdp-chat-send"
+                onClick={handleSendMessage}
+                disabled={!chatMessage.trim()}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReviewModal && (
+        <div className="pdp-modal-overlay" onClick={() => setShowReviewModal(false)}>
+          <div className="pdp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="pdp-modal-header">
+              <h2 className="pdp-modal-title">发表评价</h2>
+              <button className="pdp-modal-close" onClick={() => setShowReviewModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pdp-modal-product">
+              <div className="pdp-modal-product-image">
+                {images.length > 0 ? (
+                  <Image
+                    src={images[0]}
+                    alt={product.title}
+                    loading="lazy"
+                    placeholder="skeleton"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div className="pdp-modal-product-placeholder">
+                    <Star size={20} />
+                  </div>
+                )}
+              </div>
+              <div className="pdp-modal-product-info">
+                <p className="pdp-modal-product-name">{product.title}</p>
+              </div>
+            </div>
+
+            <div className="pdp-modal-form">
+              <div className="pdp-form-group">
+                <label className="pdp-form-label">评分</label>
+                <div className="pdp-review-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      className={`pdp-review-star ${star <= reviewForm.rating ? 'active' : ''}`}
+                      onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                    >
+                      <Star size={24} fill={star <= reviewForm.rating ? 'currentColor' : 'none'} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pdp-form-group">
+                <label className="pdp-form-label">评价内容</label>
+                <textarea
+                  value={reviewForm.content}
+                  onChange={(e) => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="分享您的购买体验..."
+                  rows={4}
+                  className="pdp-form-textarea"
+                />
+              </div>
+            </div>
+
+            <div className="pdp-modal-footer">
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="pdp-modal-btn pdp-modal-btn-cancel"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSubmitReview}
+                disabled={submitReview.isPending}
+                className="pdp-modal-btn pdp-modal-btn-submit"
+              >
+                {submitReview.isPending ? '提交中...' : '提交评价'}
               </button>
             </div>
           </div>

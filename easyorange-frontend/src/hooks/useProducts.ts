@@ -90,3 +90,15 @@ export function useCategories() {
     staleTime: 10 * 60 * 1000,
   });
 }
+
+export function useSimilarProducts(productId: number) {
+  return useQuery({
+    queryKey: ['similar-products', productId],
+    queryFn: async () => {
+      const response = await productApi.getSimilarProducts(productId);
+      return (response.data ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>));
+    },
+    enabled: productId > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
