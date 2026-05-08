@@ -8,13 +8,16 @@ services:
       MYSQL_DATABASE: ${EASYORANGE_DB_NAME:-easyorange}
       MYSQL_USER: ${EASYORANGE_DB_USERNAME:-easyorange_app}
       MYSQL_PASSWORD: ${EASYORANGE_DB_PASSWORD:-easyorange_app_dev}
-      MYSQL_CHARSET_SERVER: utf8mb4
-      MYSQL_COLLATION_SERVER: utf8mb4_0900_ai_ci
       TZ: Asia/Shanghai
     ports:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
     networks:
       - easyorange-net
     healthcheck:
