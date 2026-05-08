@@ -1497,3 +1497,192 @@
         padding: 2.5rem 1rem;
     }
 }
+
+/* ============ AI SEARCH BUTTON ============ */
+.search-ai-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(195, 155, 211, 0.08) 100%);
+    border: 1px solid rgba(249, 115, 22, 0.15);
+    color: var(--primary-500);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-right: 0.25rem;
+}
+
+.search-ai-btn:hover {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(195, 155, 211, 0.12) 100%);
+    border-color: rgba(249, 115, 22, 0.25);
+    transform: scale(1.05);
+}
+
+.search-ai-btn svg {
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+/* ============ AI SEARCH SECTION ============ */
+.search-ai-section {
+    margin-bottom: 1.5rem;
+    animation: contentFadeIn 0.5s var(--ease-out) 0.2s both;
+}
+
+.search-ai-card {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(195, 155, 211, 0.04) 100%);
+    border: 1px solid rgba(249, 115, 22, 0.12);
+    border-radius: var(--radius-2xl);
+    position: relative;
+    overflow: hidden;
+}
+
+.search-ai-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.search-ai-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.search-ai-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--primary-500) 0%, #C39BD3 100%);
+    border-radius: var(--radius-xl);
+    color: white;
+    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
+}
+
+.search-ai-icon svg {
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+.search-ai-title-group {
+    flex: 1;
+}
+
+.search-ai-title {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--text-heading);
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.01em;
+}
+
+.search-ai-desc {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
+.search-ai-features {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.search-ai-feature {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.search-ai-feature .ai-feature-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: var(--radius-md);
+    color: var(--primary-500);
+    border: 1px solid rgba(249, 115, 22, 0.1);
+}
+
+.search-ai-btn-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary-500) 0%, #C39BD3 100%);
+    border: none;
+    border-radius: var(--radius-xl);
+    color: white;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
+}
+
+.search-ai-btn-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(249, 115, 22, 0.4);
+}
+
+.search-ai-btn-main svg {
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@media (max-width: 768px) {
+    .search-ai-card {
+        padding: 1.25rem;
+    }
+
+    .search-ai-features {
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .search-ai-feature {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 120px;
+    }
+}
+
+@media (max-width: 480px) {
+    .search-ai-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .search-ai-features {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .search-ai-feature {
+        flex: none;
+        width: 100%;
+        justify-content: center;
+    }
+}

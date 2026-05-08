@@ -181,6 +181,9 @@ export function SearchPage() {
                                     <X size={12} />
                                 </button>
                             )}
+                            <button type="button" className="search-ai-btn" title="AI智能搜索">
+                                <Sparkles size={14} />
+                            </button>
                             <button type="submit" className="search-submit-btn">
                                 <Search size={14} />
                                 <span>搜索</span>
@@ -190,7 +193,7 @@ export function SearchPage() {
                             <div className="search-suggestions-dropdown">
                                 <div className="suggestions-header">
                                     <Sparkles size={12} />
-                                    <span>搜索建议</span>
+                                    <span>AI智能建议</span>
                                 </div>
                                 {suggestions.map(s => (
                                     <button
@@ -276,6 +279,45 @@ export function SearchPage() {
                                 )}
                             </div>
                         )}
+
+                        {/* AI Smart Search Section */}
+                        <div className="search-ai-section">
+                            <div className="search-ai-card">
+                                <div className="search-ai-header">
+                                    <div className="search-ai-icon">
+                                        <Sparkles size={20} />
+                                    </div>
+                                    <div className="search-ai-title-group">
+                                        <h3 className="search-ai-title">AI智能搜索</h3>
+                                        <p className="search-ai-desc">拍照识别 · 智能推荐 · 一键发布</p>
+                                    </div>
+                                </div>
+                                <div className="search-ai-features">
+                                    <div className="search-ai-feature">
+                                        <div className="ai-feature-icon">
+                                            <Zap size={16} />
+                                        </div>
+                                        <span>拍照估价</span>
+                                    </div>
+                                    <div className="search-ai-feature">
+                                        <div className="ai-feature-icon">
+                                            <TrendingUp size={16} />
+                                        </div>
+                                        <span>智能推荐</span>
+                                    </div>
+                                    <div className="search-ai-feature">
+                                        <div className="ai-feature-icon">
+                                            <Star size={16} />
+                                        </div>
+                                        <span>品质保障</span>
+                                    </div>
+                                </div>
+                                <button className="search-ai-btn-main">
+                                    <Sparkles size={16} />
+                                    <span>开启AI搜索体验</span>
+                                </button>
+                            </div>
+                        </div>
 
                         {/* Category Quick Access - 8 columns compact grid */}
                         <div className="search-categories-section">

@@ -1,12 +1,11 @@
 import { lazy, Suspense } from 'react'
 import HeroSection from '@/components/sections/HeroSection'
 
+const AIFeaturesSection = lazy(() => import('@/components/sections/AIFeaturesSection'))
 const CategoriesSection = lazy(() => import('@/components/sections/CategoriesSection'))
+const AIRecommendSection = lazy(() => import('@/components/sections/AIRecommendSection'))
 const ProductsSection = lazy(() => import('@/components/sections/ProductsSection'))
 const ServicesSection = lazy(() => import('@/components/sections/ServicesSection'))
-const UserStoriesSection = lazy(() => import('@/components/sections/UserStoriesSection'))
-const AchievementsSection = lazy(() => import('@/components/sections/AchievementsSection'))
-const ReviewsSection = lazy(() => import('@/components/sections/ReviewsSection'))
 
 const SectionSkeleton = () => (
   <div className="section-skeleton">
@@ -30,7 +29,15 @@ function HomePage() {
       <HeroSection />
 
       <Suspense fallback={<SectionSkeleton />}>
+        <AIFeaturesSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
         <CategoriesSection />
+      </Suspense>
+
+      <Suspense fallback={<SectionSkeleton />}>
+        <AIRecommendSection />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
@@ -38,19 +45,7 @@ function HomePage() {
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <UserStoriesSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
         <ServicesSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <AchievementsSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <ReviewsSection />
       </Suspense>
     </>
   )

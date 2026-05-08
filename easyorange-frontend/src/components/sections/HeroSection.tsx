@@ -246,7 +246,27 @@ export default function HeroSection() {
             </div>
           </div>
 
-          <div className="hero-stats animate-slide-up delay-3">
+          <div className="hero-ai-entry animate-slide-up delay-3">
+            <button className="ai-entry-btn">
+              <div className="ai-entry-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                <div className="ai-pulse-ring" />
+              </div>
+              <div className="ai-entry-content">
+                <span className="ai-entry-title">AI智能助手</span>
+                <span className="ai-entry-desc">拍照估价 · 智能推荐 · 一键发布</span>
+              </div>
+              <div className="ai-entry-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+              </div>
+            </button>
+          </div>
+
+          <div className="hero-stats animate-slide-up delay-4">
             <div className="stat-item">
               <span className="stat-value" data-count={String(stats.activeUsers)} ref={(el) => { statRefs.current[0] = el }}>0</span>
               <span className="stat-label">活跃用户</span>

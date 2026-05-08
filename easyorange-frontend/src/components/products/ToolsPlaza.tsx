@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Sparkles, Zap } from 'lucide-react';
 
 interface ToolsPlazaProps {
   onFilterChange?: (filter: string) => void;
@@ -7,10 +8,18 @@ interface ToolsPlazaProps {
 
 export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
   const [activeFilter, setActiveFilter] = useState('all');
+  const [aiMode, setAiMode] = useState(false);
 
   const handleFilterClick = (filter: string) => {
     setActiveFilter(filter);
+    setAiMode(false);
     onFilterChange?.(filter);
+  };
+
+  const handleAiClick = () => {
+    setAiMode(!aiMode);
+    setActiveFilter('ai');
+    onFilterChange?.('ai');
   };
 
   return (
@@ -35,9 +44,25 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
       </div>
 
       <div className="plaza-tools">
+        <button
+          className={`plaza-tool plaza-ai-tool ${aiMode ? 'active' : ''}`}
+          onClick={handleAiClick}
+        >
+          <div className="tool-icon">
+            <Sparkles size={16} />
+          </div>
+          <span className="tool-label">AI推荐</span>
+          <div className="tool-badge ai-badge">
+            <Zap size={8} />
+            AI
+          </div>
+        </button>
+
+        <div className="tool-divider" />
+
         <div className="tool-group">
           <button
-            className={`plaza-tool ${activeFilter === 'all' ? 'active' : ''}`}
+            className={`plaza-tool ${activeFilter === 'all' && !aiMode ? 'active' : ''}`}
             onClick={() => handleFilterClick('all')}
           >
             <div className="tool-icon">
@@ -51,13 +76,9 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
             <span className="tool-label">全部</span>
             <div className="tool-badge">ALL</div>
           </button>
-        </div>
 
-        <div className="tool-divider" />
-
-        <div className="tool-group">
           <button
-            className={`plaza-tool ${activeFilter === 'new' ? 'active' : ''}`}
+            className={`plaza-tool ${activeFilter === 'new' && !aiMode ? 'active' : ''}`}
             onClick={() => handleFilterClick('new')}
           >
             <div className="tool-icon">
@@ -70,7 +91,7 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
           </button>
 
           <button
-            className={`plaza-tool ${activeFilter === 'hot' ? 'active' : ''}`}
+            className={`plaza-tool ${activeFilter === 'hot' && !aiMode ? 'active' : ''}`}
             onClick={() => handleFilterClick('hot')}
           >
             <div className="tool-icon">
@@ -83,7 +104,7 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
           </button>
 
           <button
-            className={`plaza-tool ${activeFilter === 'discount' ? 'active' : ''}`}
+            className={`plaza-tool ${activeFilter === 'discount' && !aiMode ? 'active' : ''}`}
             onClick={() => handleFilterClick('discount')}
           >
             <div className="tool-icon">
@@ -96,23 +117,15 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
             <span className="tool-label">特价优惠</span>
             <div className="tool-badge">SALE</div>
           </button>
-
-          <button
-            className={`plaza-tool ${activeFilter === 'newArrival' ? 'active' : ''}`}
-            onClick={() => handleFilterClick('newArrival')}
-          >
-            <div className="tool-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-                <line x1="12" y1="22.08" x2="12" y2="12" />
-              </svg>
-            </div>
-            <span className="tool-label">全新物品</span>
-            <div className="tool-badge">FRESH</div>
-          </button>
         </div>
       </div>
+
+      {aiMode && (
+        <div className="plaza-ai-hint">
+          <Sparkles size={14} />
+          <span>AI正在根据您的浏览习惯为您推荐最合适的商品</span>
+        </div>
+      )}
 
       <div className="plaza-accent">
         <div className="accent-glow" />

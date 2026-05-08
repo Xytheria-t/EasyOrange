@@ -3,7 +3,7 @@ import {
   User, Mail, Phone, Calendar, Check, Pencil, X,
   GraduationCap, BadgeCheck, Heart, ShoppingBag, MessageSquare, Package,
   TrendingUp, Shield, ChevronRight, Sparkles,
-  Award, Eye, Star
+  Award, Eye, Star, Target, Lightbulb, Brain
 } from 'lucide-react'
 import type { User as UserType } from '@/types'
 
@@ -135,6 +135,56 @@ export function ProfileOverview({
             <div className="metric-data">
               <span className="metric-value">4.9</span>
               <span className="metric-label">平均评分</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="ai-assistant-section">
+        <div className="ai-assistant-header">
+          <div className="ai-assistant-title">
+            <div className="ai-icon-wrapper">
+              <Brain size={20} />
+            </div>
+            <div>
+              <h3>AI交易助手</h3>
+              <p>智能分析你的交易习惯，提供个性化建议</p>
+            </div>
+          </div>
+          <button className="ai-refresh-btn">
+            <Sparkles size={14} />
+            刷新建议
+          </button>
+        </div>
+        <div className="ai-insights-grid">
+          <div className="ai-insight-card highlight">
+            <div className="insight-icon">
+              <Target size={18} />
+            </div>
+            <div className="insight-content">
+              <span className="insight-label">最佳发布时间</span>
+              <span className="insight-value">周三、周五晚 20:00-22:00</span>
+              <span className="insight-desc">根据你的历史数据，此时段浏览量最高</span>
+            </div>
+          </div>
+          <div className="ai-insight-card">
+            <div className="insight-icon green">
+              <TrendingUp size={18} />
+            </div>
+            <div className="insight-content">
+              <span className="insight-label">价格建议</span>
+              <span className="insight-value">定价略低于市场均价5-10%</span>
+              <span className="insight-desc">可提高成交速度约30%</span>
+            </div>
+          </div>
+          <div className="ai-insight-card">
+            <div className="insight-icon purple">
+              <Lightbulb size={18} />
+            </div>
+            <div className="insight-content">
+              <span className="insight-label">热门品类</span>
+              <span className="insight-value">数码产品、教材资料</span>
+              <span className="insight-desc">校园需求量最大的品类</span>
             </div>
           </div>
         </div>

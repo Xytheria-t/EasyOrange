@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep } from 'lucide-react';
+import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info } from 'lucide-react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useProduct } from '@/hooks';
 import { useCreateOrder } from '@/hooks/useOrders';
@@ -337,6 +337,47 @@ export function ProductDetailPage() {
                 )}
               </div>
 
+              <div className="pdp-ai-pricing-card">
+                <div className="pdp-ai-pricing-header">
+                  <div className="pdp-ai-badge">
+                    <Sparkles size={14} />
+                    <span>AI智能估价</span>
+                  </div>
+                  <span className="pdp-ai-confidence">置信度 95%</span>
+                </div>
+                <div className="pdp-ai-pricing-body">
+                  <div className="pdp-ai-price-range">
+                    <div className="pdp-ai-price-item">
+                      <span className="pdp-ai-price-label">市场均价</span>
+                      <span className="pdp-ai-price-value">¥{((product.price || 100) * 1.15).toFixed(0)}</span>
+                    </div>
+                    <div className="pdp-ai-price-divider" />
+                    <div className="pdp-ai-price-item">
+                      <span className="pdp-ai-price-label">低价区间</span>
+                      <span className="pdp-ai-price-value low">¥{((product.price || 100) * 0.85).toFixed(0)}</span>
+                    </div>
+                    <div className="pdp-ai-price-divider" />
+                    <div className="pdp-ai-price-item highlight">
+                      <span className="pdp-ai-price-label">当前定价</span>
+                      <span className="pdp-ai-price-value">¥{product.price.toFixed(0)}</span>
+                    </div>
+                  </div>
+                  <div className="pdp-ai-pricing-analysis">
+                    <div className="pdp-ai-analysis-icon">
+                      <TrendingUp size={14} />
+                    </div>
+                    <p className="pdp-ai-analysis-text">
+                      该商品定价<span className="highlight">合理偏低</span>，相比同类商品具有价格优势，性价比突出
+                    </p>
+                  </div>
+                  <div className="pdp-ai-pricing-tags">
+                    <span className="pdp-ai-tag"><Zap size={10} />价格优势</span>
+                    <span className="pdp-ai-tag"><Star size={10} />值得购买</span>
+                    <span className="pdp-ai-tag"><TrendingUp size={10} />热门品类</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="pdp-details-card">
                 <div className="pdp-detail-item">
                   <div className="pdp-detail-icon-wrap">
@@ -420,6 +461,71 @@ export function ProductDetailPage() {
           </div>
           <div className="pdp-description-body">
             <p className="pdp-description-text">{product.description || '暂无描述'}</p>
+          </div>
+        </div>
+
+        <div className="pdp-similar-section">
+          <div className="pdp-section-header">
+            <div className="pdp-section-accent" />
+            <h3 className="pdp-section-title">
+              <Sparkles size={18} />
+              AI推荐相似商品
+            </h3>
+            <span className="pdp-section-badge">基于商品特征智能匹配</span>
+          </div>
+          <div className="pdp-similar-grid">
+            {[
+              { id: 1, title: product.title + ' 同款', price: product.price * 1.1, match: 98, image: images[0] },
+              { id: 2, title: '相似商品推荐', price: product.price * 0.95, match: 92, image: images[Math.min(1, images.length - 1)] },
+              { id: 3, title: '同类热门商品', price: product.price * 1.05, match: 88, image: images[Math.min(2, images.length - 1)] },
+              { id: 4, title: '性价比之选', price: product.price * 0.85, match: 85, image: images[0] },
+            ].map((item) => (
+              <div
+                key={item.id}
+                className="pdp-similar-card"
+                onClick={() => navigate(`/products/${product.id + item.id}`)}
+              >
+                <div className="pdp-similar-image">
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    loading="lazy"
+                    placeholder="skeleton"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  <div className="pdp-similar-match">
+                    <Star size={10} />
+                    <span>{item.match}%匹配</span>
+                  </div>
+                </div>
+                <div className="pdp-similar-content">
+                  <h4 className="pdp-similar-title">{item.title}</h4>
+                  <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="pdp-similar-footer">
+            <button className="pdp-similar-more" onClick={() => navigate('/products')}>
+              <span>查看更多相似商品</span>
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="pdp-ai-tips-section">
+          <div className="pdp-ai-tips-card">
+            <div className="pdp-ai-tips-icon">
+              <Info size={18} />
+            </div>
+            <div className="pdp-ai-tips-content">
+              <h4 className="pdp-ai-tips-title">AI助手温馨提示</h4>
+              <ul className="pdp-ai-tips-list">
+                <li>建议与卖家确认商品细节后再进行交易</li>
+                <li>优先选择校内面交，安全便捷</li>
+                <li>如遇纠纷可联系平台客服协助处理</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

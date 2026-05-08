@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Trash2, RefreshCw, ArrowRight, Sparkles, MapPin, Clock } from 'lucide-react';
+import { Trash2, RefreshCw, ArrowRight, Sparkles, MapPin, Clock, TrendingDown, Bell, Zap, Brain } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { favoriteApi } from '@/api/favoriteApi';
 import { useUIStore } from '@/store/uiStore';
@@ -244,6 +244,56 @@ export function FavoritesPage() {
                   删除选中 ({selectedIds.size})
                 </button>
               )}
+            </div>
+          </div>
+
+          <div className="favorites-ai-section">
+            <div className="favorites-ai-card">
+              <div className="favorites-ai-header">
+                <div className="favorites-ai-icon">
+                  <Brain size={18} />
+                </div>
+                <div className="favorites-ai-title">
+                  <h3>AI收藏分析</h3>
+                  <span className="favorites-ai-badge">
+                    <Zap size={10} />
+                    实时监控
+                  </span>
+                </div>
+              </div>
+              <div className="favorites-ai-features">
+                <div className="favorites-ai-feature">
+                  <div className="feature-icon price-drop">
+                    <TrendingDown size={14} />
+                  </div>
+                  <div className="feature-content">
+                    <span className="feature-value">3件</span>
+                    <span className="feature-label">降价提醒</span>
+                  </div>
+                </div>
+                <div className="favorites-ai-feature">
+                  <div className="feature-icon alert">
+                    <Bell size={14} />
+                  </div>
+                  <div className="feature-content">
+                    <span className="feature-value">2件</span>
+                    <span className="feature-label">库存紧张</span>
+                  </div>
+                </div>
+                <div className="favorites-ai-feature">
+                  <div className="feature-icon recommend">
+                    <Sparkles size={14} />
+                  </div>
+                  <div className="feature-content">
+                    <span className="feature-value">5件</span>
+                    <span className="feature-label">相似推荐</span>
+                  </div>
+                </div>
+              </div>
+              <button className="favorites-ai-btn">
+                <Sparkles size={14} />
+                查看智能推荐
+              </button>
             </div>
           </div>
 
