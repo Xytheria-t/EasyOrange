@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.exception;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileException;
 import com.cartethyia.easyorange.common.exception.ParamValidationException;
@@ -34,6 +35,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Result<Void>> handleBusinessException(BusinessException e) {
+        log.warn("业务异常[code={}]: {}", e.getCode(), e.getMessage());
+        return ResponseEntity
+                .status(e.httpStatus())
+                .body(Result.error(e.getCode(), e.getMessage()));
+    }
+
+    @ExceptionHandler(BaseBusinessException.class)
+    public ResponseEntity<Result<Void>> handleBaseBusinessException(BaseBusinessException e) {
         log.warn("业务异常[code={}]: {}", e.getCode(), e.getMessage());
         return ResponseEntity
                 .status(e.httpStatus())

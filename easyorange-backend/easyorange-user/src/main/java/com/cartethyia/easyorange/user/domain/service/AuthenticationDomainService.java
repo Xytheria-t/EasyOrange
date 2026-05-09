@@ -4,24 +4,15 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class AuthenticationDomainService {
 
     private final UserRepository userRepository;
     private final PasswordDomainService passwordDomainService;
     private final LoginSecurityDomainService loginSecurityDomainService;
     private final SmsCodeDomainService smsCodeDomainService;
-
-    public AuthenticationDomainService(
-            UserRepository userRepository,
-            PasswordDomainService passwordDomainService,
-            LoginSecurityDomainService loginSecurityDomainService,
-            SmsCodeDomainService smsCodeDomainService) {
-        this.userRepository = userRepository;
-        this.passwordDomainService = passwordDomainService;
-        this.loginSecurityDomainService = loginSecurityDomainService;
-        this.smsCodeDomainService = smsCodeDomainService;
-    }
 
     public User authenticateByPassword(String account, String password, String clientIp) {
         loginSecurityDomainService.checkLoginAttempts(account);

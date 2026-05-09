@@ -34,7 +34,7 @@ public class OrderProductInventoryAdapter implements ProductInventoryPort {
 
     @Override
     public boolean decreaseStock(Long productId) {
-        productCommandService.decrementStock(new DecrementStockCommand(productId));
+        productCommandService.decrementStock(new DecrementStockCommand(productId, 1));
         return true;
     }
 

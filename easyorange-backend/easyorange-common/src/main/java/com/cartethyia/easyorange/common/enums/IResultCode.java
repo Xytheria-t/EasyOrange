@@ -7,7 +7,7 @@ public interface IResultCode {
     String getMessage();
 
     default boolean isSuccess() {
-        return "0".equals(getCode());
+        return "A0000".equals(getCode());
     }
 
     /**
@@ -30,15 +30,15 @@ public interface IResultCode {
         char prefix = code.charAt(0);
         switch (prefix) {
             case 'A':
-                // 根据错误码后三位返回特定 HTTP 状态
-                if (code.length() >= 4) {
-                    String suffix = code.substring(1, 4);
+                if (code.length() >= 5) {
+                    String suffix = code.substring(2, 5);
                     switch (suffix) {
-                        case "401": return 401;
+                        case "401":
+                        case "402": return 401;
                         case "403": return 403;
                         case "404": return 404;
                         case "405": return 405;
-                        case "500": return 400; // A0500 归为客户端错误
+                        case "500": return 400;
                         default: return 200;
                     }
                 }

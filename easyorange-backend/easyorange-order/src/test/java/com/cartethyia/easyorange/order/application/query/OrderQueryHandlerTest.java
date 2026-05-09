@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.output.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
@@ -42,7 +42,7 @@ class OrderQueryHandlerTest {
     private ProductQueryPort productQueryPort;
 
     @Mock
-    private OrderCacheService orderCacheService;
+    private OrderCachePort orderCachePort;
 
     @Mock
     private OrderVOAssembler orderVOAssembler;
@@ -54,7 +54,7 @@ class OrderQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCacheService, orderVOAssembler);
+        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, orderVOAssembler);
 
         testOrderReadModel = new OrderReadModel(
                 1L, "ORD001", 100L, 200L, 300L,

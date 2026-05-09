@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <suppress checks="JavadocPackage"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocStyle"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocMethod"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocType"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocVariable"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="MissingJavadocMethod"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="InvalidJavadocPosition"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="DesignForExtension"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="HiddenField"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="MagicNumber"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="LineLength"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="VisibilityModifier"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="TodoComment"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="ParameterNumber"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="MethodLength"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="RegexpSingleline"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="NewlineAtEndOfFile"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="FinalParameters"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="FinalClass"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="AvoidStarImport"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="UnusedImports"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="WhitespaceAround"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+    <suppress checks="RedundantModifier"
+              files="[\\/]src[\\/]main[\\/]java[\\/].*\.java"/>
+
+    <suppress checks="JavadocPackage"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocStyle"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocMethod"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocType"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="JavadocVariable"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="MissingJavadocMethod"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="MethodName"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="MagicNumber"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="LineLength"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="AvoidStarImport"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="UnusedImports"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="FinalParameters"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="NewlineAtEndOfFile"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="RedundantModifier"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+    <suppress checks="HiddenField"
+              files="[\\/]src[\\/]test[\\/]java[\\/].*\.java"/>
+</suppressions>

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
-import com.cartethyia.easyorange.common.event.DomainEventSubscriber;
 import com.cartethyia.easyorange.common.notification.NotificationService;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
@@ -16,96 +15,140 @@ import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderNotificationEventSubscriber implements DomainEventSubscriber<BaseDomainEvent> {
+public class OrderNotificationEventSubscriber {
 
     private final EventIdempotencyChecker idempotencyChecker;
     private final NotificationService notificationService;
     private final OrderReadRepository orderReadRepository;
     private final UserInfoPort userInfoPort;
 
-    @Override
-    public Class<BaseDomainEvent> getEventType() {
-        return BaseDomainEvent.class;
-    }
-
-    @Override
-    public void handle(BaseDomainEvent event) {
-        String eventId = getEventId(event);
-        String eventType = event.getClass().getSimpleName();
-
-        if (idempotencyChecker.isDuplicate(eventType, eventId)) {
+    @Async("domainEventExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderCreated(OrderCreatedEvent event) {
+        String eventId = "created:" + event.getOrderId();
+        if (!tryAcquireLock("OrderCreated", eventId)) {
             return;
         }
-
-        if (!idempotencyChecker.tryMark(eventType, eventId)) {
-            return;
-        }
-
+        
         try {
-            if (event instanceof OrderCreatedEvent e) {
-                handleOrderCreated(e);
-            } else if (event instanceof OrderPaidEvent e) {
-                handleOrderPaid(e);
-            } else if (event instanceof OrderShippedEvent e) {
-                handleOrderShipped(e);
-            } else if (event instanceof OrderCompletedEvent e) {
-                handleOrderCompleted(e);
-            } else if (event instanceof OrderCancelledEvent e) {
-                handleOrderCancelled(e);
-            } else if (event instanceof OrderRefundedEvent e) {
-                handleOrderRefunded(e);
+            String email = getUserEmail(event.getBuyerId());
+            if (email != null) {
+                notificationService.sendEmail(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId());
             }
+            log.info("订单创建通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
-            log.error("action=handle_notification_failed eventType={} eventId={}", eventType, eventId, e);
-            throw e;
+            log.error("订单创建通知发送失败: orderId={}", event.getOrderId(), e);
         }
     }
 
-    private void handleOrderCreated(OrderCreatedEvent event) {
-        String email = getUserEmail(event.getBuyerId());
-        if (email != null) {
-            notificationService.sendEmail(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId());
+    @Async("domainEventExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderPaid(OrderPaidEvent event) {
+        String eventId = "paid:" + event.getOrderId();
+        if (!tryAcquireLock("OrderPaid", eventId)) {
+            return;
+        }
+        
+        try {
+            String email = getEmailFromOrder(event.getOrderId());
+            if (email != null) {
+                notificationService.sendEmail(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId());
+            }
+            log.info("订单支付通知已发送: orderId={}", event.getOrderId());
+        } catch (Exception e) {
+            log.error("订单支付通知发送失败: orderId={}", event.getOrderId(), e);
         }
     }
 
-    private void handleOrderPaid(OrderPaidEvent event) {
-        String email = getEmailFromOrder(event.getOrderId());
-        if (email != null) {
-            notificationService.sendEmail(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId());
+    @Async("domainEventExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderShipped(OrderShippedEvent event) {
+        String eventId = "shipped:" + event.getOrderId();
+        if (!tryAcquireLock("OrderShipped", eventId)) {
+            return;
+        }
+        
+        try {
+            String email = getEmailFromOrder(event.getOrderId());
+            if (email != null) {
+                notificationService.sendEmail(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId());
+            }
+            log.info("订单发货通知已发送: orderId={}", event.getOrderId());
+        } catch (Exception e) {
+            log.error("订单发货通知发送失败: orderId={}", event.getOrderId(), e);
         }
     }
 
-    private void handleOrderShipped(OrderShippedEvent event) {
-        String email = getEmailFromOrder(event.getOrderId());
-        if (email != null) {
-            notificationService.sendEmail(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId());
+    @Async("domainEventExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderCompleted(OrderCompletedEvent event) {
+        String eventId = "completed:" + event.getOrderId();
+        if (!tryAcquireLock("OrderCompleted", eventId)) {
+            return;
+        }
+        
+        try {
+            String email = getEmailFromOrder(event.getOrderId());
+            if (email != null) {
+                notificationService.sendEmail(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId());
+            }
+            log.info("订单完成通知已发送: orderId={}", event.getOrderId());
+        } catch (Exception e) {
+            log.error("订单完成通知发送失败: orderId={}", event.getOrderId(), e);
         }
     }
 
-    private void handleOrderCompleted(OrderCompletedEvent event) {
-        String email = getEmailFromOrder(event.getOrderId());
-        if (email != null) {
-            notificationService.sendEmail(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId());
+    @Async("domainEventExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderCancelled(OrderCancelledEvent event) {
+        String eventId = "cancelled:" + event.getOrderId() + ":" + event.getProductId();
+        if (!tryAcquireLock("OrderCancelled", eventId)) {
+            return;
+        }
+        
+        try {
+            String email = getEmailFromOrder(event.getOrderId());
+            if (email != null) {
+                notificationService.sendEmail(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId());
+            }
+            log.info("订单取消通知已发送: orderId={}", event.getOrderId());
+        } catch (Exception e) {
+            log.error("订单取消通知发送失败: orderId={}", event.getOrderId(), e);
         }
     }
 
-    private void handleOrderCancelled(OrderCancelledEvent event) {
-        String email = getEmailFromOrder(event.getOrderId());
-        if (email != null) {
-            notificationService.sendEmail(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId());
+    @Async("domainEventExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderRefunded(OrderRefundedEvent event) {
+        String eventId = "refunded:" + event.getOrderId() + ":" + event.getProductId();
+        if (!tryAcquireLock("OrderRefunded", eventId)) {
+            return;
+        }
+        
+        try {
+            String email = getEmailFromOrder(event.getOrderId());
+            if (email != null) {
+                notificationService.sendEmail(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId());
+            }
+            log.info("订单退款通知已发送: orderId={}", event.getOrderId());
+        } catch (Exception e) {
+            log.error("订单退款通知发送失败: orderId={}", event.getOrderId(), e);
         }
     }
 
-    private void handleOrderRefunded(OrderRefundedEvent event) {
-        String email = getEmailFromOrder(event.getOrderId());
-        if (email != null) {
-            notificationService.sendEmail(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId());
+    private boolean tryAcquireLock(String eventType, String eventId) {
+        if (idempotencyChecker.isDuplicate(eventType, eventId)) {
+            return false;
         }
+        return idempotencyChecker.tryMark(eventType, eventId);
     }
 
     private String getUserEmail(Long userId) {
@@ -124,22 +167,5 @@ public class OrderNotificationEventSubscriber implements DomainEventSubscriber<B
         return orderReadRepository.findById(OrderId.of(orderId))
                 .map(readModel -> getUserEmail(readModel.buyerId()))
                 .orElse(null);
-    }
-
-    private String getEventId(BaseDomainEvent event) {
-        if (event instanceof OrderCreatedEvent e) {
-            return "created:" + e.getOrderId();
-        } else if (event instanceof OrderPaidEvent e) {
-            return "paid:" + e.getOrderId();
-        } else if (event instanceof OrderShippedEvent e) {
-            return "shipped:" + e.getOrderId();
-        } else if (event instanceof OrderCompletedEvent e) {
-            return "completed:" + e.getOrderId();
-        } else if (event instanceof OrderCancelledEvent e) {
-            return "cancelled:" + e.getOrderId() + ":" + e.getProductId();
-        } else if (event instanceof OrderRefundedEvent e) {
-            return "refunded:" + e.getOrderId() + ":" + e.getProductId();
-        }
-        return event.getClass().getSimpleName() + ":" + System.currentTimeMillis();
     }
 }

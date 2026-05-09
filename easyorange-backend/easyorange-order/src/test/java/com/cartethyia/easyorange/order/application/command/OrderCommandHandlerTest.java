@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.saga.CreateOrderSaga;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +49,7 @@ class OrderCommandHandlerTest {
     private PaymentGatewayPort paymentGatewayPort;
 
     @Mock
-    private OrderCacheService orderCacheService;
+    private OrderCachePort orderCachePort;
 
     @InjectMocks
     private OrderCommandHandler commandHandler;
@@ -109,7 +109,7 @@ class OrderCommandHandlerTest {
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
-                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             }
         }
 
@@ -171,7 +171,7 @@ class OrderCommandHandlerTest {
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
-                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             }
         }
     }
@@ -197,7 +197,7 @@ class OrderCommandHandlerTest {
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
-                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             }
         }
 
@@ -241,7 +241,7 @@ class OrderCommandHandlerTest {
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
-                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             }
         }
     }
@@ -268,7 +268,27 @@ class OrderCommandHandlerTest {
 
                 verify(paymentGatewayPort).refundPayment(ORDER_ID, "商品有问题");
                 verify(orderRepository).update(any(OrderAggregate.class));
-                verify(orderCacheService).deleteOrderCache(BUYER_ID, SELLER_ID);
+                verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            }
+        }
+
+        @Test
+        @DisplayName("订单支付未完成时退款应抛出明确异常")
+        void handle_refundOrder_unpaidPayment_throwsException() {
+            RefundOrderCommand command = RefundOrderCommand.builder()
+                .orderId(ORDER_ID)
+                .reason("商品有问题")
+                .build();
+
+            OrderAggregate aggregate = createPaidButUnpaidPaymentAggregate();
+            when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
+
+            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
+                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
+
+                assertThatThrownBy(() -> commandHandler.handle(command))
+                    .isInstanceOf(Exception.class)
+                    .hasMessageContaining("无法退款");
             }
         }
     }
@@ -293,6 +313,14 @@ class OrderCommandHandlerTest {
         return OrderAggregate.fromRaw(
             ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
             new BigDecimal("99.99"), OrderStatus.SHIPPED.getCode(), 1,
+            "地址", "13800138000", "备注", null, null
+        );
+    }
+
+    private OrderAggregate createPaidButUnpaidPaymentAggregate() {
+        return OrderAggregate.fromRaw(
+            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
+            new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 0,
             "地址", "13800138000", "备注", null, null
         );
     }

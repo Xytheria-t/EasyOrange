@@ -151,5 +151,5 @@ public interface ProductCachePort {
 ## 跨模块交互
 
 - **order 模块**: 通过 `ProductInventoryPort` 扣减/恢复库存
-- **favorite 模块**: 通过 `ProductAclService` 查询商品信息
-- 当前 order/favorite 直接依赖 product Maven 模块，通过 Port/ACL 接口隔离领域模型
+- **favorite 模块**: 通过 `ProductInfoPort`（`FavoriteProductInfoAdapter` 在 application 模块实现）查询商品信息
+- order/favorite 对 product 的 Maven 依赖均为 `<optional>true</optional>`，通过 Port 接口隔离领域模型

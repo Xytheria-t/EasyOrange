@@ -4,14 +4,12 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.user.domain.constants.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.output.LoginAttemptPort;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class LoginSecurityDomainService {
 
     private final LoginAttemptPort loginAttemptPort;
-
-    public LoginSecurityDomainService(LoginAttemptPort loginAttemptPort) {
-        this.loginAttemptPort = loginAttemptPort;
-    }
 
     public void checkLoginAttempts(String account) {
         BizRequire.notBlank(account, "账号不能为空");

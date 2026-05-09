@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO eo_product_image (id, product_id, image_url, sort_order, is_main, create_time, update_time)
+        VALUES
+        <foreach collection="images" item="img" separator=",">
+            (#{img.id}, #{img.productId}, #{img.imageUrl}, #{img.sortOrder}, #{img.isMain}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+    <delete id="deleteByProductIdAndUrls">
+        DELETE FROM eo_product_image
+        WHERE product_id = #{productId}
+        AND image_url IN
+        <foreach collection="urls" item="url" open="(" separator="," close=")">
+            #{url}
+        </foreach>
+    </delete>
+
+</mapper>

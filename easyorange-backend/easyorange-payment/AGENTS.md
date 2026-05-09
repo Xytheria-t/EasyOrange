@@ -20,13 +20,12 @@ payment/
 │       └── persistence/
 │           ├── MybatisPaymentRepository.java
 │           ├── MybatisIdempotencyKeyRepository.java
-│           ├── JdbcDomainEventStore.java    # Outbox 事件存储
+│           ├── JdbcDomainEventStore.java    # Outbox 事件存储 (委托 Framework OutboxRepository)
 │           ├── PaymentConfigRepository.java
 │           ├── converter/
-│           │   ├── PaymentConverter.java
-│           │   └── DomainEventConverter.java
-│           ├── mapper/                      # PaymentMapper, DomainEventMapper, etc.
-│           └── po/                          # PaymentPO, DomainEventPO, IdempotencyKeyPO, PaymentConfigPO
+│           │   └── PaymentConverter.java
+│           ├── mapper/                      # PaymentMapper, IdempotencyKeyMapper, PaymentConfigMapper
+│           └── po/                          # PaymentPO, IdempotencyKeyPO, PaymentConfigPO
 ├── application/
 │   ├── command/                             # 命令 (CQRS Write)
 │   │   ├── PaymentCommandHandler.java
@@ -40,8 +39,7 @@ payment/
 │   │   └── PaymentView.java
 │   ├── event/
 │   │   ├── OutboxEventPublisher.java        # Outbox 模式事件发布
-│   │   ├── DomainEventCompensator.java      # 事件补偿 (未投递事件重试)
-│   │   └── PaymentEventListener.java
+│   │   └── PaymentEventListener.java        # 领域事件持久化到 Outbox
 │   ├── idempotency/
 │   │   └── IdempotencyService.java          # 幂等服务 (SHA-256 请求哈希)
 │   ├── lock/
@@ -72,13 +70,12 @@ payment/
 │   │   ├── PaymentSucceededEvent.java
 │   │   ├── PaymentFailedEvent.java
 │   │   ├── PaymentRefundedEvent.java
-│   │   ├── PaymentClosedEvent.java
-│   │   └── StoredEvent.java
+│   │   └── PaymentClosedEvent.java
 │   ├── port/output/
 │   │   ├── PaymentRepositoryPort.java       # 支付仓储端口
 │   │   ├── PaymentQueryRepositoryPort.java  # 查询仓储端口
 │   │   ├── PaymentGatewayPort.java          # 支付网关端口
-│   │   ├── DomainEventStorePort.java        # 事件存储端口 (Outbox)
+│   │   ├── DomainEventStorePort.java        # 事件存储端口 (Outbox, 使用 Framework OutboxMessage)
 │   │   ├── IdempotencyKeyRepositoryPort.java # 幂等键仓储端口
 │   │   ├── CallbackSignatureVerifierPort.java # 回调签名验证端口
 │   │   ├── PaymentResult.java, RefundResult.java
@@ -107,8 +104,8 @@ payment/
 
 1. 业务操作与事件存储在同一事务中 (`DomainEventStorePort`)
 2. `OutboxEventPublisher` 异步扫描未投递事件并发布
-3. `DomainEventCompensator` 补偿投递失败的事件
-4. 事件存储在 `eo_domain_event` 表，状态: PENDING → PUBLISHED → FAILED
+3. 事件存储在 `eo_domain_event` 表，状态: PENDING → PUBLISHED → FAILED
+4. 事件实体统一使用 Framework 模块的 `OutboxMessage`
 
 ## 幂等保护
 
@@ -146,9 +143,8 @@ REFUNDED (部分/全额)
 
 1. 创建事件类继承 `BaseDomainEvent`
 2. `PaymentAggregate` 中发布事件
-3. `DomainEventConverter` 添加序列化
-4. 添加事件监听器
-5. 测试
+3. `PaymentEventListener` 自动持久化到 Outbox
+4. 测试
 
 ## 安全要点
 

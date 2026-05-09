@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort.P
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,7 +57,7 @@ class CreateOrderSagaCompensationTest {
     private DomainEventPublisher eventPublisher;
 
     @Mock
-    private OrderCacheService orderCacheService;
+    private OrderCachePort orderCachePort;
 
     @Mock
     private RedisCache redisCache;
@@ -76,7 +76,7 @@ class CreateOrderSagaCompensationTest {
     @BeforeEach
     void setUp() {
         saga = new CreateOrderSaga(orderRepository, productInventoryPort, paymentGatewayPort, 
-                eventPublisher, orderCacheService, redisCache, sagaRepository, objectMapper);
+                eventPublisher, orderCachePort, redisCache, sagaRepository, objectMapper);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
@@ -96,7 +96,7 @@ class CreateOrderSagaCompensationTest {
         command.setPhone("13800138000");
         command.setRemark("备注");
 
-        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true);
+        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
         when(productInventoryPort.getSnapshot(100L)).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn(1L);
 
@@ -117,7 +117,7 @@ class CreateOrderSagaCompensationTest {
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 
-        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true);
+        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
         when(productInventoryPort.getSnapshot(100L)).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 

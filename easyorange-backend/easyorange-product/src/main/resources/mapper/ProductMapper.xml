@@ -62,8 +62,17 @@
     </select>
 
     <update id="batchAddViewCounts">
-        <foreach collection="viewCounts" item="count" index="productId" separator=";">
-            UPDATE eo_product SET view_count = view_count + #{count} WHERE id = #{productId}
+        UPDATE eo_product 
+        SET view_count = view_count + 
+            CASE id 
+                <foreach collection="viewCounts" item="count" index="productId">
+                    WHEN #{productId} THEN #{count}
+                </foreach>
+                ELSE 0
+            END
+        WHERE id IN
+        <foreach collection="viewCounts" item="count" index="productId" open="(" separator="," close=")">
+            #{productId}
         </foreach>
     </update>
 

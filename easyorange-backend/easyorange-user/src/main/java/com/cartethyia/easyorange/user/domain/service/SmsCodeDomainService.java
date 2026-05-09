@@ -4,9 +4,12 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.port.output.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.output.SmsRateLimitPort;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import lombok.RequiredArgsConstructor;
+
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 
+@RequiredArgsConstructor
 public class SmsCodeDomainService {
 
     private static final int CODE_LENGTH = 6;
@@ -17,11 +20,6 @@ public class SmsCodeDomainService {
 
     private final SmsCodePort smsCodePort;
     private final SmsRateLimitPort rateLimitPort;
-
-    public SmsCodeDomainService(SmsCodePort smsCodePort, SmsRateLimitPort rateLimitPort) {
-        this.smsCodePort = smsCodePort;
-        this.rateLimitPort = rateLimitPort;
-    }
 
     public void sendCode(String phone) {
         if (rateLimitPort.isSendLimited(phone)) {

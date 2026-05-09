@@ -54,7 +54,7 @@ public class ProductController {
 
     @PutMapping("/{productId}/decrement-stock")
     public Result<Void> decrementStock(@PathVariable Long productId) {
-        commandService.decrementStock(new DecrementStockCommand(productId));
+        commandService.decrementStock(new DecrementStockCommand(productId, 1));
         return Result.success();
     }
 

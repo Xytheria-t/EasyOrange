@@ -143,7 +143,7 @@ class ProductCommandServiceTest {
             mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
-            commandService.decrementStock(new DecrementStockCommand(1L));
+            commandService.decrementStock(new DecrementStockCommand(1L, 1));
 
             verify(productCachePort).evictProductCache(1L);
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));

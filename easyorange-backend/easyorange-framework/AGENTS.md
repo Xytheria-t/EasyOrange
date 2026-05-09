@@ -45,6 +45,19 @@ framework/
 │   ├── DomainEventPersistenceService.java # 事件持久化
 │   └── idempotency/
 │       └── EventIdempotencyChecker.java  # 事件幂等校验
+├── outbox/                  # Outbox 模式 (事件可靠投递，统一入口)
+│   ├── util/
+│   │   └── OutboxEventUtils.java        # 共享工具 (反序列化+截断)
+│   ├── entity/
+│   │   ├── OutboxMessage.java           # 领域模型
+│   │   └── OutboxMessagePO.java         # 持久化实体 (唯一 PO 映射 eo_domain_event)
+│   ├── mapper/
+│   │   └── OutboxMessageMapper.java     # MyBatis Mapper
+│   ├── repository/
+│   │   └── OutboxRepository.java        # 仓储实现
+│   └── publisher/
+│       ├── OutboxEventPublisher.java    # 事件存储 + 定时扫描发布 (5s间隔, 唯一任务)
+│       └── OutboxDomainEventPublisherImpl.java
 ├── exception/
 │   ├── GlobalExceptionHandler.java  # 全局异常处理
 │   └── CacheTypeMismatchException.java
@@ -126,3 +139,6 @@ RedisCache.unlock(key, value)
 - Redis Key 命名规范: `eo:模块:业务:标识`
 - 线程池配置影响事件发布和异步操作，调优需谨慎
 - 新增 AOP 切面需评估性能影响
+- **JacksonConfig 同时配置了 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper`**：Spring Boot 4.0 默认使用 Jackson 3.x 作为 HTTP 消息转换器，两者都必须注册 `ToStringSerializer` 才能防止 Long 类型精度丢失。`JsonMapperBuilderCustomizer` 用于自动配置，`jsonMapper()` Bean 直接构建时也需添加模块
+- **JacksonConfig 的 ObjectMapper 注册了 ParameterNamesModule**，领域事件类无需 @JsonCreator 注解即可反序列化；修改 JacksonConfig 时勿遗漏此模块
+- **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效

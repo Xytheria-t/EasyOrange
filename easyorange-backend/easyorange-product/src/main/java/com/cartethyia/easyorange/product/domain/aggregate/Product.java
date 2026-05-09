@@ -245,10 +245,14 @@ public class Product {
     }
 
     public void decrementStock() {
+        decrementStock(1);
+    }
+
+    public void decrementStock(int quantity) {
         if (!hasStock()) {
             throw new InsufficientStockException("商品库存不足", id, stock);
         }
-        this.stock = stock.decrease();
+        this.stock = stock.decrease(quantity);
         touch();
         addDomainEvent(new StockDecreasedEvent(id.value()));
     }

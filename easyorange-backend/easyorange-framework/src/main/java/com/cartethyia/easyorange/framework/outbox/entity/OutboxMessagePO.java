@@ -1,18 +1,23 @@
-package com.cartethyia.easyorange.payment.domain.event;
+package com.cartethyia.easyorange.framework.outbox.entity;
 
+import com.baomidou.mybatisplus.annotation.TableName;
+import com.cartethyia.easyorange.framework.entity.BaseDO;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StoredEvent {
+@EqualsAndHashCode(callSuper = true)
+@TableName("eo_domain_event")
+public class OutboxMessagePO extends BaseDO {
 
     private UUID eventId;
     private String aggregateType;
@@ -22,8 +27,5 @@ public class StoredEvent {
     private String status;
     private Instant createdAt;
     private Instant publishedAt;
-
-    public static final String STATUS_PENDING = "PENDING";
-    public static final String STATUS_PUBLISHED = "PUBLISHED";
-    public static final String STATUS_FAILED = "FAILED";
+    private String errorMessage;
 }

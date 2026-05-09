@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.infrastructure.cache;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,8 +19,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -28,14 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
 @Testcontainers
 @Tag("integration")
-@DisplayName("OrderCacheService 性能测试")
+@DisplayName("OrderCachePort 性能测试")
 class OrderCacheServicePerformanceTest {
 
     @Container
     static GenericContainer<?> redisContainer = new GenericContainer<>(
         DockerImageName.parse("redis:7-alpine")
     )
-        .withExposedPorts(6379);
+    .withExposedPorts(6379);
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -44,7 +47,7 @@ class OrderCacheServicePerformanceTest {
     }
 
     @Autowired
-    private OrderCacheService orderCacheService;
+    private OrderCachePort orderCachePort;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -66,16 +69,16 @@ class OrderCacheServicePerformanceTest {
         void orderListCache_hitRate(TestInfo testInfo) {
             Long userId = 1L;
             Integer status = 0;
-            String cacheKey = orderCacheService.buildOrderListKey(userId, status, 1, 10);
+            String cacheKey = orderCachePort.buildOrderListKey(userId, status, 1, 10);
 
             PageResult<OrderVO> mockResult = createMockOrderList(10);
-            orderCacheService.setOrderListCache(cacheKey, mockResult);
+            orderCachePort.putOrderList(cacheKey, mockResult);
 
             int hits = 0;
             int misses = 0;
 
             for (int i = 0; i < 100; i++) {
-                var result = orderCacheService.getOrderListCache(cacheKey);
+                var result = orderCachePort.getOrderList(cacheKey);
                 if (result.isPresent()) {
                     hits++;
                 } else {
@@ -97,13 +100,13 @@ class OrderCacheServicePerformanceTest {
             Long orderId = 1L;
             OrderVO mockOrder = createMockOrder(orderId);
 
-            orderCacheService.setOrderDetailCache(mockOrder);
+            orderCachePort.putOrderDetail(orderId, mockOrder);
 
             int hits = 0;
             int misses = 0;
 
             for (int i = 0; i < 100; i++) {
-                var result = orderCacheService.getOrderDetailCache(orderId);
+                var result = orderCachePort.getOrderDetail(orderId);
                 if (result.isPresent()) {
                     hits++;
                 } else {
@@ -128,17 +131,17 @@ class OrderCacheServicePerformanceTest {
         @DisplayName("缓存读取性能")
         void cacheRead_performance(TestInfo testInfo) {
             Long userId = 1L;
-            String cacheKey = orderCacheService.buildOrderListKey(userId, 0, 1, 10);
+            String cacheKey = orderCachePort.buildOrderListKey(userId, 0, 1, 10);
             PageResult<OrderVO> mockResult = createMockOrderList(10);
-            orderCacheService.setOrderListCache(cacheKey, mockResult);
+            orderCachePort.putOrderList(cacheKey, mockResult);
 
             for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-                orderCacheService.getOrderListCache(cacheKey);
+                orderCachePort.getOrderList(cacheKey);
             }
 
             long startTime = System.nanoTime();
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
-                orderCacheService.getOrderListCache(cacheKey);
+                orderCachePort.getOrderList(cacheKey);
             }
             long endTime = System.nanoTime();
 
@@ -155,14 +158,14 @@ class OrderCacheServicePerformanceTest {
         @DisplayName("缓存写入性能")
         void cacheWrite_performance(TestInfo testInfo) {
             for (int i = 0; i < WARMUP_ITERATIONS; i++) {
-                String cacheKey = orderCacheService.buildOrderListKey((long) i, 0, 1, 10);
-                orderCacheService.setOrderListCache(cacheKey, createMockOrderList(10));
+                String cacheKey = orderCachePort.buildOrderListKey((long) i, 0, 1, 10);
+                orderCachePort.putOrderList(cacheKey, createMockOrderList(10));
             }
 
             long startTime = System.nanoTime();
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
-                String cacheKey = orderCacheService.buildOrderListKey((long) (i + WARMUP_ITERATIONS), 0, 1, 10);
-                orderCacheService.setOrderListCache(cacheKey, createMockOrderList(10));
+                String cacheKey = orderCachePort.buildOrderListKey((long) (i + WARMUP_ITERATIONS), 0, 1, 10);
+                orderCachePort.putOrderList(cacheKey, createMockOrderList(10));
             }
             long endTime = System.nanoTime();
 
@@ -180,14 +183,14 @@ class OrderCacheServicePerformanceTest {
         void cacheDelete_performance(TestInfo testInfo) {
             List<String> keys = new ArrayList<>();
             for (int i = 0; i < MEASUREMENT_ITERATIONS; i++) {
-                String cacheKey = orderCacheService.buildOrderListKey((long) i, 0, 1, 10);
-                orderCacheService.setOrderListCache(cacheKey, createMockOrderList(10));
+                String cacheKey = orderCachePort.buildOrderListKey((long) i, 0, 1, 10);
+                orderCachePort.putOrderList(cacheKey, createMockOrderList(10));
                 keys.add(cacheKey);
             }
 
             long startTime = System.nanoTime();
             for (String key : keys) {
-                orderCacheService.deleteOrderListCache(key);
+                orderCachePort.evictOrderList(key);
             }
             long endTime = System.nanoTime();
 
@@ -212,19 +215,19 @@ class OrderCacheServicePerformanceTest {
 
             for (int status = 0; status <= 5; status++) {
                 for (int page = 1; page <= 3; page++) {
-                    String cacheKey = orderCacheService.buildOrderListKey(userId, status, page, 10);
-                    orderCacheService.setOrderListCache(cacheKey, createMockOrderList(10));
+                    String cacheKey = orderCachePort.buildOrderListKey(userId, status, page, 10);
+                    orderCachePort.putOrderList(cacheKey, createMockOrderList(10));
                 }
             }
 
-            String allStatusKey = orderCacheService.buildOrderListKey(userId, null, 1, 10);
-            orderCacheService.setOrderListCache(allStatusKey, createMockOrderList(10));
+            String allStatusKey = orderCachePort.buildOrderListKey(userId, null, 1, 10);
+            orderCachePort.putOrderList(allStatusKey, createMockOrderList(10));
 
             int totalKeys = 0;
             for (int status = 0; status <= 5; status++) {
                 for (int page = 1; page <= 3; page++) {
-                    String cacheKey = orderCacheService.buildOrderListKey(userId, status, page, 10);
-                    if (orderCacheService.getOrderListCache(cacheKey).isPresent()) {
+                    String cacheKey = orderCachePort.buildOrderListKey(userId, status, page, 10);
+                    if (orderCachePort.getOrderList(cacheKey).isPresent()) {
                         totalKeys++;
                     }
                 }
@@ -243,24 +246,24 @@ class OrderCacheServicePerformanceTest {
             Long sellerId = 2L;
 
             for (int status = 0; status <= 5; status++) {
-                String buyerKey = orderCacheService.buildOrderListKey(buyerId, status, 1, 10);
-                orderCacheService.setOrderListCache(buyerKey, createMockOrderList(10));
+                String buyerKey = orderCachePort.buildOrderListKey(buyerId, status, 1, 10);
+                orderCachePort.putOrderList(buyerKey, createMockOrderList(10));
 
-                String sellerKey = orderCacheService.buildOrderListKey(sellerId, status, 1, 10);
-                orderCacheService.setOrderListCache(sellerKey, createMockOrderList(10));
+                String sellerKey = orderCachePort.buildOrderListKey(sellerId, status, 1, 10);
+                orderCachePort.putOrderList(sellerKey, createMockOrderList(10));
             }
 
-            orderCacheService.deleteOrderCache(buyerId, sellerId);
+            orderCachePort.evictOrderCache(buyerId, sellerId);
 
             int remainingKeys = 0;
             for (int status = 0; status <= 5; status++) {
-                String buyerKey = orderCacheService.buildOrderListKey(buyerId, status, 1, 10);
-                if (orderCacheService.getOrderListCache(buyerKey).isPresent()) {
+                String buyerKey = orderCachePort.buildOrderListKey(buyerId, status, 1, 10);
+                if (orderCachePort.getOrderList(buyerKey).isPresent()) {
                     remainingKeys++;
                 }
 
-                String sellerKey = orderCacheService.buildOrderListKey(sellerId, status, 1, 10);
-                if (orderCacheService.getOrderListCache(sellerKey).isPresent()) {
+                String sellerKey = orderCachePort.buildOrderListKey(sellerId, status, 1, 10);
+                if (orderCachePort.getOrderList(sellerKey).isPresent()) {
                     remainingKeys++;
                 }
             }
@@ -269,27 +272,6 @@ class OrderCacheServicePerformanceTest {
                 testInfo.getDisplayName(), remainingKeys);
 
             assertThat(remainingKeys).isEqualTo(0);
-        }
-
-        @Test
-        @DisplayName("缓存预热效果")
-        void cacheWarmUp_effectiveness(TestInfo testInfo) {
-            Long userId = 1L;
-
-            orderCacheService.warmUpCache(userId);
-
-            int warmedUpKeys = 0;
-            for (int status = 0; status <= 5; status++) {
-                String cacheKey = orderCacheService.buildOrderListKey(userId, status, 1, 10);
-                if (orderCacheService.getOrderListCache(cacheKey).isPresent()) {
-                    warmedUpKeys++;
-                }
-            }
-
-            System.out.printf("[%s] 预热后缓存键数量: %d (预期: 6)%n",
-                testInfo.getDisplayName(), warmedUpKeys);
-
-            assertThat(warmedUpKeys).isEqualTo(6);
         }
     }
 
@@ -301,8 +283,8 @@ class OrderCacheServicePerformanceTest {
         @DisplayName("并发读取性能")
         void concurrentRead_performance(TestInfo testInfo) throws InterruptedException {
             Long userId = 1L;
-            String cacheKey = orderCacheService.buildOrderListKey(userId, 0, 1, 10);
-            orderCacheService.setOrderListCache(cacheKey, createMockOrderList(10));
+            String cacheKey = orderCachePort.buildOrderListKey(userId, 0, 1, 10);
+            orderCachePort.putOrderList(cacheKey, createMockOrderList(10));
 
             int threadCount = 10;
             int iterationsPerThread = 100;
@@ -313,7 +295,7 @@ class OrderCacheServicePerformanceTest {
             for (int i = 0; i < threadCount; i++) {
                 Thread thread = new Thread(() -> {
                     for (int j = 0; j < iterationsPerThread; j++) {
-                        orderCacheService.getOrderListCache(cacheKey);
+                        orderCachePort.getOrderList(cacheKey);
                     }
                 });
                 threads.add(thread);
@@ -349,8 +331,8 @@ class OrderCacheServicePerformanceTest {
                 Thread thread = new Thread(() -> {
                     for (int j = 0; j < iterationsPerThread; j++) {
                         Long userId = (long) (threadId * iterationsPerThread + j);
-                        String cacheKey = orderCacheService.buildOrderListKey(userId, 0, 1, 10);
-                        orderCacheService.setOrderListCache(cacheKey, createMockOrderList(10));
+                        String cacheKey = orderCachePort.buildOrderListKey(userId, 0, 1, 10);
+                        orderCachePort.putOrderList(cacheKey, createMockOrderList(10));
                     }
                 });
                 threads.add(thread);
@@ -387,7 +369,7 @@ class OrderCacheServicePerformanceTest {
                 .buyerId(1L)
                 .sellerId(2L)
                 .productId(100L)
-                .amount(new java.math.BigDecimal("99.99"))
+                .amount(new BigDecimal("99.99"))
                 .status(0)
                 .address("测试地址")
                 .phone("13800138000")

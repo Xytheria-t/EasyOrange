@@ -35,13 +35,19 @@ public class OperLogArchiveService {
      * 删除超过保留天数的操作日志
      */
     @Scheduled(cron = "0 0 3 * * ?")
-    @Transactional
     public void cleanupExpiredLogs() {
         try {
             LocalDateTime expireDate = LocalDateTime.now().minusDays(retentionDays);
-            int deletedCount = sysOperLogMapper.deleteExpiredLogs(expireDate);
+            int totalDeleted = 0;
+            int deleted;
+            
+            do {
+                deleted = sysOperLogMapper.deleteExpiredLogs(expireDate);
+                totalDeleted += deleted;
+            } while (deleted > 0);
+            
             log.info("Cleaned up {} expired operation logs (older than {} days)",
-                    deletedCount, retentionDays);
+                    totalDeleted, retentionDays);
         } catch (Exception e) {
             log.error("Failed to cleanup expired operation logs", e);
         }
@@ -52,7 +58,6 @@ public class OperLogArchiveService {
      * 将超过保留天数的日志迁移到 sys_oper_log_archive 表后删除
      */
     @Scheduled(cron = "0 0 2 1 * ?")
-    @Transactional
     public void archiveOldLogs() {
         try {
             LocalDateTime archiveDate = LocalDateTime.now().minusDays(retentionDays);
@@ -65,15 +70,14 @@ public class OperLogArchiveService {
                     break;
                 }
 
-                // 批量插入归档表
                 sysOperLogMapper.batchInsertArchive(logsToArchive);
                 totalArchived += logsToArchive.size();
                 batchCount++;
 
-                // 删除已归档的记录
-                for (SysOperLog logItem : logsToArchive) {
-                    sysOperLogMapper.deleteById(logItem.getOperId());
-                }
+                List<Long> idsToDelete = logsToArchive.stream()
+                        .map(SysOperLog::getOperId)
+                        .toList();
+                sysOperLogMapper.deleteBatchIds(idsToDelete);
 
                 log.info("Archived batch #{}: {} logs", batchCount, logsToArchive.size());
             }

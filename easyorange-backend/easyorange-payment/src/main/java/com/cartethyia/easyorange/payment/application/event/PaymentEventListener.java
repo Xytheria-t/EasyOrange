@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.payment.application.event;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
 import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
-import com.cartethyia.easyorange.payment.domain.event.StoredEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
@@ -60,16 +60,16 @@ public class PaymentEventListener {
     private void persistEvent(BaseDomainEvent event, Long aggregateId) {
         try {
             String payload = objectMapper.writeValueAsString(event);
-            StoredEvent storedEvent = StoredEvent.builder()
+            OutboxMessage outboxMessage = OutboxMessage.builder()
                     .eventId(UUID.fromString(event.getEventId()))
                     .aggregateType(event.getAggregateType())
                     .aggregateId(aggregateId)
                     .eventType(event.getClass().getName())
                     .payload(payload)
-                    .status(StoredEvent.STATUS_PENDING)
+                    .status(OutboxMessage.STATUS_PENDING)
                     .createdAt(event.getOccurredOn() != null ? event.getOccurredOn() : Instant.now())
                     .build();
-            eventStore.store(storedEvent);
+            eventStore.store(outboxMessage);
         } catch (JacksonException e) {
             log.error("领域事件持久化失败 eventType={} eventId={}", event.eventType(), event.getEventId(), e);
         }

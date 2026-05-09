@@ -108,7 +108,8 @@ public class ProductCommandService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        product.decrementStock();
+        int quantity = command.getQuantity() != null ? command.getQuantity() : 1;
+        product.decrementStock(quantity);
         productRepository.update(product);
         publishEvents(product);
         productCachePort.evictProductCache(productId.value());

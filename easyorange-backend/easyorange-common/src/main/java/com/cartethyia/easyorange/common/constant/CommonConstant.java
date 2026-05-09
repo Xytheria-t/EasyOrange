@@ -22,9 +22,9 @@ public class CommonConstant {
 
     public static final int DEFAULT_TOKEN_EXPIRE_SECONDS = 86400;
 
-    public static final String SUCCESS_CODE = "0";
+    public static final String SUCCESS_CODE = "A0000";
 
-    public static final String FAIL_CODE = "1";
+    public static final String FAIL_CODE = "B0001";
 
     public static final int FILE_STATUS_NORMAL = 0;
 

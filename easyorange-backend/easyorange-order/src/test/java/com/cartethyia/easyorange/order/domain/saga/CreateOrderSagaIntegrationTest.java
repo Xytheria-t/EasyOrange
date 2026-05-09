@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
-import com.cartethyia.easyorange.order.infrastructure.cache.OrderCacheService;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -76,7 +76,7 @@ class CreateOrderSagaIntegrationTest {
     private DomainEventPublisher eventPublisher;
 
     @MockitoBean
-    private OrderCacheService orderCacheService;
+    private OrderCachePort orderCachePort;
 
     @MockitoBean
     private RedisCache redisCache;
@@ -91,7 +91,7 @@ class CreateOrderSagaIntegrationTest {
             .thenReturn(true);
         when(productInventoryPort.getSnapshot(PRODUCT_ID))
             .thenReturn(Optional.of(new ProductInventoryPort.ProductSnapshot(
-                PRODUCT_ID, SELLER_ID, new BigDecimal("99.99"), true, true
+                PRODUCT_ID, SELLER_ID, new BigDecimal("99.99"), true, true, "北京"
             )));
         when(paymentGatewayPort.createPayment(any()))
             .thenReturn(1L);
@@ -184,7 +184,7 @@ class CreateOrderSagaIntegrationTest {
         void execute_productNotAvailable_throws() {
             when(productInventoryPort.getSnapshot(PRODUCT_ID))
                 .thenReturn(Optional.of(new ProductInventoryPort.ProductSnapshot(
-                    PRODUCT_ID, SELLER_ID, new BigDecimal("99.99"), false, true
+                    PRODUCT_ID, SELLER_ID, new BigDecimal("99.99"), false, true, "上海"
                 )));
 
             CreateOrderCommand command = new CreateOrderCommand();

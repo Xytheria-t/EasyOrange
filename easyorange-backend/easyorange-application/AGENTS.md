@@ -9,6 +9,21 @@ application/
 ├── src/main/java/
 │   └── com/cartethyia/easyorange/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
+│       ├── adapter/
+│       │   ├── event/                     # 跨模块事件监听器
+│       │   │   ├── PaymentEventListener.java
+│       │   │   └── ProductEventListener.java
+│       │   └── outbound/                  # 跨模块适配器实现
+│       │       ├── payment/
+│       │       │   └── OrderPaymentGatewayAdapter.java
+│       │       ├── product/
+│       │       │   ├── FavoriteProductInfoAdapter.java
+│       │       │   ├── OrderProductInventoryAdapter.java
+│       │       │   └── OrderProductQueryAdapter.java
+│       │       └── user/
+│       │           ├── MessageUserInfoAdapter.java
+│       │           ├── OrderUserInfoAdapter.java
+│       │           └── SellerInfoAdapter.java
 │       └── controller/
 │           ├── HealthController.java      # 健康检查
 │           └── PlatformStatsController.java # 平台统计
@@ -83,7 +98,32 @@ easyorange-application
 - domain 层不依赖 adapter 层
 - domain 层不依赖 Spring 框架
 - 包依赖方向合规
+- 端口接口必须有适配器实现
+- 业务模块不直接导入其他模块的领域类
 - 已知违规项在白名单中标注，附带演进计划
+
+## 跨模块适配器
+
+`adapter/outbound/` 目录存放跨模块端口接口的适配器实现：
+
+| 适配器 | 端口接口 | 模块 | 功能 |
+|--------|---------|------|------|
+| `OrderPaymentGatewayAdapter` | `PaymentGatewayPort` | order | 支付网关调用 |
+| `OrderProductInventoryAdapter` | `ProductInventoryPort` | order | 商品库存操作 |
+| `OrderProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
+| `OrderUserInfoAdapter` | `UserInfoPort` | order | 用户信息查询 |
+| `SellerInfoAdapter` | `SellerInfoPort` | product | 卖家信息查询 |
+| `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
+| `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
+
+`adapter/event/` 目录存放跨模块事件监听器：
+
+| 监听器 | 事件 | 功能 |
+|--------|------|------|
+| `PaymentInitiationEventListener` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
+| `StockReservationEventListener` | `StockReservationRequestedEvent` | 扣减库存 |
+
+所有事件监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
 
 ## 常见开发任务
 

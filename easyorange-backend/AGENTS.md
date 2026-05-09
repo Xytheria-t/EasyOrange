@@ -70,14 +70,26 @@ public Long register(RegisterRequest request) { ... }
 
 ## 跨模块通信
 
-**当前状态**：部分模块存在直接 Maven 依赖（order→product/user/payment, product→user, message→user, favorite→product）
+**当前状态 (2026-05-09)**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。
 
 **隔离方式**：
-- 被调用方定义 `port/output/` 接口（如 `ProductInventoryPort`）
-- 调用方在 `adapter/outbound/messaging/` 实现适配器（如 `ProductInventoryAdapter`）
-- 或通过 ACL 服务隔离（如 favorite 的 `ProductAclService`）
+- 调用方模块定义 `domain/port/output/` 接口（如 `ProductInventoryPort`）
+- 适配器实现在 `easyorange-application/adapter/outbound/` 包下
+- Maven 依赖标记为 `<optional>true</optional>` 实现编译期隔离
 
-**演进方向**：逐步消除直接 Maven 依赖，改为事件驱动 + Outbox 模式
+**事件驱动**：
+- 写操作通过领域事件解耦（如 `PaymentInitiationRequestedEvent`、`StockReservationRequestedEvent`）
+- 事件监听器在 `easyorange-application/adapter/event/` 包下
+- 使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式
+- Outbox 模式保证事件可靠投递（`framework/outbox/`）
+
+**查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
+
+**事件流**：
+```
+OrderCreatedEvent → OrderCreatedEventSubscriber → StockReservationRequestedEvent → StockReservationEventListener → ProductCommandService.decrementStock()
+PaymentInitiationRequestedEvent → PaymentInitiationEventListener → PaymentCommandHandler.handle()
+```
 
 ## 统一响应格式
 
@@ -150,3 +162,36 @@ public class BaseDO {
 - 防重: `@RepeatSubmit`
 - XSS: `XssFilter` + `XssHttpServletRequestWrapper`
 - CORS: 生产环境严格白名单
+
+## 踩坑警示
+
+### MyBatis-Plus UUID TypeHandler
+
+MyBatis-Plus **没有内置** `java.util.UUID` 的 TypeHandler。如果 PO 类中有 `UUID` 字段（如 `OutboxMessagePO.eventId`），直接 insert/update 会报：
+
+```
+Type handler was null on parameter mapping for property 'eventId'. javaType=UUID
+```
+
+**解决方案（已配置）**：
+1. 自定义 `UuidTypeHandler extends BaseTypeHandler<UUID>`（位于 `framework/config/database/`）
+2. 在 `application.yaml` 的 `mybatis-plus:` 下配置 `type-handlers-package: com.cartethyia.easyorange.framework.config.database`
+3. 数据库侧对应列类型为 `CHAR(36)`
+
+**注意**：新增 PO 的 UUID 字段时无需额外配置，全局 TypeHandler 会自动生效。
+
+### Jackson 领域事件反序列化
+
+所有领域事件类（如 `PaymentCreatedEvent`、`OrderCreatedEvent`）只有参数化构造器，无 `@JsonCreator` / `@JsonProperty` 注解。反序列化依赖 **ParameterNamesModule** 通过构造器参数名推断属性映射。
+
+如果移除 `JacksonConfig` 中的 `ParameterNamesModule` 或遗漏 `jackson-module-parameter-names` 依赖，Outbox 补偿器和发布器反序列化事件时会报：
+
+```
+InvalidDefinitionException: Cannot construct instance of XxxEvent (no Creators, like default constructor, exist)
+```
+
+**已配置位置**：
+1. `framework/pom.xml` — `jackson-module-parameter-names` 依赖
+2. `framework/.../JacksonConfig.java` — `mapper.registerModule(new ParameterNamesModule())`
+
+**注意**：新增领域事件类时无需添加任何 Jackson 注解，遵循现有模式即可。

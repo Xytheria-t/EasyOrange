@@ -215,6 +215,7 @@ public class CreateOrderSaga {
                         if (aggregate.canCancel()) {
                             OrderAggregate.OrderCancelledResult result = aggregate.cancel("Saga 补偿取消");
                             orderRepository.update(result.aggregate());
+                            orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
                         } else {
                             log.warn("Saga: 订单状态不允许取消补偿 orderId={} status={}", orderId.value(), aggregate.status());
                         }

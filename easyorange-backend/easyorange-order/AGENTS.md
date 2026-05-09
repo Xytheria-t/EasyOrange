@@ -134,7 +134,7 @@ CreateOrderSaga.execute():
 | `UserInfoPort` | `UserInfoAdapter` | user |
 | `OrderCachePort` | `RedisOrderCacheAdapter` | Redis |
 
-当前仍存在直接 Maven 依赖，演进方向为完全通过 Port 接口 + 事件驱动解耦。
+所有跨模块依赖已标记为 `<optional>true</optional>`，通过 Port 接口 + 适配器模式完全隔离。
 
 ## 订单状态机
 

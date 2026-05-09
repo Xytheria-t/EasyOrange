@@ -1,19 +1,13 @@
 package com.cartethyia.easyorange.payment.domain.port.output;
 
+import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
 import java.util.List;
 import java.util.UUID;
 
-import com.cartethyia.easyorange.payment.domain.event.StoredEvent;
-
 public interface DomainEventStorePort {
-
-    void store(StoredEvent event);
-
-    List<StoredEvent> findUnpublished(int limit);
-
-    List<StoredEvent> findPendingEvents(int limit);
-
+    void store(OutboxMessage event);
+    List<OutboxMessage> findUnpublished(int limit);
+    List<OutboxMessage> findPendingEvents(int limit);
     void markAsPublished(UUID eventId);
-
     void markAsFailed(UUID eventId, String errorMessage);
 }

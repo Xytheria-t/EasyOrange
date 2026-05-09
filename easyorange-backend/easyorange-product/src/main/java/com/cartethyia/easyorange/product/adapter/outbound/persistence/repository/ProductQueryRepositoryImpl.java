@@ -6,9 +6,11 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
+import com.cartethyia.easyorange.product.application.service.SearchHistoryBufferService;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.HotKeywordDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
@@ -47,6 +49,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final SearchHistoryMapper searchHistoryMapper;
     private final HotKeywordMapper hotKeywordMapper;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SearchHistoryBufferService searchHistoryBufferService;
+    private final CategoryCachePort categoryCachePort;
 
     @Override
     public Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
@@ -95,13 +99,19 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     private List<Long> resolveCategoryIdsWithChildren(Long categoryId) {
-        List<CategoryDO> children = categoryMapper.selectList(
-                new LambdaQueryWrapper<CategoryDO>()
-                        .eq(CategoryDO::getParentId, categoryId)
-                        .eq(CategoryDO::getStatus, 1)
-        );
-        List<Long> ids = new java.util.ArrayList<>();
+        List<Long> ids = new ArrayList<>();
         ids.add(categoryId);
+        
+        List<CategoryDO> children = categoryCachePort.getCategoriesByParentId(categoryId)
+                .stream()
+                .filter(c -> c.status() != null && c.status() == 1)
+                .map(c -> {
+                    CategoryDO childDO = new CategoryDO();
+                    childDO.setId(c.id());
+                    return childDO;
+                })
+                .toList();
+        
         children.forEach(c -> ids.add(c.getId()));
         return ids;
     }
@@ -287,10 +297,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         redisTemplate.opsForList().leftPush(key, keyword);
         redisTemplate.opsForList().trim(key, 0, 19);
 
-        SearchHistoryDO historyDO = new SearchHistoryDO();
-        historyDO.setUserId(userId);
-        historyDO.setKeyword(keyword);
-        searchHistoryMapper.insert(historyDO);
+        searchHistoryBufferService.addToBuffer(userId, keyword);
     }
 
     @Override

@@ -1,23 +1,18 @@
-package com.cartethyia.easyorange.payment.adapter.outbound.persistence.po;
+package com.cartethyia.easyorange.framework.outbox.entity;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.framework.entity.BaseDO;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Data
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
-@TableName("eo_domain_event")
-public class DomainEventPO extends BaseDO {
+public class OutboxMessage {
 
     private UUID eventId;
     private String aggregateType;
@@ -27,4 +22,9 @@ public class DomainEventPO extends BaseDO {
     private String status;
     private Instant createdAt;
     private Instant publishedAt;
+    private String errorMessage;
+
+    public static final String STATUS_PENDING = "PENDING";
+    public static final String STATUS_PUBLISHED = "PUBLISHED";
+    public static final String STATUS_FAILED = "FAILED";
 }

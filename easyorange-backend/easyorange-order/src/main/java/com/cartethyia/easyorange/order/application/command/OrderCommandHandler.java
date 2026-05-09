@@ -73,6 +73,7 @@ public class OrderCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void handle(RefundOrderCommand command) {
         OrderAggregate aggregate = validateBuyerOrder(command.getOrderId());
+        BizRequire.requireTrue(aggregate.paymentStatus() == 1, OrderResultCode.ORDER_CANNOT_REFUND);
         OrderAggregate.OrderRefundedResult result = aggregate.refund(command.getReason());
 
         paymentGatewayPort.refundPayment(aggregate.id().value(), command.getReason());

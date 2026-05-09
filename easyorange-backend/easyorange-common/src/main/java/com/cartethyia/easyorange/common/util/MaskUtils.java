@@ -17,24 +17,24 @@ public class MaskUtils {
         }
         String[] parts = email.split("@");
         String name = parts[0];
-        if (name.length() <= 2) {
-            return "**@" + parts[1];
+        if (name.length() <= 1) {
+            return "****@" + parts[1];
         }
-        return name.substring(0, 2) + "***@" + parts[1];
+        return name.charAt(0) + "****@" + parts[1];
     }
 
     public static String maskIdCard(String idCard) {
-        if (idCard == null || idCard.length() < 8) {
+        if (idCard == null || idCard.length() < 15) {
             return idCard;
         }
-        return idCard.substring(0, 4) + "**********" + idCard.substring(idCard.length() - 4);
+        return idCard.substring(0, 6) + "********" + idCard.substring(idCard.length() - 4);
     }
 
     public static String maskBankCard(String bankCard) {
         if (bankCard == null || bankCard.length() < 8) {
             return bankCard;
         }
-        return "**** **** **** " + bankCard.substring(bankCard.length() - 4);
+        return bankCard.substring(0, 4) + "****" + bankCard.substring(bankCard.length() - 4);
     }
 
     public static String maskName(String name) {
@@ -47,7 +47,10 @@ public class MaskUtils {
         if (name.length() == 2) {
             return name.charAt(0) + "*";
         }
-        return name.charAt(0) + "*" + name.charAt(name.length() - 1);
+        if (name.length() == 3) {
+            return name.charAt(0) + "*" + name.charAt(2);
+        }
+        return name.substring(0, 2) + "****";
     }
 
     public static String maskAddress(String address) {
@@ -62,9 +65,7 @@ public class MaskUtils {
         if (address.length() <= visible) {
             return address;
         }
-        String visiblePart = address.substring(0, visible);
-        String maskedPart = "*".repeat(Math.min(address.length() - visible, 10));
-        return visiblePart + maskedPart;
+        return address.substring(0, visible) + "***";
     }
 
     public static String mask(String value, int keepFront, int keepEnd) {

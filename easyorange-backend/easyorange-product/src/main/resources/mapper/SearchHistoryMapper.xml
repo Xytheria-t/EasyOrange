@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.SearchHistoryMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO eo_search_history (id, user_id, keyword, search_time, create_time, update_time)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.userId}, #{item.keyword}, #{item.searchTime}, NOW(), NOW())
+        </foreach>
+    </insert>
+
+</mapper>

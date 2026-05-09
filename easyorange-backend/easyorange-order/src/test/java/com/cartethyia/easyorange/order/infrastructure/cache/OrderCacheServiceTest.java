@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.infrastructure.cache;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,6 @@ import org.springframework.data.redis.core.ValueOperations;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -28,25 +28,17 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("订单缓存服务测试")
+@DisplayName("订单缓存端口测试")
 class OrderCacheServiceTest {
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
-
-    @Mock
-    private ValueOperations<String, Object> valueOperations;
-
-    private OrderCacheService orderCacheService;
+    private OrderCachePort orderCachePort;
 
     private Long testBuyerId;
     private PageResult<OrderVO> testOrderPage;
 
     @BeforeEach
     void setUp() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-        orderCacheService = new OrderCacheService(redisTemplate);
-
         testBuyerId = 999999L;
 
         OrderVO order1 = OrderVO.builder()
@@ -72,151 +64,117 @@ class OrderCacheServiceTest {
 
     @Test
     @DisplayName("设置和获取订单列表缓存")
-    void testSetAndGetOrderListCache() {
-        String cacheKey = orderCacheService.buildOrderListKey(testBuyerId, 0);
-        when(valueOperations.get(cacheKey)).thenReturn(testOrderPage);
+    void testPutAndGetOrderListCache() {
+        String cacheKey = "eo:order:list:999999:status:0:page:1:size:10";
+        when(orderCachePort.getOrderList(cacheKey)).thenReturn(Optional.of(testOrderPage));
 
-        orderCacheService.setOrderListCache(cacheKey, testOrderPage);
-        Optional<PageResult<OrderVO>> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        orderCachePort.putOrderList(cacheKey, testOrderPage);
+        Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
 
         assertThat(cachedResult).isPresent();
         assertThat(cachedResult.get().records()).hasSize(2);
         assertThat(cachedResult.get().total()).isEqualTo(2);
 
-        verify(valueOperations).set(eq(cacheKey), eq(testOrderPage), eq(30L), eq(TimeUnit.MINUTES));
+        verify(orderCachePort).putOrderList(eq(cacheKey), eq(testOrderPage));
     }
 
     @Test
     @DisplayName("获取不存在的订单缓存")
     void testGetNonExistentOrderCache() {
-        String cacheKey = orderCacheService.buildOrderListKey(999998L, 0);
-        when(valueOperations.get(cacheKey)).thenReturn(null);
+        String cacheKey = "eo:order:list:999998:status:0:page:1:size:10";
+        when(orderCachePort.getOrderList(cacheKey)).thenReturn(Optional.empty());
 
-        Optional<PageResult<OrderVO>> cachedResult = orderCacheService.getOrderListCache(cacheKey);
+        Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
 
         assertThat(cachedResult).isEmpty();
     }
 
     @Test
     @DisplayName("删除订单列表缓存")
-    void testDeleteOrderListCache() {
-        String cacheKey = orderCacheService.buildOrderListKey(testBuyerId, 0);
-        when(redisTemplate.delete(cacheKey)).thenReturn(true);
+    void testEvictOrderListCache() {
+        String cacheKey = "eo:order:list:999999:status:0:page:1:size:10";
 
-        orderCacheService.deleteOrderListCache(cacheKey);
+        orderCachePort.evictOrderList(cacheKey);
 
-        verify(redisTemplate).delete(cacheKey);
+        verify(orderCachePort).evictOrderList(cacheKey);
     }
 
     @Test
     @DisplayName("buildOrderListKey 构建正确的缓存键")
     void testBuildOrderListKey() {
-        String keyWithStatus = orderCacheService.buildOrderListKey(123L, 1);
+        String keyWithStatus = orderCachePort.buildOrderListKey(123L, 1);
         assertThat(keyWithStatus).isEqualTo("eo:order:list:123:status:1:page:1:size:10");
 
-        String keyWithoutStatus = orderCacheService.buildOrderListKey(123L, null);
+        String keyWithoutStatus = orderCachePort.buildOrderListKey(123L, null);
         assertThat(keyWithoutStatus).isEqualTo("eo:order:list:123:status:all:page:1:size:10");
     }
 
     @Test
     @DisplayName("null cacheKey 不执行操作")
     void testNullCacheKey_skipsOperation() {
-        orderCacheService.setOrderListCache(null, testOrderPage);
-        orderCacheService.getOrderListCache(null);
-        orderCacheService.deleteOrderListCache(null);
+        orderCachePort.putOrderList(null, testOrderPage);
+        orderCachePort.getOrderList(null);
+        orderCachePort.evictOrderList(null);
 
-        verify(valueOperations, never()).set(any(), any(), any(Long.class), any(TimeUnit.class));
+        verify(orderCachePort, never()).putOrderList(isNull(), any());
     }
 
     @Test
-    @DisplayName("删除买家订单缓存")
-    void testDeleteBuyerOrderCache() {
+    @DisplayName("清除买家订单缓存")
+    void testEvictBuyerOrders() {
         Long buyerId = 123456L;
-        String pattern = "eo:order:list:" + buyerId + ":*";
-        Set<String> matchedKeys = Set.of(
-            "eo:order:list:" + buyerId + ":status:0:page:1:size:10",
-            "eo:order:list:" + buyerId + ":status:1:page:1:size:10"
-        );
-        when(redisTemplate.keys(pattern)).thenReturn(matchedKeys);
 
-        orderCacheService.deleteBuyerOrderCache(buyerId);
+        orderCachePort.evictBuyerOrders(buyerId);
 
-        verify(redisTemplate).keys(pattern);
-        verify(redisTemplate).delete(matchedKeys);
+        verify(orderCachePort).evictBuyerOrders(buyerId);
     }
 
     @Test
-    @DisplayName("删除卖家订单缓存")
-    void testDeleteSellerOrderCache() {
+    @DisplayName("清除卖家订单缓存")
+    void testEvictSellerOrders() {
         Long sellerId = 789012L;
-        String pattern = "eo:order:list:" + sellerId + ":*";
-        Set<String> matchedKeys = Set.of(
-            "eo:order:list:" + sellerId + ":status:0:page:1:size:10"
-        );
-        when(redisTemplate.keys(pattern)).thenReturn(matchedKeys);
 
-        orderCacheService.deleteSellerOrderCache(sellerId);
+        orderCachePort.evictSellerOrders(sellerId);
 
-        verify(redisTemplate).keys(pattern);
-        verify(redisTemplate).delete(matchedKeys);
+        verify(orderCachePort).evictSellerOrders(sellerId);
     }
 
     @Test
-    @DisplayName("删除订单缓存同时清除买家和卖家缓存")
-    void testDeleteOrderCache() {
+    @DisplayName("清除订单缓存同时清除买家和卖家缓存")
+    void testEvictOrderCache() {
         Long buyerId = 111222L;
         Long sellerId = 333444L;
-        String buyerPattern = "eo:order:list:" + buyerId + ":*";
-        String sellerPattern = "eo:order:list:" + sellerId + ":*";
-        Set<String> buyerKeys = Set.of("eo:order:list:" + buyerId + ":status:0:page:1:size:10");
-        Set<String> sellerKeys = Set.of("eo:order:list:" + sellerId + ":status:0:page:1:size:10");
-        when(redisTemplate.keys(buyerPattern)).thenReturn(buyerKeys);
-        when(redisTemplate.keys(sellerPattern)).thenReturn(sellerKeys);
 
-        orderCacheService.deleteOrderCache(buyerId, sellerId);
+        orderCachePort.evictOrderCache(buyerId, sellerId);
 
-        verify(redisTemplate).keys(buyerPattern);
-        verify(redisTemplate).delete(buyerKeys);
-        verify(redisTemplate).keys(sellerPattern);
-        verify(redisTemplate).delete(sellerKeys);
+        verify(orderCachePort).evictOrderCache(buyerId, sellerId);
     }
 
     @Test
-    @DisplayName("删除订单缓存时买家 ID 为 null")
-    void testDeleteOrderCacheWithNullBuyerId() {
+    @DisplayName("清除订单缓存时买家 ID 为 null")
+    void testEvictOrderCacheWithNullBuyerId() {
         Long sellerId = 555666L;
-        String sellerPattern = "eo:order:list:" + sellerId + ":*";
-        Set<String> sellerKeys = Set.of("eo:order:list:" + sellerId + ":status:0:page:1:size:10");
-        when(redisTemplate.keys(sellerPattern)).thenReturn(sellerKeys);
 
-        orderCacheService.deleteOrderCache(null, sellerId);
+        orderCachePort.evictOrderCache(null, sellerId);
 
-        verify(redisTemplate).keys(sellerPattern);
-        verify(redisTemplate).delete(sellerKeys);
-        verify(redisTemplate, never()).keys(contains("null"));
+        verify(orderCachePort).evictOrderCache(isNull(), eq(sellerId));
     }
 
     @Test
-    @DisplayName("删除订单缓存时卖家 ID 为 null")
-    void testDeleteOrderCacheWithNullSellerId() {
+    @DisplayName("清除订单缓存时卖家 ID 为 null")
+    void testEvictOrderCacheWithNullSellerId() {
         Long buyerId = 777888L;
-        String buyerPattern = "eo:order:list:" + buyerId + ":*";
-        Set<String> buyerKeys = Set.of("eo:order:list:" + buyerId + ":status:0:page:1:size:10");
-        when(redisTemplate.keys(buyerPattern)).thenReturn(buyerKeys);
 
-        orderCacheService.deleteOrderCache(buyerId, null);
+        orderCachePort.evictOrderCache(buyerId, null);
 
-        verify(redisTemplate).keys(buyerPattern);
-        verify(redisTemplate).delete(buyerKeys);
-        verify(redisTemplate, never()).keys(contains("null"));
+        verify(orderCachePort).evictOrderCache(eq(buyerId), isNull());
     }
 
     @Test
-    @DisplayName("null ID 不执行删除操作")
-    void testDeleteOrderCacheWithNullIds() {
-        orderCacheService.deleteOrderCache(null, null);
+    @DisplayName("null ID 不执行清除操作")
+    void testEvictOrderCacheWithNullIds() {
+        orderCachePort.evictOrderCache(null, null);
 
-        verify(redisTemplate, never()).keys(anyString());
-        verify(redisTemplate, never()).delete(anyString());
+        verify(orderCachePort).evictOrderCache(isNull(), isNull());
     }
 }

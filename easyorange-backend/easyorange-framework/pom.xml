@@ -104,6 +104,12 @@
             <artifactId>caffeine</artifactId>
         </dependency>
 
+        <!-- Jackson ParameterNamesModule (支持通过构造器参数名反序列化) -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+        </dependency>
+
         <!-- Thumbnailator for image processing -->
         <dependency>
             <groupId>net.coobird</groupId>

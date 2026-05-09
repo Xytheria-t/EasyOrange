@@ -1,20 +1,20 @@
 package com.cartethyia.easyorange.common.enums;
 
 public enum ResultCode implements IResultCode {
-    SUCCESS("0", "操作成功"),
-    FAIL("1", "操作失败"),
-    VALIDATE_FAILED("1007", "参数校验失败"),
-    BUSINESS_ERROR("1000", "业务异常"),
-    PARAM_ERROR("1001", "参数错误"),
-    UNAUTHORIZED("1002", "未授权"),
-    FORBIDDEN("1003", "禁止访问"),
-    NOT_FOUND("1004", "资源不存在"),
-    INTERNAL_SERVER_ERROR("1005", "内部服务器错误"),
-    SERVICE_UNAVAILABLE("1006", "服务不可用"),
-    METHOD_NOT_ALLOWED("1008", "请求方法不允许"),
-    FILE_TOO_LARGE("2001", "文件大小超过限制"),
-    INVALID_FILE_TYPE("2002", "无效的文件类型"),
-    FILE_UPLOAD_FAILED("2003", "文件上传失败");
+    SUCCESS("A0000", "成功"),
+    FAIL("B0001", "操作失败"),
+    VALIDATE_FAILED("B0003", "参数校验失败"),
+    BUSINESS_ERROR("B0002", "业务异常"),
+    PARAM_ERROR("B0004", "参数错误"),
+    UNAUTHORIZED("A0401", "未登录"),
+    FORBIDDEN("A0403", "禁止访问"),
+    NOT_FOUND("A0404", "资源不存在"),
+    INTERNAL_SERVER_ERROR("C0500", "服务器内部错误"),
+    SERVICE_UNAVAILABLE("C0503", "服务不可用"),
+    METHOD_NOT_ALLOWED("A0405", "请求方法不允许"),
+    FILE_TOO_LARGE("B5005", "文件大小超过限制"),
+    INVALID_FILE_TYPE("B5004", "无效的文件类型"),
+    FILE_UPLOAD_FAILED("B5001", "文件上传失败");
 
     private final String code;
     private final String message;

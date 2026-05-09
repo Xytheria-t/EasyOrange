@@ -1,66 +1,49 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.DomainEventConverter;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.DomainEventMapper;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.DomainEventPO;
+import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
+import com.cartethyia.easyorange.framework.outbox.repository.OutboxRepository;
 import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
-import com.cartethyia.easyorange.payment.domain.event.StoredEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class JdbcDomainEventStore implements DomainEventStorePort {
 
-    private final DomainEventMapper domainEventMapper;
+    private final OutboxRepository outboxRepository;
 
     @Override
-    public void store(StoredEvent event) {
-        DomainEventPO po = DomainEventConverter.toPO(event);
-        domainEventMapper.insert(po);
+    public void store(OutboxMessage event) {
+        try {
+            outboxRepository.save(event);
+        } catch (DuplicateKeyException e) {
+            log.warn("事件已存在，跳过重复存储: eventId={}", event.getEventId());
+        }
     }
 
     @Override
-    public List<StoredEvent> findUnpublished(int limit) {
-        LambdaQueryWrapper<DomainEventPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DomainEventPO::getStatus, StoredEvent.STATUS_PENDING)
-                .orderByAsc(DomainEventPO::getCreatedAt)
-                .last("LIMIT " + limit);
-
-        return domainEventMapper.selectList(wrapper).stream()
-                .map(DomainEventConverter::toStoredEvent)
-                .toList();
+    public List<OutboxMessage> findUnpublished(int limit) {
+        return outboxRepository.findPending(limit);
     }
 
     @Override
-    public List<StoredEvent> findPendingEvents(int limit) {
+    public List<OutboxMessage> findPendingEvents(int limit) {
         return findUnpublished(limit);
     }
 
     @Override
     public void markAsPublished(UUID eventId) {
-        LambdaQueryWrapper<DomainEventPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DomainEventPO::getEventId, eventId);
-        DomainEventPO po = domainEventMapper.selectOne(wrapper);
-        if (po != null) {
-            po.setStatus(StoredEvent.STATUS_PUBLISHED);
-            po.setPublishedAt(java.time.Instant.now());
-            domainEventMapper.updateById(po);
-        }
+        outboxRepository.markAsPublished(eventId);
     }
 
     @Override
     public void markAsFailed(UUID eventId, String errorMessage) {
-        LambdaQueryWrapper<DomainEventPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DomainEventPO::getEventId, eventId);
-        DomainEventPO po = domainEventMapper.selectOne(wrapper);
-        if (po != null) {
-            po.setStatus(StoredEvent.STATUS_FAILED);
-            domainEventMapper.updateById(po);
-        }
+        outboxRepository.markAsFailed(eventId, errorMessage);
     }
 }

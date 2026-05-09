@@ -4,18 +4,13 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 public class UserRegistrationDomainService {
 
     private final UserRepository userRepository;
     private final PasswordDomainService passwordDomainService;
-
-    public UserRegistrationDomainService(
-            UserRepository userRepository,
-            PasswordDomainService passwordDomainService) {
-        this.userRepository = userRepository;
-        this.passwordDomainService = passwordDomainService;
-    }
 
     public User register(String username, String password, String phone, String email, String nickname) {
         validateUsernameNotExists(username);

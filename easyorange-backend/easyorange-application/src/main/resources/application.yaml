@@ -76,6 +76,7 @@ server:
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
+  type-handlers-package: com.cartethyia.easyorange.framework.config.database
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
@@ -146,6 +147,8 @@ security:
     - /api/products/search
     - /api/products/search/**
     - /api/products/{id}/similar
+    - /api/products/{id}/reviews
+    - /api/products/{id}/reviews/stats
   static-paths:
     - /static/**
     - /public/**

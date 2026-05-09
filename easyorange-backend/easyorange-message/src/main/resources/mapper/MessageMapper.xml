@@ -29,6 +29,7 @@
     <delete id="deleteMessagesBefore">
         DELETE FROM eo_message
         WHERE create_time &lt; #{targetDate}
+        LIMIT 1000
     </delete>
 
 </mapper>

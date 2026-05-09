@@ -5,6 +5,7 @@
     <delete id="deleteExpiredLogs">
         DELETE FROM eo_oper_log 
         WHERE oper_time &lt; #{expireDate}
+        LIMIT 1000
     </delete>
 
     <delete id="deleteLogsBefore">

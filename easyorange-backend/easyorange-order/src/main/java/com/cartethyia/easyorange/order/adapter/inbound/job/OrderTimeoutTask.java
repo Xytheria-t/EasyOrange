@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.order.infrastructure.config.OrderTimeoutPropert
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class OrderTimeoutTask {
     private final DomainEventPublisher domainEventPublisher;
     private final OrderTimeoutProperties properties;
     private final RedisCache redisCache;
+    private final OrderCachePort orderCachePort;
 
     private static final String CANCEL_LOCK_PREFIX = "eo:order:lock:cancel:";
 
@@ -71,6 +73,7 @@ public class OrderTimeoutTask {
         OrderAggregate.OrderCancelledResult result = aggregate.cancel("订单超时自动取消");
         orderRepository.update(result.aggregate());
 
+        orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
         domainEventPublisher.publish(result.event());
 
         return true;

@@ -15,10 +15,13 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.Pro
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
@@ -116,8 +119,8 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
 
         List<ProductImageDO> imageDOs = converter.toImageDOs(product.getId(), product.getImages());
-        for (ProductImageDO img : imageDOs) {
-            productImageMapper.insert(img);
+        if (!imageDOs.isEmpty()) {
+            productImageMapper.batchInsert(imageDOs);
         }
     }
 
@@ -137,13 +140,42 @@ public class ProductRepositoryImpl implements ProductRepository {
             }
         }
 
-        productImageMapper.delete(
+        updateImagesDifferentially(product);
+    }
+
+    private void updateImagesDifferentially(Product product) {
+        Long productId = product.getId().value();
+
+        List<ProductImageDO> existingImages = productImageMapper.selectList(
                 new LambdaQueryWrapper<ProductImageDO>()
-                        .eq(ProductImageDO::getProductId, product.getId().value())
+                        .eq(ProductImageDO::getProductId, productId)
         );
-        List<ProductImageDO> imageDOs = converter.toImageDOs(product.getId(), product.getImages());
-        for (ProductImageDO img : imageDOs) {
-            productImageMapper.insert(img);
+
+        List<ProductImageDO> newImages = converter.toImageDOs(product.getId(), product.getImages());
+
+        Set<String> existingUrls = existingImages.stream()
+                .map(ProductImageDO::getImageUrl)
+                .collect(Collectors.toSet());
+
+        Set<String> newUrls = newImages.stream()
+                .map(ProductImageDO::getImageUrl)
+                .collect(Collectors.toSet());
+
+        Set<String> urlsToDelete = new HashSet<>(existingUrls);
+        urlsToDelete.removeAll(newUrls);
+
+        Set<String> urlsToAdd = new HashSet<>(newUrls);
+        urlsToAdd.removeAll(existingUrls);
+
+        if (!urlsToDelete.isEmpty()) {
+            productImageMapper.deleteByProductIdAndUrls(productId, new ArrayList<>(urlsToDelete));
+        }
+
+        if (!urlsToAdd.isEmpty()) {
+            List<ProductImageDO> imagesToInsert = newImages.stream()
+                    .filter(img -> urlsToAdd.contains(img.getImageUrl()))
+                    .collect(Collectors.toList());
+            productImageMapper.batchInsert(imagesToInsert);
         }
     }
 
