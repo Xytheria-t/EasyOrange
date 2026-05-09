@@ -10,7 +10,7 @@ interface FilterSidebarProps {
 }
 
 export interface FilterState {
-  categories: number[];
+  categories: string[];
   priceMin?: number;
   priceMax?: number;
   conditions: number[];
@@ -19,7 +19,7 @@ export interface FilterState {
 
 export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters, initialFilters }: FilterSidebarProps) {
   const { data: categories } = useCategories();
-  const [selectedCategories, setSelectedCategories] = useState<number[]>(initialFilters?.categories ?? []);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(initialFilters?.categories ?? []);
   const [priceRange, setPriceRange] = useState({
     min: initialFilters?.priceMin?.toString() ?? '',
     max: initialFilters?.priceMax?.toString() ?? '',
@@ -27,7 +27,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
   const [selectedConditions, setSelectedConditions] = useState<number[]>(initialFilters?.conditions ?? []);
   const [sortType, setSortType] = useState(initialFilters?.sort ?? 'newest');
 
-  const handleCategoryToggle = (categoryId: number) => {
+  const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories(prev =>
       prev.includes(categoryId)
         ? prev.filter(id => id !== categoryId)

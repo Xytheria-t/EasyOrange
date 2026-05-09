@@ -246,7 +246,7 @@ export class CategorySelector {
      * @returns 分类路径字符串
      */
     private getCategoryPath(
-        categoryId: number,
+        categoryId: string,
         categories: Category[] = this.categories,
         path = ''
     ): string | null {

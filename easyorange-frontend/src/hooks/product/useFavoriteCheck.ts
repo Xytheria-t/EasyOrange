@@ -8,9 +8,9 @@ export function useFavoriteCheck() {
   const { token } = useAuthStore()
   const queryClient = useQueryClient()
   const addToast = useUIStore((s) => s.addToast)
-  const [favoriteMap, setFavoriteMap] = useState<Record<number, boolean>>(() => ({}))
+  const [favoriteMap, setFavoriteMap] = useState<Record<string, boolean>>(() => ({}))
 
-  const checkFavorites = useCallback(async (productIds: number[]) => {
+  const checkFavorites = useCallback(async (productIds: string[]) => {
     if (!token || productIds.length === 0) {
       setFavoriteMap({})
       return
@@ -23,7 +23,7 @@ export function useFavoriteCheck() {
     }
   }, [token])
 
-  const toggleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
+  const toggleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
     if (!token) {
       return false
     }
@@ -48,7 +48,7 @@ export function useFavoriteCheck() {
     return token ? favoriteMap : {}
   }, [token, favoriteMap])
 
-  const isFavorited = useCallback((productId: number): boolean => {
+  const isFavorited = useCallback((productId: string): boolean => {
     return effectiveFavoriteMap[productId] ?? false
   }, [effectiveFavoriteMap])
 

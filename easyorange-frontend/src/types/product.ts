@@ -1,7 +1,7 @@
 export type ProductStatus = 'DRAFT' | 'ONLINE' | 'SOLD' | 'OFFLINE';
 
 export interface Product {
-    id: number;
+    id: string;
     title: string;
     description: string;
     price: number;
@@ -15,7 +15,7 @@ export interface Product {
     location: string;
     views: number;
     favorites: number;
-    sellerId: number;
+    sellerId: string;
     sellerName: string;
     sellerAvatar: string | null;
     sellerRating: number;
@@ -31,12 +31,12 @@ export interface Product {
 
 export interface ProductQueryParams {
     keyword?: string;
-    categoryId?: number;
+    categoryId?: string;
     priceMin?: number;
     priceMax?: number;
     conditions?: number[];
     status?: ProductStatus;
-    sellerId?: number;
+    sellerId?: string;
     sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
     pageNum?: number;
     pageSize?: number;
@@ -61,7 +61,7 @@ export interface UpdateProductRequest {
     price?: number;
     originalPrice?: number;
     categoryId?: number;
-    conditionLevel?: number;
+    conditionLevel: number;
     stock?: number;
     location?: string;
     contactMethod?: string;
@@ -69,10 +69,10 @@ export interface UpdateProductRequest {
 }
 
 export interface Category {
-    id: number;
+    id: string;
     name: string;
     icon: string | null;
-    parentId: number | null;
+    parentId: string | null;
     level?: number;
     sortOrder?: number;
     status?: number;
@@ -81,8 +81,8 @@ export interface Category {
 }
 
 export interface FavoriteProduct {
-    id: number;
-    sellerId: number;
+    id: string;
+    sellerId: string;
     username: string;
     userAvatar: string | null;
     categoryId: number;
@@ -106,8 +106,8 @@ export interface FavoriteProduct {
 }
 
 export interface Favorite {
-    id: number;
-    productId: number;
+    id: string;
+    productId: string;
     product: FavoriteProduct;
     createTime: string;
 }

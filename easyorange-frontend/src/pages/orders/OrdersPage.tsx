@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, RefreshCw, ShoppingBag, Sparkles } from 'lucide-react';
+import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, RefreshCw, ShoppingBag, Sparkles, Loader2 } from 'lucide-react';
 import { useMyOrders, useCancelOrder, usePayOrder, useReceiveOrder } from '@/hooks';
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/constants';
 import type { Order, OrderStatus } from '@/types';
+import { useUIStore } from '@/store';
 import './payment.css';
 
 const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
@@ -74,19 +75,51 @@ function OrdersPage() {
   const cancelOrder = useCancelOrder();
   const payOrder = usePayOrder();
   const receiveOrder = useReceiveOrder();
+  const addToast = useUIStore((s) => s.addToast);
+
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const orders = data?.records ?? [];
 
-  const handleCancel = async (id: number) => {
-    try { await cancelOrder.mutateAsync({ id }); } catch { /* handled */ }
+  const getErrorMessage = useCallback((err: unknown): string => {
+    if (err instanceof Error) {
+      const msg = err.message;
+      if (msg.includes('B3007') || msg.includes('无法取消')) return '该订单当前无法取消，可能已支付或已发货';
+      if (msg.includes('B3001') || msg.includes('不存在')) return '订单信息已变更，请刷新页面重试';
+      if (msg.includes('B3003') || msg.includes('非订单所有者')) return '您没有权限操作此订单';
+      return msg;
+    }
+    return '操作失败，请重试';
+  }, []);
+
+  const handleCancel = async (id: string) => {
+    setCancellingId(id);
+    try {
+      await cancelOrder.mutateAsync({ id });
+      addToast({ type: 'success', message: '订单已取消' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err) });
+    } finally {
+      setCancellingId(null);
+    }
   };
 
-  const handlePay = async (id: number) => {
-    try { await payOrder.mutateAsync(id); } catch { /* handled */ }
+  const handlePay = async (id: string) => {
+    try {
+      await payOrder.mutateAsync(id);
+      addToast({ type: 'success', message: '支付请求已提交' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err) });
+    }
   };
 
-  const handleReceive = async (id: number) => {
-    try { await receiveOrder.mutateAsync(id); } catch { /* handled */ }
+  const handleReceive = async (id: string) => {
+    try {
+      await receiveOrder.mutateAsync(id);
+      addToast({ type: 'success', message: '已确认收货' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err) });
+    }
   };
 
   return (
@@ -173,11 +206,7 @@ function OrdersPage() {
               onPay={handlePay}
               onReceive={handleReceive}
               onClick={() => navigate(`/orders/${order.id}`)}
-              isActionLoading={
-                cancelOrder.isPending ||
-                payOrder.isPending ||
-                receiveOrder.isPending
-              }
+              isCancelling={cancellingId === order.id}
               index={index}
             />
           ))}
@@ -191,15 +220,15 @@ export default OrdersPage;
 
 interface OrderCardProps {
   order: Order;
-  onCancel: (id: number) => void;
-  onPay: (id: number) => void;
-  onReceive: (id: number) => void;
+  onCancel: (id: string) => void;
+  onPay: (id: string) => void;
+  onReceive: (id: string) => void;
   onClick: () => void;
-  isActionLoading: boolean;
+  isCancelling: boolean;
   index: number;
 }
 
-function OrderCard({ order, onCancel, onPay, onReceive, onClick, isActionLoading, index }: OrderCardProps) {
+function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, index }: OrderCardProps) {
   const statusKey = getOrderStatusFromCode(order.status);
   const statusLabel = getOrderStatusLabel(order.status);
   const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.CANCELLED;
@@ -266,14 +295,15 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isActionLoading
             <>
               <button
                 onClick={() => onCancel(order.id)}
-                disabled={isActionLoading}
+                disabled={isCancelling}
                 className="order-btn-secondary"
               >
+                {isCancelling ? <Loader2 size={14} className="animate-spin" /> : null}
                 取消订单
               </button>
               <button
                 onClick={() => onPay(order.id)}
-                disabled={isActionLoading}
+                disabled={isCancelling}
                 className="order-btn-primary"
               >
                 立即支付
@@ -283,7 +313,6 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isActionLoading
           {statusKey === 'SHIPPED' && (
             <button
               onClick={() => onReceive(order.id)}
-              disabled={isActionLoading}
               className="order-btn-primary"
             >
               确认收货

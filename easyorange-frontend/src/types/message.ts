@@ -1,6 +1,6 @@
 export interface ChatSession {
-    id: number;
-    targetUserId: number;
+    id: string;
+    targetUserId: string;
     targetUserName: string;
     targetUserAvatar: string | null;
     lastMessage: string;
@@ -9,9 +9,9 @@ export interface ChatSession {
 }
 
 export interface ChatMessage {
-    id: number;
-    senderId: number;
-    receiverId: number;
+    id: string;
+    senderId: string;
+    receiverId: string;
     content: string;
     type: 'TEXT' | 'IMAGE' | 'PRODUCT';
     createTime: string;

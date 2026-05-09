@@ -1,10 +1,14 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useProducts, useCategories, useFavoriteCheck, useColumnCount } from '@/hooks';
 import { ProductCard } from '@/components/product/ProductCard';
 import { preloadImages } from '@/components/ui/Image';
+import { productApi } from '@/api/productApi';
+import { normalizeProduct } from '@/utils/product';
+import { PRODUCT_KEYS } from '@/hooks/product/useProducts';
 
 import { ToolsPlaza } from '@/components/product/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
@@ -16,6 +20,7 @@ function ProductsPage() {
   const [searchParams] = useSearchParams();
   const { token } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
   const initialCategoryId = searchParams.get('category') || searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
@@ -25,7 +30,7 @@ function ProductsPage() {
     pageNum: 1,
     pageSize: 20,
     keyword: initialKeyword || undefined,
-    categoryId: initialCategoryId ? Number(initialCategoryId) : undefined,
+    categoryId: initialCategoryId ?? undefined,
     sort: 'newest',
   });
 
@@ -62,6 +67,27 @@ function ProductsPage() {
     }
   }, [allProducts, token, checkFavorites]);
 
+  const hasNextPage = allProducts.length < total && total > 0;
+
+  useEffect(() => {
+    if (!isLoading && products.length > 0 && hasNextPage) {
+      const nextPageNum = (params.pageNum || 1) + 1;
+      const nextParams = { ...params, pageNum: nextPageNum };
+      queryClient.prefetchQuery({
+        queryKey: PRODUCT_KEYS.list(nextParams),
+        queryFn: async () => {
+          const response = await productApi.getProducts(nextParams);
+          const responseData = response.data;
+          return {
+            ...responseData,
+            records: (responseData.records ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>)),
+          };
+        },
+        staleTime: 30 * 1000,
+      }).catch(() => {});
+    }
+  }, [isLoading, products.length, hasNextPage, params, queryClient]);
+
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -69,19 +95,19 @@ function ProductsPage() {
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !isLoading) {
-          if (allProducts.length < total && total > 0) {
+          if (hasNextPage) {
             handleLoadNext();
           } else if (!isLooping && allProducts.length > 0) {
             handleLoopBack();
           }
         }
       },
-      { rootMargin: '200px' }
+      { rootMargin: '1200px' }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [allProducts.length, total, isLoading, isLooping]);
+  }, [allProducts.length, total, isLoading, isLooping, hasNextPage]);
 
   const handleLoadNext = useCallback(() => {
     setParams(prev => ({ ...prev, pageNum: (prev.pageNum || 1) + 1 }));
@@ -106,12 +132,16 @@ function ProductsPage() {
   const COLUMN_COUNT = useColumnCount();
 
   const rows = useMemo(() => {
-    const result: Product[][] = [];
+    const result: (Product | null)[][] = [];
     for (let i = 0; i < allProducts.length; i += COLUMN_COUNT) {
       result.push(allProducts.slice(i, i + COLUMN_COUNT));
     }
+    if (isLoading && allProducts.length > 0 && hasNextPage) {
+      result.push(Array(COLUMN_COUNT).fill(null));
+      result.push(Array(COLUMN_COUNT).fill(null));
+    }
     return result;
-  }, [allProducts, COLUMN_COUNT]);
+  }, [allProducts, COLUMN_COUNT, isLoading, hasNextPage]);
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -119,7 +149,7 @@ function ProductsPage() {
     count: rows.length,
     getScrollElement: () => (typeof window !== 'undefined' ? window.document.documentElement : null) as HTMLElement | null,
     estimateSize: () => 520,
-    overscan: 3,
+    overscan: 8,
   });
 
   const sortOptions: { value: NonNullable<ProductQueryParams['sort']>; label: string }[] = [
@@ -165,7 +195,7 @@ function ProductsPage() {
     setParams(prev => ({ ...prev, categoryId: undefined, pageNum: 1 }));
   }, [resetAllProducts]);
 
-  const handleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
+  const handleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
     if (!token) {
       navigate('/login');
       return;
@@ -275,15 +305,26 @@ function ProductsPage() {
                   padding: '0 0 1.75rem 0',
                 }}
               >
-                {row.map((product: Product, colIndex: number) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    index={virtualRow.index * COLUMN_COUNT + colIndex}
-                    isFavorited={isFavorited(product.id)}
-                    onFavorite={handleFavorite}
-                  />
-                ))}
+                {row.map((item: Product | null, colIndex: number) =>
+                  item === null ? (
+                    <div key={`buffer-${virtualRow.index}-${colIndex}`} className="product-card-loading-premium">
+                      <div className="product-image-loading-premium" />
+                      <div className="product-info-loading">
+                        <div className="loading-line short" />
+                        <div className="loading-line" />
+                        <div className="loading-line short" />
+                      </div>
+                    </div>
+                  ) : (
+                    <ProductCard
+                      key={item.id}
+                      product={item}
+                      index={virtualRow.index * COLUMN_COUNT + colIndex}
+                      isFavorited={isFavorited(item.id)}
+                      onFavorite={handleFavorite}
+                    />
+                  )
+                )}
               </div>
             );
           })}

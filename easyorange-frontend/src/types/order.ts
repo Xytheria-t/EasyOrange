@@ -9,13 +9,13 @@ export type OrderStatus =
 export type PaymentMethod = 'WECHAT' | 'ALIPAY' | 'CAMPUS_CARD' | 'CASH';
 
 export interface Order {
-    id: number;
+    id: string;
     orderNo: string;
-    buyerId: number;
+    buyerId: string;
     buyerUsername: string;
-    sellerId: number;
+    sellerId: string;
     sellerUsername: string;
-    productId: number;
+    productId: string;
     productTitle: string;
     productImage: string;
     amount: number;
@@ -30,7 +30,7 @@ export interface Order {
 }
 
 export interface CreateOrderRequest {
-    productId: number;
+    productId: string;
     quantity?: number;
     paymentMethod?: PaymentMethod;
     address?: string;
@@ -41,9 +41,9 @@ export interface CreateOrderRequest {
 export interface OrderQueryParams {
     orderNo?: string;
     status?: number | OrderStatus;
-    buyerId?: number;
-    sellerId?: number;
-    productId?: number;
+    buyerId?: string;
+    sellerId?: string;
+    productId?: string;
     role?: 'buyer' | 'seller';
     pageNum?: number;
     pageSize?: number;
@@ -55,7 +55,7 @@ export interface OrderQueryParams {
 
 export interface OrderDetail extends Order {
     product?: {
-        id: number;
+        id: string;
         title: string;
         images: string[];
         condition: string;

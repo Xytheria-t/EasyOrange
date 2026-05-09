@@ -10,7 +10,7 @@ export function normalizeProduct(raw: Record<string, unknown>): Product {
     const status = typeof raw.status === 'number' ? raw.status : 1;
     const condition = typeof raw.condition === 'number' ? raw.condition : 0;
     return {
-        id: raw.id as number,
+        id: raw.id as string,
         title: (raw.title as string) ?? '',
         description: (raw.description as string) ?? '',
         price: raw.price as number,
@@ -24,7 +24,7 @@ export function normalizeProduct(raw: Record<string, unknown>): Product {
         location: (raw.location as string) ?? '',
         views: (raw.views as number) ?? 0,
         favorites: (raw.favorites as number) ?? 0,
-        sellerId: raw.sellerId as number,
+        sellerId: raw.sellerId as string,
         sellerName: ((raw.sellerName as string) || (raw.username as string)) ?? '匿名用户',
         sellerAvatar: ((raw.sellerAvatar as string | null) || (raw.userAvatar as string | null)) ?? null,
         sellerRating: (raw.sellerRating as number) ?? 0,

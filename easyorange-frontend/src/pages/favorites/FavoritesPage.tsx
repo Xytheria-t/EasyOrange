@@ -20,8 +20,8 @@ function FavoritesPage() {
   const navigate = useNavigate();
   const addToast = useUIStore((s) => s.addToast);
   const queryClient = useQueryClient();
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [removingId, setRemovingId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [pageNum, setPageNum] = useState(1);
   const pageSize = 20;
 
@@ -35,7 +35,7 @@ function FavoritesPage() {
   });
 
   const removeMutation = useMutation({
-    mutationFn: async (productId: number) => {
+    mutationFn: async (productId: string) => {
       await favoriteApi.remove(productId);
     },
     onSuccess: () => {
@@ -50,7 +50,7 @@ function FavoritesPage() {
   });
 
   const removeManyMutation = useMutation({
-    mutationFn: async (ids: number[]) => {
+    mutationFn: async (ids: string[]) => {
       await favoriteApi.removeMany(ids);
     },
     onSuccess: () => {
@@ -67,7 +67,7 @@ function FavoritesPage() {
   const total = favoritesData?.total ?? 0;
   const totalPages = favoritesData?.pages ?? Math.ceil(total / pageSize);
 
-  const toggleSelect = (id: number) => {
+  const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) {
@@ -84,7 +84,7 @@ function FavoritesPage() {
     removeManyMutation.mutate(Array.from(selectedIds));
   };
 
-  const handleRemove = (e: React.MouseEvent, productId: number) => {
+  const handleRemove = (e: React.MouseEvent, productId: string) => {
     e.stopPropagation();
     e.preventDefault();
     setRemovingId(productId);

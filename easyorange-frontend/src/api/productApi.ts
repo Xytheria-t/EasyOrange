@@ -14,43 +14,43 @@ export const productApi = {
         });
     },
 
-    getProductById(id: number) {
+    getProductById(id: string) {
         return request<Product>(`/products/${id}`);
     },
 
     createProduct(data: CreateProductRequest) {
-        return request<number>('/products', {
+        return request<string>('/products', {
             method: 'POST',
             body: data
         });
     },
 
-    updateProduct(id: number, data: UpdateProductRequest) {
-        return request<number>(`/products/${id}`, {
+    updateProduct(id: string, data: UpdateProductRequest) {
+        return request<string>(`/products/${id}`, {
             method: 'PUT',
             body: data
         });
     },
 
-    deleteProduct(id: number) {
+    deleteProduct(id: string) {
         return request<void>(`/products/${id}`, {
             method: 'DELETE'
         });
     },
 
-    putOnline(id: number) {
+    putOnline(id: string) {
         return request<void>(`/products/${id}/online`, {
             method: 'PUT'
         });
     },
 
-    takeOffline(id: number) {
+    takeOffline(id: string) {
         return request<void>(`/products/${id}/offline`, {
             method: 'PUT'
         });
     },
 
-    getCategories(parentId?: number) {
+    getCategories(parentId?: string) {
         return request<Category[]>('/products/categories', {
             method: 'GET',
             params: parentId != null ? { parentId } : undefined,
@@ -86,7 +86,7 @@ export const productApi = {
         });
     },
 
-    getProductsByIds(ids: number[]) {
+    getProductsByIds(ids: string[]) {
         return request<Product[]>('/products/batch', {
             method: 'POST',
             body: ids,
@@ -94,11 +94,11 @@ export const productApi = {
         });
     },
 
-    getSimilarProducts(id: number) {
+    getSimilarProducts(id: string) {
         return request<Product[]>(`/products/${id}/similar`, { skipAuth: true });
     },
 
-    incrementView(id: number) {
+    incrementView(id: string) {
         return request<void>(`/products/${id}/view`, {
             method: 'POST',
             skipAuth: true

@@ -8,7 +8,6 @@ export {
     ProductsSection,
     AIFeaturesSection,
     AIRecommendSection,
-    ServicesSection,
     Footer,
     BackgroundEffects,
 } from './sections';

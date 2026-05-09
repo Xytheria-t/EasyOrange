@@ -16,33 +16,33 @@ export const favoriteApi = {
         });
     },
 
-    add(productId: number) {
+    add(productId: string) {
         return request(`/favorites/${productId}`, {
             method: 'POST'
         });
     },
 
-    remove(productId: number) {
+    remove(productId: string) {
         return request(`/favorites/${productId}`, {
             method: 'DELETE'
         });
     },
 
-    removeMany(ids: number[]) {
+    removeMany(ids: string[]) {
         return request('/favorites/batch', {
             method: 'DELETE',
             body: { ids }
         });
     },
 
-    check(productId: number) {
+    check(productId: string) {
         return request<boolean>(`/favorites/check/${productId}`, {
             method: 'GET'
         });
     },
 
-    batchCheck(productIds: number[]) {
-        return request<Record<number, boolean>>('/favorites/batch-check', {
+    batchCheck(productIds: string[]) {
+        return request<Record<string, boolean>>('/favorites/batch-check', {
             method: 'POST',
             body: { productIds }
         });

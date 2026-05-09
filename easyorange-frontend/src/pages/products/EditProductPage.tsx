@@ -30,8 +30,8 @@ interface FormErrors {
 function EditProductPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { data: product, isLoading: isLoadingProduct } = useProduct(Number(id));
-    const updateProduct = useUpdateProduct(Number(id));
+    const { data: product, isLoading: isLoadingProduct } = useProduct(id ?? '');
+    const updateProduct = useUpdateProduct(id ?? '');
     const deleteProduct = useDeleteProduct();
     const { data: categories } = useCategories();
     const [form, setForm] = useState<FormState>({
@@ -143,7 +143,7 @@ function EditProductPage() {
 
     const handleDelete = async () => {
         try {
-            await deleteProduct.mutateAsync(Number(id));
+            await deleteProduct.mutateAsync(id ?? '');
             navigate('/products');
         } catch {
         }

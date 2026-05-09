@@ -2,9 +2,9 @@ import { request } from './core/request';
 import type { PaymentMethod } from '@/types';
 
 export interface PaymentInfo {
-    id: number;
+    id: string;
     paymentNo: string;
-    orderId: number;
+    orderId: string;
     amount: number;
     status: string;
     paymentMethod: PaymentMethod | null;
@@ -13,12 +13,12 @@ export interface PaymentInfo {
 }
 
 export interface CreatePaymentRequest {
-    orderId: number;
+    orderId: string;
     paymentMethod: PaymentMethod;
 }
 
 export interface PaymentResponse {
-    paymentId: number;
+    paymentId: string;
     paymentNo: string;
     payUrl?: string;
     qrCodeUrl?: string;
@@ -39,7 +39,7 @@ export const paymentApi = {
         });
     },
 
-    getPaymentById(id: number) {
+    getPaymentById(id: string) {
         return request<PaymentInfo>(`/payments/${id}`);
     },
 
@@ -50,21 +50,21 @@ export const paymentApi = {
         });
     },
 
-    getPaymentByOrder(orderId: number) {
+    getPaymentByOrder(orderId: string) {
         return request<PaymentInfo>(`/payments/orders/${orderId}`);
     },
 
-    getPaymentStatus(id: number) {
+    getPaymentStatus(id: string) {
         return request<PaymentStatusResponse>(`/payments/${id}/status`);
     },
 
-    refund(id: number) {
+    refund(id: string) {
         return request(`/payments/${id}/refund`, {
             method: 'POST'
         });
     },
 
-    close(id: number) {
+    close(id: string) {
         return request(`/payments/${id}/close`, {
             method: 'POST'
         });

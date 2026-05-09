@@ -5,7 +5,7 @@ const AIFeaturesSection = lazy(() => import('@/components/sections/AIFeaturesSec
 const CategoriesSection = lazy(() => import('@/components/sections/CategoriesSection'))
 const AIRecommendSection = lazy(() => import('@/components/sections/AIRecommendSection'))
 const ProductsSection = lazy(() => import('@/components/sections/ProductsSection'))
-const ServicesSection = lazy(() => import('@/components/sections/ServicesSection'))
+
 
 const SectionSkeleton = () => (
   <div className="section-skeleton">
@@ -42,10 +42,6 @@ function HomePage() {
 
       <Suspense fallback={<SectionSkeleton />}>
         <ProductsSection />
-      </Suspense>
-
-      <Suspense fallback={<SectionSkeleton />}>
-        <ServicesSection />
       </Suspense>
     </>
   )

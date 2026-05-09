@@ -1,7 +1,7 @@
 import { useCategories, useScrollReveal } from '@/hooks';
 
 interface CategoryDisplay {
-  id: number;
+  id: string;
   name: string;
   desc: string;
   count: string;
@@ -114,7 +114,7 @@ export default function CategoriesSection() {
   }) || [];
 
   displayCategories.push({
-    id: 0,
+    id: 'all',
     name: '更多分类',
     desc: '探索全部分类',
     count: '查看全部 →',

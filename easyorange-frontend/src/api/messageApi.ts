@@ -16,18 +16,18 @@ export const messageApi = {
         return request<Record<string, unknown>[]>('/messages/conversations');
     },
 
-    getConversation(userId: string | number) {
+    getConversation(userId: string) {
         return request<ChatMessage[]>(`/messages/conversation/${userId}`);
     },
 
-    sendMessage(data: { receiverId: number; content: string }) {
+    sendMessage(data: { receiverId: string; content: string }) {
         return request('/messages', {
             method: 'POST',
             body: data
         });
     },
 
-    markAsRead(ids: number | number[]) {
+    markAsRead(ids: string | string[]) {
         const idArray = Array.isArray(ids) ? ids : [ids];
         return request('/messages/read', {
             method: 'PUT',
@@ -35,7 +35,7 @@ export const messageApi = {
         });
     },
 
-    delete(id: number) {
+    delete(id: string) {
         return request(`/messages/${id}`, {
             method: 'DELETE'
         });

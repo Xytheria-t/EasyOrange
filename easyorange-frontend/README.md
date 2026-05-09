@@ -23,7 +23,12 @@
 easyorange-frontend/
 ├── src/
 │   ├── api/                  # API 接口层
-│   │   ├── core/             # 请求核心封装
+│   │   ├── core/             # 请求核心模块
+│   │   │   ├── request.ts    # 主请求函数
+│   │   │   ├── requestManager.ts  # 请求去重/取消
+│   │   │   ├── cache.ts      # 响应缓存
+│   │   │   ├── interceptors.ts    # 拦截器管理
+│   │   │   └── index.ts      # 统一导出
 │   │   ├── productApi.ts     # 商品 API
 │   │   ├── orderApi.ts       # 订单 API
 │   │   └── ...
@@ -35,7 +40,12 @@ easyorange-frontend/
 │   │   └── ui/               # 基础 UI 组件
 │   ├── features/             # 业务模块
 │   │   └── auth/             # 认证模块
+│   │       └── session.ts    # TokenRefreshManager
 │   ├── hooks/                # 自定义 Hooks
+│   │   ├── auth/             # 认证相关 Hooks
+│   │   ├── order/            # 订单相关 Hooks
+│   │   ├── product/          # 商品相关 Hooks
+│   │   └── ui/               # UI 相关 Hooks (useColumnCount 等)
 │   ├── lib/                  # 库配置
 │   ├── pages/                # 页面组件
 │   │   └── publish/          # 发布商品子模块

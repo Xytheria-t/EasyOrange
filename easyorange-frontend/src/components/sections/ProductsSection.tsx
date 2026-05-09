@@ -29,7 +29,7 @@ export default function ProductsSection() {
     }
   }, [products, token, checkFavorites])
 
-  const handleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
+  const handleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
     if (!token) {
       navigate('/login')
       return

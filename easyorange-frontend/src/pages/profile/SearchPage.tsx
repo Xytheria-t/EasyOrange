@@ -119,7 +119,7 @@ function SearchPage() {
         addToHistory(kw);
     };
 
-    const handleCategoryClick = (categoryId: number) => {
+    const handleCategoryClick = (categoryId: string) => {
         navigate(`/products?category=${categoryId}`);
     };
 

@@ -35,8 +35,8 @@ interface ChatMessage {
 function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: product, isLoading } = useProduct(Number(id));
-  const { data: similarProducts } = useSimilarProducts(Number(id));
+  const { data: product, isLoading } = useProduct(id ?? '');
+  const { data: similarProducts } = useSimilarProducts(id ?? '');
   const { token, user } = useAuthStore();
   const addToast = useUIStore((s) => s.addToast);
 
@@ -66,7 +66,7 @@ function ProductDetailPage() {
   const [copied, setCopied] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const productId = Number(id);
+  const productId = id ?? '';
 
   const { data: isFavorited = false } = useQuery({
     queryKey: ['favorite-check', productId],
@@ -74,7 +74,7 @@ function ProductDetailPage() {
       const res = await favoriteApi.check(productId);
       return res.data === true;
     },
-    enabled: !!token && productId > 0,
+    enabled: !!token && !!productId,
     staleTime: 30 * 1000,
   });
 
@@ -84,7 +84,7 @@ function ProductDetailPage() {
       const res = await reviewApi.getList(productId, { pageNum: 1, pageSize: 10 });
       return res.data;
     },
-    enabled: productId > 0,
+    enabled: !!productId,
     staleTime: 60 * 1000,
   });
 
@@ -95,7 +95,7 @@ function ProductDetailPage() {
     : '5.0';
 
   useEffect(() => {
-    if (productId > 0) {
+    if (productId) {
       productApi.incrementView(productId).catch(() => {});
     }
   }, [productId]);
@@ -276,13 +276,12 @@ function ProductDetailPage() {
         content: chatMessage.trim(),
       });
       setChatMessages(prev => [...prev, {
-        id: Date.now(),
-        senderId: user?.userId || 0,
+        id: String(Date.now()),
+        senderId: user?.userId ?? '',
         receiverId: product.sellerId,
         content: chatMessage.trim(),
         createTime: new Date().toISOString(),
-        isMine: true,
-      }]);
+      } as unknown as ChatMessage]);
       setChatMessage('');
       addToast({ type: 'success', message: '消息已发送' });
     } catch {

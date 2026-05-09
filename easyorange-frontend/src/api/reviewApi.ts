@@ -6,14 +6,14 @@ import type { PageResult } from '@/types';
 import { request } from './core/request';
 
 export const reviewApi = {
-    getList(productId: number, _params?: Record<string, unknown>) {
+    getList(productId: string, _params?: Record<string, unknown>) {
         return request<PageResult<Record<string, unknown>>>(`/products/${productId}/reviews`, {
             method: 'GET',
             skipAuth: true
         });
     },
 
-    create(productId: number, data: Record<string, unknown>) {
+    create(productId: string, data: Record<string, unknown>) {
         return request(`/products/${productId}/reviews`, {
             method: 'POST',
             body: data

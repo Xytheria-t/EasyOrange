@@ -23,36 +23,36 @@ export const orderApi = {
         });
     },
 
-    getDetail(id: number) {
+    getDetail(id: string) {
         return request<OrderDetail>(`/orders/${id}`);
     },
 
-    cancel(id: number, reason?: string) {
+    cancel(id: string, reason?: string) {
         return request(`/orders/${id}/cancel`, {
             method: 'PUT',
             params: reason ? { reason } as Record<string, unknown> : undefined
         });
     },
 
-    receive(id: number) {
+    receive(id: string) {
         return request(`/orders/${id}/receive`, {
             method: 'PUT'
         });
     },
 
-    pay(id: number) {
+    pay(id: string) {
         return request(`/orders/${id}/pay`, {
             method: 'PUT'
         });
     },
 
-    ship(id: number) {
+    ship(id: string) {
         return request(`/orders/${id}/ship`, {
             method: 'PUT'
         });
     },
 
-    refund(id: number, reason?: string) {
+    refund(id: string, reason?: string) {
         return request(`/orders/${id}/refund`, {
             method: 'PUT',
             params: reason ? { reason } as Record<string, unknown> : undefined

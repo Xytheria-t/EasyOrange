@@ -1,7 +1,10 @@
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MapPin, Phone, RefreshCw, User, FileText, Truck, CheckCircle, Clock, XCircle, CreditCard } from 'lucide-react';
+import './payment.css';
+import { ArrowLeft, Package, MapPin, Phone, RefreshCw, User, FileText, Truck, CheckCircle, Clock, XCircle, CreditCard, Loader2 } from 'lucide-react';
 import { useOrderDetail, useCancelOrder, usePayOrder, useReceiveOrder, useRefundOrder } from '@/hooks';
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/constants';
+import { useUIStore } from '@/store';
 import type { OrderStatus } from '@/types';
 
 const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Clock; hint: string }> = {
@@ -56,19 +59,32 @@ const STATUS_ORDER: Record<OrderStatus, number> = {
 function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const orderId = Number(id);
 
-  const { data: order, isLoading, isError, refetch } = useOrderDetail(orderId);
+  const { data: order, isLoading, isError, refetch } = useOrderDetail(id ?? '');
   const cancelOrder = useCancelOrder();
   const payOrder = usePayOrder();
   const receiveOrder = useReceiveOrder();
   const refundOrder = useRefundOrder();
+  const addToast = useUIStore((s) => s.addToast);
+
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const isActionLoading =
-    cancelOrder.isPending ||
+    isCancelling ||
     payOrder.isPending ||
     receiveOrder.isPending ||
     refundOrder.isPending;
+
+  const getErrorMessage = useCallback((err: unknown, action: string): string => {
+    if (err instanceof Error) {
+      const msg = err.message;
+      if (msg.includes('B3007') || msg.includes('无法取消')) return '该订单当前无法取消，可能已支付或已发货';
+      if (msg.includes('B3001') || msg.includes('不存在')) return '订单信息已变更，请刷新页面重试';
+      if (msg.includes('B3003') || msg.includes('非订单所有者')) return '您没有权限操作此订单';
+      return msg;
+    }
+    return `${action}失败，请重试`;
+  }, []);
 
   if (isLoading) {
     return (
@@ -86,9 +102,14 @@ function OrderDetailPage() {
       <div className="order-detail-error">
         <div className="order-detail-error-icon">!</div>
         <p className="order-detail-error-text">订单不存在或加载失败</p>
-        <button onClick={() => refetch()} className="order-detail-error-btn">
-          重新加载
-        </button>
+        <div className="order-detail-error-actions">
+          <button onClick={() => refetch()} className="order-detail-error-btn">
+            重新加载
+          </button>
+          <button onClick={() => navigate('/orders')} className="order-detail-error-btn">
+            返回订单列表
+          </button>
+        </div>
       </div>
     );
   }
@@ -100,19 +121,42 @@ function OrderDetailPage() {
   const currentStep = STATUS_ORDER[statusKey];
 
   const handleCancel = async () => {
-    try { await cancelOrder.mutateAsync({ id: orderId }); } catch { /* handled */ }
+    setIsCancelling(true);
+    try {
+      await cancelOrder.mutateAsync({ id: id ?? '' });
+      addToast({ type: 'success', message: '订单已取消' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err, '取消订单') });
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   const handlePay = async () => {
-    try { await payOrder.mutateAsync(orderId); } catch { /* handled */ }
+    try {
+      await payOrder.mutateAsync(id ?? '');
+      addToast({ type: 'success', message: '支付请求已提交' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err, '支付') });
+    }
   };
 
   const handleReceive = async () => {
-    try { await receiveOrder.mutateAsync(orderId); } catch { /* handled */ }
+    try {
+      await receiveOrder.mutateAsync(id ?? '');
+      addToast({ type: 'success', message: '已确认收货' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err, '确认收货') });
+    }
   };
 
   const handleRefund = async () => {
-    try { await refundOrder.mutateAsync({ id: orderId }); } catch { /* handled */ }
+    try {
+      await refundOrder.mutateAsync({ id: id ?? '' });
+      addToast({ type: 'success', message: '退款申请已提交' });
+    } catch (err: unknown) {
+      addToast({ type: 'error', message: getErrorMessage(err, '申请退款') });
+    }
   };
 
   return (
@@ -268,6 +312,7 @@ function OrderDetailPage() {
               disabled={isActionLoading}
               className="order-detail-btn-secondary"
             >
+              {isCancelling ? <Loader2 size={14} className="animate-spin" /> : null}
               取消订单
             </button>
             <button

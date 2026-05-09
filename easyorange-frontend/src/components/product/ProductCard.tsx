@@ -6,10 +6,11 @@ import { CONDITION_LABEL_MAP } from '@/constants'
 import { formatPrice, formatRelativeTime } from '@/utils'
 import { Image } from '@/components/ui/Image'
 import placeholderImage from '@/assets/placeholder.png'
+import '../../pages/products/products-premium.css'
 
 interface ProductCardProps {
   product: Product
-  onFavorite?: (id: number, isFavorited: boolean) => void
+  onFavorite?: (id: string, isFavorited: boolean) => void;
   isFavorited?: boolean
   style?: React.CSSProperties
   index?: number

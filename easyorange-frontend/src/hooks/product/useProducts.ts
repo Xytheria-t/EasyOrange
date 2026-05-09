@@ -3,12 +3,12 @@ import { productApi } from '@/api/productApi';
 import type { ProductQueryParams, CreateProductRequest, UpdateProductRequest, PageResult, Product } from '@/types';
 import { normalizeProduct } from '@/utils/product';
 
-const PRODUCT_KEYS = {
+export const PRODUCT_KEYS = {
   all: ['products'] as const,
   lists: () => [...PRODUCT_KEYS.all, 'list'] as const,
   list: (params: ProductQueryParams) => [...PRODUCT_KEYS.lists(), params] as const,
   details: () => [...PRODUCT_KEYS.all, 'detail'] as const,
-  detail: (id: number) => [...PRODUCT_KEYS.details(), id] as const,
+  detail: (id: string) => [...PRODUCT_KEYS.details(), id] as const,
 };
 
 export function useProducts(params: ProductQueryParams = {}) {
@@ -26,14 +26,14 @@ export function useProducts(params: ProductQueryParams = {}) {
   });
 }
 
-export function useProduct(id: number) {
+export function useProduct(id: string) {
   return useQuery({
     queryKey: PRODUCT_KEYS.detail(id),
     queryFn: async () => {
       const response = await productApi.getProductById(id);
       return normalizeProduct(response.data as unknown as Record<string, unknown>);
     },
-    enabled: id > 0,
+    enabled: !!id,
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -52,7 +52,7 @@ export function useCreateProduct() {
   });
 }
 
-export function useUpdateProduct(id: number) {
+export function useUpdateProduct(id: string) {
   const queryClient = useQueryClient();
   
   return useMutation({
@@ -71,7 +71,7 @@ export function useDeleteProduct() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       await productApi.deleteProduct(id);
     },
     onSuccess: () => {
@@ -91,14 +91,14 @@ export function useCategories() {
   });
 }
 
-export function useSimilarProducts(productId: number) {
+export function useSimilarProducts(productId: string) {
   return useQuery({
     queryKey: ['similar-products', productId],
     queryFn: async () => {
       const response = await productApi.getSimilarProducts(productId);
       return (response.data ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>));
     },
-    enabled: productId > 0,
+    enabled: !!productId,
     staleTime: 5 * 60 * 1000,
   });
 }

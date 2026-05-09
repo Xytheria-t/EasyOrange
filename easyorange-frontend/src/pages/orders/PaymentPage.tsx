@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CreditCard, Smartphone, Wallet, ArrowLeft, Shield, Loader2 } from 'lucide-react';
-import { useCreatePayment, usePaymentStatus } from '@/hooks';
-import { useOrderDetail } from '@/hooks';
+import { useCreatePayment, usePaymentStatus, useOrderDetail } from '@/hooks';
 import { useUIStore } from '@/store/uiStore';
 import type { PaymentMethod } from '@/types';
 import '@/styles/main.css';
@@ -18,14 +17,14 @@ function PaymentPage() {
   const navigate = useNavigate();
   const addToast = useUIStore((s) => s.addToast);
 
-  const orderId = Number(searchParams.get('orderId')) || 0;
+  const orderId = searchParams.get('orderId') ?? '';
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('WECHAT');
-  const [paymentId, setPaymentId] = useState<number | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: order, isLoading: orderLoading } = useOrderDetail(orderId);
   const { data: paymentStatus } = usePaymentStatus(
-    paymentId ?? 0,
+    paymentId ?? '',
     paymentId !== null
   );
   const createPayment = useCreatePayment();
@@ -40,8 +39,24 @@ function PaymentPage() {
     return null;
   }
 
+  if (!orderId) {
+    return (
+      <div className="payment-page">
+        <div className="payment-error-state">
+          <h2>无效的订单</h2>
+          <p>请从订单页面重新发起支付</p>
+          <button className="btn btn-primary" onClick={() => navigate('/orders')}>
+            返回订单
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async () => {
-    if (!orderId || !selectedMethod) {return;}
+    if (!selectedMethod) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -57,20 +72,6 @@ function PaymentPage() {
       setIsSubmitting(false);
     }
   };
-
-  if (!orderId) {
-    return (
-      <div className="payment-page">
-        <div className="payment-error-state">
-          <h2>无效的订单</h2>
-          <p>请从订单页面重新发起支付</p>
-          <button className="btn btn-primary" onClick={() => navigate('/orders')}>
-            返回订单
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (orderLoading) {
     return (

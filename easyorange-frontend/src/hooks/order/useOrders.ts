@@ -8,7 +8,7 @@ const ORDER_KEYS = {
   myOrders: (params: OrderQueryParams) => [...ORDER_KEYS.all, 'my', params] as const,
   soldOrders: (params: OrderQueryParams) => [...ORDER_KEYS.all, 'sold', params] as const,
   details: () => [...ORDER_KEYS.all, 'detail'] as const,
-  detail: (id: number) => [...ORDER_KEYS.details(), id] as const,
+  detail: (id: string) => [...ORDER_KEYS.details(), id] as const,
 };
 
 export function useMyOrders(params: OrderQueryParams = {}) {
@@ -33,14 +33,14 @@ export function useSoldOrders(params: OrderQueryParams = {}) {
   });
 }
 
-export function useOrderDetail(id: number) {
+export function useOrderDetail(id: string) {
   return useQuery<OrderDetail>({
     queryKey: ORDER_KEYS.detail(id),
     queryFn: async () => {
       const response = await orderApi.getDetail(id);
       return response.data;
     },
-    enabled: id > 0,
+    enabled: !!id,
     staleTime: 60 * 1000,
   });
 }
@@ -54,7 +54,7 @@ export function useCreateOrder() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
     },
   });
 }
@@ -63,12 +63,50 @@ export function useCancelOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
       await orderApi.cancel(id, reason);
     },
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ORDER_KEYS.all });
+
+      const previousLists = queryClient.getQueriesData<{ records: Array<{ id: string; status: number }> }>({ queryKey: ORDER_KEYS.all });
+      const previousDetail = queryClient.getQueryData(ORDER_KEYS.detail(id));
+
+      queryClient.setQueriesData<{ records: Array<{ id: string; status: number }> }>(
+        { queryKey: ORDER_KEYS.all },
+        (oldData) => {
+          if (!oldData?.records) return oldData;
+          return {
+            ...oldData,
+            records: oldData.records.map((order) =>
+              order.id === id ? { ...order, status: 4 } : order
+            ),
+          };
+        }
+      );
+
+      queryClient.setQueryData(ORDER_KEYS.detail(id), (oldData: { status: number } | undefined) => {
+        if (!oldData) return oldData;
+        return { ...oldData, status: 4 };
+      });
+
+      return { previousLists, previousDetail };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.details() });
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousLists) {
+        for (const [queryKey, data] of context.previousLists) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(ORDER_KEYS.detail(_vars.id), context.previousDetail);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
     },
   });
 }
@@ -77,12 +115,11 @@ export function usePayOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       await orderApi.pay(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.details() });
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
     },
   });
 }
@@ -91,12 +128,11 @@ export function useShipOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       await orderApi.ship(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.details() });
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
     },
   });
 }
@@ -105,12 +141,11 @@ export function useReceiveOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       await orderApi.receive(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.details() });
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
     },
   });
 }
@@ -119,12 +154,11 @@ export function useRefundOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, reason }: { id: number; reason?: string }) => {
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
       await orderApi.refund(id, reason);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.details() });
+      queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
     },
   });
 }
