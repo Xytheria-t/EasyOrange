@@ -4,7 +4,7 @@ import { Camera, X, Loader2, ArrowLeft, Package, Tag, MapPin, FileText, Settings
 import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
 import { compressImage } from '@/utils/imageCompress';
-import { CONDITION_LABEL_MAP } from '@/types';
+import { CONDITION_LABEL_MAP } from '@/constants';
 import './edit-product.css';
 
 interface FormState {
@@ -27,7 +27,7 @@ interface FormErrors {
     conditionLevel?: string;
 }
 
-export function EditProductPage() {
+function EditProductPage() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { data: product, isLoading: isLoadingProduct } = useProduct(Number(id));
@@ -489,3 +489,5 @@ export function EditProductPage() {
         </div>
     );
 }
+
+export default EditProductPage;

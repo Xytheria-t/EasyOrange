@@ -1,2 +1,2 @@
-export { LoginPage } from './LoginPage';
-export { ForgotPasswordPage } from './ForgotPasswordPage';
+export { default as LoginPage } from './LoginPage';
+export { default as ForgotPasswordPage } from './ForgotPasswordPage';

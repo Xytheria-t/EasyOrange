@@ -29,7 +29,7 @@ const TRENDING_TOPICS = [
     { title: '品质生活', subtitle: '精选集', desc: '提升生活幸福感', color: '#8B5CF6', icon: Star },
 ];
 
-export function SearchPage() {
+function SearchPage() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const initialKeyword = searchParams.get('keyword') || '';
@@ -503,3 +503,5 @@ export function SearchPage() {
         </div>
     );
 }
+
+export default SearchPage;

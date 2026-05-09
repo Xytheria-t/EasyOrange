@@ -20,7 +20,7 @@ import './profile.css'
 type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId'
 type TabType = 'overview' | 'activity' | 'security' | 'preferences'
 
-export function ProfilePage() {
+function ProfilePage() {
   const { data: user, isLoading } = useCurrentUser()
   const logoutMutation = useLogout()
   const navigate = useNavigate()
@@ -185,3 +185,5 @@ export function ProfilePage() {
     </div>
   )
 }
+
+export default ProfilePage;

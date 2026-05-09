@@ -5,7 +5,7 @@ import { messageApi } from '@/api/messageApi';
 import type { ChatSession } from '@/types';
 import './messages.css';
 
-export function MessagesPage() {
+function MessagesPage() {
   const navigate = useNavigate();
 
   const { data: conversations, isLoading, error } = useQuery({
@@ -182,3 +182,5 @@ export function MessagesPage() {
     </div>
   );
 }
+
+export default MessagesPage;

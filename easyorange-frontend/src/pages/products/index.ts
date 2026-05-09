@@ -1,4 +1,4 @@
-export { ProductsPage } from './ProductsPage';
-export { ProductDetailPage } from './ProductDetailPage';
-export { EditProductPage } from './EditProductPage';
-export { PublishPage } from './PublishPage';
+export { default as ProductsPage } from './ProductsPage';
+export { default as ProductDetailPage } from './ProductDetailPage';
+export { default as EditProductPage } from './EditProductPage';
+export { default as PublishPage } from './PublishPage';

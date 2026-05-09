@@ -4,7 +4,8 @@ import { Trash2, RefreshCw, ArrowRight, Sparkles, MapPin, Clock, TrendingDown, B
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { favoriteApi } from '@/api/favoriteApi';
 import { useUIStore } from '@/store/uiStore';
-import { CONDITION_LABEL_MAP, type Favorite } from '@/types';
+import { CONDITION_LABEL_MAP } from '@/constants';
+import type { Favorite } from '@/types';
 import { Image } from '@/components/ui/Image';
 import './favorites.css';
 
@@ -15,7 +16,7 @@ const CONDITION_ICONS: Record<number, string> = {
   4: '📦',
 };
 
-export function FavoritesPage() {
+function FavoritesPage() {
   const navigate = useNavigate();
   const addToast = useUIStore((s) => s.addToast);
   const queryClient = useQueryClient();
@@ -459,3 +460,5 @@ export function FavoritesPage() {
     </div>
   );
 }
+
+export default FavoritesPage;

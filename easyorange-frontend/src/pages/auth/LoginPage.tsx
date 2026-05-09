@@ -9,7 +9,7 @@ import './login.css'
 
 type LoginMethod = 'password' | 'sms'
 
-export function LoginPage() {
+function LoginPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login')
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('password')
   const [formData, setFormData] = useState({
@@ -570,3 +570,5 @@ export function LoginPage() {
     </div>
   )
 }
+
+export default LoginPage;

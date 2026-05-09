@@ -13,7 +13,7 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof Credi
   { value: 'CAMPUS_CARD', label: '校园卡', icon: Wallet, desc: '校园专属' },
 ];
 
-export function PaymentPage() {
+function PaymentPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const addToast = useUIStore((s) => s.addToast);
@@ -171,3 +171,5 @@ export function PaymentPage() {
     </div>
   );
 }
+
+export default PaymentPage;

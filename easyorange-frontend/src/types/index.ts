@@ -26,16 +26,3 @@ export type {
 export type { ChatSession, ChatMessage } from './message';
 
 export type { RequestOptions } from './api';
-
-export {
-    CONDITION_LABEL_MAP,
-    STATUS_LABEL_MAP,
-    PRODUCT_STATUS_CODE,
-} from '@/constants/product';
-
-export {
-    ORDER_STATUS_CODE,
-    ORDER_STATUS_LABEL,
-    getOrderStatusLabel,
-    getOrderStatusFromCode,
-} from '@/constants/order';

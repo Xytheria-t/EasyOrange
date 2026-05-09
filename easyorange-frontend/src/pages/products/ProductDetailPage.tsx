@@ -32,7 +32,7 @@ interface ChatMessage {
   isMine: boolean;
 }
 
-export function ProductDetailPage() {
+function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading } = useProduct(Number(id));
@@ -1092,3 +1092,5 @@ export function ProductDetailPage() {
     </div>
   );
 }
+
+export default ProductDetailPage;

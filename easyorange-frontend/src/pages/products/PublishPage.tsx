@@ -9,7 +9,7 @@ import { useCreateProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
 import { productApi } from '@/api/productApi';
 import { compressImage } from '@/utils/imageCompress';
-import { CONDITION_LABEL_MAP } from '@/types';
+import { CONDITION_LABEL_MAP } from '@/constants';
 import './publish.css';
 
 interface FormState {
@@ -60,7 +60,7 @@ const CONDITION_DESC: Record<number, string> = {
   4: '有明显使用痕迹，功能正常',
 };
 
-export function PublishPage() {
+function PublishPage() {
   const navigate = useNavigate();
   const createProduct = useCreateProduct();
   const { data: categories } = useCategories();
@@ -733,3 +733,5 @@ export function PublishPage() {
     </div>
   );
 }
+
+export default PublishPage;

@@ -209,17 +209,6 @@ export function Image({
   }, []);
 
   useEffect(() => {
-    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
-      queueMicrotask(() => {
-        setLoaded(true);
-        if (resolvedSrc) {
-          imageCache.add(resolvedSrc);
-        }
-      });
-    }
-  }, [resolvedSrc]);
-
-  useEffect(() => {
     if (!resolvedSrc) {return;}
 
     if (prevSrcRef.current !== resolvedSrc) {
@@ -227,6 +216,17 @@ export function Image({
       setError(false);
       setLoaded(false);
       setRetryIndex(0);
+    }
+  }, [resolvedSrc]);
+
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      queueMicrotask(() => {
+        setLoaded(true);
+        if (resolvedSrc) {
+          imageCache.add(resolvedSrc);
+        }
+      });
     }
   }, [resolvedSrc]);
 

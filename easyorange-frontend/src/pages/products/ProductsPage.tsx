@@ -38,7 +38,7 @@ function useColumnCount() {
   return columnCount;
 }
 
-export function ProductsPage() {
+function ProductsPage() {
   const [searchParams] = useSearchParams();
   const { token } = useAuthStore();
   const navigate = useNavigate();
@@ -336,3 +336,5 @@ export function ProductsPage() {
     </div>
   );
 }
+
+export default ProductsPage;

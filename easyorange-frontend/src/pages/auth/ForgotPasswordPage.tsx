@@ -8,7 +8,7 @@ import './forgot-password.css'
 
 type Step = 1 | 2 | 3
 
-export function ForgotPasswordPage() {
+function ForgotPasswordPage() {
   const navigate = useNavigate()
   const addToast = useUIStore((s) => s.addToast)
   const [step, setStep] = useState<Step>(1)
@@ -246,3 +246,5 @@ export function ForgotPasswordPage() {
     </div>
   )
 }
+
+export default ForgotPasswordPage;

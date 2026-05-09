@@ -11,21 +11,21 @@ const LoadingFallback = () => (
 );
 
 const HomePage = lazy(() => import('@/pages/home/HomePage'));
-const ProductsPage = lazy(() => import('@/pages/products/ProductsPage').then(m => ({ default: m.ProductsPage })));
-const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage').then(m => ({ default: m.ProductDetailPage })));
-const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage').then(m => ({ default: m.ProfilePage })));
-const FavoritesPage = lazy(() => import('@/pages/favorites/FavoritesPage').then(m => ({ default: m.FavoritesPage })));
-const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage').then(m => ({ default: m.MessagesPage })));
-const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage').then(m => ({ default: m.OrdersPage })));
-const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })));
-const PaymentPage = lazy(() => import('@/pages/orders/PaymentPage').then(m => ({ default: m.PaymentPage })));
-const PaymentResultPage = lazy(() => import('@/pages/orders/PaymentResultPage').then(m => ({ default: m.PaymentResultPage })));
-const PublishPage = lazy(() => import('@/pages/products/PublishPage').then(m => ({ default: m.PublishPage })));
-const SearchPage = lazy(() => import('@/pages/profile/SearchPage').then(m => ({ default: m.SearchPage })));
-const EditProductPage = lazy(() => import('@/pages/products/EditProductPage').then(m => ({ default: m.EditProductPage })));
-const LoginPage = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
-const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const ProductsPage = lazy(() => import('@/pages/products/ProductsPage'));
+const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage'));
+const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
+const FavoritesPage = lazy(() => import('@/pages/favorites/FavoritesPage'));
+const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'));
+const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage'));
+const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage'));
+const PaymentPage = lazy(() => import('@/pages/orders/PaymentPage'));
+const PaymentResultPage = lazy(() => import('@/pages/orders/PaymentResultPage'));
+const PublishPage = lazy(() => import('@/pages/products/PublishPage'));
+const SearchPage = lazy(() => import('@/pages/profile/SearchPage'));
+const EditProductPage = lazy(() => import('@/pages/products/EditProductPage'));
+const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
+const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();

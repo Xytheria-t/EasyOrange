@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Package, MapPin, Phone, RefreshCw, User, FileText, Truck, CheckCircle, Clock, XCircle, CreditCard } from 'lucide-react';
 import { useOrderDetail, useCancelOrder, usePayOrder, useReceiveOrder, useRefundOrder } from '@/hooks';
-import { getOrderStatusLabel, getOrderStatusFromCode } from '@/types';
+import { getOrderStatusLabel, getOrderStatusFromCode } from '@/constants';
 import type { OrderStatus } from '@/types';
 
 const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Clock; hint: string }> = {
@@ -53,7 +53,7 @@ const STATUS_ORDER: Record<OrderStatus, number> = {
   REFUNDED: -1,
 };
 
-export function OrderDetailPage() {
+function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const orderId = Number(id);
@@ -301,3 +301,5 @@ export function OrderDetailPage() {
     </div>
   );
 }
+
+export default OrderDetailPage;

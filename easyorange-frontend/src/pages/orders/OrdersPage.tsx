@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, RefreshCw, ShoppingBag, Sparkles } from 'lucide-react';
 import { useMyOrders, useCancelOrder, usePayOrder, useReceiveOrder } from '@/hooks';
-import { getOrderStatusLabel, getOrderStatusFromCode } from '@/types';
+import { getOrderStatusLabel, getOrderStatusFromCode } from '@/constants';
 import type { Order, OrderStatus } from '@/types';
 import './payment.css';
 
@@ -60,7 +60,7 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
   },
 };
 
-export function OrdersPage() {
+function OrdersPage() {
   const [activeTab, setActiveTab] = useState('all');
   const navigate = useNavigate();
 
@@ -186,6 +186,8 @@ export function OrdersPage() {
     </div>
   );
 }
+
+export default OrdersPage;
 
 interface OrderCardProps {
   order: Order;

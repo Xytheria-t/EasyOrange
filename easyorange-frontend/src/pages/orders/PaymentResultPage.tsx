@@ -2,7 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Package, ArrowLeft, Sparkles, Home, ShoppingBag, Brain, RefreshCw } from 'lucide-react';
 import './payment-result.css';
 
-export function PaymentResultPage() {
+function PaymentResultPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -133,3 +133,5 @@ export function PaymentResultPage() {
     </div>
   );
 }
+
+export default PaymentResultPage;

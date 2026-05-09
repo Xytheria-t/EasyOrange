@@ -1,1 +1,1 @@
-export { MessagesPage } from './MessagesPage';
+export { default as MessagesPage } from './MessagesPage';
