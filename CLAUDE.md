@@ -80,12 +80,17 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 | 代码审查 | `common/code-review.md` |
 | Git 操作 | `common/git-workflow.md` |
 
-## 开发建议
+## 开发规范
 
-1. **遵循规则**：查看对应规则文件获取详细的编码规范
-2. **提问确认**：遇到不确定的情况，先问再做
-3. **简洁优先**：最小代码解决问题，不做过度设计
-4. **测试验证**：功能完成后运行测试确保质量
+- 编码规则见 `.trae/rules/` 目录
+- 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
+- 数据库变更必须通过 Flyway 迁移脚本
+- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
+- 测试覆盖率目标 ≥ 80%
+- **多模块构建**: 修改子模块后启动前必须先执行 `mvn clean install -Dmaven.test.skip=true`，确保子模块 JAR 安装到本地仓库，否则 DevTools 运行时会 ClassNotFoundException
+- **前端CSS导入**: 共享组件（如 ProductCard）使用的样式CSS必须在组件文件自身 import，禁止仅依赖页面级导入。首页通过 React.lazy 懒加载 section 组件时，页面级CSS不会随组件chunk加载，导致首次渲染无样式
+- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`），前端 TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失
+- **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
 
 ---
 

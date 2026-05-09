@@ -79,10 +79,8 @@ EasyOrange Platform
 easyorange/
 ├── easyorange-backend/               # 后端服务
 │   ├── easyorange-application/       # 应用层（启动类、控制器）
-│   ├── easyorange-common-core/       # 核心工具模块（异常、结果、工具类）
-│   ├── easyorange-common-domain/     # 领域公共模块（领域事件、通知接口）
-│   ├── easyorange-common/            # 公共模块（DTO、注解、通知服务）
-│   ├── easyorange-framework/         # 框架层（安全、配置）
+│   ├── easyorange-common/            # 公共模块（Result, PageResult, 注解, 异常, 领域事件基类）
+│   ├── easyorange-framework/         # 框架层（安全、配置、Outbox、事件发布）
 │   ├── easyorange-user/              # 用户域模块
 │   ├── easyorange-product/           # 商品域模块
 │   ├── easyorange-order/             # 订单域模块（含 Saga 编排）
@@ -125,6 +123,8 @@ easyorange/
 ├── docker-compose.yml                # Docker Compose 配置
 ├── .env.example                      # 环境变量示例
 ├── .githooks/                        # Git 钩子
+├── doc/                              # 项目文档
+│   └── 规范/                         # 架构规范文档（已切分为多个子文档）
 ├── AGENTS.md                         # Agent 使用说明
 ├── CLAUDE.md                         # Claude 配置
 ├── DATABASE.md                       # 数据库设计文档

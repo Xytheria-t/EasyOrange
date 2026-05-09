@@ -28,6 +28,9 @@ easy-orange/
 │   ├── easyorange-favorite/     # 收藏模块 (DDD + ACL)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
 ├── easyorange-frontend/         # React 前端
+│   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
+│   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
+│   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)
 ├── doc/                         # 项目文档
 └── .trae/rules/                 # AI 编码规则
 ```
@@ -40,6 +43,7 @@ easy-orange/
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
 5. **领域事件**: `@PublishEvent` 注解 + AOP 切面发布
 6. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
+7. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已有统一处理器返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
 
 ## 模块依赖关系
 
@@ -47,12 +51,46 @@ easy-orange/
 application → framework, user, product, order, payment, message, favorite
 framework → common
 user → framework
-product → framework, user (需通过 ACL 演进消除)
-order → framework, product, user, payment (需通过 Port/ACL 演进消除)
+product → framework, user (通过 SellerInfoPort 隔离，optional)
+order → framework, product, user, payment (通过 Port 接口隔离，optional)
 payment → framework
-message → framework, user (需通过 ACL 演进消除)
-favorite → framework, product (已通过 ProductAclService 隔离)
+message → framework, user (通过 UserInfoPort 隔离，optional)
+favorite → framework, product (通过 ProductInfoPort 隔离，optional)
 ```
+
+> **状态 (2026-05-09)**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。写操作通过事件驱动解耦，查询操作保留同步端口调用。
+
+## 已知问题
+
+（暂无）
+
+## 错误码规范
+
+错误码采用 **A/B/C/D 前缀格式**：
+
+| 前缀 | 类型 | HTTP 状态 | 示例 |
+|------|------|----------|------|
+| A | 成功/客户端语义 | 200/4xx | A0000=成功, A0401=未登录, A0403=禁止访问 |
+| B | 业务错误 | 400 | B0001=操作失败, B0002=业务异常 |
+| C | 系统错误 | 500 | C0500=服务器内部错误 |
+| D | 第三方错误 | 502 | D0502=上游服务不可用 |
+
+判断成功：`"A0000".equals(code)`
+
+## 架构文档
+
+详细架构规范见 `doc/规范/` 目录：
+
+| 文档 | 内容 |
+|------|------|
+| [架构.md](doc/架构/架构.md) | 主索引文档 |
+| [架构-技术栈.md](doc/架构/架构-技术栈.md) | 技术选型 |
+| [架构-系统架构.md](doc/架构/架构-系统架构.md) | 整体架构、模块划分 |
+| [架构-模块结构.md](doc/架构/架构-模块结构.md) | 包结构规范 |
+| [架构-DDD规范.md](doc/架构/架构-DDD规范.md) | DDD 设计规范 |
+| [架构-安全认证.md](doc/架构/架构-安全认证.md) | JWT 认证 |
+| [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) | Flyway 规范 |
+| [架构-部署演进.md](doc/架构/架构-部署演进.md) | 部署与演进 |
 
 ## 开发规范
 
@@ -61,6 +99,8 @@ favorite → framework, product (已通过 ProductAclService 隔离)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
 - 测试覆盖率目标 ≥ 80%
+- **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
+- **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 
 ## 常用命令
 

@@ -6,7 +6,7 @@
 |------|------|
 | 数据库 | MySQL 8.0+ |
 | 字符集 | utf8mb4 / utf8mb4_0900_ai_ci |
-| 主键策略 | 雪花算法（BIGINT），Saga/Event 使用 UUID |
+| 主键策略 | 雪花算法（BIGINT），Saga/Event 使用 UUID。JSON 层面所有 BIGINT 主键通过 Jackson ToStringSerializer 序列化为 String，防止前端 JS 精度丢失 |
 | 逻辑删除 | del_flag TINYINT（0 正常 / 2 删除） |
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
@@ -15,7 +15,7 @@
 
 ## 表总览
 
-共 23 张表，按业务模块划分：
+共 24 张表，按业务模块划分：
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -24,6 +24,7 @@
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
+| 商品 | eo_product_review | 商品评价 | ProductReviewDO |
 | 商品 | eo_product_report | 商品举报 | ProductReportDO |
 | 商品 | eo_favorite | 用户收藏 | FavoriteDO |
 | 搜索 | eo_search_history | 搜索历史 | SearchHistoryDO |
@@ -39,7 +40,7 @@
 | 文件 | eo_upload_file | 文件上传记录 | UploadFile |
 | 日志 | eo_oper_log | 操作日志 | SysOperLog |
 | 日志 | eo_oper_log_archive | 操作日志归档 | — |
-| 事件 | eo_domain_event | 领域事件（Outbox） | DomainEventPO |
+| 事件 | eo_domain_event | 领域事件（Outbox） | OutboxMessagePO |
 | 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
 | 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyPO |
 
@@ -203,7 +204,38 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 6. eo_product_report — 商品举报表
+### 6. eo_product_review — 商品评价表
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | BIGINT | PK | 主键 ID |
+| product_id | BIGINT | NOT NULL | 商品 ID |
+| user_id | BIGINT | NOT NULL | 评价用户 ID |
+| order_id | BIGINT | NOT NULL | 关联订单 ID |
+| rating | TINYINT | NOT NULL DEFAULT 5 | 评分（1-5） |
+| content | TEXT | NOT NULL | 评价内容 |
+| reply_content | TEXT | | 卖家回复内容 |
+| reply_time | DATETIME | | 卖家回复时间 |
+| likes | INT | NOT NULL DEFAULT 0 | 点赞数 |
+| status | TINYINT | NOT NULL DEFAULT 1 | 状态（0 隐藏 / 1 显示 / 2 待审核） |
+| + 公共字段 | | | |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| uk_eo_product_review_user_order | UNIQUE | user_id, order_id |
+| idx_eo_product_review_product_id | KEY | product_id |
+| idx_eo_product_review_order_id | KEY | order_id |
+| idx_eo_product_review_create_time | KEY | create_time DESC |
+
+**CHECK 约束**：rating 1-5, status IN (0,1,2), likes>=0
+
+**业务约束**：同一用户对同一订单只能评价一次（唯一约束）
+
+---
+
+### 7. eo_product_report — 商品举报表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -225,7 +257,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 7. eo_favorite — 用户收藏表
+### 8. eo_favorite — 用户收藏表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -328,7 +360,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 11. eo_payment — 支付记录表
+### 12. eo_payment — 支付记录表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -378,7 +410,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 13. eo_message — 消息表
+### 14. eo_message — 消息表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -399,7 +431,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | 名称 | 类型 | 列 |
 |------|------|----|
 | idx_eo_message_sender_time | KEY | sender_id, create_time DESC |
-| idx_eo_message_receiver_read_time | KEY | receiver_id, is_read, create_time DESC |
+| idx_eo_message_receiver_read_time | KEY | receiver_id, is_read, del_flag, create_time DESC |
 | idx_eo_message_business_id | KEY | business_id |
 | idx_eo_message_conversation_time | KEY | conversation_id, create_time DESC |
 
@@ -431,7 +463,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 16. eo_message_template — 消息模板表
+### 17. eo_message_template — 消息模板表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -497,7 +529,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 19. eo_oper_log — 操作日志表
+### 20. eo_oper_log — 操作日志表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -537,7 +569,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 21. eo_domain_event — 领域事件表（Outbox 模式）
+### 22. eo_domain_event — 领域事件表（Outbox 模式）
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -600,7 +632,7 @@ PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
 
 ---
 
-### 23. eo_idempotency_key — 幂等性键表
+### 24. eo_idempotency_key — 幂等性键表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -648,6 +680,7 @@ PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
 eo_user ──1:N── eo_product (user_id)
               ├──1:N── eo_product_image (product_id)
               ├──1:1── eo_product_detail (product_id)
+              ├──1:N── eo_product_review (product_id)
               ├──1:N── eo_product_report (product_id)
               └──1:N── eo_favorite (user_id + product_id)
 
@@ -657,6 +690,7 @@ eo_category ──1:N── eo_product (category_id)
 eo_user ──1:N── eo_order (buyer_id / seller_id)
 eo_product ──1:1── eo_order (product_id)
 eo_order ──1:1── eo_payment (order_id)
+eo_order ──1:N── eo_product_review (order_id)
 
 eo_user ──1:N── eo_message (sender_id / receiver_id)
 eo_user ──1:N── eo_message_subscription (user_id)
