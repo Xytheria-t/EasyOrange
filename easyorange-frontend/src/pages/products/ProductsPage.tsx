@@ -3,11 +3,11 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { X } from 'lucide-react';
 import { useProducts, useCategories, useFavoriteCheck } from '@/hooks';
-import { ProductCard } from '@/components/sections/ProductCard';
+import { ProductCard } from '@/components/product/ProductCard';
 import { preloadImages } from '@/components/ui/Image';
 
-import { ToolsPlaza } from '@/components/products/ToolsPlaza';
-import { FilterSidebar, type FilterState } from '@/components/products/FilterSidebar';
+import { ToolsPlaza } from '@/components/product/ToolsPlaza';
+import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';
 import type { ProductQueryParams, Product } from '@/types';
 

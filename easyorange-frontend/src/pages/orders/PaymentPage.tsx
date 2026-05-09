@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CreditCard, Smartphone, Wallet, ArrowLeft, Shield, Loader2 } from 'lucide-react';
-import { useCreatePayment, usePaymentStatus } from '@/hooks/usePayment';
-import { useOrderDetail } from '@/hooks/useOrders';
+import { useCreatePayment, usePaymentStatus } from '@/hooks';
+import { useOrderDetail } from '@/hooks';
 import { useUIStore } from '@/store/uiStore';
 import type { PaymentMethod } from '@/types';
 import '@/styles/main.css';

@@ -4,7 +4,7 @@
  */
 
 import type { Product } from '@/types';
-import { PRODUCT_STATUS_CODE } from '@/types';
+import { PRODUCT_STATUS_CODE } from '@/constants';
 
 export function normalizeProduct(raw: Record<string, unknown>): Product {
     const status = typeof raw.status === 'number' ? raw.status : 1;

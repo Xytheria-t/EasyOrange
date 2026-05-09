@@ -7,7 +7,7 @@ import {
     Dumbbell, Flame, Star, ChevronRight, History, Trash2
 } from 'lucide-react';
 import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories } from '@/hooks';
-import { ProductCard } from '@/components/sections/ProductCard';
+import { ProductCard } from '@/components/product/ProductCard';
 import { debounce } from '@/utils';
 import '@/styles/main.css';
 import '@/styles/search.css';

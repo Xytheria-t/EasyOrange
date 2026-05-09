@@ -1,6 +1,6 @@
 import { RouterProvider } from 'react-router-dom';
 import { router } from './routes';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/feedback/ErrorBoundary';
 import motionController from './lib/motion';
 import { useEffect } from 'react';
 

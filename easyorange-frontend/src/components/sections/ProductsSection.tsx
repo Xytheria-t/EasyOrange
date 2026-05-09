@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ProductCard } from './ProductCard'
+import { ProductCard } from '@/components/product/ProductCard'
 import { useProducts, useFavoriteCheck } from '@/hooks'
 import { useAuthStore } from '@/store/authStore'
 import type { Product, ProductQueryParams } from '@/types'

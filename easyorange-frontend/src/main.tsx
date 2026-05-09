@@ -7,7 +7,7 @@ import App from './App';
 import { initTokenRefresh } from './features/auth/session';
 import './styles/tailwind.css';
 import './styles/main.css';
-import './styles/floating-nav.css';
+import './components/sections/floating-nav.css';
 
 initTokenRefresh();
 
