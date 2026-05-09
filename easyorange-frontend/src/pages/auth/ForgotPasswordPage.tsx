@@ -4,7 +4,7 @@ import { userApi } from '@/api/userApi'
 import { ArrowLeft, KeyRound, Smartphone, ShieldCheck, Sparkles, Check } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { errorHandler } from '@/utils/errorHandler'
-import '@/styles/forgot-password.css'
+import './forgot-password.css'
 
 type Step = 1 | 2 | 3
 

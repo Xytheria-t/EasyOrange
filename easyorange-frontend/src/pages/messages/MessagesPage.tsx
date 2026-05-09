@@ -3,7 +3,7 @@ import { MessageCircle, Bell, Sparkles, Zap, Send, Brain } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { messageApi } from '@/api/messageApi';
 import type { ChatSession } from '@/types';
-import '@/styles/messages.css';
+import './messages.css';
 
 export function MessagesPage() {
   const navigate = useNavigate();

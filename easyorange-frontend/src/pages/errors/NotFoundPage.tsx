@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, ArrowLeft, Search, TrendingUp, Sparkles, Brain } from 'lucide-react';
-import '@/styles/not-found.css';
+import './not-found.css';
 
 export function NotFoundPage() {
   const navigate = useNavigate();

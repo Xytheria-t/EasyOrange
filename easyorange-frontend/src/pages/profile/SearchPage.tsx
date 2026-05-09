@@ -10,7 +10,7 @@ import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories }
 import { ProductCard } from '@/components/product/ProductCard';
 import { debounce } from '@/utils';
 import '@/styles/main.css';
-import '@/styles/search.css';
+import './search.css';
 
 const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
     '电子数码': { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },

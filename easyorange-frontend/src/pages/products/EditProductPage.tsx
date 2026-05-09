@@ -5,7 +5,7 @@ import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@
 import { uploadFile } from '@/api/uploadApi';
 import { compressImage } from '@/utils/imageCompress';
 import { CONDITION_LABEL_MAP } from '@/types';
-import '@/styles/edit-product.css';
+import './edit-product.css';
 
 interface FormState {
     name: string;

@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug, Sparkles } from 'lucide-react';
-import '@/styles/error-boundary.css';
+import './error-boundary.css';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

@@ -15,7 +15,7 @@ import {
   PasswordModal,
 } from '@/components/profile'
 import '@/styles/main.css'
-import '@/styles/profile.css'
+import './profile.css'
 
 type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId'
 type TabType = 'overview' | 'activity' | 'security' | 'preferences'

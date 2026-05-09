@@ -1,6 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Package, ArrowLeft, Sparkles, Home, ShoppingBag, Brain, RefreshCw } from 'lucide-react';
-import '@/styles/payment-result.css';
+import './payment-result.css';
 
 export function PaymentResultPage() {
   const [searchParams] = useSearchParams();

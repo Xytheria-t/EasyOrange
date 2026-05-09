@@ -4,6 +4,7 @@ import { Package, Clock, Truck, CheckCircle, XCircle, ChevronRight, RefreshCw, S
 import { useMyOrders, useCancelOrder, usePayOrder, useReceiveOrder } from '@/hooks';
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/types';
 import type { Order, OrderStatus } from '@/types';
+import './payment.css';
 
 const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
   { id: 'all', label: '全部', icon: Package, statusCode: undefined },

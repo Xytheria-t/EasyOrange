@@ -10,7 +10,7 @@ import { uploadFile } from '@/api/uploadApi';
 import { productApi } from '@/api/productApi';
 import { compressImage } from '@/utils/imageCompress';
 import { CONDITION_LABEL_MAP } from '@/types';
-import '@/styles/publish.css';
+import './publish.css';
 
 interface FormState {
   name: string;

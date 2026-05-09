@@ -10,6 +10,7 @@ import { ToolsPlaza } from '@/components/product/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';
 import type { ProductQueryParams, Product } from '@/types';
+import './products-premium.css';
 
 function useColumnCount() {
   const [columnCount, setColumnCount] = useState(() => {

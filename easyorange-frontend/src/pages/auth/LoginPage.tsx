@@ -5,7 +5,7 @@ import { userApi } from '@/api/userApi'
 import { validator, errorHandler } from '@/utils'
 import { useUIStore } from '@/store/uiStore'
 import { ProfileSetupModal } from '@/components/profile/ProfileSetupModal'
-import '@/styles/login.css'
+import './login.css'
 
 type LoginMethod = 'password' | 'sms'
 

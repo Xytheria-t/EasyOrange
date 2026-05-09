@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import './ai-features.css'
 
 interface AIFeature {
   id: string

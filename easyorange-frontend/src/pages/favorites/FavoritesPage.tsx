@@ -6,7 +6,7 @@ import { favoriteApi } from '@/api/favoriteApi';
 import { useUIStore } from '@/store/uiStore';
 import { CONDITION_LABEL_MAP, type Favorite } from '@/types';
 import { Image } from '@/components/ui/Image';
-import '@/styles/favorites.css';
+import './favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
   1: '✨',
