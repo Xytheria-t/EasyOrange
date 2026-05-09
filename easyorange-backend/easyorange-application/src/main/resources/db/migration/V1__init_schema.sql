@@ -137,6 +137,33 @@ CREATE TABLE `eo_product_image` (
     KEY `idx_eo_product_image_product_sort` (`product_id`, `sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品图片表';
 
+CREATE TABLE `eo_product_review` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `product_id` BIGINT NOT NULL COMMENT '商品 ID',
+    `user_id` BIGINT NOT NULL COMMENT '评价用户 ID',
+    `order_id` BIGINT NOT NULL COMMENT '关联订单 ID',
+    `rating` TINYINT NOT NULL DEFAULT 5 COMMENT '评分（1-5）',
+    `content` TEXT NOT NULL COMMENT '评价内容',
+    `reply_content` TEXT DEFAULT NULL COMMENT '卖家回复内容',
+    `reply_time` DATETIME DEFAULT NULL COMMENT '卖家回复时间',
+    `likes` INT NOT NULL DEFAULT 0 COMMENT '点赞数',
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '状态（0 隐藏 1 显示 2 待审核）',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_product_review_product_id` (`product_id`),
+    KEY `idx_eo_product_review_user_id` (`user_id`),
+    KEY `idx_eo_product_review_order_id` (`order_id`),
+    KEY `idx_eo_product_review_create_time` (`create_time` DESC),
+    CONSTRAINT `chk_eo_product_review_rating` CHECK (`rating` >= 1 AND `rating` <= 5),
+    CONSTRAINT `chk_eo_product_review_status` CHECK (`status` IN (0, 1, 2)),
+    CONSTRAINT `chk_eo_product_review_likes` CHECK (`likes` >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品评价表';
+
 CREATE TABLE `eo_product_report` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
     `product_id` BIGINT NOT NULL COMMENT '被举报商品 ID',
@@ -456,119 +483,4 @@ CREATE TABLE `eo_oper_log` (
     `request_method` VARCHAR(10) DEFAULT NULL COMMENT '请求方式',
     `operator_type` TINYINT NOT NULL DEFAULT 0 COMMENT '操作类别',
     `oper_name` VARCHAR(50) DEFAULT NULL COMMENT '操作人员',
-    `oper_url` VARCHAR(255) DEFAULT NULL COMMENT '请求 URL',
-    `oper_ip` VARCHAR(128) DEFAULT NULL COMMENT '主机地址',
-    `oper_location` VARCHAR(255) DEFAULT NULL COMMENT '操作地点',
-    `oper_param` TEXT DEFAULT NULL COMMENT '请求参数',
-    `json_result` TEXT DEFAULT NULL COMMENT '返回参数',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '操作状态（0 正常 1 异常）',
-    `error_msg` VARCHAR(2000) DEFAULT NULL COMMENT '错误消息',
-    `oper_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
-    `cost_time` INT NOT NULL DEFAULT 0 COMMENT '消耗时间（毫秒）',
-    PRIMARY KEY (`oper_id`),
-    KEY `idx_eo_oper_log_time` (`oper_time`),
-    KEY `idx_eo_oper_log_name_time` (`oper_name`, `oper_time` DESC),
-    KEY `idx_eo_oper_log_business_time` (`business_type`, `oper_time` DESC),
-    KEY `idx_eo_oper_log_status_time` (`status`, `oper_time` DESC),
-    CONSTRAINT `chk_eo_oper_log_status` CHECK (`status` IN (0, 1))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志表';
-
-CREATE TABLE `eo_oper_log_archive` (
-    `oper_id` BIGINT NOT NULL COMMENT '归档日志主键',
-    `title` VARCHAR(50) DEFAULT NULL COMMENT '模块标题',
-    `business_type` TINYINT NOT NULL DEFAULT 0 COMMENT '业务类型',
-    `method` VARCHAR(100) DEFAULT NULL COMMENT '方法名称',
-    `request_method` VARCHAR(10) DEFAULT NULL COMMENT '请求方式',
-    `operator_type` TINYINT NOT NULL DEFAULT 0 COMMENT '操作类别',
-    `oper_name` VARCHAR(50) DEFAULT NULL COMMENT '操作人员',
-    `oper_url` VARCHAR(255) DEFAULT NULL COMMENT '请求 URL',
-    `oper_ip` VARCHAR(128) DEFAULT NULL COMMENT '主机地址',
-    `oper_location` VARCHAR(255) DEFAULT NULL COMMENT '操作地点',
-    `oper_param` TEXT DEFAULT NULL COMMENT '请求参数',
-    `json_result` TEXT DEFAULT NULL COMMENT '返回参数',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '操作状态（0 正常 1 异常）',
-    `error_msg` VARCHAR(2000) DEFAULT NULL COMMENT '错误消息',
-    `oper_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
-    `cost_time` INT NOT NULL DEFAULT 0 COMMENT '消耗时间（毫秒）',
-    `archived_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '归档时间',
-    PRIMARY KEY (`oper_id`),
-    KEY `idx_eo_oper_log_archive_time` (`oper_time`),
-    KEY `idx_eo_oper_log_archive_name` (`oper_name`),
-    KEY `idx_eo_oper_log_archive_archived_at` (`archived_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志归档表';
-
--- ===================================================================
--- 9. 领域事件表 (Outbox 模式)
--- ===================================================================
-
-CREATE TABLE `eo_domain_event` (
-    `id`              BIGINT          NOT NULL                 COMMENT '主键ID',
-    `event_id`        CHAR(36)        NOT NULL                 COMMENT '事件唯一标识(UUID)',
-    `aggregate_type`  VARCHAR(100)    NOT NULL                 COMMENT '聚合类型',
-    `aggregate_id`    BIGINT          NOT NULL                 COMMENT '聚合ID',
-    `event_type`      VARCHAR(100)    NOT NULL                 COMMENT '事件类型',
-    `payload`         TEXT            DEFAULT NULL             COMMENT '事件载荷(JSON)',
-    `status`          VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态(PENDING/PUBLISHED/FAILED)',
-    `created_at`      DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '事件创建时间',
-    `published_at`    DATETIME(3)     DEFAULT NULL             COMMENT '事件发布时间',
-    `del_flag`        TINYINT         NOT NULL DEFAULT 0       COMMENT '删除标志(0=正常 2=已删除)',
-    `create_time`     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
-    `update_time`     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
-    `create_by`       BIGINT          DEFAULT NULL             COMMENT '创建人ID',
-    `update_by`       BIGINT          DEFAULT NULL             COMMENT '更新人ID',
-    `version`         INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_domain_event_event_id` (`event_id`),
-    KEY `idx_eo_domain_event_aggregate` (`aggregate_type`, `aggregate_id`),
-    KEY `idx_eo_domain_event_status_created` (`status`, `created_at`),
-    KEY `idx_eo_domain_event_event_type` (`event_type`),
-    CONSTRAINT `chk_eo_domain_event_status` CHECK (`status` IN ('PENDING', 'PUBLISHED', 'FAILED'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='领域事件表';
-
--- ===================================================================
--- 10. Saga 分布式事务状态表
--- ===================================================================
-
-CREATE TABLE `eo_saga_status` (
-    `saga_id`           CHAR(36)        NOT NULL                 COMMENT 'Saga 实例唯一标识(UUID)',
-    `saga_type`         VARCHAR(100)    NOT NULL                 COMMENT 'Saga 类型',
-    `state`             VARCHAR(20)     NOT NULL                 COMMENT 'Saga 状态',
-    `current_step`      VARCHAR(50)     DEFAULT NULL             COMMENT '当前执行步骤',
-    `payload`           TEXT            DEFAULT NULL             COMMENT 'Saga 载荷(JSON)',
-    `error_message`    TEXT            DEFAULT NULL             COMMENT '错误信息',
-    `compensation_log`  TEXT            DEFAULT NULL             COMMENT '补偿日志(JSON)',
-    `retry_count`       INT             NOT NULL DEFAULT 0       COMMENT '重试次数',
-    `created_at`        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT 'Saga 创建时间',
-    `updated_at`        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT 'Saga 更新时间',
-    PRIMARY KEY (`saga_id`),
-    KEY `idx_eo_saga_status_type_state` (`saga_type`, `state`),
-    KEY `idx_eo_saga_status_state_created` (`state`, `created_at`),
-    KEY `idx_eo_saga_status_created_at` (`created_at`),
-    CONSTRAINT `chk_eo_saga_status_state` CHECK (
-        `state` IN ('STARTED', 'ORDER_CREATED', 'PAYMENT_CREATED', 'COMPLETED', 'COMPENSATING', 'COMPENSATED', 'FAILED')
-    )
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Saga 分布式事务状态表';
-
--- ===================================================================
--- 11. 幂等性键表
--- ===================================================================
-
-CREATE TABLE `eo_idempotency_key` (
-    `id`              BIGINT          NOT NULL                 COMMENT '主键ID',
-    `idempotency_key` VARCHAR(255)    NOT NULL                 COMMENT '幂等性键',
-    `user_id`         BIGINT          NOT NULL                 COMMENT '用户ID',
-    `request_hash`    VARCHAR(64)     NOT NULL                 COMMENT '请求哈希',
-    `response_data`   TEXT            DEFAULT NULL             COMMENT '响应数据(JSON)',
-    `status`          VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态(PENDING/COMPLETED/FAILED)',
-    `expires_at`      DATETIME        NOT NULL                 COMMENT '过期时间',
-    `del_flag`        TINYINT         NOT NULL DEFAULT 0       COMMENT '删除标志(0=正常 2=已删除)',
-    `create_time`     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
-    `update_time`     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
-    `create_by`       BIGINT          DEFAULT NULL             COMMENT '创建人ID',
-    `update_by`       BIGINT          DEFAULT NULL             COMMENT '更新人ID',
-    `version`         INT             NOT NULL DEFAULT 0       COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_idempotency_key_key` (`idempotency_key`),
-    KEY `idx_eo_idempotency_key_user_expires` (`user_id`, `expires_at`),
-    CONSTRAINT `chk_eo_idempotency_key_status` CHECK (`status` IN ('PENDING', 'COMPLETED', 'FAILED'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='幂等性键表';
+    `oper_url` VARCHAR(255) DEFAULT NULL COMMENT

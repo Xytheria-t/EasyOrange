@@ -329,20 +329,14 @@ export function FavoritesPage() {
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
 
-                    <div className="fav-card-checkbox">
+                    <div className="fav-card-checkbox" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         id={`fav-${fav.id}`}
                         checked={selectedIds.has(fav.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          toggleSelect(fav.id);
-                        }}
+                        onChange={() => toggleSelect(fav.id)}
                       />
-                      <label
-                        htmlFor={`fav-${fav.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <label htmlFor={`fav-${fav.id}`} />
                     </div>
 
                     <button

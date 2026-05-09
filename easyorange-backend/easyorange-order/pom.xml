@@ -22,22 +22,25 @@
             <artifactId>easyorange-framework</artifactId>
         </dependency>
 
-        <!-- 依赖 Product 模块（查询商品信息） -->
+        <!-- 依赖 Product 模块（查询商品信息） - optional 因为适配器在 application 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-product</artifactId>
+            <optional>true</optional>
         </dependency>
 
-        <!-- 依赖 User 模块（查询用户信息） -->
+        <!-- 依赖 User 模块（查询用户信息） - optional 因为适配器在 application 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-user</artifactId>
+            <optional>true</optional>
         </dependency>
 
-        <!-- 依赖 Payment 模块（支付相关） -->
+        <!-- 依赖 Payment 模块（支付相关） - optional 因为适配器在 application 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-payment</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 

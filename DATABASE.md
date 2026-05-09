@@ -589,7 +589,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 **状态流转**：
 
 ```
-STARTED ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
+PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
   │                                        │
   └──→ COMPENSATING ─→ COMPENSATED         └──→ FAILED
   │

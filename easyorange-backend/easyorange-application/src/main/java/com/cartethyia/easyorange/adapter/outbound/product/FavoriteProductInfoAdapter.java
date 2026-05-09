@@ -1,27 +1,26 @@
-package com.cartethyia.easyorange.favorite.infrastructure.acl;
+package com.cartethyia.easyorange.adapter.outbound.product;
 
+import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
+import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Service
-public class ProductAclServiceImpl implements ProductAclService {
+@Component
+@RequiredArgsConstructor
+public class FavoriteProductInfoAdapter implements ProductInfoPort {
 
     private final ProductRepository productRepository;
     private final ProductQueryRepository productQueryRepository;
-
-    public ProductAclServiceImpl(ProductRepository productRepository,
-                                  ProductQueryRepository productQueryRepository) {
-        this.productRepository = productRepository;
-        this.productQueryRepository = productQueryRepository;
-    }
 
     @Override
     public boolean productExists(Long productId) {
@@ -36,24 +35,31 @@ public class ProductAclServiceImpl implements ProductAclService {
     }
 
     @Override
-    public List<ProductReadModel> findProductsByIds(List<Long> productIds) {
-        return productQueryRepository.findProductsByIds(productIds);
+    public List<ProductInfo> findProductsByIds(List<Long> productIds) {
+        List<ProductReadModel> products = productQueryRepository.findProductsByIds(productIds);
+        return products.stream()
+                .map(this::toProductInfo)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Map<Long, SellerReadModel> findSellersByIds(Set<Long> sellerIds) {
+    public Map<Long, SellerInfo> findSellersByIds(Set<Long> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
             return Collections.emptyMap();
         }
         return productQueryRepository.findSellersByIds(sellerIds).stream()
-                .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
+                .collect(Collectors.toMap(
+                        SellerReadModel::id,
+                        this::toSellerInfo,
+                        (a, b) -> a
+                ));
     }
 
     @Override
-    public List<ProductVO> assembleProductVOs(List<ProductReadModel> products,
-                                               Map<Long, SellerReadModel> sellerMap) {
+    public List<ProductDetailInfo> assembleProductDetails(List<ProductInfo> products,
+                                                           Map<Long, SellerInfo> sellerMap) {
         List<Long> productIds = products.stream()
-                .map(ProductReadModel::id)
+                .map(ProductInfo::id)
                 .collect(Collectors.toList());
 
         Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
@@ -72,7 +78,7 @@ public class ProductAclServiceImpl implements ProductAclService {
                             .map(ProductQueryRepository.ProductImageInfo::imageUrl)
                             .orElse(imageUrls.isEmpty() ? "" : imageUrls.getFirst());
 
-                    ProductVO.ProductVOBuilder builder = ProductVO.builder()
+                    ProductDetailInfo.Builder builder = ProductDetailInfo.builder()
                             .id(product.id())
                             .sellerId(product.sellerId())
                             .categoryId(product.categoryId())
@@ -94,7 +100,7 @@ public class ProductAclServiceImpl implements ProductAclService {
                             .updateTime(product.updateTime());
 
                     if (product.sellerId() != null) {
-                        SellerReadModel seller = sellerMap.get(product.sellerId());
+                        SellerInfo seller = sellerMap.get(product.sellerId());
                         if (seller != null) {
                             builder.username(seller.nickName() != null ? seller.nickName() : seller.username());
                             builder.userAvatar(seller.avatar());
@@ -103,5 +109,38 @@ public class ProductAclServiceImpl implements ProductAclService {
                     return builder.build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    private ProductInfo toProductInfo(ProductReadModel model) {
+        return new ProductInfo(
+                model.id(),
+                model.sellerId(),
+                model.categoryId(),
+                model.title(),
+                model.description(),
+                model.price(),
+                model.originalPrice(),
+                model.stock(),
+                model.status(),
+                model.statusDesc(),
+                model.views(),
+                model.condition(),
+                model.conditionDesc(),
+                model.location(),
+                model.contactMethod(),
+                model.images(),
+                model.mainImageUrl(),
+                model.createTime(),
+                model.updateTime()
+        );
+    }
+
+    private SellerInfo toSellerInfo(SellerReadModel model) {
+        return new SellerInfo(
+                model.id(),
+                model.username(),
+                model.nickName(),
+                model.avatar()
+        );
     }
 }

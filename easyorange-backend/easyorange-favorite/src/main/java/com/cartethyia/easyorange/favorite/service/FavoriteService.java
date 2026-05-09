@@ -4,16 +4,16 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
+import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.favorite.infrastructure.acl.ProductAclService;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
+import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
 import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
 import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,12 +24,12 @@ import java.util.stream.Collectors;
 public class FavoriteService {
 
     private final FavoriteRepository favoriteRepository;
-    private final ProductAclService productAclService;
+    private final ProductInfoPort productInfoPort;
 
     public FavoriteService(FavoriteRepository favoriteRepository,
-                           ProductAclService productAclService) {
+                           ProductInfoPort productInfoPort) {
         this.favoriteRepository = favoriteRepository;
-        this.productAclService = productAclService;
+        this.productInfoPort = productInfoPort;
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -37,8 +37,8 @@ public class FavoriteService {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         Long productId = dto.getProductId();
 
-        BizRequire.requireTrue(productAclService.productExists(productId), "商品不存在");
-        BizRequire.requireFalse(productAclService.isOwnProduct(userId, productId), "不能收藏自己的商品");
+        BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
+        BizRequire.requireFalse(productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
         BizRequire.requireFalse(
                 favoriteRepository.existsByUserIdAndProductId(userId, productId),
                 "已收藏过该商品"
@@ -92,22 +92,22 @@ public class FavoriteService {
                 .map(Favorite::getProductId)
                 .collect(Collectors.toList());
 
-        List<ProductReadModel> products = productAclService.findProductsByIds(productIds);
+        List<ProductInfo> products = productInfoPort.findProductsByIds(productIds);
         if (products.isEmpty()) {
             return PageResult.empty(pageNum, pageSize);
         }
 
         Set<Long> sellerIds = products.stream()
-                .map(ProductReadModel::sellerId)
+                .map(ProductInfo::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
 
-        Map<Long, SellerReadModel> sellerMap = productAclService.findSellersByIds(sellerIds);
+        Map<Long, SellerInfo> sellerMap = productInfoPort.findSellersByIds(sellerIds);
 
-        List<ProductVO> productVOs = productAclService.assembleProductVOs(products, sellerMap);
+        List<ProductDetailInfo> productDetailInfos = productInfoPort.assembleProductDetails(products, sellerMap);
 
-        Map<Long, ProductVO> productVOMap = productVOs.stream()
-                .collect(Collectors.toMap(ProductVO::getId, p -> p, (a, b) -> a));
+        Map<Long, ProductDetailInfo> productDetailMap = productDetailInfos.stream()
+                .collect(Collectors.toMap(ProductDetailInfo::id, p -> p, (a, b) -> a));
 
         Map<Long, Favorite> favoriteByProductId = favorites.stream()
                 .collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
@@ -115,14 +115,14 @@ public class FavoriteService {
         List<FavoriteVO> voList = productIds.stream()
                 .map(productId -> {
                     Favorite fav = favoriteByProductId.get(productId);
-                    ProductVO productVO = productVOMap.get(productId);
-                    if (fav == null || productVO == null) {
+                    ProductDetailInfo productDetail = productDetailMap.get(productId);
+                    if (fav == null || productDetail == null) {
                         return null;
                     }
                     return FavoriteVO.builder()
                             .id(fav.getId())
                             .productId(fav.getProductId())
-                            .product(productVO)
+                            .product(productDetail)
                             .createTime(fav.getCreateTime())
                             .build();
                 })

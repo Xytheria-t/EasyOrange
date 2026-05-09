@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
 import com.cartethyia.easyorange.product.application.query.dto.ProductReviewVO;
 import com.cartethyia.easyorange.product.application.query.dto.ReviewStatsVO;
-import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import com.cartethyia.easyorange.product.domain.port.output.SellerInfoPort;
+import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class ProductReviewQueryService {
 
     private final ProductReviewMapper reviewMapper;
-    private final UserRepository userRepository;
+    private final SellerInfoPort sellerInfoPort;
 
     @Transactional(readOnly = true)
     public PageResult<ProductReviewVO> listReviews(Long productId, Integer pageNum, Integer pageSize) {
@@ -52,7 +52,7 @@ public class ProductReviewQueryService {
             return PageResult.empty(normalized.getPageNum(), normalized.getPageSize());
         }
 
-        Map<Long, User> userMap = resolveUsers(reviewPage.getRecords());
+        Map<Long, SellerInfo> userMap = resolveUsers(reviewPage.getRecords());
 
         List<ProductReviewVO> vos = reviewPage.getRecords().stream()
                 .map(r -> toReviewVO(r, userMap))
@@ -102,7 +102,7 @@ public class ProductReviewQueryService {
                 .build();
     }
 
-    private Map<Long, User> resolveUsers(List<ProductReviewDO> reviews) {
+    private Map<Long, SellerInfo> resolveUsers(List<ProductReviewDO> reviews) {
         Set<Long> userIds = reviews.stream()
                 .map(ProductReviewDO::getUserId)
                 .filter(Objects::nonNull)
@@ -112,22 +112,17 @@ public class ProductReviewQueryService {
             return Collections.emptyMap();
         }
 
-        return userRepository.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+        return sellerInfoPort.getSellerInfos(userIds);
     }
 
-    private ProductReviewVO toReviewVO(ProductReviewDO review, Map<Long, User> userMap) {
-        User user = userMap.get(review.getUserId());
-        String userAvatar = null;
-        if (user != null && user.getProfile() != null) {
-            userAvatar = user.getProfile().avatar();
-        }
+    private ProductReviewVO toReviewVO(ProductReviewDO review, Map<Long, SellerInfo> userMap) {
+        SellerInfo user = userMap.get(review.getUserId());
         return ProductReviewVO.builder()
                 .id(review.getId())
                 .productId(review.getProductId())
                 .userId(review.getUserId())
-                .username(user != null ? user.getUsername() : "未知用户")
-                .userAvatar(userAvatar)
+                .username(user != null ? user.username() : "未知用户")
+                .userAvatar(user != null ? user.avatar() : null)
                 .rating(review.getRating())
                 .content(review.getContent())
                 .likes(review.getLikes())

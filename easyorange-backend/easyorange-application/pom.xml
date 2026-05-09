@@ -42,6 +42,12 @@
             <artifactId>easyorange-order</artifactId>
         </dependency>
 
+        <!-- 依赖支付模块（OrderPaymentGatewayAdapter 需要） -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-payment</artifactId>
+        </dependency>
+
         <!-- 依赖消息模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>

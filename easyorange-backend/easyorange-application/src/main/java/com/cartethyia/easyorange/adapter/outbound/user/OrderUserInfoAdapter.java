@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.adapter.outbound.messaging;
+package com.cartethyia.easyorange.adapter.outbound.user;
 
 import com.cartethyia.easyorange.order.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class UserInfoAdapter implements UserInfoPort {
+public class OrderUserInfoAdapter implements UserInfoPort {
 
     private final UserRepository userRepository;
 

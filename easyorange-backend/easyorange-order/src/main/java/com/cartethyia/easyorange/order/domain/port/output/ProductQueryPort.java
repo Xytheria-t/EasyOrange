@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-public interface ProductQueryPort {
+public interface ProductQueryPort extends OutboundPort {
 
     Optional<ProductDetail> getProductById(Long productId);
 

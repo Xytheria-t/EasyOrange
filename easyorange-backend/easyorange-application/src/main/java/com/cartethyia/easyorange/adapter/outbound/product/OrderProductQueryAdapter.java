@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.adapter.outbound.messaging;
+package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class ProductQueryAdapter implements ProductQueryPort {
+public class OrderProductQueryAdapter implements ProductQueryPort {
 
     private final ProductQueryService productQueryService;
 

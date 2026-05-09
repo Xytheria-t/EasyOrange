@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.favorite.service.dto;
 
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,6 +15,6 @@ import java.time.LocalDateTime;
 public class FavoriteVO {
     private Long id;
     private Long productId;
-    private ProductVO product;
+    private ProductDetailInfo product;
     private LocalDateTime createTime;
 }

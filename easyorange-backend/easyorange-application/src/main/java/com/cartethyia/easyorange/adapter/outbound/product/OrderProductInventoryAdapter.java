@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.adapter.outbound.messaging;
+package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
@@ -14,7 +14,7 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-public class ProductInventoryAdapter implements ProductInventoryPort {
+public class OrderProductInventoryAdapter implements ProductInventoryPort {
 
     private final ProductSnapshotPort productSnapshotPort;
     private final ProductCommandService productCommandService;

@@ -209,6 +209,17 @@ export function Image({
   }, []);
 
   useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
+      queueMicrotask(() => {
+        setLoaded(true);
+        if (resolvedSrc) {
+          imageCache.add(resolvedSrc);
+        }
+      });
+    }
+  }, [resolvedSrc]);
+
+  useEffect(() => {
     if (!resolvedSrc) {return;}
 
     if (prevSrcRef.current !== resolvedSrc) {

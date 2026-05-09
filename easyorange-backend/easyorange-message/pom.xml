@@ -22,10 +22,11 @@
             <artifactId>easyorange-framework</artifactId>
         </dependency>
 
-        <!-- 依赖 User 模块（查询用户信息） -->
+        <!-- 依赖 User 模块（查询用户信息）- 标记为 optional，由 application 模块提供实现 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-user</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- WebSocket -->

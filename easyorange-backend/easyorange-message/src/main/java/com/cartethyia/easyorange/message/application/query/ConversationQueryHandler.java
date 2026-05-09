@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.message.application.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.mapper.MessageMapper;
-import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class ConversationQueryHandler {
 
     private final MessageMapper messageMapper;
-    private final UserRepository userRepository;
+    private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
     public List<ConversationVO> getConversation(Long otherUserId) {
@@ -48,35 +48,25 @@ public class ConversationQueryHandler {
         userIds.add(currentUserId);
         userIds.add(otherUserId);
 
-        Map<Long, User> userMap = userRepository.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(userIds);
 
         return messages.stream()
                 .map(m -> toConversationVO(m, userMap, currentUserId))
                 .collect(Collectors.toList());
     }
 
-    private ConversationVO toConversationVO(Message message, Map<Long, User> userMap, Long currentUserId) {
-        User sender = userMap.get(message.getSenderId());
-        User receiver = userMap.get(message.getReceiverId());
-
-        String senderAvatar = null;
-        String receiverAvatar = null;
-        if (sender != null && sender.getProfile() != null) {
-            senderAvatar = sender.getProfile().avatar();
-        }
-        if (receiver != null && receiver.getProfile() != null) {
-            receiverAvatar = receiver.getProfile().avatar();
-        }
+    private ConversationVO toConversationVO(Message message, Map<Long, UserInfo> userMap, Long currentUserId) {
+        UserInfo sender = userMap.get(message.getSenderId());
+        UserInfo receiver = userMap.get(message.getReceiverId());
 
         return ConversationVO.builder()
                 .id(message.getId())
                 .senderId(message.getSenderId())
-                .senderName(sender != null ? sender.getUsername() : "未知用户")
-                .senderAvatar(senderAvatar)
+                .senderName(sender != null ? sender.username() : "未知用户")
+                .senderAvatar(sender != null ? sender.avatar() : null)
                 .receiverId(message.getReceiverId())
-                .receiverName(receiver != null ? receiver.getUsername() : "未知用户")
-                .receiverAvatar(receiverAvatar)
+                .receiverName(receiver != null ? receiver.username() : "未知用户")
+                .receiverAvatar(receiver != null ? receiver.avatar() : null)
                 .content(message.getContent())
                 .isRead(message.getIsRead())
                 .createTime(message.getCreateTime())

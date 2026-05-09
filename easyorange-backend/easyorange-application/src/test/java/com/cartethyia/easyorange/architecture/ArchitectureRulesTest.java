@@ -149,6 +149,83 @@ class ArchitectureRulesTest {
         assertTrue(violations.isEmpty(), () -> "Query handlers importing command handlers:\n" + String.join("\n", violations));
     }
 
+    @Test
+    @DisplayName("business modules do not directly import other business modules domain classes")
+    void businessModules_doNotDirectlyImportOtherDomainClasses() throws IOException {
+        Path backendRoot = backendRoot();
+        List<String> violations = new ArrayList<>();
+
+        Set<String> businessModules = Set.of("easyorange-order", "easyorange-product", "easyorange-message", "easyorange-favorite");
+
+        for (Path javaFile : javaFiles(backendRoot)) {
+            String normalized = normalize(backendRoot, javaFile);
+
+            String currentModule = businessModules.stream()
+                    .filter(normalized::startsWith)
+                    .findFirst()
+                    .orElse(null);
+
+            if (currentModule == null) {
+                continue;
+            }
+
+            if (normalized.contains("/adapter/outbound/messaging/") || normalized.contains("/infrastructure/acl/")) {
+                continue;
+            }
+
+            List<String> lines = Files.readAllLines(javaFile, StandardCharsets.UTF_8);
+            for (String line : lines) {
+                for (String otherModule : businessModules) {
+                    if (otherModule.equals(currentModule)) {
+                        continue;
+                    }
+                    String forbiddenImport = "import com.cartethyia.easyorange." + otherModule.replace("easyorange-", "") + ".";
+                    if (line.startsWith(forbiddenImport)) {
+                        if (!line.contains(".domain.port.output.") && !line.contains(".domain.valueobject.")) {
+                            violations.add(normalized + " -> " + line.trim());
+                        }
+                    }
+                }
+            }
+        }
+
+        assertTrue(violations.isEmpty(), () -> "Business modules directly importing other domain classes:\n" + String.join("\n", violations));
+    }
+
+    @Test
+    @DisplayName("port interfaces have adapter implementations in application module")
+    void portInterfaces_haveAdapterImplementations() throws IOException {
+        Path backendRoot = backendRoot();
+        List<String> portInterfaces = new ArrayList<>();
+        List<String> adapterImplementations = new ArrayList<>();
+
+        for (Path javaFile : javaFiles(backendRoot)) {
+            String normalized = normalize(backendRoot, javaFile);
+
+            if (normalized.contains("/domain/port/output/") && normalized.endsWith("Port.java")) {
+                String portName = javaFile.getFileName().toString().replace(".java", "");
+                portInterfaces.add(portName);
+            }
+
+            if (normalized.contains("/adapter/outbound/") && normalized.endsWith("Adapter.java")) {
+                String adapterName = javaFile.getFileName().toString().replace(".java", "");
+                adapterImplementations.add(adapterName);
+            }
+        }
+
+        List<String> missingAdapters = new ArrayList<>();
+        for (String port : portInterfaces) {
+            String expectedAdapter = port.replace("Port", "Adapter");
+            boolean hasAdapter = adapterImplementations.stream()
+                    .anyMatch(adapter -> adapter.contains(expectedAdapter.replace("Port", "")));
+            if (!hasAdapter) {
+                missingAdapters.add(port);
+            }
+        }
+
+        assertTrue(missingAdapters.isEmpty(), () -> "Port interfaces without adapter implementations:\n" + String.join("\n", missingAdapters));
+    }
+
     private static Path backendRoot() {
         Path current = Path.of("").toAbsolutePath().normalize();
         while (current != null) {

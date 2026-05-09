@@ -4,7 +4,9 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
+import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
+import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageVO;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
@@ -12,8 +14,6 @@ import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class MessageQueryHandler {
 
     private final MessageQueryRepository queryRepository;
-    private final UserRepository userRepository;
+    private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
     public MessageVO getMessageDetail(Long messageId) {
@@ -89,8 +89,12 @@ public class MessageQueryHandler {
             return Map.of();
         }
 
-        return userRepository.findAllById(userIds).stream()
-                .collect(Collectors.toMap(User::getId, User::getUsername, (a, b) -> a));
+        return userInfoPort.getUserInfoMap(userIds).entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> e.getValue().username(),
+                        (a, b) -> a
+                ));
     }
 
     private MessageVO toMessageVO(Message message, Map<Long, String> usernameMap) {

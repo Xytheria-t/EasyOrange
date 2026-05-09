@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.adapter.outbound.messaging;
+package com.cartethyia.easyorange.adapter.outbound.payment;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
@@ -11,9 +11,9 @@ import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPor
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-@Component("orderPaymentGatewayAdapter")
+@Component
 @RequiredArgsConstructor
-public class PaymentGatewayAdapter implements PaymentGatewayPort {
+public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
 
     private final PaymentCommandHandler paymentCommandHandler;
     private final PaymentRepositoryPort paymentRepository;
