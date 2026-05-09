@@ -46,7 +46,9 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
         lastArgs = args;
         if (rafId === null) {
             rafId = requestAnimationFrame(() => {
-                func.apply(this, lastArgs!);
+                if (lastArgs !== null) {
+                    func.apply(this, lastArgs);
+                }
                 rafId = null;
                 lastArgs = null;
             });

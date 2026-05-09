@@ -5,7 +5,7 @@ interface CompressOptions {
   mimeType?: string;
 }
 
-const DEFAULT_OPTIONS: CompressOptions = {
+const DEFAULT_OPTIONS: Required<CompressOptions> = {
   maxWidth: 1600,
   maxHeight: 1600,
   quality: 0.8,
@@ -28,14 +28,18 @@ export async function compressImage(
   let targetWidth = width;
   let targetHeight = height;
 
-  if (width > opts.maxWidth! || height > opts.maxHeight!) {
-    const ratio = Math.min(opts.maxWidth! / width, opts.maxHeight! / height);
+  if (width > opts.maxWidth || height > opts.maxHeight) {
+    const ratio = Math.min(opts.maxWidth / width, opts.maxHeight / height);
     targetWidth = Math.round(width * ratio);
     targetHeight = Math.round(height * ratio);
   }
 
   const canvas = new OffscreenCanvas(targetWidth, targetHeight);
-  const ctx = canvas.getContext('2d')!;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    bitmap.close();
+    return file;
+  }
   ctx.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
   bitmap.close();
 

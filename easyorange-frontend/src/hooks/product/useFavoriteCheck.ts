@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { favoriteApi } from '@/api/favoriteApi'
 import { useAuthStore } from '@/store/authStore'
@@ -8,7 +8,7 @@ export function useFavoriteCheck() {
   const { token } = useAuthStore()
   const queryClient = useQueryClient()
   const addToast = useUIStore((s) => s.addToast)
-  const [favoriteMap, setFavoriteMap] = useState<Record<number, boolean>>({})
+  const [favoriteMap, setFavoriteMap] = useState<Record<number, boolean>>(() => ({}))
 
   const checkFavorites = useCallback(async (productIds: number[]) => {
     if (!token || productIds.length === 0) {
@@ -22,10 +22,6 @@ export function useFavoriteCheck() {
       setFavoriteMap({})
     }
   }, [token])
-
-  const isFavorited = useCallback((productId: number): boolean => {
-    return favoriteMap[productId] ?? false
-  }, [favoriteMap])
 
   const toggleFavorite = useCallback(async (productId: number, shouldFavorite: boolean) => {
     if (!token) {
@@ -48,11 +44,13 @@ export function useFavoriteCheck() {
     }
   }, [token, addToast, queryClient])
 
-  useEffect(() => {
-    if (!token) {
-      setFavoriteMap({})
-    }
-  }, [token])
+  const effectiveFavoriteMap = useMemo(() => {
+    return token ? favoriteMap : {}
+  }, [token, favoriteMap])
 
-  return { favoriteMap, checkFavorites, isFavorited, toggleFavorite }
+  const isFavorited = useCallback((productId: number): boolean => {
+    return effectiveFavoriteMap[productId] ?? false
+  }, [effectiveFavoriteMap])
+
+  return { favoriteMap: effectiveFavoriteMap, checkFavorites, isFavorited, toggleFavorite }
 }
