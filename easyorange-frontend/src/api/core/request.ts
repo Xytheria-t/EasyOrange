@@ -1,145 +1,14 @@
 import { isSuccessCode, type ApiCode, type Result, type RequestOptions } from '@/types';
 import { refreshAccessToken, getStoredToken, handleUnauthorized } from '@/features/auth/session';
+import { requestManager } from './requestManager';
+import { getCacheKey, getFromCache, setToCache, clearCache } from './cache';
+import { applyRequestInterceptors, applyResponseInterceptors, addRequestInterceptor, addResponseInterceptor, type RequestConfig } from './interceptors';
 
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT = 10000;
 const DEFAULT_RETRIES = 2;
 const RETRY_DELAY_BASE = 1000;
-const CACHE_TTL = 5 * 60 * 1000;
 const CLIENT_TYPE = 'web';
-
-interface PendingRequest {
-    controller: AbortController;
-    timestamp: number;
-}
-
-interface CacheItem<T = unknown> {
-    data: T;
-    expireAt: number;
-}
-
-interface RequestConfig extends RequestInit {
-    headers: Record<string, string>;
-}
-
-type RequestInterceptor = (config: RequestConfig) => RequestConfig | Promise<RequestConfig>;
-type ResponseInterceptor = (response: Response) => Response | Promise<Response>;
-
-const requestManager = {
-    pendingRequests: new Map<string, PendingRequest>(),
-    dedupeWindow: 100,
-
-    generateKey(endpoint: string, options: { method?: string; body?: unknown } = {}): string {
-        const method = options.method || 'GET';
-        const body = options.body ? JSON.stringify(options.body) : '';
-        return `${method}:${endpoint}:${body}`;
-    },
-
-    isDuplicate(key: string): boolean {
-        const pending = this.pendingRequests.get(key);
-        if (!pending) {return false;}
-        return Date.now() - pending.timestamp < this.dedupeWindow;
-    },
-
-    startTracking(key: string, controller: AbortController): void {
-        const existing = this.pendingRequests.get(key);
-        if (existing?.controller) {
-            existing.controller.abort();
-        }
-        this.pendingRequests.set(key, { controller, timestamp: Date.now() });
-    },
-
-    stopTracking(key: string): void {
-        this.pendingRequests.delete(key);
-    },
-
-    cancel(key: string, reason = '请求已取消'): void {
-        const pending = this.pendingRequests.get(key);
-        if (pending?.controller) {
-            pending.controller.abort(reason);
-            this.pendingRequests.delete(key);
-        }
-    },
-
-    cancelAll(reason = '所有请求已取消'): void {
-        this.pendingRequests.forEach((pending) => {
-            pending.controller?.abort(reason);
-        });
-        this.pendingRequests.clear();
-    },
-
-    cancelByPattern(pattern: RegExp | string, reason = '请求已取消'): void {
-        const regex = pattern instanceof RegExp ? pattern : new RegExp(pattern);
-        this.pendingRequests.forEach((pending, key) => {
-            if (regex.test(key)) {
-                pending.controller?.abort(reason);
-                this.pendingRequests.delete(key);
-            }
-        });
-    }
-};
-
-const buildQueryParams = (params: Record<string, unknown>): string => {
-    const filtered = Object.entries(params)
-        .filter(([, v]) => v !== null && v !== undefined && v !== '');
-    if (filtered.length === 0) {return '';}
-    return `?${  new URLSearchParams(
-        filtered.map(([k, v]) => [k, String(v)])
-    ).toString()}`;
-};
-
-const requestCache = new Map<string, CacheItem>();
-
-const getCacheKey = (endpoint: string, options?: { body?: unknown; params?: Record<string, unknown> }): string => {
-    const body = options?.body ? JSON.stringify(options.body) : '';
-    const params = options?.params ? JSON.stringify(options.params) : '';
-    return `${endpoint}:${body}:${params}`;
-};
-
-const getFromCache = <T>(key: string): T | null => {
-    const cached = requestCache.get(key);
-    if (!cached) {return null;}
-    if (Date.now() > cached.expireAt) {
-        requestCache.delete(key);
-        return null;
-    }
-    return cached.data as T;
-};
-
-const setToCache = <T>(key: string, data: T): void => {
-    requestCache.set(key, { data, expireAt: Date.now() + CACHE_TTL });
-};
-
-const clearCache = (pattern?: string): void => {
-    if (!pattern) {
-        requestCache.clear();
-        return;
-    }
-    for (const key of requestCache.keys()) {
-        if (key.startsWith(pattern)) {
-            requestCache.delete(key);
-        }
-    }
-};
-
-const requestInterceptors: RequestInterceptor[] = [];
-const responseInterceptors: ResponseInterceptor[] = [];
-
-const addRequestInterceptor = (interceptor: RequestInterceptor): (() => void) => {
-    requestInterceptors.push(interceptor);
-    return () => {
-        const index = requestInterceptors.indexOf(interceptor);
-        if (index > -1) {requestInterceptors.splice(index, 1);}
-    };
-};
-
-const addResponseInterceptor = (interceptor: ResponseInterceptor): (() => void) => {
-    responseInterceptors.push(interceptor);
-    return () => {
-        const index = responseInterceptors.indexOf(interceptor);
-        if (index > -1) {responseInterceptors.splice(index, 1);}
-    };
-};
 
 class ApiClientError extends Error {
     status: ApiCode;
@@ -191,6 +60,15 @@ const isRetryable = (status: ApiCode): boolean => {
         return false;
     }
     return status === 0 || status === 408 || status === 429 || status >= 500;
+};
+
+const buildQueryParams = (params: Record<string, unknown>): string => {
+    const filtered = Object.entries(params)
+        .filter(([, v]) => v !== null && v !== undefined && v !== '');
+    if (filtered.length === 0) {return '';}
+    return `?${  new URLSearchParams(
+        filtered.map(([k, v]) => [k, String(v)])
+    ).toString()}`;
 };
 
 const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/logout', '/auth/register', '/auth/password-reset', '/auth/sms-code']);
@@ -260,9 +138,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
         }
     }
 
-    for (const interceptor of requestInterceptors) {
-        config = await interceptor(config);
-    }
+    config = await applyRequestInterceptors(config);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort('请求超时'), timeout);
@@ -297,10 +173,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
             try {
                 const response = await fetch(url, config);
 
-                let processedResponse = response;
-                for (const interceptor of responseInterceptors) {
-                    processedResponse = await interceptor(processedResponse);
-                }
+                const processedResponse = await applyResponseInterceptors(response);
 
                 if (!processedResponse.ok) {
                     if (processedResponse.status === 401 && shouldHandleUnauthorized(endpoint, skipAuth)) {

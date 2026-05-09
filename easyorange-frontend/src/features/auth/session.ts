@@ -8,6 +8,7 @@ const USER_STORAGE_KEY = 'user';
 
 const TOKEN_EXPIRES_IN_MINUTES = 30;
 const TOKEN_REFRESH_BEFORE_MINUTES = 5;
+const LOGIN_GRACE_PERIOD_MS = 5000;
 
 export const AUTH_SESSION_CHANGE_EVENT = 'auth-session-change';
 
@@ -26,24 +27,81 @@ export interface AuthSessionDetail {
     reason?: AuthSessionClearReason;
 }
 
-let unauthorizedRedirectInFlight = false;
-let refreshTimer: ReturnType<typeof setTimeout> | null = null;
-let isRefreshing = false;
-let refreshSubscribers: Array<(token: string) => void> = [];
-let lastLoginTimestamp = 0;
-const LOGIN_GRACE_PERIOD_MS = 5000;
+class TokenRefreshManager {
+    private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+    private isRefreshing = false;
+    private refreshSubscribers: Array<(token: string) => void> = [];
+    private lastLoginTimestamp = 0;
+    private unauthorizedRedirectInFlight = false;
 
-export function subscribeTokenRefresh(callback: (token: string) => void): () => void {
-    refreshSubscribers.push(callback);
-    return () => {
-        refreshSubscribers = refreshSubscribers.filter(cb => cb !== callback);
-    };
+    subscribe(callback: (token: string) => void): () => void {
+        this.refreshSubscribers.push(callback);
+        return () => {
+            this.refreshSubscribers = this.refreshSubscribers.filter(cb => cb !== callback);
+        };
+    }
+
+    notifySubscribers(token: string): void {
+        this.refreshSubscribers.forEach(cb => cb(token));
+        this.refreshSubscribers = [];
+    }
+
+    schedule(expiresAt: number, onRefresh: () => void): void {
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+            this.refreshTimer = null;
+        }
+
+        const now = Date.now();
+        const refreshTime = expiresAt - TOKEN_REFRESH_BEFORE_MINUTES * 60 * 1000;
+        const delay = refreshTime - now;
+
+        if (delay <= 0) {
+            onRefresh();
+            return;
+        }
+
+        this.refreshTimer = setTimeout(onRefresh, delay);
+    }
+
+    cancel(): void {
+        if (this.refreshTimer) {
+            clearTimeout(this.refreshTimer);
+            this.refreshTimer = null;
+        }
+    }
+
+    getIsRefreshing(): boolean {
+        return this.isRefreshing;
+    }
+
+    setIsRefreshing(value: boolean): void {
+        this.isRefreshing = value;
+    }
+
+    getLastLoginTimestamp(): number {
+        return this.lastLoginTimestamp;
+    }
+
+    setLastLoginTimestamp(timestamp: number): void {
+        this.lastLoginTimestamp = timestamp;
+    }
+
+    isUnauthorizedRedirectInFlight(): boolean {
+        return this.unauthorizedRedirectInFlight;
+    }
+
+    setUnauthorizedRedirectInFlight(value: boolean): void {
+        this.unauthorizedRedirectInFlight = value;
+    }
+
+    isWithinLoginGracePeriod(): boolean {
+        const timeSinceLogin = Date.now() - this.lastLoginTimestamp;
+        return this.lastLoginTimestamp > 0 && timeSinceLogin < LOGIN_GRACE_PERIOD_MS;
+    }
 }
 
-function notifySubscribers(token: string): void {
-    refreshSubscribers.forEach(cb => cb(token));
-    refreshSubscribers = [];
-}
+const tokenRefreshManager = new TokenRefreshManager();
 
 function emitAuthSessionChange(reason?: AuthSessionClearReason): void {
     const detail: AuthSessionDetail = {
@@ -72,33 +130,6 @@ export function getStoredTokenExpires(): number | null {
     return storage.get<number | null>(TOKEN_EXPIRES_KEY, null);
 }
 
-function scheduleTokenRefresh(expiresAt: number): void {
-    if (refreshTimer) {
-        clearTimeout(refreshTimer);
-        refreshTimer = null;
-    }
-
-    const now = Date.now();
-    const refreshTime = expiresAt - TOKEN_REFRESH_BEFORE_MINUTES * 60 * 1000;
-    const delay = refreshTime - now;
-
-    if (delay <= 0) {
-        refreshAccessToken();
-        return;
-    }
-
-    refreshTimer = setTimeout(() => {
-        refreshAccessToken();
-    }, delay);
-}
-
-function cancelScheduledRefresh(): void {
-    if (refreshTimer) {
-        clearTimeout(refreshTimer);
-        refreshTimer = null;
-    }
-}
-
 function syncAllStores(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
     storage.set(TOKEN_STORAGE_KEY, token);
     storage.set(USER_STORAGE_KEY, user);
@@ -112,10 +143,10 @@ function syncAllStores(token: string, user: AuthSessionUser, expiresAt?: number,
 
     if (expiresAt) {
         storage.set(TOKEN_EXPIRES_KEY, expiresAt);
-        scheduleTokenRefresh(expiresAt);
+        tokenRefreshManager.schedule(expiresAt, refreshAccessToken);
     } else {
         storage.remove(TOKEN_EXPIRES_KEY);
-        cancelScheduledRefresh();
+        tokenRefreshManager.cancel();
     }
 }
 
@@ -123,7 +154,7 @@ function clearAllStores(reason: AuthSessionClearReason = 'manual'): void {
     storage.remove(TOKEN_STORAGE_KEY);
     storage.remove(TOKEN_EXPIRES_KEY);
     storage.remove(USER_STORAGE_KEY);
-    cancelScheduledRefresh();
+    tokenRefreshManager.cancel();
     emitAuthSessionChange(reason);
 }
 
@@ -133,13 +164,13 @@ export async function refreshAccessToken(): Promise<string | null> {
         return null;
     }
 
-    if (isRefreshing) {
+    if (tokenRefreshManager.getIsRefreshing()) {
         return new Promise(resolve => {
-            subscribeTokenRefresh(resolve);
+            tokenRefreshManager.subscribe(resolve);
         });
     }
 
-    isRefreshing = true;
+    tokenRefreshManager.setIsRefreshing(true);
 
     try {
         const refreshToken = useAuthStore.getState().refreshToken;
@@ -163,7 +194,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         } else {
             syncAllStores(response.data, { username: '', nickname: '' }, expiresAt);
         }
-        notifySubscribers(response.data);
+        tokenRefreshManager.notifySubscribers(response.data);
 
         return response.data;
     } catch {
@@ -176,14 +207,14 @@ export async function refreshAccessToken(): Promise<string | null> {
         });
         return null;
     } finally {
-        isRefreshing = false;
+        tokenRefreshManager.setIsRefreshing(false);
     }
 }
 
 export function setSession(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
     syncAllStores(token, user, expiresAt, refreshToken);
-    lastLoginTimestamp = Date.now();
-    unauthorizedRedirectInFlight = false;
+    tokenRefreshManager.setLastLoginTimestamp(Date.now());
+    tokenRefreshManager.setUnauthorizedRedirectInFlight(false);
     emitAuthSessionChange();
 }
 
@@ -209,16 +240,15 @@ export async function logout(): Promise<void> {
 }
 
 export function handleUnauthorized(): void {
-    if (unauthorizedRedirectInFlight) {
+    if (tokenRefreshManager.isUnauthorizedRedirectInFlight()) {
         return;
     }
 
-    const timeSinceLogin = Date.now() - lastLoginTimestamp;
-    if (lastLoginTimestamp > 0 && timeSinceLogin < LOGIN_GRACE_PERIOD_MS) {
+    if (tokenRefreshManager.isWithinLoginGracePeriod()) {
         return;
     }
 
-    unauthorizedRedirectInFlight = true;
+    tokenRefreshManager.setUnauthorizedRedirectInFlight(true);
     useAuthStore.getState().logout();
     clearSession('unauthorized');
 
@@ -233,10 +263,12 @@ export function handleUnauthorized(): void {
 export function initTokenRefresh(): void {
     const expiresAt = getStoredTokenExpires();
     if (expiresAt && expiresAt > Date.now()) {
-        scheduleTokenRefresh(expiresAt);
+        tokenRefreshManager.schedule(expiresAt, refreshAccessToken);
     }
 }
 
 export function syncTokenToStore(token: string): void {
     useAuthStore.getState().setToken(token);
 }
+
+export { tokenRefreshManager };

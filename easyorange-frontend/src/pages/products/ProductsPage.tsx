@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { X } from 'lucide-react';
-import { useProducts, useCategories, useFavoriteCheck } from '@/hooks';
+import { useProducts, useCategories, useFavoriteCheck, useColumnCount } from '@/hooks';
 import { ProductCard } from '@/components/product/ProductCard';
 import { preloadImages } from '@/components/ui/Image';
 
@@ -11,32 +11,6 @@ import { FilterSidebar, type FilterState } from '@/components/product/FilterSide
 import { useAuthStore } from '@/store/authStore';
 import type { ProductQueryParams, Product } from '@/types';
 import './products-premium.css';
-
-function useColumnCount() {
-  const [columnCount, setColumnCount] = useState(() => {
-    if (typeof window === 'undefined') {return 4;}
-    const width = window.innerWidth;
-    if (width <= 480) {return 2;}
-    if (width <= 768) {return 2;}
-    if (width <= 1200) {return 3;}
-    return 4;
-  });
-
-  useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      if (width <= 480) {setColumnCount(2);}
-      else if (width <= 768) {setColumnCount(2);}
-      else if (width <= 1200) {setColumnCount(3);}
-      else {setColumnCount(4);}
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return columnCount;
-}
 
 function ProductsPage() {
   const [searchParams] = useSearchParams();
