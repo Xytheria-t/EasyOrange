@@ -15,7 +15,7 @@
 | **样式** | Tailwind CSS 4 | 原子化 CSS |
 | **图标** | Lucide React | 图标库 |
 | **测试** | Playwright | E2E 测试 |
-| **质量** | ESLint + Prettier | 代码规范 |
+| **质量** | ESLint + Prettier + jsx-a11y | 代码规范与可访问性检查 |
 
 ## 项目结构
 

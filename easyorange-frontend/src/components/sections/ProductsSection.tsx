@@ -219,7 +219,7 @@ export default function ProductsSection() {
             ))
           ) : (
             <div className="text-center py-12" style={{ gridColumn: '1 / -1' }}>
-              <p style={{ color: 'var(--text-secondary)' }}>暂无商品</p>
+              <p className="text-secondary">暂无商品</p>
             </div>
           )}
         </div>

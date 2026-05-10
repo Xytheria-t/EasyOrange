@@ -31,7 +31,7 @@ export function Header() {
   const handleScroll = useCallback(
     throttle(() => {
       setIsScrolled(window.scrollY > 20)
-    }, 60),
+    }, 100),
     []
   )
 
@@ -135,7 +135,7 @@ export function Header() {
             >
               <div className="floating-nav__user-avatar">
                 {user?.avatar ? (
-                  <img src={user.avatar} alt="头像" className="floating-nav__user-avatar-img" />
+                  <img src={user.avatar} alt="头像" className="floating-nav__user-avatar-img" width="32" height="32" />
                 ) : (
                   (user?.nickname || user?.username || '用').charAt(0)
                 )}

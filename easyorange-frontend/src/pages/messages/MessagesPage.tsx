@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { MessageCircle, Bell, Sparkles, Zap, Send, Brain } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { messageApi } from '@/api/messageApi';
@@ -6,8 +6,6 @@ import type { ChatSession } from '@/types';
 import './messages.css';
 
 function MessagesPage() {
-  const navigate = useNavigate();
-
   const { data: conversations, isLoading, error } = useQuery({
     queryKey: ['messages', 'conversations'],
     queryFn: async () => {
@@ -134,10 +132,10 @@ function MessagesPage() {
       ) : (
         <div className="messages-list">
           {conversations.map((conv) => (
-            <div
+            <Link
               key={conv.id}
+              to={`/messages?userId=${conv.targetUserId}`}
               className="message-card"
-              onClick={() => navigate(`/messages?userId=${conv.targetUserId}`)}
             >
               <div className="message-avatar-wrap">
                 {conv.targetUserAvatar ? (
@@ -145,6 +143,8 @@ function MessagesPage() {
                     src={conv.targetUserAvatar}
                     alt={conv.targetUserName}
                     className="message-avatar"
+                    width="48"
+                    height="48"
                   />
                 ) : (
                   <div className="message-avatar-fallback">
@@ -164,7 +164,7 @@ function MessagesPage() {
                 </div>
                 <p className="message-preview">{conv.lastMessage}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
@@ -177,7 +177,7 @@ function MessagesPage() {
           <p className="notification-title">消息提醒</p>
           <p className="notification-desc">开启消息推送，及时获取最新动态</p>
         </div>
-        <button className="notification-btn">开启</button>
+        <button type="button" className="notification-btn">开启</button>
       </div>
     </div>
   );

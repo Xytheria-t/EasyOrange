@@ -407,9 +407,11 @@ input, textarea, select {
     to { opacity: 1; transform: translateX(0); }
 }
 
-@keyframes float {
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-15px); }
+  }
 }
 
 @keyframes floatGentle {
@@ -539,6 +541,17 @@ input, textarea, select {
 
 .animate-float {
     animation: float 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-float,
+    .animate-heartbeat,
+    .animate-hot-pulse,
+    .animate-scroll-indicator,
+    .heartbeat,
+    .orb {
+        animation: none !important;
+    }
 }
 
 .delay-1 { animation-delay: 0.1s; }

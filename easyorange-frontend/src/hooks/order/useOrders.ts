@@ -75,7 +75,7 @@ export function useCancelOrder() {
       queryClient.setQueriesData<{ records: Array<{ id: string; status: number }> }>(
         { queryKey: ORDER_KEYS.all },
         (oldData) => {
-          if (!oldData?.records) return oldData;
+          if (!oldData?.records) {return oldData;}
           return {
             ...oldData,
             records: oldData.records.map((order) =>
@@ -86,7 +86,7 @@ export function useCancelOrder() {
       );
 
       queryClient.setQueryData(ORDER_KEYS.detail(id), (oldData: { status: number } | undefined) => {
-        if (!oldData) return oldData;
+        if (!oldData) {return oldData;}
         return { ...oldData, status: 4 };
       });
 

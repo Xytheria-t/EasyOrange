@@ -94,6 +94,17 @@ export const ProductCard = memo(({
   // Staggered entrance animation delay
   const entranceDelay = index * 80
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return
+    navigate(`/products/${product.id}`)
+  }
+
+  const handleCardKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !(e.target as HTMLElement).closest('button')) {
+      navigate(`/products/${product.id}`)
+    }
+  }
+
   return (
     <article
       ref={cardRef}
@@ -102,13 +113,14 @@ export const ProductCard = memo(({
         ...style,
         animationDelay: `${entranceDelay}ms`,
       }}
-      onClick={() => navigate(`/products/${product.id}`)}
+      onClick={handleCardClick}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onMouseEnter={handleMouseEnter}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && navigate(`/products/${product.id}`)}
+      onKeyDown={handleCardKeyDown}
+      aria-label={`商品：${product.title}`}
     >
       {/* Gradient border glow */}
       <div className="product-card-border-glow" />
@@ -282,7 +294,7 @@ export const ProductCard = memo(({
             {product.sellerAvatar ? (
               <>
                 <div className="seller-avatar-premium">
-                  <img src={product.sellerAvatar} alt={sellerName} />
+                  <img src={product.sellerAvatar} alt={sellerName} width="32" height="32" />
                   <div className="seller-pulse-ring" />
                 </div>
                 <div className="seller-body-premium">

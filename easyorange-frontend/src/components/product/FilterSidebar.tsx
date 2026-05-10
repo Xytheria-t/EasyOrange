@@ -74,7 +74,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
       <aside className={`filter-sidebar ${isOpen ? 'open' : ''}`}>
         <div className="filter-header">
           <h3>筛选条件</h3>
-          <button className="filter-close" onClick={onClose}>
+          <button className="filter-close" onClick={onClose} aria-label="关闭筛选面板">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -104,7 +104,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                   <span className="checkbox-custom" />
                   <span className="checkbox-label">{category.name}</span>
                   {(category.productCount ?? 0) > 0 && (
-                    <span className="condition-icon" style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                    <span className="condition-icon condition-count">
                       ({category.productCount})
                     </span>
                   )}
@@ -125,6 +125,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
               <div className="price-inputs">
                 <input
                   type="number"
+                  name="priceMin"
                   className="price-input"
                   placeholder="最低价"
                   min="0"
@@ -134,6 +135,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                 <span className="price-separator">-</span>
                 <input
                   type="number"
+                  name="priceMax"
                   className="price-input"
                   placeholder="最高价"
                   min="0"

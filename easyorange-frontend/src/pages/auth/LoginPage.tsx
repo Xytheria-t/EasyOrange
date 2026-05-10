@@ -347,12 +347,14 @@ function LoginPage() {
                   </svg>
                   <input
                     type={loginMethod === 'sms' ? 'tel' : 'text'}
+                    name="account"
                     placeholder={loginMethod === 'password' ? '用户名 / 邮箱 / 手机号' : '请输入手机号'}
                     value={formData.account}
                     onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value }))}
                     required
                     autoComplete={loginMethod === 'sms' ? 'tel' : 'username'}
                     maxLength={loginMethod === 'sms' ? 11 : undefined}
+                    aria-label={loginMethod === 'password' ? '用户名、邮箱或手机号' : '手机号'}
                     data-testid="input-account"
                   />
                 </div>
@@ -367,11 +369,13 @@ function LoginPage() {
                     </svg>
                     <input
                       type="password"
+                      name="password"
                       placeholder="密码"
                       value={formData.password}
                       onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                       required
                       autoComplete="current-password"
+                      aria-label="密码"
                       data-testid="input-password"
                     />
                   </div>
@@ -384,12 +388,14 @@ function LoginPage() {
                     </svg>
                     <input
                       type="text"
+                      name="smsCode"
                       placeholder="请输入验证码"
                       value={smsCode}
                       onChange={(e) => setSmsCode(e.target.value)}
                       required
                       maxLength={6}
                       autoComplete="one-time-code"
+                      aria-label="短信验证码"
                     />
                     <button
                       type="button"
@@ -479,11 +485,13 @@ function LoginPage() {
                   </svg>
                   <input
                     type="text"
+                    name="username"
                     placeholder="用户名"
                     value={formData.account}
                     onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value }))}
                     required
                     autoComplete="username"
+                    aria-label="用户名"
                     data-testid="input-register-username"
                   />
                 </div>
@@ -503,6 +511,7 @@ function LoginPage() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                     required
                     autoComplete="new-password"
+                    aria-label="密码"
                     data-testid="input-register-password"
                   />
                 </div>
@@ -517,11 +526,13 @@ function LoginPage() {
                   </svg>
                   <input
                     type="password"
+                    name="confirmPassword"
                     placeholder="确认密码"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                     required
                     autoComplete="new-password"
+                    aria-label="确认密码"
                     data-testid="input-register-confirm-password"
                   />
                 </div>
@@ -535,7 +546,7 @@ function LoginPage() {
                   required
                 />
                 <span className="auth-page-checkbox-custom"></span>
-                <span>我已阅读并同意<a href="#">服务条款</a>和<a href="#">隐私政策</a></span>
+                <span>我已阅读并同意<a href="/terms" target="_blank" rel="noopener noreferrer">服务条款</a>和<a href="/privacy" target="_blank" rel="noopener noreferrer">隐私政策</a></span>
               </label>
 
               {error && activeTab === 'register' && (

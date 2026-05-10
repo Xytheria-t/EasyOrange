@@ -68,6 +68,19 @@ const BLUR_STYLE: React.CSSProperties = {
 
 const DEFAULT_WIDTHS = [150, 300, 600, 1200];
 
+let cachedWebPSupport: boolean | null = null;
+
+function getWebPSupport(): boolean {
+  if (cachedWebPSupport !== null) return cachedWebPSupport;
+  if (typeof document === 'undefined') return false;
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  const dataUrl = canvas.toDataURL('image/webp');
+  cachedWebPSupport = dataUrl.startsWith('data:image/webp');
+  return cachedWebPSupport;
+}
+
 function extractFileId(src: string | undefined): string | null {
   if (!src) {return null;}
   
@@ -129,14 +142,13 @@ function getRetryUrl(url: string, retry: number): string {
 }
 
 function useSupportsWebP(): boolean {
-  const [supports, setSupports] = useState(false);
+  const [supports, setSupports] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return getWebPSupport();
+  });
 
   useEffect(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    const dataUrl = canvas.toDataURL('image/webp');
-    setSupports(dataUrl.startsWith('data:image/webp'));
+    setSupports(getWebPSupport());
   }, []);
 
   return supports;

@@ -10,6 +10,7 @@ import { uploadFile } from '@/api/uploadApi';
 import { productApi } from '@/api/productApi';
 import { compressImage } from '@/utils/imageCompress';
 import { CONDITION_LABEL_MAP } from '@/constants';
+import { useUIStore } from '@/store/uiStore';
 import './publish.css';
 
 interface FormState {
@@ -64,6 +65,7 @@ function PublishPage() {
   const navigate = useNavigate();
   const createProduct = useCreateProduct();
   const { data: categories } = useCategories();
+  const addToast = useUIStore((s) => s.addToast);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
@@ -138,8 +140,9 @@ function PublishPage() {
         if (result.data?.url) {
           setForm(prev => ({ ...prev, imageUrls: [...prev.imageUrls, result.data.url] }));
         }
-      } catch {
-        // upload failed, skip
+      } catch (error) {
+        console.error('Image upload failed:', error);
+        addToast({ type: 'error', message: '图片上传失败，请重试' });
       } finally {
         setUploadingIndex(null);
       }
@@ -375,7 +378,7 @@ function PublishPage() {
                         onDrop={(e) => handleDrop(e, index)}
                         onDragEnd={handleDragEnd}
                       >
-                        <img src={url} alt={`商品图片 ${index + 1}`} />
+                        <img src={url} alt={`商品图片 ${index + 1}`} width="120" height="120" />
                         {index === 0 && (
                           <div className="cover-badge-v2">
                             <span>封面</span>
@@ -445,6 +448,7 @@ function PublishPage() {
                   <div className={`input-wrapper-v2 ${errors.name ? 'has-error' : ''}`}>
                     <input
                       type="text"
+                      name="name"
                       placeholder="给宝贝起个吸引人的名字"
                       value={form.name}
                       onChange={e => updateField('name', e.target.value)}
@@ -495,6 +499,7 @@ function PublishPage() {
                     </label>
                     <div className={`select-wrapper-v2 ${errors.conditionLevel ? 'has-error' : ''}`}>
                       <select
+                        name="conditionLevel"
                         value={form.conditionLevel}
                         onChange={e => updateField('conditionLevel', e.target.value)}
                         className="field-select-v2"
@@ -570,6 +575,7 @@ function PublishPage() {
                     <div className="input-wrapper-v2">
                       <input
                         type="text"
+                        name="location"
                         placeholder="如：清水河校区南门"
                         value={form.location}
                         onChange={e => updateField('location', e.target.value)}
@@ -622,6 +628,7 @@ function PublishPage() {
                       <span className="price-symbol-v2">¥</span>
                       <input
                         type="number"
+                        name="price"
                         placeholder="0.00"
                         step="0.01"
                         min="0.01"
@@ -674,6 +681,7 @@ function PublishPage() {
                   <div className="input-wrapper-v2">
                     <input
                       type="number"
+                      name="stock"
                       placeholder="1"
                       min="1"
                       value={form.stock}
