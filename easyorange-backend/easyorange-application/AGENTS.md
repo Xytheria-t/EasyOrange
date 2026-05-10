@@ -73,7 +73,7 @@ easyorange-application
 |------|------|---------|
 | `application.yaml` | 基础配置 | 数据源、Redis、MyBatis-Plus、线程池 |
 | `application-dev.yaml` | 开发环境 | 小连接池、详细日志、JWT 开发密钥 |
-| `application-prod.yaml` | 生产环境 | 大连接池、SSL、JSON 日志、Swagger 关闭、优雅停机 |
+| `application-prod.yaml` | 生产环境 | 大连接池、SSL、Swagger 关闭、优雅停机 |
 | `application-test.yaml` | 测试环境 | Testcontainers 配置 |
 
 ### 关键配置项
