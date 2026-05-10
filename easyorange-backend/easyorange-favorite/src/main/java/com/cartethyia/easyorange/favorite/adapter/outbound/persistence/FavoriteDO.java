@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.favorite.infrastructure.persistence;
+package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.framework.entity.BaseDO;

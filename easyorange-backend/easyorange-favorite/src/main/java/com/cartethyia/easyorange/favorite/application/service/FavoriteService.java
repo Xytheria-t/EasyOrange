@@ -1,18 +1,18 @@
-package com.cartethyia.easyorange.favorite.service;
+package com.cartethyia.easyorange.favorite.application.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
+import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
-import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,6 +74,7 @@ public class FavoriteService {
         favoriteRepository.removeByIds(ids);
     }
 
+    @Transactional(readOnly = true)
     public PageResult<FavoriteVO> queryFavorites(FavoritePageQuery query) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
@@ -132,16 +133,19 @@ public class FavoriteService {
         return PageResult.of(voList, total, pageNum, pageSize);
     }
 
+    @Transactional(readOnly = true)
     public boolean isFavorited(Long productId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return favoriteRepository.existsByUserIdAndProductId(userId, productId);
     }
 
+    @Transactional(readOnly = true)
     public long getFavoriteCount() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return favoriteRepository.countByUserId(userId);
     }
 
+    @Transactional(readOnly = true)
     public Map<Long, Boolean> batchCheckFavorited(List<Long> productIds) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         if (productIds == null || productIds.isEmpty()) {

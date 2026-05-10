@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.favorite.service.dto;
+package com.cartethyia.easyorange.favorite.application.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RemoveFavoriteDTO {
+public class AddFavoriteDTO {
     @NotNull(message = "商品ID不能为空")
     private Long productId;
 }

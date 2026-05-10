@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.favorite.infrastructure.persistence;
+package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;

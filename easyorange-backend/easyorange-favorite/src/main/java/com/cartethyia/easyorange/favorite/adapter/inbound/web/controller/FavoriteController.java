@@ -1,14 +1,14 @@
-package com.cartethyia.easyorange.favorite.controller;
+package com.cartethyia.easyorange.favorite.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.favorite.controller.request.BatchCheckRequest;
-import com.cartethyia.easyorange.favorite.controller.request.BatchRemoveRequest;
-import com.cartethyia.easyorange.favorite.service.FavoriteService;
-import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchCheckRequest;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchRemoveRequest;
+import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
+import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;

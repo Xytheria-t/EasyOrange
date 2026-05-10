@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.favorite.controller.request;
+package com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request;
 
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;

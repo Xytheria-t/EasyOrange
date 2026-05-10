@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.favorite.service.dto;
+package com.cartethyia.easyorange.favorite.application.dto;
 
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import lombok.AllArgsConstructor;

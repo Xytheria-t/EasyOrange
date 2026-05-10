@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.favorite.service.dto;
+package com.cartethyia.easyorange.favorite.application.dto;
 
 import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
