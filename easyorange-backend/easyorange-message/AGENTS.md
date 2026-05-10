@@ -2,36 +2,23 @@
 
 消息通知模块，混合架构（部分 DDD + 传统分层），支持站内消息、WebSocket 实时推送、消息模板。
 
-> **架构现状**: 本模块尚未完全迁移到 DDD 六边形架构。domain/repository 中存在 MyBatis 实现类
-> (`MybatisMessageRepository` 等)，controller/service 层仍为传统分层结构。
-> 演进方向：逐步将 MyBatis 实现迁移到 adapter/outbound/persistence/，controller 迁移到 adapter/inbound/。
+> **架构现状**: MyBatis Repository 实现已迁移到 `adapter/outbound/persistence/`。controller/service 层仍为传统分层结构，待进一步演进。
 
 ## 目录结构
 
 ```
 message/
-├── controller/                        # [传统] 控制器 (待迁移到 adapter/inbound/web/)
-│   ├── MessageCommandController.java  # 消息写端点
-│   ├── MessageQueryController.java    # 消息读端点
-│   └── request/                       # 请求 DTO (待迁移到 dto/request/)
-├── service/                           # [传统] 服务层 (待迁移到 application/service/)
-│   ├── MessageSubscriptionService.java
-│   ├── MessageTemplateService.java
-│   ├── OfflineMessageService.java
-│   └── impl/                          # 实现类
-├── dto/                               # DTO
-│   ├── request/                       # 请求 DTO
-│   │   ├── SendMessageRequest.java
-│   │   ├── QueryMessageRequest.java
-│   │   ├── SubscriptionRequest.java
-│   │   ├── TemplateMessageRequest.java
-│   │   └── WsMessage.java
-│   └── vo/                            # 视图对象
-│       ├── MessageVO.java
-│       ├── ConversationVO.java
-│       ├── UnreadCountVO.java
-│       ├── MessageSubscriptionVO.java
-│       └── MessageTemplateVO.java
+├── adapter/                           # 适配器层
+│   └── outbound/persistence/          # 出站适配器 (MyBatis 实现)
+│       ├── MessageMapper.java
+│       ├── MessageSubscriptionMapper.java
+│       ├── MessageTemplateMapper.java
+│       ├── OfflineMessageMapper.java
+│       ├── MybatisMessageRepository.java
+│       ├── MybatisMessageQueryRepository.java
+│       ├── MybatisMessageSubscriptionRepository.java
+│       ├── MybatisMessageTemplateRepository.java
+│       └── MybatisOfflineMessageRepository.java
 ├── application/                       # [DDD] 应用层 (CQRS)
 │   ├── command/
 │   │   ├── MessageCommandHandler.java
@@ -45,25 +32,42 @@ message/
 │       ├── ConversationQueryHandler.java
 │       ├── MessageQuery.java
 │       └── UnreadCountQuery.java
+├── controller/                        # [传统] 控制器 (待迁移到 adapter/inbound/web/)
+│   ├── MessageCommandController.java
+│   └── MessageQueryController.java
+├── service/                           # [传统] 服务层 (待迁移到 application/service/)
+│   ├── MessageArchiveService.java     # 消息归档定时服务
+│   ├── MessageSubscriptionService.java
+│   ├── MessageTemplateService.java
+│   ├── OfflineMessageService.java
+│   └── impl/
+├── dto/
+│   ├── request/
+│   │   ├── SendMessageRequest.java
+│   │   ├── QueryMessageRequest.java
+│   │   ├── SubscriptionRequest.java
+│   │   ├── TemplateMessageRequest.java
+│   │   └── WsMessage.java
+│   └── vo/
+│       ├── MessageVO.java
+│       ├── ConversationVO.java
+│       ├── UnreadCountVO.java
+│       ├── MessageSubscriptionVO.java
+│       └── MessageTemplateVO.java
 ├── domain/                            # [DDD] 领域层
 │   ├── event/
 │   │   ├── MessageSentEvent.java
 │   │   ├── MessageReadEvent.java
 │   │   └── MessageDeletedEvent.java
-│   ├── repository/                    # ⚠️ 包含 MyBatis 实现类 (应迁移到 adapter/outbound/)
-│   │   ├── MessageRepository.java         # 接口
-│   │   ├── MybatisMessageRepository.java  # 实现类 (待迁移)
+│   ├── repository/                    # 仓储接口 (实现已迁移到 adapter/outbound/)
+│   │   ├── MessageRepository.java
 │   │   ├── MessageQueryRepository.java
-│   │   ├── MybatisMessageQueryRepository.java # 实现类 (待迁移)
 │   │   ├── OfflineMessageRepository.java
-│   │   ├── MybatisOfflineMessageRepository.java # 实现类 (待迁移)
 │   │   ├── MessageSubscriptionRepository.java
-│   │   ├── MybatisMessageSubscriptionRepository.java # 实现类 (待迁移)
-│   │   ├── MessageTemplateRepository.java
-│   │   └── MybatisMessageTemplateRepository.java # 实现类 (待迁移)
+│   │   └── MessageTemplateRepository.java
 │   ├── service/
-│   │   ├── MessageRoutingService.java     # 消息路由
-│   │   └── OfflineMessageStoreService.java # 离线消息存储
+│   │   ├── MessageRoutingService.java
+│   │   └── OfflineMessageStoreService.java
 │   ├── valueobject/
 │   │   ├── MessageContent.java
 │   │   ├── MessageType.java
@@ -72,16 +76,11 @@ message/
 │       ├── MessageDomainException.java
 │       ├── MessageNotFoundException.java
 │       └── UnauthorizedOperationException.java
-├── entity/                            # [传统] 实体类 (待迁移到 domain/aggregate + adapter/outbound/persistence/)
+├── entity/                            # [传统] 实体类 (待迁移)
 │   ├── Message.java
 │   ├── MessageSubscription.java
 │   ├── MessageTemplate.java
 │   └── OfflineMessage.java
-├── mapper/                            # [传统] MyBatis Mapper (待迁移到 adapter/outbound/persistence/)
-│   ├── MessageMapper.java
-│   ├── MessageSubscriptionMapper.java
-│   ├── MessageTemplateMapper.java
-│   └── OfflineMessageMapper.java
 ├── enums/
 │   ├── MessageStatus.java
 │   ├── MessageType.java
@@ -90,11 +89,11 @@ message/
 ├── constant/
 │   └── MessageConstant.java
 └── websocket/                         # WebSocket 实时推送
-    ├── WebSocketConfig.java               # STOMP 配置
-    ├── WebSocketAuthInterceptor.java      # JWT 认证拦截
-    ├── WebSocketMessageHandler.java       # 消息处理
-    ├── WebSocketNotifier.java             # 实时通知推送
-    └── WebSocketEventListener.java        # 连接/断开事件
+    ├── WebSocketConfig.java
+    ├── WebSocketAuthInterceptor.java
+    ├── WebSocketMessageHandler.java
+    ├── WebSocketNotifier.java
+    └── WebSocketEventListener.java
 ```
 
 ## WebSocket 架构
@@ -118,14 +117,22 @@ message/
 - 用户只能读取/删除自己的消息
 - 消息发送限流
 
+## 消息归档服务
+
+`MessageArchiveService` 提供定时归档和清理功能：
+
+- **清理任务**: 每天凌晨 3 点清理超过保留天数的消息
+- **归档任务**: 每月 1 号凌晨 2 点将旧消息归档到 `eo_message_archive` 表
+- **配置项**: `easyorange.message.retention-days`（默认 90 天）
+- **批次大小**: 每次处理 1000 条记录
+
 ## 演进路线
 
-1. 将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`
-2. 将 `mapper/` 迁移到 `adapter/outbound/persistence/mapper/`
-3. 将 `domain/repository/` 中的 MyBatis 实现类迁移到 `adapter/outbound/persistence/repository/`
-4. 将 `controller/` 迁移到 `adapter/inbound/web/controller/`
-5. 将 `service/` 迁移到 `application/service/`
-6. 添加 `domain/port/output/` 端口接口
+1. ~~将 `domain/repository/` 中的 MyBatis 实现类迁移到 `adapter/outbound/persistence/`~~ ✅ 已完成
+2. 将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`
+3. 将 `controller/` 迁移到 `adapter/inbound/web/controller/`
+4. 将 `service/` 迁移到 `application/service/`
+5. 添加 `domain/port/output/` 端口接口
 
 ## 常见开发任务
 

@@ -1,9 +1,9 @@
-package com.cartethyia.easyorange.message.domain.repository;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
-import com.cartethyia.easyorange.message.mapper.MessageTemplateMapper;
+import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

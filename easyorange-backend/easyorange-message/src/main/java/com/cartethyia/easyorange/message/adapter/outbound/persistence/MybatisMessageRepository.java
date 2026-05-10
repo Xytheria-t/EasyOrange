@@ -1,11 +1,11 @@
-package com.cartethyia.easyorange.message.domain.repository;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
-import com.cartethyia.easyorange.message.mapper.MessageMapper;
+import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.entity.Message;
-import com.cartethyia.easyorange.message.mapper.MessageMapper;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

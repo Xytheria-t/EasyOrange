@@ -1,8 +1,8 @@
-package com.cartethyia.easyorange.message.domain.repository;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.message.entity.MessageSubscription;
-import com.cartethyia.easyorange.message.mapper.MessageSubscriptionMapper;
+import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

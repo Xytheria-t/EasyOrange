@@ -101,4 +101,5 @@ public class Message extends BaseDO {
     public Integer getIsRead() { return isRead; }
     public Long getBusinessId() { return businessId; }
     public Long getConversationId() { return conversationId; }
+    public LocalDateTime getReadTime() { return readTime; }
 }

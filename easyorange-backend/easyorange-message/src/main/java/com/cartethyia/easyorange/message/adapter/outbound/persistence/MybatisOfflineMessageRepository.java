@@ -1,10 +1,10 @@
-package com.cartethyia.easyorange.message.domain.repository;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.entity.OfflineMessage;
-import com.cartethyia.easyorange.message.mapper.OfflineMessageMapper;
+import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

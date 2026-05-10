@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.domain.repository.query;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
-import com.cartethyia.easyorange.message.mapper.MessageMapper;
+import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
