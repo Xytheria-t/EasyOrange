@@ -93,9 +93,8 @@ CREATE TABLE `eo_product` (
     `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
-    KEY `idx_eo_product_user_time` (`user_id`, `create_time` DESC),
-    KEY `idx_eo_product_category_status_time` (`category_id`, `status`, `create_time` DESC),
-    KEY `idx_eo_product_status_price` (`status`, `price`),
+    KEY `idx_eo_product_user_time` (`user_id`, `del_flag`, `create_time` DESC),
+    KEY `idx_eo_product_category_status_time` (`category_id`, `status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_product_search` (`status`, `del_flag`, `category_id`, `create_time` DESC),
     KEY `idx_eo_product_status_del_price` (`status`, `del_flag`, `price`),
     KEY `idx_eo_product_user_status_del` (`user_id`, `status`, `del_flag`, `create_time` DESC),
@@ -270,6 +269,7 @@ CREATE TABLE `eo_order` (
     KEY `idx_eo_order_product_id` (`product_id`),
     KEY `idx_eo_order_payment_status` (`payment_status`),
     KEY `idx_eo_order_status_payment` (`status`, `payment_status`, `create_time` DESC),
+    KEY `idx_eo_order_product_del` (`product_id`, `del_flag`),
     CONSTRAINT `chk_eo_order_amount` CHECK (`amount` >= 0),
     CONSTRAINT `chk_eo_order_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5)),
     CONSTRAINT `chk_eo_order_payment_status` CHECK (`payment_status` IN (0, 1, 2))
@@ -354,7 +354,7 @@ CREATE TABLE `eo_message` (
     `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (`id`),
     KEY `idx_eo_message_sender_time` (`sender_id`, `create_time` DESC),
-    KEY `idx_eo_message_receiver_read_time` (`receiver_id`, `is_read`, `create_time` DESC),
+    KEY `idx_eo_message_receiver_read_time` (`receiver_id`, `is_read`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_message_conversation_time` (`conversation_id`, `create_time` DESC),
     KEY `idx_eo_message_business_id` (`business_id`),
     CONSTRAINT `chk_eo_message_is_read` CHECK (`is_read` IN (0, 1))

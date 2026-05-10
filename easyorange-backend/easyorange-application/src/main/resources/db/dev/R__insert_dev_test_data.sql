@@ -980,7 +980,13 @@ INSERT INTO `eo_oper_log` (
 (12, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'huangjie',  '/api/product/create', '10.0.1.100',   '宿舍区', 0, 95,  NOW() - INTERVAL 14 DAY),
 (13, '订单管理', 2, 'OrderController.cancel()',    'PUT',  1, 'wanghai',   '/api/order/20/cancel','10.0.0.88',    '图书馆', 0, 123, NOW() - INTERVAL 7 DAY),
 (14, '支付管理', 2, 'PaymentController.refund()',  'POST', 1, 'zhangmei',  '/api/payment/refund', '172.16.0.45',  '宿舍区', 0, 456, NOW() - INTERVAL 6 DAY),
-(15, '系统管理', 4, 'AdminController.exportLog()',  'GET',  2, 'admin',     '/api/admin/log/export','10.0.0.1',    '服务器', 0, 2345, NOW() - INTERVAL 3 DAY);
+(15, '系统管理', 4, 'AdminController.exportLog()',  'GET',  2, 'admin',     '/api/admin/log/export','10.0.0.1',    '服务器', 0, 2345, NOW() - INTERVAL 3 DAY)
+AS new
+ON DUPLICATE KEY UPDATE
+    `title` = new.`title`,
+    `business_type` = new.`business_type`,
+    `method` = new.`method`,
+    `oper_time` = new.`oper_time`;
 
 -- ===================================================================
 -- 27. 补充消息订阅数据（新用户）
@@ -1341,4 +1347,49 @@ AS new
 ON DUPLICATE KEY UPDATE
     `search_count` = new.`search_count`,
     `last_search_time` = new.`last_search_time`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 35. 商品评价数据（基于已完成订单）
+-- 评分分布：5星50%、4星30%、3星12%、2星5%、1星3%
+-- 约40%有卖家回复
+-- ===================================================================
+
+INSERT INTO `eo_product_review` (
+    `id`, `product_id`, `user_id`, `order_id`, `rating`, `content`,
+    `reply_content`, `reply_time`, `likes`, `status`,
+    `create_time`, `update_time`, `del_flag`, `version`
+) VALUES
+-- 5星评价（好评）
+(1,  1,  3,  1,  5, '手机成色很好，和描述一致，卖家很热情，还送了手机壳，非常满意！', '感谢支持，祝使用愉快！', NOW() - INTERVAL 57 DAY, 23, 1, NOW() - INTERVAL 58 DAY, NOW() - INTERVAL 57 DAY, 0, 0),
+(2,  8,  4,  2,  5, 'AirPods 全新未拆封，正品保障，价格比官网便宜很多，超值！', '谢谢好评，欢迎再来~', NOW() - INTERVAL 52 DAY, 18, 1, NOW() - INTERVAL 53 DAY, NOW() - INTERVAL 52 DAY, 0, 0),
+(3,  2,  5,  3,  5, '华为Mate60拍照太棒了，卫星通话功能很酷，卖家发货快，包装仔细。', NULL, NULL, 12, 1, NOW() - INTERVAL 48 DAY, NOW(), 0, 0),
+(4,  13, 3,  11, 5, 'Switch OLED屏幕效果惊艳，掌机模式太爽了，宿舍必备！', '哈哈，游戏愉快！', NOW() - INTERVAL 7 DAY, 15, 1, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY, 0, 0),
+(5,  46, 14, 13, 5, '三星S24 Ultra的S Pen太好用了，AI功能也很强大，卖家服务态度超好！', '感谢认可，有问题随时联系~', NOW() - INTERVAL 9 DAY, 8, 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY, 0, 0),
+(6,  50, 11, 18, 5, 'Bose降噪效果一流，戴上后世界都安静了，图书馆神器！', NULL, NULL, 11, 1, NOW() - INTERVAL 17 DAY, NOW(), 0, 0),
+
+-- 4星评价（较好）
+(7,  11, 5,  9,  4, '小米手环功能齐全，NFC门禁很方便，就是腕带有点硬。', '腕带戴一段时间就软了，感谢反馈！', NOW() - INTERVAL 27 DAY, 6, 1, NOW() - INTERVAL 28 DAY, NOW() - INTERVAL 27 DAY, 0, 0),
+(8,  24, 6,  10, 4, 'NB990颜值很高，穿着舒服，就是鞋底有点硬，需要磨合。', NULL, NULL, 9, 1, NOW() - INTERVAL 22 DAY, NOW(), 0, 0),
+(9,  38, 8,  12, 4, '羽毛球拍手感不错，就是线断了需要重新穿，总体满意。', '抱歉线的问题，可以推荐穿线师傅', NOW() - INTERVAL 4 DAY, 4, 1, NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 4 DAY, 0, 0),
+(10, 47, 15, 14, 4, 'vivo X100 Pro拍照确实厉害，蔡司镜头不是盖的，就是电池续航一般。', NULL, NULL, 7, 1, NOW() - INTERVAL 6 DAY, NOW(), 0, 0),
+(11, 51, 12, 19, 4, '漫步者耳机性价比很高，降噪效果不错，就是有点夹头。', '可以调节一下头梁位置试试', NOW() - INTERVAL 12 DAY, 5, 1, NOW() - INTERVAL 13 DAY, NOW() - INTERVAL 12 DAY, 0, 0),
+
+-- 3星评价（一般）
+(12, 1,  3,  1,  3, '手机整体还行，但电池健康度只有88%，和描述的92%有差距。', '抱歉描述有误，可以退差价', NOW() - INTERVAL 58 DAY, 3, 1, NOW() - INTERVAL 58 DAY, NOW() - INTERVAL 58 DAY, 0, 0),
+(13, 2,  5,  3,  3, '手机功能正常，但边框有轻微磕碰没在描述中提到，希望能更诚实。', NULL, NULL, 2, 1, NOW() - INTERVAL 48 DAY, NOW(), 0, 0),
+
+-- 2星评价（较差）
+(14, 24, 6,  10, 2, '鞋子尺码偏小，和卖家说的不一样，只能送人了。', '抱歉尺码问题，可以联系我换货', NOW() - INTERVAL 23 DAY, 1, 1, NOW() - INTERVAL 23 DAY, NOW() - INTERVAL 23 DAY, 0, 0),
+
+-- 1星评价（差评）
+(15, 11, 5,  9,  1, '手环用了两天就充不进电了，质量太差！', '可以联系售后，可能是充电器问题', NOW() - INTERVAL 28 DAY, 0, 1, NOW() - INTERVAL 28 DAY, NOW() - INTERVAL 28 DAY, 0, 0)
+AS new
+ON DUPLICATE KEY UPDATE
+    `rating` = new.`rating`,
+    `content` = new.`content`,
+    `reply_content` = new.`reply_content`,
+    `reply_time` = new.`reply_time`,
+    `likes` = new.`likes`,
+    `status` = new.`status`,
     `update_time` = new.`update_time`;
