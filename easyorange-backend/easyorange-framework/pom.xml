@@ -86,12 +86,6 @@
             <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
         </dependency>
 
-        <!-- Logstash Logback Encoder - 结构化日志 -->
-        <dependency>
-            <groupId>net.logstash.logback</groupId>
-            <artifactId>logstash-logback-encoder</artifactId>
-        </dependency>
-
         <!-- Micrometer Core -->
         <dependency>
             <groupId>io.micrometer</groupId>

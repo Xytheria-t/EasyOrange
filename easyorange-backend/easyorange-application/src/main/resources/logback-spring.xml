@@ -2,45 +2,16 @@
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <springProperty scope="context" name="APP_NAME" source="spring.application.name" defaultValue="easyorange"/>
-
-    <springProfile name="dev">
-        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder>
-                <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level){fg_cyan, bold} %magenta([%thread]) [%X{traceId}] %green(%-40.40logger{40}) %highlight(:){fg_yellow, bold} %m%n</pattern>
-                <charset>UTF-8</charset>
-            </encoder>
-        </appender>
-    </springProfile>
-
-    <springProfile name="!dev">
-        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <includeMdc>true</includeMdc>
-                <includeContext>false</includeContext>
-                <includeTags>false</includeTags>
-                <includeCallerData>false</includeCallerData>
-                <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timestampPattern>
-                <fieldNames>
-                    <timestamp>@timestamp</timestamp>
-                    <message>message</message>
-                    <logger>logger</logger>
-                    <thread>thread</thread>
-                    <level>level</level>
-                    <stackTrace>stack_trace</stackTrace>
-                </fieldNames>
-                <customFields>{"app":"${APP_NAME}"}</customFields>
-            </encoder>
-        </appender>
-    </springProfile>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %magenta([%thread]) [%X{traceId}] %green(%-40.40logger{40}) : %m%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>
-
-    <logger name="com.cartethyia.easyorange" level="INFO" additivity="false">
-        <appender-ref ref="CONSOLE"/>
-    </logger>
 
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.springdoc" level="WARN"/>

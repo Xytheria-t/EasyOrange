@@ -39,7 +39,7 @@
         <aspectjweaver.version>1.9.25.1</aspectjweaver.version>
         <springdoc.version>3.0.2</springdoc.version>
         <mybatis-plus.version>3.5.16</mybatis-plus.version>
-        <logstash-logback-encoder.version>8.0</logstash-logback-encoder.version>
+
         <jackson3.version>3.1.2</jackson3.version>
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <mapstruct.version>1.6.3</mapstruct.version>
@@ -133,13 +133,6 @@
                 <artifactId>mybatis-plus-extension</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
-
-            <dependency>
-                <groupId>net.logstash.logback</groupId>
-                <artifactId>logstash-logback-encoder</artifactId>
-                <version>${logstash-logback-encoder.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
