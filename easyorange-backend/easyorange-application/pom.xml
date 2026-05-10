@@ -120,8 +120,8 @@
                 <version>11.14.1</version>
                 <configuration>
                     <url>jdbc:mysql://localhost:3306/easyorange?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true</url>
-                    <user>easyorange_app</user>
-                    <password>easyorange_app_dev</password>
+                    <user>${env.FLYWAY_USER}</user>
+                    <password>${env.FLYWAY_PASSWORD}</password>
                     <locations>
                         <location>filesystem:src/main/resources/db/migration</location>
                     </locations>

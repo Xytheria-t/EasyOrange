@@ -166,9 +166,8 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 | 名称 | 类型 | 列 |
 |------|------|----|
-| idx_eo_product_user_time | KEY | user_id, create_time DESC |
-| idx_eo_product_category_status_time | KEY | category_id, status, create_time DESC |
-| idx_eo_product_status_price | KEY | status, price |
+| idx_eo_product_user_time | KEY | user_id, del_flag, create_time DESC |
+| idx_eo_product_category_status_time | KEY | category_id, status, del_flag, create_time DESC |
 | idx_eo_product_search | KEY | status, del_flag, category_id, create_time DESC |
 | idx_eo_product_status_del_price | KEY | status, del_flag, price |
 | idx_eo_product_user_status_del | KEY | user_id, status, del_flag, create_time DESC |
@@ -345,6 +344,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | idx_eo_order_buyer_status_time | KEY | buyer_id, status, del_flag, create_time DESC |
 | idx_eo_order_seller_status_time | KEY | seller_id, status, del_flag, create_time DESC |
 | idx_eo_order_product_id | KEY | product_id |
+| idx_eo_order_product_del | KEY | product_id, del_flag |
 | idx_eo_order_payment_status | KEY | payment_status |
 | idx_eo_order_status_payment | KEY | status, payment_status, create_time DESC |
 

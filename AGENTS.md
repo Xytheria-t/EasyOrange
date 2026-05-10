@@ -24,8 +24,8 @@ easy-orange/
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
-│   ├── easyorange-message/      # 消息模块 (混合架构 + WebSocket)
-│   ├── easyorange-favorite/     # 收藏模块 (DDD + ACL)
+│   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
+│   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
 ├── easyorange-frontend/         # React 前端
 │   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
