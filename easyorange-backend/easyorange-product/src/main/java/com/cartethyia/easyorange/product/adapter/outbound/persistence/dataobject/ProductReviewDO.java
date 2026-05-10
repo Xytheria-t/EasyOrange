@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobjec
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.framework.entity.BaseDO;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -20,9 +21,15 @@ public class ProductReviewDO extends BaseDO {
 
     private Long userId;
 
+    private Long orderId;
+
     private Integer rating;
 
     private String content;
+
+    private String replyContent;
+
+    private LocalDateTime replyTime;
 
     private Integer likes;
 
