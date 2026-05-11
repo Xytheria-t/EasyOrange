@@ -43,7 +43,7 @@ CREATE TABLE `eo_user` (
     KEY `idx_eo_user_create_time` (`create_time`),
     CONSTRAINT `chk_eo_user_status` CHECK (`status` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_user_sex` CHECK (`sex` IS NULL OR `sex` IN (0, 1, 2)),
-    CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('01', '02'))
+    CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('00', '01'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
 
 -- ===================================================================

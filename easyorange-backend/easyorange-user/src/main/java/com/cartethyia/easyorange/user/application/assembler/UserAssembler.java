@@ -66,6 +66,7 @@ public interface UserAssembler {
         vo.setAvatar(avatar);
         vo.setStatus(user.getStatus() != null
             ? Integer.parseInt(user.getStatus().getCode()) : 0);
+        vo.setUserType(user.getUserType());
         vo.setCreateTime(user.getAuditInfo() != null ? user.getAuditInfo().createTime() : null);
         vo.setUpdateTime(user.getAuditInfo() != null ? user.getAuditInfo().updateTime() : null);
     }

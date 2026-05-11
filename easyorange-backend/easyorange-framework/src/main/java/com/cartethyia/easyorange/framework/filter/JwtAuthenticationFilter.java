@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String ADMIN_USER_TYPE = "00";
+    private static final String ADMIN_PATH_PREFIX = "/api/admin";
 
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
@@ -119,6 +120,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 Long userId = Long.parseLong(claims.getSubject());
                 setAuthentication(request, response, token, userId, claims);
+            }
+
+            String path = request.getRequestURI();
+            String userType = claims.get("userType", String.class);
+            if (path.startsWith(ADMIN_PATH_PREFIX) && !ADMIN_USER_TYPE.equals(userType)) {
+                log.warn("Non-admin access to admin path: {}, userType: {}, IP: {}",
+                    path, userType, RequestUtil.getClientIp(request));
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":\"403\",\"message\":\"权限不足\",\"data\":null,\"timestamp\":" + System.currentTimeMillis() + "}");
+                return;
             }
         } catch (Exception e) {
             log.error("action=auth_error, error={}", e.getMessage());

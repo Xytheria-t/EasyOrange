@@ -1,3 +1,5 @@
+export type UserType = '00' | '01';
+
 export interface User {
     userId: string;
     username: string;
@@ -8,6 +10,7 @@ export interface User {
     realName: string | null;
     avatar: string | null;
     status: number;
+    userType: UserType;
     createTime: string;
     updateTime: string;
 }

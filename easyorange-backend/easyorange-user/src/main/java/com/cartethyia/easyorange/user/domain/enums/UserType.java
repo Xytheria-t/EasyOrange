@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.domain.enums;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.baomidou.mybatisplus.annotation.IEnum;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,6 +13,7 @@ public enum UserType implements IEnum<String> {
     NORMAL("01", "普通用户");
 
     @EnumValue
+    @JsonValue
     private final String code;
 
     private final String description;

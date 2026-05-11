@@ -13,7 +13,7 @@ INSERT INTO `eo_user` (
     `real_name`, `avatar`, `create_time`, `update_time`
 ) VALUES
 (1,  'testuser',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '测试用户',   0, 0, 0, 'testuser@campus.edu',    '13800138001', '2023001', '张三',   'https://picsum.photos/seed/avatar1/100/100',  NOW() - INTERVAL 90 DAY, NOW()),
-(2,  'admin',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '02', '管理员',     1, 0, 0, 'admin@campus.edu',       '13800138002', NULL,      '李管理', 'https://picsum.photos/seed/avatar2/100/100',  NOW() - INTERVAL 120 DAY, NOW()),
+(2,  'admin',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '00', '管理员',     1, 0, 0, 'admin@campus.edu',       '13800138002', NULL,      '李管理', 'https://picsum.photos/seed/avatar2/100/100',  NOW() - INTERVAL 120 DAY, NOW()),
 (3,  'liming',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '黎明',       1, 0, 0, 'liming@campus.edu',      '13800138003', '2023002', '黎明',   'https://picsum.photos/seed/avatar3/100/100',  NOW() - INTERVAL 60 DAY, NOW()),
 (4,  'wangfang',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '小芳同学',   2, 0, 0, 'wangfang@campus.edu',    '13800138004', '2023003', '王芳',   'https://picsum.photos/seed/avatar4/100/100',  NOW() - INTERVAL 45 DAY, NOW()),
 (5,  'zhaowei',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '赵伟',       1, 0, 0, 'zhaowei@campus.edu',     '13800138005', '2023004', '赵伟',   'https://picsum.photos/seed/avatar5/100/100',  NOW() - INTERVAL 30 DAY, NOW()),

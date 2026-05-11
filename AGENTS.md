@@ -28,6 +28,11 @@ easy-orange/
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
 ├── easyorange-frontend/         # React 前端
+│   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统）
+│   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃), AdminHeader
+│   │   ├── pages/              # dashboard / users / products / orders / reports / stats
+│   │   ├── components/         # AdminTable, AdminSelect(Portal), StatusBadge, ConfirmModal
+│   │   └── styles/             # admin.css (侧边栏/头部), admin-layout.css (布局骨架)
 │   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
 │   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
 │   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)

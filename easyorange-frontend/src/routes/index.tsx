@@ -26,6 +26,7 @@ const EditProductPage = lazy(() => import('@/pages/products/EditProductPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
+const AdminRoutes = lazy(() => import('@/admin/AdminRoutes').then(m => ({ default: m.AdminRoutes })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
@@ -125,6 +126,7 @@ export const router = createBrowserRouter(
         />
         <Route path="*" element={withSuspense(NotFoundPage)} />
       </Route>
+      <Route path="admin/*" element={withSuspense(AdminRoutes)} />
     </>
   )
 );

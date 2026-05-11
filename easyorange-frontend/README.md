@@ -32,6 +32,11 @@ easyorange-frontend/
 │   │   ├── productApi.ts     # 商品 API
 │   │   ├── orderApi.ts       # 订单 API
 │   │   └── ...
+│   ├── admin/                # 管理端模块（暖橙指挥中心设计系统）
+│   │   ├── layout/           # AdminLayout, AdminSidebar, AdminHeader
+│   │   ├── pages/            # dashboard / users / products / orders / reports / stats
+│   │   ├── components/       # AdminTable, AdminSelect(Portal), StatusBadge, ConfirmModal
+│   │   └── styles/           # admin.css, admin-layout.css
 │   ├── components/           # 可复用组件
 │   │   ├── layout/           # 布局组件
 │   │   ├── sections/         # 页面区块组件
@@ -122,6 +127,13 @@ npm run preview
 | 支付结果 | `/payment/result` | 支付结果展示 | 是 |
 | 登录 | `/login` | 用户登录 | 否 |
 | 找回密码 | `/forgot-password` | 密码找回 | 否 |
+| 管理后台 | `/admin` | 管理端仪表盘（重定向到 /admin/dashboard） | 是 |
+| 管理仪表盘 | `/admin/dashboard` | 数据概览、待办事项、最近动态 | 是 |
+| 用户管理 | `/admin/users` | 用户列表、搜索、详情弹窗、状态变更 | 是 |
+| 商品管理 | `/admin/products` | 商品审核列表、详情抽屉、通过/拒绝 | 是 |
+| 订单管理 | `/admin/orders` | 订单列表、筛选、状态追踪 | 是 |
+| 举报管理 | `/admin/reports` | 举报处理、处理/驳回操作 | 是 |
+| 数据统计 | `/admin/stats` | 统计卡片、图表、活动时间线 | 是 |
 
 ## 核心功能
 
@@ -169,6 +181,11 @@ VITE_APP_TITLE=易橙坊 - 让闲置流转，让价值延续
 - 所有函数和变量必须有类型注解
 - 优先使用 `const` 和不可变数据模式
 - 使用 async/await 处理异步操作
+
+### 管理端开发约定
+- **样式**: 所有 `src/admin/` 页面/组件必须使用内联 `style={{}}`，禁止依赖外部CSS（`admin.css` 仅用于侧边栏/头部布局）
+- **下拉菜单**: 必须使用 `AdminSelect` 组件（`src/admin/components/AdminSelect.tsx`），禁止使用原生 `<select>`
+- **设计系统**: 暖橙指挥中心 — 主色 Orange(#F97316) / Rose(#FB7185)，毛玻璃侧边栏，渐变强调色
 
 ### Git 提交规范
 ```
