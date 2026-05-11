@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.favorite.infrastructure.acl.ProductAclService;
+import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
 import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
 import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
@@ -39,7 +39,7 @@ class FavoriteServiceTest {
     private FavoriteRepository favoriteRepository;
 
     @Mock
-    private ProductAclService productAclService;
+    private ProductInfoPort productInfoPort;
 
     private FavoriteService favoriteService;
 
@@ -52,7 +52,7 @@ class FavoriteServiceTest {
         securityContextMock = mockStatic(SecurityContextUtil.class);
         securityContextMock.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(TEST_USER_ID);
 
-        favoriteService = new FavoriteService(favoriteRepository, productAclService);
+        favoriteService = new FavoriteService(favoriteRepository, productInfoPort);
     }
 
     @AfterEach
@@ -63,8 +63,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏成功")
     void addFavorite_success() {
-        when(productAclService.productExists(TEST_PRODUCT_ID)).thenReturn(true);
-        when(productAclService.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
+        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.save(any(Favorite.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -76,7 +76,7 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏 - 商品不存在时抛出异常")
     void addFavorite_productNotFound() {
-        when(productAclService.productExists(TEST_PRODUCT_ID)).thenReturn(false);
+        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(false);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(AddFavoriteDTO.builder().productId(TEST_PRODUCT_ID).build()))
                 .isInstanceOf(BusinessException.class)
@@ -88,8 +88,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏 - 已收藏时抛出异常")
     void addFavorite_alreadyFavorited() {
-        when(productAclService.productExists(TEST_PRODUCT_ID)).thenReturn(true);
-        when(productAclService.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
+        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(false);
         when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(AddFavoriteDTO.builder().productId(TEST_PRODUCT_ID).build()))
@@ -102,8 +102,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("添加收藏 - 不能收藏自己的商品")
     void addFavorite_cannotFavoriteOwnProduct() {
-        when(productAclService.productExists(TEST_PRODUCT_ID)).thenReturn(true);
-        when(productAclService.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.productExists(TEST_PRODUCT_ID)).thenReturn(true);
+        when(productInfoPort.isOwnProduct(TEST_USER_ID, TEST_PRODUCT_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> favoriteService.addFavorite(AddFavoriteDTO.builder().productId(TEST_PRODUCT_ID).build()))
                 .isInstanceOf(BusinessException.class)
@@ -204,10 +204,10 @@ class FavoriteServiceTest {
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(2L);
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
                 .thenReturn(List.of(favorite1, favorite2));
-        when(productAclService.findProductsByIds(List.of(2001L, 2002L)))
+        when(productInfoPort.findProductsByIds(List.of(2001L, 2002L)))
                 .thenReturn(List.of(product1, product2));
-        when(productAclService.findSellersByIds(any())).thenReturn(Collections.emptyMap());
-        when(productAclService.assembleProductVOs(any(), any()))
+        when(productInfoPort.findSellersByIds(any())).thenReturn(Collections.emptyMap());
+        when(productInfoPort.assembleProductVOs(any(), any()))
                 .thenReturn(List.of(vo1, vo2));
 
         PageResult<FavoriteVO> result = favoriteService.queryFavorites(query);

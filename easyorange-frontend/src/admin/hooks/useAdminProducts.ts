@@ -7,7 +7,7 @@ export const ADMIN_PRODUCT_KEYS = {
   lists: () => [...ADMIN_PRODUCT_KEYS.all, 'list'] as const,
   list: (params: AdminProductQuery) => [...ADMIN_PRODUCT_KEYS.lists(), params] as const,
   details: () => [...ADMIN_PRODUCT_KEYS.all, 'detail'] as const,
-  detail: (id: string) => [...ADMIN_PRODUCT_KEYS.details(), id] as const,
+  detail: (id: number) => [...ADMIN_PRODUCT_KEYS.details(), id] as const,
 };
 
 export function useAdminProducts(params: AdminProductQuery) {
@@ -15,7 +15,7 @@ export function useAdminProducts(params: AdminProductQuery) {
     queryKey: ADMIN_PRODUCT_KEYS.list(params),
     queryFn: async () => {
       const response = await adminApi.getProducts(params);
-      return response;
+      return response.data;
     },
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -23,7 +23,7 @@ export function useAdminProducts(params: AdminProductQuery) {
   });
 }
 
-export function useAdminProductDetail(id: string) {
+export function useAdminProductDetail(id: number) {
   return useQuery<AdminProduct>({
     queryKey: ADMIN_PRODUCT_KEYS.detail(id),
     queryFn: async () => {
@@ -41,9 +41,9 @@ export function useUpdateProductStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateStatusRequest }) => {
+    mutationFn: async ({ id, data }: { id: number; data: UpdateStatusRequest }) => {
       const response = await adminApi.updateProductStatus(id, data);
-      return response;
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCT_KEYS.lists() });

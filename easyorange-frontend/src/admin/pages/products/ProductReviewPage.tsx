@@ -4,9 +4,9 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { AdminSelect } from '../../components/AdminSelect';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
 import { ProductDetailDrawer } from './ProductDetailDrawer';
-import type { AdminProduct, ProductStatus } from '../../types/admin';
+import type { AdminProduct } from '../../types/admin';
 
-const statusOptions: { value: ProductStatus | ''; label: string }[] = [
+const statusOptions: { value: number | ''; label: string }[] = [
   { value: '', label: '全部状态' },
   { value: 0, label: '草稿' },
   { value: 1, label: '上架' },
@@ -36,22 +36,22 @@ export default function ProductReviewPage() {
   const [pageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ProductStatus | ''>('');
+  const [statusFilter, setStatusFilter] = useState<number | ''>('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState('createTime');
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  const { data, isLoading, refetch } = useAdminProducts({
-    page,
-    size: pageSize,
+  const { data, isLoading, isError, error: _error, refetch } = useAdminProducts({
+    pageNum: page,
+    pageSize,
     keyword: keyword || undefined,
     status: statusFilter || undefined,
-    categoryId: categoryFilter || undefined,
+    categoryId: categoryFilter ? Number(categoryFilter) : undefined,
   });
 
-  const products = data?.data?.records ?? [];
-  const total = data?.data?.total ?? 0;
+  const products = data?.records ?? [];
+  const total = data?.total ?? 0;
 
   const handleSearch = () => {
     setKeyword(searchInput);
@@ -63,7 +63,7 @@ export default function ProductReviewPage() {
   };
 
   const handleViewDetail = (product: AdminProduct) => {
-    setSelectedProductId(product.id);
+    setSelectedProductId(product.productId ?? null);
     setDrawerOpen(true);
   };
 
@@ -87,9 +87,9 @@ export default function ProductReviewPage() {
   const columns: Column<AdminProduct>[] = useMemo(
     () => [
       {
-        key: 'images',
+        key: 'mainImage',
         title: '图片',
-        render: (images: string[]) => (
+        render: (_value, record) => (
           <div style={{
             width: 46, height: 46, borderRadius: 12,
             overflow: 'hidden', flexShrink: 0,
@@ -97,8 +97,10 @@ export default function ProductReviewPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             border: '1px solid rgba(249,115,22,0.08)',
           }}>
-            {images && images[0] ? (
-              <img src={images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {record.mainImage ? (
+              <img src={record.mainImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : record.images && record.images[0] ? (
+              <img src={record.images[0]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <span style={{ fontSize: '1.15rem' }}>📦</span>
             )}
@@ -139,7 +141,7 @@ export default function ProductReviewPage() {
       {
         key: 'status',
         title: '状态',
-        render: (status: ProductStatus) => <StatusBadge status={status} type="product" />,
+        render: (_value, record) => <StatusBadge status={record.statusDesc ?? record.status ?? ''} type="product" />,
       },
       {
         key: 'createTime',
@@ -180,11 +182,12 @@ export default function ProductReviewPage() {
   );
 
   return (
-    <div style={{ position: 'relative', animation: 'pageIn 0.5s ease-out both' }}>
+    <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', animation: 'pageIn 0.5s ease-out both' }}>
       {/* Background atmosphere */}
       <div
         style={{
-          position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+          position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+          borderRadius: 20,
           background: `
             radial-gradient(ellipse 50% 40% at 12% 10%, rgba(251,113,133,0.03) 0%, transparent 50%),
             radial-gradient(ellipse 42% 50% at 88% 82%, rgba(195,155,211,.03) 0%, transparent 48%),
@@ -194,7 +197,33 @@ export default function ProductReviewPage() {
       />
 
       {/* Content */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+
+        {isError && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(244,63,94,0.06), rgba(244,63,94,0.02))',
+            border: '1px solid rgba(244,63,94,0.12)', borderRadius: 16,
+            padding: '1rem 1.25rem', marginBottom: '1.5rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.06))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E11D48" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
+              <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>无法连接到服务器，请检查后端服务是否启动</div>
+            </div>
+            <button onClick={() => window.location.reload()} style={{
+              padding: '0.45rem 1rem', borderRadius: 10, background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
+              color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(244,63,94,0.25)',
+            }}>刷新</button>
+          </div>
+        )}
 
         {/* ===== Header ===== */}
         <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
@@ -289,7 +318,7 @@ export default function ProductReviewPage() {
             <AdminSelect
               options={statusOptions}
               value={statusFilter}
-              onChange={(val) => { setStatusFilter(val as ProductStatus | ''); setPage(1); }}
+              onChange={(val) => { setStatusFilter(val as number | ''); setPage(1); }}
             />
           </div>
 
@@ -345,7 +374,7 @@ export default function ProductReviewPage() {
           <AdminTable
             columns={columns}
             data={products}
-            rowKey="id"
+            rowKey="productId"
             loading={isLoading}
             pagination={{
               current: page,

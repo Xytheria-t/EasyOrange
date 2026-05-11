@@ -29,7 +29,7 @@ EasyOrange Platform
   Frontend (React 19 SPA)           Backend (Spring Boot 4.0)
   ┌──────────────────────┐          ┌──────────────────────┐
   │  React 19            │          │  DDD Modular          │
-  │  React Router v7     │  REST    │  11 Maven Modules     │
+  │  React Router v7     │  REST    │  12 Maven Modules     │
   │  TanStack Query 5    │◄───────►│  MyBatis-Plus         │
   │  Zustand 5           │  API     │  Spring Security      │
   │  Tailwind CSS 4      │          │  Saga Pattern         │
@@ -77,8 +77,9 @@ EasyOrange Platform
 
 ```
 easyorange/
-├── easyorange-backend/               # 后端服务
-│   ├── easyorange-application/       # 应用层（启动类、控制器）
+├── easyorange-backend/               # 后端服务 (12 Maven 模块)
+│   ├── easyorange-application/       # 应用层（启动类、健康检查、平台统计）
+│   ├── easyorange-admin/             # 管理端（用户/商品/订单/分类/举报/审核 API）
 │   ├── easyorange-common/            # 公共模块（Result, PageResult, 注解, 异常, 领域事件基类）
 │   ├── easyorange-framework/         # 框架层（安全、配置、Outbox、事件发布）
 │   ├── easyorange-user/              # 用户域模块
@@ -124,7 +125,7 @@ easyorange/
 ├── .env.example                      # 环境变量示例
 ├── .githooks/                        # Git 钩子
 ├── doc/                              # 项目文档
-│   └── 规范/                         # 架构规范文档（已切分为多个子文档）
+│   └── 架构/                         # 架构规范文档（已切分为多个子文档）
 ├── AGENTS.md                         # Agent 使用说明
 ├── CLAUDE.md                         # Claude 配置
 ├── DATABASE.md                       # 数据库设计文档
@@ -255,6 +256,12 @@ npm run dev
 | **评价** | `POST /api/reviews` | 创建评价 |
 | | `GET /api/reviews/product/{id}` | 商品评价列表 |
 | **统计** | `GET /api/stats` | 平台统计数据 |
+| **管理端-仪表板** | `GET /api/admin/dashboard/*` | 统计概览、待处理事项、最近动态 |
+| **管理端-用户** | `GET/PUT /api/admin/users/*` | 用户列表、详情、状态、解锁、重置密码、角色 |
+| **管理端-商品** | `GET/PUT /api/admin/products/*` | 商品列表、详情、状态、审核(带原因)、批量审核 |
+| **管理端-订单** | `GET/PUT /api/admin/orders/*` | 订单列表、详情、取消、强制完成、退款、统计 |
+| **管理端-分类** | CRUD `/api/admin/categories` | 分类 CRUD、树形结构、启用禁用 |
+| **管理端-举报** | `GET/PUT /api/admin/reports/*` | 举报列表、详情、处理(4种动作)、统计 |
 
 ## 功能模块
 

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.user.domain.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -10,17 +11,17 @@ import lombok.RequiredArgsConstructor;
 public class UserRegistrationDomainService {
 
     private final UserRepository userRepository;
-    private final PasswordDomainService passwordDomainService;
+    private final PasswordEncoderPort passwordEncoder;
 
     public User register(String username, String password, String phone, String email, String nickname) {
         validateUsernameNotExists(username);
         validateUniqueContactInfo(phone, email);
 
-        String encodedPassword = passwordDomainService.encode(password);
+        String encodedPassword = passwordEncoder.encode(password);
         User user = User.register(username, encodedPassword, nickname);
 
         if (phone != null && !phone.isBlank() || email != null && !email.isBlank()) {
-            user = user.updateProfile(email, phone, null, null, null, null, null);
+            user = user.updateContactInfo(email, phone, null);
         }
 
         return userRepository.save(user);

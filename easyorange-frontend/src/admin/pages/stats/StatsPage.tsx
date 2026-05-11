@@ -1,4 +1,5 @@
-import { useDashboardStats } from '../../hooks';
+import { useMemo } from 'react';
+import { useDashboardStats, useAdminCategories, useAdminOrderStats } from '../../hooks';
 
 const MOCK_TREND = [
   { month: '1月', users: 120, orders: 85, products: 200 },
@@ -6,15 +7,6 @@ const MOCK_TREND = [
   { month: '3月', users: 180, orders: 130, products: 280 },
   { month: '4月', users: 210, orders: 156, products: 320 },
   { month: '5月', users: 250, orders: 198, products: 380 },
-];
-
-const MOCK_CATEGORY = [
-  { name: '教材书籍', count: 456, pct: 32 },
-  { name: '数码电子', count: 312, pct: 22 },
-  { name: '生活用品', count: 228, pct: 16 },
-  { name: '服饰鞋包', count: 185, pct: 13 },
-  { name: '运动户外', count: 132, pct: 9 },
-  { name: '其他', count: 107, pct: 8 },
 ];
 
 const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#8B857E'];
@@ -36,21 +28,41 @@ const ACTIVITY_COLORS = {
 
 export default function StatsPage() {
   const { data: stats, isLoading } = useDashboardStats();
+  const { data: categories, isLoading: categoriesLoading } = useAdminCategories();
+  const { data: orderStats } = useAdminOrderStats();
 
   const statCards = [
-    { label: '总用户数', value: stats?.totalUsers ?? 1280, growth: stats?.userGrowth ?? 12.5, color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #FB923C)', emoji: '👥' },
-    { label: '总商品数', value: stats?.totalProducts ?? 1420, growth: stats?.productGrowth ?? 8.3, color: '#C39BD3', gradient: 'linear-gradient(135deg, #C39BD3, #D8B4FE)', emoji: '📦' },
-    { label: '总订单数', value: stats?.totalOrders ?? 856, growth: stats?.orderGrowth ?? 15.2, color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #34D399)', emoji: '🛒' },
-    { label: '今日新增用户', value: stats?.newUsersToday ?? 42, growth: 5.8, color: '#FBBF24', gradient: 'linear-gradient(135deg, #FBBF24, #F97316)', emoji: '✨' },
+    { label: '总用户数', value: stats?.totalUsers ?? 1280, color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #FB923C)', emoji: '👥' },
+    { label: '总商品数', value: stats?.totalProducts ?? 1420, color: '#C39BD3', gradient: 'linear-gradient(135deg, #C39BD3, #D8B4FE)', emoji: '📦' },
+    { label: '总订单数', value: stats?.totalOrders ?? 856, color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #34D399)', emoji: '🛒' },
+    { label: '今日新增用户', value: stats?.todayNewUsers ?? 42, color: '#FBBF24', gradient: 'linear-gradient(135deg, #FBBF24, #F97316)', emoji: '✨' },
   ];
 
   const maxTrendValue = Math.max(...MOCK_TREND.map((t) => Math.max(t.users, t.orders, t.products)));
 
+  const categoryDistribution = useMemo(() => {
+    if (!categories || categories.length === 0) return [];
+    const validCategories = categories.filter((c) => (c.productCount ?? 0) > 0);
+    if (validCategories.length === 0) return [];
+    const maxCount = Math.max(...validCategories.map((c) => c.productCount ?? 0));
+    const total = validCategories.reduce((sum, c) => sum + (c.productCount ?? 0), 0);
+    return validCategories
+      .sort((a, b) => (b.productCount ?? 0) - (a.productCount ?? 0))
+      .slice(0, CATEGORY_COLORS.length)
+      .map((c) => ({
+        name: c.name,
+        count: c.productCount ?? 0,
+        pct: total > 0 ? ((c.productCount ?? 0) / total * 100) : 0,
+        ratio: maxCount > 0 ? ((c.productCount ?? 0) / maxCount) : 0,
+      }));
+  }, [categories]);
+
   return (
-    <div style={{ position: 'relative', animation: 'pageIn 0.5s ease-out both' }}>
+    <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', animation: 'pageIn 0.5s ease-out both' }}>
       {/* Background atmosphere */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+        borderRadius: 20,
         background: `
           radial-gradient(ellipse 55% 35% at 8% 12%, rgba(249,115,22,0.035) 0%, transparent 50%),
           radial-gradient(ellipse 40% 45% at 92% 85%, rgba(195,155,211,0.03) 0%, transparent 48%),
@@ -58,7 +70,7 @@ export default function StatsPage() {
         `,
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
           <h1 style={{
@@ -118,18 +130,37 @@ export default function StatsPage() {
                 }}>
                   {isLoading ? '—' : card.value.toLocaleString()}
                 </span>
-                <span style={{
-                  fontSize: '0.76rem', fontWeight: 600,
-                  color: card.growth >= 0 ? '#059669' : '#E11D48',
-                  background: card.growth >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(244,63,94,0.08)',
-                  padding: '0.15rem 0.45rem', borderRadius: 6,
-                }}>
-                  {card.growth >= 0 ? '↑' : '↓'} {Math.abs(card.growth)}%
-                </span>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Order stats quick summary */}
+        {orderStats && (
+          <div style={{
+            display: 'flex', flexWrap: 'wrap', gap: '0.75rem',
+            marginBottom: '1.5rem', animation: 'toolbarIn 0.5s ease-out 0.2s both',
+            padding: '1rem 1.25rem',
+            background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.55)', borderRadius: 16,
+            alignItems: 'center',
+          }}>
+            {[
+              { label: '今日订单', value: orderStats.todayOrders, color: '#F97316' },
+              { label: '待发货', value: orderStats.toShip, color: '#FBBF24' },
+              { label: '待收货', value: orderStats.toReceive, color: '#10B981' },
+              { label: '已完成', value: orderStats.completed, color: '#C39BD3' },
+              { label: '今日营收', value: `¥${orderStats.todayRevenue.toLocaleString()}`, color: '#FB7185' },
+            ].map((item) => (
+              <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: item.color, flexShrink: 0 }} />
+                <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{item.label}:</span>
+                <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#2A2520' }}>{item.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Two-column layout */}
         <div style={{
@@ -192,9 +223,10 @@ export default function StatsPage() {
                 </div>
               ))}
             </div>
+            {/* TODO: Replace MOCK_TREND with real API data when backend adds GET /admin/dashboard/trend endpoint */}
           </div>
 
-          {/* Category distribution */}
+          {/* Category distribution — powered by useAdminCategories() */}
           <div style={{
             background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -208,28 +240,38 @@ export default function StatsPage() {
             }}>
               🏷️ 商品分类分布
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              {MOCK_CATEGORY.map((cat, idx) => (
-                <div key={cat.name}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                    <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#4A4540' }}>{cat.name}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{cat.count} 件 ({cat.pct}%)</span>
-                  </div>
-                  <div style={{
-                    height: 8, borderRadius: 4,
-                    background: 'rgba(229,224,219,0.3)',
-                    overflow: 'hidden',
-                  }}>
+            {categoriesLoading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 140, color: '#B5AEA8', fontSize: '0.87rem' }}>
+                加载中…
+              </div>
+            ) : categoryDistribution.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 140, color: '#B5AEA8', fontSize: '0.87rem' }}>
+                暂无分类数据
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {categoryDistribution.map((cat, idx) => (
+                  <div key={cat.name}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                      <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#4A4540' }}>{cat.name}</span>
+                      <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{cat.count} 件 ({Math.round(cat.pct)}%)</span>
+                    </div>
                     <div style={{
-                      height: '100%', borderRadius: 4,
-                      background: CATEGORY_COLORS[idx],
-                      width: `${cat.pct}%`,
-                      transition: 'width 0.6s ease',
-                    }} />
+                      height: 8, borderRadius: 4,
+                      background: 'rgba(229,224,219,0.3)',
+                      overflow: 'hidden',
+                    }}>
+                      <div style={{
+                        height: '100%', borderRadius: 4,
+                        background: CATEGORY_COLORS[idx % CATEGORY_COLORS.length],
+                        width: `${Math.max(cat.ratio * 100, 4)}%`,
+                        transition: 'width 0.6s ease',
+                      }} />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -269,6 +311,7 @@ export default function StatsPage() {
               </div>
             ))}
           </div>
+          {/* TODO: Replace MOCK_RECENT_ACTIVITY with real API data when backend adds GET /admin/dashboard/activity endpoint */}
         </div>
       </div>
 

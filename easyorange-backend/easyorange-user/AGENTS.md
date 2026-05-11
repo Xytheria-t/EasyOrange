@@ -39,6 +39,9 @@ user/
 │       └── storage/                     # 存储适配器
 │           └── LocalAvatarFileStorage.java
 ├── application/
+│   ├── dto/                             # 应用层 DTO（assembler/service/controller 共用）
+│   │   ├── UserVO.java
+│   │   └── UserProfileVO.java
 │   ├── service/                         # 应用服务
 │   │   ├── UserLoginAppService.java
 │   │   ├── UserRegistrationAppService.java
@@ -51,9 +54,11 @@ user/
 │   ├── aggregate/
 │   │   └── User.java                    # 用户聚合根
 │   ├── valueobject/
-│   │   ├── AuditInfo.java
-│   │   ├── LoginInfo.java
-│   │   └── UserProfile.java
+│   │   ├── AuditInfo.java               # 审计信息 (createTime, updateTime, createBy, updateBy, delFlag, version)
+│   │   ├── ContactInfo.java              # 联系方式 (email, phone)
+│   │   ├── Credentials.java              # 认证凭据 (username, encodedPassword)
+│   │   ├── LoginInfo.java                # 登录轨迹 (loginIp, loginDate, pwdUpdateDate)
+│   │   └── PersonalInfo.java             # 个人信息+展示 (realName, nickName, sex, studentId, avatar)
 │   ├── event/
 │   │   ├── UserRegisteredEvent.java
 │   │   ├── PasswordChangedEvent.java
@@ -61,7 +66,6 @@ user/
 │   ├── service/                         # 领域服务
 │   │   ├── AuthenticationDomainService.java
 │   │   ├── LoginSecurityDomainService.java
-│   │   ├── PasswordDomainService.java
 │   │   ├── SmsCodeDomainService.java
 │   │   └── UserRegistrationDomainService.java
 │   ├── repository/
@@ -110,10 +114,10 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 - `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
 - `UserEventPort` → `UserEventPublisher` (Spring Events)
 
-### 自定义校验注解
+### 自定义校验注解 (Jakarta Bean Validation)
 
-- `@Password(minLength=8, requireDigit=true, requireSpecialChar=true)` — 密码强度
-- `@Unique(field="username", message="用户名已存在")` — 唯一性校验
+- **`@Password`** — 密码强度校验（字段级）。规则来自 `UserConstant.PASSWORD_REGEX`（8-128位，含大小写+数字+特殊字符）；弱密码黑名单通过 `application.yaml` 的 `easy-orange.validation.password.weak-list` 配置注入。使用示例: `@Password String password`
+- **`@Unique(field="username", entityClass=UserEntity.class)`** — 数据库唯一性校验（类级别，支持 `@Repeatable` 多字段）。通过 `ApplicationContext` 动态查找对应 Mapper，不再硬编码实体。新增实体只需指定 `entityClass` 即可复用。详见设计文档: [2026-05-11-validation-package-redesign.md](../../docs/superpowers/specs/2026-05-11-validation-package-redesign.md)
 
 ## 安全要点
 
@@ -126,11 +130,13 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 
 ### 添加新用户字段
 
-1. `User` 聚合根添加字段
-2. 创建 Flyway 迁移脚本
-3. 更新 `UserEntity` / `UserVO` / `UpdateUserRequest`
-4. 更新 `UserAssembler`
-5. 添加测试
+1. 判断字段归属的值对象（Credentials / ContactInfo / PersonalInfo / LoginInfo / AuditInfo）或是否应留在聚合根（id, userType, status）
+2. 在对应值对象 record 中新增字段 + 紧凑构造器校验 + `withXxx()` 方法
+3. 创建 Flyway 迁移脚本
+4. 更新 `UserEntity` / `application/dto/UserVO` / `UpdateUserRequest`
+5. 更新 `UserAssembler`（如需 MapStruct 显式映射）
+6. 更新 `User` 聚合根的相关修改方法
+7. 添加测试
 
 ### 添加新登录方式
 

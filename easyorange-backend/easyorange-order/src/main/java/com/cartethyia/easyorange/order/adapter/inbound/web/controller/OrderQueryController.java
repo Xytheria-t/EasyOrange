@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.application.query.QueryOrderRequest;
-import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

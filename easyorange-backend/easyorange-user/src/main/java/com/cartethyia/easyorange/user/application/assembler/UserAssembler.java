@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.user.application.assembler;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
+import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
+import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import org.mapstruct.AfterMapping;
 import org.mapstruct.Builder;
@@ -24,6 +24,7 @@ public interface UserAssembler {
     @Mapping(target = "realName", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "avatar", ignore = true)
+    @Mapping(target = "studentId", source = "personalInfo.studentId")
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     UserVO toVo(User user);
@@ -38,6 +39,7 @@ public interface UserAssembler {
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "userType", ignore = true)
     @Mapping(target = "avatar", ignore = true)
+    @Mapping(target = "studentId", source = "user.personalInfo.studentId")
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     UserProfileVO toProfileVo(User user, Set<String> roles, Set<String> permissions, Long loginTime);
@@ -53,11 +55,14 @@ public interface UserAssembler {
     @AfterMapping
     default void applyMaskingAndConversions(User user, @MappingTarget UserVO vo) {
         if (user == null) return;
-        String email = user.getProfile() != null ? user.getProfile().email() : null;
-        String phone = user.getProfile() != null ? user.getProfile().phone() : null;
-        String realName = user.getProfile() != null ? user.getProfile().realName() : null;
-        String nickName = user.getProfile() != null ? user.getProfile().nickName() : null;
-        String avatar = user.getProfile() != null ? user.getProfile().avatar() : null;
+        var contactInfo = user.getContactInfo();
+        var personalInfo = user.getPersonalInfo();
+
+        String email = contactInfo != null ? contactInfo.email() : null;
+        String phone = contactInfo != null ? contactInfo.phone() : null;
+        String realName = personalInfo != null ? personalInfo.realName() : null;
+        String nickName = personalInfo != null ? personalInfo.nickName() : null;
+        String avatar = personalInfo != null ? personalInfo.avatar() : null;
 
         vo.setNickname(nickName);
         vo.setEmail(MaskUtils.maskEmail(email));
@@ -74,12 +79,15 @@ public interface UserAssembler {
     @AfterMapping
     default void applyMaskingAndConversions(User user, @MappingTarget UserProfileVO vo) {
         if (user == null) return;
-        String email = user.getProfile() != null ? user.getProfile().email() : null;
-        String phone = user.getProfile() != null ? user.getProfile().phone() : null;
-        String realName = user.getProfile() != null ? user.getProfile().realName() : null;
-        String nickName = user.getProfile() != null ? user.getProfile().nickName() : null;
-        String avatar = user.getProfile() != null ? user.getProfile().avatar() : null;
-        var sex = user.getProfile() != null ? user.getProfile().sex() : null;
+        var contactInfo = user.getContactInfo();
+        var personalInfo = user.getPersonalInfo();
+
+        String email = contactInfo != null ? contactInfo.email() : null;
+        String phone = contactInfo != null ? contactInfo.phone() : null;
+        String realName = personalInfo != null ? personalInfo.realName() : null;
+        String nickName = personalInfo != null ? personalInfo.nickName() : null;
+        String avatar = personalInfo != null ? personalInfo.avatar() : null;
+        var sex = personalInfo != null ? personalInfo.sex() : null;
 
         vo.setNickname(nickName);
         vo.setEmail(MaskUtils.maskEmail(email));

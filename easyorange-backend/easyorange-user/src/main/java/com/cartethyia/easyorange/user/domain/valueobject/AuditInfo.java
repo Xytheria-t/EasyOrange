@@ -8,11 +8,14 @@ public record AuditInfo(
     Long createBy,
     Long updateBy,
     Integer delFlag,
-    Integer version
+    int version
 ) {
+    public static final int NOT_DELETED = 0;
+    public static final int DELETED = 1;
+
     public static AuditInfo create(Long operatorId) {
         LocalDateTime now = LocalDateTime.now();
-        return new AuditInfo(now, now, operatorId, operatorId, 0, 0);
+        return new AuditInfo(now, now, operatorId, operatorId, NOT_DELETED, 0);
     }
 
     public AuditInfo update(Long operatorId) {
@@ -32,7 +35,7 @@ public record AuditInfo(
             LocalDateTime.now(),
             createBy,
             operatorId,
-            1,
+            DELETED,
             version
         );
     }

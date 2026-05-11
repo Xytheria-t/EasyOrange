@@ -1,0 +1,248 @@
+package com.cartethyia.easyorange.admin.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
+import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
+import com.cartethyia.easyorange.admin.dto.response.CategoryTreeVO;
+import com.cartethyia.easyorange.admin.dto.response.CategoryVO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
+import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class AdminCategoryService {
+
+    private final CategoryMapper categoryMapper;
+    private final CategoryQueryRepository categoryQueryRepository;
+
+    private static final int MAX_CATEGORY_LEVEL = 3;
+
+    public List<CategoryVO> listCategories(Long parentId) {
+        List<CategoryDO> entities;
+        if (parentId != null) {
+            entities = categoryQueryRepository.findByParentId(parentId);
+        } else {
+            entities = categoryMapper.selectList(
+                new LambdaQueryWrapper<CategoryDO>()
+                    .eq(CategoryDO::getDelFlag, 0)
+                    .orderByAsc(CategoryDO::getSortOrder)
+            );
+        }
+
+        Map<Long, Long> productCountMap = countProductMaps(entities);
+        Map<Long, String> parentNameMap = buildParentNameMap(entities);
+
+        return entities.stream()
+            .map(cat -> toCategoryVO(cat, productCountMap, parentNameMap))
+            .collect(Collectors.toList());
+    }
+
+    public List<CategoryTreeVO> categoryTree() {
+        List<CategoryDO> all = categoryMapper.selectList(
+            new LambdaQueryWrapper<CategoryDO>()
+                .eq(CategoryDO::getStatus, 1)
+                .eq(CategoryDO::getDelFlag, 0)
+                .orderByAsc(CategoryDO::getSortOrder)
+        );
+
+        Map<Long, List<CategoryDO>> groupedByParent = all.stream()
+            .collect(Collectors.groupingBy(
+                cat -> cat.getParentId() != null ? cat.getParentId() : 0L,
+                LinkedHashMap::new,
+                Collectors.toList()
+            ));
+
+        Function<Long, List<CategoryTreeVO>> buildChildren = new Function<>() {
+            @Override
+            public List<CategoryTreeVO> apply(Long pid) {
+                List<CategoryDO> children = groupedByParent.getOrDefault(pid, List.of());
+                return children.stream()
+                    .map(cat -> CategoryTreeVO.builder()
+                        .categoryId(cat.getId())
+                        .name(cat.getName())
+                        .level(cat.getLevel())
+                        .sortOrder(cat.getSortOrder())
+                        .status(cat.getStatus())
+                        .children(apply(cat.getId()))
+                        .build())
+                    .collect(Collectors.toList());
+            }
+        };
+
+        return buildChildren.apply(0L);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public CategoryVO createCategory(CategoryCreateRequest request) {
+        int level = 1;
+        if (request.getParentId() != null) {
+            CategoryDO parent = categoryMapper.selectById(request.getParentId());
+            if (parent == null || parent.getDelFlag() != 0) {
+                throw BusinessException.of("父分类不存在");
+            }
+            level = parent.getLevel() + 1;
+            if (level > MAX_CATEGORY_LEVEL) {
+                throw BusinessException.of("分类层级不能超过" + MAX_CATEGORY_LEVEL + "级");
+            }
+            checkDuplicateName(request.getName(), request.getParentId());
+        } else {
+            checkDuplicateNameAtRoot(request.getName());
+        }
+
+        CategoryDO entity = CategoryDO.builder()
+            .name(request.getName())
+            .parentId(request.getParentId())
+            .level(level)
+            .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
+            .status(1)
+            .build();
+
+        categoryMapper.insert(entity);
+
+        return toCategoryVO(entity, Map.of(), Map.of());
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public CategoryVO updateCategory(Long id, CategoryUpdateRequest request) {
+        CategoryDO entity = categoryMapper.selectById(id);
+        if (entity == null || entity.getDelFlag() != 0) {
+            throw BusinessException.of("分类不存在");
+        }
+
+        if (request.getParentId() != null && !Objects.equals(request.getParentId(), entity.getParentId())) {
+            CategoryDO parent = categoryMapper.selectById(request.getParentId());
+            if (parent == null || parent.getDelFlag() != 0) {
+                throw BusinessException.of("父分类不存在");
+            }
+            int newLevel = parent.getLevel() + 1;
+            if (newLevel > MAX_CATEGORY_LEVEL) {
+                throw BusinessException.of("移动后分类层级不能超过" + MAX_CATEGORY_LEVEL + "级");
+            }
+            entity.setLevel(newLevel);
+            entity.setParentId(request.getParentId());
+        } else if (request.getParentId() == null) {
+            entity.setParentId(null);
+            entity.setLevel(1);
+        }
+
+        if (!Objects.equals(request.getName(), entity.getName())) {
+            Long checkParentId = entity.getParentId() != null ? entity.getParentId() : null;
+            if (checkParentId != null) {
+                checkDuplicateName(request.getName(), checkParentId);
+            } else {
+                checkDuplicateNameAtRoot(request.getName());
+            }
+            entity.setName(request.getName());
+        }
+
+        if (request.getSortOrder() != null) {
+            entity.setSortOrder(request.getSortOrder());
+        }
+
+        categoryMapper.updateById(entity);
+
+        Map<Long, Long> productCountMap = countProductMaps(List.of(entity));
+        return toCategoryVO(entity, productCountMap, Map.of());
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void updateStatus(Long id, Integer status) {
+        CategoryDO entity = categoryMapper.selectById(id);
+        if (entity == null || entity.getDelFlag() != 0) {
+            throw BusinessException.of("分类不存在");
+        }
+        entity.setStatus(status);
+        categoryMapper.updateById(entity);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCategory(Long id) {
+        CategoryDO entity = categoryMapper.selectById(id);
+        if (entity == null || entity.getDelFlag() != 0) {
+            throw BusinessException.of("分类不存在");
+        }
+
+        long childCount = categoryMapper.selectCount(
+            new LambdaQueryWrapper<CategoryDO>()
+                .eq(CategoryDO::getParentId, id)
+                .eq(CategoryDO::getDelFlag, 0)
+        );
+        if (childCount > 0) {
+            throw BusinessException.of("该分类下存在子分类，无法删除");
+        }
+
+        long productCount = countProductsByCategoryId(id);
+        if (productCount > 0) {
+            throw BusinessException.of("该分类下存在关联商品，无法删除");
+        }
+
+        entity.setDelFlag(2);
+        categoryMapper.updateById(entity);
+    }
+
+    private void checkDuplicateName(String name, Long parentId) {
+        CategoryDO existing = categoryQueryRepository.findByName(name);
+        if (existing != null && existing.getDelFlag() == 0 && Objects.equals(existing.getParentId(), parentId)) {
+            throw BusinessException.of("同级下已存在同名分类");
+        }
+    }
+
+    private void checkDuplicateNameAtRoot(String name) {
+        CategoryDO existing = categoryQueryRepository.findByName(name);
+        if (existing != null && existing.getDelFlag() == 0 && existing.getParentId() == null) {
+            throw BusinessException.of("已存在同名的一级分类");
+        }
+    }
+
+    private Map<Long, Long> countProductMaps(List<CategoryDO> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ids = categories.stream().map(CategoryDO::getId).collect(Collectors.toList());
+        return categoryQueryRepository.countProductsByCategoryIds(ids);
+    }
+
+    private Long countProductsByCategoryId(Long categoryId) {
+        Map<Long, Long> result = categoryQueryRepository.countProductsByCategoryIds(List.of(categoryId));
+        return result.getOrDefault(categoryId, 0L);
+    }
+
+    private Map<Long, String> buildParentNameMap(List<CategoryDO> categories) {
+        Set<Long> parentIds = categories.stream()
+            .map(CategoryDO::getParentId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        if (parentIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<CategoryDO> parents = categoryQueryRepository.findByIds(new ArrayList<>(parentIds));
+        return parents.stream()
+            .collect(Collectors.toMap(CategoryDO::getId, CategoryDO::getName, (a, b) -> a));
+    }
+
+    private CategoryVO toCategoryVO(CategoryDO dobj, Map<Long, Long> productCountMap, Map<Long, String> parentNameMap) {
+        return CategoryVO.builder()
+            .categoryId(dobj.getId())
+            .name(dobj.getName())
+            .parentId(dobj.getParentId())
+            .parentName(dobj.getParentId() != null ? parentNameMap.get(dobj.getParentId()) : null)
+            .level(dobj.getLevel())
+            .sortOrder(dobj.getSortOrder())
+            .status(dobj.getStatus())
+            .productCount(productCountMap.getOrDefault(dobj.getId(), 0L))
+            .createTime(dobj.getCreateTime())
+            .updateTime(dobj.getUpdateTime())
+            .build();
+    }
+}

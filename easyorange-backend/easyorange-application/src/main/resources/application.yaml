@@ -167,3 +167,20 @@ springdoc:
     url: /openapi/spec
     tags-sorter: alpha
     operations-sorter: alpha
+
+easy-orange:
+  validation:
+    password:
+      weak-list:
+        - "Password1!"
+        - "Password123!"
+        - "Qwerty123!"
+        - "Admin123!"
+        - "Welcome1!"
+        - "Letmein1!"
+        - "Abc123!@"
+        - "Test123!"
+        - "Passw0rd!"
+        - "P@ssw0rd!"
+        - "Password!1"
+        - "Admin@123"

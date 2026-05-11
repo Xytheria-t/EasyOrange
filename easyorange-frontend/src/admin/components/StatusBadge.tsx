@@ -1,6 +1,6 @@
 
 export interface StatusBadgeProps {
-  status: number;
+  status: number | string;
   type: 'user' | 'product' | 'order' | 'report';
   className?: string;
 }
@@ -49,9 +49,24 @@ export function StatusBadge({ status, type }: StatusBadgeProps) {
     order: orderStatusConfig,
     report: reportStatusConfig,
   };
-  const config = configMap[type][status];
+
+  const numericStatus = typeof status === 'number' ? status : Number(status);
+  const config = !isNaN(numericStatus) ? configMap[type][numericStatus] : undefined;
 
   if (!config) {
+    if (typeof status === 'string' && status.trim()) {
+      return (
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+          padding: '0.27rem 0.72rem', borderRadius: 9999,
+          fontSize: '0.73rem', fontWeight: 600, letterSpacing: '0.02em',
+          whiteSpace: 'nowrap', background: variantStyles.default.bg, color: variantStyles.default.color,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: variantStyles.default.dot }} />
+          {status}
+        </span>
+      );
+    }
     return (
       <span style={{
         display: 'inline-flex', alignItems: 'center', gap: '0.35rem',

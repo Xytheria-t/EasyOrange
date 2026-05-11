@@ -28,6 +28,7 @@ public class ProductSearchHandler {
     private final ProductQueryRepository productQueryRepository;
     private final SearchHistoryService searchHistoryService;
 
+    @Transactional(readOnly = true)
     public PageResult<ProductResponse> handleSearch(ProductSearchRequest request) {
         Page<ProductReadModel> page = productQueryRepository.searchProducts(
                 request.getKeyword(),

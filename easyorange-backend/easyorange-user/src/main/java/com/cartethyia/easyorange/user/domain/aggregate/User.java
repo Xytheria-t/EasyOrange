@@ -4,8 +4,10 @@ import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -16,25 +18,32 @@ import java.util.Objects;
 public class User {
 
     private final Long id;
-    private final String username;
-    private final String password;
+    private final Credentials credentials;
     private final UserType userType;
-    private final String studentId;
     private final UserStatus status;
-    private final UserProfile profile;
+    private final ContactInfo contactInfo;
+    private final PersonalInfo personalInfo;
     private final LoginInfo loginInfo;
     private final AuditInfo auditInfo;
+
+    public String getUsername() {
+        return credentials != null ? credentials.username() : null;
+    }
+
+    public String getPassword() {
+        return credentials != null ? credentials.encodedPassword() : null;
+    }
 
     public static User register(String username, String encodedPassword, String nickName) {
         Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(encodedPassword, "password must not be null");
 
         return User.builder()
-            .username(username)
-            .password(encodedPassword)
+            .credentials(new Credentials(username, encodedPassword))
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .profile(new UserProfile(null, null, null, nickName, null, null, null))
+            .contactInfo(ContactInfo.empty())
+            .personalInfo(new PersonalInfo(null, nickName, null, null, null))
             .loginInfo(LoginInfo.initial())
             .build();
     }
@@ -47,41 +56,49 @@ public class User {
             .build();
     }
 
-    public User updateProfile(String email, String phone, Sex sex, String realName, String nickname, String studentId, Long operatorId) {
-        UserProfile newProfile = this.profile;
+    public User updateContactInfo(String email, String phone, Long operatorId) {
+        ContactInfo updated = this.contactInfo;
 
         if (email != null && !email.isBlank()) {
-            newProfile = newProfile.updateEmail(email);
+            updated = updated.withEmail(email);
         }
         if (phone != null && !phone.isBlank()) {
-            newProfile = newProfile.updatePhone(phone);
+            updated = updated.withPhone(phone);
+        }
+
+        return this.toBuilder()
+            .contactInfo(updated)
+            .auditInfo(updateAuditInfo(operatorId))
+            .build();
+    }
+
+    public User updatePersonalInfo(String realName, String nickName, Sex sex, String studentId, Long operatorId) {
+        PersonalInfo updated = this.personalInfo;
+
+        if (realName != null && !realName.isBlank()) {
+            updated = updated.withRealName(realName);
+        }
+        if (nickName != null && !nickName.isBlank()) {
+            updated = updated.withNickName(nickName);
         }
         if (sex != null) {
-            newProfile = newProfile.updateSex(sex);
+            updated = updated.withSex(sex);
         }
-        if (realName != null && !realName.isBlank()) {
-            newProfile = newProfile.updateRealName(realName);
-        }
-        if (nickname != null && !nickname.isBlank()) {
-            newProfile = newProfile.updateNickName(nickname);
-        }
-
-        User.UserBuilder builder = this.toBuilder()
-            .profile(newProfile)
-            .auditInfo(updateAuditInfo(operatorId));
-
         if (studentId != null && !studentId.isBlank()) {
-            builder.studentId(studentId);
+            updated = updated.withStudentId(studentId);
         }
 
-        return builder.build();
+        return this.toBuilder()
+            .personalInfo(updated)
+            .auditInfo(updateAuditInfo(operatorId))
+            .build();
     }
 
     public User changeAvatar(String avatarUrl, Long operatorId) {
         Objects.requireNonNull(avatarUrl, "avatarUrl must not be null");
 
         return this.toBuilder()
-            .profile(this.profile.updateAvatar(avatarUrl))
+            .personalInfo(this.personalInfo.withAvatar(avatarUrl))
             .auditInfo(updateAuditInfo(operatorId))
             .build();
     }
@@ -90,7 +107,7 @@ public class User {
         Objects.requireNonNull(encodedNewPassword, "password must not be null");
 
         return this.toBuilder()
-            .password(encodedNewPassword)
+            .credentials(this.credentials.changePassword(encodedNewPassword))
             .loginInfo(this.loginInfo.updatePasswordTime())
             .auditInfo(updateAuditInfo(operatorId))
             .build();

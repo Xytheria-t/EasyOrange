@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
 import { AdminSelect } from '../../components/AdminSelect';
+import { useAdminOrders } from '../../hooks';
+import type { AdminOrder } from '../../types/admin';
 
 const statusFilterOptions = [
   { value: '', label: '全部状态' },
@@ -13,34 +15,19 @@ const statusFilterOptions = [
   { value: '5', label: '退款中' },
 ];
 
-interface MockOrder {
-  id: string;
-  orderNo: string;
-  buyerName: string;
-  sellerName: string;
-  productName: string;
-  amount: number;
-  status: number;
-  createTime: string;
-}
-
-const MOCK_ORDERS: MockOrder[] = [
-  { id: '1', orderNo: 'EO20260510001', buyerName: '张同学', sellerName: '李学姐', productName: '高等数学教材（第七版）', amount: 25.00, status: 1, createTime: '2026-05-10 14:30:00' },
-  { id: '2', orderNo: 'EO20260510002', buyerName: '王同学', sellerName: '赵同学', productName: '小米台灯 Pro', amount: 68.00, status: 2, createTime: '2026-05-10 12:15:00' },
-  { id: '3', orderNo: 'EO20260509003', buyerName: '陈同学', sellerName: '刘学长', productName: 'iPad Air 4 64G', amount: 2800.00, status: 3, createTime: '2026-05-09 20:45:00' },
-  { id: '4', orderNo: 'EO20260509004', buyerName: '周同学', sellerName: '吴同学', productName: '自行车 捷安特', amount: 350.00, status: 0, createTime: '2026-05-09 16:20:00' },
-  { id: '5', orderNo: 'EO20260508005', buyerName: '孙同学', sellerName: '郑学姐', productName: '考研英语真题集', amount: 15.00, status: 5, createTime: '2026-05-08 09:10:00' },
-  { id: '6', orderNo: 'EO20260508006', buyerName: '黄同学', sellerName: '林同学', productName: '罗技鼠标 G304', amount: 45.00, status: 4, createTime: '2026-05-08 08:30:00' },
-  { id: '7', orderNo: 'EO20260507007', buyerName: '何同学', sellerName: '马学长', productName: '显示器支架', amount: 35.00, status: 3, createTime: '2026-05-07 22:15:00' },
-  { id: '8', orderNo: 'EO20260507008', buyerName: '杨同学', sellerName: '徐同学', productName: 'C语言程序设计', amount: 12.00, status: 1, createTime: '2026-05-07 18:40:00' },
-];
-
 export default function OrderManagePage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
+
+  const { data, isLoading } = useAdminOrders({
+    pageNum: page,
+    pageSize,
+    orderNo: keyword || undefined,
+    status: statusFilter ? Number(statusFilter) : undefined,
+  });
 
   const handleSearch = useCallback(() => {
     setKeyword(searchInput);
@@ -51,16 +38,10 @@ export default function OrderManagePage() {
     if (e.key === 'Enter') handleSearch();
   }, [handleSearch]);
 
-  const filteredOrders = MOCK_ORDERS.filter((o) => {
-    if (statusFilter && o.status !== Number(statusFilter)) return false;
-    if (keyword && !o.orderNo.toLowerCase().includes(keyword.toLowerCase()) && !o.productName.includes(keyword) && !o.buyerName.includes(keyword)) return false;
-    return true;
-  });
-
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-  const columns: Column<MockOrder>[] = [
+  const columns: Column<AdminOrder>[] = [
     {
       key: 'orderNo',
       title: '订单号',
@@ -146,10 +127,11 @@ export default function OrderManagePage() {
   ];
 
   return (
-    <div style={{ position: 'relative', animation: 'pageIn 0.5s ease-out both' }}>
+    <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', animation: 'pageIn 0.5s ease-out both' }}>
       {/* Background atmosphere */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+        borderRadius: 20,
         background: `
           radial-gradient(ellipse 55% 35% at 8% 12%, rgba(249,115,22,0.035) 0%, transparent 50%),
           radial-gradient(ellipse 40% 45% at 92% 85%, rgba(195,155,211,0.03) 0%, transparent 48%),
@@ -157,7 +139,7 @@ export default function OrderManagePage() {
         `,
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
@@ -253,25 +235,27 @@ export default function OrderManagePage() {
           </div>
           <div style={{ flex: 1 }} />
           <span style={{ fontSize: '0.81rem', color: '#9B9590', fontWeight: 500 }}>
-            共 <strong style={{ color: '#2A2520' }}>{filteredOrders.length}</strong> 笔订单
+            共 <strong style={{ color: '#2A2520' }}>{data?.total ?? 0}</strong> 笔订单
           </span>
         </div>
 
         {/* Table */}
         <div style={{
+          flex: 1,
           background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           border: '1px solid rgba(255,255,255,0.65)', borderRadius: 20,
           overflow: 'hidden', animation: 'cardIn 0.5s ease-out 0.15s both',
+          minHeight: 300,
         }}>
           <AdminTable
             columns={columns}
-            data={filteredOrders}
-            rowKey="id"
-            loading={false}
+            data={data?.records ?? []}
+            rowKey="orderId"
+            loading={isLoading}
             pagination={
-              filteredOrders.length > pageSize
-                ? { current: page, pageSize, total: filteredOrders.length, onChange: setPage }
+              (data?.total ?? 0) > pageSize
+                ? { current: data?.current ?? 1, pageSize, total: data?.total ?? 0, onChange: setPage }
                 : undefined
             }
             emptyText="暂无订单数据"

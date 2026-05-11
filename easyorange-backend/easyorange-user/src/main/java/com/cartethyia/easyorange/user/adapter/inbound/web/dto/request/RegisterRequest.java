@@ -1,11 +1,12 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request;
 
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import com.cartethyia.easyorange.user.domain.constants.UserConstant;
 import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Password;
 import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Unique;
 import jakarta.validation.constraints.*;
 
-@Unique(field = "username", message = "用户名已存在")
+@Unique(field = "username", entityClass = UserEntity.class, message = "用户名已存在")
 public record RegisterRequest(
     @NotBlank(message = "用户名不能为空")
     @Size(

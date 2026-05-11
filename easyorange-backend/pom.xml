@@ -27,6 +27,7 @@
         <module>easyorange-payment</module>
         <module>easyorange-message</module>
         <module>easyorange-favorite</module>
+        <module>easyorange-admin</module>
         <module>easyorange-application</module>
     </modules>
 
@@ -87,6 +88,11 @@
             <dependency>
                 <groupId>com.cartethyia</groupId>
                 <artifactId>easyorange-favorite</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cartethyia</groupId>
+                <artifactId>easyorange-admin</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

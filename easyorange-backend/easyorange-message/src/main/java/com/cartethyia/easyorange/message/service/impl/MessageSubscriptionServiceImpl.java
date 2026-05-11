@@ -56,6 +56,7 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean isSubscribed(Long userId, String messageType, String pushChannel) {
         return messageSubscriptionRepository.existsEnabled(userId, messageType, pushChannel);
     }

@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
-import type { AdminUser, UserStatus } from '../../types/admin';
+import type { AdminUser } from '../../types/admin';
 
 export interface UserDetailModalProps {
   open: boolean;
   user: AdminUser | null;
   onClose: () => void;
-  onSave: (status: UserStatus) => Promise<void>;
+  onSave: (status: string) => Promise<void>;
   loading?: boolean;
 }
 
-const statusOptions: { value: UserStatus; label: string; emoji: string }[] = [
-  { value: 0, label: '正常', emoji: '✅' },
-  { value: 1, label: '禁用', emoji: '🚫' },
-  { value: 2, label: '锁定', emoji: '🔒' },
+const statusOptions: { value: string; label: string; emoji: string }[] = [
+  { value: '0', label: '正常', emoji: '✅' },
+  { value: '1', label: '禁用', emoji: '🚫' },
+  { value: '2', label: '锁定', emoji: '🔒' },
 ];
 
 const AVATAR_GRADIENTS = [
@@ -23,10 +23,10 @@ const AVATAR_GRADIENTS = [
   'linear-gradient(135deg, #C39BD3, #D8B4FE)',
 ] as const;
 
-const STATUS_STYLES: Record<number, { bg: string; color: string; dot: string; label: string }> = {
-  0: { bg: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(52,211,153,0.06))', color: '#059669', dot: '#10B981', label: '正常' },
-  1: { bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(251,113,133,0.06))', color: '#E11D48', dot: '#F43F5E', label: '禁用' },
-  2: { bg: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(251,191,36,0.06))', color: '#D97706', dot: '#F59E0B', label: '锁定' },
+const STATUS_STYLES: Record<string, { bg: string; color: string; dot: string; label: string }> = {
+  '0': { bg: 'linear-gradient(135deg, rgba(16,185,129,0.10), rgba(52,211,153,0.06))', color: '#059669', dot: '#10B981', label: '正常' },
+  '1': { bg: 'linear-gradient(135deg, rgba(244,63,94,0.10), rgba(251,113,133,0.06))', color: '#E11D48', dot: '#F43F5E', label: '禁用' },
+  '2': { bg: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(251,191,36,0.06))', color: '#D97706', dot: '#F59E0B', label: '锁定' },
 };
 
 export function UserDetailModal({
@@ -36,11 +36,11 @@ export function UserDetailModal({
   onSave,
   loading = false,
 }: UserDetailModalProps) {
-  const [selectedStatus, setSelectedStatus] = useState<UserStatus>(0);
+  const [selectedStatus, setSelectedStatus] = useState<string>('0');
 
   useEffect(() => {
     if (user) {
-      setSelectedStatus(user.status);
+      setSelectedStatus(user.status ?? '0');
     }
   }, [user]);
 
@@ -81,7 +81,7 @@ export function UserDetailModal({
   };
 
   const avatarGradient = AVATAR_GRADIENTS[Number(user.userId ?? 0) % AVATAR_GRADIENTS.length];
-  const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES[0];
+  const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES['0'];
 
   return (
     <div style={{
@@ -205,10 +205,10 @@ export function UserDetailModal({
             {[
               { label: '用户名', value: user.username },
               { label: '昵称', value: user.nickname || '未设置' },
-              { label: '邮箱', value: maskEmail(user.email) },
+              { label: '邮箱', value: maskEmail(user.email ?? '') },
               { label: '手机', value: maskPhone(user.phone) },
               { label: '用户类型', value: user.userType === '01' ? '🎓 学生' : '👨‍🏫 教师' },
-              { label: '注册时间', value: formatDate(user.createTime) },
+              { label: '注册时间', value: formatDate(user.createTime ?? '') },
             ].map((item) => (
               <div key={item.label} style={{
                 padding: '0.65rem 0.85rem',
@@ -236,7 +236,7 @@ export function UserDetailModal({
                 fontSize: '1.5rem', fontWeight: 700, color: '#F97316',
                 lineHeight: 1.2,
               }}>
-                {user.productCount}
+                —
               </p>
               <p style={{ fontSize: '0.78rem', color: '#9B9590', marginTop: 2 }}>商品数</p>
             </div>
@@ -247,7 +247,7 @@ export function UserDetailModal({
                 fontSize: '1.5rem', fontWeight: 700, color: '#C39BD3',
                 lineHeight: 1.2,
               }}>
-                {user.orderCount}
+                —
               </p>
               <p style={{ fontSize: '0.78rem', color: '#9B9590', marginTop: 2 }}>订单数</p>
             </div>

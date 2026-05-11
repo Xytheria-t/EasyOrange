@@ -1,7 +1,10 @@
+import { useState } from 'react';
+
 interface StatCardProps {
   title: string;
   value: number | string;
   growth?: number;
+  sub?: string;
   icon?: React.ReactNode;
   accent?: 'orange' | 'rose' | 'purple' | 'gold' | 'emerald';
 }
@@ -52,7 +55,8 @@ const ACCENT_CONFIG = {
   },
 } as const;
 
-export function StatCard({ title, value, growth, icon, accent = 'orange' }: StatCardProps) {
+export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }: StatCardProps) {
+  const [shining, setShining] = useState(false);
   const showGrowth = growth !== undefined && growth !== 0;
   const isPositive = growth !== undefined && growth > 0;
   const cfg = ACCENT_CONFIG[accent];
@@ -65,8 +69,8 @@ export function StatCard({ title, value, growth, icon, accent = 'orange' }: Stat
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         border: '1px solid rgba(255,255,255,0.7)',
-        borderRadius: 20,
-        padding: '1.5rem',
+        borderRadius: 24,
+        padding: '1.85rem 1.65rem',
         overflow: 'hidden',
         transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
         cursor: 'default',
@@ -75,6 +79,8 @@ export function StatCard({ title, value, growth, icon, accent = 'orange' }: Stat
         e.currentTarget.style.transform = 'translateY(-4px)';
         e.currentTarget.style.boxShadow = cfg.hoverShadow;
         e.currentTarget.style.borderColor = cfg.borderAccent;
+        setShining(true);
+        setTimeout(() => setShining(false), 600);
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.transform = 'translateY(0)';
@@ -82,6 +88,16 @@ export function StatCard({ title, value, growth, icon, accent = 'orange' }: Stat
         e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)';
       }}
     >
+      <style>{`@keyframes adminShineSweep { from { transform: translateX(-100%); } to { transform: translateX(200%); } }`}</style>
+      {/* Shine sweep */}
+      {shining && (
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.45) 42%, rgba(255,255,255,0) 48%, transparent 52%)',
+          pointerEvents: 'none',
+          animation: 'adminShineSweep 0.6s ease-out forwards',
+        }} />
+      )}
       {/* Accent glow */}
       <div style={{
         position: 'absolute', inset: 0,
@@ -93,7 +109,7 @@ export function StatCard({ title, value, growth, icon, accent = 'orange' }: Stat
       {/* Decorative corner ring */}
       <div style={{
         position: 'absolute', top: '-16px', right: '-16px',
-        width: 72, height: 72, borderRadius: '50%',
+        width: 82, height: 82, borderRadius: '50%',
         border: `2px solid ${cfg.borderAccent}`,
         opacity: 0.4,
         pointerEvents: 'none',
@@ -105,15 +121,16 @@ export function StatCard({ title, value, growth, icon, accent = 'orange' }: Stat
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{
-            fontSize: '0.78rem', fontWeight: 600, color: '#9B9590',
+            fontSize: '0.82rem', fontWeight: 600, color: '#9B9590',
             letterSpacing: '0.04em', textTransform: 'uppercase',
-            marginBottom: '0.6rem',
+            marginBottom: '0.75rem',
+            whiteSpace: 'nowrap',
           }}>
             {title}
           </p>
           <p style={{
             fontFamily: "'DM Sans', 'Playfair Display', serif",
-            fontSize: '1.75rem', fontWeight: 700, color: '#2A2520',
+            fontSize: '2.35rem', fontWeight: 700, color: '#2A2520',
             letterSpacing: '-0.03em', lineHeight: 1.15,
           }}>
             {formatValue(value)}
@@ -138,10 +155,19 @@ export function StatCard({ title, value, growth, icon, accent = 'orange' }: Stat
               {Math.abs(growth)}%
             </span>
           )}
+          {sub && !showGrowth && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center',
+              marginTop: '0.6rem', fontSize: '0.73rem', fontWeight: 500,
+              color: '#9B9590', letterSpacing: '0.01em',
+            }}>
+              {sub}
+            </span>
+          )}
         </div>
         {icon && (
           <div style={{
-            width: 48, height: 48, borderRadius: 14,
+            width: 58, height: 58, borderRadius: 16,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0, background: cfg.iconBg, color: cfg.iconColor,
             position: 'relative', overflow: 'hidden',

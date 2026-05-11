@@ -1,11 +1,13 @@
 package com.cartethyia.easyorange.user.application.assembler;
 
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
+import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
+import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
@@ -30,14 +32,16 @@ class UserAssemblerTest {
     }
 
     private User buildTestUser() {
-        UserProfile profile = new UserProfile(
+        ContactInfo contactInfo = new ContactInfo(
             "test@example.com",
-            "13812345678",
+            "13812345678"
+        );
+        PersonalInfo personalInfo = new PersonalInfo(
             "张三",
             "小张",
             Sex.MALE,
-            "/avatar/test.png",
-            null
+            "2024001",
+            "/avatar/test.png"
         );
         AuditInfo auditInfo = new AuditInfo(
             LocalDateTime.of(2024, 1, 1, 0, 0),
@@ -50,12 +54,11 @@ class UserAssemblerTest {
 
         return User.builder()
             .id(1L)
-            .username("testuser")
-            .password("$2a$10$encoded")
+            .credentials(new Credentials("testuser", "$2a$10$encoded"))
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .studentId("2024001")
-            .profile(profile)
+            .contactInfo(contactInfo)
+            .personalInfo(personalInfo)
             .auditInfo(auditInfo)
             .build();
     }
@@ -98,7 +101,7 @@ class UserAssemblerTest {
         void shouldReturnZeroWhenStatusIsNull() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
+                .credentials(new Credentials("testuser", "password"))
                 .status(null)
                 .build();
 

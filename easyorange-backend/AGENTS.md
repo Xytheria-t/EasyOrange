@@ -45,6 +45,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 - `domain` 层通过 `port/output/` 接口与外部交互，由 `adapter/outbound/` 实现
 - `application` 层编排业务流程，事务边界在此层
 - `adapter/inbound/` 仅做参数校验和 DTO 转换，不含业务逻辑
+- **查询方法只读事务**: `application/service/` 和 `application/query/` 下的纯查询方法（find/get/list/query/count 等）**必须**标注 `@Transactional(readOnly = true)`；写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。这是项目级约定，所有模块（user/product/order/payment/message/favorite/admin）一致遵循
 
 ## CQRS 模式
 
@@ -109,7 +110,7 @@ PageResult.of(records, total, page, size)
 | 聚合根 | 名词 | `User`, `Product`, `OrderAggregate` |
 | 值对象 | 名词 (record) | `ProductId`, `Money`, `StockQuantity` |
 | 领域事件 | `*Event` | `UserRegisteredEvent` |
-| 领域服务 | `*DomainService` | `PasswordDomainService` |
+| 领域服务 | `*DomainService` | `AuthenticationDomainService` |
 | 应用服务 | `*AppService` / `*CommandHandler` | `UserAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
 | 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` | `UserRepositoryImpl` |

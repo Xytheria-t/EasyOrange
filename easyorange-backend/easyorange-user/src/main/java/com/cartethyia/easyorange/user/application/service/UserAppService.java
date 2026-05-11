@@ -6,8 +6,8 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUserRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
+import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
+import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
+import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,11 +28,12 @@ public class UserAppService {
     private static final long AVATAR_MAX_SIZE = 5 * 1024 * 1024;
 
     private final UserRepository userRepository;
-    private final PasswordDomainService passwordDomainService;
+    private final PasswordEncoderPort passwordEncoder;
     private final AvatarFilePort avatarFilePort;
     private final UserAssembler userAssembler;
     private final UserEventPort userEventPort;
 
+    @Transactional(readOnly = true)
     public UserProfileVO getUserInfo() {
         AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
         User user = userRepository.findById(authUser.userId())
@@ -48,8 +49,26 @@ public class UserAppService {
 
         validateUniqueFieldsIfChanged(request, currentUser);
 
-        User updatedUser = currentUser.updateProfile(request.email(), request.phone(),
-            request.gender() != null ? Sex.fromCode(request.gender()) : null, request.realName(), request.nickname(), request.studentId(), currentUser.getId());
+        User updatedUser = currentUser;
+        Long operatorId = currentUser.getId();
+
+        boolean contactChanged = (request.email() != null && !request.email().isBlank())
+            || (request.phone() != null && !request.phone().isBlank());
+        if (contactChanged) {
+            updatedUser = updatedUser.updateContactInfo(request.email(), request.phone(), operatorId);
+        }
+
+        boolean personalChanged = (request.realName() != null && !request.realName().isBlank())
+            || (request.nickname() != null && !request.nickname().isBlank())
+            || (request.gender() != null)
+            || (request.studentId() != null && !request.studentId().isBlank());
+        if (personalChanged) {
+            updatedUser = updatedUser.updatePersonalInfo(
+                request.realName(), request.nickname(),
+                request.gender() != null ? Sex.fromCode(request.gender()) : null,
+                request.studentId(), operatorId);
+        }
+
         BizRequire.requireTrue(userRepository.update(updatedUser), "更新用户信息失败");
         return userAssembler.toVo(updatedUser);
     }
@@ -58,14 +77,14 @@ public class UserAppService {
     public void changePassword(ChangePasswordRequest request) {
         User user = getCurrentUserOrThrow();
 
-        passwordDomainService.validateDifferentPassword(request.oldPassword(), request.newPassword());
+        BizRequire.ne(request.oldPassword(), request.newPassword(), "新密码不能与旧密码相同");
 
         BizRequire.requireTrue(
-            passwordDomainService.matches(request.oldPassword(), user.getPassword()),
+            passwordEncoder.matches(request.oldPassword(), user.getPassword()),
             UserResultCode.PASSWORD_ERROR
         );
 
-        String encodedNewPassword = passwordDomainService.encode(request.newPassword());
+        String encodedNewPassword = passwordEncoder.encode(request.newPassword());
         User updatedUser = user.changePassword(encodedNewPassword, user.getId());
         boolean updated = userRepository.update(updatedUser);
 
@@ -85,7 +104,7 @@ public class UserAppService {
 
         User currentUser = getCurrentUserOrThrow();
 
-        String currentAvatar = currentUser.getProfile() != null ? currentUser.getProfile().avatar() : null;
+        String currentAvatar = currentUser.getPersonalInfo() != null ? currentUser.getPersonalInfo().avatar() : null;
         avatarFilePort.deleteIfExists(currentAvatar);
 
         try {
@@ -103,29 +122,34 @@ public class UserAppService {
     }
 
     private boolean hasAnyUpdate(UpdateUserRequest request) {
+        String requestStudentId = request.studentId();
         return request.nickname() != null && !request.nickname().isBlank()
             || request.email() != null && !request.email().isBlank()
             || request.phone() != null && !request.phone().isBlank()
             || request.gender() != null
             || request.realName() != null && !request.realName().isBlank()
-            || request.studentId() != null && !request.studentId().isBlank();
+            || requestStudentId != null && !requestStudentId.isBlank();
     }
 
     private void validateUniqueFieldsIfChanged(UpdateUserRequest request, User currentUser) {
-        String currentEmail = currentUser.getProfile() != null ? currentUser.getProfile().email() : null;
+        var contactInfo = currentUser.getContactInfo();
+        String currentEmail = contactInfo != null ? contactInfo.email() : null;
         if (request.email() != null && !request.email().isBlank() && !request.email().equals(currentEmail)) {
             userRepository.findByEmail(request.email())
                 .ifPresent(_ -> { throw BusinessException.of(UserResultCode.EMAIL_EXISTS); });
         }
 
-        String currentPhone = currentUser.getProfile() != null ? currentUser.getProfile().phone() : null;
+        String currentPhone = contactInfo != null ? contactInfo.phone() : null;
         if (request.phone() != null && !request.phone().isBlank() && !request.phone().equals(currentPhone)) {
             userRepository.findByPhone(request.phone())
                 .ifPresent(_ -> { throw BusinessException.of(UserResultCode.PHONE_EXISTS); });
         }
 
-        if (request.studentId() != null && !request.studentId().isBlank() && !request.studentId().equals(currentUser.getStudentId())) {
-            userRepository.findByStudentId(request.studentId())
+        var personalInfo = currentUser.getPersonalInfo();
+        String currentStudentId = personalInfo != null ? personalInfo.studentId() : null;
+        String requestStudentId = request.studentId();
+        if (requestStudentId != null && !requestStudentId.isBlank() && !requestStudentId.equals(currentStudentId)) {
+            userRepository.findByStudentId(requestStudentId)
                 .ifPresent(_ -> { throw BusinessException.of(UserResultCode.STUDENT_ID_EXISTS); });
         }
     }

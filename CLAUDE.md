@@ -11,18 +11,34 @@ tags:
 
 ```
 easy-orange/
-├── easyorange-backend/     # Spring Boot 后端 (Java 25)
-│   ├── easyorange-application/   # 应用启动入口
-│   ├── easyorange-common/        # 通用组件
-│   ├── easyorange-framework/      # 框架配置
-│   ├── easyorange-user/          # 用户模块
-│   ├── easyorange-product/       # 商品模块
-│   ├── easyorange-order/         # 订单模块
-│   ├── easyorange-payment/       # 支付模块
-│   ├── easyorange-message/       # 消息模块
-│   └── easyorange-favorite/      # 收藏模块
-├── easyorange-frontend/     # React 前端 (TypeScript)
-└── .trae/rules/            # AI 规则文件
+├── easyorange-backend/          # Spring Boot 后端
+│   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP)
+│   ├── easyorange-user/         # 用户模块 (DDD)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
+│   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
+│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
+│   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
+│   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
+│   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
+│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
+├── easyorange-frontend/         # React 前端
+│   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统，前后端已完整对接）
+│   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃 210px), AdminHeader
+│   │   ├── pages/              # dashboard / users / products / orders / reports / stats
+│   │   │   └── 全部页面已对接真实后端 API（无 Mock 数据残留）
+│   │   ├── components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal, StatCard, AdminMenuEntry
+│   │   ├── hooks/              # useAdminDashboard / Users / Products / Orders / Reports / Categories / ProductAudit / AdminGuard
+│   │   ├── api/adminApi.ts     # 33 个 API 函数，与后端 6 个 Controller 完全对齐
+│   │   ├── types/admin.ts      # 完整类型定义（Order/Report/Category/Audit/User 操作）
+│   │   └── styles/             # admin.css（侧边栏 210px/头部）, admin-layout.css（布局骨架）
+│   ├── src/components/admin/   # 管理端共享组件（AdminMenuEntry 等，供用户侧 Header 引用）
+│   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
+│   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
+│   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)
+├── doc/                         # 项目文档
+│   └── 架构/                    # 架构规范文档（已切分为多个子文档）
+└── .trae/rules/                 # AI 编码规则
 ```
 
 ## 规则激活机制
@@ -92,8 +108,16 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
 - **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
 - **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则用户端 Header/导航栏会在管理页面显示
-- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`），前端 TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失
+- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`）。**用户端** TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失。**管理端** (`src/admin/types/admin.ts`) 的 ID 字段使用 `number` 类型，因为管理端直接操作内部 Long 主键，不经过用户侧的序列化层
 - **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
+- **管理员角色判断**: 判断用户是否为管理员必须使用 `ADMIN_USER_TYPE` 常量（位于 `src/constants/app.ts`），禁止硬编码 `'00'`。使用处包括 `AdminMenuEntry`、`useAdminGuard` 等
+- **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能
+- **管理端页面布局模式**: `src/admin/pages/` 下所有页面**必须**使用以下三层结构，否则内容区会被裁切或背景不随内容滚动：
+  1. 根容器: `position: relative, minHeight: 'calc(100vh - 80px)'`
+  2. 背景层: `position: absolute, inset: 0, borderRadius: 20`（**禁止用 fixed**）
+  3. 内容层: `position: relative, zIndex: 1, display: flex, flexDirection: column`
+- **AdminSelect Portal 防误关**: AdminSelect 的下拉面板通过 `createPortal` 渲染到 `document.body`。`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 listRef**，否则点击选项会立即关闭（mousedown 先冒泡到 document → 检测为外部点击 → 关闭 → onClick 被吞掉）。详见 `AdminSelect.tsx`
+- **父 POM 模块注册**: 新增后端子模块时（如 easyorange-admin），必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册，否则该模块不会被构建/安装到本地仓库，依赖它的模块会报 `未解析的依赖项` 错误
 
 ---
 

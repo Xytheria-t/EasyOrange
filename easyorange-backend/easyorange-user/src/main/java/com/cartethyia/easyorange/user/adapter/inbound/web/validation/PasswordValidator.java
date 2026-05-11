@@ -3,19 +3,22 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 import com.cartethyia.easyorange.user.domain.constants.UserConstant;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.Set;
 import java.util.regex.Pattern;
 
+@Component
 public class PasswordValidator implements ConstraintValidator<Password, String> {
 
     private static final Pattern PATTERN = Pattern.compile(UserConstant.PASSWORD_REGEX);
 
-    private static final Set<String> WEAK_PASSWORDS = Set.of(
-        "Password1!", "Password123!", "Qwerty123!", "Admin123!",
-        "Welcome1!", "Letmein1!", "Abc123!@", "Test123!",
-        "Passw0rd!", "P@ssw0rd!", "Password!1", "Admin@123"
-    );
+    private final Set<String> weakPasswords;
+
+    public PasswordValidator(@Value("${easy-orange.validation.password.weak-list:}") Set<String> weakPasswords) {
+        this.weakPasswords = weakPasswords != null ? weakPasswords : Set.of();
+    }
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
@@ -27,7 +30,7 @@ public class PasswordValidator implements ConstraintValidator<Password, String> 
             return false;
         }
 
-        if (WEAK_PASSWORDS.contains(value)) {
+        if (weakPasswords.contains(value)) {
             context.disableDefaultConstraintViolation();
             context.buildConstraintViolationWithTemplate("密码过于简单，请使用更强的密码")
                    .addConstraintViolation();

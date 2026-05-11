@@ -61,7 +61,11 @@ export function AdminSelect({
 
   const handleClickOutside = useCallback(
     (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (
+        ref.current && !ref.current.contains(target) &&
+        listRef.current && !listRef.current.contains(target)
+      ) {
         setOpen(false);
       }
     },
@@ -95,10 +99,12 @@ export function AdminSelect({
         top: pos.top,
         left: pos.left,
         width: pos.width,
-        background: '#fff',
-        border: '1.5px solid rgba(229,224,219,0.6)',
-        borderRadius: 12,
-        boxShadow: '0 8px 28px rgba(42,37,32,0.10), 0 2px 8px rgba(42,37,32,0.04)',
+        background: 'rgba(255,255,255,0.92)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        border: '1px solid rgba(255,255,255,0.65)',
+        borderRadius: 14,
+        boxShadow: '0 12px 40px rgba(42,37,32,0.12), 0 4px 12px rgba(0,0,0,0.04)',
         zIndex: 99999,
         animation: 'adminSelectDropIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
         maxHeight: 240,

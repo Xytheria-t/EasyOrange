@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAdminProductDetail, useUpdateProductStatus } from '../../hooks/useAdminProducts';
 import { ConfirmModal } from '../../components/ConfirmModal';
-import type { ProductStatus } from '../../types/admin';
 
 interface ProductDetailDrawerProps {
   open: boolean;
-  productId: string | null;
+  productId: number | null;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -22,7 +21,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     type: 'approve' | 'reject';
   }>({ open: false, type: 'approve' });
 
-  const { data: product, isLoading, refetch } = useAdminProductDetail(productId || '');
+  const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
   const updateStatus = useUpdateProductStatus();
 
   useEffect(() => {
@@ -56,9 +55,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
   const handleConfirmAction = async () => {
     if (!product) return;
-    const newStatus: ProductStatus = confirmModal.type === 'approve' ? 1 : 3;
+    const newStatus: number = confirmModal.type === 'approve' ? 1 : 3;
     try {
-      await updateStatus.mutateAsync({ id: product.id, data: { status: newStatus } });
+      await updateStatus.mutateAsync({ id: product.productId, data: { status: newStatus } });
       setConfirmModal({ open: false, type: 'approve' });
       onSuccess();
       onClose();
@@ -241,9 +240,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                       WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                       backgroundClip: 'text',
                     }}>
-                      {formatPrice(product.price)}
+                      {formatPrice(product.price ?? 0)}
                     </span>
-                    {product.originalPrice && product.originalPrice > product.price && (
+                    {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
                       <span style={{ fontSize: '0.85rem', color: '#B5AEA8', textDecoration: 'line-through' }}>
                         {formatPrice(product.originalPrice)}
                       </span>
@@ -258,7 +257,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                       { label: '新旧程度', value: conditionLabels[product.conditionLevel || 8] || '未知' },
                       { label: '分类', value: product.categoryName },
                       { label: '卖家', value: product.sellerName },
-                      { label: '发布时间', value: formatDate(product.createTime) },
+                      { label: '发布时间', value: formatDate(product.createTime ?? '') },
                     ].map((item) => (
                       <div key={item.label} style={{
                         padding: '0.6rem 0.8rem',
@@ -273,23 +272,16 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                   </div>
 
                   {/* Stats */}
-                  <div style={{
-                    display: 'flex', gap: '1.5rem', padding: '0.75rem 0',
-                    borderTop: '1px solid rgba(229,224,219,0.4)',
-                    borderBottom: '1px solid rgba(229,224,219,0.4)',
-                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '0.75rem 0',
+                      borderTop: '1px solid rgba(229,224,219,0.4)',
+                      borderBottom: '1px solid rgba(229,224,219,0.4)',
+                    }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem', color: '#8B857E' }}>
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
-                      <span style={{ fontWeight: 600, color: '#4A4540' }}>{product.viewCount}</span> 次浏览
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem', color: '#8B857E' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FB7185" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      <span style={{ fontWeight: 600, color: '#4A4540' }}>{product.favoriteCount}</span> 人收藏
+                      <span style={{ fontWeight: 600, color: '#4A4540' }}>{product.viewCount ?? 0}</span> 次浏览
                     </div>
                   </div>
 

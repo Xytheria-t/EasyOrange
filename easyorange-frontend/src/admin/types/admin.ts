@@ -1,84 +1,124 @@
-export type UserType = '00' | '01';
-
-export type UserStatus = 0 | 1 | 2;
-
-export type ProductStatus = 0 | 1 | 2 | 3;
+export type UserType = string;
+export type UserStatus = string;
+export type ProductStatus = number;
 
 export interface AdminUser {
-  userId: string;
+  userId: number;
   username: string;
-  nickname?: string;
-  email: string;
+  nickname: string | null;
+  avatar: string | null;
+  email: string | null;
   phone: string | null;
-  userType: UserType;
-  status: UserStatus;
-  createTime: string;
-  productCount: number;
-  orderCount: number;
+  studentId: string | null;
+  realName: string | null;
+  userType: string | null;
+  userTypeDesc: string | null;
+  status: string | null;
+  statusDesc: string | null;
+  loginIp: string | null;
+  loginDate: string | null;
+  createTime: string | null;
+  updateTime: string | null;
 }
 
 export interface DashboardStats {
   totalUsers: number;
-  newUsersToday: number;
+  todayNewUsers: number;
   totalProducts: number;
-  pendingReview: number;
+  pendingProducts: number;
   totalOrders: number;
-  userGrowth: number;
-  productGrowth: number;
-  orderGrowth: number;
+  todayOrders: number;
+  totalRevenue: number;
+  pendingReports: number;
+}
+
+export interface PendingReportItem {
+  id: number;
+  productId: number;
+  productName: string | null;
+  reason: string | null;
+  reporterName: string | null;
+  createTime: string | null;
 }
 
 export interface PendingItems {
-  pendingProducts: number;
   pendingReports: number;
-  pendingRefunds: number;
+  pendingOrders: number;
+  pendingProducts: number;
+  recentReports: PendingReportItem[];
 }
 
 export interface RecentUser {
-  userId: string;
+  userId: number;
   username: string;
-  nickname?: string;
-  createTime: string;
+  nickname: string | null;
+  avatar: string | null;
+  email: string | null;
+  phone: string | null;
+  userType: string | null;
+  userTypeDesc: string | null;
+  status: string | null;
+  statusDesc: string | null;
+  createTime: string | null;
 }
 
 export interface RecentProduct {
-  id: string;
+  productId: number;
   name: string;
-  createTime: string;
+  price: number | null;
+  mainImage: string | null;
+  status: number | null;
+  statusDesc: string | null;
+  sellerId: number | null;
+  sellerName: string | null;
+  categoryName: string | null;
+  viewCount: number | null;
+  createTime: string | null;
 }
 
 export interface AdminProduct {
-  id: string;
+  productId: number;
   name: string;
-  price: number;
-  originalPrice?: number;
-  conditionLevel?: number;
+  description: string | null;
+  price: number | null;
+  originalPrice: number | null;
+  stock: number | null;
+  status: number | null;
+  statusDesc: string | null;
+  conditionLevel: number | null;
+  location: string | null;
+  contactMethod: string | null;
   images: string[];
-  categoryName: string;
-  sellerId: string;
-  sellerName: string;
-  status: ProductStatus;
-  createTime: string;
-  viewCount: number;
-  favoriteCount: number;
-  description?: string;
-  location?: string;
+  mainImage: string | null;
+  categoryId: number | null;
+  categoryName: string | null;
+  sellerId: number | null;
+  sellerName: string | null;
+  sellerAvatar: string | null;
+  viewCount: number | null;
+  createTime: string | null;
+  updateTime: string | null;
 }
 
 export interface AdminUserQuery {
-  page: number;
-  size: number;
-  status?: UserStatus;
+  pageNum: number;
+  pageSize: number;
   keyword?: string;
-  sortBy?: 'createTime' | 'productCount' | 'orderCount';
+  userType?: string;
+  status?: string;
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface AdminProductQuery {
-  page: number;
-  size: number;
-  status?: ProductStatus;
-  categoryId?: string;
+  pageNum: number;
+  pageSize: number;
   keyword?: string;
+  categoryId?: number;
+  status?: number;
+  sellerId?: number;
+  startTime?: string;
+  endTime?: string;
 }
 
 export interface UpdateStatusRequest {
@@ -86,21 +126,207 @@ export interface UpdateStatusRequest {
   reason?: string;
 }
 
-export interface PageResponse<T> {
-  code: number;
-  data: {
-    records: T[];
-    total: number;
-    page: number;
-    size: number;
-    pages: number;
-  };
+export interface PageData<T> {
+  records: T[];
+  total: number;
+  current: number;
+  size: number;
+  pages: number;
 }
 
 export interface ActionResponse {
-  code: number;
-  data: {
-    success: boolean;
-    message: string;
-  };
+  success: boolean;
+  message: string;
+}
+
+// ==================== Order Types ====================
+
+export interface AdminOrder {
+  orderId: number;
+  orderNo: string;
+  buyerId: number;
+  buyerName: string;
+  sellerId: number;
+  sellerName: string;
+  productId: number;
+  productName: string;
+  amount: number;
+  status: number;
+  statusDesc: string;
+  paymentStatus: number;
+  paymentStatusDesc: string;
+  createTime: string | null;
+}
+
+export interface AdminOrderDetail {
+  orderId: number;
+  orderNo: string;
+  buyer: OrderParticipant;
+  seller: OrderParticipant;
+  product: OrderProductInfo;
+  amount: number;
+  status: number;
+  statusDesc: string;
+  paymentStatus: number;
+  paymentNo: string | null;
+  paidAmount: number | null;
+  refundedAmount: number | null;
+  shippingAddress: ShippingAddress | null;
+  remark: string | null;
+  cancelReason: string | null;
+  createTime: string | null;
+  payTime: string | null;
+  updateTime: string | null;
+  cancelTime: string | null;
+}
+
+export interface OrderParticipant {
+  userId: number;
+  nickname: string;
+  avatar: string | null;
+  phone: string | null;
+}
+
+export interface OrderProductInfo {
+  productId: number;
+  name: string;
+  mainImage: string | null;
+  price: number;
+}
+
+export interface ShippingAddress {
+  receiverName: string;
+  phone: string;
+  detailAddress: string;
+}
+
+export interface AdminOrderQuery {
+  pageNum: number;
+  pageSize: number;
+  orderNo?: string;
+  buyerId?: number;
+  sellerId?: number;
+  status?: number;
+  paymentStatus?: number;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface OrderInterventionRequest {
+  reason: string;
+}
+
+export interface OrderStatsVO {
+  totalOrders: number;
+  todayOrders: number;
+  pendingPayment: number;
+  toShip: number;
+  toReceive: number;
+  completed: number;
+  cancelled: number;
+  refunded: number;
+  totalRevenue: number;
+  todayRevenue: number;
+}
+
+// ==================== Report Types ====================
+
+export interface AdminReport {
+  reportId: number;
+  productId: number;
+  productName: string | null;
+  productImage: string | null;
+  reporterId: number;
+  reporterName: string;
+  reason: string;
+  status: number;
+  statusDesc: string;
+  handleResult: string | null;
+  handleRemark: string | null;
+  createTime: string | null;
+  handleTime: string | null;
+}
+
+export interface AdminReportQuery {
+  pageNum: number;
+  pageSize: number;
+  status?: number;
+  type?: number;
+  keyword?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface ReportHandleRequest {
+  action: 'resolve' | 'dismiss';
+  remark?: string;
+}
+
+export interface ReportStatsVO {
+  totalReports: number;
+  pendingReports: number;
+  resolvedReports: number;
+  dismissedReports: number;
+}
+
+// ==================== Category Types ====================
+
+export interface CategoryVO {
+  categoryId: number;
+  name: string;
+  parentId: number | null;
+  parentName: string | null;
+  level: number;
+  sortOrder: number;
+  status: number;
+  productCount: number;
+  createTime: string | null;
+  updateTime: string | null;
+}
+
+export interface CategoryTreeVO {
+  categoryId: number;
+  name: string;
+  level: number;
+  sortOrder: number;
+  status: number;
+  children: CategoryTreeVO[];
+}
+
+export interface CategoryCreateRequest {
+  name: string;
+  parentId?: number;
+  sortOrder?: number;
+}
+
+export interface CategoryUpdateRequest {
+  name?: string;
+  parentId?: number;
+  sortOrder?: number;
+  status?: number;
+}
+
+// ==================== Audit & User Operation Types ====================
+
+export interface BatchAuditRequest {
+  productIds: number[];
+  action: 'approve' | 'reject';
+  reason?: string;
+}
+
+export interface ProductAuditRequest {
+  action: 'approve' | 'reject';
+  reason?: string;
+}
+
+export interface UserRoleRequest {
+  role: string;
+}
+
+export interface ResetPasswordRequest {
+  newPassword: string;
+}
+
+export interface UserUnlockRequest {
+  reason?: string;
 }

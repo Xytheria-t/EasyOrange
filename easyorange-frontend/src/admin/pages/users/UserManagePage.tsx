@@ -4,7 +4,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { AdminSelect } from '../../components/AdminSelect';
 import { UserDetailModal } from './UserDetailModal';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
-import type { AdminUser, UserStatus } from '../../types/admin';
+import type { AdminUser } from '../../types/admin';
 
 const statusFilterOptions = [
   { value: '', label: '全部状态' },
@@ -17,12 +17,6 @@ const userTypeFilterOptions = [
   { value: '', label: '全部类型' },
   { value: '01', label: '学生' },
   { value: '02', label: '教师' },
-];
-
-const sortByOptions = [
-  { value: 'createTime', label: '注册时间' },
-  { value: 'productCount', label: '商品数量' },
-  { value: 'orderCount', label: '订单数量' },
 ];
 
 const AVATAR_GRADIENTS = [
@@ -40,16 +34,15 @@ export default function UserManagePage() {
   const [searchInput, setSearchInput] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [userTypeFilter, setUserTypeFilter] = useState('');
-  const [sortBy, setSortBy] = useState('createTime');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, isLoading } = useAdminUsers({
-    page,
-    size: pageSize,
+  const { data, isLoading, isError, error: _error } = useAdminUsers({
+    pageNum: page,
+    pageSize,
     keyword: keyword || undefined,
-    status: statusFilter ? (Number(statusFilter) as UserStatus) : undefined,
-    sortBy: sortBy as 'createTime' | 'productCount' | 'orderCount',
+    status: statusFilter || undefined,
+    userType: userTypeFilter || undefined,
   });
 
   const updateStatusMutation = useUpdateUserStatus();
@@ -68,9 +61,9 @@ export default function UserManagePage() {
     setModalOpen(true);
   }, []);
 
-  const handleSaveStatus = useCallback(async (status: UserStatus) => {
+  const handleSaveStatus = useCallback(async (status: string) => {
     if (!selectedUser) return;
-    await updateStatusMutation.mutateAsync({ id: selectedUser.userId, data: { status } });
+    await updateStatusMutation.mutateAsync({ id: selectedUser.userId, data: { status: Number(status) } });
     setModalOpen(false);
     setSelectedUser(null);
   }, [selectedUser, updateStatusMutation]);
@@ -115,16 +108,16 @@ export default function UserManagePage() {
     {
       key: 'userType',
       title: '类型',
-      render: (value) => (
-        <span style={{ fontWeight: 600, fontSize: '0.82rem', color: value === '01' ? '#2563EB' : '#7C3AED' }}>
-          {value === '01' ? '🎓 学生' : '👨‍🏫 教师'}
+      render: (_value, record) => (
+        <span style={{ fontWeight: 600, fontSize: '0.82rem', color: record.userType === '01' ? '#2563EB' : '#7C3AED' }}>
+          {record.userTypeDesc || (record.userType === '01' ? '🎓 学生' : '👨‍🏫 教师')}
         </span>
       ),
     },
     {
       key: 'status',
       title: '状态',
-      render: (value) => <StatusBadge status={value as number} type="user" />,
+      render: (_value, record) => <StatusBadge status={record.statusDesc ?? record.status ?? ''} type="user" />,
     },
     {
       key: 'createTime',
@@ -169,13 +162,15 @@ export default function UserManagePage() {
     <div
       style={{
         position: 'relative',
+        minHeight: 'calc(100vh - 80px)',
         animation: 'pageIn 0.5s ease-out both',
       }}
     >
       {/* Background atmosphere */}
       <div
         style={{
-          position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+          position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+          borderRadius: 20,
           background: `
             radial-gradient(ellipse 55% 35% at 8% 12%, rgba(249,115,22,0.035) 0%, transparent 50%),
             radial-gradient(ellipse 40% 45% at 92% 85%, rgba(195,155,211,0.03) 0%, transparent 48%),
@@ -185,7 +180,33 @@ export default function UserManagePage() {
       />
 
       {/* Content */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
+
+        {isError && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(244,63,94,0.06), rgba(244,63,94,0.02))',
+            border: '1px solid rgba(244,63,94,0.12)', borderRadius: 16,
+            padding: '1rem 1.25rem', marginBottom: '1.5rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg, rgba(244,63,94,0.12), rgba(244,63,94,0.06))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E11D48" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
+              <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>无法连接到服务器，请检查后端服务是否启动</div>
+            </div>
+            <button onClick={() => window.location.reload()} style={{
+              padding: '0.45rem 1rem', borderRadius: 10, background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
+              color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(244,63,94,0.25)',
+            }}>刷新</button>
+          </div>
+        )}
 
         {/* ===== Header ===== */}
         <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
@@ -300,20 +321,6 @@ export default function UserManagePage() {
 
           {/* Divider */}
           <div style={{ width: 1, height: 20, background: '#E5E0DB', flexShrink: 0 }} />
-
-          {/* Sort */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', fontWeight: 500, color: '#9B9590' }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
-              排序
-            </span>
-            <AdminSelect
-              options={sortByOptions}
-              value={sortBy}
-              onChange={(val) => { setSortBy(val); setPage(1); }}
-              minWidth={120}
-            />
-          </div>
 
           {/* Spacer + count */}
           <div style={{ flex: 1 }} />

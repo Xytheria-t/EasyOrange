@@ -1,118 +1,131 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanWrapper;
+import org.springframework.beans.BeanWrapperImpl;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Field;
-import java.util.Map;
-
+@Slf4j
 @Component
+@RequiredArgsConstructor
 public class UniqueFieldValidator implements ConstraintValidator<Unique, Object> {
 
-    private static final Logger log = LoggerFactory.getLogger(UniqueFieldValidator.class);
+    private static final String ID_COLUMN = "id";
+    private static final String DEL_FLAG_COLUMN = "del_flag";
 
-    private static final Map<String, SFunction<UserEntity, ?>> FIELD_GETTERS = Map.of(
-        "username", UserEntity::getUsername,
-        "email", UserEntity::getEmail,
-        "phone", UserEntity::getPhone
-    );
-
-    private final UserMapper userMapper;
+    private final ApplicationContext applicationContext;
 
     private String fieldName;
     private String idFieldName;
-
-    public UniqueFieldValidator(UserMapper userMapper) {
-        this.userMapper = userMapper;
-    }
+    private Class<?> entityClass;
 
     @Override
     public void initialize(Unique uniqueAnnotation) {
         this.fieldName = uniqueAnnotation.field();
         this.idFieldName = uniqueAnnotation.idField();
+        this.entityClass = uniqueAnnotation.entityClass();
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public boolean isValid(Object value, ConstraintValidatorContext context) {
         if (value == null || fieldName == null || fieldName.isBlank()) {
             return true;
         }
 
-        String fieldValue = getFieldValue(value, fieldName);
+        BeanWrapper beanWrapper = new BeanWrapperImpl(value);
+        String fieldValue = getPropertyValue(beanWrapper, fieldName);
         if (fieldValue == null || fieldValue.isBlank()) {
             return true;
         }
 
-        SFunction<UserEntity, ?> queryMethod = (SFunction<UserEntity, ?>) FIELD_GETTERS.get(fieldName);
-        if (queryMethod == null) {
-            log.warn("Unique validation: unsupported field '{}'", fieldName);
+        @SuppressWarnings("unchecked")
+        BaseMapper<Object> mapper = (BaseMapper<Object>) resolveMapper();
+        if (mapper == null) {
+            log.warn("Unique validation: no Mapper found for entity '{}'", entityClass.getName());
             return true;
         }
 
-        Long idValue = getIdFieldValue(value, idFieldName);
+        Long idValue = getIdValue(beanWrapper, idFieldName);
 
-        LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(queryMethod, fieldValue);
+        QueryWrapper<Object> wrapper = new QueryWrapper<>();
+        wrapper.eq(toUnderlineCase(fieldName), fieldValue);
 
         if (idValue != null) {
-            wrapper.ne(UserEntity::getId, idValue);
+            wrapper.ne(ID_COLUMN, idValue);
         }
 
-        wrapper.eq(UserEntity::getDelFlag, 0);
-        return userMapper.selectCount(wrapper) == 0;
+        wrapper.eq(DEL_FLAG_COLUMN, 0);
+        return mapper.selectCount(wrapper) == 0;
     }
 
-    private String getFieldValue(Object obj, String field) {
+    private String getPropertyValue(BeanWrapper beanWrapper, String property) {
+        if (!beanWrapper.isReadableProperty(property)) {
+            log.warn("Unique validation: property '{}' not readable on type '{}'",
+                property, beanWrapper.getWrappedClass().getName());
+            return null;
+        }
+        Object val = beanWrapper.getPropertyValue(property);
+        return val != null ? val.toString() : null;
+    }
+
+    private Long getIdValue(BeanWrapper beanWrapper, String property) {
+        if (!beanWrapper.isReadableProperty(property)) {
+            return null;
+        }
+        Object val = beanWrapper.getPropertyValue(property);
+        if (val == null) {
+            return null;
+        }
+        if (val instanceof Number number) {
+            return number.longValue();
+        }
         try {
-            Field declaredField = findField(obj.getClass(), field);
-            if (declaredField == null) {
-                log.warn("Unique validation: field '{}' not found on class '{}'",
-                    field, obj.getClass().getName());
-                return null;
-            }
-            declaredField.setAccessible(true);
-            Object val = declaredField.get(obj);
-            return val != null ? val.toString() : null;
-        } catch (Exception e) {
-            log.error("Unique validation: failed to read field '{}' on class '{}'",
-                field, obj.getClass().getName(), e);
+            return Long.parseLong(val.toString());
+        } catch (NumberFormatException e) {
+            log.warn("Unique validation: id field '{}' is not a valid number", property);
             return null;
         }
     }
 
-    private Long getIdFieldValue(Object obj, String field) {
+    private BaseMapper<?> resolveMapper() {
+        String mapperBeanName = deriveMapperBeanName(entityClass.getSimpleName());
         try {
-            Field declaredField = findField(obj.getClass(), field);
-            if (declaredField == null) {
-                return null;
-            }
-            declaredField.setAccessible(true);
-            Object val = declaredField.get(obj);
-            return val != null ? ((Number) val).longValue() : null;
+            return applicationContext.getBean(mapperBeanName, BaseMapper.class);
         } catch (Exception e) {
-            log.error("Unique validation: failed to read id field '{}' on class '{}'",
-                field, obj.getClass().getName(), e);
+            log.warn("Unique validation: failed to resolve Mapper bean '{}' for entity '{}': {}",
+                mapperBeanName, entityClass.getName(), e.getMessage());
             return null;
         }
     }
 
-    private Field findField(Class<?> clazz, String name) {
-        Class<?> current = clazz;
-        while (current != null && current != Object.class) {
-            try {
-                return current.getDeclaredField(name);
-            } catch (NoSuchFieldException e) {
-                current = current.getSuperclass();
+    private static String deriveMapperBeanName(String entitySimpleName) {
+        String baseName = entitySimpleName.endsWith("Entity")
+            ? entitySimpleName.substring(0, entitySimpleName.length() - "Entity".length())
+            : entitySimpleName;
+        char first = baseName.charAt(0);
+        String rest = baseName.substring(1);
+        return Character.toLowerCase(first) + rest + "Mapper";
+    }
+
+    private static String toUnderlineCase(String camelCase) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < camelCase.length(); i++) {
+            char c = camelCase.charAt(i);
+            if (Character.isUpperCase(c)) {
+                if (!sb.isEmpty()) {
+                    sb.append('_');
+                }
+                sb.append(Character.toLowerCase(c));
+            } else {
+                sb.append(c);
             }
         }
-        return null;
+        return sb.toString();
     }
 }

@@ -9,6 +9,7 @@ import java.lang.annotation.*;
 @Constraint(validatedBy = UniqueFieldValidator.class)
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Repeatable(Unique.List.class)
 public @interface Unique {
 
     String message() default "字段值已存在";
@@ -20,4 +21,13 @@ public @interface Unique {
     String field();
 
     String idField() default "id";
+
+    Class<?> entityClass();
+
+    @Documented
+    @Target({ElementType.TYPE})
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface List {
+        Unique[] value();
+    }
 }

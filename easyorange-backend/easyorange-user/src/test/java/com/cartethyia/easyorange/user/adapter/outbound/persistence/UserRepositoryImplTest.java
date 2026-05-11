@@ -3,8 +3,10 @@ package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
@@ -68,26 +70,18 @@ class UserRepositoryImplTest {
             .pwdUpdateDate(LocalDateTime.of(2024, 1, 1, 0, 0))
             .avatar("/avatar/test.png")
             .remark("测试用户")
+            .version(0)
             .build();
     }
 
     private User buildTestDomainUser() {
         return User.builder()
             .id(1L)
-            .username("testuser")
-            .password("$2a$10$encoded")
+            .credentials(new Credentials("testuser", "$2a$10$encoded"))
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .studentId("2024001")
-            .profile(new UserProfile(
-                "test@example.com",
-                "13812345678",
-                "张三",
-                "小张",
-                Sex.MALE,
-                "/avatar/test.png",
-                "测试用户"
-            ))
+            .contactInfo(new ContactInfo("test@example.com", "13812345678"))
+            .personalInfo(new PersonalInfo("张三", "小张", Sex.MALE, "2024001", "/avatar/test.png"))
             .loginInfo(new LoginInfo(
                 "192.168.1.1",
                 LocalDateTime.of(2024, 1, 1, 12, 0),
@@ -115,8 +109,8 @@ class UserRepositoryImplTest {
             assertThat(user.getPassword()).isEqualTo("$2a$10$encoded");
             assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
             assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
-            assertThat(user.getProfile().email()).isEqualTo("test@example.com");
-            assertThat(user.getProfile().phone()).isEqualTo("13812345678");
+            assertThat(user.getContactInfo().email()).isEqualTo("test@example.com");
+            assertThat(user.getContactInfo().phone()).isEqualTo("13812345678");
         }
 
         @Test
@@ -126,7 +120,7 @@ class UserRepositoryImplTest {
 
             Optional<User> result = userRepository.findById(999L);
 
-            assertThat(result).isEmpty();
+            assertThat(result.isEmpty());
         }
     }
 
@@ -153,7 +147,7 @@ class UserRepositoryImplTest {
 
             Optional<User> result = userRepository.findByUsername("nonexistent");
 
-            assertThat(result).isEmpty();
+            assertThat(result.isEmpty());
         }
     }
 
@@ -165,8 +159,7 @@ class UserRepositoryImplTest {
         @DisplayName("应插入并返回带 id 的用户")
         void shouldInsertAndReturnWithId() {
             User domainUser = User.builder()
-                .username("newuser")
-                .password("$2a$10$encoded")
+                .credentials(new Credentials("newuser", "$2a$10$encoded"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
                 .build();
@@ -193,8 +186,8 @@ class UserRepositoryImplTest {
         void shouldDelegateToMapper() {
             User domainUser = User.builder()
                 .id(1L)
-                .username("testuser")
-                .profile(new UserProfile("updated@example.com", null, null, null, null, null, null))
+                .credentials(new Credentials("testuser", "password"))
+                .contactInfo(new ContactInfo("updated@example.com", null))
                 .build();
             when(userMapper.updateById(any(UserEntity.class))).thenReturn(1);
 
@@ -209,7 +202,7 @@ class UserRepositoryImplTest {
         void shouldReturnFalseWhenUpdateFails() {
             User domainUser = User.builder()
                 .id(999L)
-                .username("testuser")
+                .credentials(new Credentials("testuser", "password"))
                 .build();
             when(userMapper.updateById(any(UserEntity.class))).thenReturn(0);
 
@@ -257,7 +250,7 @@ class UserRepositoryImplTest {
         void shouldReturnEmptyWhenAccountIsNull() {
             Optional<User> result = userRepository.findByAccount(null);
 
-            assertThat(result).isEmpty();
+            assertThat(result.isEmpty());
             verify(userMapper, never()).selectOne(any());
         }
 
@@ -266,7 +259,7 @@ class UserRepositoryImplTest {
         void shouldReturnEmptyWhenAccountIsBlank() {
             Optional<User> result = userRepository.findByAccount("   ");
 
-            assertThat(result).isEmpty();
+            assertThat(result.isEmpty());
             verify(userMapper, never()).selectOne(any());
         }
 
@@ -279,7 +272,7 @@ class UserRepositoryImplTest {
             Optional<User> result = userRepository.findByAccount("test@example.com");
 
             assertThat(result).isPresent();
-            assertThat(result.get().getProfile().email()).isEqualTo("test@example.com");
+            assertThat(result.get().getContactInfo().email()).isEqualTo("test@example.com");
         }
 
         @Test
@@ -291,7 +284,7 @@ class UserRepositoryImplTest {
             Optional<User> result = userRepository.findByAccount("13812345678");
 
             assertThat(result).isPresent();
-            assertThat(result.get().getProfile().phone()).isEqualTo("13812345678");
+            assertThat(result.get().getContactInfo().phone()).isEqualTo("13812345678");
         }
     }
 
@@ -308,7 +301,7 @@ class UserRepositoryImplTest {
             Optional<User> result = userRepository.findByPhone("13812345678");
 
             assertThat(result).isPresent();
-            assertThat(result.get().getProfile().phone()).isEqualTo("13812345678");
+            assertThat(result.get().getContactInfo().phone()).isEqualTo("13812345678");
         }
     }
 
@@ -325,7 +318,7 @@ class UserRepositoryImplTest {
             Optional<User> result = userRepository.findByEmail("test@example.com");
 
             assertThat(result).isPresent();
-            assertThat(result.get().getProfile().email()).isEqualTo("test@example.com");
+            assertThat(result.get().getContactInfo().email()).isEqualTo("test@example.com");
         }
     }
 }

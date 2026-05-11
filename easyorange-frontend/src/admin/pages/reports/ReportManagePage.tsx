@@ -3,6 +3,8 @@ import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { AdminSelect } from '../../components/AdminSelect';
+import { useAdminReports, useHandleReport } from '../../hooks';
+import type { AdminReport } from '../../types/admin';
 
 const statusFilterOptions = [
   { value: '', label: '全部状态' },
@@ -20,26 +22,6 @@ const typeFilterOptions = [
   { value: '3', label: '其他' },
 ];
 
-interface MockReport {
-  id: string;
-  reporterName: string;
-  targetName: string;
-  targetType: string;
-  reason: string;
-  type: number;
-  status: number;
-  createTime: string;
-}
-
-const MOCK_REPORTS: MockReport[] = [
-  { id: '1', reporterName: '张同学', targetName: '假冒AirPods Pro', targetType: '商品', reason: '商品描述与实物严重不符，涉嫌假冒', type: 0, status: 0, createTime: '2026-05-10 15:20:00' },
-  { id: '2', reporterName: '李同学', targetName: '王某某', targetType: '用户', reason: '发布多条虚假商品信息，骗取定金', type: 1, status: 1, createTime: '2026-05-10 11:30:00' },
-  { id: '3', reporterName: '赵同学', targetName: '二手iPhone 14', targetType: '商品', reason: '标价远低于市场价，疑似诈骗', type: 2, status: 0, createTime: '2026-05-09 20:45:00' },
-  { id: '4', reporterName: '陈同学', targetName: '考研资料包', targetType: '商品', reason: '盗版资料，侵犯知识产权', type: 0, status: 2, createTime: '2026-05-09 14:10:00' },
-  { id: '5', reporterName: '周同学', targetName: '刘某某', targetType: '用户', reason: '恶意骚扰，多次发送不当信息', type: 3, status: 0, createTime: '2026-05-08 09:30:00' },
-  { id: '6', reporterName: '吴同学', targetName: '游戏账号转让', targetType: '商品', reason: '虚拟商品禁止交易', type: 0, status: 3, createTime: '2026-05-07 22:15:00' },
-];
-
 const TYPE_LABELS: Record<number, { emoji: string; label: string; color: string }> = {
   0: { emoji: '📦', label: '违规商品', color: '#E11D48' },
   1: { emoji: '🎭', label: '虚假信息', color: '#D97706' },
@@ -53,8 +35,18 @@ export default function ReportManagePage() {
   const [keyword, setKeyword] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
-  const [confirmModal, setConfirmModal] = useState<{ open: boolean; reportId: string; action: 'resolve' | 'dismiss' }>({ open: false, reportId: '', action: 'resolve' });
+  const [confirmModal, setConfirmModal] = useState<{ open: boolean; reportId: number; action: 'resolve' | 'dismiss' }>({ open: false, reportId: 0, action: 'resolve' });
   const pageSize = 10;
+
+  const { data, isLoading } = useAdminReports({
+    pageNum: page,
+    pageSize,
+    status: statusFilter ? Number(statusFilter) : undefined,
+    type: typeFilter ? Number(typeFilter) : undefined,
+    keyword: keyword || undefined,
+  });
+
+  const handleReport = useHandleReport();
 
   const handleSearch = useCallback(() => {
     setKeyword(searchInput);
@@ -65,36 +57,34 @@ export default function ReportManagePage() {
     if (e.key === 'Enter') handleSearch();
   }, [handleSearch]);
 
-  const filteredReports = MOCK_REPORTS.filter((r) => {
-    if (statusFilter && r.status !== Number(statusFilter)) return false;
-    if (typeFilter && r.type !== Number(typeFilter)) return false;
-    if (keyword && !r.targetName.includes(keyword) && !r.reporterName.includes(keyword) && !r.reason.includes(keyword)) return false;
-    return true;
-  });
-
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
   const handleConfirmAction = async () => {
-    setConfirmModal({ open: false, reportId: '', action: 'resolve' });
+    try {
+      await handleReport.mutateAsync({ id: confirmModal.reportId, data: { action: confirmModal.action } });
+      setConfirmModal({ open: false, reportId: 0, action: 'resolve' });
+    } catch {
+      setConfirmModal((prev) => ({ ...prev, open: false }));
+    }
   };
 
-  const columns: Column<MockReport>[] = [
+  const columns: Column<AdminReport>[] = [
     {
-      key: 'targetName',
+      key: 'productName',
       title: '举报对象',
-      render: (value, record) => (
+      render: (value, _record) => (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontWeight: 600, color: '#2A2520', fontSize: '0.87rem' }}>{value as string}</span>
-          <span style={{ fontSize: '0.76rem', color: '#9B9590' }}>{record.targetType}</span>
+          <span style={{ fontWeight: 600, color: '#2A2520', fontSize: '0.87rem' }}>{value || '未知商品'}</span>
+          <span style={{ fontSize: '0.76rem', color: '#9B9590' }}>商品</span>
         </div>
       ),
     },
     {
-      key: 'type',
+      key: 'reason',
       title: '类型',
-      render: (value) => {
-        const t = TYPE_LABELS[value as number] ?? TYPE_LABELS[3];
+      render: () => {
+        const t = TYPE_LABELS[0];
         return (
           <span style={{ fontSize: '0.82rem', fontWeight: 600, color: t.color }}>
             {t.emoji} {t.label}
@@ -107,7 +97,7 @@ export default function ReportManagePage() {
       title: '举报原因',
       render: (value) => (
         <span style={{ color: '#6B6460', fontSize: '0.84rem', maxWidth: 220, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {value as string}
+          {value}
         </span>
       ),
     },
@@ -115,20 +105,20 @@ export default function ReportManagePage() {
       key: 'reporterName',
       title: '举报人',
       render: (value) => (
-        <span style={{ fontSize: '0.86rem', color: '#6B6460' }}>{value as string}</span>
+        <span style={{ fontSize: '0.86rem', color: '#6B6460' }}>{value}</span>
       ),
     },
     {
       key: 'status',
       title: '状态',
-      render: (value) => <StatusBadge status={value as number} type="report" />,
+      render: (value) => <StatusBadge status={value} type="report" />,
     },
     {
       key: 'createTime',
       title: '举报时间',
       sortable: true,
       render: (value) => (
-        <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{formatDate(value as string)}</span>
+        <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{value ? formatDate(value) : '-'}</span>
       ),
     },
     {
@@ -139,7 +129,7 @@ export default function ReportManagePage() {
           {record.status === 0 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: record.id, action: 'resolve' }); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: record.reportId, action: 'resolve' }); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                   padding: '0.35rem 0.7rem', borderRadius: 10,
@@ -154,7 +144,7 @@ export default function ReportManagePage() {
                 处理
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: record.id, action: 'dismiss' }); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: record.reportId, action: 'dismiss' }); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                   padding: '0.35rem 0.7rem', borderRadius: 10,
@@ -179,10 +169,11 @@ export default function ReportManagePage() {
   ];
 
   return (
-    <div style={{ position: 'relative', animation: 'pageIn 0.5s ease-out both' }}>
+    <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', animation: 'pageIn 0.5s ease-out both' }}>
       {/* Background atmosphere */}
       <div style={{
-        position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none',
+        position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+        borderRadius: 20,
         background: `
           radial-gradient(ellipse 55% 35% at 8% 12%, rgba(244,63,94,0.03) 0%, transparent 50%),
           radial-gradient(ellipse 40% 45% at 92% 85%, rgba(195,155,211,0.03) 0%, transparent 48%),
@@ -190,7 +181,7 @@ export default function ReportManagePage() {
         `,
       }} />
 
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <header style={{ marginBottom: '1.75rem', animation: 'headerSlide 0.6s ease-out both' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
@@ -296,25 +287,27 @@ export default function ReportManagePage() {
           </div>
           <div style={{ flex: 1 }} />
           <span style={{ fontSize: '0.81rem', color: '#9B9590', fontWeight: 500 }}>
-            共 <strong style={{ color: '#2A2520' }}>{filteredReports.length}</strong> 条举报
+            共 <strong style={{ color: '#2A2520' }}>{data?.total ?? 0}</strong> 条举报
           </span>
         </div>
 
         {/* Table */}
         <div style={{
+          flex: 1,
           background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           border: '1px solid rgba(255,255,255,0.65)', borderRadius: 20,
           overflow: 'hidden', animation: 'cardIn 0.5s ease-out 0.15s both',
+          minHeight: 300,
         }}>
           <AdminTable
             columns={columns}
-            data={filteredReports}
-            rowKey="id"
-            loading={false}
+            data={data?.records ?? []}
+            rowKey="reportId"
+            loading={isLoading}
             pagination={
-              filteredReports.length > pageSize
-                ? { current: page, pageSize, total: filteredReports.length, onChange: setPage }
+              data && data.total > pageSize
+                ? { current: page, pageSize, total: data.total, onChange: setPage }
                 : undefined
             }
             emptyText="暂无举报数据"
@@ -328,7 +321,8 @@ export default function ReportManagePage() {
         content={confirmModal.action === 'resolve' ? '确定要处理该举报吗？将对举报对象采取相应措施。' : '确定要驳回该举报吗？驳回后举报将被关闭。'}
         confirmText={confirmModal.action === 'resolve' ? '确认处理' : '确认驳回'}
         onConfirm={handleConfirmAction}
-        onCancel={() => setConfirmModal({ open: false, reportId: '', action: 'resolve' })}
+        loading={handleReport.isPending}
+        onCancel={() => setConfirmModal({ open: false, reportId: 0, action: 'resolve' })}
         variant={confirmModal.action === 'resolve' ? 'warning' : 'info'}
       />
 

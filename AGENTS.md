@@ -6,36 +6,29 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 
 | 层 | 技术 |
 |---|------|
-| 后端 | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16 |
-| 前端 | TypeScript, React |
-| 数据库 | MySQL 8.0, Redis 7 |
-| 认证 | JWT (Access + Refresh Token) |
-| 迁移 | Flyway 11.14.1 |
-| 部署 | Docker, docker-compose |
+| **后端** | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16 |
+| **前端** | TypeScript, React |
+| **数据库** | MySQL 8.0, Redis 7 |
+| **认证** | JWT (Access + Refresh Token) |
+| **迁移** | Flyway 11.14.1 |
+| **部署** | Docker, docker-compose |
 
 ## 项目结构
 
 ```
 easy-orange/
-├── easyorange-backend/          # Spring Boot 后端
+├── easyorange-backend/          # Spring Boot 后端 (12 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP)
 │   ├── easyorange-user/         # 用户模块 (DDD)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
-│   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
+│   ├── easyorange-message/      # 消息模块 (DDD + WebSocket)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
+│   ├── easyorange-admin/        # 管理端模块 (独立模块，24 个管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
 ├── easyorange-frontend/         # React 前端
-│   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统）
-│   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃), AdminHeader
-│   │   ├── pages/              # dashboard / users / products / orders / reports / stats
-│   │   ├── components/         # AdminTable, AdminSelect(Portal), StatusBadge, ConfirmModal
-│   │   └── styles/             # admin.css (侧边栏/头部), admin-layout.css (布局骨架)
-│   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
-│   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
-│   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)
 ├── doc/                         # 项目文档
 └── .trae/rules/                 # AI 编码规则
 ```

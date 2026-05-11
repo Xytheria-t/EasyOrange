@@ -37,14 +37,14 @@ public class MessageUserInfoAdapter implements UserInfoPort {
                 .collect(Collectors.toMap(
                         User::getId,
                         this::toUserInfo,
-                        (a, b) -> a
+                        (a, _) -> a
                 ));
     }
 
     private UserInfo toUserInfo(User user) {
         String avatar = null;
-        if (user.getProfile() != null) {
-            avatar = user.getProfile().avatar();
+        if (user.getPersonalInfo() != null) {
+            avatar = user.getPersonalInfo().avatar();
         }
         return UserInfo.of(user.getId(), user.getUsername(), avatar);
     }

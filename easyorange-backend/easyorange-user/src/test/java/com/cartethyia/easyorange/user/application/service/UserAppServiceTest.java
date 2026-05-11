@@ -4,16 +4,19 @@ import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUserRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileVO;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserVO;
+import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
+import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import com.cartethyia.easyorange.user.domain.service.PasswordDomainService;
+import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
@@ -46,7 +49,7 @@ class UserAppServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private PasswordDomainService passwordDomainService;
+    private PasswordEncoderPort passwordEncoder;
 
     @Mock
     private AvatarFilePort avatarFilePort;
@@ -63,7 +66,7 @@ class UserAppServiceTest {
     void setUp() {
         userAppService = new UserAppService(
             userRepository,
-            passwordDomainService,
+            passwordEncoder,
             avatarFilePort,
             userAssembler,
             userEventPort
@@ -89,24 +92,26 @@ class UserAppServiceTest {
     }
 
     private User buildTestUser() {
-        UserProfile profile = new UserProfile(
+        ContactInfo contactInfo = new ContactInfo(
             "test@example.com",
-            "13812345678",
+            "13812345678"
+        );
+        PersonalInfo personalInfo = new PersonalInfo(
             "张三",
             null,
             Sex.MALE,
-            "/avatar/old.png",
-            null
+            null,
+            "/avatar/old.png"
         );
 
         return User.builder()
             .id(1L)
-            .username("testuser")
-            .password("$2a$10$encoded")
+            .credentials(new Credentials("testuser", "$2a$10$encoded"))
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .profile(profile)
-            .loginInfo(com.cartethyia.easyorange.user.domain.valueobject.LoginInfo.initial())
+            .contactInfo(contactInfo)
+            .personalInfo(personalInfo)
+            .loginInfo(LoginInfo.initial())
             .build();
     }
 
@@ -281,19 +286,18 @@ class UserAppServiceTest {
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-            when(passwordDomainService.matches("OldPassword123", "$2a$10$encoded")).thenReturn(true);
-            when(passwordDomainService.encode("NewPassword456")).thenReturn("$2a$10$newEncoded");
+            when(passwordEncoder.matches("OldPassword123", "$2a$10$encoded")).thenReturn(true);
+            when(passwordEncoder.encode("NewPassword456")).thenReturn("$2a$10$newEncoded");
             when(userRepository.update(any(User.class))).thenReturn(true);
 
             ChangePasswordRequest request = new ChangePasswordRequest("OldPassword123", "NewPassword456");
 
             userAppService.changePassword(request);
 
-            verify(passwordDomainService).validateDifferentPassword("OldPassword123", "NewPassword456");
-            verify(passwordDomainService).matches("OldPassword123", "$2a$10$encoded");
-            verify(passwordDomainService).encode("NewPassword456");
+            verify(passwordEncoder).matches("OldPassword123", "$2a$10$encoded");
+            verify(passwordEncoder).encode("NewPassword456");
             verify(userRepository).update(any(User.class));
-            
+
             ArgumentCaptor<PasswordChangedEvent> eventCaptor = ArgumentCaptor.forClass(PasswordChangedEvent.class);
             verify(userEventPort).publish(eventCaptor.capture());
             PasswordChangedEvent event = eventCaptor.getValue();
@@ -306,7 +310,7 @@ class UserAppServiceTest {
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-            when(passwordDomainService.matches("WrongOldPassword", "$2a$10$encoded")).thenReturn(false);
+            when(passwordEncoder.matches("WrongOldPassword", "$2a$10$encoded")).thenReturn(false);
 
             ChangePasswordRequest request = new ChangePasswordRequest("WrongOldPassword", "NewPassword456");
 
@@ -324,8 +328,6 @@ class UserAppServiceTest {
             setSecurityContext(1L);
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-            doThrow(BusinessException.of("新密码不能与旧密码相同"))
-                .when(passwordDomainService).validateDifferentPassword("SamePassword", "SamePassword");
 
             ChangePasswordRequest request = new ChangePasswordRequest("SamePassword", "SamePassword");
 
@@ -344,22 +346,13 @@ class UserAppServiceTest {
         void shouldUploadAndUpdateAvatar() {
             setSecurityContext(1L);
             User user = buildTestUser();
-            UserProfile newProfile = new UserProfile(
-                "test@example.com",
-                "13812345678",
-                "张三",
-                null,
-                Sex.MALE,
-                "/avatar/new.png",
-                null
-            );
             User updatedUser = User.builder()
                 .id(1L)
-                .username("testuser")
-                .password("$2a$10$encoded")
+                .credentials(new Credentials("testuser", "$2a$10$encoded"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
-                .profile(newProfile)
+                .contactInfo(user.getContactInfo())
+                .personalInfo(user.getPersonalInfo())
                 .build();
 
             byte[] content = "fake-image".getBytes();

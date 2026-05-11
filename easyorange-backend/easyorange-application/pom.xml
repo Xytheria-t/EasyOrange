@@ -54,6 +54,12 @@
             <artifactId>easyorange-message</artifactId>
         </dependency>
 
+        <!-- 依赖管理端模块 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-admin</artifactId>
+        </dependency>
+
         <!-- Spring Boot Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

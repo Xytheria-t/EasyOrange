@@ -1,10 +1,14 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request;
 
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Unique;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
+@Unique(field = "email", entityClass = UserEntity.class, message = "邮箱已被使用")
+@Unique(field = "phone", entityClass = UserEntity.class, message = "手机号已被使用")
 public record UpdateUserRequest(
     @Size(max = 30, message = "昵称长度不能超过 30 个字符")
     String nickname,
@@ -24,4 +28,4 @@ public record UpdateUserRequest(
 
     @Size(max = 50, message = "学号长度不能超过 50 个字符")
     String studentId
-) {}
+) { }

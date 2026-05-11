@@ -14,8 +14,6 @@ order/
 │   │   │   │   └── OrderQueryController.java    # 读端点
 │   │   │   ├── dto/request/
 │   │   │   │   └── CreateOrderRequest.java
-│   │   │   └── dto/response/
-│   │   │       └── OrderVO.java
 │   │   ├── job/                             # 定时任务
 │   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
 │   │   │   └── OrderAutoConfirmTask.java    # 自动确认收货
@@ -53,8 +51,10 @@ order/
 │   │   ├── OrderQueryHandler.java
 │   │   ├── OrderQuery.java
 │   │   └── QueryOrderRequest.java
-│   └── assembler/
-│       └── OrderVOAssembler.java
+│   ├── assembler/
+│   │   └── OrderVOAssembler.java
+│   └── dto/
+│       └── OrderVO.java                  # 响应 VO（被 assembler/controller/outbound 共用）
 ├── domain/
 │   ├── aggregate/
 │   │   └── OrderAggregate.java             # 订单聚合根 (不可变)

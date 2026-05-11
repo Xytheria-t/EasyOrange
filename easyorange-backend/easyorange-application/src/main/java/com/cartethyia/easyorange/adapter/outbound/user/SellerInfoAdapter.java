@@ -44,9 +44,11 @@ public class SellerInfoAdapter implements SellerInfoPort {
     private SellerInfo toSellerInfo(User user) {
         String avatar = null;
         String nickName = null;
-        if (user.getProfile() != null) {
-            avatar = user.getProfile().avatar();
-            nickName = user.getProfile().nickName();
+        if (user.getPersonalInfo() != null) {
+            avatar = user.getPersonalInfo().avatar();
+        }
+        if (user.getPersonalInfo() != null) {
+            nickName = user.getPersonalInfo().nickName();
         }
         return SellerInfo.of(user.getId(), user.getUsername(), nickName, avatar);
     }

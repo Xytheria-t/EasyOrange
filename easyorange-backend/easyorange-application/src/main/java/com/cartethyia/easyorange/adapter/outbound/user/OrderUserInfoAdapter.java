@@ -20,7 +20,7 @@ public class OrderUserInfoAdapter implements UserInfoPort {
                 .map(user -> new UserInfo(
                         user.getId(),
                         user.getUsername(),
-                        user.getProfile() != null ? user.getProfile().email() : null
+                        user.getContactInfo() != null ? user.getContactInfo().email() : null
                 ));
     }
 }

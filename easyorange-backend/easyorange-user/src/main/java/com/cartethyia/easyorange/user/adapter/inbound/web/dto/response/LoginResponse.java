@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.cartethyia.easyorange.user.application.dto.UserVO;
+
 @Data
 @Builder
 @NoArgsConstructor

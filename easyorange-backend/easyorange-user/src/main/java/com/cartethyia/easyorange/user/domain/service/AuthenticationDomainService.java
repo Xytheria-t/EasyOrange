@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.user.domain.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 
@@ -10,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthenticationDomainService {
 
     private final UserRepository userRepository;
-    private final PasswordDomainService passwordDomainService;
+    private final PasswordEncoderPort passwordEncoder;
     private final LoginSecurityDomainService loginSecurityDomainService;
     private final SmsCodeDomainService smsCodeDomainService;
 
@@ -19,7 +20,7 @@ public class AuthenticationDomainService {
 
         User user = userRepository.findByAccount(account).orElse(null);
 
-        if (user == null || !passwordDomainService.matches(password, user.getPassword())) {
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
             loginSecurityDomainService.recordFailedAttempt(account);
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
@@ -61,7 +62,7 @@ public class AuthenticationDomainService {
             return null;
         }
 
-        String encodedPassword = passwordDomainService.encode(newPassword);
+        String encodedPassword = passwordEncoder.encode(newPassword);
         User updated = user.changePassword(encodedPassword, null);
         userRepository.update(updated);
 

@@ -4,8 +4,10 @@ import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,8 +31,8 @@ class UserTest {
             assertThat(user.getPassword()).isEqualTo("encodedPassword");
             assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
             assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
-            assertThat(user.getProfile()).isNotNull();
-            assertThat(user.getProfile().nickName()).isEqualTo("阳光橙子");
+            assertThat(user.getPersonalInfo()).isNotNull();
+            assertThat(user.getPersonalInfo().nickName()).isEqualTo("阳光橙子");
         }
 
         @Test
@@ -59,8 +61,7 @@ class UserTest {
         void shouldUpdatePasswordAndPwdUpdateDate() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .password("oldEncodedPassword")
+                .credentials(new Credentials("testuser", "oldEncodedPassword"))
                 .loginInfo(LoginInfo.initial())
                 .build();
 
@@ -76,8 +77,7 @@ class UserTest {
         void shouldOverridePreviousPassword() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .password("firstPassword")
+                .credentials(new Credentials("testuser", "firstPassword"))
                 .loginInfo(LoginInfo.initial())
                 .build();
 
@@ -92,8 +92,7 @@ class UserTest {
         void shouldThrowWhenPasswordIsNull() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .password("oldPassword")
+                .credentials(new Credentials("testuser", "oldPassword"))
                 .loginInfo(LoginInfo.initial())
                 .build();
 
@@ -112,7 +111,7 @@ class UserTest {
         void shouldUpdateLoginIpAndLoginDate() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
+                .credentials(new Credentials("testuser", "password"))
                 .loginInfo(LoginInfo.initial())
                 .build();
 
@@ -128,7 +127,7 @@ class UserTest {
         void shouldOverridePreviousLoginInfo() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
+                .credentials(new Credentials("testuser", "password"))
                 .loginInfo(LoginInfo.initial())
                 .build();
 
@@ -140,40 +139,45 @@ class UserTest {
     }
 
     @Nested
-    @DisplayName("updateProfile")
+    @DisplayName("updateContactInfo / updatePersonalInfo")
     class UpdateProfileTests {
 
         @Test
-        @DisplayName("应更新邮箱、手机和性别")
-        void shouldUpdateEmailPhoneAndSex() {
+        @DisplayName("应更新邮箱、手机、性别和学号")
+        void shouldUpdateEmailPhoneSexAndStudentId() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .profile(UserProfile.empty())
+                .credentials(new Credentials("testuser", "password"))
+                .contactInfo(ContactInfo.empty())
+                .personalInfo(PersonalInfo.empty())
                 .build();
 
-            User updatedUser = user.updateProfile("new@example.com", "13999999999", Sex.FEMALE, null, null, null, 1L);
+            User updatedUser = user.updateContactInfo("new@example.com", "13999999999", 1L)
+                .updatePersonalInfo(null, null, Sex.FEMALE, "2024001", 1L);
 
-            assertThat(updatedUser.getProfile().email()).isEqualTo("new@example.com");
-            assertThat(updatedUser.getProfile().phone()).isEqualTo("13999999999");
-            assertThat(updatedUser.getProfile().sex()).isEqualTo(Sex.FEMALE);
+            assertThat(updatedUser.getContactInfo().email()).isEqualTo("new@example.com");
+            assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13999999999");
+            assertThat(updatedUser.getPersonalInfo().sex()).isEqualTo(Sex.FEMALE);
+            assertThat(updatedUser.getPersonalInfo().studentId()).isEqualTo("2024001");
             assertThat(updatedUser.getAuditInfo()).isNotNull();
         }
 
         @Test
         @DisplayName("空值不应覆盖已有字段")
         void shouldNotOverrideWithBlankValues() {
-            UserProfile profile = new UserProfile("old@example.com", "13812345678", null, null, null, null, null);
+            ContactInfo contactInfo = new ContactInfo("old@example.com", "13812345678");
+            PersonalInfo personalInfo = new PersonalInfo(null, null, null, null, null);
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .profile(profile)
+                .credentials(new Credentials("testuser", "password"))
+                .contactInfo(contactInfo)
+                .personalInfo(personalInfo)
                 .build();
 
-            User updatedUser = user.updateProfile("", "", null, null, null, null, 1L);
+            User updatedUser = user.updateContactInfo("", "", 1L);
 
-            assertThat(updatedUser.getProfile().email()).isEqualTo("old@example.com");
-            assertThat(updatedUser.getProfile().phone()).isEqualTo("13812345678");
+            assertThat(updatedUser.getContactInfo().email()).isEqualTo("old@example.com");
+            assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13812345678");
         }
     }
 
@@ -184,16 +188,16 @@ class UserTest {
         @Test
         @DisplayName("应更新头像URL")
         void shouldUpdateAvatarUrl() {
-            UserProfile profile = new UserProfile(null, null, null, null, null, "/avatar/old.png", null);
+            PersonalInfo personalInfo = new PersonalInfo(null, null, null, null, "/avatar/old.png");
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .profile(profile)
+                .credentials(new Credentials("testuser", "password"))
+                .personalInfo(personalInfo)
                 .build();
 
             User updatedUser = user.changeAvatar("/avatar/new.png", 1L);
 
-            assertThat(updatedUser.getProfile().avatar()).isEqualTo("/avatar/new.png");
+            assertThat(updatedUser.getPersonalInfo().avatar()).isEqualTo("/avatar/new.png");
             assertThat(updatedUser.getAuditInfo()).isNotNull();
         }
 
@@ -202,8 +206,8 @@ class UserTest {
         void shouldThrowWhenAvatarUrlIsNull() {
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .profile(UserProfile.empty())
+                .credentials(new Credentials("testuser", "password"))
+                .personalInfo(PersonalInfo.empty())
                 .build();
 
             assertThatThrownBy(() -> user.changeAvatar(null, 1L))
@@ -244,25 +248,18 @@ class UserTest {
         @Test
         @DisplayName("Builder 应正确创建 User 对象")
         void shouldCreateUserCorrectly() {
-            UserProfile profile = new UserProfile(
-                "test@example.com",
-                "13812345678",
-                "张三",
-                "小张",
-                Sex.MALE,
-                "/avatar/test.png",
-                null
-            );
+            ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
+            PersonalInfo personalInfo = new PersonalInfo("张三", "小张", Sex.MALE, "2024001", "/avatar/test.png");
             LoginInfo loginInfo = new LoginInfo("192.168.1.1", null, null);
             AuditInfo auditInfo = AuditInfo.create(1L);
 
             User user = User.builder()
                 .id(1L)
-                .username("testuser")
-                .password("encodedPassword")
+                .credentials(new Credentials("testuser", "encodedPassword"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
-                .profile(profile)
+                .contactInfo(contactInfo)
+                .personalInfo(personalInfo)
                 .loginInfo(loginInfo)
                 .auditInfo(auditInfo)
                 .build();
@@ -272,11 +269,12 @@ class UserTest {
             assertThat(user.getPassword()).isEqualTo("encodedPassword");
             assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
             assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
-            assertThat(user.getProfile().email()).isEqualTo("test@example.com");
-            assertThat(user.getProfile().phone()).isEqualTo("13812345678");
-            assertThat(user.getProfile().realName()).isEqualTo("张三");
-            assertThat(user.getProfile().nickName()).isEqualTo("小张");
-            assertThat(user.getProfile().avatar()).isEqualTo("/avatar/test.png");
+            assertThat(user.getContactInfo().email()).isEqualTo("test@example.com");
+            assertThat(user.getContactInfo().phone()).isEqualTo("13812345678");
+            assertThat(user.getPersonalInfo().realName()).isEqualTo("张三");
+            assertThat(user.getPersonalInfo().nickName()).isEqualTo("小张");
+            assertThat(user.getPersonalInfo().studentId()).isEqualTo("2024001");
+            assertThat(user.getPersonalInfo().avatar()).isEqualTo("/avatar/test.png");
         }
     }
 
@@ -288,7 +286,7 @@ class UserTest {
         @DisplayName("应设置用户ID")
         void shouldAssignId() {
             User user = User.builder()
-                .username("testuser")
+                .credentials(new Credentials("testuser", "password"))
                 .build();
 
             User updatedUser = user.assignId(42L);
@@ -300,7 +298,7 @@ class UserTest {
         @DisplayName("ID为空应抛出异常")
         void shouldThrowWhenIdIsNull() {
             User user = User.builder()
-                .username("testuser")
+                .credentials(new Credentials("testuser", "password"))
                 .build();
 
             assertThatThrownBy(() -> user.assignId(null))
@@ -316,14 +314,15 @@ class UserTest {
         @Test
         @DisplayName("toBuilder 应保留所有字段")
         void shouldPreserveAllFields() {
-            UserProfile profile = new UserProfile("test@example.com", "13812345678", null, "nickname", null, null, null);
+            ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
+            PersonalInfo personalInfo = new PersonalInfo(null, "nickname", null, null, null);
             User original = User.builder()
                 .id(1L)
-                .username("testuser")
-                .password("password")
+                .credentials(new Credentials("testuser", "password"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
-                .profile(profile)
+                .contactInfo(contactInfo)
+                .personalInfo(personalInfo)
                 .build();
 
             User copied = original.toBuilder().build();
@@ -333,7 +332,8 @@ class UserTest {
             assertThat(copied.getPassword()).isEqualTo(original.getPassword());
             assertThat(copied.getUserType()).isEqualTo(original.getUserType());
             assertThat(copied.getStatus()).isEqualTo(original.getStatus());
-            assertThat(copied.getProfile()).isEqualTo(original.getProfile());
+            assertThat(copied.getContactInfo()).isEqualTo(original.getContactInfo());
+            assertThat(copied.getPersonalInfo()).isEqualTo(original.getPersonalInfo());
         }
     }
 }

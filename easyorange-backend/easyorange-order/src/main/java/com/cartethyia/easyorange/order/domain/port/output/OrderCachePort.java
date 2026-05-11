@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.domain.port.output;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.application.dto.OrderVO;
 
 import java.util.Optional;
 

@@ -21,20 +21,26 @@
 @Builder(toBuilder = true)
 public class User {
     private final Long id;
-    private final String username;
-    private final String password;
-    private final UserProfile profile;
+    private final Credentials credentials;       // username + encodedPassword
+    private final UserType userType;
+    private final UserStatus status;
+    private final ContactInfo contactInfo;       // email + phone
+    private final PersonalInfo personalInfo;     // realName + nickName + sex + studentId + avatar
     private final LoginInfo loginInfo;
     private final AuditInfo auditInfo;
+
+    public String getUsername() { return credentials.username(); }
+    public String getPassword() { return credentials.encodedPassword(); }
 
     public static User register(String username, String encodedPassword, String nickName) {
         Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(encodedPassword, "password must not be null");
         return User.builder()
-            .username(username)
-            .password(encodedPassword)
+            .credentials(new Credentials(username, encodedPassword))
+            .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .profile(new UserProfile(null, null, null, nickName, null, null, null))
+            .contactInfo(ContactInfo.empty())
+            .personalInfo(new PersonalInfo(null, nickName, null, null, null))
             .loginInfo(LoginInfo.initial())
             .build();
     }
@@ -42,7 +48,7 @@ public class User {
     public User changePassword(String encodedNewPassword, Long operatorId) {
         Objects.requireNonNull(encodedNewPassword, "password must not be null");
         return this.toBuilder()
-            .password(encodedNewPassword)
+            .credentials(this.credentials.changePassword(encodedNewPassword))
             .loginInfo(this.loginInfo.updatePasswordTime())
             .auditInfo(updateAuditInfo(operatorId))
             .build();
@@ -69,19 +75,15 @@ public class User {
 - **替换而非修改**：通过返回新实例实现"修改"
 
 ```java
-public record UserProfile(
-    String email,
-    String phone,
-    Sex sex,
-    String nickName,
-    String realName,
-    String avatar,
-    String studentId
-) {
-    public UserProfile updateEmail(String email) {
-        return new UserProfile(email, this.phone, this.sex, this.nickName,
-            this.realName, this.avatar, this.studentId);
+public record ContactInfo(String email, String phone) {
+    public ContactInfo {
+        if (email != null && !email.matches("^[\\w.-]+@[\\w.-]+\\.\\w+$")) {
+            throw new IllegalArgumentException("Invalid email format");
+        }
     }
+
+    public static ContactInfo empty() { return new ContactInfo(null, null); }
+    public ContactInfo withEmail(String newEmail) { return new ContactInfo(newEmail, phone); }
 }
 ```
 
@@ -97,7 +99,7 @@ public record UserProfile(
 ```java
 public class AuthenticationDomainService {
     public void validateRegistration(User user, List<User> existingUsers) {
-        if (existingUsers.stream().anyMatch(u -> u.getProfile().phone().equals(user.getProfile().phone()))) {
+        if (existingUsers.stream().anyMatch(u -> u.getContactInfo().phone().equals(user.getContactInfo().phone()))) {
             throw new UserDomainException("手机号已注册");
         }
     }
@@ -243,7 +245,7 @@ public class UserInfoAdapter implements UserInfoPort {
 
     // 外部 User 模型 → 内部 Order 模块的 UserInfoVO
     private UserInfoVO toUserInfoVO(User user) {
-        return new UserInfoVO(user.getId(), user.getUsername(), user.getProfile().phone());
+        return new UserInfoVO(user.getId(), user.getUsername(), user.getContactInfo().phone());
     }
 }
 ```

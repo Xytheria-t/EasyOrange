@@ -11,8 +11,8 @@ application/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
-│       │   │   ├── PaymentEventListener.java
-│       │   │   └── ProductEventListener.java
+│       │   │   ├── PaymentInitiationEventListener.java
+│       │   │   └── StockReservationEventListener.java
 │       │   └── outbound/                  # 跨模块适配器实现
 │       │       ├── payment/
 │       │       │   └── OrderPaymentGatewayAdapter.java
@@ -54,12 +54,13 @@ application/
 ```
 easyorange-application
 ├── easyorange-framework
+├── easyorange-admin                    # 管理端 API（需管理员权限）
 ├── easyorange-user
 ├── easyorange-product
+├── easyorange-favorite
 ├── easyorange-order
 ├── easyorange-payment
 ├── easyorange-message
-├── easyorange-favorite
 ├── spring-boot-starter-actuator
 ├── micrometer-registry-prometheus
 └── flyway-core + flyway-mysql

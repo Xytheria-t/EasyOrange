@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.order.domain.port.output.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.application.assembler.OrderVOAssembler;
-import com.cartethyia.easyorange.order.adapter.inbound.web.dto.response.OrderVO;
+import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

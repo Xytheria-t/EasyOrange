@@ -10,8 +10,10 @@ import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.UserProfile;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -77,12 +79,11 @@ public class UserEntity extends BaseDO {
     public User toDomain() {
         return User.builder()
             .id(id)
-            .username(username)
-            .password(password)
+            .credentials(new Credentials(username, password))
             .userType(userType)
-            .studentId(studentId)
             .status(status)
-            .profile(new UserProfile(email, phone, realName, nickName, sex, avatar, remark))
+            .contactInfo(new ContactInfo(email, phone))
+            .personalInfo(new PersonalInfo(realName, nickName, sex, studentId, avatar))
             .loginInfo(new LoginInfo(loginIp, loginDate, pwdUpdateDate))
             .auditInfo(new AuditInfo(getCreateTime(), getUpdateTime(), getCreateBy(), getUpdateBy(), getDelFlag(), getVersion()))
             .build();
@@ -94,15 +95,14 @@ public class UserEntity extends BaseDO {
             .username(user.getUsername())
             .password(user.getPassword())
             .userType(user.getUserType())
-            .studentId(user.getStudentId())
             .status(user.getStatus())
-            .email(profileField(user, UserProfile::email))
-            .phone(profileField(user, UserProfile::phone))
-            .realName(profileField(user, UserProfile::realName))
-            .nickName(profileField(user, UserProfile::nickName))
-            .sex(profileField(user, UserProfile::sex))
-            .avatar(profileField(user, UserProfile::avatar))
-            .remark(profileField(user, UserProfile::remark))
+            .email(contactField(user, ContactInfo::email))
+            .phone(contactField(user, ContactInfo::phone))
+            .realName(personalField(user, PersonalInfo::realName))
+            .nickName(personalField(user, PersonalInfo::nickName))
+            .sex(personalField(user, PersonalInfo::sex))
+            .studentId(personalField(user, PersonalInfo::studentId))
+            .avatar(personalField(user, PersonalInfo::avatar))
             .loginIp(loginField(user, LoginInfo::loginIp))
             .loginDate(loginField(user, LoginInfo::loginDate))
             .pwdUpdateDate(loginField(user, LoginInfo::pwdUpdateDate))
@@ -115,8 +115,12 @@ public class UserEntity extends BaseDO {
             .build();
     }
 
-    private static <T> T profileField(User user, Function<UserProfile, T> extractor) {
-        return user.getProfile() != null ? extractor.apply(user.getProfile()) : null;
+    private static <T> T contactField(User user, Function<ContactInfo, T> extractor) {
+        return user.getContactInfo() != null ? extractor.apply(user.getContactInfo()) : null;
+    }
+
+    private static <T> T personalField(User user, Function<PersonalInfo, T> extractor) {
+        return user.getPersonalInfo() != null ? extractor.apply(user.getPersonalInfo()) : null;
     }
 
     private static <T> T loginField(User user, Function<LoginInfo, T> extractor) {
