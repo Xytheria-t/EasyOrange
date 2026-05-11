@@ -11,7 +11,7 @@ interface AdminGuardState {
 export function useAdminGuard(): AdminGuardState {
   const { user, token, isAuthenticated } = useAuthStore();
 
-  const isAdmin = isAuthenticated && user?.userType === '00';
+  const isAdmin = !!token && !!user && user.userType === '00';
 
   return {
     isLoading: !token,

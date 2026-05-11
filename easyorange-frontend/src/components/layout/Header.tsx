@@ -4,6 +4,7 @@ import { Search } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 import { throttle } from '@/utils/function'
+import { useAdminGuard } from '@/admin/hooks/useAdminGuard'
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -16,6 +17,7 @@ export function Header() {
   const { token, user, logout } = useAuthStore()
   const addToast = useUIStore((s) => s.addToast)
   const isLoggedIn = !!token
+  const { isAdmin } = useAdminGuard()
 
   const handleLoginClick = () => {
     navigate('/login')
@@ -175,6 +177,15 @@ export function Header() {
                 </svg>
                 <span>我的订单</span>
               </Link>
+              {isAdmin && (
+                <Link to="/admin" className="floating-nav__menu-item floating-nav__menu-item--admin" onClick={() => setIsUserMenuOpen(false)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    <path d="M9 12l2 2 4-4" />
+                  </svg>
+                  <span>后台管理</span>
+                </Link>
+              )}
               <div className="floating-nav__menu-divider" />
               <button className="floating-nav__menu-item floating-nav__menu-item--logout" onClick={handleLogoutClick} data-testid="btn-logout">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

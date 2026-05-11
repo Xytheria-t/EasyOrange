@@ -814,6 +814,28 @@
     );
 }
 
+.floating-nav__menu-item--admin {
+    background: linear-gradient(
+        135deg,
+        rgba(102, 126, 234, 0.08) 0%,
+        rgba(118, 75, 162, 0.06) 100%
+    );
+    color: #6366f1;
+    font-weight: 600;
+}
+
+.floating-nav__menu-item--admin svg {
+    color: #6366f1;
+}
+
+.floating-nav__menu-item--admin:hover::before {
+    background: linear-gradient(
+        135deg,
+        rgba(102, 126, 234, 0.15) 0%,
+        rgba(118, 75, 162, 0.1) 100%
+    );
+}
+
 .floating-nav__login-btn {
     display: flex;
     align-items: center;
