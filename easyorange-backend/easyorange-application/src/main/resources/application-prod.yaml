@@ -126,8 +126,4 @@ security:
     - /error
   allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false
+# 生产环境 API 文档已关闭

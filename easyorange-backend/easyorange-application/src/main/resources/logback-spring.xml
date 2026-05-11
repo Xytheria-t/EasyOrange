@@ -14,7 +14,6 @@
     </root>
 
     <logger name="org.springframework" level="WARN"/>
-    <logger name="org.springdoc" level="WARN"/>
     <logger name="com.baomidou" level="WARN"/>
     <logger name="io.lettuce" level="WARN"/>
     <logger name="org.apache.ibatis" level="WARN"/>

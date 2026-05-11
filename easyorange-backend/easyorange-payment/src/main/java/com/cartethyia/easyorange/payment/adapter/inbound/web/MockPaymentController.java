@@ -9,8 +9,6 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +18,6 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping("/mock-payment")
 @Profile("dev")
-@Tag(name = "Mock Payment", description = "模拟支付接口 (仅开发环境)")
 @RequiredArgsConstructor
 public class MockPaymentController {
 
@@ -28,7 +25,6 @@ public class MockPaymentController {
     private final PaymentGatewayPort paymentGateway;
 
     @PostMapping("/create")
-    @Operation(summary = "创建模拟支付")
     public Result<PaymentResponse> createMockPayment(
             @RequestParam Long orderId,
             @RequestParam Integer paymentMethod,
@@ -52,7 +48,6 @@ public class MockPaymentController {
     }
 
     @PostMapping("/process")
-    @Operation(summary = "处理模拟支付")
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
         PaymentAggregate aggregate = paymentRepository.findById(request.getPaymentId())
                 .orElseThrow(PaymentNotFoundException::of);
@@ -68,7 +63,6 @@ public class MockPaymentController {
     }
 
     @PostMapping("/success/{paymentId}")
-    @Operation(summary = "模拟支付成功")
     public Result<PaymentResponse> mockPaymentSuccess(@PathVariable Long paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
@@ -79,7 +73,6 @@ public class MockPaymentController {
     }
 
     @PostMapping("/fail/{paymentId}")
-    @Operation(summary = "模拟支付失败")
     public Result<PaymentResponse> mockPaymentFail(@PathVariable Long paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
@@ -90,7 +83,6 @@ public class MockPaymentController {
     }
 
     @PostMapping("/refund/{paymentId}")
-    @Operation(summary = "模拟退款")
     public Result<Void> mockRefund(@PathVariable Long paymentId, @RequestParam String reason) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);

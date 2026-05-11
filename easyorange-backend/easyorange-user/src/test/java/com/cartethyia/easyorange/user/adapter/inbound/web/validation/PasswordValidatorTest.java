@@ -3,11 +3,13 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class PasswordValidatorTest {
 
-    private final PasswordValidator validator = new PasswordValidator();
+    private final PasswordValidator validator = new PasswordValidator(Set.of());
 
     @Test
     @DisplayName("valid password - lowercase, uppercase, digit, special char, length 8")

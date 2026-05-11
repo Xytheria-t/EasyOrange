@@ -72,12 +72,6 @@ file:
     path: ./upload                        # 文件上传路径
     url-prefix: /api/file/                # 文件访问 URL 前缀
 
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: true
-
 # -------------------------------------------------------------------
 # JWT Token 配置
 # -------------------------------------------------------------------

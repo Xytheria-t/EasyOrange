@@ -68,13 +68,11 @@
             <artifactId>aspectjweaver</artifactId>
         </dependency>
 
-        <!-- OpenAPI 文档 -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-        </dependency>
-
         <!-- MyBatis-Plus jsqlparser（starter 已由 common 模块传递） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-jsqlparser</artifactId>

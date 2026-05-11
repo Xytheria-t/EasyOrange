@@ -53,7 +53,6 @@ EasyOrange Platform
 | **数据库** | MySQL 8.0 | 关系型数据库 |
 | **迁移** | Flyway | 数据库版本管理 |
 | **缓存** | Redis 7 | 高性能缓存 |
-| **文档** | SpringDoc OpenAPI 3.0.2 | API 文档生成 |
 | **序列化** | Jackson 3.1.2 | JSON 处理 |
 | **映射** | MapStruct 1.6.3 | 对象映射 |
 | **构建** | Maven | 依赖管理和构建 |
@@ -216,13 +215,6 @@ npm run dev
 ```
 
 前端服务将在 `http://localhost:5173` 启动，API 请求自动代理到 `http://localhost:8080`
-
-## API 文档
-
-启动后端服务后，访问以下地址查看 API 文档：
-
-- **Swagger UI**: http://localhost:8080/swagger-ui.html
-- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
 
 ### 核心 API
 

@@ -17,7 +17,3 @@ security:
   static-paths: []
   allowed-origins:
     - "http://localhost:5173"
-
-springdoc:
-  api-docs:
-    enabled: true

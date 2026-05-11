@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 import java.util.Map;
@@ -150,6 +151,13 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public Result<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
         log.warn("请求地址不存在: {}", e.getRequestURL());
+        return Result.error(ResultCode.NOT_FOUND);
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Result<Void> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.debug("静态资源不存在: {}", e.getResourcePath());
         return Result.error(ResultCode.NOT_FOUND);
     }
 

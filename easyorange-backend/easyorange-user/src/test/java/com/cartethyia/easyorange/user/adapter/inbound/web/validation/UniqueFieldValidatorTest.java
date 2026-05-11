@@ -1,7 +1,8 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -9,23 +10,29 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UniqueFieldValidatorTest {
 
     @Mock
-    private UserMapper userMapper;
+    private ApplicationContext applicationContext;
+
+    @Mock
+    private BaseMapper<Object> userMapper;
 
     private UniqueFieldValidator validator;
 
     @BeforeEach
     void setUp() {
-        validator = new UniqueFieldValidator(userMapper);
+        when(applicationContext.getBean(eq("userMapper"), eq(BaseMapper.class))).thenReturn(userMapper);
+        validator = new UniqueFieldValidator(applicationContext);
     }
 
     @Nested
@@ -131,7 +138,7 @@ class UniqueFieldValidatorTest {
             when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
             validator.initialize(new TestUniqueAnnotation("email", "邮箱已存在", "id"));
-            var request = new RegisterRequest("user1", "aA123456", "test@example.com", null, null);
+            var request = new RegisterRequest("user1", "aA123456", "test@example.com", null);
 
             assertThat(validator.isValid(request, null)).isTrue();
         }
@@ -142,7 +149,7 @@ class UniqueFieldValidatorTest {
             when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
 
             validator.initialize(new TestUniqueAnnotation("email", "邮箱已存在", "id"));
-            var request = new RegisterRequest("user1", "aA123456", "test@example.com", null, null);
+            var request = new RegisterRequest("user1", "aA123456", "test@example.com", null);
 
             assertThat(validator.isValid(request, null)).isFalse();
         }
@@ -158,7 +165,7 @@ class UniqueFieldValidatorTest {
             when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
             validator.initialize(new TestUniqueAnnotation("phone", "手机号已存在", "id"));
-            var request = new RegisterRequest("user1", "aA123456", null, "13800138000", null);
+            var request = new RegisterRequest("user1", "aA123456", null, "13800138000");
 
             assertThat(validator.isValid(request, null)).isTrue();
         }
@@ -169,7 +176,7 @@ class UniqueFieldValidatorTest {
             when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
 
             validator.initialize(new TestUniqueAnnotation("phone", "手机号已存在", "id"));
-            var request = new RegisterRequest("user1", "aA123456", null, "13800138000", null);
+            var request = new RegisterRequest("user1", "aA123456", null, "13800138000");
 
             assertThat(validator.isValid(request, null)).isFalse();
         }
@@ -183,7 +190,7 @@ class UniqueFieldValidatorTest {
         @DisplayName("non-existent field - returns true with warning logged")
         void isValid_nonExistentField_returnsTrue() {
             validator.initialize(new TestUniqueAnnotation("nonExistent", "error", "id"));
-            var request = new RegisterRequest("user1", "aA123456", null, null, null);
+            var request = new RegisterRequest("user1", "aA123456", null, null);
 
             assertThat(validator.isValid(request, null)).isTrue();
             verifyNoInteractions(userMapper);
@@ -193,7 +200,7 @@ class UniqueFieldValidatorTest {
         @DisplayName("field is null value - returns true (skip)")
         void isValid_nullFieldValue_returnsTrue() {
             validator.initialize(new TestUniqueAnnotation("username", "用户名已存在", "id"));
-            var request = new RegisterRequest(null, "aA123456", null, null, null);
+            var request = new RegisterRequest(null, "aA123456", null, null);
 
             assertThat(validator.isValid(request, null)).isTrue();
             verifyNoInteractions(userMapper);
@@ -203,7 +210,7 @@ class UniqueFieldValidatorTest {
         @DisplayName("field is empty value - returns true (skip)")
         void isValid_emptyFieldValue_returnsTrue() {
             validator.initialize(new TestUniqueAnnotation("username", "用户名已存在", "id"));
-            var request = new RegisterRequest("", "aA123456", null, null, null);
+            var request = new RegisterRequest("", "aA123456", null, null);
 
             assertThat(validator.isValid(request, null)).isTrue();
             verifyNoInteractions(userMapper);
@@ -218,20 +225,21 @@ class UniqueFieldValidatorTest {
         @DisplayName("field not in FIELD_GETTERS map - returns true")
         void isValid_unsupportedField_returnsTrue() {
             validator.initialize(new TestUniqueAnnotation("password", "error", "id"));
-            var request = new RegisterRequest("user1", "aA123456", null, null, null);
+            var request = new RegisterRequest("user1", "aA123456", null, null);
 
             assertThat(validator.isValid(request, null)).isTrue();
             verifyNoInteractions(userMapper);
         }
     }
 
-    private record RegisterRequest(String username, String password, String email, String phone, Long id) {
+    record RegisterRequest(String username, String password, String email, String phone) {
         RegisterRequest(String username, String password) {
-            this(username, password, null, null, null);
+            this(username, password, null, null);
         }
     }
 
-    private record TestUniqueAnnotation(String field, String message, String idField) implements Unique {
+    record TestUniqueAnnotation(String field, String message, String idField) implements Unique {
+        @Override public Class<?> entityClass() { return UserEntity.class; }
         @Override public String message() { return message; }
         @Override public Class<?>[] groups() { return new Class[0]; }
         @Override public Class<? extends jakarta.validation.Payload>[] payload() { return new Class[0]; }

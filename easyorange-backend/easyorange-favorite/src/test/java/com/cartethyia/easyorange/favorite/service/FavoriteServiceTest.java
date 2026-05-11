@@ -2,17 +2,18 @@ package com.cartethyia.easyorange.favorite.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
+import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
-import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
+import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -187,28 +188,40 @@ class FavoriteServiceTest {
         Favorite favorite1 = Favorite.reconstitute(1L, TEST_USER_ID, 2001L, null);
         Favorite favorite2 = Favorite.reconstitute(2L, TEST_USER_ID, 2002L, null);
 
-        ProductReadModel product1 = new ProductReadModel(2001L, 3001L, "user1", "avatar1",
-                2L, "分类", "商品1", "描述", new BigDecimal("99.99"), null,
-                10, 1, "上架", 100, 1, "全新",
-                "北京", "微信", List.of("http://img/1.jpg"), "http://img/1.jpg",
-                null, null);
-        ProductReadModel product2 = new ProductReadModel(2002L, 3002L, "user2", "avatar2",
-                2L, "分类", "商品2", "描述", new BigDecimal("199.99"), null,
-                5, 1, "上架", 50, 2, "几乎全新",
-                "上海", "微信", List.of("http://img/2.jpg"), "http://img/2.jpg",
-                null, null);
+        ProductInfo product1 = new ProductInfo(2001L, 3001L, 2L, "商品1", "描述",
+                new BigDecimal("99.99"), null, 10, 1, "上架", 100, 1, "全新",
+                "北京", "微信", List.of("http://img/1.jpg"), "http://img/1.jpg", null, null);
+        ProductInfo product2 = new ProductInfo(2002L, 3002L, 2L, "商品2", "描述",
+                new BigDecimal("199.99"), null, 5, 1, "上架", 50, 2, "几乎全新",
+                "上海", "微信", List.of("http://img/2.jpg"), "http://img/2.jpg", null, null);
 
-        ProductVO vo1 = ProductVO.builder().id(2001L).title("商品1").price(new BigDecimal("99.99")).build();
-        ProductVO vo2 = ProductVO.builder().id(2002L).title("商品2").price(new BigDecimal("199.99")).build();
+        SellerInfo seller1 = new SellerInfo(3001L, "user1", "user1", "avatar1");
+        SellerInfo seller2 = new SellerInfo(3002L, "user2", "user2", "avatar2");
+
+        ProductDetailInfo detail1 = ProductDetailInfo.builder()
+                .id(2001L).sellerId(3001L).username("user1").userAvatar("avatar1")
+                .categoryId(2L).categoryName("分类").title("商品1").description("描述")
+                .price(new BigDecimal("99.99")).stock(10).status(1).statusDesc("上架")
+                .views(100).condition(1).conditionDesc("全新").location("北京")
+                .contactMethod("微信").images(List.of("http://img/1.jpg")).mainImageUrl("http://img/1.jpg")
+                .build();
+        ProductDetailInfo detail2 = ProductDetailInfo.builder()
+                .id(2002L).sellerId(3002L).username("user2").userAvatar("avatar2")
+                .categoryId(2L).categoryName("分类").title("商品2").description("描述")
+                .price(new BigDecimal("199.99")).stock(5).status(1).statusDesc("上架")
+                .views(50).condition(2).conditionDesc("几乎全新").location("上海")
+                .contactMethod("微信").images(List.of("http://img/2.jpg")).mainImageUrl("http://img/2.jpg")
+                .build();
 
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(2L);
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
                 .thenReturn(List.of(favorite1, favorite2));
         when(productInfoPort.findProductsByIds(List.of(2001L, 2002L)))
                 .thenReturn(List.of(product1, product2));
-        when(productInfoPort.findSellersByIds(any())).thenReturn(Collections.emptyMap());
-        when(productInfoPort.assembleProductVOs(any(), any()))
-                .thenReturn(List.of(vo1, vo2));
+        when(productInfoPort.findSellersByIds(Set.of(3001L, 3002L)))
+                .thenReturn(Map.of(3001L, seller1, 3002L, seller2));
+        when(productInfoPort.assembleProductDetails(any(), any()))
+                .thenReturn(List.of(detail1, detail2));
 
         PageResult<FavoriteVO> result = favoriteService.queryFavorites(query);
 
@@ -218,10 +231,10 @@ class FavoriteServiceTest {
         assertThat(result.records().get(0).getId()).isEqualTo(1L);
         assertThat(result.records().get(0).getProductId()).isEqualTo(2001L);
         assertThat(result.records().get(0).getProduct()).isNotNull();
-        assertThat(result.records().get(0).getProduct().getTitle()).isEqualTo("商品1");
+        assertThat(result.records().get(0).getProduct().title()).isEqualTo("商品1");
         assertThat(result.records().get(1).getId()).isEqualTo(2L);
         assertThat(result.records().get(1).getProductId()).isEqualTo(2002L);
-        assertThat(result.records().get(1).getProduct().getTitle()).isEqualTo("商品2");
+        assertThat(result.records().get(1).getProduct().title()).isEqualTo("商品2");
     }
 
     @Test

@@ -1,14 +1,15 @@
 package com.cartethyia.easyorange.favorite.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.favorite.controller.request.BatchCheckRequest;
-import com.cartethyia.easyorange.favorite.controller.request.BatchRemoveRequest;
-import com.cartethyia.easyorange.favorite.service.FavoriteService;
-import com.cartethyia.easyorange.favorite.service.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.service.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.service.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.service.dto.RemoveFavoriteDTO;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.controller.FavoriteController;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchCheckRequest;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchRemoveRequest;
+import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
+import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
+import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
+import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +41,7 @@ class FavoriteControllerTest {
         FavoriteVO favoriteVO = FavoriteVO.builder()
                 .id(1L)
                 .productId(2001L)
-                .product(ProductVO.builder()
+                .product(ProductDetailInfo.builder()
                         .id(2001L)
                         .title("测试商品")
                         .price(new BigDecimal("99.99"))
@@ -60,7 +61,7 @@ class FavoriteControllerTest {
         assertThat(result.data().total()).isEqualTo(1L);
         assertThat(result.data().records().get(0).getId()).isEqualTo(1L);
         assertThat(result.data().records().get(0).getProductId()).isEqualTo(2001L);
-        assertThat(result.data().records().get(0).getProduct().getTitle()).isEqualTo("测试商品");
+        assertThat(result.data().records().get(0).getProduct().title()).isEqualTo("测试商品");
         verify(favoriteService).queryFavorites(any(FavoritePageQuery.class));
     }
 

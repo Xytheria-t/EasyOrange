@@ -33,7 +33,6 @@ application/
 │   ├── application-prod.yaml              # 生产环境
 │   ├── application-test.yaml              # 测试环境
 │   ├── logback-spring.xml                 # 日志配置
-│   ├── openapi.yaml                       # OpenAPI 文档
 │   └── db/
 │       ├── migration/                     # Flyway DDL 迁移
 │       │   ├── V1__init_schema.sql
