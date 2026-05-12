@@ -8,6 +8,8 @@ import type { AdminProduct } from '../../types/admin';
 
 const statusOptions: { value: number | ''; label: string }[] = [
   { value: '', label: '全部状态' },
+  { value: 4, label: '待审核' },
+  { value: 5, label: '已驳回' },
   { value: 0, label: '草稿' },
   { value: 1, label: '上架' },
   { value: 2, label: '已售' },
@@ -250,7 +252,7 @@ export default function ProductReviewPage() {
                 商品审核
               </h1>
               <p style={{ fontSize: '0.88rem', color: '#9B9590', marginTop: '0.3rem', paddingLeft: '36px' }}>
-                审核平台商品信息，管理上架与下架状态
+                审核待上架商品，管理通过与驳回
               </p>
             </div>
 

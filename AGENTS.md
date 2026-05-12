@@ -13,22 +13,60 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | **迁移** | Flyway 11.14.1 |
 | **部署** | Docker, docker-compose |
 
+## 数据库表清单
+
+| 表名 | 说明 | 备注 |
+|------|------|------|
+| `eo_product` | 商品信息表 | 6状态: DRAFT(0)/PENDING_REVIEW(4)/REJECTED(5)/ONLINE(1)/SOLD(2)/OFFLINE(3) |
+| `eo_product_audit_log` | 审核记录表 | action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照 |
+| `eo_product_detail` | 商品详情表 | JSON 格式 |
+
+## 商品审核工作流
+
+状态机: `DRAFT(0) → PENDING_REVIEW(4) → ONLINE(1)` / `REJECTED(5) → PENDING_REVIEW(4)` (循环)
+
+- 卖家发布商品自动进入待审核
+- 管理员审核通过→上架, 驳回→退回草稿(可重新提交)
+- 审核结果触发站内消息通知(AUDIT_SUCCESS/AUDIT_REJECTED)
+- 审核记录持久化至 `eo_product_audit_log` 表
+
 ## 项目结构
 
 ```
 easy-orange/
-├── easyorange-backend/          # Spring Boot 后端 (12 Maven 模块)
+├── easyorange-backend/          # Spring Boot 后端 (10 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP)
 │   ├── easyorange-user/         # 用户模块 (DDD)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流)
+│   │   ├── domain/
+│   │   │   ├── enums/ProductStatus.java    # 6状态: DRAFT/PENDING_REVIEW/REJECTED/ONLINE/SOLD/OFFLINE
+│   │   │   └── event/ProductAuditedEvent.java  # 审核完成领域事件
+│   │   ├── adapter/outbound/persistence/
+│   │   │   ├── dataobject/ProductAuditLogDO.java     # 审核日志 DO (Builder模式)
+│   │   │   ├── mapper/ProductAuditLogMapper.java      # 审核日志 Mapper
+│   │   │   └── mapper/xml/ProductAuditLogMapper.xml  # 审核日志 SQL
+│   │   └── application/command/ProductCommandService.java # 含 submitForReview()
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
-│   ├── easyorange-admin/        # 管理端模块 (独立模块，24 个管理 API)
+│   ├── easyorange-admin/        # 管理端模块 (独立模块，管理API + 审核工作流)
+│   │   ├── controller/AdminProductAuditController.java  # PUT audit, POST batch-audit, GET audit-logs
+│   │   ├── service/AdminProductAuditService.java       # 状态校验→写日志→发事件
+│   │   └── dto/ (ProductAuditRequest, BatchAuditRequest, AuditLogVO)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
-├── easyorange-frontend/         # React 前端
+│       └── adapter/event/ProductAuditEventListener.java  # 审核→站内消息通知
+├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
+│   ├── src/admin/               # 管理后台
+│   │   ├── pages/products/
+│   │   │   ├── ProductListPage.tsx          # 商品列表
+│   │   │   ├── ProductReviewPage.tsx        # 商品审核页（默认待审核，含状态筛选）
+│   │   │   └── ProductDetailDrawer.tsx      # 商品详情抽屉（审核维度+原因输入+驳回弹窗+审核时间线）
+│   │   ├── hooks/useAdminProductAudit.ts    # useAuditProduct / useBatchAuditProducts / useAuditLogs
+│   │   ├── types/admin.ts                   # 含 AuditLogVO, AuditDimension, ProductAuditRequest
+│   │   └── api/adminApi.ts                  # 含 getAuditLogs() + 增强 auditProduct()
+│   ├── src/pages/products/ProductDetailPage.tsx  # 用户商品详情（审核状态标签+重提交按钮）
 ├── doc/                         # 项目文档
 └── .trae/rules/                 # AI 编码规则
 ```
@@ -77,7 +115,7 @@ favorite → framework, product (通过 ProductInfoPort 隔离，optional)
 
 ## 架构文档
 
-详细架构规范见 `doc/规范/` 目录：
+详细架构规范见 `doc/架构/` 目录：
 
 | 文档 | 内容 |
 |------|------|

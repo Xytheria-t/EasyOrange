@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useAdminProductDetail, useUpdateProductStatus } from '../../hooks/useAdminProducts';
-import { ConfirmModal } from '../../components/ConfirmModal';
+import { useAdminProductDetail } from '../../hooks/useAdminProducts';
+import { useAuditProduct, useAuditLogs } from '../../hooks/useAdminProductAudit';
+import type { AuditLogVO, AuditDimension } from '../../types/admin';
 
 interface ProductDetailDrawerProps {
   open: boolean;
@@ -16,18 +17,23 @@ const conditionLabels: Record<number, string> = {
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [confirmModal, setConfirmModal] = useState<{
-    open: boolean;
-    type: 'approve' | 'reject';
-  }>({ open: false, type: 'approve' });
+  const [selectedDimensions, setSelectedDimensions] = useState<AuditDimension[]>([]);
+  const [auditRemark, setAuditRemark] = useState('');
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
 
   const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
-  const updateStatus = useUpdateProductStatus();
+  const updateStatus = useAuditProduct();
+  const auditLogs = useAuditLogs(productId);
 
   useEffect(() => {
     if (open && productId) {
       setSelectedImage(0);
       setPreviewImage(null);
+      setSelectedDimensions([]);
+      setAuditRemark('');
+      setRejectReason('');
+      setShowRejectModal(false);
       refetch();
     }
   }, [open, productId, refetch]);
@@ -45,24 +51,30 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     };
   }, [open, previewImage, onClose]);
 
-  const handleApprove = () => {
-    setConfirmModal({ open: true, type: 'approve' });
-  };
-
-  const handleReject = () => {
-    setConfirmModal({ open: true, type: 'reject' });
-  };
-
-  const handleConfirmAction = async () => {
+  const handleApproveWithDimensions = () => {
     if (!product) return;
-    const newStatus: number = confirmModal.type === 'approve' ? 1 : 3;
+    updateStatus.mutateAsync({
+      id: product.productId,
+      data: { action: 1, dimensions: selectedDimensions, remark: auditRemark || undefined },
+    }).then(() => {
+      onSuccess();
+      onClose();
+    });
+  };
+
+  const handleRejectWithReason = async () => {
+    if (!product || !rejectReason.trim()) return;
     try {
-      await updateStatus.mutateAsync({ id: product.productId, data: { status: newStatus } });
-      setConfirmModal({ open: false, type: 'approve' });
+      await updateStatus.mutateAsync({
+        id: product.productId,
+        data: { action: 2, reason: rejectReason, dimensions: selectedDimensions, remark: auditRemark || undefined },
+      });
+      setShowRejectModal(false);
+      setRejectReason('');
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to update product status:', error);
+      console.error('Failed to reject product:', error);
     }
   };
 
@@ -298,6 +310,59 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                     </div>
                   )}
 
+                  {/* 审核记录时间线 */}
+                  {auditLogs.data && auditLogs.data.length > 0 && (
+                    <div style={{
+                      padding: '1rem',
+                      background: 'linear-gradient(135deg, rgba(249,115,22,0.03), rgba(195,155,211,0.02))',
+                      borderRadius: 14,
+                      border: '1px solid rgba(229,224,219,0.35)',
+                    }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        📜 审核记录
+                      </h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                        {auditLogs.data.map((log: AuditLogVO) => (
+                          <div key={log.id} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
+                            <div style={{
+                              width: 8, height: 8, borderRadius: '50%', marginTop: '5px', flexShrink: 0,
+                              background: log.action === 1 ? '#10B981' : log.action === 2 ? '#F43F5E' : '#D6CEC5',
+                              border: log.action === 3 ? '1.5px solid #D6CEC5' : 'none',
+                            }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{log.createTime?.replace('T', ' ').slice(0, 16)}</span>
+                                <span style={{ fontSize: '0.81rem', fontWeight: 600, color: '#2A2520' }}>{log.operatorName}</span>
+                                <span style={{
+                                  fontSize: '0.75rem', fontWeight: 600, padding: '0.1rem 0.45rem', borderRadius: 6,
+                                  color: log.action === 1 ? '#059669' : log.action === 2 ? '#E11D48' : '#8B857E',
+                                  background: log.action === 1 ? 'rgba(16,185,129,0.08)' : log.action === 2 ? 'rgba(244,63,94,0.08)' : 'rgba(139,133,126,0.08)',
+                                }}>
+                                  {log.actionDesc}
+                                </span>
+                              </div>
+                              {log.reason && (
+                                <div style={{ fontSize: '0.82rem', color: '#4A4540', lineHeight: 1.55 }}>{log.reason}</div>
+                              )}
+                              {log.dimensions && log.dimensions.length > 0 && (
+                                <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                                  {log.dimensions.map((d) => (
+                                    <span key={d} style={{
+                                      fontSize: '0.72rem', padding: '0.1rem 0.4rem', borderRadius: 4,
+                                      background: 'rgba(249,115,22,0.06)', color: '#C2410C',
+                                    }}>
+                                      {d === 'basic' ? '基本信息' : d === 'compliance' ? '内容合规' : d === 'image' ? '图片质量' : '价格合理'}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Location */}
                   {product.location && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem' }}>
@@ -319,64 +384,141 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             )}
           </div>
 
-          {/* Footer actions */}
+          {/* Footer actions - 完整审核操作区 */}
           {product && (
             <div style={{
-              display: 'flex', gap: '0.65rem',
+              display: 'flex', flexDirection: 'column', gap: '0.75rem',
               padding: '1rem 1.5rem',
               borderTop: '1px solid rgba(229,224,219,0.4)',
               background: 'linear-gradient(180deg, rgba(250,248,245,0.5), rgba(250,248,245,0.9))',
             }}>
-              <button
-                onClick={handleApprove}
-                disabled={updateStatus.isPending}
-                style={{
-                  flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
-                  border: 'none',
-                  background: updateStatus.isPending ? '#D6CEC5' : 'linear-gradient(135deg, #10B981, #059669)',
-                  color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                  cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: updateStatus.isPending ? 'none' : '0 3px 12px rgba(16,185,129,0.28)',
-                }}
-                onMouseEnter={(e) => { if (!updateStatus.isPending) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 18px rgba(16,185,129,0.38)'; } }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = updateStatus.isPending ? 'none' : '0 3px 12px rgba(16,185,129,0.28)'; }}
-              >
-                ✅ 通过审核
-              </button>
-              <button
-                onClick={handleReject}
-                disabled={updateStatus.isPending}
-                style={{
-                  flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
-                  border: 'none',
-                  background: updateStatus.isPending ? '#D6CEC5' : 'linear-gradient(135deg, #F43F5E, #E11D48)',
-                  color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                  cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: updateStatus.isPending ? 'none' : '0 3px 12px rgba(244,63,94,0.28)',
-                }}
-                onMouseEnter={(e) => { if (!updateStatus.isPending) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 18px rgba(244,63,94,0.38)'; } }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = updateStatus.isPending ? 'none' : '0 3px 12px rgba(244,63,94,0.28)'; }}
-              >
-                🚫 下架商品
-              </button>
-              <button
-                onClick={onClose}
-                disabled={updateStatus.isPending}
-                style={{
-                  padding: '0.65rem 1.2rem', borderRadius: 12,
-                  border: '1.5px solid #E5E0DB', background: '#fff',
-                  color: '#6B6460', fontSize: '0.87rem', fontWeight: 600,
-                  cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.15s ease',
-                  opacity: updateStatus.isPending ? 0.5 : 1,
-                }}
-                onMouseEnter={(e) => { if (!updateStatus.isPending) e.currentTarget.style.background = 'rgba(229,224,219,0.3)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
-              >
-                关闭
-              </button>
+              {/* 审核维度 */}
+              <div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.45rem' }}>
+                  审核维度
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  {[
+                    { key: 'basic' as AuditDimension, label: '基本信息合规' },
+                    { key: 'compliance' as AuditDimension, label: '内容无违规' },
+                    { key: 'image' as AuditDimension, label: '图片质量合格' },
+                    { key: 'price' as AuditDimension, label: '价格合理' },
+                  ].map((dim) => (
+                    <button
+                      key={dim.key}
+                      onClick={() => setSelectedDimensions(prev =>
+                        prev.includes(dim.key) ? prev.filter(d => d !== dim.key) : [...prev, dim.key]
+                      )}
+                      style={{
+                        padding: '0.35rem 0.7rem', borderRadius: 8,
+                        border: selectedDimensions.includes(dim.key)
+                          ? '2px solid #F97316'
+                          : '1.5px solid #E5E0DB',
+                        background: selectedDimensions.includes(dim.key)
+                          ? 'rgba(249,115,22,0.08)'
+                          : '#fff',
+                        color: selectedDimensions.includes(dim.key) ? '#EA580C' : '#8B857E',
+                        fontSize: '0.79rem', fontWeight: 500,
+                        cursor: 'pointer', transition: 'all 0.15s ease',
+                      }}
+                    >
+                      {selectedDimensions.includes(dim.key) ? '✓ ' : ''}
+                      {dim.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 审核意见 */}
+              <div>
+                <textarea
+                  placeholder="审核意见（选填）..."
+                  value={auditRemark}
+                  onChange={(e) => setAuditRemark(e.target.value)}
+                  style={{
+                    width: '100%', padding: '0.6rem 0.8rem', borderRadius: 10,
+                    border: '1.5px solid #E5E0DB', background: '#fff',
+                    fontSize: '0.84rem', color: '#2A2520', resize: 'vertical',
+                    minHeight: '52px', outline: 'none', fontFamily: 'inherit',
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; }}
+                />
+              </div>
+
+              {/* 操作按钮行 */}
+              <div style={{ display: 'flex', gap: '0.65rem' }}>
+                <button
+                  onClick={() => handleApproveWithDimensions()}
+                  disabled={updateStatus.isPending}
+                  style={{
+                    flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
+                    border: 'none',
+                    background: updateStatus.isPending ? '#D6CEC5' : 'linear-gradient(135deg, #10B981, #059669)',
+                    color: '#fff', fontSize: '0.87rem', fontWeight: 600,
+                    cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: updateStatus.isPending ? 'none' : '0 3px 12px rgba(16,185,129,0.28)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!updateStatus.isPending) {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 5px 18px rgba(16,185,129,0.38)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!updateStatus.isPending) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(16,185,129,0.28)';
+                    }
+                  }}
+                >
+                  ✅ 通过审核
+                </button>
+                <button
+                  onClick={() => setShowRejectModal(true)}
+                  disabled={updateStatus.isPending}
+                  style={{
+                    flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
+                    border: 'none',
+                    background: updateStatus.isPending ? '#D6CEC5' : 'linear-gradient(135deg, #F43F5E, #E11D48)',
+                    color: '#fff', fontSize: '0.87rem', fontWeight: 600,
+                    cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: updateStatus.isPending ? 'none' : '0 3px 12px rgba(244,63,94,0.28)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!updateStatus.isPending) {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 5px 18px rgba(244,63,94,0.38)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!updateStatus.isPending) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(244,63,94,0.28)';
+                    }
+                  }}
+                >
+                  🚫 驳回商品
+                </button>
+                <button
+                  onClick={onClose}
+                  disabled={updateStatus.isPending}
+                  style={{
+                    padding: '0.65rem 1.2rem', borderRadius: 12,
+                    border: '1.5px solid #E5E0DB', background: '#fff',
+                    color: '#6B6460', fontSize: '0.87rem', fontWeight: 600,
+                    cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.15s ease',
+                    opacity: updateStatus.isPending ? 0.5 : 1,
+                  }}
+                  onMouseEnter={(e) => { if (!updateStatus.isPending) e.currentTarget.style.background = 'rgba(229,224,219,0.3)'; }}
+                  onMouseLeave={(e) => { if (!updateStatus.isPending) e.currentTarget.style.background = '#fff'; }}
+                >
+                  关闭
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -420,20 +562,94 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
         </div>
       )}
 
-      <ConfirmModal
-        open={confirmModal.open}
-        title={confirmModal.type === 'approve' ? '确认通过审核' : '确认下架商品'}
-        content={confirmModal.type === 'approve' ? '确定要通过该商品的审核吗？通过后商品将上架销售。' : '确定要下架该商品吗？下架后商品将不再展示。'}
-        confirmText={confirmModal.type === 'approve' ? '确认通过' : '确认下架'}
-        onConfirm={handleConfirmAction}
-        onCancel={() => setConfirmModal({ open: false, type: 'approve' })}
-        loading={updateStatus.isPending}
-        variant={confirmModal.type === 'approve' ? 'info' : 'danger'}
-      />
+      {/* 驳回弹窗 */}
+      {showRejectModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(42,37,32,0.5)', backdropFilter: 'blur(4px)',
+        }}>
+          <div style={{
+            width: '90%', maxWidth: 420,
+            background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)',
+            borderRadius: 20, padding: '1.5rem',
+            border: '1px solid rgba(229,224,219,0.4)',
+            boxShadow: '0 20px 60px rgba(42,37,32,0.15)',
+            animation: 'modalIn 0.25s ease-out',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#E11D48', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                ⚠️ 确认驳回商品
+              </h3>
+              <button onClick={() => { setShowRejectModal(false); setRejectReason(''); }} style={{
+                width: 30, height: 30, borderRadius: 8, border: '1.5px solid #E5E0DB', background: '#fff',
+                color: '#8B857E', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: '#6B6460', marginBottom: '0.85rem', lineHeight: 1.5 }}>
+              确定要驳回该商品吗？驳回后卖家可修改并重新提交。
+            </p>
+
+            {/* 快捷理由选项 */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
+              {['信息不完整', '图片模糊', '疑似虚假信息', '价格异常', '违规内容', '其他'].map((tag) => (
+                <button key={tag} onClick={() => {
+                  const prefix = rejectReason ? rejectReason + '；' : '';
+                  setRejectReason(prefix + tag);
+                }} style={{
+                  padding: '0.28rem 0.55rem', borderRadius: 6,
+                  border: '1.5px solid #E5E0DB', background: '#fff',
+                  color: '#8B857E', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer',
+                  transition: 'all 0.12s ease',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F43F5E'; e.currentTarget.style.color = '#E11D48'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.color = '#8B857E'; }}
+                >{tag}</button>
+              ))}
+            </div>
+
+            {/* 原因输入框 */}
+            <textarea
+              placeholder="请填写驳回原因（必填）..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              rows={3}
+              style={{
+                width: '100%', padding: '0.65rem 0.8rem', borderRadius: 10,
+                border: '2px solid #E5E0DB', background: '#fff',
+                fontSize: '0.85rem', color: '#2A2520', resize: 'vertical',
+                outline: 'none', fontFamily: 'inherit', marginBottom: '1rem',
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = '#F43F5E'; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = rejectReason ? '#F97316' : '#E5E0DB'; }}
+            />
+
+            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
+              <button onClick={() => { setShowRejectModal(false); setRejectReason(''); }} style={{
+                padding: '0.55rem 1.1rem', borderRadius: 10, border: '1.5px solid #E5E0DB',
+                background: '#fff', color: '#6B6460', fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer',
+              }}>取消</button>
+              <button
+                onClick={handleRejectWithReason}
+                disabled={!rejectReason.trim() || updateStatus.isPending}
+                style={{
+                  padding: '0.55rem 1.3rem', borderRadius: 10, border: 'none',
+                  background: (!rejectReason.trim() || updateStatus.isPending) ? '#D6CEC5' : 'linear-gradient(135deg, #F43F5E, #E11D48)',
+                  color: '#fff', fontSize: '0.84rem', fontWeight: 600,
+                  cursor: (!rejectReason.trim() || updateStatus.isPending) ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+              >确认驳回</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes drawerFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </>
   );

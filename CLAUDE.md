@@ -118,6 +118,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
   3. 内容层: `position: relative, zIndex: 1, display: flex, flexDirection: column`
 - **AdminSelect Portal 防误关**: AdminSelect 的下拉面板通过 `createPortal` 渲染到 `document.body`。`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 listRef**，否则点击选项会立即关闭（mousedown 先冒泡到 document → 检测为外部点击 → 关闭 → onClick 被吞掉）。详见 `AdminSelect.tsx`
 - **父 POM 模块注册**: 新增后端子模块时（如 easyorange-admin），必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册，否则该模块不会被构建/安装到本地仓库，依赖它的模块会报 `未解析的依赖项` 错误
+- **Flyway SQL 格式**: 迁移脚本中 CREATE TABLE 的列定义**禁止使用对齐格式**（列名与类型之间用大量空格填充对齐），必须使用紧凑格式。Flyway MySQL 解析器会对齐格式产生兼容性问题，导致 MySQL 1064 语法错误。详见 [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) 反模式章节
 
 ---
 

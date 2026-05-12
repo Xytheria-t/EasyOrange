@@ -25,6 +25,7 @@ import type {
   CategoryUpdateRequest,
   BatchAuditRequest,
   ProductAuditRequest,
+  AuditLogVO,
   UserRoleRequest,
   ResetPasswordRequest,
   UserUnlockRequest,
@@ -120,6 +121,10 @@ export const adminApi = {
       method: 'PUT',
       body: data
     });
+  },
+
+  getAuditLogs(id: number) {
+    return request<AuditLogVO[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
   },
 
   getOrders(params: AdminOrderQuery) {

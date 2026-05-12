@@ -1,4 +1,4 @@
-export type ProductStatus = 'DRAFT' | 'ONLINE' | 'SOLD' | 'OFFLINE';
+export type ProductStatus = 'DRAFT' | 'ONLINE' | 'SOLD' | 'OFFLINE' | 'PENDING_REVIEW' | 'REJECTED';
 
 export interface Product {
     id: string;

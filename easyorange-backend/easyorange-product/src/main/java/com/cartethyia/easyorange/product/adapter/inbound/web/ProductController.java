@@ -81,4 +81,10 @@ public class ProductController {
         commandService.takeOffline(productId);
         return Result.success();
     }
+
+    @PutMapping("/{id}/submit")
+    public Result<Void> submitForReview(@PathVariable Long id) {
+        commandService.submitForReview(id);
+        return Result.success();
+    }
 }

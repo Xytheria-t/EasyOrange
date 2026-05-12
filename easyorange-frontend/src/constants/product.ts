@@ -12,6 +12,8 @@ export const STATUS_LABEL_MAP: Record<ProductStatus, string> = {
     ONLINE: '在售',
     SOLD: '已售出',
     OFFLINE: '已下架',
+    PENDING_REVIEW: '⏳ 审核中',
+    REJECTED: '🔴 已驳回',
 };
 
 export const PRODUCT_STATUS_CODE: Record<number, ProductStatus> = {
@@ -19,4 +21,6 @@ export const PRODUCT_STATUS_CODE: Record<number, ProductStatus> = {
     1: 'ONLINE',
     2: 'SOLD',
     3: 'OFFLINE',
+    4: 'PENDING_REVIEW',
+    5: 'REJECTED',
 };

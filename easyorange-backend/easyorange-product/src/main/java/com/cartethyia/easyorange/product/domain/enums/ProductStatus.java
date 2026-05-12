@@ -5,6 +5,8 @@ import java.util.Arrays;
 public enum ProductStatus {
 
     DRAFT(0, "草稿"),
+    PENDING_REVIEW(4, "待审核"),
+    REJECTED(5, "已驳回"),
     ONLINE(1, "上架"),
     SOLD(2, "已售出"),
     OFFLINE(3, "下架");
@@ -70,5 +72,17 @@ public enum ProductStatus {
 
     public boolean canDelete() {
         return this != SOLD;
+    }
+
+    public boolean canSubmitForReview() {
+        return this == DRAFT || this == REJECTED;
+    }
+
+    public boolean canApprove() {
+        return this == PENDING_REVIEW;
+    }
+
+    public boolean canReject() {
+        return this == PENDING_REVIEW;
     }
 }

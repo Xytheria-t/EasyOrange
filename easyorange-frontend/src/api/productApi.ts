@@ -103,5 +103,11 @@ export const productApi = {
             method: 'POST',
             skipAuth: true
         });
+    },
+
+    submitForReview(id: string) {
+        return request<void>(`/products/${id}/submit`, {
+            method: 'PUT'
+        });
     }
 };

@@ -15,7 +15,7 @@
 
 ## 表总览
 
-共 24 张表，按业务模块划分：
+共 26 张业务表，按业务模块划分：
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
@@ -24,6 +24,7 @@
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
 | 商品 | eo_product_image | 商品图片（1:N） | ProductImageDO |
+| 商品 | eo_product_audit_log | 商品审核记录 | — |
 | 商品 | eo_product_review | 商品评价 | ProductReviewDO |
 | 商品 | eo_product_report | 商品举报 | ProductReportDO |
 | 商品 | eo_favorite | 用户收藏 | FavoriteDO |
@@ -203,7 +204,35 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 6. eo_product_review — 商品评价表
+### 6. eo_product_audit_log — 商品审核记录表
+
+> 无公共字段（审核记录不需要 del_flag/version，通过业务逻辑保证不可变）
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | BIGINT | PK | 主键 ID |
+| product_id | BIGINT | NOT NULL | 商品 ID |
+| operator_id | BIGINT | NOT NULL | 操作人 ID |
+| operator_name | VARCHAR(50) | NOT NULL | 操作人姓名 |
+| action | TINYINT | NOT NULL | 审核动作（1 通过 / 2 拒绝 / 3 重新提交） |
+| reason | VARCHAR(500) | | 审核原因 |
+| audit_dimensions | VARCHAR(500) | | 审核维度 JSON |
+| before_status | TINYINT | NOT NULL | 操作前状态 |
+| after_status | TINYINT | NOT NULL | 操作后状态 |
+| remark | VARCHAR(500) | | 管理员备注 |
+| create_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| idx_audit_product | KEY | product_id, create_time DESC |
+| idx_audit_operator | KEY | operator_id, create_time DESC |
+| idx_audit_action_time | KEY | action, create_time DESC |
+
+---
+
+### 7. eo_product_review — 商品评价表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|

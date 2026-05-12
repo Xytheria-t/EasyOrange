@@ -76,7 +76,7 @@ EasyOrange Platform
 
 ```
 easyorange/
-├── easyorange-backend/               # 后端服务 (12 Maven 模块)
+├── easyorange-backend/               # 后端服务 (10 Maven 模块)
 │   ├── easyorange-application/       # 应用层（启动类、健康检查、平台统计）
 │   ├── easyorange-admin/             # 管理端（用户/商品/订单/分类/举报/审核 API）
 │   ├── easyorange-common/            # 公共模块（Result, PageResult, 注解, 异常, 领域事件基类）
@@ -88,7 +88,6 @@ easyorange/
 │   ├── easyorange-message/           # 消息域模块
 │   ├── easyorange-favorite/          # 收藏域模块
 │   ├── pom.xml                       # Maven 父工程
-│   └── init.sql                      # 数据库初始化脚本
 │
 ├── easyorange-frontend/              # 前端应用 (React SPA)
 │   ├── src/
@@ -122,7 +121,6 @@ easyorange/
 │
 ├── docker-compose.yml                # Docker Compose 配置
 ├── .env.example                      # 环境变量示例
-├── .githooks/                        # Git 钩子
 ├── doc/                              # 项目文档
 │   └── 架构/                         # 架构规范文档（已切分为多个子文档）
 ├── AGENTS.md                         # Agent 使用说明

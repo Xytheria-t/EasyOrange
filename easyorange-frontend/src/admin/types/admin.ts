@@ -308,15 +308,40 @@ export interface CategoryUpdateRequest {
 
 // ==================== Audit & User Operation Types ====================
 
+export type AuditAction = 1 | 2 | 3;
+export type AuditDimension = 'basic' | 'compliance' | 'image' | 'price';
+
 export interface BatchAuditRequest {
-  productIds: number[];
-  action: 'approve' | 'reject';
-  reason?: string;
+  items: {
+    productId: number;
+    action: 1 | 2;
+    reason?: string;
+    dimensions?: AuditDimension[];
+  }[];
 }
 
 export interface ProductAuditRequest {
-  action: 'approve' | 'reject';
+  action: 1 | 2;
   reason?: string;
+  dimensions?: AuditDimension[];
+  remark?: string;
+}
+
+export interface AuditLogVO {
+  id: number;
+  productId: number;
+  operatorId: number;
+  operatorName: string;
+  action: AuditAction;
+  actionDesc: string;
+  reason: string | null;
+  dimensions: AuditDimension[];
+  beforeStatus: number;
+  beforeStatusDesc: string;
+  afterStatus: number;
+  afterStatusDesc: string;
+  remark: string | null;
+  createTime: string;
 }
 
 export interface UserRoleRequest {

@@ -94,7 +94,9 @@ INSERT INTO `eo_message_template` (
 (9, 'PRODUCT_ONLINE',   '商品上架通知',   'system','商品上架成功',   '你发布的商品「${productName}」已成功上架，祝早日售出！',                      '["productName"]',                 1, NOW(), NOW()),
 (10, 'PRODUCT_OFFLINE', '商品下架通知',   'system','商品已下架',     '你的商品「${productName}」已下架，原因：${reason}。',                         '["productName","reason"]',       1, NOW(), NOW()),
 (11, 'USER_REGISTER',   '注册欢迎通知',   'system','欢迎加入',       '欢迎来到EasyOrange校园二手交易平台！在这里你可以轻松买卖二手商品~',             '[]',                              1, NOW(), NOW()),
-(12, 'PRICE_DROP',      '降价提醒',        'system','收藏商品降价',   '你收藏的商品「${productName}」已降价至 ${price} 元，快去看看吧！',              '["productName","price"]',        1, NOW(), NOW())
+(12, 'PRICE_DROP',      '降价提醒',        'system','收藏商品降价',   '你收藏的商品「${productName}」已降价至 ${price} 元，快去看看吧！',              '["productName","price"]',        1, NOW(), NOW()),
+(13, 'AUDIT_SUCCESS',   '审核通过通知',     'audit', '商品审核通过 🎉',   '您发布的「${productName}」已通过审核，现已上架销售！',        '["productName"]',                 1, NOW(), NOW()),
+(14, 'AUDIT_REJECTED', '审核驳回通知',      'audit', '商品审核未通过 ⚠️', '您发布的「${productName}」未通过审核。原因：${reason}。', '["productName","reason"]',           1, NOW(), NOW())
 AS new
 ON DUPLICATE KEY UPDATE
     `template_name` = new.`template_name`,

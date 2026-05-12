@@ -16,7 +16,8 @@ public class BatchAuditRequest {
 
     public record AuditItem(
         @NotNull Long productId,
-        @NotNull Integer status,
-        String reason
+        @NotNull Integer action,
+        String reason,
+        List<String> dimensions
     ) {}
 }

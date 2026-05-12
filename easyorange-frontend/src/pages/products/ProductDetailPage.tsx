@@ -148,6 +148,19 @@ function ProductDetailPage() {
     },
   });
 
+  const resubmitForReview = useMutation({
+    mutationFn: async () => {
+      await productApi.submitForReview(productId);
+    },
+    onSuccess: () => {
+      addToast({ type: 'success', message: '已重新提交审核' });
+      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+    },
+    onError: () => {
+      addToast({ type: 'error', message: '重新提交失败，请重试' });
+    },
+  });
+
   const preloadAdjacentImages = useCallback((centerIdx: number, allImages: string[]) => {
     if (allImages.length <= 1) return;
     const prevIdx = (centerIdx - 1 + allImages.length) % allImages.length;
@@ -195,6 +208,8 @@ function ProductDetailPage() {
   const statusLabel = STATUS_LABEL_MAP[product.status as keyof typeof STATUS_LABEL_MAP] ?? product.status;
   const isOnline = product.status === 'ONLINE';
   const isSold = product.status === 'SOLD';
+  const isPendingReview = product.status === 'PENDING_REVIEW';
+  const isRejected = product.status === 'REJECTED';
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
   const discountPercent = hasDiscount
     ? Math.round((1 - product.price / product.originalPrice!) * 100)
@@ -479,9 +494,19 @@ function ProductDetailPage() {
             <div className="pdp-info-sticky">
               <div className="pdp-title-section">
                 <div className="pdp-title-badges">
-                  <span className={`pdp-status-chip ${isOnline ? 'online' : isSold ? 'sold' : 'offline'}`}>
-                    {statusLabel}
-                  </span>
+                  {isPendingReview ? (
+                    <span className="pdp-status-chip" style={{ background: '#FEF3C7', color: '#D97706', border: '1px solid #FDE68A' }}>
+                      {statusLabel}
+                    </span>
+                  ) : isRejected ? (
+                    <span className="pdp-status-chip" style={{ background: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}>
+                      {statusLabel}
+                    </span>
+                  ) : (
+                    <span className={`pdp-status-chip ${isOnline ? 'online' : isSold ? 'sold' : 'offline'}`}>
+                      {statusLabel}
+                    </span>
+                  )}
                   {conditionLabel && (
                     <span className="pdp-condition-chip">{conditionLabel}</span>
                   )}
@@ -607,13 +632,27 @@ function ProductDetailPage() {
 
               <div className="pdp-actions">
                 {isOwner ? (
-                  <button
-                    className="pdp-btn pdp-btn-primary"
-                    onClick={() => navigate(`/products/${id}/edit`)}
-                  >
-                    <Pencil size={18} />
-                    编辑商品
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      className="pdp-btn pdp-btn-primary"
+                      onClick={() => navigate(`/products/${id}/edit`)}
+                      disabled={isPendingReview}
+                      style={isPendingReview ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                    >
+                      <Pencil size={18} />
+                      编辑商品
+                    </button>
+                    {isRejected && (
+                      <button
+                        className="pdp-btn pdp-btn-primary"
+                        onClick={() => resubmitForReview.mutate()}
+                        disabled={resubmitForReview.isPending}
+                        style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
+                      >
+                        {resubmitForReview.isPending ? '提交中...' : '修改并重新提交'}
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <button

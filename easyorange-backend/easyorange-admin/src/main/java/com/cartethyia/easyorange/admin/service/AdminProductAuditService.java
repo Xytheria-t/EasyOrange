@@ -3,22 +3,36 @@ package com.cartethyia.easyorange.admin.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
+import com.cartethyia.easyorange.admin.dto.response.AuditLogVO;
 import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultVO;
+import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminProductAuditService {
 
     private final ProductMapper productMapper;
+    private final ProductAuditLogMapper productAuditLogMapper;
+    private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     @Transactional(rollbackFor = Exception.class)
     public void auditProduct(Long id, ProductAuditRequest request) {
@@ -27,26 +41,57 @@ public class AdminProductAuditService {
             throw BusinessException.of("商品不存在");
         }
 
-        int targetStatus = Integer.parseInt(request.getStatus());
+        if (product.getStatus() != ProductStatus.PENDING_REVIEW.getCode()) {
+            throw BusinessException.of("只有待审核状态的商品可以审核");
+        }
 
-        if (targetStatus == 1) {
-            if (product.getStatus() != ProductStatus.DRAFT.getCode()) {
-                throw BusinessException.of("只有草稿状态的商品可以审核通过");
-            }
+        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String operatorName = SecurityContextUtil.getUserContext()
+                .map(authUser -> authUser.username())
+                .orElse("管理员");
+
+        Integer beforeStatus = product.getStatus();
+        Integer action = request.getAction();
+
+        if (action == 1) {
             product.setStatus(ProductStatus.ONLINE.getCode());
-        } else if (targetStatus == -1) {
-            if (product.getStatus() != ProductStatus.DRAFT.getCode()) {
-                throw BusinessException.of("只有草稿状态的商品可以拒绝");
-            }
+        } else if (action == 2) {
             if (request.getReason() == null || request.getReason().isBlank()) {
                 throw BusinessException.of("拒绝时必须填写原因");
             }
-            product.setStatus(ProductStatus.OFFLINE.getCode());
+            product.setStatus(ProductStatus.REJECTED.getCode());
         } else {
-            throw BusinessException.of("无效的审核状态");
+            throw BusinessException.of("无效的审核动作");
         }
 
+        Integer afterStatus = product.getStatus();
         productMapper.updateById(product);
+
+        ProductAuditLogDO auditLog = ProductAuditLogDO.builder()
+                .productId(id)
+                .operatorId(operatorId)
+                .operatorName(operatorName)
+                .action(action)
+                .reason(request.getReason())
+                .auditDimensions(toJsonString(request.getDimensions()))
+                .beforeStatus(beforeStatus)
+                .afterStatus(afterStatus)
+                .remark(request.getRemark())
+                .build();
+        productAuditLogMapper.insert(auditLog);
+
+        ProductAuditedEvent event = new ProductAuditedEvent(
+                id,
+                product.getName(),
+                product.getUserId(),
+                action,
+                request.getReason(),
+                LocalDateTime.now()
+        );
+        eventPublisher.publishEvent(event);
+
+        log.info("action=audit_product productId={} action={} operatorId={} beforeStatus={} afterStatus={}",
+                id, action, operatorId, beforeStatus, afterStatus);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -62,35 +107,131 @@ public class AdminProductAuditService {
                     continue;
                 }
 
-                if (item.status() == 1) {
-                    if (product.getStatus() != ProductStatus.DRAFT.getCode()) {
-                        errors.add("商品ID " + item.productId() + ": 非草稿状态，无法通过");
-                        continue;
-                    }
-                    product.setStatus(ProductStatus.ONLINE.getCode());
-                } else if (item.status() == -1) {
-                    if (product.getStatus() != ProductStatus.DRAFT.getCode()) {
-                        errors.add("商品ID " + item.productId() + ": 非草稿状态，无法拒绝");
-                        continue;
-                    }
-                    product.setStatus(ProductStatus.OFFLINE.getCode());
-                } else {
-                    errors.add("商品ID " + item.productId() + ": 无效的状态值 " + item.status());
+                if (product.getStatus() != ProductStatus.PENDING_REVIEW.getCode()) {
+                    errors.add("商品ID " + item.productId() + ": 非待审核状态，无法操作");
                     continue;
                 }
 
+                Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+                String operatorName = SecurityContextUtil.getUserContext()
+                        .map(authUser -> authUser.username())
+                        .orElse("管理员");
+
+                Integer beforeStatus = product.getStatus();
+                Integer action = item.action();
+
+                if (action == 1) {
+                    product.setStatus(ProductStatus.ONLINE.getCode());
+                } else if (action == 2) {
+                    if (item.reason() == null || item.reason().isBlank()) {
+                        errors.add("商品ID " + item.productId() + ": 拒绝时必须填写原因");
+                        continue;
+                    }
+                    product.setStatus(ProductStatus.REJECTED.getCode());
+                } else {
+                    errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + action);
+                    continue;
+                }
+
+                Integer afterStatus = product.getStatus();
                 productMapper.updateById(product);
+
+                ProductAuditLogDO auditLog = ProductAuditLogDO.builder()
+                        .productId(item.productId())
+                        .operatorId(operatorId)
+                        .operatorName(operatorName)
+                        .action(action)
+                        .reason(item.reason())
+                        .auditDimensions(toJsonString(item.dimensions()))
+                        .beforeStatus(beforeStatus)
+                        .afterStatus(afterStatus)
+                        .build();
+                productAuditLogMapper.insert(auditLog);
+
+                ProductAuditedEvent event = new ProductAuditedEvent(
+                        item.productId(),
+                        product.getName(),
+                        product.getUserId(),
+                        action,
+                        item.reason(),
+                        LocalDateTime.now()
+                );
+                eventPublisher.publishEvent(event);
+
                 successCount++;
+            } catch (BusinessException e) {
+                errors.add("商品ID " + item.productId() + ": " + e.getMessage());
             } catch (Exception e) {
                 errors.add("商品ID " + item.productId() + ": " + e.getMessage());
             }
         }
 
         return new BatchAuditResultVO(
-            request.getItems().size(),
-            successCount,
-            errors.size(),
-            errors
+                request.getItems().size(),
+                successCount,
+                errors.size(),
+                errors
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<AuditLogVO> getAuditLogs(Long productId) {
+        List<ProductAuditLogDO> logs = productAuditLogMapper.selectByProductId(productId);
+        return logs.stream().map(this::toAuditLogVO).toList();
+    }
+
+    private AuditLogVO toAuditLogVO(ProductAuditLogDO log) {
+        return new AuditLogVO(
+                log.getId(),
+                log.getProductId(),
+                log.getOperatorId(),
+                log.getOperatorName(),
+                log.getAction(),
+                getActionDesc(log.getAction()),
+                log.getReason(),
+                parseDimensions(log.getAuditDimensions()),
+                log.getBeforeStatus(),
+                ProductStatus.getDescByCode(log.getBeforeStatus()),
+                log.getAfterStatus(),
+                ProductStatus.getDescByCode(log.getAfterStatus()),
+                log.getRemark(),
+                log.getCreateTime()
+        );
+    }
+
+    private String getActionDesc(Integer action) {
+        if (action == null) {
+            return "未知";
+        }
+        return switch (action) {
+            case 1 -> "通过";
+            case 2 -> "拒绝";
+            default -> "未知";
+        };
+    }
+
+    private String toJsonString(List<String> dimensions) {
+        if (dimensions == null || dimensions.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(dimensions);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize audit dimensions to JSON", e);
+            return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> parseDimensions(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, List.class);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse audit dimensions from JSON: {}", json, e);
+            return List.of();
+        }
     }
 }
