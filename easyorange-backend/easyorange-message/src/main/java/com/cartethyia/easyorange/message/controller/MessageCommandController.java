@@ -5,9 +5,12 @@ import com.cartethyia.easyorange.message.application.command.DeleteMessageComman
 import com.cartethyia.easyorange.message.application.command.MarkAsReadBatchCommand;
 import com.cartethyia.easyorange.message.application.command.MarkAsReadCommand;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
+import com.cartethyia.easyorange.message.application.command.RecallMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
+import com.cartethyia.easyorange.message.dto.vo.ConversationListVO;
 import com.cartethyia.easyorange.message.enums.MessageType;
+import com.cartethyia.easyorange.message.websocket.TypingIndicatorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +23,7 @@ import java.util.List;
 public class MessageCommandController {
 
     private final MessageCommandHandler commandHandler;
+    private final TypingIndicatorService typingIndicatorService;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
@@ -70,6 +74,25 @@ public class MessageCommandController {
     @PreAuthorize("isAuthenticated()")
     public Result<Void> deleteMessage(@PathVariable Long id) {
         commandHandler.handle(DeleteMessageCommand.builder().messageId(id).build());
+        return Result.success();
+    }
+
+    @PutMapping("/{id}/recall")
+    @PreAuthorize("isAuthenticated()")
+    public Result<Void> recallMessage(@PathVariable Long id) {
+        commandHandler.handle(RecallMessageCommand.builder()
+                .messageId(id)
+                .operatorId(com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow())
+                .build());
+        return Result.success();
+    }
+
+    @PostMapping("/typing")
+    @PreAuthorize("isAuthenticated()")
+    public Result<Void> typing(@RequestBody java.util.Map<String, String> body) {
+        String conversationId = body.get("conversationId");
+        Long targetUserId = body.get("targetUserId") != null ? Long.valueOf(body.get("targetUserId")) : null;
+        typingIndicatorService.setTyping(conversationId, com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow());
         return Result.success();
     }
 }

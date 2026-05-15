@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import { useAuditProduct, useAuditLogs } from '../../hooks/useAdminProductAudit';
 import type { AuditLogVO, AuditDimension } from '../../types/admin';
@@ -14,13 +15,28 @@ const conditionLabels: Record<number, string> = {
   10: '全新', 9: '9成新', 8: '8成新', 7: '7成新', 6: '6成新及以下',
 };
 
+const createInitialState = () => ({
+  selectedImage: 0,
+  previewImage: null as string | null,
+  selectedDimensions: [] as AuditDimension[],
+  auditRemark: '',
+  rejectReason: '',
+  showRejectModal: false,
+});
+
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [selectedDimensions, setSelectedDimensions] = useState<AuditDimension[]>([]);
-  const [auditRemark, setAuditRemark] = useState('');
-  const [rejectReason, setRejectReason] = useState('');
-  const [showRejectModal, setShowRejectModal] = useState(false);
+  const prevStateKeyRef = useRef<string | null>(null);
+  const stateKey = open && productId ? `${open}-${productId}` : null;
+  
+  const [state, setState] = useState(createInitialState);
+  const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
+
+  if (stateKey !== prevStateKeyRef.current) {
+    prevStateKeyRef.current = stateKey;
+    if (stateKey) {
+      setState(createInitialState());
+    }
+  }
 
   const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
   const updateStatus = useAuditProduct();
@@ -28,20 +44,14 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
   useEffect(() => {
     if (open && productId) {
-      setSelectedImage(0);
-      setPreviewImage(null);
-      setSelectedDimensions([]);
-      setAuditRemark('');
-      setRejectReason('');
-      setShowRejectModal(false);
       refetch();
     }
   }, [open, productId, refetch]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {return;}
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !previewImage) onClose();
+      if (e.key === 'Escape' && !previewImage) {onClose();}
     };
     document.addEventListener('keydown', handleEscape);
     document.body.style.overflow = 'hidden';
@@ -52,7 +62,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
   }, [open, previewImage, onClose]);
 
   const handleApproveWithDimensions = () => {
-    if (!product) return;
+    if (!product) {return;}
     updateStatus.mutateAsync({
       id: product.productId,
       data: { action: 1, dimensions: selectedDimensions, remark: auditRemark || undefined },
@@ -63,14 +73,13 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
   };
 
   const handleRejectWithReason = async () => {
-    if (!product || !rejectReason.trim()) return;
+    if (!product || !rejectReason.trim()) {return;}
     try {
       await updateStatus.mutateAsync({
         id: product.productId,
         data: { action: 2, reason: rejectReason, dimensions: selectedDimensions, remark: auditRemark || undefined },
       });
-      setShowRejectModal(false);
-      setRejectReason('');
+      setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }));
       onSuccess();
       onClose();
     } catch (error) {
@@ -86,13 +95,15 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
   const formatPrice = (price: number) => `¥${price.toFixed(2)}`;
 
-  if (!open) return null;
+  if (!open) {return null;}
 
-  return (
+  return createPortal(
     <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 40 }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
         {/* Backdrop */}
         <div
+          role="button"
+          tabIndex={0}
           style={{
             position: 'absolute', inset: 0,
             background: 'rgba(42,37,32,0.4)',
@@ -101,6 +112,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             animation: 'drawerFadeIn 0.25s ease-out',
           }}
           onClick={onClose}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') { onClose(); } }}
         />
 
         {/* Drawer panel */}
@@ -115,6 +127,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
           transform: open ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
           display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
         }}>
           {/* Header */}
           <div style={{
@@ -162,7 +175,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', minHeight: 0 }}>
             {isLoading ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.7rem', padding: '4rem 1rem' }}>
                 <div style={{
@@ -177,13 +190,16 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 {/* Image gallery */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div
+                    role="button"
+                    tabIndex={product.images[selectedImage] ? 0 : -1}
                     style={{
                       position: 'relative', width: '100%', aspectRatio: '16/10',
                       overflow: 'hidden', borderRadius: 16,
                       background: 'linear-gradient(135deg, #F5F2EE, #EDE8E3)',
                       cursor: product.images[selectedImage] ? 'pointer' : 'default',
                     }}
-                    onClick={() => product.images[selectedImage] && setPreviewImage(product.images[selectedImage])}
+                    onClick={() => product.images[selectedImage] && setState(prev => ({ ...prev, previewImage: product.images[selectedImage] }))}
+                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && product.images[selectedImage]) { setState(prev => ({ ...prev, previewImage: product.images[selectedImage] })); } }}
                   >
                     {product.images[selectedImage] ? (
                       <img
@@ -215,7 +231,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                       {product.images.map((img, index) => (
                         <button
                           key={index}
-                          onClick={() => setSelectedImage(index)}
+                          onClick={() => setState(prev => ({ ...prev, selectedImage: index }))}
                           style={{
                             flexShrink: 0, width: 56, height: 56, borderRadius: 12,
                             overflow: 'hidden',
@@ -406,9 +422,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                   ].map((dim) => (
                     <button
                       key={dim.key}
-                      onClick={() => setSelectedDimensions(prev =>
-                        prev.includes(dim.key) ? prev.filter(d => d !== dim.key) : [...prev, dim.key]
-                      )}
+                      onClick={() => setState(prev => ({
+                        ...prev,
+                        selectedDimensions: prev.selectedDimensions.includes(dim.key)
+                          ? prev.selectedDimensions.filter(d => d !== dim.key)
+                          : [...prev.selectedDimensions, dim.key]
+                      }))}
                       style={{
                         padding: '0.35rem 0.7rem', borderRadius: 8,
                         border: selectedDimensions.includes(dim.key)
@@ -434,7 +453,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                 <textarea
                   placeholder="审核意见（选填）..."
                   value={auditRemark}
-                  onChange={(e) => setAuditRemark(e.target.value)}
+                  onChange={(e) => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
                   style={{
                     width: '100%', padding: '0.6rem 0.8rem', borderRadius: 10,
                     border: '1.5px solid #E5E0DB', background: '#fff',
@@ -476,7 +495,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                   ✅ 通过审核
                 </button>
                 <button
-                  onClick={() => setShowRejectModal(true)}
+                  onClick={() => setState(prev => ({ ...prev, showRejectModal: true }))}
                   disabled={updateStatus.isPending}
                   style={{
                     flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
@@ -513,8 +532,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                     transition: 'all 0.15s ease',
                     opacity: updateStatus.isPending ? 0.5 : 1,
                   }}
-                  onMouseEnter={(e) => { if (!updateStatus.isPending) e.currentTarget.style.background = 'rgba(229,224,219,0.3)'; }}
-                  onMouseLeave={(e) => { if (!updateStatus.isPending) e.currentTarget.style.background = '#fff'; }}
+                  onMouseEnter={(e) => { if (!updateStatus.isPending) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
+                  onMouseLeave={(e) => { if (!updateStatus.isPending) {e.currentTarget.style.background = '#fff';} }}
                 >
                   关闭
                 </button>
@@ -527,19 +546,21 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
       {/* Image preview overlay */}
       {previewImage && (
         <div
+          role="button"
+          tabIndex={0}
           style={{
             position: 'fixed', inset: 0, zIndex: 50,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'rgba(42,37,32,0.88)',
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
             animation: 'drawerFadeIn 0.2s ease-out',
           }}
-          onClick={() => setPreviewImage(null)}
+          onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') { setState(prev => ({ ...prev, previewImage: null })); } }}
         >
           <button
             style={{
-              position: 'absolute', top: '1.25rem', right: '1.25rem',
+              position: 'fixed', top: '1.25rem', right: '1.25rem',
               width: 40, height: 40, borderRadius: 12,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
@@ -547,7 +568,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-            onClick={() => setPreviewImage(null)}
+            onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12" />
@@ -556,8 +577,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
           <img
             src={previewImage}
             alt="预览"
-            style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain', borderRadius: 12 }}
-            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'fixed', left: '50%', top: '50%',
+              transform: 'translate(-50%, -50%)',
+              maxHeight: '90vh', maxWidth: '90vw',
+              objectFit: 'contain', borderRadius: 12,
+            }}
           />
         </div>
       )}
@@ -566,11 +591,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
       {showRejectModal && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 50,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(42,37,32,0.5)', backdropFilter: 'blur(4px)',
         }}>
           <div style={{
-            width: '90%', maxWidth: 420,
+            position: 'fixed', left: '50%', top: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'calc(100% - 2rem)', maxWidth: 420,
             background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)',
             borderRadius: 20, padding: '1.5rem',
             border: '1px solid rgba(229,224,219,0.4)',
@@ -581,7 +607,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#E11D48', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 ⚠️ 确认驳回商品
               </h3>
-              <button onClick={() => { setShowRejectModal(false); setRejectReason(''); }} style={{
+              <button onClick={() => { setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' })); }} style={{
                 width: 30, height: 30, borderRadius: 8, border: '1.5px solid #E5E0DB', background: '#fff',
                 color: '#8B857E', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>✕</button>
@@ -595,8 +621,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
               {['信息不完整', '图片模糊', '疑似虚假信息', '价格异常', '违规内容', '其他'].map((tag) => (
                 <button key={tag} onClick={() => {
-                  const prefix = rejectReason ? rejectReason + '；' : '';
-                  setRejectReason(prefix + tag);
+                  setState(prev => ({ ...prev, rejectReason: (prev.rejectReason ? `${prev.rejectReason}；` : '') + tag }));
                 }} style={{
                   padding: '0.28rem 0.55rem', borderRadius: 6,
                   border: '1.5px solid #E5E0DB', background: '#fff',
@@ -613,7 +638,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             <textarea
               placeholder="请填写驳回原因（必填）..."
               value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
+              onChange={(e) => setState(prev => ({ ...prev, rejectReason: e.target.value }))}
               rows={3}
               style={{
                 width: '100%', padding: '0.65rem 0.8rem', borderRadius: 10,
@@ -626,7 +651,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             />
 
             <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
-              <button onClick={() => { setShowRejectModal(false); setRejectReason(''); }} style={{
+              <button onClick={() => { setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' })); }} style={{
                 padding: '0.55rem 1.1rem', borderRadius: 10, border: '1.5px solid #E5E0DB',
                 background: '#fff', color: '#6B6460', fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer',
               }}>取消</button>
@@ -649,8 +674,9 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
       <style>{`
         @keyframes drawerFadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
-    </>
+    </>,
+    document.body
   );
 }

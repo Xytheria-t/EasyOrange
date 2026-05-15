@@ -134,7 +134,7 @@ function MessagesPage() {
           {conversations.map((conv) => (
             <Link
               key={conv.id}
-              to={`/messages?userId=${conv.targetUserId}`}
+              to={`/messages/${conv.targetUserId}`}
               className="message-card"
             >
               <div className="message-avatar-wrap">

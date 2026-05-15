@@ -95,7 +95,7 @@ export const ProductCard = memo(({
   const entranceDelay = index * 80
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button')) return
+    if ((e.target as HTMLElement).closest('button')) {return}
     navigate(`/products/${product.id}`)
   }
 
@@ -106,7 +106,7 @@ export const ProductCard = memo(({
   }
 
   return (
-    <article
+    <div
       ref={cardRef}
       className="product-card-premium"
       style={{
@@ -311,6 +311,8 @@ export const ProductCard = memo(({
           </div>
         </div>
       </div>
-    </article>
+    </div>
   )
 })
+
+ProductCard.displayName = 'ProductCard'

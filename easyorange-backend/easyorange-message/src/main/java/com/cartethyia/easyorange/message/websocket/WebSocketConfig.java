@@ -64,8 +64,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint(MessageConstant.WS_ENDPOINT)
                 .addInterceptors(webSocketAuthInterceptor)
-                .setAllowedOriginPatterns("*")
-                .withSockJS();
+                .setAllowedOriginPatterns("*");
     }
 
     @Override

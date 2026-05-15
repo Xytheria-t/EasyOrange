@@ -55,7 +55,8 @@ easyorange-frontend/
 │   ├── pages/                # 页面组件
 │   │   └── publish/          # 发布商品子模块
 │   ├── routes/               # 路由配置
-│   ├── store/                # Zustand 状态管理
+│   ├── store/                # Zustand 状态管理（认证、用户状态等）
+│   ├── stores/               # Zustand 状态管理（聊天模块独立 store）
 │   ├── styles/               # 样式文件
 │   ├── types/                # 类型定义
 │   ├── utils/                # 工具函数

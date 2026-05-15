@@ -4,6 +4,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { AdminSelect } from '../../components/AdminSelect';
 import { useAdminOrders } from '../../hooks';
 import type { AdminOrder } from '../../types/admin';
+import { OrderDetailModal } from './OrderDetailModal';
 
 const statusFilterOptions = [
   { value: '', label: '全部状态' },
@@ -21,6 +22,7 @@ export default function OrderManagePage() {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const [detailOrderId, setDetailOrderId] = useState<number | null>(null);
 
   const { data, isLoading } = useAdminOrders({
     pageNum: page,
@@ -35,7 +37,7 @@ export default function OrderManagePage() {
   }, [searchInput]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Enter') {handleSearch();}
   }, [handleSearch]);
 
   const formatDate = (dateStr: string) =>
@@ -103,7 +105,7 @@ export default function OrderManagePage() {
     {
       key: 'actions',
       title: '操作',
-      render: (_) => (
+      render: (_, record) => (
         <button
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
@@ -115,6 +117,7 @@ export default function OrderManagePage() {
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.14)'; e.currentTarget.style.transform = 'translateX(2px)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.07)'; e.currentTarget.style.transform = 'translateX(0)'; }}
+          onClick={() => setDetailOrderId(record.orderId)}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -262,6 +265,12 @@ export default function OrderManagePage() {
           />
         </div>
       </div>
+
+      <OrderDetailModal
+        open={detailOrderId !== null}
+        orderId={detailOrderId}
+        onClose={() => setDetailOrderId(null)}
+      />
 
       <style>{`
         @keyframes pageIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }

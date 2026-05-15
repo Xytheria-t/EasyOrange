@@ -53,7 +53,7 @@ export default function UserManagePage() {
   }, [searchInput]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Enter') {handleSearch();}
   }, [handleSearch]);
 
   const handleViewDetail = useCallback((user: AdminUser) => {
@@ -62,7 +62,7 @@ export default function UserManagePage() {
   }, []);
 
   const handleSaveStatus = useCallback(async (status: string) => {
-    if (!selectedUser) return;
+    if (!selectedUser) {return;}
     await updateStatusMutation.mutateAsync({ id: selectedUser.userId, data: { status: Number(status) } });
     setModalOpen(false);
     setSelectedUser(null);

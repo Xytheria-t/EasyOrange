@@ -1,9 +1,11 @@
 package com.cartethyia.easyorange.admin.controller;
 
+import com.cartethyia.easyorange.admin.dto.response.ActivityVO;
 import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
 import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
 import com.cartethyia.easyorange.admin.dto.response.RecentProductVO;
 import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
+import com.cartethyia.easyorange.admin.dto.response.TrendVO;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
 import com.cartethyia.easyorange.common.result.Result;
 import lombok.RequiredArgsConstructor;
@@ -38,5 +40,15 @@ public class AdminDashboardController {
     @GetMapping("/recent-products")
     public Result<List<RecentProductVO>> getRecentProducts() {
         return Result.success(adminDashboardService.getRecentProducts(10));
+    }
+
+    @GetMapping("/trend")
+    public Result<List<TrendVO>> getTrend() {
+        return Result.success(adminDashboardService.getTrend());
+    }
+
+    @GetMapping("/activity")
+    public Result<List<ActivityVO>> getActivity() {
+        return Result.success(adminDashboardService.getRecentActivity());
     }
 }

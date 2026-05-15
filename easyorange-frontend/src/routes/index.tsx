@@ -16,6 +16,7 @@ const ProductDetailPage = lazy(() => import('@/pages/products/ProductDetailPage'
 const ProfilePage = lazy(() => import('@/pages/profile/ProfilePage'));
 const FavoritesPage = lazy(() => import('@/pages/favorites/FavoritesPage'));
 const MessagesPage = lazy(() => import('@/pages/messages/MessagesPage'));
+const ChatWindowPage = lazy(() => import('@/pages/messages/ChatWindowPage'));
 const OrdersPage = lazy(() => import('@/pages/orders/OrdersPage'));
 const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage'));
 const PaymentPage = lazy(() => import('@/pages/orders/PaymentPage'));
@@ -81,6 +82,14 @@ export const router = createBrowserRouter(
           element={
             <ProtectedRoute>
               {withSuspense(MessagesPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="messages/:targetUserId"
+          element={
+            <ProtectedRoute>
+              {withSuspense(ChatWindowPage)}
             </ProtectedRoute>
           }
         />

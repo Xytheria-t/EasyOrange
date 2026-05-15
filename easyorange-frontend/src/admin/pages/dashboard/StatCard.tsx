@@ -10,7 +10,7 @@ interface StatCardProps {
 }
 
 function formatValue(value: number | string): string {
-  if (typeof value === 'string') return value;
+  if (typeof value === 'string') {return value;}
   if (value >= 10000) {
     return `${(value / 10000).toFixed(1)}万`;
   }

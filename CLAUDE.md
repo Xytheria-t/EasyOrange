@@ -26,18 +26,26 @@ easy-orange/
 │   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统，前后端已完整对接）
 │   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃 210px), AdminHeader
 │   │   ├── pages/              # dashboard / users / products / orders / reports / stats
-│   │   │   └── 全部页面已对接真实后端 API（无 Mock 数据残留）
-│   │   ├── components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal, StatCard, AdminMenuEntry
-│   │   ├── hooks/              # useAdminDashboard / Users / Products / Orders / Reports / Categories / ProductAudit / AdminGuard
-│   │   ├── api/adminApi.ts     # 33 个 API 函数，与后端 6 个 Controller 完全对齐
-│   │   ├── types/admin.ts      # 完整类型定义（Order/Report/Category/Audit/User 操作）
-│   │   └── styles/             # admin.css（侧边栏 210px/头部）, admin-layout.css（布局骨架）
+│   │   ├── users/UserDetailModal.tsx       # 用户详情弹窗（Portal挂载body）
+│   │   ├── products/ProductDetailDrawer.tsx # 商品审核抽屉（Portal+驳回弹窗+图片预览）
+│   │   └── orders/OrderDetailModal.tsx      # 订单详情弹窗（Portal挂载body）
+│   │   └── 全部页面已对接真实后端 API（无 Mock 数据残留）
+│   ├── src/components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal(Portal), StatCard, AdminMenuEntry
+│   │   ├── chat/              # 聊天组件（ChatHeader, MessageBubble[长按菜单], MessageList[虚拟滚动], ChatInputBar, TypingIndicator）
+│   │   ├── hooks/             # useAdmin* / useAdminProductAudit / useAdminGuard
+│   │   │   └── chat/          # useStompChat(STOMP连接), useChatMessages(react-query+store合并), useMessageRecall, useChatNotification(桌面通知+声音), useOfflineQueue
+│   │   ├── api/adminApi.ts    # 33 个 API 函数，与后端 6 个 Controller 完全对齐
+│   │   ├── api/messageApi.ts  # 消息 API（conversations, send, recall, typing, markAsRead）
+│   │   ├── types/admin.ts     # 完整类型定义（Order/Report/Category/Audit/User 操作）
+│   │   ├── stores/chatStore.ts# 聊天全局状态（Zustand: messages, typingUsers, connectionStatus）
+│   │   └── styles/            # admin.css（侧边栏 210px/头部）, admin-layout.css（布局骨架）, chat-window.css
 │   ├── src/components/admin/   # 管理端共享组件（AdminMenuEntry 等，供用户侧 Header 引用）
 │   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
 │   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
 │   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)
 ├── doc/                         # 项目文档
-│   └── 架构/                    # 架构规范文档（已切分为多个子文档）
+│   ├── 架构/                   # 架构规范文档（已切分为多个子文档）
+│   └── specs/                  # 功能设计规格文档
 └── .trae/rules/                 # AI 编码规则
 ```
 
@@ -105,6 +113,9 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - 测试覆盖率目标 ≥ 80%
 - **多模块构建**: 修改子模块后启动前必须先执行 `mvn clean install -Dmaven.test.skip=true`，确保子模块 JAR 安装到本地仓库，否则 DevTools 运行时会 ClassNotFoundException
 - **前端CSS导入**: 共享组件（如 ProductCard）使用的样式CSS必须在组件文件自身 import，禁止仅依赖页面级导入。首页通过 React.lazy 懒加载 section 组件时，页面级CSS不会随组件chunk加载，导致首次渲染无样式
+- **管理端弹窗/抽屉必须使用 Portal**: `src/admin/` 下所有 Modal、Drawer、确认框等弹出层组件**必须**通过 `createPortal(..., document.body)` 挂载到 `<body>` 节点。原因：`.admin-sidebar` 和 `.admin-header` 使用了 `backdrop-filter: blur()`，这会创建新的包含块（containing block），导致 `position: fixed` 的定位基准从视口变为被偏移的祖先元素，弹窗居中失效且底部截断。Portal 直接挂载 body 可彻底绕过此问题。居中方式统一用 `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%)`
+- **管理端弹窗内容溢出处理**: 所有 Portal 弹窗容器必须设置 `maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区域设置 `flex: 1; overflowY: auto; minHeight: 0`。确保超长内容可滚动，header/footer 固定可见
+- **AdminTable render 函数签名**: 列定义的 `render` 回调签名为 `(value, record)` — 第一个参数是单元格值（`getValue(record, key)` 的结果），第二个参数才是完整行记录。常见错误：只接收第一个参数 `(record) => ...` 导致实际拿到的是 `undefined`（当列 key 在数据中不存在时），点击事件无法获取行数据
 - **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
 - **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
 - **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则用户端 Header/导航栏会在管理页面显示
@@ -119,6 +130,12 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **AdminSelect Portal 防误关**: AdminSelect 的下拉面板通过 `createPortal` 渲染到 `document.body`。`handleClickOutside` 必须**同时排除触发按钮 ref 和列表 listRef**，否则点击选项会立即关闭（mousedown 先冒泡到 document → 检测为外部点击 → 关闭 → onClick 被吞掉）。详见 `AdminSelect.tsx`
 - **父 POM 模块注册**: 新增后端子模块时（如 easyorange-admin），必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册，否则该模块不会被构建/安装到本地仓库，依赖它的模块会报 `未解析的依赖项` 错误
 - **Flyway SQL 格式**: 迁移脚本中 CREATE TABLE 的列定义**禁止使用对齐格式**（列名与类型之间用大量空格填充对齐），必须使用紧凑格式。Flyway MySQL 解析器会对齐格式产生兼容性问题，导致 MySQL 1064 语法错误。详见 [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) 反模式章节
+- **Zustand store 写入规则**: zustand store **只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 useEffect 内写入 store**。原因：zustand 的 `...spread` 操作每次产生新对象引用 → effect 内写 store → 新引用触发重渲染 → effect 再执行 → 无限循环（Maximum update depth exceeded）。正确做法：react-query 提供 `staleTime: Infinity` 初始数据，zustand store 叠加实时更新（selector 纯读取安全）
+- **聊天 conversationId 格式**: 前后端统一使用排序双 ID 格式 `conv_{minId}_{maxId}`（如 `conv_123_456`），确保 A→B 和 B→A 的会话 ID 一致。前端：`conv_${[currentUserId, targetUserId].sort().join('_')}`；后端：`"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
+- **Mockito Java 25 兼容**: Java 25 下 Mockito inline mock maker 使用 ByteBuddy attach 机制会失败（WSL2 环境尤为明显）。已配置 `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` 使用 `mock-maker-subclass` 模式。**新测试不要尝试改回 inline 模式**
+- **前端 ESLint jsx-a11y**: 所有非交互元素（div/span/article）上的点击事件必须改为语义化的 `button` 元素，或添加 `role="button"` + `tabIndex={0}` + `onKeyDown`。`label` 元素必须通过 `htmlFor` 关联表单控件或使用嵌套结构
+- **前端 ESLint curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`
+- **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect
 
 ---
 

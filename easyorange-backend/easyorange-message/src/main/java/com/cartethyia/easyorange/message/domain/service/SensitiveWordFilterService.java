@@ -1,0 +1,49 @@
+package com.cartethyia.easyorange.message.domain.service;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+@Slf4j
+@Service
+public class SensitiveWordFilterService {
+
+    private static final Set<String> SENSITIVE_WORDS = Set.of(
+            "敏感词示例"
+    );
+
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+
+    public String filter(String content) {
+        if (content == null || content.isBlank()) {
+            return content;
+        }
+
+        String normalized = WHITESPACE_PATTERN.matcher(content.trim()).replaceAll(" ");
+        String result = normalized;
+
+        for (String word : SENSITIVE_WORDS) {
+            result = result.replaceAll("(?i)" + Pattern.quote(word), "***");
+        }
+
+        boolean wasFiltered = !result.equals(normalized);
+        if (wasFiltered) {
+            log.info("action=sensitive_word_filtered originalLength={} filteredLength={}",
+                    content.length(), result.length());
+        }
+
+        return result;
+    }
+
+    public boolean containsSensitive(String content) {
+        if (content == null || content.isBlank()) {
+            return false;
+        }
+        String lower = content.toLowerCase();
+        return SENSITIVE_WORDS.stream().anyMatch(lower::contains);
+    }
+}

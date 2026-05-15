@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { AdminUser } from '../../types/admin';
 
 export interface UserDetailModalProps {
@@ -36,18 +37,12 @@ export function UserDetailModal({
   onSave,
   loading = false,
 }: UserDetailModalProps) {
-  const [selectedStatus, setSelectedStatus] = useState<string>('0');
+  const [selectedStatus, setSelectedStatus] = useState<string>(user?.status ?? '0');
 
   useEffect(() => {
-    if (user) {
-      setSelectedStatus(user.status ?? '0');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (!open) return;
+    if (!open) {return;}
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !loading) onClose();
+      if (e.key === 'Escape' && !loading) {onClose();}
     };
     document.addEventListener('keydown', handleEscape);
     document.body.style.overflow = 'hidden';
@@ -57,7 +52,7 @@ export function UserDetailModal({
     };
   }, [open, loading, onClose]);
 
-  if (!open || !user) return null;
+  if (!open || !user) {return null;}
 
   const handleSave = async () => {
     await onSave(selectedStatus);
@@ -70,27 +65,27 @@ export function UserDetailModal({
     });
 
   const maskPhone = (phone: string | null) => {
-    if (!phone) return '未绑定';
+    if (!phone) {return '未绑定';}
     return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
   };
 
   const maskEmail = (email: string) => {
     const [name, domain] = email.split('@');
-    const maskedName = name.length > 2 ? name[0] + '***' + name[name.length - 1] : name;
+    const maskedName = name.length > 2 ? `${name[0]  }***${  name[name.length - 1]}` : name;
     return `${maskedName}@${domain}`;
   };
 
   const avatarGradient = AVATAR_GRADIENTS[Number(user.userId ?? 0) % AVATAR_GRADIENTS.length];
   const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES['0'];
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 50,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '1rem',
+      position: 'fixed', inset: 0, zIndex: 9999,
     }}>
       {/* Backdrop */}
       <div
+        role="button"
+        tabIndex={0}
         style={{
           position: 'fixed', inset: 0,
           background: 'rgba(42,37,32,0.45)',
@@ -99,11 +94,16 @@ export function UserDetailModal({
           animation: 'modalFadeIn 0.2s ease-out',
         }}
         onClick={() => !loading && onClose()}
+        onKeyDown={(e) => e.key === 'Enter' && !loading && onClose()}
+        aria-label="关闭对话框"
       />
 
       {/* Modal */}
       <div style={{
-        position: 'relative', width: '100%', maxWidth: 440,
+        position: 'fixed', left: '50%', top: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 'calc(100% - 2rem)', maxWidth: 440,
+        maxHeight: 'calc(100vh - 2rem)',
         background: 'rgba(255,255,255,0.92)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
@@ -111,6 +111,7 @@ export function UserDetailModal({
         borderRadius: 24,
         boxShadow: '0 24px 64px rgba(42,37,32,0.18), 0 8px 24px rgba(249,115,22,0.06)',
         overflow: 'hidden',
+        display: 'flex', flexDirection: 'column',
         animation: 'modalSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
       }}>
         {/* Header */}
@@ -161,7 +162,7 @@ export function UserDetailModal({
         </div>
 
         {/* Body */}
-        <div style={{ padding: '1.5rem' }}>
+        <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', minHeight: 0 }}>
           {/* User profile card */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: '1rem',
@@ -255,10 +256,10 @@ export function UserDetailModal({
 
           {/* Status selector */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.5rem' }}>
+            <label htmlFor="status-select" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.5rem' }}>
               调整状态
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem' }} id="status-select" role="radiogroup">
               {statusOptions.map((opt) => {
                 const isActive = selectedStatus === opt.value;
                 const sStyle = STATUS_STYLES[opt.value];
@@ -305,7 +306,7 @@ export function UserDetailModal({
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'all 0.15s ease', opacity: loading ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'rgba(229,224,219,0.3)'; }}
+            onMouseEnter={(e) => { if (!loading) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
             onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
           >
             取消
@@ -342,9 +343,10 @@ export function UserDetailModal({
 
       <style>{`
         @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes modalSlideIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -119,10 +119,10 @@ export function AdminSelect({
             type="button"
             onClick={(e) => { e.preventDefault(); handleSelect(opt.value); }}
             onMouseEnter={(e) => {
-              if (!isActive) e.currentTarget.style.background = 'rgba(249,115,22,0.05)';
+              if (!isActive) {e.currentTarget.style.background = 'rgba(249,115,22,0.05)';}
             }}
             onMouseLeave={(e) => {
-              if (!isActive) e.currentTarget.style.background = 'transparent';
+              if (!isActive) {e.currentTarget.style.background = 'transparent';}
             }}
             style={{
               width: '100%', padding: '0.55rem 0.85rem',

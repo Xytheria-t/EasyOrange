@@ -38,11 +38,11 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 export function throttle<T extends (...args: unknown[]) => unknown>(
     func: T,
     _limit = 300
-): (...args: Parameters<T>) => void {
+): ((...args: Parameters<T>) => void) & { cancel: () => void } {
     let rafId: number | null = null;
     let lastArgs: Parameters<T> | null = null;
 
-    return function (this: unknown, ...args: Parameters<T>) {
+    const throttled = function (this: unknown, ...args: Parameters<T>) {
         lastArgs = args;
         if (rafId === null) {
             rafId = requestAnimationFrame(() => {
@@ -54,4 +54,14 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
             });
         }
     };
+
+    throttled.cancel = () => {
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+        lastArgs = null;
+    };
+
+    return throttled;
 }

@@ -61,7 +61,7 @@ export default function ProductReviewPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Enter') {handleSearch();}
   };
 
   const handleViewDetail = (product: AdminProduct) => {
@@ -79,10 +79,10 @@ export default function ProductReviewPage() {
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
+    if (minutes < 1) {return '刚刚';}
+    if (minutes < 60) {return `${minutes}分钟前`;}
+    if (hours < 24) {return `${hours}小时前`;}
+    if (days < 7) {return `${days}天前`;}
     return date.toLocaleDateString('zh-CN');
   };
 
@@ -112,33 +112,40 @@ export default function ProductReviewPage() {
       {
         key: 'name',
         title: '商品名称',
-        render: (name: string) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <span style={{ fontWeight: 600, color: '#2A2520', fontSize: '0.875rem', maxWidth: 220 }} className="truncate block">{name}</span>
-          </div>
-        ),
+        render: (value) => {
+          const name = value as string;
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <span style={{ fontWeight: 600, color: '#2A2520', fontSize: '0.875rem', maxWidth: 220 }} className="truncate block">{name}</span>
+            </div>
+          );
+        },
       },
       {
         key: 'price',
         title: '价格',
-        render: (price: number) => (
-          <span style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #F97316, #EA580C)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            fontSize: '0.95rem',
-          }}>
-            {formatPrice(price)}
-          </span>
-        ),
+        render: (value) => {
+          const price = value as number;
+          return (
+            <span style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 700,
+              background: 'linear-gradient(135deg, #F97316, #EA580C)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              fontSize: '0.95rem',
+            }}>
+              {formatPrice(price)}
+            </span>
+          );
+        },
       },
       {
         key: 'sellerName',
         title: '卖家',
-        render: (sellerName: string) => (
-          <span style={{ color: '#6B6460', fontSize: '0.85rem' }}>{sellerName}</span>
-        ),
+        render: (value) => {
+          const sellerName = value as string;
+          return <span style={{ color: '#6B6460', fontSize: '0.85rem' }}>{sellerName}</span>;
+        },
       },
       {
         key: 'status',
@@ -149,9 +156,10 @@ export default function ProductReviewPage() {
         key: 'createTime',
         title: '发布时间',
         sortable: true,
-        render: (time: string) => (
-          <span style={{ color: '#9B9590', fontSize: '0.82rem' }}>{formatTime(time)}</span>
-        ),
+        render: (value) => {
+          const time = value as string;
+          return <span style={{ color: '#9B9590', fontSize: '0.82rem' }}>{formatTime(time)}</span>;
+        },
       },
       {
         key: 'actions',

@@ -3,7 +3,7 @@ import { useState, useMemo, useCallback } from 'react';
 export interface Column<T> {
   key: keyof T | string;
   title: string;
-  render?: (value: any, record: T) => React.ReactNode;
+  render?: (value: unknown, record: T) => React.ReactNode;
   sortable?: boolean;
 }
 
@@ -29,7 +29,7 @@ interface SortState {
   direction: SortDirection;
 }
 
-export function AdminTable<T extends Record<string, any>>({
+export function AdminTable<T extends object>({
   columns,
   data,
   rowKey,
@@ -42,29 +42,29 @@ export function AdminTable<T extends Record<string, any>>({
 
   const handleSort = (columnKey: string) => {
     setSortState((prev) => {
-      if (prev.key !== columnKey) return { key: columnKey, direction: 'asc' };
-      if (prev.direction === 'asc') return { key: columnKey, direction: 'desc' };
+      if (prev.key !== columnKey) {return { key: columnKey, direction: 'asc' };}
+      if (prev.direction === 'asc') {return { key: columnKey, direction: 'desc' };}
       return { key: null, direction: null };
     });
   };
 
   const sortedData = useMemo(() => {
-    if (!sortState.key || !sortState.direction) return data;
+    if (!sortState.key || !sortState.direction) {return data;}
     return [...data].sort((a, b) => {
       const aValue = a[sortState.key as keyof T];
       const bValue = b[sortState.key as keyof T];
-      if (aValue === bValue) return 0;
-      if (aValue == null) return 1;
-      if (bValue == null) return -1;
+      if (aValue === bValue) {return 0;}
+      if (aValue == null) {return 1;}
+      if (bValue == null) {return -1;}
       const comparison = aValue < bValue ? -1 : 1;
       return sortState.direction === 'asc' ? comparison : -comparison;
     });
   }, [data, sortState]);
 
-  const getValue = (record: T, key: keyof T | string): any => {
+  const getValue = (record: T, key: keyof T | string): unknown => {
     if (typeof key === 'string' && key.includes('.')) {
-      let value: any = record;
-      for (const k of key.split('.')) value = value?.[k];
+      let value: unknown = record;
+      for (const k of key.split('.')) {value = (value as Record<string, unknown>)?.[k];}
       return value;
     }
     return record[key as keyof T];
@@ -89,19 +89,19 @@ export function AdminTable<T extends Record<string, any>>({
   const totalPages = pagination ? Math.ceil(pagination.total / pagination.pageSize) : 0;
 
   const pageNumbers = useMemo(() => {
-    if (!pagination) return [];
+    if (!pagination) {return [];}
     const pages: (number | 'ellipsis')[] = [];
     const { current, pageSize, total } = pagination;
     const totalP = Math.ceil(total / pageSize);
     if (totalP <= 7) {
-      for (let i = 1; i <= totalP; i++) pages.push(i);
+      for (let i = 1; i <= totalP; i++) {pages.push(i);}
     } else {
       pages.push(1);
-      if (current > 3) pages.push('ellipsis');
+      if (current > 3) {pages.push('ellipsis');}
       for (let i = Math.max(2, current - 1); i <= Math.min(totalP - 1, current + 1); i++) {
         pages.push(i);
       }
-      if (current < totalP - 2) pages.push('ellipsis');
+      if (current < totalP - 2) {pages.push('ellipsis');}
       pages.push(totalP);
     }
     return pages;
@@ -218,13 +218,16 @@ export function AdminTable<T extends Record<string, any>>({
                   onMouseEnter={(e) => handleRowMouseEnter(e, rIdx)}
                   onMouseLeave={(e) => handleRowMouseLeave(e, rIdx)}
                 >
-                  {columns.map((column) => (
-                    <td key={String(column.key)} style={tdStyle}>
-                      {column.render
-                        ? column.render(getValue(record, column.key), record)
-                        : getValue(record, column.key)}
-                    </td>
-                  ))}
+                  {columns.map((column) => {
+                    const cellValue = getValue(record, column.key);
+                    return (
+                      <td key={String(column.key)} style={tdStyle}>
+                        {column.render
+                          ? column.render(cellValue, record)
+                          : (cellValue as React.ReactNode)}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             )}

@@ -1,5 +1,8 @@
 package com.cartethyia.easyorange.framework.exception;
 
+import lombok.Getter;
+
+@Getter
 public class CacheTypeMismatchException extends RuntimeException {
 
     private final Class<?> expectedType;
@@ -14,15 +17,4 @@ public class CacheTypeMismatchException extends RuntimeException {
         this.actualType = actualType;
     }
 
-    public Class<?> getExpectedType() {
-        return expectedType;
-    }
-
-    public Class<?> getActualType() {
-        return actualType;
-    }
-
-    public String getKey() {
-        return key;
-    }
 }

@@ -40,6 +40,7 @@ public class GetPendingReportsHandler {
                 report.getProductId(),
                 report.getReporterId(),
                 report.getReason(),
+                report.getReasonType(),
                 report.statusCode()
         );
     }

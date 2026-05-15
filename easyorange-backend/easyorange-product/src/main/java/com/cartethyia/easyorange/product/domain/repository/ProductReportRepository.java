@@ -13,6 +13,12 @@ public interface ProductReportRepository {
 
     long countPendingReports();
 
+    PageResult<ProductReport> findByStatus(Integer status, int pageNum, int pageSize);
+
+    long countByStatus(Integer status);
+
+    PageResult<ProductReport> findByReporterId(Long reporterId, int pageNum, int pageSize);
+
     void save(ProductReport report);
 
     void update(ProductReport report);

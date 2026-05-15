@@ -8,7 +8,7 @@
 
 | 功能域 | Controller | 说明 |
 |--------|-----------|------|
-| 仪表板 | AdminDashboardController | 统计概览、待处理事项、最近动态 |
+| 仪表板 | AdminDashboardController | 统计概览、待处理事项、趋势分析、最近动态 |
 | 用户管理 | AdminUserController | 用户列表、详情、状态、解锁、重置密码、强制下线、角色 |
 | 商品管理 | AdminProductController | 商品列表、详情、审核(带原因)、批量审核 |
 | 订单管理 | AdminOrderController | 订单列表、详情、取消、强制完成、退款、统计 |

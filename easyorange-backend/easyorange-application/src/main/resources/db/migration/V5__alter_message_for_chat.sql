@@ -1,0 +1,2 @@
+ALTER TABLE `eo_message` ADD COLUMN `msg_status` VARCHAR(20) NOT NULL DEFAULT 'SENT' COMMENT '消息状态（SENT/DELIVERED/READ/RECALLED）' AFTER `is_read`;
+ALTER TABLE `eo_message` ADD COLUMN `recalled_at` DATETIME NULL COMMENT '撤回时间' AFTER `msg_status`;

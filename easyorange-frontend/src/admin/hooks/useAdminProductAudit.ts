@@ -39,7 +39,7 @@ export function useAuditLogs(productId: number | null) {
   return useQuery({
     queryKey: ADMIN_AUDIT_KEYS.logs(productId ?? 0),
     queryFn: async (): Promise<{ data: AuditLogVO[] }> => {
-      if (!productId) return { data: [] };
+      if (!productId) {return { data: [] };}
       return adminApi.getAuditLogs(productId);
     },
     enabled: productId != null && productId > 0,

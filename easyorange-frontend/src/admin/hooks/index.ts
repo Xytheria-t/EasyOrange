@@ -4,6 +4,8 @@ export {
   usePendingItems,
   useRecentUsers,
   useRecentProducts,
+  useTrend,
+  useRecentActivity,
   ADMIN_DASHBOARD_KEYS,
 } from './useAdminDashboard';
 export {

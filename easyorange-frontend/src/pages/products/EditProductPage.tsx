@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Camera, X, Loader2, ArrowLeft, Package, Tag, MapPin, FileText, Settings, Trash2, AlertTriangle, Sparkles, Brain } from 'lucide-react';
 import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@/hooks';
@@ -34,39 +34,40 @@ function EditProductPage() {
     const updateProduct = useUpdateProduct(id ?? '');
     const deleteProduct = useDeleteProduct();
     const { data: categories } = useCategories();
-    const [form, setForm] = useState<FormState>({
-        name: '',
-        description: '',
-        price: '',
-        originalPrice: '',
-        categoryId: '',
-        conditionLevel: '',
-        stock: '1',
-        location: '',
-        contactMethod: '',
-        imageUrls: [],
-    });
     const [errors, setErrors] = useState<FormErrors>({});
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        if (product) {
-            setForm({
-                name: product.title || '',
-                description: product.description || '',
-                price: product.price?.toString() || '',
-                originalPrice: product.originalPrice?.toString() || '',
-                categoryId: product.categoryId?.toString() || '',
-                conditionLevel: product.conditionLevel?.toString() || '',
-                stock: product.stock?.toString() || '1',
-                location: product.location || '',
-                contactMethod: product.contactMethod || '',
-                imageUrls: product.images || [],
-            });
+    const initialForm = useMemo((): FormState => {
+        if (!product) {
+            return {
+                name: '',
+                description: '',
+                price: '',
+                originalPrice: '',
+                categoryId: '',
+                conditionLevel: '',
+                stock: '1',
+                location: '',
+                contactMethod: '',
+                imageUrls: [],
+            };
         }
+        return {
+            name: product.title || '',
+            description: product.description || '',
+            price: product.price?.toString() || '',
+            originalPrice: product.originalPrice?.toString() || '',
+            categoryId: product.categoryId?.toString() || '',
+            conditionLevel: product.conditionLevel?.toString() || '',
+            stock: product.stock?.toString() || '1',
+            location: product.location || '',
+            contactMethod: product.contactMethod || '',
+            imageUrls: product.images || [],
+        };
     }, [product]);
+    const [form, setForm] = useState<FormState>(initialForm);
 
     const validate = (): boolean => {
         const newErrors: FormErrors = {};
@@ -106,7 +107,8 @@ function EditProductPage() {
                 if (result.data?.url) {
                     updateField('imageUrls', [...form.imageUrls, result.data.url]);
                 }
-            } catch {
+            } catch (error) {
+                console.error('图片上传失败:', error);
             } finally {
                 setUploadingIndex(null);
             }
@@ -138,6 +140,7 @@ function EditProductPage() {
             });
             navigate(`/products/${id}`);
         } catch {
+            console.error('更新商品失败');
         }
     };
 
@@ -146,6 +149,7 @@ function EditProductPage() {
             await deleteProduct.mutateAsync(id ?? '');
             navigate('/products');
         } catch {
+            console.error('删除商品失败');
         }
     };
 
@@ -281,10 +285,11 @@ function EditProductPage() {
                         </div>
                         <div className="edit-form-fields">
                             <div className="edit-field-group">
-                                <label className="edit-field-label">
+                                <label className="edit-field-label" htmlFor="edit-product-name">
                                     商品名称 <span className="edit-required">*</span>
                                 </label>
                                 <input
+                                    id="edit-product-name"
                                     type="text"
                                     className={`edit-input ${errors.name ? 'has-error' : ''}`}
                                     value={form.name}
@@ -296,8 +301,9 @@ function EditProductPage() {
                             </div>
 
                             <div className="edit-field-group">
-                                <label className="edit-field-label">商品描述</label>
+                                <label className="edit-field-label" htmlFor="edit-product-desc">商品描述</label>
                                 <textarea
+                                    id="edit-product-desc"
                                     rows={4}
                                     className="edit-textarea"
                                     value={form.description}
@@ -321,10 +327,11 @@ function EditProductPage() {
                         <div className="edit-form-fields">
                             <div className="edit-field-row">
                                 <div className="edit-field-group">
-                                    <label className="edit-field-label">
+                                    <label className="edit-field-label" htmlFor="edit-product-price">
                                         售价 (¥) <span className="edit-required">*</span>
                                     </label>
                                     <input
+                                        id="edit-product-price"
                                         type="number"
                                         step="0.01"
                                         min="0.01"
@@ -336,8 +343,9 @@ function EditProductPage() {
                                     {errors.price && <span className="edit-error-text">{errors.price}</span>}
                                 </div>
                                 <div className="edit-field-group">
-                                    <label className="edit-field-label">原价 (¥)</label>
+                                    <label className="edit-field-label" htmlFor="edit-product-original-price">原价 (¥)</label>
                                     <input
+                                        id="edit-product-original-price"
                                         type="number"
                                         step="0.01"
                                         min="0.01"
@@ -351,10 +359,11 @@ function EditProductPage() {
 
                             <div className="edit-field-row">
                                 <div className="edit-field-group">
-                                    <label className="edit-field-label">
+                                    <label className="edit-field-label" htmlFor="edit-product-category">
                                         商品类别 <span className="edit-required">*</span>
                                     </label>
                                     <select
+                                        id="edit-product-category"
                                         className={`edit-select ${errors.categoryId ? 'has-error' : ''}`}
                                         value={form.categoryId}
                                         onChange={e => updateField('categoryId', e.target.value)}
@@ -367,10 +376,11 @@ function EditProductPage() {
                                     {errors.categoryId && <span className="edit-error-text">{errors.categoryId}</span>}
                                 </div>
                                 <div className="edit-field-group">
-                                    <label className="edit-field-label">
+                                    <label className="edit-field-label" htmlFor="edit-product-condition">
                                         新旧程度 <span className="edit-required">*</span>
                                     </label>
                                     <select
+                                        id="edit-product-condition"
                                         className={`edit-select ${errors.conditionLevel ? 'has-error' : ''}`}
                                         value={form.conditionLevel}
                                         onChange={e => updateField('conditionLevel', e.target.value)}
@@ -398,8 +408,9 @@ function EditProductPage() {
                         <div className="edit-form-fields">
                             <div className="edit-field-row">
                                 <div className="edit-field-group">
-                                    <label className="edit-field-label">库存数量</label>
+                                    <label className="edit-field-label" htmlFor="edit-product-stock">库存数量</label>
                                     <input
+                                        id="edit-product-stock"
                                         type="number"
                                         min="1"
                                         className="edit-input"
@@ -408,8 +419,9 @@ function EditProductPage() {
                                     />
                                 </div>
                                 <div className="edit-field-group">
-                                    <label className="edit-field-label">联系方式</label>
+                                    <label className="edit-field-label" htmlFor="edit-product-contact">联系方式</label>
                                     <input
+                                        id="edit-product-contact"
                                         type="text"
                                         className="edit-input"
                                         value={form.contactMethod}
@@ -421,11 +433,12 @@ function EditProductPage() {
                             </div>
 
                             <div className="edit-field-group">
-                                <label className="edit-field-label">
+                                <label className="edit-field-label" htmlFor="edit-product-location">
                                     <MapPin size={14} style={{ marginRight: 4 }} />
                                     交易地点
                                 </label>
                                 <input
+                                    id="edit-product-location"
                                     type="text"
                                     className="edit-input"
                                     value={form.location}

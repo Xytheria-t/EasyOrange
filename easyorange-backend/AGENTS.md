@@ -11,7 +11,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | MyBatis-Plus | 3.5.16 |
 | MapStruct | 1.6.3 |
 | Flyway | 11.14.1 |
-| JJWT | 0.12.6 |
+| JJWT | 0.13.0 |
 | ArchUnit | 1.4.1 |
 
 ## DDD 分层规则

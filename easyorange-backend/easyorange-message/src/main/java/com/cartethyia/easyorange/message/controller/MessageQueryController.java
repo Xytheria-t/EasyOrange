@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.message.application.query.ConversationQueryHandler;
 import com.cartethyia.easyorange.message.application.query.MessageQueryHandler;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
+import com.cartethyia.easyorange.message.dto.vo.ConversationListVO;
 import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.dto.vo.MessageVO;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
@@ -21,6 +22,12 @@ public class MessageQueryController {
 
     private final MessageQueryHandler queryHandler;
     private final ConversationQueryHandler conversationQueryHandler;
+
+    @GetMapping("/conversations")
+    @PreAuthorize("isAuthenticated()")
+    public Result<List<ConversationListVO>> getConversations() {
+        return Result.success(conversationQueryHandler.getConversations());
+    }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")

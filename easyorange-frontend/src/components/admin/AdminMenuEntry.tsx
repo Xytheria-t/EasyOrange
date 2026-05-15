@@ -6,7 +6,7 @@ export function AdminMenuEntry() {
   const navigate = useNavigate()
   const { isAdmin } = useAdminGuard()
 
-  if (!isAdmin) return null
+  if (!isAdmin) {return null}
 
   return (
     <button

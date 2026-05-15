@@ -13,11 +13,19 @@ export function PasswordModal({ show, form, isLoading, onFormChange, onClose, on
   if (!show) {return null}
 
   return (
-    <div className="modal-overlay active" onClick={onClose}>
+    <div
+      className="modal-overlay active"
+      role="button"
+      tabIndex={0}
+      onClick={onClose}
+      onKeyDown={(e) => e.key === 'Enter' && onClose()}
+      aria-label="关闭对话框"
+    >
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         className="modal modal-content-large"
         style={{ opacity: 1, visibility: 'visible', pointerEvents: 'auto', transform: 'translate(-50%, -50%) scale(1)' }}
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="modal-header">
           <h3>修改密码</h3>
@@ -27,8 +35,9 @@ export function PasswordModal({ show, form, isLoading, onFormChange, onClose, on
         </div>
         <div className="modal-body">
           <div className="form-group">
-            <label className="form-label">旧密码</label>
+            <label className="form-label" htmlFor="old-password">旧密码</label>
             <input
+              id="old-password"
               className="form-input"
               type="password"
               value={form.oldPassword}
@@ -37,8 +46,9 @@ export function PasswordModal({ show, form, isLoading, onFormChange, onClose, on
             />
           </div>
           <div className="form-group">
-            <label className="form-label">新密码</label>
+            <label className="form-label" htmlFor="new-password">新密码</label>
             <input
+              id="new-password"
               className="form-input"
               type="password"
               value={form.newPassword}
@@ -47,8 +57,9 @@ export function PasswordModal({ show, form, isLoading, onFormChange, onClose, on
             />
           </div>
           <div className="form-group">
-            <label className="form-label">确认新密码</label>
+            <label className="form-label" htmlFor="confirm-password">确认新密码</label>
             <input
+              id="confirm-password"
               className="form-input"
               type="password"
               value={form.confirmPassword}

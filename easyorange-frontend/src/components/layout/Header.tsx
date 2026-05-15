@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
-import { Search } from 'lucide-react'
+import { Search, MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 import { throttle } from '@/utils/function'
@@ -30,17 +30,16 @@ export function Header() {
     navigate('/')
   }
 
-  const handleScroll = useCallback(
-    throttle(() => {
-      setIsScrolled(window.scrollY > 20)
-    }, 100),
-    []
-  )
-
   useEffect(() => {
+    const handleScroll = throttle(() => {
+      setIsScrolled(window.scrollY > 20)
+    }, 100)
     window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [handleScroll])
+    return () => {
+      handleScroll.cancel()
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -121,6 +120,17 @@ export function Header() {
           >
             <Search size={19} />
           </button>
+
+          {/* 消息入口（仅登录可见） */}
+          {isLoggedIn && (
+            <button
+              className="floating-nav__icon-btn"
+              onClick={() => navigate('/messages')}
+              aria-label="消息"
+            >
+              <MessageCircle size={19} />
+            </button>
+          )}
 
           {/* 用户菜单 */}
           <div

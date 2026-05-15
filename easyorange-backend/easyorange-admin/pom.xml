@@ -22,6 +22,11 @@
 
         <dependency>
             <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-framework</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-user</artifactId>
             <optional>true</optional>
         </dependency>

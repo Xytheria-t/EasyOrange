@@ -9,16 +9,18 @@ public class ProductReportResponse {
     private Long productId;
     private Long reporterId;
     private String reason;
+    private Integer reasonType;
     private Integer status;
 
     public ProductReportResponse() {
     }
 
-    public ProductReportResponse(Long id, Long productId, Long reporterId, String reason, Integer status) {
+    public ProductReportResponse(Long id, Long productId, Long reporterId, String reason, Integer reasonType, Integer status) {
         this.id = id;
         this.productId = productId;
         this.reporterId = reporterId;
         this.reason = reason;
+        this.reasonType = reasonType;
         this.status = status;
     }
 
@@ -52,6 +54,14 @@ public class ProductReportResponse {
 
     public void setReason(String reason) {
         this.reason = reason;
+    }
+
+    public Integer getReasonType() {
+        return reasonType;
+    }
+
+    public void setReasonType(Integer reasonType) {
+        this.reasonType = reasonType;
     }
 
     public Integer getStatus() {

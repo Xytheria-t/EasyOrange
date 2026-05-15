@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.user.application.service;
 
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ForgotPasswordRequest;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
@@ -20,7 +19,7 @@ public class PasswordResetAppService {
     private final UserEventPort userEventPort;
 
     @Transactional(rollbackFor = Exception.class)
-    public Long forgotPassword(ForgotPasswordRequest request) {
+    public void forgotPassword(ForgotPasswordRequest request) {
         User user = authenticationDomainService.resetPassword(
             request.phone(),
             request.verifyCode(),
@@ -29,12 +28,11 @@ public class PasswordResetAppService {
 
         if (user == null) {
             log.info("Password reset processed for phone: {}", maskPhone(request.phone()));
-            return null;
+            return;
         }
 
         userEventPort.publish(new ForgotPasswordEvent(user.getId(), request.phone()));
 
-        return user.getId();
     }
 
     private String maskPhone(String phone) {

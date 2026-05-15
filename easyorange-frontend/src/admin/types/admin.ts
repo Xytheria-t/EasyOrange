@@ -327,6 +327,19 @@ export interface ProductAuditRequest {
   remark?: string;
 }
 
+export interface TrendItem {
+  month: string;
+  users: number;
+  products: number;
+  orders: number;
+}
+
+export interface ActivityItem {
+  time: string;
+  text: string;
+  type: 'user' | 'product' | 'order' | 'report';
+}
+
 export interface AuditLogVO {
   id: number;
   productId: number;

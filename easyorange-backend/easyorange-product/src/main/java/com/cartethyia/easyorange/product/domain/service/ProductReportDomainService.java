@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.service;
 
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
@@ -15,15 +16,15 @@ public class ProductReportDomainService {
     private final ProductRepository productRepository;
     private final ProductCachePort productCachePort;
 
-    public void reportProduct(Long productId, Long reporterId, String reason) {
-        ProductReport report = ProductReport.create(productId, reporterId, reason);
+    public void reportProduct(Long productId, Long reporterId, String reason, Integer reasonType) {
+        ProductReport report = ProductReport.create(productId, reporterId, reason, reasonType);
         productReportRepository.save(report);
     }
 
     public void processReport(Long reportId, boolean approved) {
         ProductReport report = productReportRepository.findById(reportId);
         if (report == null) {
-            throw new IllegalArgumentException("举报记录不存在: " + reportId);
+            throw new ReportNotFoundException("举报记录不存在: " + reportId);
         }
 
         if (approved) {
@@ -38,5 +39,11 @@ public class ProductReportDomainService {
         }
 
         productReportRepository.update(report);
+    }
+
+    public static class ReportNotFoundException extends BaseBusinessException {
+        public ReportNotFoundException(String message) {
+            super(message);
+        }
     }
 }

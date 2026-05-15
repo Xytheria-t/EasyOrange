@@ -78,9 +78,9 @@ function OrderDetailPage() {
   const getErrorMessage = useCallback((err: unknown, action: string): string => {
     if (err instanceof Error) {
       const msg = err.message;
-      if (msg.includes('B3007') || msg.includes('无法取消')) return '该订单当前无法取消，可能已支付或已发货';
-      if (msg.includes('B3001') || msg.includes('不存在')) return '订单信息已变更，请刷新页面重试';
-      if (msg.includes('B3003') || msg.includes('非订单所有者')) return '您没有权限操作此订单';
+      if (msg.includes('B3007') || msg.includes('无法取消')) {return '该订单当前无法取消，可能已支付或已发货';}
+      if (msg.includes('B3001') || msg.includes('不存在')) {return '订单信息已变更，请刷新页面重试';}
+      if (msg.includes('B3003') || msg.includes('非订单所有者')) {return '您没有权限操作此订单';}
       return msg;
     }
     return `${action}失败，请重试`;

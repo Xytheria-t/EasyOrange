@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
+import com.cartethyia.easyorange.message.dto.vo.ConversationListVO;
 import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
@@ -71,5 +72,56 @@ public class ConversationQueryHandler {
                 .isRead(message.getIsRead())
                 .createTime(message.getCreateTime())
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConversationListVO> getConversations() {
+        Long currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
+
+        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> w
+                        .eq(Message::getSenderId, currentUserId)
+                        .or()
+                        .eq(Message::getReceiverId, currentUserId)
+                )
+                .eq(Message::getDelFlag, 0)
+                .orderByDesc(Message::getCreateTime);
+
+        List<Message> allMessages = messageMapper.selectList(wrapper);
+
+        if (allMessages.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Message> latestMap = new LinkedHashMap<>();
+        Map<Long, Integer> unreadCountMap = new HashMap<>();
+
+        for (Message msg : allMessages) {
+            Long otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
+            latestMap.putIfAbsent(otherUserId, msg);
+            if (msg.getReceiverId().equals(currentUserId) && msg.isUnread()) {
+                unreadCountMap.merge(otherUserId, 1, Integer::sum);
+            }
+        }
+
+        Set<Long> userIds = new HashSet<>(latestMap.keySet());
+        userIds.add(currentUserId);
+        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(userIds);
+
+        return latestMap.entrySet().stream()
+                .map(entry -> {
+                    Long targetUserId = entry.getKey();
+                    Message latestMsg = entry.getValue();
+                    UserInfo targetUser = userMap.get(targetUserId);
+                    return ConversationListVO.builder()
+                            .targetUserId(targetUserId)
+                            .targetUserName(targetUser != null ? targetUser.username() : "未知用户")
+                            .targetUserAvatar(targetUser != null ? targetUser.avatar() : null)
+                            .lastMessage(latestMsg.getContent())
+                            .lastMessageTime(latestMsg.getCreateTime())
+                            .unreadCount(unreadCountMap.getOrDefault(targetUserId, 0))
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface WaveLayer {
   amplitude: number;
@@ -13,78 +13,92 @@ export default function BackgroundEffects() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
   const startTimeRef = useRef<number>(0);
-  const [isVisible, setIsVisible] = useState(true);
-  const [shouldAnimate, setShouldAnimate] = useState(true);
+  const isVisibleState = useState(true);
+  const setIsVisible = isVisibleState[1];
+  const shouldAnimateState = useState(true);
+  const setShouldAnimate = shouldAnimateState[1];
   const lastFrameTimeRef = useRef<number>(0);
   const frameCountRef = useRef<number>(0);
+  const isVisibleRef = useRef(true);
+  const shouldAnimateRef = useRef(true);
+  const drawScheduledRef = useRef(false);
 
   const prefersReducedMotion = typeof window !== 'undefined' 
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
     : false;
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!ctx || !canvas || !isVisible || !shouldAnimate) {
-      animationRef.current = requestAnimationFrame(draw);
-      return;
-    }
-
-    const now = performance.now();
-    const deltaTime = now - lastFrameTimeRef.current;
+  const scheduleDraw = () => {
+    if (drawScheduledRef.current) {return;}
+    drawScheduledRef.current = true;
     
-    if (deltaTime < 16) {
-      animationRef.current = requestAnimationFrame(draw);
-      return;
-    }
-    
-    lastFrameTimeRef.current = now;
-    frameCountRef.current++;
-
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    ctx.clearRect(0, 0, width, height);
-
-    const elapsed = (now - startTimeRef.current) / 1000;
-    const isMobile = window.innerWidth < 768;
-    const waveStep = isMobile ? 48 : 24;
-
-    const waveLayers: WaveLayer[] = [
-      { amplitude: 80, frequency: 0.003, speed: 0.4, offset: 0, color: 'rgba(249, 115, 22, 0.06)' },
-      { amplitude: 60, frequency: 0.004, speed: 0.3, offset: 1.5, color: 'rgba(251, 113, 133, 0.05)' },
-      ...(isMobile ? [] : [
-        { amplitude: 100, frequency: 0.002, speed: 0.2, offset: 3, color: 'rgba(195, 155, 211, 0.04)' },
-      ]),
-    ];
-
-    for (const wave of waveLayers) {
-      ctx.beginPath();
-      const time = elapsed * wave.speed + wave.offset;
-
-      for (let x = 0; x <= width; x += waveStep) {
-        const y = height * 0.5 + Math.sin(x * wave.frequency + time) * wave.amplitude;
-
-        if (x === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
+    const doDraw = () => {
+      drawScheduledRef.current = false;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      if (!ctx || !canvas || !isVisibleRef.current || !shouldAnimateRef.current) {
+        animationRef.current = requestAnimationFrame(scheduleDraw);
+        return;
       }
 
-      ctx.lineTo(width, height);
-      ctx.lineTo(0, height);
-      ctx.closePath();
+      const now = performance.now();
+      const deltaTime = now - lastFrameTimeRef.current;
+      
+      if (deltaTime < 16) {
+        animationRef.current = requestAnimationFrame(scheduleDraw);
+        return;
+      }
+      
+      lastFrameTimeRef.current = now;
+      frameCountRef.current++;
 
-      ctx.fillStyle = wave.color;
-      ctx.fill();
-    }
+      const width = window.innerWidth;
+      const height = window.innerHeight;
 
-    animationRef.current = requestAnimationFrame(draw);
-  }, [isVisible, shouldAnimate]);
+      ctx.clearRect(0, 0, width, height);
+
+      const elapsed = (now - startTimeRef.current) / 1000;
+      const isMobile = window.innerWidth < 768;
+      const waveStep = isMobile ? 48 : 24;
+
+      const waveLayers: WaveLayer[] = [
+        { amplitude: 80, frequency: 0.003, speed: 0.4, offset: 0, color: 'rgba(249, 115, 22, 0.06)' },
+        { amplitude: 60, frequency: 0.004, speed: 0.3, offset: 1.5, color: 'rgba(251, 113, 133, 0.05)' },
+        ...(isMobile ? [] : [
+          { amplitude: 100, frequency: 0.002, speed: 0.2, offset: 3, color: 'rgba(195, 155, 211, 0.04)' },
+        ]),
+      ];
+
+      for (const wave of waveLayers) {
+        ctx.beginPath();
+        const time = elapsed * wave.speed + wave.offset;
+
+        for (let x = 0; x <= width; x += waveStep) {
+          const y = height * 0.5 + Math.sin(x * wave.frequency + time) * wave.amplitude;
+
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+
+        ctx.fillStyle = wave.color;
+        ctx.fill();
+      }
+
+      animationRef.current = requestAnimationFrame(scheduleDraw);
+    };
+    
+    requestAnimationFrame(doDraw);
+  };
 
   useEffect(() => {
     if (prefersReducedMotion) {
+      shouldAnimateRef.current = false;
       setShouldAnimate(false);
       return;
     }
@@ -107,7 +121,10 @@ export default function BackgroundEffects() {
 
     const handleVisibilityChange = () => {
       const visible = !document.hidden;
-      setIsVisible(visible);
+      if (isVisibleRef.current !== visible) {
+        isVisibleRef.current = visible;
+        setIsVisible(visible);
+      }
       if (visible) {
         lastFrameTimeRef.current = performance.now();
       }
@@ -119,7 +136,11 @@ export default function BackgroundEffects() {
     if (container) {
       visibilityObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-          setIsVisible(entry.isIntersecting && !document.hidden);
+          const visible = entry.isIntersecting && !document.hidden;
+          if (isVisibleRef.current !== visible) {
+            isVisibleRef.current = visible;
+            setIsVisible(visible);
+          }
           if (entry.isIntersecting) {
             lastFrameTimeRef.current = performance.now();
           }
@@ -131,7 +152,7 @@ export default function BackgroundEffects() {
     resize();
     startTimeRef.current = performance.now();
     lastFrameTimeRef.current = performance.now();
-    draw();
+    scheduleDraw();
 
     let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
     const handleResize = () => {
@@ -149,7 +170,7 @@ export default function BackgroundEffects() {
       visibilityObserver?.disconnect();
       if (resizeTimeout) {clearTimeout(resizeTimeout);}
     };
-  }, [draw, prefersReducedMotion]);
+  }, [prefersReducedMotion]);
 
   if (prefersReducedMotion) {
     return (

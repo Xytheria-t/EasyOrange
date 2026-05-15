@@ -71,8 +71,8 @@ const DEFAULT_WIDTHS = [150, 300, 600, 1200];
 let cachedWebPSupport: boolean | null = null;
 
 function getWebPSupport(): boolean {
-  if (cachedWebPSupport !== null) return cachedWebPSupport;
-  if (typeof document === 'undefined') return false;
+  if (cachedWebPSupport !== null) {return cachedWebPSupport;}
+  if (typeof document === 'undefined') {return false;}
   const canvas = document.createElement('canvas');
   canvas.width = 1;
   canvas.height = 1;
@@ -142,15 +142,7 @@ function getRetryUrl(url: string, retry: number): string {
 }
 
 function useSupportsWebP(): boolean {
-  const [supports, setSupports] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return getWebPSupport();
-  });
-
-  useEffect(() => {
-    setSupports(getWebPSupport());
-  }, []);
-
+  const [supports] = useState(() => getWebPSupport());
   return supports;
 }
 

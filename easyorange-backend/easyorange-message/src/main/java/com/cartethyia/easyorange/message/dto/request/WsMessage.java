@@ -38,4 +38,8 @@ public class WsMessage {
     private Long businessId;
 
     private LocalDateTime createTime;
+
+    private String conversationId;
+
+    private Long targetUserId;
 }

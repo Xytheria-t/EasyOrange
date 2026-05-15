@@ -39,7 +39,14 @@ export function AdminHeader() {
       </div>
 
       <div className="header-right">
-        <div className="header-user" onClick={handleLogout} title="返回主站">
+        <div
+          className="header-user"
+          role="button"
+          tabIndex={0}
+          onClick={handleLogout}
+          onKeyDown={(e) => e.key === 'Enter' && handleLogout()}
+          title="返回主站"
+        >
           <div className="header-user-avatar">
             {user?.nickname?.charAt(0) || user?.username?.charAt(0) || 'A'}
           </div>

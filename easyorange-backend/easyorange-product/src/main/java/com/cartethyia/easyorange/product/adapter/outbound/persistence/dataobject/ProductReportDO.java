@@ -22,6 +22,8 @@ public class ProductReportDO extends BaseDO {
 
     private String reason;
 
+    private Integer reasonType;
+
     private Integer status;
 
     private String handleResult;

@@ -90,7 +90,7 @@ function ProductsPage() {
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinel) {return;}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -288,7 +288,7 @@ function ProductsPage() {
         <div ref={parentRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
-            if (!row) return null;
+            if (!row) {return null;}
             return (
               <div
                 key={virtualRow.index}

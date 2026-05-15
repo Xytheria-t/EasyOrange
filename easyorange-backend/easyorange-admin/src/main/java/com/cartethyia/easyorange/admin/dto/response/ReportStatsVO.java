@@ -6,6 +6,7 @@ import lombok.Builder;
 public record ReportStatsVO(
     long totalReports,
     long pendingReports,
+    long processingReports,
     long resolvedReports,
     long dismissedReports
 ) {}

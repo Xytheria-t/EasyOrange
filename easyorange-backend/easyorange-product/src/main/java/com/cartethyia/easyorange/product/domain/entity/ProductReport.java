@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.entity;
 
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import lombok.Getter;
 
@@ -12,38 +13,40 @@ public class ProductReport {
     private final Long productId;
     private final Long reporterId;
     private final String reason;
+    private Integer reasonType;
     private ProductReportStatus status;
     private String remark;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    private ProductReport(Long productId, Long reporterId, String reason) {
+    private ProductReport(Long productId, Long reporterId, String reason, Integer reasonType) {
         this.productId = productId;
         this.reporterId = reporterId;
         this.reason = reason;
+        this.reasonType = reasonType;
         this.status = ProductReportStatus.PENDING;
         this.createTime = LocalDateTime.now();
         this.updateTime = LocalDateTime.now();
     }
 
-    public static ProductReport create(Long productId, Long reporterId, String reason) {
+    public static ProductReport create(Long productId, Long reporterId, String reason, Integer reasonType) {
         if (productId == null) {
-            throw new IllegalArgumentException("商品ID不能为空");
+            throw new ReportDomainException("商品ID不能为空");
         }
         if (reporterId == null) {
-            throw new IllegalArgumentException("举报人ID不能为空");
+            throw new ReportDomainException("举报人ID不能为空");
         }
         if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException("举报原因不能为空");
+            throw new ReportDomainException("举报原因不能为空");
         }
-        return new ProductReport(productId, reporterId, reason);
+        return new ProductReport(productId, reporterId, reason, reasonType);
     }
 
     public static ProductReport reconstitute(Long id, Long productId, Long reporterId,
                                               String reason, ProductReportStatus status,
                                               String remark, LocalDateTime createTime,
-                                              LocalDateTime updateTime) {
-        ProductReport report = new ProductReport(productId, reporterId, reason);
+                                              LocalDateTime updateTime, Integer reasonType) {
+        ProductReport report = new ProductReport(productId, reporterId, reason, reasonType);
         report.id = id;
         report.status = status;
         report.remark = remark;
@@ -54,7 +57,7 @@ public class ProductReport {
 
     public void approve(String remark) {
         if (!isPending()) {
-            throw new IllegalStateException("只有待处理的举报才能被批准");
+            throw new ReportDomainException("只有待处理的举报才能被批准");
         }
         this.status = ProductReportStatus.RESOLVED;
         this.remark = remark;
@@ -63,7 +66,7 @@ public class ProductReport {
 
     public void reject(String remark) {
         if (!isPending()) {
-            throw new IllegalStateException("只有待处理的举报才能被驳回");
+            throw new ReportDomainException("只有待处理的举报才能被驳回");
         }
         this.status = ProductReportStatus.DISMISSED;
         this.remark = remark;
@@ -81,6 +84,12 @@ public class ProductReport {
     public void assignId(Long id) {
         if (this.id == null) {
             this.id = id;
+        }
+    }
+
+    public static class ReportDomainException extends BaseBusinessException {
+        public ReportDomainException(String message) {
+            super(message);
         }
     }
 }

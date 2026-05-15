@@ -1,25 +1,9 @@
 import { useMemo } from 'react';
-import { useDashboardStats, useAdminCategories, useAdminOrderStats } from '../../hooks';
-
-const MOCK_TREND = [
-  { month: '1月', users: 120, orders: 85, products: 200 },
-  { month: '2月', users: 145, orders: 102, products: 230 },
-  { month: '3月', users: 180, orders: 130, products: 280 },
-  { month: '4月', users: 210, orders: 156, products: 320 },
-  { month: '5月', users: 250, orders: 198, products: 380 },
-];
+import { useDashboardStats, useAdminCategories, useAdminOrderStats, useTrend, useRecentActivity } from '../../hooks';
 
 const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#8B857E'];
 
-const MOCK_RECENT_ACTIVITY = [
-  { time: '10分钟前', text: '新用户 张同学 完成注册', type: 'user' as const },
-  { time: '25分钟前', text: '商品「高等数学教材」通过审核', type: 'product' as const },
-  { time: '1小时前', text: '订单 EO20260510001 交易完成', type: 'order' as const },
-  { time: '2小时前', text: '用户 李学姐 发布了新商品', type: 'product' as const },
-  { time: '3小时前', text: '收到1条新的举报待处理', type: 'report' as const },
-];
-
-const ACTIVITY_COLORS = {
+const ACTIVITY_COLORS: Record<string, string> = {
   user: '#F97316',
   product: '#C39BD3',
   order: '#10B981',
@@ -30,20 +14,25 @@ export default function StatsPage() {
   const { data: stats, isLoading } = useDashboardStats();
   const { data: categories, isLoading: categoriesLoading } = useAdminCategories();
   const { data: orderStats } = useAdminOrderStats();
+  const { data: trend = [] } = useTrend();
+  const { data: recentActivity = [] } = useRecentActivity();
 
   const statCards = [
-    { label: '总用户数', value: stats?.totalUsers ?? 1280, color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #FB923C)', emoji: '👥' },
-    { label: '总商品数', value: stats?.totalProducts ?? 1420, color: '#C39BD3', gradient: 'linear-gradient(135deg, #C39BD3, #D8B4FE)', emoji: '📦' },
-    { label: '总订单数', value: stats?.totalOrders ?? 856, color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #34D399)', emoji: '🛒' },
-    { label: '今日新增用户', value: stats?.todayNewUsers ?? 42, color: '#FBBF24', gradient: 'linear-gradient(135deg, #FBBF24, #F97316)', emoji: '✨' },
+    { label: '总用户数', value: stats?.totalUsers ?? 0, color: '#F97316', gradient: 'linear-gradient(135deg, #F97316, #FB923C)', emoji: '👥' },
+    { label: '总商品数', value: stats?.totalProducts ?? 0, color: '#C39BD3', gradient: 'linear-gradient(135deg, #C39BD3, #D8B4FE)', emoji: '📦' },
+    { label: '总订单数', value: stats?.totalOrders ?? 0, color: '#10B981', gradient: 'linear-gradient(135deg, #10B981, #34D399)', emoji: '🛒' },
+    { label: '今日新增用户', value: stats?.todayNewUsers ?? 0, color: '#FBBF24', gradient: 'linear-gradient(135deg, #FBBF24, #F97316)', emoji: '✨' },
   ];
 
-  const maxTrendValue = Math.max(...MOCK_TREND.map((t) => Math.max(t.users, t.orders, t.products)));
+  const maxTrendValue = useMemo(() => {
+    if (trend.length === 0) {return 1;}
+    return Math.max(...trend.flatMap((t) => [t.users, t.orders, t.products]));
+  }, [trend]);
 
   const categoryDistribution = useMemo(() => {
-    if (!categories || categories.length === 0) return [];
+    if (!categories || categories.length === 0) {return [];}
     const validCategories = categories.filter((c) => (c.productCount ?? 0) > 0);
-    if (validCategories.length === 0) return [];
+    if (validCategories.length === 0) {return [];}
     const maxCount = Math.max(...validCategories.map((c) => c.productCount ?? 0));
     const total = validCategories.reduce((sum, c) => sum + (c.productCount ?? 0), 0);
     return validCategories
@@ -56,6 +45,12 @@ export default function StatsPage() {
         ratio: maxCount > 0 ? ((c.productCount ?? 0) / maxCount) : 0,
       }));
   }, [categories]);
+
+  const monthLabel = (month: string) => {
+    const parts = month.split('-');
+    if (parts.length === 2) {return parseInt(parts[1]) + '月';}
+    return month;
+  };
 
   return (
     <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', animation: 'pageIn 0.5s ease-out both' }}>
@@ -182,34 +177,39 @@ export default function StatsPage() {
             }}>
               📈 月度趋势
             </h3>
-            {/* Simple bar chart */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', height: 160 }}>
-              {MOCK_TREND.map((item) => (
-                <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, width: '100%' }}>
-                    <div style={{
-                      flex: 1, borderRadius: '6px 6px 2px 2px',
-                      background: 'linear-gradient(180deg, #F97316, rgba(249,115,22,0.5))',
-                      height: `${(item.users / maxTrendValue) * 100}%`,
-                      minHeight: 4, transition: 'height 0.5s ease',
-                    }} />
-                    <div style={{
-                      flex: 1, borderRadius: '6px 6px 2px 2px',
-                      background: 'linear-gradient(180deg, #C39BD3, rgba(195,155,211,0.5))',
-                      height: `${(item.products / maxTrendValue) * 100}%`,
-                      minHeight: 4, transition: 'height 0.5s ease',
-                    }} />
-                    <div style={{
-                      flex: 1, borderRadius: '6px 6px 2px 2px',
-                      background: 'linear-gradient(180deg, #10B981, rgba(16,185,129,0.5))',
-                      height: `${(item.orders / maxTrendValue) * 100}%`,
-                      minHeight: 4, transition: 'height 0.5s ease',
-                    }} />
+            {trend.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, color: '#B5AEA8', fontSize: '0.87rem' }}>
+                加载中…
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', height: 160 }}>
+                {trend.map((item) => (
+                  <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, width: '100%' }}>
+                      <div style={{
+                        flex: 1, borderRadius: '6px 6px 2px 2px',
+                        background: 'linear-gradient(180deg, #F97316, rgba(249,115,22,0.5))',
+                        height: `${(item.users / maxTrendValue) * 100}%`,
+                        minHeight: 4, transition: 'height 0.5s ease',
+                      }} />
+                      <div style={{
+                        flex: 1, borderRadius: '6px 6px 2px 2px',
+                        background: 'linear-gradient(180deg, #C39BD3, rgba(195,155,211,0.5))',
+                        height: `${(item.products / maxTrendValue) * 100}%`,
+                        minHeight: 4, transition: 'height 0.5s ease',
+                      }} />
+                      <div style={{
+                        flex: 1, borderRadius: '6px 6px 2px 2px',
+                        background: 'linear-gradient(180deg, #10B981, rgba(16,185,129,0.5))',
+                        height: `${(item.orders / maxTrendValue) * 100}%`,
+                        minHeight: 4, transition: 'height 0.5s ease',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#9B9590', fontWeight: 500 }}>{monthLabel(item.month)}</span>
                   </div>
-                  <span style={{ fontSize: '0.72rem', color: '#9B9590', fontWeight: 500 }}>{item.month}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             {/* Legend */}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', marginTop: '1rem' }}>
               {[
@@ -223,7 +223,6 @@ export default function StatsPage() {
                 </div>
               ))}
             </div>
-            {/* TODO: Replace MOCK_TREND with real API data when backend adds GET /admin/dashboard/trend endpoint */}
           </div>
 
           {/* Category distribution — powered by useAdminCategories() */}
@@ -290,28 +289,33 @@ export default function StatsPage() {
           }}>
             🔔 最近动态
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {MOCK_RECENT_ACTIVITY.map((activity, idx) => (
-              <div
-                key={idx}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.85rem',
-                  padding: '0.85rem 0',
-                  borderBottom: idx < MOCK_RECENT_ACTIVITY.length - 1 ? '1px solid rgba(229,224,219,0.35)' : 'none',
-                }}
-              >
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: ACTIVITY_COLORS[activity.type],
-                  flexShrink: 0,
-                  boxShadow: `0 0 8px ${ACTIVITY_COLORS[activity.type]}40`,
-                }} />
-                <span style={{ flex: 1, fontSize: '0.87rem', color: '#4A4540' }}>{activity.text}</span>
-                <span style={{ fontSize: '0.78rem', color: '#B5AEA8', flexShrink: 0, whiteSpace: 'nowrap' }}>{activity.time}</span>
-              </div>
-            ))}
-          </div>
-          {/* TODO: Replace MOCK_RECENT_ACTIVITY with real API data when backend adds GET /admin/dashboard/activity endpoint */}
+          {recentActivity.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 100, color: '#B5AEA8', fontSize: '0.87rem' }}>
+              暂无动态
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {recentActivity.map((activity, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.85rem',
+                    padding: '0.85rem 0',
+                    borderBottom: idx < recentActivity.length - 1 ? '1px solid rgba(229,224,219,0.35)' : 'none',
+                  }}
+                >
+                  <div style={{
+                    width: 8, height: 8, borderRadius: '50%',
+                    background: ACTIVITY_COLORS[activity.type] ?? '#9B9590',
+                    flexShrink: 0,
+                    boxShadow: `0 0 8px ${ACTIVITY_COLORS[activity.type] ?? '#9B9590'}40`,
+                  }} />
+                  <span style={{ flex: 1, fontSize: '0.87rem', color: '#4A4540' }}>{activity.text}</span>
+                  <span style={{ fontSize: '0.78rem', color: '#B5AEA8', flexShrink: 0, whiteSpace: 'nowrap' }}>{activity.time}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

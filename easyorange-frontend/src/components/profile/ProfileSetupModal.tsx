@@ -101,34 +101,6 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
     navigate('/')
   }, [addToast, onClose, navigate])
 
-  useEffect(() => {
-    if (isOpen) {
-      openOverlayLayer(OVERLAY_LAYER_ID)
-    } else {
-      closeOverlayLayer(OVERLAY_LAYER_ID)
-    }
-    return () => {
-      closeOverlayLayer(OVERLAY_LAYER_ID)
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen) {return}
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        handleClose()
-      }
-      if (e.key === 'Enter' && !e.shiftKey && !isSubmitting) {
-        e.preventDefault()
-        handleSubmit()
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, handleClose, isSubmitting])
-
-  if (!isOpen) {return null}
-
   const validateField = (field: FormField, value: string): string | null => {
     if (field.required && !value.trim()) {
       return `${field.label}为必填项`
@@ -155,18 +127,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
     return !hasError
   }
 
-  const handleChange = (key: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [key]: value }))
-    if (errors[key]) {
-      setErrors((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    }
-  }
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!validateAll()) {
       addToast({ type: 'warning', message: '请完善所有必填信息' })
       return
@@ -190,7 +151,46 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
     } finally {
       setIsSubmitting(false)
     }
+  }, [formData, addToast, queryClient, onClose, navigate])
+
+  const handleChange = (key: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }))
+    if (errors[key]) {
+      setErrors((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }
   }
+
+  useEffect(() => {
+    if (isOpen) {
+      openOverlayLayer(OVERLAY_LAYER_ID)
+    } else {
+      closeOverlayLayer(OVERLAY_LAYER_ID)
+    }
+    return () => {
+      closeOverlayLayer(OVERLAY_LAYER_ID)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {return}
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose()
+      }
+      if (e.key === 'Enter' && !e.shiftKey && !isSubmitting) {
+        e.preventDefault()
+        handleSubmit()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, handleClose, isSubmitting, handleSubmit])
+
+  if (!isOpen) {return null}
 
   const validCount = formFields.filter((f) => {
     const value = formData[f.key] || ''
@@ -202,24 +202,26 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
     <div
       className="modal-overlay active"
       style={{ zIndex: 2000 }}
+      role="button"
+      tabIndex={0}
       onClick={handleClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="profile-setup-title"
+      onKeyDown={(e) => e.key === 'Enter' && handleClose()}
+      aria-label="关闭对话框"
     >
-      <div
-        className="modal modal-content-large"
-        style={{
-          opacity: 1,
-          visibility: 'visible',
-          pointerEvents: 'auto',
-          transform: 'translate(-50%, -50%) scale(1)',
-          maxWidth: 560,
-          width: '92vw',
-          minWidth: 'auto'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        <div
+          className="modal modal-content-large"
+          style={{
+            opacity: 1,
+            visibility: 'visible',
+            pointerEvents: 'auto',
+            transform: 'translate(-50%, -50%) scale(1)',
+            maxWidth: 560,
+            width: '92vw',
+            minWidth: 'auto'
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
         <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '0.5rem' }}>
           <div>
             <h3 id="profile-setup-title" style={{ fontSize: '1.375rem', fontWeight: 800, letterSpacing: '-0.02em' }}>

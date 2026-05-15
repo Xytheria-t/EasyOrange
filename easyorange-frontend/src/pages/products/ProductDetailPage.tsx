@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
@@ -32,6 +32,24 @@ interface ChatMessage {
   isMine: boolean;
 }
 
+type ImageAction =
+  | { type: 'SET_INDEX'; index: number }
+  | { type: 'SET_LOADED'; loaded: boolean }
+  | { type: 'RESET' };
+
+function imageReducer(state: { currentImageIndex: number; imageLoaded: boolean }, action: ImageAction) {
+  switch (action.type) {
+    case 'SET_INDEX':
+      return { ...state, currentImageIndex: action.index };
+    case 'SET_LOADED':
+      return { ...state, imageLoaded: action.loaded };
+    case 'RESET':
+      return { currentImageIndex: 0, imageLoaded: false };
+    default:
+      return state;
+  }
+}
+
 function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -53,7 +71,7 @@ function ProductDetailPage() {
 
   const queryClient = useQueryClient();
   const createOrder = useCreateOrder();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageState, dispatchImage] = useReducer(imageReducer, { currentImageIndex: 0, imageLoaded: false });
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -64,7 +82,6 @@ function ProductDetailPage() {
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [copied, setCopied] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const productId = id ?? '';
 
@@ -101,34 +118,30 @@ function ProductDetailPage() {
   }, [productId]);
 
   useEffect(() => {
-    setImageLoaded(false);
-    setCurrentImageIndex(0);
+    dispatchImage({ type: 'RESET' });
   }, [productId]);
 
-  const loadChatHistory = useCallback(async () => {
-    if (!product?.sellerId || !token) return;
-    try {
-      const res = await messageApi.getConversation(product.sellerId);
-      const rawData = res.data as unknown as Record<string, unknown>[];
-      const messages = (rawData ?? []).map((msg) => ({
-        id: msg.id as number,
-        senderId: msg.senderId as number,
-        receiverId: msg.receiverId as number,
-        content: msg.content as string,
-        createTime: msg.createTime as string,
-        isMine: msg.senderId === user?.userId,
-      }));
-      setChatMessages(messages.reverse());
-    } catch {
-      setChatMessages([]);
-    }
-  }, [product?.sellerId, token, user?.userId]);
-
   useEffect(() => {
-    if (showChatModal) {
-      loadChatHistory();
-    }
-  }, [showChatModal, loadChatHistory]);
+    if (!showChatModal || !product?.sellerId || !token) {return;}
+    const loadChatHistory = async () => {
+      try {
+        const res = await messageApi.getConversation(product.sellerId);
+        const rawData = res.data as unknown as Record<string, unknown>[];
+        const messages = (rawData ?? []).map((msg) => ({
+          id: msg.id as number,
+          senderId: msg.senderId as number,
+          receiverId: msg.receiverId as number,
+          content: msg.content as string,
+          createTime: msg.createTime as string,
+          isMine: msg.senderId === user?.userId,
+        }));
+        setChatMessages(messages.reverse());
+      } catch {
+        setChatMessages([]);
+      }
+    };
+    loadChatHistory();
+  }, [showChatModal, product?.sellerId, token, user?.userId]);
 
   const submitReview = useMutation({
     mutationFn: async () => {
@@ -162,7 +175,7 @@ function ProductDetailPage() {
   });
 
   const preloadAdjacentImages = useCallback((centerIdx: number, allImages: string[]) => {
-    if (allImages.length <= 1) return;
+    if (allImages.length <= 1) {return;}
     const prevIdx = (centerIdx - 1 + allImages.length) % allImages.length;
     const nextIdx = (centerIdx + 1) % allImages.length;
     preloadImages([allImages[prevIdx], allImages[nextIdx]], { width: 600, format: 'webp', quality: 80 }).catch(() => {});
@@ -216,14 +229,14 @@ function ProductDetailPage() {
     : 0;
 
   const handlePrevImage = () => {
-    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
-    setCurrentImageIndex(prevIndex);
+    const prevIndex = (imageState.currentImageIndex - 1 + images.length) % images.length;
+    dispatchImage({ type: 'SET_INDEX', index: prevIndex });
     preloadAdjacentImages(prevIndex, images);
   };
 
   const handleNextImage = () => {
-    const nextIndex = (currentImageIndex + 1) % images.length;
-    setCurrentImageIndex(nextIndex);
+    const nextIndex = (imageState.currentImageIndex + 1) % images.length;
+    dispatchImage({ type: 'SET_INDEX', index: nextIndex });
     preloadAdjacentImages(nextIndex, images);
   };
 
@@ -255,7 +268,7 @@ function ProductDetailPage() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    if (!product || isOwner) return;
+    if (!product || isOwner) {return;}
     setShowOrderModal(true);
   };
 
@@ -264,8 +277,8 @@ function ProductDetailPage() {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    if (isOwner) return;
-    setShowChatModal(true);
+    if (isOwner) {return;}
+    navigate(`/messages/${product.sellerId}`);
   };
 
   const handleShare = () => {
@@ -284,7 +297,7 @@ function ProductDetailPage() {
   };
 
   const handleSendMessage = async () => {
-    if (!chatMessage.trim() || !product?.sellerId) return;
+    if (!chatMessage.trim() || !product?.sellerId) {return;}
     try {
       await messageApi.sendMessage({
         receiverId: product.sellerId,
@@ -345,14 +358,14 @@ function ProductDetailPage() {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));
-    if (minutes < 1) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
+    if (minutes < 1) {return '刚刚';}
+    if (minutes < 60) {return `${minutes}分钟前`;}
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}小时前`;
+    if (hours < 24) {return `${hours}小时前`;}
     const days = Math.floor(hours / 24);
-    if (days === 1) return '昨天';
-    if (days < 7) return `${days}天前`;
-    if (days < 30) return `${Math.floor(days / 7)}周前`;
+    if (days === 1) {return '昨天';}
+    if (days < 7) {return `${days}天前`;}
+    if (days < 30) {return `${Math.floor(days / 7)}周前`;}
     return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
 
@@ -379,7 +392,7 @@ function ProductDetailPage() {
             返回
           </button>
           <div className="pdp-breadcrumb-trail">
-            <span className="pdp-breadcrumb-item" onClick={() => navigate('/products')}>商城</span>
+            <button type="button" className="pdp-breadcrumb-item" onClick={() => navigate('/products')}>商城</button>
             <BreadcrumbSep size={14} className="pdp-breadcrumb-sep" />
             {product.categoryName && (
               <>
@@ -394,14 +407,14 @@ function ProductDetailPage() {
         <div className="pdp-hero">
           <div className="pdp-gallery">
             <div className="pdp-gallery-main">
-              <div className={`pdp-gallery-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
+              <div className={`pdp-gallery-image-wrapper ${imageState.imageLoaded ? 'loaded' : ''}`}>
                 {(() => {
-                  const fileIdMatch = images[currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
+                  const fileIdMatch = images[imageState.currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
                   const fileId = fileIdMatch?.[1];
-                  const thumbSrc = fileId ? buildThumbnailUrl(fileId, 400) : images[currentImageIndex];
+                  const thumbSrc = fileId ? buildThumbnailUrl(fileId, 400) : images[imageState.currentImageIndex];
                   return (
                     <>
-                      {!imageLoaded && (
+                      {!imageState.imageLoaded && (
                         <Image
                           src={thumbSrc}
                           alt={`${product.title} - 缩略预览`}
@@ -413,20 +426,20 @@ function ProductDetailPage() {
                         />
                       )}
                       <Image
-                        src={images[currentImageIndex]}
-                        alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
+                        src={images[imageState.currentImageIndex]}
+                        alt={`${product.title} - 图片 ${imageState.currentImageIndex + 1}`}
                         className="pdp-gallery-image"
                         loading="eager"
                         fetchPriority="high"
-                        placeholder={imageLoaded ? 'none' : 'none'}
-                        onLoad={() => setImageLoaded(true)}
+                        placeholder={imageState.imageLoaded ? 'none' : 'none'}
+                        onLoad={() => dispatchImage({ type: 'SET_LOADED', loaded: true })}
                         style={{
                           width: '100%',
                           height: '100%',
                           objectFit: 'contain',
-                          position: imageLoaded ? 'relative' : 'absolute',
+                          position: imageState.imageLoaded ? 'relative' : 'absolute',
                           inset: 0,
-                          zIndex: imageLoaded ? 1 : 0,
+                          zIndex: imageState.imageLoaded ? 1 : 0,
                         }}
                       />
                     </>
@@ -449,7 +462,7 @@ function ProductDetailPage() {
                     <ChevronRight size={20} />
                   </button>
                   <div className="pdp-gallery-counter">
-                    {currentImageIndex + 1} / {images.length}
+                    {imageState.currentImageIndex + 1} / {images.length}
                   </div>
                 </>
               )}
@@ -473,8 +486,8 @@ function ProductDetailPage() {
                 {images.map((img, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setCurrentImageIndex(idx)}
-                    className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
+                    onClick={() => dispatchImage({ type: 'SET_INDEX', index: idx })}
+                    className={`pdp-thumb ${idx === imageState.currentImageIndex ? 'active' : ''}`}
                   >
                     <Image
                       src={img}
@@ -784,8 +797,9 @@ function ProductDetailPage() {
             <>
               <div className="pdp-similar-grid">
                 {similarProducts.slice(0, 4).map((item) => (
-                  <div
+                  <button
                     key={item.id}
+                    type="button"
                     className="pdp-similar-card"
                     onClick={() => navigate(`/products/${item.id}`)}
                   >
@@ -802,7 +816,7 @@ function ProductDetailPage() {
                       <h4 className="pdp-similar-title">{item.title}</h4>
                       <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
               <div className="pdp-similar-footer">
@@ -839,8 +853,16 @@ function ProductDetailPage() {
       </div>
 
       {showOrderModal && (
-        <div className="pdp-modal-overlay" onClick={() => setShowOrderModal(false)}>
-          <div className="pdp-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="pdp-modal-overlay"
+          onClick={() => setShowOrderModal(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowOrderModal(false); } }}
+          aria-label="关闭订单确认弹窗"
+        >
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div className="pdp-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">确认购买</h2>
               <button className="pdp-modal-close" onClick={() => setShowOrderModal(false)}>
@@ -872,21 +894,23 @@ function ProductDetailPage() {
 
             <div className="pdp-modal-form">
               <div className="pdp-form-group">
-                <label className="pdp-form-label">交易地点</label>
-                <div
+                <label className="pdp-form-label" htmlFor="order-location">交易地点</label>
+                <button
+                  type="button"
                   className="pdp-form-input"
                   style={{ background: 'rgba(21, 30, 52, 0.04)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                  onClick={() => { setShowOrderModal(false); setShowChatModal(true); }}
+                  onClick={() => { setShowOrderModal(false); navigate(`/messages/${product.sellerId}`); }}
                 >
                   <span style={{ color: '#64748b' }}>私聊卖家协商交易地点</span>
                   <MessageCircle size={16} style={{ color: '#64748b' }} />
-                </div>
+                </button>
               </div>
               <div className="pdp-form-group">
-                <label className="pdp-form-label">
+                <label className="pdp-form-label" htmlFor="order-phone">
                   联系电话 <span className="pdp-form-required">*</span>
                 </label>
                 <input
+                  id="order-phone"
                   type="tel"
                   value={orderForm.phone}
                   onChange={(e) => handleOrderFormChange('phone', e.target.value)}
@@ -896,8 +920,9 @@ function ProductDetailPage() {
                 />
               </div>
               <div className="pdp-form-group">
-                <label className="pdp-form-label">备注</label>
+                <label className="pdp-form-label" htmlFor="order-remark">备注</label>
                 <textarea
+                  id="order-remark"
                   value={orderForm.remark}
                   onChange={(e) => handleOrderFormChange('remark', e.target.value)}
                   placeholder="选填，对卖家留言"
@@ -927,8 +952,16 @@ function ProductDetailPage() {
       )}
 
       {showShareModal && (
-        <div className="pdp-modal-overlay" onClick={() => setShowShareModal(false)}>
-          <div className="pdp-modal pdp-share-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="pdp-modal-overlay"
+          onClick={() => setShowShareModal(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowShareModal(false); } }}
+          aria-label="关闭分享弹窗"
+        >
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div className="pdp-modal pdp-share-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">分享商品</h2>
               <button className="pdp-modal-close" onClick={() => setShowShareModal(false)}>
@@ -961,9 +994,10 @@ function ProductDetailPage() {
               </div>
 
               <div className="pdp-share-link">
-                <label className="pdp-form-label">商品链接</label>
+                <label className="pdp-form-label" htmlFor="share-link">商品链接</label>
                 <div className="pdp-share-link-box">
                   <input
+                    id="share-link"
                     type="text"
                     value={window.location.href}
                     readOnly
@@ -980,8 +1014,16 @@ function ProductDetailPage() {
       )}
 
       {showChatModal && (
-        <div className="pdp-modal-overlay" onClick={() => setShowChatModal(false)}>
-          <div className="pdp-modal pdp-chat-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="pdp-modal-overlay"
+          onClick={() => setShowChatModal(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowChatModal(false); } }}
+          aria-label="关闭聊天弹窗"
+        >
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div className="pdp-modal pdp-chat-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">
                 <MessageCircle size={18} />
@@ -1052,8 +1094,16 @@ function ProductDetailPage() {
       )}
 
       {showReviewModal && (
-        <div className="pdp-modal-overlay" onClick={() => setShowReviewModal(false)}>
-          <div className="pdp-modal" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="pdp-modal-overlay"
+          onClick={() => setShowReviewModal(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowReviewModal(false); } }}
+          aria-label="关闭评价弹窗"
+        >
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          <div className="pdp-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">发表评价</h2>
               <button className="pdp-modal-close" onClick={() => setShowReviewModal(false)}>
@@ -1084,13 +1134,14 @@ function ProductDetailPage() {
 
             <div className="pdp-modal-form">
               <div className="pdp-form-group">
-                <label className="pdp-form-label">评分</label>
-                <div className="pdp-review-stars">
+                <span className="pdp-form-label" id="review-rating-label">评分</span>
+                <div className="pdp-review-stars" role="group" aria-labelledby="review-rating-label">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       className={`pdp-review-star ${star <= reviewForm.rating ? 'active' : ''}`}
                       onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                      aria-label={`${star}星`}
                     >
                       <Star size={24} fill={star <= reviewForm.rating ? 'currentColor' : 'none'} />
                     </button>
@@ -1098,8 +1149,9 @@ function ProductDetailPage() {
                 </div>
               </div>
               <div className="pdp-form-group">
-                <label className="pdp-form-label">评价内容</label>
+                <label className="pdp-form-label" htmlFor="review-content">评价内容</label>
                 <textarea
+                  id="review-content"
                   value={reviewForm.content}
                   onChange={(e) => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
                   placeholder="分享您的购买体验..."

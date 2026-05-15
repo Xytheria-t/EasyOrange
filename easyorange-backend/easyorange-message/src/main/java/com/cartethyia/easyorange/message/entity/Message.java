@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.framework.entity.BaseDO;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
+import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
+import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
@@ -33,6 +35,8 @@ public class Message extends BaseDO {
     private LocalDateTime readTime;
     private Long businessId;
     private Long conversationId;
+    private String msgStatus;
+    private LocalDateTime recalledAt;
 
     public static Message create(Long senderId, Long receiverId, Integer type, String title, String content, Long businessId) {
         Message message = new Message();
@@ -43,6 +47,7 @@ public class Message extends BaseDO {
         message.content = HtmlUtils.htmlEscape(content);
         message.isRead = MessageStatus.UNREAD.getCode();
         message.businessId = businessId;
+        message.msgStatus = MessageStatus.SENT.getCode();
         return message;
     }
 
@@ -80,12 +85,32 @@ public class Message extends BaseDO {
         return new MessageDeletedEvent(this.getId(), userId);
     }
 
+    public MessageRecalledEvent recall(Long operatorId, String conversationId) {
+        if (!this.senderId.equals(operatorId)) {
+            throw new UnauthorizedOperationException("不能撤回他人的消息");
+        }
+        if (MessageStatus.RECALLED.getCode().equals(this.msgStatus)) {
+            throw new MessageDomainException("消息已被撤回");
+        }
+        java.time.Duration elapsed = java.time.Duration.between(this.getCreateTime(), java.time.LocalDateTime.now());
+        if (elapsed.toMinutes() >= 2) {
+            throw new MessageDomainException("消息已超过可撤回时间（2分钟）");
+        }
+        this.msgStatus = MessageStatus.RECALLED.getCode();
+        this.recalledAt = java.time.LocalDateTime.now();
+        return new MessageRecalledEvent(this.getId(), conversationId, operatorId, this.recalledAt);
+    }
+
     public boolean isUnread() {
         return MessageStatus.UNREAD.getCode().equals(this.isRead);
     }
 
     public boolean isOwnedBy(Long userId) {
         return this.receiverId.equals(userId);
+    }
+
+    public boolean isSender(Long userId) {
+        return this.senderId != null && this.senderId.equals(userId);
     }
 
     public void markAsRead() {

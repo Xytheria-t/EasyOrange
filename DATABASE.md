@@ -4,7 +4,7 @@
 
 | 项目 | 说明 |
 |------|------|
-| 数据库 | MySQL 8.0+ |
+| 数据库 | MySQL 8.4 (LTS) |
 | 字符集 | utf8mb4 / utf8mb4_0900_ai_ci |
 | 主键策略 | 雪花算法（BIGINT），Saga/Event 使用 UUID。JSON 层面所有 BIGINT 主键通过 Jackson ToStringSerializer 序列化为 String，防止前端 JS 精度丢失 |
 | 逻辑删除 | del_flag TINYINT（0 正常 / 2 删除） |
@@ -453,6 +453,8 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | read_time | DATETIME | | 已读时间 |
 | business_id | BIGINT | | 业务 ID |
 | conversation_id | BIGINT | | 会话 ID |
+| msg_status | VARCHAR(20) | NOT NULL DEFAULT 'SENT' | 消息状态（SENT / DELIVERED / READ / RECALLED） |
+| recalled_at | DATETIME | | 撤回时间 |
 | + 公共字段 | | | |
 
 **索引**：

@@ -12,6 +12,8 @@ public record AdminReportVO(
     String productImage,
     Long reporterId,
     String reporterName,
+    Integer reasonType,
+    String reasonTypeDesc,
     String reason,
     Integer status,
     String statusDesc,

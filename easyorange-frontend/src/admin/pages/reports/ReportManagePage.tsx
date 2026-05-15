@@ -54,7 +54,7 @@ export default function ReportManagePage() {
   }, [searchInput]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleSearch();
+    if (e.key === 'Enter') {handleSearch();}
   }, [handleSearch]);
 
   const formatDate = (dateStr: string) =>
@@ -73,12 +73,15 @@ export default function ReportManagePage() {
     {
       key: 'productName',
       title: '举报对象',
-      render: (value, _record) => (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontWeight: 600, color: '#2A2520', fontSize: '0.87rem' }}>{value || '未知商品'}</span>
-          <span style={{ fontSize: '0.76rem', color: '#9B9590' }}>商品</span>
-        </div>
-      ),
+      render: (value, _record) => {
+        const productName = value as string | undefined;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontWeight: 600, color: '#2A2520', fontSize: '0.87rem' }}>{productName || '未知商品'}</span>
+            <span style={{ fontSize: '0.76rem', color: '#9B9590' }}>商品</span>
+          </div>
+        );
+      },
     },
     {
       key: 'reason',
@@ -95,31 +98,41 @@ export default function ReportManagePage() {
     {
       key: 'reason',
       title: '举报原因',
-      render: (value) => (
-        <span style={{ color: '#6B6460', fontSize: '0.84rem', maxWidth: 220, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {value}
-        </span>
-      ),
+      render: (value) => {
+        const reason = value as string;
+        return (
+          <span style={{ color: '#6B6460', fontSize: '0.84rem', maxWidth: 220, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {reason}
+          </span>
+        );
+      },
     },
     {
       key: 'reporterName',
       title: '举报人',
-      render: (value) => (
-        <span style={{ fontSize: '0.86rem', color: '#6B6460' }}>{value}</span>
-      ),
+      render: (value) => {
+        const reporterName = value as string;
+        return <span style={{ fontSize: '0.86rem', color: '#6B6460' }}>{reporterName}</span>;
+      },
     },
     {
       key: 'status',
       title: '状态',
-      render: (value) => <StatusBadge status={value} type="report" />,
+      render: (value) => {
+        const status = value as string | number;
+        return <StatusBadge status={status} type="report" />;
+      },
     },
     {
       key: 'createTime',
       title: '举报时间',
       sortable: true,
-      render: (value) => (
-        <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{value ? formatDate(value) : '-'}</span>
-      ),
+      render: (value) => {
+        const timeStr = value as string | undefined;
+        return (
+          <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{timeStr ? formatDate(timeStr) : '-'}</span>
+        );
+      },
     },
     {
       key: 'actions',

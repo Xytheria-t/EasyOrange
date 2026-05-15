@@ -73,11 +73,14 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
             </div>
           </div>
 
-          <div
+          <button
+            type="button"
             className="profile-avatar-wrapper"
             onClick={handleAvatarClick}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleAvatarClick() } }}
             onMouseEnter={() => setAvatarHover(true)}
             onMouseLeave={() => setAvatarHover(false)}
+            aria-label="更换头像"
           >
             {user?.avatar ? (
               <img src={user.avatar} alt="头像" className="profile-avatar-img" />
@@ -97,7 +100,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
               style={{ display: 'none' }}
               onChange={handleAvatarChange}
             />
-          </div>
+          </button>
 
           <div className="profile-info">
             <p className="profile-eyebrow">Welcome back</p>

@@ -74,7 +74,12 @@ product/
 │   ├── port/
 │   │   ├── ProductCachePort.java        # 缓存端口 (domain 定义, application 实现)
 │   │   ├── CategoryCachePort.java
-│   │   └── ProductSnapshotPort.java
+│   │   ├── ProductSnapshotPort.java
+│   │   └── output/                      # 跨模块出站端口
+│   │       ├── OutboundPort.java        # 标记接口
+│   │       ├── SellerInfoPort.java      # 卖家信息查询
+│   │       ├── ProductNotificationPort.java  # 商品事件通知
+│   │       └── ProductSearchIndexPort.java   # 搜索索引
 │   ├── repository/
 │   │   ├── ProductRepository.java       # 写仓储
 │   │   ├── ProductReportRepository.java

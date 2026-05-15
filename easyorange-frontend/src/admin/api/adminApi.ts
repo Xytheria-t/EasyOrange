@@ -1,5 +1,6 @@
 import { request } from '@/api/core/request';
 import type {
+  ActivityItem,
   DashboardStats,
   PendingItems,
   RecentUser,
@@ -8,6 +9,7 @@ import type {
   AdminProduct,
   AdminUserQuery,
   AdminProductQuery,
+  TrendItem,
   UpdateStatusRequest,
   PageData,
   AdminOrder,
@@ -52,6 +54,14 @@ export const adminApi = {
     return request<RecentProduct[]>(`${ADMIN_API_PREFIX}/dashboard/recent-products`, {
       params: { limit }
     });
+  },
+
+  getTrend() {
+    return request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
+  },
+
+  getActivity() {
+    return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
   },
 
   getUsers(params: AdminUserQuery) {

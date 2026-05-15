@@ -35,6 +35,9 @@ class UserRepositoryImplTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private UserEntityMapper entityMapper;
+
     private UserRepositoryImpl userRepository;
 
     @BeforeAll
@@ -49,7 +52,7 @@ class UserRepositoryImplTest {
 
     @BeforeEach
     void setUp() {
-        userRepository = new UserRepositoryImpl(userMapper);
+        userRepository = new UserRepositoryImpl(userMapper, entityMapper);
     }
 
     private UserEntity buildTestEntity() {
@@ -99,6 +102,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserEntity entity = buildTestEntity();
             when(userMapper.selectById(1L)).thenReturn(entity);
+            when(entityMapper.toDomain(entity)).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findById(1L);
 
@@ -120,7 +124,7 @@ class UserRepositoryImplTest {
 
             Optional<User> result = userRepository.findById(999L);
 
-            assertThat(result.isEmpty());
+            assertThat(result).isEmpty();
         }
     }
 
@@ -133,6 +137,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserEntity entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
+            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByUsername("testuser");
 
@@ -147,7 +152,7 @@ class UserRepositoryImplTest {
 
             Optional<User> result = userRepository.findByUsername("nonexistent");
 
-            assertThat(result.isEmpty());
+            assertThat(result).isEmpty();
         }
     }
 
@@ -163,6 +168,12 @@ class UserRepositoryImplTest {
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
                 .build();
+            when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
+                .username("newuser")
+                .password("$2a$10$encoded")
+                .userType(UserType.NORMAL)
+                .status(UserStatus.NORMAL)
+                .build());
             doAnswer(invocation -> {
                 UserEntity e = invocation.getArgument(0);
                 e.setId(1L);
@@ -189,6 +200,12 @@ class UserRepositoryImplTest {
                 .credentials(new Credentials("testuser", "password"))
                 .contactInfo(new ContactInfo("updated@example.com", null))
                 .build();
+            when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
+                .id(1L)
+                .username("testuser")
+                .password("password")
+                .email("updated@example.com")
+                .build());
             when(userMapper.updateById(any(UserEntity.class))).thenReturn(1);
 
             boolean result = userRepository.update(domainUser);
@@ -204,6 +221,11 @@ class UserRepositoryImplTest {
                 .id(999L)
                 .credentials(new Credentials("testuser", "password"))
                 .build();
+            when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
+                .id(999L)
+                .username("testuser")
+                .password("password")
+                .build());
             when(userMapper.updateById(any(UserEntity.class))).thenReturn(0);
 
             boolean result = userRepository.update(domainUser);
@@ -250,7 +272,7 @@ class UserRepositoryImplTest {
         void shouldReturnEmptyWhenAccountIsNull() {
             Optional<User> result = userRepository.findByAccount(null);
 
-            assertThat(result.isEmpty());
+            assertThat(result).isEmpty();
             verify(userMapper, never()).selectOne(any());
         }
 
@@ -259,7 +281,7 @@ class UserRepositoryImplTest {
         void shouldReturnEmptyWhenAccountIsBlank() {
             Optional<User> result = userRepository.findByAccount("   ");
 
-            assertThat(result.isEmpty());
+            assertThat(result).isEmpty();
             verify(userMapper, never()).selectOne(any());
         }
 
@@ -268,6 +290,7 @@ class UserRepositoryImplTest {
         void shouldFindByEmail() {
             UserEntity entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
+            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByAccount("test@example.com");
 
@@ -280,6 +303,7 @@ class UserRepositoryImplTest {
         void shouldFindByPhone() {
             UserEntity entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
+            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByAccount("13812345678");
 
@@ -297,6 +321,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserEntity entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
+            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByPhone("13812345678");
 
@@ -314,6 +339,7 @@ class UserRepositoryImplTest {
         void shouldReturnDomainUser() {
             UserEntity entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
+            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByEmail("test@example.com");
 

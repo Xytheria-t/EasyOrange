@@ -9,25 +9,25 @@ import {
 } from '../../hooks/useAdminDashboard';
 
 function formatTimeAgo(dateString: string | null | undefined): string {
-  if (!dateString) return '未知';
+  if (!dateString) {return '未知';}
   const date = new Date(dateString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
-  if (diffMins < 1) return '刚刚';
-  if (diffMins < 60) return `${diffMins}分钟前`;
-  if (diffHours < 24) return `${diffHours}小时前`;
+  if (diffMins < 1) {return '刚刚';}
+  if (diffMins < 60) {return `${diffMins}分钟前`;}
+  if (diffHours < 24) {return `${diffHours}小时前`;}
   return `${diffDays}天前`;
 }
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 6) return '夜深了';
-  if (hour < 12) return '上午好';
-  if (hour < 14) return '中午好';
-  if (hour < 18) return '下午好';
+  if (hour < 6) {return '夜深了';}
+  if (hour < 12) {return '上午好';}
+  if (hour < 14) {return '中午好';}
+  if (hour < 18) {return '下午好';}
   return '晚上好';
 }
 
@@ -53,7 +53,7 @@ const PRODUCT_ICONS: Record<string, string> = {
 
 function getProductIcon(name: string): string {
   for (const key of Object.keys(PRODUCT_ICONS)) {
-    if (key !== 'default' && name.includes(key)) return PRODUCT_ICONS[key];
+    if (key !== 'default' && name.includes(key)) {return PRODUCT_ICONS[key];}
   }
   return PRODUCT_ICONS.default;
 }

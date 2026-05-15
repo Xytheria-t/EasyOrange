@@ -318,7 +318,10 @@ function FavoritesPage() {
                 <div
                   key={fav.id}
                   className={`fav-card${selectedIds.has(fav.id) ? ' selected' : ''}`}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => navigate(`/products/${product.id}`)}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/products/${product.id}`)}
                 >
                   <div className="fav-card-image">
                     <Image
@@ -330,14 +333,21 @@ function FavoritesPage() {
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
 
-                    <div className="fav-card-checkbox" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="fav-card-checkbox"
+                      role="checkbox"
+                      aria-checked={selectedIds.has(fav.id)}
+                      tabIndex={0}
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         id={`fav-${fav.id}`}
                         checked={selectedIds.has(fav.id)}
                         onChange={() => toggleSelect(fav.id)}
                       />
-                      <label htmlFor={`fav-${fav.id}`} />
+                      <label htmlFor={`fav-${fav.id}`} aria-label="选择此收藏项" />
                     </div>
 
                     <button

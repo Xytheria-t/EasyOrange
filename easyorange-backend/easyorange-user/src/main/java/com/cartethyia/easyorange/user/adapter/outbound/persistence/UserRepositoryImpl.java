@@ -21,11 +21,12 @@ import java.util.Optional;
 public class UserRepositoryImpl implements UserRepository {
 
     private final UserMapper userMapper;
+    private final UserEntityMapper entityMapper;
 
     @Override
     public Optional<User> findById(Long id) {
         return Optional.ofNullable(userMapper.selectById(id))
-            .map(UserEntity::toDomain);
+            .map(entityMapper::toDomain);
     }
 
     @Override
@@ -36,7 +37,7 @@ public class UserRepositoryImpl implements UserRepository {
         LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery()
             .in(UserEntity::getId, ids);
         return userMapper.selectList(wrapper).stream()
-            .map(UserEntity::toDomain)
+            .map(entityMapper::toDomain)
             .toList();
     }
 
@@ -70,12 +71,12 @@ public class UserRepositoryImpl implements UserRepository {
             .or().eq(UserEntity::getEmail, account)
             .or().eq(UserEntity::getPhone, account);
         return Optional.ofNullable(userMapper.selectOne(wrapper))
-            .map(UserEntity::toDomain);
+            .map(entityMapper::toDomain);
     }
 
     @Override
     public User save(User user) {
-        UserEntity entity = UserEntity.from(user);
+        UserEntity entity = entityMapper.from(user);
         int rows = userMapper.insert(entity);
         if (rows == 0) {
             throw new IllegalStateException("用户保存失败");
@@ -85,7 +86,7 @@ public class UserRepositoryImpl implements UserRepository {
 
     @Override
     public boolean update(User user) {
-        UserEntity entity = UserEntity.from(user);
+        UserEntity entity = entityMapper.from(user);
         return userMapper.updateById(entity) > 0;
     }
 
@@ -116,6 +117,6 @@ public class UserRepositoryImpl implements UserRepository {
         LambdaQueryWrapper<UserEntity> wrapper = Wrappers.<UserEntity>lambdaQuery()
             .eq(column, value);
         return Optional.ofNullable(userMapper.selectOne(wrapper))
-            .map(UserEntity::toDomain);
+            .map(entityMapper::toDomain);
     }
 }

@@ -441,12 +441,13 @@ function PublishPage() {
 
               <div className="form-fields-v2">
                 <div className="field-group-v2">
-                  <label className="field-label-v2">
+                  <label className="field-label-v2" htmlFor="name">
                     商品名称
                     <span className="required-mark">*</span>
                   </label>
                   <div className={`input-wrapper-v2 ${errors.name ? 'has-error' : ''}`}>
                     <input
+                      id="name"
                       type="text"
                       name="name"
                       placeholder="给宝贝起个吸引人的名字"
@@ -467,12 +468,13 @@ function PublishPage() {
 
                 <div className="field-row-v2">
                   <div className="field-group-v2">
-                    <label className="field-label-v2">
+                    <label className="field-label-v2" htmlFor="categoryId">
                       商品类别
                       <span className="required-mark">*</span>
                     </label>
                     <div className={`select-wrapper-v2 ${errors.categoryId ? 'has-error' : ''}`}>
                       <select
+                        id="categoryId"
                         value={form.categoryId}
                         onChange={e => updateField('categoryId', e.target.value)}
                         className="field-select-v2"
@@ -493,12 +495,13 @@ function PublishPage() {
                   </div>
 
                   <div className="field-group-v2">
-                    <label className="field-label-v2">
+                    <label className="field-label-v2" htmlFor="conditionLevel">
                       新旧程度
                       <span className="required-mark">*</span>
                     </label>
                     <div className={`select-wrapper-v2 ${errors.conditionLevel ? 'has-error' : ''}`}>
                       <select
+                        id="conditionLevel"
                         name="conditionLevel"
                         value={form.conditionLevel}
                         onChange={e => updateField('conditionLevel', e.target.value)}
@@ -552,9 +555,10 @@ function PublishPage() {
 
               <div className="form-fields-v2">
                 <div className="field-group-v2">
-                  <label className="field-label-v2">商品描述</label>
+                  <label className="field-label-v2" htmlFor="description">商品描述</label>
                   <div className="textarea-wrapper-v2">
                     <textarea
+                      id="description"
                       rows={5}
                       placeholder="详细描述商品的品牌、型号、规格、使用情况等信息，让买家更了解您的宝贝..."
                       value={form.description}
@@ -568,12 +572,13 @@ function PublishPage() {
 
                 <div className="field-row-v2">
                   <div className="field-group-v2">
-                    <label className="field-label-v2">
+                    <label className="field-label-v2" htmlFor="location">
                       <MapPin size={14} />
                       交易地点
                     </label>
                     <div className="input-wrapper-v2">
                       <input
+                        id="location"
                         type="text"
                         name="location"
                         placeholder="如：清水河校区南门"
@@ -586,12 +591,13 @@ function PublishPage() {
                   </div>
 
                   <div className="field-group-v2">
-                    <label className="field-label-v2">
+                    <label className="field-label-v2" htmlFor="contactMethod">
                       <MessageCircle size={14} />
                       联系方式
                     </label>
                     <div className="input-wrapper-v2">
                       <input
+                        id="contactMethod"
                         type="text"
                         placeholder="微信号 / QQ号"
                         value={form.contactMethod}
@@ -620,13 +626,14 @@ function PublishPage() {
               <div className="form-fields-v2">
                 <div className="field-row-v2">
                   <div className="field-group-v2">
-                    <label className="field-label-v2">
+                    <label className="field-label-v2" htmlFor="price">
                       出售价格
                       <span className="required-mark">*</span>
                     </label>
                     <div className={`input-wrapper-v2 price-input-wrapper ${errors.price ? 'has-error' : ''}`}>
                       <span className="price-symbol-v2">¥</span>
                       <input
+                        id="price"
                         type="number"
                         name="price"
                         placeholder="0.00"
@@ -646,10 +653,11 @@ function PublishPage() {
                   </div>
 
                   <div className="field-group-v2">
-                    <label className="field-label-v2">原价（选填）</label>
+                    <label className="field-label-v2" htmlFor="originalPrice">原价（选填）</label>
                     <div className="input-wrapper-v2 price-input-wrapper">
                       <span className="price-symbol-v2">¥</span>
                       <input
+                        id="originalPrice"
                         type="number"
                         placeholder="0.00"
                         step="0.01"
@@ -674,12 +682,13 @@ function PublishPage() {
                 )}
 
                 <div className="field-group-v2" style={{ maxWidth: '200px' }}>
-                  <label className="field-label-v2">
+                  <label className="field-label-v2" htmlFor="stock">
                     <Package size={14} />
                     库存数量
                   </label>
                   <div className="input-wrapper-v2">
                     <input
+                      id="stock"
                       type="number"
                       name="stock"
                       placeholder="1"

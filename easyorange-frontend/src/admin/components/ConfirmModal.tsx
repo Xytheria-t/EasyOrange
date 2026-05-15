@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface ConfirmModalProps {
   open: boolean;
@@ -87,18 +88,18 @@ export function ConfirmModal({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open) {return null;}
 
   const cfg = VARIANT_CONFIG[variant];
 
-  return (
+  return createPortal(
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 50,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '1rem',
+      position: 'fixed', inset: 0, zIndex: 9999,
     }}>
       {/* Backdrop */}
       <div
+        role="button"
+        tabIndex={0}
         style={{
           position: 'fixed', inset: 0,
           background: 'rgba(42,37,32,0.45)',
@@ -107,6 +108,8 @@ export function ConfirmModal({
           animation: 'confirmFadeIn 0.2s ease-out',
         }}
         onClick={() => !loading && onCancel()}
+        onKeyDown={(e) => e.key === 'Enter' && !loading && onCancel()}
+        aria-label="关闭对话框"
       />
 
       {/* Modal */}
@@ -115,7 +118,9 @@ export function ConfirmModal({
         aria-modal="true"
         aria-labelledby="confirm-modal-title"
         style={{
-        position: 'relative', width: '100%', maxWidth: 440,
+        position: 'fixed', left: '50%', top: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: 'calc(100% - 2rem)', maxWidth: 440,
         background: 'rgba(255,255,255,0.94)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
@@ -168,7 +173,7 @@ export function ConfirmModal({
               cursor: loading ? 'not-allowed' : 'pointer',
               transition: 'all 0.15s ease', opacity: loading ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'rgba(229,224,219,0.3)'; }}
+            onMouseEnter={(e) => { if (!loading) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
             onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
           >
             {cancelText}
@@ -203,9 +208,10 @@ export function ConfirmModal({
 
       <style>{`
         @keyframes confirmFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes confirmSlideIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes confirmSlideIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -249,12 +249,14 @@ function SearchPage() {
                                                 >
                                                     <Clock size={10} />
                                                     <span>{item}</span>
-                                                    <span
+                                                    <button
+                                                        type="button"
                                                         className="search-history-remove"
                                                         onClick={(e) => removeFromHistory(item, e)}
+                                                        aria-label={`删除搜索记录 ${item}`}
                                                     >
                                                         <X size={8} />
-                                                    </span>
+                                                    </button>
                                                 </button>
                                             ))}
                                         </div>

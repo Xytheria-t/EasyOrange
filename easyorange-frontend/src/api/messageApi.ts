@@ -2,42 +2,56 @@
  * @fileoverview 消息 API 模块
  */
 
-import type { PageResult, ChatMessage } from '@/types';
+import type { PageResult, ChatSession, ChatMessage } from '@/types';
+import type { RecallPayload } from '@/types/message';
 import { request } from './core/request';
 
 export const messageApi = {
-    getList(_params?: Record<string, unknown>) {
-        return request<PageResult<Record<string, unknown>>>('/messages/list', {
-            method: 'GET'
-        });
-    },
+  getList(_params?: Record<string, unknown>) {
+    return request<PageResult<Record<string, unknown>>>('/messages/list', {
+      method: 'GET'
+    });
+  },
 
-    getConversations() {
-        return request<Record<string, unknown>[]>('/messages/conversations');
-    },
+  getConversations() {
+    return request<ChatSession[]>('/messages/conversations');
+  },
 
-    getConversation(userId: string) {
-        return request<ChatMessage[]>(`/messages/conversation/${userId}`);
-    },
+  getConversation(userId: string | number) {
+    return request<ChatMessage[]>(`/messages/conversation/${userId}`);
+  },
 
-    sendMessage(data: { receiverId: string; content: string }) {
-        return request('/messages', {
-            method: 'POST',
-            body: data
-        });
-    },
+  sendMessage(data: { receiverId: string; content: string }) {
+    return request('/messages', {
+      method: 'POST',
+      body: data
+    });
+  },
 
-    markAsRead(ids: string | string[]) {
-        const idArray = Array.isArray(ids) ? ids : [ids];
-        return request('/messages/read', {
-            method: 'PUT',
-            body: idArray
-        });
-    },
+  markAsRead(ids: (string | number) | (string | number)[]) {
+    const idArray = Array.isArray(ids) ? ids : [ids];
+    return request('/messages/read', {
+      method: 'PUT',
+      body: idArray
+    });
+  },
 
-    delete(id: string) {
-        return request(`/messages/${id}`, {
-            method: 'DELETE'
-        });
-    }
+  delete(id: string) {
+    return request(`/messages/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  typing(data: { conversationId: string; targetUserId: string }) {
+    return request('/messages/typing', {
+      method: 'POST',
+      body: data
+    });
+  },
+
+  recall(messageId: string): Promise<{ data: RecallPayload }> {
+    return request(`/messages/${messageId}/recall`, {
+      method: 'PUT'
+    });
+  }
 };

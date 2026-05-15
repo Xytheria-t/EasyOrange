@@ -84,9 +84,9 @@ function OrdersPage() {
   const getErrorMessage = useCallback((err: unknown): string => {
     if (err instanceof Error) {
       const msg = err.message;
-      if (msg.includes('B3007') || msg.includes('无法取消')) return '该订单当前无法取消，可能已支付或已发货';
-      if (msg.includes('B3001') || msg.includes('不存在')) return '订单信息已变更，请刷新页面重试';
-      if (msg.includes('B3003') || msg.includes('非订单所有者')) return '您没有权限操作此订单';
+      if (msg.includes('B3007') || msg.includes('无法取消')) {return '该订单当前无法取消，可能已支付或已发货';}
+      if (msg.includes('B3001') || msg.includes('不存在')) {return '订单信息已变更，请刷新页面重试';}
+      if (msg.includes('B3003') || msg.includes('非订单所有者')) {return '您没有权限操作此订单';}
       return msg;
     }
     return '操作失败，请重试';
@@ -237,7 +237,10 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
     <div
       className="order-card-premium"
       style={{ animationDelay: `${index * 80}ms` }}
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}
     >
       <div className="order-card-shine" />
 
@@ -290,7 +293,11 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
 
       <div className="order-card-footer-premium">
         <span className="order-card-time-premium">{order.createTime}</span>
-        <div className="order-card-actions-premium" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="order-card-actions-premium"
+          role="group"
+          aria-label="订单操作"
+        >
           {statusKey === 'PENDING_PAYMENT' && (
             <>
               <button

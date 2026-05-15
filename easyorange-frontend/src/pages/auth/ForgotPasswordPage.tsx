@@ -137,10 +137,11 @@ function ForgotPasswordPage() {
             {step === 1 && (
               <div className="forgot-password-form-step">
                 <div className="form-group">
-                  <label className="form-label">手机号</label>
+                  <label className="form-label" htmlFor="forgot-phone">手机号</label>
                   <div className="input-wrapper">
                     <Smartphone size={18} className="input-icon" />
                     <input
+                      id="forgot-phone"
                       className="form-input"
                       type="tel"
                       placeholder="请输入注册时绑定的手机号"
@@ -166,10 +167,11 @@ function ForgotPasswordPage() {
             {step === 2 && (
               <div className="forgot-password-form-step">
                 <div className="form-group">
-                  <label className="form-label">验证码</label>
+                  <label className="form-label" htmlFor="forgot-verify-code">验证码</label>
                   <div className="input-wrapper">
                     <ShieldCheck size={18} className="input-icon" />
                     <input
+                      id="forgot-verify-code"
                       className="form-input"
                       type="text"
                       placeholder="请输入6位验证码"
@@ -196,10 +198,11 @@ function ForgotPasswordPage() {
             {step === 3 && (
               <div className="forgot-password-form-step">
                 <div className="form-group">
-                  <label className="form-label">新密码</label>
+                  <label className="form-label" htmlFor="forgot-new-password">新密码</label>
                   <div className="input-wrapper">
                     <KeyRound size={18} className="input-icon" />
                     <input
+                      id="forgot-new-password"
                       className="form-input"
                       type="password"
                       placeholder="需包含大小写字母和数字，6-20位"
@@ -210,10 +213,11 @@ function ForgotPasswordPage() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">确认新密码</label>
+                  <label className="form-label" htmlFor="forgot-confirm-password">确认新密码</label>
                   <div className="input-wrapper">
                     <KeyRound size={18} className="input-icon" />
                     <input
+                      id="forgot-confirm-password"
                       className="form-input"
                       type="password"
                       placeholder="再次输入新密码"

@@ -56,7 +56,7 @@ export function ProfilePreferences() {
                 <span className="pref-desc">接收订单状态变更提醒</span>
               </div>
               <label className="switch">
-                <input type="checkbox" defaultChecked />
+                <input type="checkbox" defaultChecked aria-label="订单通知" />
                 <span className="switch-slider"></span>
               </label>
             </div>
@@ -66,7 +66,7 @@ export function ProfilePreferences() {
                 <span className="pref-desc">接收私信和系统消息</span>
               </div>
               <label className="switch">
-                <input type="checkbox" defaultChecked />
+                <input type="checkbox" defaultChecked aria-label="消息提醒" />
                 <span className="switch-slider"></span>
               </label>
             </div>
@@ -76,7 +76,7 @@ export function ProfilePreferences() {
                 <span className="pref-desc">接收优惠活动和推荐</span>
               </div>
               <label className="switch">
-                <input type="checkbox" />
+                <input type="checkbox" aria-label="营销推送" />
                 <span className="switch-slider"></span>
               </label>
             </div>
@@ -92,7 +92,7 @@ export function ProfilePreferences() {
                 <span className="pref-desc">其他用户可查看你的资料</span>
               </div>
               <label className="switch">
-                <input type="checkbox" defaultChecked />
+                <input type="checkbox" defaultChecked aria-label="公开个人资料" />
                 <span className="switch-slider"></span>
               </label>
             </div>
@@ -102,7 +102,7 @@ export function ProfilePreferences() {
                 <span className="pref-desc">其他用户可看到你的在线状态</span>
               </div>
               <label className="switch">
-                <input type="checkbox" defaultChecked />
+                <input type="checkbox" defaultChecked aria-label="显示在线状态" />
                 <span className="switch-slider"></span>
               </label>
             </div>

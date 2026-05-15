@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ class UniqueFieldValidatorTest {
 
     @BeforeEach
     void setUp() {
-        when(applicationContext.getBean(eq("userMapper"), eq(BaseMapper.class))).thenReturn(userMapper);
+        lenient().when(applicationContext.getBean(eq("userMapper"), eq(BaseMapper.class))).thenReturn(userMapper);
         validator = new UniqueFieldValidator(applicationContext);
     }
 
@@ -96,25 +96,25 @@ class UniqueFieldValidatorTest {
         @Test
         @DisplayName("unique username - returns true")
         void isValid_uniqueUsername_returnsTrue() {
-            when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(0L);
 
             validator.initialize(new TestUniqueAnnotation("username", "用户名已存在", "id"));
             var request = new RegisterRequest("newuser", "aA123456");
 
             assertThat(validator.isValid(request, null)).isTrue();
-            verify(userMapper).selectCount(any(LambdaQueryWrapper.class));
+            verify(userMapper).selectCount(any(QueryWrapper.class));
         }
 
         @Test
         @DisplayName("duplicate username - returns false")
         void isValid_duplicateUsername_returnsFalse() {
-            when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(1L);
 
             validator.initialize(new TestUniqueAnnotation("username", "用户名已存在", "id"));
             var request = new RegisterRequest("existinguser", "aA123456");
 
             assertThat(validator.isValid(request, null)).isFalse();
-            verify(userMapper).selectCount(any(LambdaQueryWrapper.class));
+            verify(userMapper).selectCount(any(QueryWrapper.class));
         }
 
         @Test
@@ -135,7 +135,7 @@ class UniqueFieldValidatorTest {
         @Test
         @DisplayName("unique email - returns true")
         void isValid_uniqueEmail_returnsTrue() {
-            when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(0L);
 
             validator.initialize(new TestUniqueAnnotation("email", "邮箱已存在", "id"));
             var request = new RegisterRequest("user1", "aA123456", "test@example.com", null);
@@ -146,7 +146,7 @@ class UniqueFieldValidatorTest {
         @Test
         @DisplayName("duplicate email - returns false")
         void isValid_duplicateEmail_returnsFalse() {
-            when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(1L);
 
             validator.initialize(new TestUniqueAnnotation("email", "邮箱已存在", "id"));
             var request = new RegisterRequest("user1", "aA123456", "test@example.com", null);
@@ -162,7 +162,7 @@ class UniqueFieldValidatorTest {
         @Test
         @DisplayName("unique phone - returns true")
         void isValid_uniquePhone_returnsTrue() {
-            when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(0L);
 
             validator.initialize(new TestUniqueAnnotation("phone", "手机号已存在", "id"));
             var request = new RegisterRequest("user1", "aA123456", null, "13800138000");
@@ -173,7 +173,7 @@ class UniqueFieldValidatorTest {
         @Test
         @DisplayName("duplicate phone - returns false")
         void isValid_duplicatePhone_returnsFalse() {
-            when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(1L);
 
             validator.initialize(new TestUniqueAnnotation("phone", "手机号已存在", "id"));
             var request = new RegisterRequest("user1", "aA123456", null, "13800138000");
@@ -222,13 +222,15 @@ class UniqueFieldValidatorTest {
     class UnsupportedFieldTests {
 
         @Test
-        @DisplayName("field not in FIELD_GETTERS map - returns true")
+        @DisplayName("password field - still validates (no field whitelist)")
         void isValid_unsupportedField_returnsTrue() {
+            when(userMapper.selectCount(any(QueryWrapper.class))).thenReturn(0L);
+
             validator.initialize(new TestUniqueAnnotation("password", "error", "id"));
             var request = new RegisterRequest("user1", "aA123456", null, null);
 
             assertThat(validator.isValid(request, null)).isTrue();
-            verifyNoInteractions(userMapper);
+            verify(userMapper).selectCount(any(QueryWrapper.class));
         }
     }
 

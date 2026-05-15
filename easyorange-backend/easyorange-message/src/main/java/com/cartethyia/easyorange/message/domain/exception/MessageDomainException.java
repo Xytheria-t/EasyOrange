@@ -8,7 +8,7 @@ import lombok.Getter;
 @Getter
 public class MessageDomainException extends BaseBusinessException {
 
-    protected MessageDomainException(String message) {
+    public MessageDomainException(String message) {
         super(message);
     }
 
@@ -18,6 +18,10 @@ public class MessageDomainException extends BaseBusinessException {
 
     protected MessageDomainException(IResultCode resultCode, String message) {
         super(resultCode, message);
+    }
+
+    public static MessageDomainException of(String message) {
+        return new MessageDomainException(message);
     }
 
     @Override

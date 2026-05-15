@@ -36,7 +36,7 @@ EasyOrange Platform
   └──────────────────────┘          └──────────────────────┘
          │                                  │
          ▼                                  ▼
-  Vite 8 Dev Server                  MySQL 8.0 + Redis 7
+  Vite 8 Dev Server                  MySQL 8.4 + Redis 7.4
   Port 5173                          Port 3306 + 6379
 ```
 
@@ -50,9 +50,9 @@ EasyOrange Platform
 | **框架** | Spring Boot 4.0.3 | 现代化微服务框架 |
 | **ORM** | MyBatis-Plus 3.5.16 | 高效数据访问层 |
 | **安全** | Spring Security + JWT (jjwt 0.13.0) | 认证授权 |
-| **数据库** | MySQL 8.0 | 关系型数据库 |
+| **数据库** | MySQL 8.4 | 关系型数据库 |
 | **迁移** | Flyway | 数据库版本管理 |
-| **缓存** | Redis 7 | 高性能缓存 |
+| **缓存** | Redis 7.4 | 高性能缓存 |
 | **序列化** | Jackson 3.1.2 | JSON 处理 |
 | **映射** | MapStruct 1.6.3 | 对象映射 |
 | **构建** | Maven | 依赖管理和构建 |
@@ -94,19 +94,23 @@ easyorange/
 │   │   ├── api/                      # API 接口层
 │   │   ├── app/                      # 应用配置（路由、认证会话）
 │   │   ├── components/               # 可复用组件
-│   │   │   ├── layout/               # 布局组件（Header, Footer）
-│   │   │   ├── sections/             # 页面区块组件
+│   │   ├── layout/               # 布局组件（Header, Footer）
+│   │   ├── chat/                 # 聊天组件（ChatHeader, MessageBubble, MessageList, ChatInputBar, TypingIndicator）
+│   │   ├── sections/             # 页面区块组件
 │   │   │   ├── profile/              # 个人中心组件
 │   │   │   ├── products/             # 商品相关组件
 │   │   │   └── ui/                   # 基础 UI 组件
 │   │   ├── features/                 # 业务模块（auth 等）
 │   │   ├── hooks/                    # 自定义 Hooks
-│   │   ├── lib/                      # 库配置（queryClient, motion）
+│   │   └── chat/                 # 聊天 Hooks（useStompChat, useChatMessages, useMessageRecall, useChatNotification, useOfflineQueue）
+│   ├── lib/                      # 库配置（queryClient, motion）
 │   │   ├── pages/                    # 页面组件
+│   │   │   ├── messages/             # 消息页面（MessagesPage, ChatWindowPage）
 │   │   │   └── publish/              # 发布商品子模块
 │   │   ├── routes/                   # 路由配置
 │   │   ├── store/                    # Zustand 状态管理
-│   │   ├── styles/                   # 样式文件（Tailwind + CSS）
+│   │   └── chatStore.ts          # 聊天全局状态（messages, typingUsers, connectionStatus）
+│   ├── styles/                   # 样式文件（Tailwind + CSS）
 │   │   ├── types/                    # 类型定义
 │   │   ├── utils/                    # 工具函数
 │   │   └── main.tsx                  # 入口文件
@@ -243,6 +247,9 @@ npm run dev
 | | `GET /api/payment/status` | 支付状态 |
 | **消息** | `GET /api/messages` | 消息列表 |
 | | `POST /api/messages` | 发送消息 |
+| | `PUT /api/messages/{id}/recall` | 撤回消息（2分钟内） |
+| | `POST /api/messages/typing` | 上报正在输入 |
+| | `PUT /api/messages/read` | 批量标记已读 |
 | **评价** | `POST /api/reviews` | 创建评价 |
 | | `GET /api/reviews/product/{id}` | 商品评价列表 |
 | **统计** | `GET /api/stats` | 平台统计数据 |
@@ -251,7 +258,7 @@ npm run dev
 | **管理端-商品** | `GET/PUT /api/admin/products/*` | 商品列表、详情、状态、审核(带原因)、批量审核 |
 | **管理端-订单** | `GET/PUT /api/admin/orders/*` | 订单列表、详情、取消、强制完成、退款、统计 |
 | **管理端-分类** | CRUD `/api/admin/categories` | 分类 CRUD、树形结构、启用禁用 |
-| **管理端-举报** | `GET/PUT /api/admin/reports/*` | 举报列表、详情、处理(4种动作)、统计 |
+| **管理端-举报** | `GET/PUT /api/admin/reports/*` | 举报列表、详情、处理(6种动作)、统计 |
 
 ## 功能模块
 
@@ -268,6 +275,7 @@ npm run dev
 | 个人中心 | `/profile` | 个人信息、密码修改、偏好设置 | 是 |
 | 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
 | 消息中心 | `/messages` | 站内消息列表 | 是 |
+| 聊天窗口 | `/messages/:targetUserId` | 实时聊天（STOMP WebSocket） | 是 |
 | 我的订单 | `/orders` | 订单列表 | 是 |
 | 订单详情 | `/orders/:id` | 订单详情 | 是 |
 | 收银台 | `/payment` | 在线支付 | 是 |

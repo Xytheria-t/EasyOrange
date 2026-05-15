@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.framework.redis.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
-import com.cartethyia.easyorange.framework.redis.*;
+import com.cartethyia.easyorange.framework.redis.RedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Component
@@ -44,9 +45,7 @@ public class RedisCacheImpl implements RedisCache {
     }
 
     private String generateKey(String key) {
-        if (key == null || key.isEmpty()) {
-            throw new IllegalArgumentException("Key must not be null or empty");
-        }
+        BizRequire.notBlank(key, "Key must not be null or empty");
         return keyPrefix.isEmpty() ? key : keyPrefix + ":" + key;
     }
 
@@ -56,32 +55,20 @@ public class RedisCacheImpl implements RedisCache {
             return null;
         }
         if (type.isInstance(value)) {
-            return (T) value;
+            return type.cast(value);
         }
-        if (type == Long.class && value instanceof Number number) {
-            return (T) Long.valueOf(number.longValue());
-        }
-        if (type == Integer.class && value instanceof Number number) {
-            return (T) Integer.valueOf(number.intValue());
-        }
-        if (type == Double.class && value instanceof Number number) {
-            return (T) Double.valueOf(number.doubleValue());
-        }
-        if (type == Float.class && value instanceof Number number) {
-            return (T) Float.valueOf(number.floatValue());
-        }
-        if (type == Short.class && value instanceof Number number) {
-            return (T) Short.valueOf(number.shortValue());
-        }
-        if (type == Byte.class && value instanceof Number number) {
-            return (T) Byte.valueOf(number.byteValue());
+        if (value instanceof Number n && type != Number.class) {
+            return switch (type) {
+                case Class<?> t when t == Long.class -> (T) Long.valueOf(n.longValue());
+                case Class<?> t when t == Integer.class -> (T) Integer.valueOf(n.intValue());
+                case Class<?> t when t == Double.class -> (T) Double.valueOf(n.doubleValue());
+                case Class<?> t when t == Float.class -> (T) Float.valueOf(n.floatValue());
+                case Class<?> t when t == Short.class -> (T) Short.valueOf(n.shortValue());
+                case Class<?> t when t == Byte.class -> (T) Byte.valueOf(n.byteValue());
+                default -> throw new CacheTypeMismatchException(key, type, value.getClass());
+            };
         }
         throw new CacheTypeMismatchException(key, type, value.getClass());
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T castValue(Object value, Class<T> type) {
-        return castValue(value, type, "unknown");
     }
 
     private <T> Set<T> filterByType(Set<?> candidates, Class<T> type) {
@@ -94,27 +81,24 @@ public class RedisCacheImpl implements RedisCache {
                 .collect(Collectors.toSet());
     }
 
+    @SuppressWarnings("unchecked")
     private <T> Map<String, T> multiGetInternal(Collection<String> keys, Class<T> type) {
         if (keys == null || keys.isEmpty()) {
             return Collections.emptyMap();
         }
-        List<String> prefixedKeys = keys.stream().map(this::generateKey).toList();
-        List<Object> values = redisTemplate.opsForValue().multiGet(prefixedKeys);
+        List<String> rawKeys = keys.stream().map(this::generateKey).toList();
+        List<Object> values = redisTemplate.opsForValue().multiGet(rawKeys);
         if (values == null) {
             return Collections.emptyMap();
         }
+        List<String> keyList = keys instanceof List<String> l ? l : List.copyOf(keys);
         Map<String, T> result = new HashMap<>(keys.size());
-        Iterator<String> keyIterator = keys.iterator();
-        for (Object value : values) {
-            String key = keyIterator.next();
+        IntStream.range(0, values.size()).forEach(i -> {
+            Object value = values.get(i);
             if (value != null) {
-                if (type == null || type.isInstance(value)) {
-                    @SuppressWarnings("unchecked")
-                    T castedValue = (T) value;
-                    result.put(key, castedValue);
-                }
+                result.put(keyList.get(i), type == null ? (T) value : type.cast(value));
             }
-        }
+        });
         return result;
     }
 
@@ -221,7 +205,7 @@ public class RedisCacheImpl implements RedisCache {
     @Override
     public <T> void multiSet(Map<String, T> map) {
         BizRequire.notEmpty(map, "批量缓存数据不能为空");
-        Map<String, Object> prefixedMap = new HashMap<>();
+        Map<String, Object> prefixedMap = new HashMap<>(map.size());
         map.forEach((k, v) -> prefixedMap.put(generateKey(k), v));
         redisTemplate.opsForValue().multiSet(prefixedMap);
     }
@@ -262,7 +246,7 @@ public class RedisCacheImpl implements RedisCache {
     @Override
     public <T> void hashPutAll(String key, Map<String, T> map) {
         BizRequire.notEmpty(map, "缓存数据不能为空");
-        redisTemplate.opsForHash().putAll(generateKey(key), new HashMap<>(map));
+        redisTemplate.opsForHash().putAll(generateKey(key), map);
     }
 
     @Override
@@ -408,16 +392,15 @@ public class RedisCacheImpl implements RedisCache {
             return Collections.emptySet();
         }
         return rawKeys.stream()
-                .map(key -> {
-                    if (keyPrefix.isEmpty()) {
-                        return key;
-                    }
-                    String prefixWithColon = keyPrefix + ":";
-                    if (key.startsWith(prefixWithColon)) {
-                        return key.substring(prefixWithColon.length());
-                    }
-                    return key;
-                })
+                .map(this::stripPrefix)
                 .collect(Collectors.toSet());
+    }
+
+    private String stripPrefix(String key) {
+        if (keyPrefix.isEmpty()) {
+            return key;
+        }
+        String prefixWithColon = keyPrefix + ":";
+        return key.startsWith(prefixWithColon) ? key.substring(prefixWithColon.length()) : key;
     }
 }

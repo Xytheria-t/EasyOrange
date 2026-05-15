@@ -26,9 +26,10 @@ user/
 │   │       └── Unique.java + UniqueFieldValidator.java
 │   └── outbound/
 │       ├── persistence/                 # 持久化适配器
-│       │   ├── UserEntity.java
-│       │   ├── UserMapper.java
-│       │   └── UserRepositoryImpl.java
+│       │   ├── UserEntity.java          # 纯数据库实体（不含映射逻辑）
+│       │   ├── UserEntityMapper.java    # MapStruct: UserEntity ↔ User 聚合根
+│       │   ├── UserMapper.java          # MyBatis-Plus Mapper 接口
+│       │   └── UserRepositoryImpl.java   # 仓储实现（注入 entityMapper）
 │       ├── cache/                       # 缓存适配器
 │       │   ├── RedisLoginAttemptAdapter.java
 │       │   └── RedisSmsCodeAdapter.java
@@ -94,6 +95,17 @@ user/
 
 ## 核心模式
 
+### 对象映射策略
+
+模块内有两层 MapStruct 映射，职责分离：
+
+| Mapper | 方向 | 位置 | 说明 |
+|--------|------|------|------|
+| `UserEntityMapper` | Entity ↔ Domain | `adapter/outbound/persistence/` | 扁平字段 ↔ 嵌套值对象（record 构造） |
+| `UserAssembler` | Domain ↔ VO | `application/assembler/` | 聚合根 ↔ 应用层 DTO（含脱敏、枚举转码） |
+
+`UserEntity` 是纯数据库实体，不含任何 `toDomain()` / `from()` 方法。所有持久化映射逻辑集中在 `UserEntityMapper`。
+
 ### 登录策略模式
 
 `LoginMethod` 枚举定义登录方式（用户名/手机号），`AuthenticationDomainService` 根据策略分发认证逻辑。
@@ -133,10 +145,12 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 1. 判断字段归属的值对象（Credentials / ContactInfo / PersonalInfo / LoginInfo / AuditInfo）或是否应留在聚合根（id, userType, status）
 2. 在对应值对象 record 中新增字段 + 紧凑构造器校验 + `withXxx()` 方法
 3. 创建 Flyway 迁移脚本
-4. 更新 `UserEntity` / `application/dto/UserVO` / `UpdateUserRequest`
-5. 更新 `UserAssembler`（如需 MapStruct 显式映射）
-6. 更新 `User` 聚合根的相关修改方法
-7. 添加测试
+4. 更新 `UserEntity`（新增字段）
+5. 更新 `UserEntityMapper`（toDomain/from 的 @Mapping 或 default 方法）
+6. 更新 `application/dto/UserVO` / `UpdateUserRequest`
+7. 更新 `UserAssembler`（如需 MapStruct 显式映射）
+8. 更新 `User` 聚合根的相关修改方法
+9. 添加测试
 
 ### 添加新登录方式
 
