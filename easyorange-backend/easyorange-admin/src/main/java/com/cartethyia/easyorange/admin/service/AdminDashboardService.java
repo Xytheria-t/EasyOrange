@@ -6,7 +6,9 @@ import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
 import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
 import com.cartethyia.easyorange.admin.dto.response.RecentProductVO;
 import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
+import com.cartethyia.easyorange.admin.dto.response.TopProductVO;
 import com.cartethyia.easyorange.admin.dto.response.TrendVO;
+import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapVO;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -215,6 +217,58 @@ public class AdminDashboardService {
 
         activities.sort(Comparator.comparing(ActivityVO::getTime).reversed());
         return activities.stream().limit(10).collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserActivityHeatmapVO> getUserActivityHeatmap() {
+        LocalDateTime since = LocalDate.now().minusDays(30).atStartOfDay();
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+            "SELECT DAYOFWEEK(oper_time) AS day_of_week, HOUR(oper_time) AS hour, COUNT(*) AS cnt " +
+            "FROM eo_oper_log WHERE oper_time >= ? " +
+            "GROUP BY DAYOFWEEK(oper_time), HOUR(oper_time) " +
+            "ORDER BY day_of_week, hour",
+            since
+        );
+        List<UserActivityHeatmapVO> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            result.add(new UserActivityHeatmapVO(
+                ((Number) row.get("day_of_week")).intValue(),
+                ((Number) row.get("hour")).intValue(),
+                ((Number) row.get("cnt")).longValue()
+            ));
+        }
+        return result;
+    }
+
+    @Transactional(readOnly = true)
+    public List<TopProductVO> getTopProducts(int limit) {
+        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+            "SELECT p.id, p.name, p.view_count, p.price, p.main_image, p.status " +
+            "FROM eo_product p WHERE p.del_flag = 0 AND p.status = 1 " +
+            "ORDER BY p.view_count DESC LIMIT ?",
+            limit
+        );
+
+        ProductStatus[] statuses = ProductStatus.values();
+        Map<Integer, String> statusMap = new java.util.HashMap<>();
+        for (ProductStatus s : statuses) {
+            statusMap.put(s.getCode(), s.getDescription());
+        }
+
+        List<TopProductVO> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            int statusCode = row.get("status") != null ? ((Number) row.get("status")).intValue() : -1;
+            result.add(TopProductVO.builder()
+                .productId(((Number) row.get("id")).longValue())
+                .name((String) row.get("name"))
+                .viewCount(row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0)
+                .price(row.get("price") != null ? (java.math.BigDecimal) row.get("price") : java.math.BigDecimal.ZERO)
+                .mainImage((String) row.get("main_image"))
+                .status(statusCode)
+                .statusDesc(statusMap.getOrDefault(statusCode, "未知"))
+                .build());
+        }
+        return result;
     }
 
     private static LocalDateTime toLocalDateTime(Object value) {
