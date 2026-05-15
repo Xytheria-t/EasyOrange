@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useDashboardStats, useAdminCategories, useAdminOrderStats, useTrend, useRecentActivity } from '../../hooks';
+import TrendChart from '../dashboard/charts/TrendChart';
 
 const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#8B857E'];
 
@@ -24,11 +25,6 @@ export default function StatsPage() {
     { label: '今日新增用户', value: stats?.todayNewUsers ?? 0, color: '#FBBF24', gradient: 'linear-gradient(135deg, #FBBF24, #F97316)', emoji: '✨' },
   ];
 
-  const maxTrendValue = useMemo(() => {
-    if (trend.length === 0) {return 1;}
-    return Math.max(...trend.flatMap((t) => [t.users, t.orders, t.products]));
-  }, [trend]);
-
   const categoryDistribution = useMemo(() => {
     if (!categories || categories.length === 0) {return [];}
     const validCategories = categories.filter((c) => (c.productCount ?? 0) > 0);
@@ -45,12 +41,6 @@ export default function StatsPage() {
         ratio: maxCount > 0 ? ((c.productCount ?? 0) / maxCount) : 0,
       }));
   }, [categories]);
-
-  const monthLabel = (month: string) => {
-    const parts = month.split('-');
-    if (parts.length === 2) {return parseInt(parts[1]) + '月';}
-    return month;
-  };
 
   return (
     <div style={{ position: 'relative', minHeight: 'calc(100vh - 80px)', animation: 'pageIn 0.5s ease-out both' }}>
@@ -163,7 +153,7 @@ export default function StatsPage() {
           gap: '1.25rem', marginBottom: '1.25rem',
           animation: 'cardIn 0.5s ease-out 0.25s both',
         }}>
-          {/* Trend chart */}
+          {/* Trend chart — interactive Recharts version */}
           <div style={{
             background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -173,56 +163,14 @@ export default function StatsPage() {
             <h3 style={{
               fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
               fontSize: '1rem', fontWeight: 700, color: '#2A2520',
-              marginBottom: '1.25rem',
+              marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem',
             }}>
-              📈 月度趋势
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              月度趋势
             </h3>
-            {trend.length === 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 160, color: '#B5AEA8', fontSize: '0.87rem' }}>
-                加载中…
-              </div>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '0.75rem', height: 160 }}>
-                {trend.map((item) => (
-                  <div key={item.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, width: '100%' }}>
-                      <div style={{
-                        flex: 1, borderRadius: '6px 6px 2px 2px',
-                        background: 'linear-gradient(180deg, #F97316, rgba(249,115,22,0.5))',
-                        height: `${(item.users / maxTrendValue) * 100}%`,
-                        minHeight: 4, transition: 'height 0.5s ease',
-                      }} />
-                      <div style={{
-                        flex: 1, borderRadius: '6px 6px 2px 2px',
-                        background: 'linear-gradient(180deg, #C39BD3, rgba(195,155,211,0.5))',
-                        height: `${(item.products / maxTrendValue) * 100}%`,
-                        minHeight: 4, transition: 'height 0.5s ease',
-                      }} />
-                      <div style={{
-                        flex: 1, borderRadius: '6px 6px 2px 2px',
-                        background: 'linear-gradient(180deg, #10B981, rgba(16,185,129,0.5))',
-                        height: `${(item.orders / maxTrendValue) * 100}%`,
-                        minHeight: 4, transition: 'height 0.5s ease',
-                      }} />
-                    </div>
-                    <span style={{ fontSize: '0.72rem', color: '#9B9590', fontWeight: 500 }}>{monthLabel(item.month)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {/* Legend */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.25rem', marginTop: '1rem' }}>
-              {[
-                { label: '用户', color: '#F97316' },
-                { label: '商品', color: '#C39BD3' },
-                { label: '订单', color: '#10B981' },
-              ].map((l) => (
-                <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, background: l.color }} />
-                  <span style={{ fontSize: '0.76rem', color: '#8B857E', fontWeight: 500 }}>{l.label}</span>
-                </div>
-              ))}
-            </div>
+            <TrendChart data={trend} compact={false} height={280} />
           </div>
 
           {/* Category distribution — powered by useAdminCategories() */}
