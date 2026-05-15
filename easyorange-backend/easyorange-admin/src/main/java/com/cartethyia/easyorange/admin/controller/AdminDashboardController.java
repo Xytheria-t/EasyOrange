@@ -5,12 +5,15 @@ import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
 import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
 import com.cartethyia.easyorange.admin.dto.response.RecentProductVO;
 import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
+import com.cartethyia.easyorange.admin.dto.response.TopProductVO;
 import com.cartethyia.easyorange.admin.dto.response.TrendVO;
+import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapVO;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
 import com.cartethyia.easyorange.common.result.Result;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -50,5 +53,15 @@ public class AdminDashboardController {
     @GetMapping("/activity")
     public Result<List<ActivityVO>> getActivity() {
         return Result.success(adminDashboardService.getRecentActivity());
+    }
+
+    @GetMapping("/user-activity-heatmap")
+    public Result<List<UserActivityHeatmapVO>> getUserActivityHeatmap() {
+        return Result.success(adminDashboardService.getUserActivityHeatmap());
+    }
+
+    @GetMapping("/top-products")
+    public Result<List<TopProductVO>> getTopProducts(@RequestParam(defaultValue = "10") int limit) {
+        return Result.success(adminDashboardService.getTopProducts(limit));
     }
 }
