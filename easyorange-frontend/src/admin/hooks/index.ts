@@ -6,6 +6,8 @@ export {
   useRecentProducts,
   useTrend,
   useRecentActivity,
+  useUserActivityHeatmap,
+  useTopProducts,
   ADMIN_DASHBOARD_KEYS,
 } from './useAdminDashboard';
 export {
@@ -41,6 +43,7 @@ export {
   useAdminCategoryTree,
   useCreateCategory,
   useUpdateCategory,
+  useUpdateCategoryStatus,
   useDeleteCategory,
   ADMIN_CATEGORY_KEYS,
 } from './useAdminCategories';
@@ -49,3 +52,9 @@ export {
   useBatchAuditProducts,
   ADMIN_AUDIT_KEYS,
 } from './useAdminProductAudit';
+export {
+  useAdminReviews,
+  useAdminReviewDetail,
+  useDeleteReview,
+  ADMIN_REVIEW_KEYS,
+} from './useAdminReviews';

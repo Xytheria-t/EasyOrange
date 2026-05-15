@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type { ActivityItem, DashboardStats, PendingItems, RecentProduct, RecentUser, TrendItem } from '../types/admin';
+import type { ActivityItem, DashboardStats, PendingItems, RecentProduct, RecentUser, TopProductItem, TrendItem, UserActivityItem } from '../types/admin';
 
 export const ADMIN_DASHBOARD_KEYS = {
   all: ['admin', 'dashboard'] as const,
@@ -86,6 +86,32 @@ export function useRecentActivity() {
     },
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
+    retry: 1,
+  });
+}
+
+export function useUserActivityHeatmap() {
+  return useQuery<UserActivityItem[]>({
+    queryKey: [...ADMIN_DASHBOARD_KEYS.all, 'heatmap'] as const,
+    queryFn: async () => {
+      const response = await adminApi.getUserActivityHeatmap();
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+}
+
+export function useTopProducts(limit = 10) {
+  return useQuery<TopProductItem[]>({
+    queryKey: [...ADMIN_DASHBOARD_KEYS.all, 'top-products', limit] as const,
+    queryFn: async () => {
+      const response = await adminApi.getTopProducts(limit);
+      return response.data ?? [];
+    },
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
     retry: 1,
   });
 }

@@ -368,3 +368,55 @@ export interface ResetPasswordRequest {
 export interface UserUnlockRequest {
   reason?: string;
 }
+
+// ==================== Review Types ====================
+
+export interface AdminReview {
+  reviewId: string;
+  productId: string;
+  productName: string | null;
+  userId: string;
+  username: string | null;
+  userAvatar: string | null;
+  rating: number;
+  content: string;
+  replyContent: string | null;
+  likes: number;
+  status: number;
+  createTime: string | null;
+  updateTime: string | null;
+}
+
+export interface AdminReviewQuery {
+  pageNum: number;
+  pageSize: number;
+  productId?: string;
+  userId?: string;
+  rating?: number;
+  status?: number;
+  keyword?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface AdminReviewDeleteRequest {
+  reason: string;
+}
+
+// ==================== Dashboard Chart Types ====================
+
+export interface UserActivityItem {
+  dayOfWeek: number;
+  hour: number;
+  count: number;
+}
+
+export interface TopProductItem {
+  productId: number;
+  name: string;
+  viewCount: number;
+  price: number;
+  mainImage: string | null;
+  status: number;
+  statusDesc: string;
+}

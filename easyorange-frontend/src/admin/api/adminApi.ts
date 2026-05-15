@@ -10,6 +10,7 @@ import type {
   AdminUserQuery,
   AdminProductQuery,
   TrendItem,
+  TopProductItem,
   UpdateStatusRequest,
   PageData,
   AdminOrder,
@@ -31,6 +32,10 @@ import type {
   UserRoleRequest,
   ResetPasswordRequest,
   UserUnlockRequest,
+  AdminReview,
+  AdminReviewQuery,
+  AdminReviewDeleteRequest,
+  UserActivityItem,
 } from '../types/admin';
 
 const ADMIN_API_PREFIX = '/admin';
@@ -62,6 +67,16 @@ export const adminApi = {
 
   getActivity() {
     return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
+  },
+
+  getUserActivityHeatmap() {
+    return request<UserActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/user-activity-heatmap`);
+  },
+
+  getTopProducts(limit = 10) {
+    return request<TopProductItem[]>(`${ADMIN_API_PREFIX}/dashboard/top-products`, {
+      params: { limit }
+    });
   },
 
   getUsers(params: AdminUserQuery) {
@@ -194,6 +209,13 @@ export const adminApi = {
     });
   },
 
+  updateCategoryStatus(id: number, status: number) {
+    return request<void>(`${ADMIN_API_PREFIX}/categories/${id}/status`, {
+      method: 'PUT',
+      params: { status }
+    });
+  },
+
   deleteCategory(id: number) {
     return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
       method: 'DELETE'
@@ -217,6 +239,25 @@ export const adminApi = {
   handleReport(id: number, data: ReportHandleRequest) {
     return request<void>(`${ADMIN_API_PREFIX}/reports/${id}/handle`, {
       method: 'PUT',
+      body: data
+    });
+  },
+
+  // ==================== Review Management ====================
+
+  getReviews(params: AdminReviewQuery) {
+    return request<PageData<AdminReview>>(`${ADMIN_API_PREFIX}/reviews`, {
+      params: { ...params }
+    });
+  },
+
+  getReviewById(id: string) {
+    return request<AdminReview>(`${ADMIN_API_PREFIX}/reviews/${id}`);
+  },
+
+  deleteReview(id: string, data: AdminReviewDeleteRequest) {
+    return request<void>(`${ADMIN_API_PREFIX}/reviews/${id}`, {
+      method: 'DELETE',
       body: data
     });
   },
