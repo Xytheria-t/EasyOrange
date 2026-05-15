@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StatCard } from './StatCard';
+import TrendChart from './charts/TrendChart';
+import ActivityHeatmap from './charts/ActivityHeatmap';
+import TopProductsChart from './charts/TopProductsChart';
 import {
   useDashboardStats,
   usePendingItems,
   useRecentUsers,
   useRecentProducts,
+  useTrend,
+  useUserActivityHeatmap,
+  useTopProducts,
 } from '../../hooks/useAdminDashboard';
 
 function formatTimeAgo(dateString: string | null | undefined): string {
@@ -145,6 +151,9 @@ export default function DashboardPage() {
   const { data: pendingItems, isLoading: pendingLoading, isError: pendingError, error: pendingErr } = usePendingItems();
   const { data: recentUsers, isLoading: usersLoading, isError: usersError, error: usersErr } = useRecentUsers(5);
   const { data: recentProducts, isLoading: productsLoading, isError: productsError, error: productsErr } = useRecentProducts(5);
+  const { data: trend = [] } = useTrend();
+  const { data: heatmap = [] } = useUserActivityHeatmap();
+  const { data: topProducts = [] } = useTopProducts(10);
 
   const hasAnyError = statsError || pendingError || usersError || productsError;
 
@@ -952,6 +961,93 @@ export default function DashboardPage() {
             </div>
           </section>
         </div>
+
+        {/* ─── CHARTS SECTION — 3-column grid ─── */}
+        <div className="dash-charts-grid-responsive" style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '1.5rem',
+          marginTop: '1.5rem',
+          animation: 'dashContentReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both',
+        }}>
+          {/* Trend chart */}
+          <section style={sectionCard}>
+            <div style={sectionHeader}>
+              <h2 style={sectionTitle}>
+                <span style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 28, height: 28, borderRadius: 8,
+                  background: 'linear-gradient(135deg, rgba(249,115,22,0.1), rgba(249,115,22,0.03))',
+                  marginRight: '0.15rem',
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </span>
+                趋势概览
+              </h2>
+              <Link to="/admin/stats" style={{
+                fontSize: '0.78rem', color: '#F97316', fontWeight: 500,
+                textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.25rem',
+                transition: 'gap 0.2s ease', fontFamily: "'LXGW WenKai', sans-serif",
+              }}
+                onMouseEnter={(e) => { e.currentTarget.style.gap = '0.5rem'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.gap = '0.25rem'; }}
+              >
+                详情
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+              </Link>
+            </div>
+            <div style={{ padding: '0.75rem 0.5rem' }}>
+              <TrendChart data={trend} compact height={180} />
+            </div>
+          </section>
+
+          {/* Activity heatmap */}
+          <section style={sectionCard}>
+            <div style={sectionHeader}>
+              <h2 style={sectionTitle}>
+                <span style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 28, height: 28, borderRadius: 8,
+                  background: 'linear-gradient(135deg, rgba(251,113,133,0.12), rgba(251,113,133,0.03))',
+                  marginRight: '0.15rem',
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FB7185" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+                  </svg>
+                </span>
+                用户活跃时段
+              </h2>
+            </div>
+            <div style={{ padding: '0.5rem' }}>
+              <ActivityHeatmap data={heatmap} />
+            </div>
+          </section>
+
+          {/* Top products */}
+          <section style={sectionCard}>
+            <div style={sectionHeader}>
+              <h2 style={sectionTitle}>
+                <span style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 28, height: 28, borderRadius: 8,
+                  background: 'linear-gradient(135deg, rgba(195,155,211,0.12), rgba(195,155,211,0.03))',
+                  marginRight: '0.15rem',
+                }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C39BD3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </span>
+                Top 浏览量商品
+              </h2>
+            </div>
+            <div style={{ padding: '0.5rem 0.75rem' }}>
+              <TopProductsChart data={topProducts} />
+            </div>
+          </section>
+        </div>
       </div>
 
       {/* ═══════════ ANIMATIONS & RESPONSIVE STYLES ═══════════ */}
@@ -1061,6 +1157,18 @@ export default function DashboardPage() {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
+          }
+        }
+
+        /* ══════ CHARTS GRID RESPONSIVE ══════ */
+        @media (max-width: 1280px) {
+          .dash-charts-grid-responsive {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (max-width: 900px) {
+          .dash-charts-grid-responsive {
+            grid-template-columns: 1fr !important;
           }
         }
 
