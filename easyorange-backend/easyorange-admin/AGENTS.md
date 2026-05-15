@@ -8,12 +8,13 @@
 
 | 功能域 | Controller | 说明 |
 |--------|-----------|------|
-| 仪表板 | AdminDashboardController | 统计概览、待处理事项、趋势分析、最近动态 |
+| 仪表板 | AdminDashboardController | 统计概览、待处理事项、趋势分析、最近动态、用户活跃热力图、Top 浏览量商品 |
 | 用户管理 | AdminUserController | 用户列表、详情、状态、解锁、重置密码、强制下线、角色 |
 | 商品管理 | AdminProductController | 商品列表、详情、审核(带原因)、批量审核 |
 | 订单管理 | AdminOrderController | 订单列表、详情、取消、强制完成、退款、统计 |
 | 分类管理 | AdminCategoryController | 分类 CRUD、树形结构、启用禁用 |
 | 举报管理 | AdminReportController | 举报列表、详情、处理、统计 |
+| 评价管理 | AdminReviewController | 评价列表、详情、删除 |
 
 ## 目录结构
 
@@ -41,7 +42,7 @@ easyorange-admin/
 ```
 easyorange-admin ──optional──> easyorange-common   (Result, PageResult, BusinessException)
                  ──optional──> easyorange-user     (UserMapper, UserEntity, UserStatus)
-                 ──optional──> easyorange-product  (ProductMapper, ProductDO, CategoryDO, ProductReportRepository)
+                 ──optional──> easyorange-product  (ProductMapper, ProductDO, ProductReviewDO, ProductReviewMapper, CategoryDO, ProductReportRepository)
                  ──optional──> easyorange-order     (OrderReadRepository, OrderDO, OrderStatus)
                  ──optional──> easyorange-payment  (支付信息查询)
 ```
