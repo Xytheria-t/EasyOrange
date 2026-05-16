@@ -93,6 +93,7 @@ easy-orange/
 │   │   │   ├── service/SensitiveWordFilterService.java # 敏感词过滤（***替换）
 │   │   │   └── service/RateLimiterService.java   # Redis 滑动窗口限流（消息5条/s, typing1次/2s）
 │   │   ├── application/command/
+│   │   │   ├── SendSystemMessageCommand.java    # 系统通知命令（含 businessId 支持导航）
 │   │   │   ├── RecallMessageCommand.java        # 撤回命令
 │   │   │   └── MessageCommandHandler.java       # 含 recall() + 限流 + 敏感词过滤
 │   │   ├── controller/MessageCommandController.java  # 新增 /{id}/recall, POST /typing
@@ -102,8 +103,11 @@ easy-orange/
 │   │   └── TypingIndicatorService.java          # Redis TTL typing 状态管理
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   ├── easyorange-admin/        # 管理端模块 (独立模块，管理API + 审核工作流)
-│   │   ├── controller/AdminProductAuditController.java  # PUT audit, POST batch-audit, GET audit-logs
-│   │   ├── controller/AdminReportController.java       # 举报管理（列表/详情/处理/批量处理/历史/统计）
+│   │   ├── controller/
+│   │   │   ├── AdminProductController.java        # 商品管理（列表/详情/状态变更）
+│   │   │   ├── AdminProductAuditController.java  # 审核管理（单条/批量审核，审核日志）
+│   │   │   ├── AdminReportController.java        # 举报管理（列表/详情/处理/批量处理/历史/统计）
+│   │   │   └── AdminReviewController.java        # 评价管理（列表/详情/删除）
 │   │   ├── service/
 │   │   │   ├── AdminDashboardService.java
 │   │   │   ├── AdminUserService.java
@@ -112,29 +116,45 @@ easy-orange/
 │   │   │   ├── AdminProductAuditService.java       # 状态校验→写日志→发事件
 │   │   │   ├── AdminOrderService.java
 │   │   │   ├── AdminCategoryService.java
-│   │   │   └── AdminReportService.java             # 含批量处理+处理历史+事件发布
+│   │   │   ├── AdminReportService.java             # 含批量处理+处理历史+事件发布
+│   │   │   └── AdminReviewService.java             # 评价管理（列表/详情/软删除）
 │   │   └── dto/
-│   │       ├── request/                             # 14 个请求 DTO（含 BatchHandleRequest）
-│   │       └── response/                            # 19 个响应 VO（含 TrendVO/ActivityVO）
+│   │       ├── request/                             # 16 个请求 DTO（含 AdminReviewDeleteRequest, AdminReviewQueryRequest）
+│   │       └── response/                            # 20 个响应 VO（含 AdminReviewVO）
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
 │       ├── adapter/event/ProductAuditEventListener.java    # 审核→站内消息通知
 │       └── adapter/event/ReportProcessedEventListener.java # 举报处理→站内消息通知(AFTER_COMMIT+Async)
 ├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
+│   ├── src/testUtils/           # 测试基础设施 (vitest + testing-library + msw)
 │   ├── src/admin/               # 管理后台
 │   │   ├── components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal(Portal), StatCard, AdminMenuEntry
 │   │   ├── pages/
+│   │   │   ├── dashboard/                   # 仪表盘
+│   │   │   ├── users/                       # 用户管理（含 UserDetailModal）
 │   │   │   ├── products/
-│   │   │   │   ├── ProductListPage.tsx          # 商品列表
-│   │   │   │   ├── ProductReviewPage.tsx        # 商品审核页（默认待审核，含状态筛选）
-│   │   │   │   └── ProductDetailDrawer.tsx      # 商品详情抽屉（Portal挂载body，审核维度+原因输入+驳回弹窗+审核时间线）
+│   │   │   │   ├── ProductManagePage.tsx             # 商品管理列表（搜索/筛选/详情/上下架）
+│   │   │   │   ├── ProductManageDetailModal.tsx      # 商品管理详情弹窗（Portal挂载body，含状态变更）
+│   │   │   │   ├── ProductReviewPage.tsx              # 商品审核页（默认待审核，含状态筛选）
+│   │   │   │   └── ProductDetailDrawer.tsx            # 商品详情抽屉（Portal挂载body，审核维度+原因输入+驳回弹窗+审核时间线）
+│   │   │   ├── categories/                 # 分类管理（CategoryManagePage）
 │   │   │   ├── orders/
 │   │   │   │   ├── OrderManagePage.tsx           # 订单管理列表
-│   │   │   │   └── OrderDetailModal.tsx          # 订单详情弹窗（Portal挂载body，含状态/金额/商品/时间/地址/备注）
-│   │   │   ├── users/UserDetailModal.tsx         # 用户详情弹窗（Portal挂载body）
-│   │   ├── hooks/useAdminProductAudit.ts    # useAuditProduct / useBatchAuditProducts / useAuditLogs
-│   │   ├── types/admin.ts                   # 含 AuditLogVO, AuditDimension, ProductAuditRequest
-│   │   └── api/adminApi.ts                  # 含 getAuditLogs() + 增强 auditProduct()
+│   │   │   │   └── OrderDetailModal.tsx          # 订单详情弹窗（Portal挂载body）
+│   │   │   ├── reviews/                     # 评价管理（ReviewManagePage）
+│   │   │   ├── reports/                     # 举报处理（ReportManagePage）
+│   │   │   └── stats/                       # 数据统计（StatsPage）
+│   │   ├── hooks/                           # 12 个 hooks 含 useAdminReviews, useAdminCategories, useAdminProductAudit 等
+│   │   ├── types/admin.ts                   # 含 AuditLogVO, AuditDimension, AdminReview 等类型
+│   │   └── api/adminApi.ts                  # 管理后台所有 API 端点
 │   ├── src/pages/products/ProductDetailPage.tsx  # 用户商品详情（审核状态标签+重提交按钮）
+│   ├── src/pages/products/MyProductsPage.tsx      # 我的发布（状态筛选/查看/编辑）
+│   ├── src/pages/notifications/                  # 通知中心（系统消息列表，Header 铃铛入口）
+│   │   ├── NotificationsPage.tsx                 # 通知列表（分页/标记已读/导航至商品详情）
+│   │   └── notifications.css
+│   ├── src/components/notification/
+│   │   └── NotificationBell.tsx                  # Header 铃铛图标（30s 轮询未读数）
+│   ├── src/api/notificationApi.ts                # 通知 API（列表/未读数/已读/全部已读）
+│   └── src/types/notification.ts                 # NotificationItem, UnreadCount 类型
 ├── doc/                         # 项目文档
 │   ├── 架构/                   # 架构规范文档（已切分为多个子文档）
 │   └── specs/                  # 功能设计规格文档
@@ -162,7 +182,7 @@ order → framework, product, user, payment (通过 Port 接口隔离，optional
 payment → framework
 message → framework, user (通过 UserInfoPort 隔离，optional)
 favorite → framework, product (通过 ProductInfoPort 隔离，optional)
-admin → framework, common, user (optional)
+admin → framework, common, user (optional), product (optional), order (optional), payment (optional)
 ```
 
 > **状态 (2026-05-09)**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。写操作通过事件驱动解耦，查询操作保留同步端口调用。
@@ -238,4 +258,19 @@ docker-compose up -d
 
 # 启动后端
 ./mvnw spring-boot:run -pl easyorange-application
+
+# 前端测试
+cd easyorange-frontend
+
+# 运行所有单元/组件/Hook 测试（15 个文件, 123 个用例）
+npm test
+
+# 监听模式
+npm run test:watch
+
+# 覆盖率报告（当前 ~7% 整体覆盖率，第一阶段目标）
+npm run test:coverage
+
+# E2E 测试（需先启动 dev server）
+npm run test:e2e
 ```
