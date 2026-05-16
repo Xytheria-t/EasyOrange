@@ -1,0 +1,73 @@
+import { describe, it, expect } from 'vitest';
+import { normalizeProduct, calculateDiscount, getConditionNameFromString, isHotProduct } from './product';
+
+describe('normalizeProduct', () => {
+  it('normalizes a raw product record', () => {
+    const raw = {
+      id: '1',
+      title: '测试',
+      description: '描述',
+      price: 100,
+      categoryId: 1,
+      status: 1,
+      condition: 1,
+      images: [],
+      sellerId: 'u1',
+      createTime: '2026-01-01',
+      updateTime: '2026-01-01',
+    };
+
+    const product = normalizeProduct(raw);
+    expect(product.id).toBe('1');
+    expect(product.title).toBe('测试');
+    expect(product.price).toBe(100);
+    expect(product.status).toBe('ONLINE');
+  });
+
+  it('uses defaults for missing fields', () => {
+    const product = normalizeProduct({ id: '1', price: 50, categoryId: 1, sellerId: 'u1' } as Record<string, unknown>);
+    expect(product.title).toBe('');
+    expect(product.description).toBe('');
+    expect(product.status).toBe('ONLINE');
+    expect(product.sellerName).toBe('匿名用户');
+  });
+});
+
+describe('calculateDiscount', () => {
+  it('calculates discount ratio', () => {
+    expect(calculateDiscount(80, 100)).toBe(0.8);
+  });
+
+  it('returns null when originalPrice is missing', () => {
+    expect(calculateDiscount(80, null)).toBeNull();
+  });
+
+  it('returns null when current >= original', () => {
+    expect(calculateDiscount(100, 100)).toBeNull();
+    expect(calculateDiscount(120, 100)).toBeNull();
+  });
+});
+
+describe('getConditionNameFromString', () => {
+  it('maps known condition strings', () => {
+    expect(getConditionNameFromString('NEW')).toBe('全新');
+    expect(getConditionNameFromString('LIKE_NEW')).toBe('几乎全新');
+    expect(getConditionNameFromString('GOOD')).toBe('良好');
+  });
+
+  it('returns original string for unknown condition', () => {
+    expect(getConditionNameFromString('UNKNOWN')).toBe('UNKNOWN');
+  });
+});
+
+describe('isHotProduct', () => {
+  it('returns true when viewCount >= 100', () => {
+    expect(isHotProduct(100)).toBe(true);
+    expect(isHotProduct(200)).toBe(true);
+  });
+
+  it('returns false when viewCount < 100', () => {
+    expect(isHotProduct(99)).toBe(false);
+    expect(isHotProduct(0)).toBe(false);
+  });
+});
