@@ -55,5 +55,21 @@
       "version": "detect"
     }
   },
-  "ignorePatterns": ["node_modules/", "dist/"]
+  "ignorePatterns": ["node_modules/", "dist/"],
+  "overrides": [
+    {
+      "files": ["*.test.ts", "*.test.tsx"],
+      "globals": {
+        "describe": "readonly",
+        "it": "readonly",
+        "test": "readonly",
+        "expect": "readonly",
+        "vi": "readonly",
+        "beforeAll": "readonly",
+        "afterAll": "readonly",
+        "beforeEach": "readonly",
+        "afterEach": "readonly"
+      }
+    }
+  ]
 }
