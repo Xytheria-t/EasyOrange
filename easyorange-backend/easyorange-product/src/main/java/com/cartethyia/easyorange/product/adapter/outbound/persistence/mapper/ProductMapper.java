@@ -37,4 +37,7 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
     List<SellerInfo> selectSellersByIds(@Param("sellerIds") Set<Long> sellerIds);
 
     void batchAddViewCounts(@Param("viewCounts") java.util.Map<Long, Integer> viewCounts);
+
+    void updateSearchText(@Param("productId") Long productId,
+                          @Param("searchText") String searchText);
 }

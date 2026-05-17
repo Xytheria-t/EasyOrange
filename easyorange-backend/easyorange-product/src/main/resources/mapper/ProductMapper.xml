@@ -77,4 +77,10 @@
         </foreach>
     </update>
 
+    <update id="updateSearchText">
+        UPDATE eo_product
+        SET search_text = #{searchText}
+        WHERE id = #{productId}
+    </update>
+
 </mapper>

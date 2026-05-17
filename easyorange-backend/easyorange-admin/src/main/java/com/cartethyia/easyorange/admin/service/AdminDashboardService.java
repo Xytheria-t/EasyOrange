@@ -252,7 +252,7 @@ public class AdminDashboardService {
         ProductStatus[] statuses = ProductStatus.values();
         Map<Integer, String> statusMap = new java.util.HashMap<>();
         for (ProductStatus s : statuses) {
-            statusMap.put(s.getCode(), s.getDescription());
+            statusMap.put(s.getCode(), s.getDesc());
         }
 
         List<TopProductVO> result = new ArrayList<>();

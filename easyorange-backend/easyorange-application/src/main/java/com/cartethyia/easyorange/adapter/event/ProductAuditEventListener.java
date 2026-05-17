@@ -26,6 +26,7 @@ public class ProductAuditEventListener {
                         .receiverId(event.sellerId())
                         .title("商品审核通过")
                         .content("您发布的「%s」已通过审核，现已上架销售！".formatted(event.productName()))
+                        .businessId(event.productId())
                         .build());
             } else {
                 messageCommandHandler.handle(SendSystemMessageCommand.builder()
@@ -33,6 +34,7 @@ public class ProductAuditEventListener {
                         .title("商品审核未通过")
                         .content("您发布的「%s」未通过审核。原因：%s。请修改后重新提交。"
                                 .formatted(event.productName(), event.reason()))
+                        .businessId(event.productId())
                         .build());
             }
             log.info("action=audit_notification_sent productId={} action={} sellerId={}",

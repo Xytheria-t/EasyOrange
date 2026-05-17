@@ -72,7 +72,8 @@ public class MessageCommandHandler {
         Message message = Message.createSystem(
                 command.getReceiverId(),
                 command.getTitle(),
-                command.getContent()
+                command.getContent(),
+                command.getBusinessId()
         );
 
         messageRepository.save(message);

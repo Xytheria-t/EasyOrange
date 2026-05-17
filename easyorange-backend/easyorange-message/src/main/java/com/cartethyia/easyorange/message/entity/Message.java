@@ -51,7 +51,7 @@ public class Message extends BaseDO {
         return message;
     }
 
-    public static Message createSystem(Long receiverId, String title, String content) {
+    public static Message createSystem(Long receiverId, String title, String content, Long businessId) {
         Message message = new Message();
         message.senderId = null;
         message.receiverId = receiverId;
@@ -59,6 +59,7 @@ public class Message extends BaseDO {
         message.title = HtmlUtils.htmlEscape(title);
         message.content = HtmlUtils.htmlEscape(content);
         message.isRead = MessageStatus.UNREAD.getCode();
+        message.businessId = businessId;
         return message;
     }
 
