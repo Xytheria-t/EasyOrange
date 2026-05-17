@@ -1,20 +1,32 @@
 package com.cartethyia.easyorange.framework.file.service.impl;
 
+import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.coobird.thumbnailator.Thumbnails;
 import net.coobird.thumbnailator.geometry.Positions;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
+import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Set;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class ImageProcessingServiceImpl implements ImageProcessingService {
+
+    private final ImageProcessingProperties properties;
 
     private static final Set<String> SUPPORTED_IMAGE_TYPES = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/bmp"
@@ -38,7 +50,13 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
             builder.crop(Positions.CENTER);
         }
 
-        builder.toFile(outputFile);
+        if (format == ImageFormat.JPEG && properties.getProgressiveJpeg().isEnabled()
+                && source.length() >= properties.getProgressiveJpeg().getMinSize()) {
+            BufferedImage processed = builder.asBufferedImage();
+            writeProgressiveJpeg(processed, outputFile, quality);
+        } else {
+            builder.toFile(outputFile);
+        }
 
         log.debug("Processed image: {} -> {} ({}x{}, quality={}, format={})",
                 source.getName(), outputFile.getName(), width, height, quality, format);
@@ -47,24 +65,8 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
     }
 
     @Override
-    public ProcessedImage createThumbnail(File source, int size) throws IOException {
-        File outputFile = File.createTempFile("thumb_", ".jpg");
-
-        Thumbnails.of(source)
-                .size(size, size)
-                .outputQuality(0.8f)
-                .outputFormat("jpg")
-                .toFile(outputFile);
-
-        log.debug("Created thumbnail: {} -> {} ({}x{})",
-                source.getName(), outputFile.getName(), size, size);
-
-        return new ProcessedImage(outputFile, "image/jpeg", outputFile.length());
-    }
-
-    @Override
     public ProcessedImage processImage(File source, int width, int height, ImageFormat format) throws IOException {
-        return processImage(source, width, height, format, 0.8f);
+        return processImage(source, width, height, format, properties.getQuality());
     }
 
     @Override
@@ -81,6 +83,11 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
                 source.getName(), outputFile.getName(), size, size, quality);
 
         return new ProcessedImage(outputFile, "image/jpeg", outputFile.length());
+    }
+
+    @Override
+    public ProcessedImage createThumbnail(File source, int size) throws IOException {
+        return createThumbnail(source, size, properties.getThumbnailQuality());
     }
 
     @Override
@@ -126,6 +133,13 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
             }
         }
 
+        if (bestScore < properties.getSmartCrop().getMinEntropyThreshold() * windowRows * windowCols) {
+            int cx = Math.max(0, (width - cropWidth) / 2);
+            int cy = Math.max(0, (height - cropHeight) / 2);
+            log.debug("Smart crop fell back to center crop (bestScore={})", bestScore);
+            return source.getSubimage(cx, cy, cropWidth, cropHeight);
+        }
+
         int x = Math.min(bestC * cellW, width - cropWidth);
         int y = Math.min(bestR * cellH, height - cropHeight);
 
@@ -140,6 +154,19 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         return smartCrop(source, targetWidth, targetHeight);
     }
 
+    @Override
+    public boolean isImage(String mimeType) {
+        if (mimeType == null) {
+            return false;
+        }
+        return SUPPORTED_IMAGE_TYPES.contains(mimeType.toLowerCase());
+    }
+
+    @Override
+    public boolean supportsFormat(ImageFormat format) {
+        return SUPPORTED_OUTPUT_FORMATS.contains(format);
+    }
+
     private float calculateEntropy(BufferedImage image, int x, int y, int w, int h) {
         int[] histogram = new int[256];
         int total = w * h;
@@ -147,7 +174,10 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         for (int py = y; py < y + h && py < image.getHeight(); py++) {
             for (int px = x; px < x + w && px < image.getWidth(); px++) {
                 int rgb = image.getRGB(px, py);
-                int gray = ((rgb >> 16) & 0xFF) * 77 + ((rgb >> 8) & 0xFF) * 151 + (rgb & 0xFF) * 28 >> 8;
+                int r = (rgb >> 16) & 0xFF;
+                int g = (rgb >> 8) & 0xFF;
+                int b = rgb & 0xFF;
+                int gray = (77 * r + 151 * g + 28 * b) >> 8;
                 histogram[Math.min(gray, 255)]++;
             }
         }
@@ -162,16 +192,23 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         return entropy;
     }
 
-    @Override
-    public boolean isImage(String mimeType) {
-        if (mimeType == null) {
-            return false;
+    private void writeProgressiveJpeg(BufferedImage image, File output, float quality) throws IOException {
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
+        if (!writers.hasNext()) {
+            throw new IOException("No JPEG writer available");
         }
-        return SUPPORTED_IMAGE_TYPES.contains(mimeType.toLowerCase());
-    }
 
-    @Override
-    public boolean supportsFormat(ImageFormat format) {
-        return SUPPORTED_OUTPUT_FORMATS.contains(format);
+        ImageWriter writer = writers.next();
+        JPEGImageWriteParam param = new JPEGImageWriteParam(null);
+        param.setProgressiveMode(ImageWriteParam.MODE_DEFAULT);
+        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        param.setCompressionQuality(quality);
+
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(new FileOutputStream(output))) {
+            writer.setOutput(ios);
+            writer.write(null, new IIOImage(image, null, null), param);
+        } finally {
+            writer.dispose();
+        }
     }
 }
