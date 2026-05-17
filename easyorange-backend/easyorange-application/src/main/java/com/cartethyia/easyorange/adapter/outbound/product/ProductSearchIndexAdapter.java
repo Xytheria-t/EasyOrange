@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.Pro
 import com.cartethyia.easyorange.product.domain.port.output.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "false", matchIfMissing = true)
 @RequiredArgsConstructor
 public class ProductSearchIndexAdapter implements ProductSearchIndexPort {
 
