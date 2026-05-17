@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { http, HttpResponse } from 'msw';
@@ -17,9 +17,6 @@ function Wrapper({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={testQc}>{children}</QueryClientProvider>;
 }
 
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
 
 describe('useAuditProduct', () => {
   it('audits a product and invalidates list cache', async () => {

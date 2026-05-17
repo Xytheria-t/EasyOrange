@@ -9,7 +9,8 @@ export type RouteName =
     | 'orders'
     | 'orderDetail'
     | 'payment'
-    | 'paymentResult';
+    | 'paymentResult'
+    | 'notifications';
 
 export interface RouteConfig {
     path: string;
@@ -74,6 +75,11 @@ export const routes: Record<RouteName, RouteConfig> = {
     paymentResult: {
         path: '/payment/result',
         title: '支付结果',
+        requiresAuth: true
+    },
+    notifications: {
+        path: '/notifications',
+        title: '通知中心',
         requiresAuth: true
     }
 };

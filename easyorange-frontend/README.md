@@ -122,6 +122,7 @@ npm run preview
 | 个人中心 | `/profile` | 个人信息、密码修改 | 是 |
 | 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
 | 消息中心 | `/messages` | 站内消息列表 | 是 |
+| 通知中心 | `/notifications` | 系统通知列表、查看详情 | 是 |
 | 我的订单 | `/orders` | 订单列表 | 是 |
 | 订单详情 | `/orders/:id` | 订单详情 | 是 |
 | 收银台 | `/payment` | 在线支付 | 是 |
