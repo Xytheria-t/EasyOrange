@@ -2,7 +2,7 @@
  * @fileoverview 商品 API 模块
  */
 
-import type { PageResult, Category, Product, ProductQueryParams, CreateProductRequest, UpdateProductRequest } from '@/types';
+import type { PageResult, Category, Product, ProductQueryParams, CreateProductRequest, UpdateProductRequest, ProductSearchResult, ProductSearchParams } from '@/types';
 import { request } from './core/request';
 
 export const productApi = {
@@ -62,10 +62,10 @@ export const productApi = {
         return request<PageResult<Product>>(`/products/category/${category}`, { skipAuth: true });
     },
 
-    searchProducts(keyword: string, pageNum?: number, pageSize?: number) {
-        return request<PageResult<Product>>('/products/search', {
+    searchProducts(params: ProductSearchParams = {}) {
+        return request<ProductSearchResult>('/products/search', {
             method: 'GET',
-            params: { keyword, pageNum, pageSize } as Record<string, unknown>,
+            params: params as Record<string, unknown>,
             skipAuth: true
         });
     },

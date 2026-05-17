@@ -111,3 +111,31 @@ export interface Favorite {
     product: FavoriteProduct;
     createTime: string;
 }
+
+/** ES facet aggregation bucket */
+export interface FacetBucket {
+    code: string;
+    count: number;
+}
+
+/** ES-powered product search result */
+export interface ProductSearchResult {
+    records: Product[];
+    total: number;
+    pageNum: number;
+    pageSize: number;
+    facets: FacetBucket[];
+}
+
+/** Product search query parameters for ES search */
+export interface ProductSearchParams {
+    keyword?: string;
+    categoryId?: number;
+    status?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    conditionLevel?: number;
+    sort?: 'default' | 'price_asc' | 'price_desc' | 'newest';
+    pageNum?: number;
+    pageSize?: number;
+}

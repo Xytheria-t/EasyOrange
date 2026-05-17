@@ -27,14 +27,14 @@ describe('useProductSearch', () => {
             total: 0,
             pageNum: 1,
             pageSize: 20,
-            pages: 0,
+            facets: [],
           },
           timestamp: Date.now(),
         });
       }),
     );
 
-    const { result } = renderHook(() => useProductSearch('手机'), {
+    const { result } = renderHook(() => useProductSearch({ keyword: '手机' }), {
       wrapper: Wrapper,
     });
 
@@ -43,7 +43,7 @@ describe('useProductSearch', () => {
   });
 
   it('is not enabled when keyword is empty', () => {
-    const { result } = renderHook(() => useProductSearch('  '), {
+    const { result } = renderHook(() => useProductSearch({ keyword: '  ' }), {
       wrapper: Wrapper,
     });
 

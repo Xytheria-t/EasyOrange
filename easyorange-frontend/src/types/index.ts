@@ -12,6 +12,9 @@ export type {
     Category,
     Favorite,
     FavoriteProduct,
+    FacetBucket,
+    ProductSearchResult,
+    ProductSearchParams,
 } from './product';
 
 export type {

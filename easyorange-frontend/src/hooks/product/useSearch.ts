@@ -1,15 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
-import type { ProductQueryParams, PageResult, Product } from '@/types';
+import type { ProductSearchParams, ProductSearchResult } from '@/types';
 
-export function useProductSearch(keyword: string, params?: Omit<ProductQueryParams, 'keyword'>) {
-    return useQuery<PageResult<Product>>({
-        queryKey: ['productSearch', keyword, params],
+export function useProductSearch(params: ProductSearchParams = {}) {
+    return useQuery<ProductSearchResult>({
+        queryKey: ['productSearch', params],
         queryFn: async () => {
-            const response = await productApi.searchProducts(keyword, params?.pageNum, params?.pageSize);
+            const response = await productApi.searchProducts(params);
             return response.data;
         },
-        enabled: keyword.trim().length > 0,
+        enabled: (params.keyword?.trim().length ?? 0) > 0,
         staleTime: 30 * 1000,
     });
 }

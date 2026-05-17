@@ -90,7 +90,7 @@ describe('SearchPage', () => {
       { id: 'p1', title: '测试手机', price: 1999, images: [], status: 'ONLINE', condition: 1, createTime: '2026-05-10T10:00:00Z', views: 100, categoryName: '电子数码', location: '北京', sellerName: '卖家', description: 'desc' },
     ];
     mockUseProductSearch.mockReturnValue({
-      data: { records: mockProducts, total: 1, size: 20, current: 1, pages: 1 },
+      data: { records: mockProducts, total: 1, pageNum: 1, pageSize: 20, facets: [] },
       isLoading: false,
       isError: false,
       error: null,
@@ -128,7 +128,7 @@ describe('SearchPage', () => {
 
   it('shows no results state', async () => {
     mockUseProductSearch.mockReturnValue({
-      data: { records: [], total: 0, size: 20, current: 1, pages: 0 },
+      data: { records: [], total: 0, pageNum: 1, pageSize: 20, facets: [] },
       isLoading: false,
       isError: false,
       error: null,

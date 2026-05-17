@@ -48,7 +48,8 @@ function SearchPage() {
 
     const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword);
 
-    const { data: searchResult, isLoading: isSearching } = useProductSearch(submittedKeyword, {
+    const { data: searchResult, isLoading: isSearching } = useProductSearch({
+        keyword: submittedKeyword,
         pageNum: 1,
         pageSize: 20,
     });
