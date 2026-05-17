@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.framework.config.cache.LocalCacheConfig;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
+import com.cartethyia.easyorange.framework.config.properties.ImageProcessingProperties;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ImageFormat;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ProcessedImage;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class FileController {
 
     private final FileService fileService;
     private final ImageProcessingService imageProcessingService;
+    private final ImageProcessingProperties imageProcessingProperties;
     private final com.github.benmanes.caffeine.cache.Cache<String, LocalCacheConfig.ImageProcessingCacheEntry> imageProcessCache;
 
     private static final long CACHE_MAX_AGE_SECONDS = TimeUnit.DAYS.toSeconds(365);
@@ -45,8 +47,14 @@ public class FileController {
     @PreAuthorize("isAuthenticated()")
     public Result<UploadFileVO> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "businessType", required = false) String businessType) {
+            @RequestParam(value = "businessType", required = false) String businessType,
+            @RequestParam(value = "crop", required = false) String crop) {
         UploadFileVO result = fileService.uploadFile(file, businessType);
+
+        if (crop != null && file.getContentType() != null && imageProcessingService.isImage(file.getContentType())) {
+            log.debug("Smart crop requested: {} for fileId={}", crop, result.getId());
+        }
+
         return Result.success(result);
     }
 
@@ -178,7 +186,7 @@ public class FileController {
             return ResponseEntity.badRequest().build();
         }
 
-        String cacheKey = buildCacheKey(id, size, size, ImageFormat.WEBP, 0.8f);
+        String cacheKey = buildCacheKey(id, size, size, ImageFormat.WEBP, imageProcessingProperties.getThumbnailQuality());
         var cached = getCachedOrProcessForThumbnail(cacheKey, originalFile, size, ifNoneMatch);
         if (cached != null && cached.notModified()) {
             return ResponseEntity.status(304)
