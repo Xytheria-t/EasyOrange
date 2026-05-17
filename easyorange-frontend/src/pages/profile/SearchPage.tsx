@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories } from '@/hooks';
 import { ProductCard } from '@/components/product/ProductCard';
+import FacetFilter from '@/components/search/FacetFilter';
 import { debounce } from '@/utils';
+import type { ProductSearchParams } from '@/types/product';
 import '@/styles/main.css';
 import './search.css';
 
@@ -47,18 +49,49 @@ function SearchPage() {
     });
 
     const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword);
+    const [filters, setFilters] = useState<Record<string, string>>({});
+    const [pageNum, setPageNum] = useState(1);
 
-    const { data: searchResult, isLoading: isSearching } = useProductSearch({
-        keyword: submittedKeyword,
-        pageNum: 1,
-        pageSize: 20,
-    });
+    const searchQueryParams: ProductSearchParams = useMemo(() => {
+        const params: ProductSearchParams = {
+            keyword: submittedKeyword,
+            pageNum,
+            pageSize: 20,
+        };
+        if (filters.category) {
+            params.categoryId = Number(filters.category);
+        }
+        if (filters.condition) {
+            params.conditionLevel = Number(filters.condition);
+        }
+        if (filters.price) {
+            const [min, max] = filters.price.split('_');
+            if (min) params.minPrice = Number(min);
+            if (max) params.maxPrice = Number(max);
+        }
+        return params;
+    }, [submittedKeyword, pageNum, filters]);
+
+    const { data: searchResult, isLoading: isSearching } = useProductSearch(searchQueryParams);
     const { data: suggestions } = useSearchSuggestions(debouncedKeyword);
     const { data: hotKeywords } = useHotKeywords(10);
     const { data: categories } = useCategories();
 
     const products = searchResult?.records ?? [];
     const total = searchResult?.total ?? 0;
+    const facets = searchResult?.facets ?? [];
+
+    const handleFilterChange = useCallback((key: string, value: string | null) => {
+        setFilters(prev => {
+            if (value === null) {
+                const next = { ...prev };
+                delete next[key];
+                return next;
+            }
+            return { ...prev, [key]: value };
+        });
+        setPageNum(1);
+    }, []);
 
     // 防抖处理搜索输入，避免频繁请求建议
     const debouncedSetKeyword = useMemo(
@@ -431,6 +464,16 @@ function SearchPage() {
                                 共找到 <span className="search-count-number">{total}</span> 件商品
                             </p>
                         </div>
+
+                        {facets.length > 0 && (
+                            <div className="px-0.5">
+                                <FacetFilter
+                                    facets={facets}
+                                    filters={filters}
+                                    onFilterChange={handleFilterChange}
+                                />
+                            </div>
+                        )}
 
                         {isSearching && (
                             <div className="search-loading">
