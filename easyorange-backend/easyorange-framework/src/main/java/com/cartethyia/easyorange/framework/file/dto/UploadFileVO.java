@@ -26,4 +26,8 @@ public class UploadFileVO {
     private String mimeType;
 
     private String md5;
+
+    private String storageType;
+
+    private String storageKey;
 }

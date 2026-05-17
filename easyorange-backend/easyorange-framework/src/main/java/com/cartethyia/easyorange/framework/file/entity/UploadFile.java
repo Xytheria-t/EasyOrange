@@ -30,6 +30,10 @@ public class UploadFile extends BaseDO {
 
     private String md5;
 
+    private String storageType;
+
+    private String storageKey;
+
     private String businessType;
 
     private Long businessId;
