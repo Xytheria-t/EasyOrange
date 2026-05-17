@@ -23,7 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
+@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderIntegrationTestConfig.class)
 @Testcontainers
 @Tag("integration")
 @DisplayName("SagaRepository 集成测试")

@@ -1,0 +1,217 @@
+package com.cartethyia.easyorange.order.application.assembler;
+
+import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DisplayName("OrderVOAssembler 单元测试")
+class OrderVOAssemblerTest {
+
+    private final OrderVOAssembler assembler = new OrderVOAssembler();
+
+    private static final Long ORDER_ID = 100L;
+    private static final String ORDER_NO = "ORD100";
+    private static final Long BUYER_ID = 1L;
+    private static final Long SELLER_ID = 2L;
+    private static final Long PRODUCT_ID = 200L;
+    private static final BigDecimal AMOUNT = new BigDecimal("99.99");
+    private static final Integer STATUS = 0;
+    private static final String STATUS_DESC = "待付款";
+    private static final Integer PAYMENT_STATUS = 0;
+    private static final String ADDRESS = "北京市朝阳区建国路88号";
+    private static final String PHONE = "13800138000";
+    private static final String REMARK = "尽快发货";
+    private static final String CANCEL_REASON = null;
+    private static final LocalDateTime CANCEL_TIME = null;
+    private static final LocalDateTime CREATE_TIME = LocalDateTime.of(2026, 5, 1, 10, 0);
+    private static final LocalDateTime UPDATE_TIME = LocalDateTime.of(2026, 5, 1, 12, 0);
+
+    private static final String PRODUCT_TITLE = "测试商品";
+    private static final BigDecimal PRODUCT_PRICE = new BigDecimal("99.99");
+    private static final Integer PRODUCT_STATUS = 1;
+    private static final List<String> PRODUCT_IMAGES = List.of("http://example.com/img1.jpg");
+
+    private OrderReadModel createOrder() {
+        return new OrderReadModel(
+                ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, PRODUCT_ID, AMOUNT,
+                STATUS, STATUS_DESC, PAYMENT_STATUS,
+                ADDRESS, PHONE, REMARK, CANCEL_REASON, CANCEL_TIME,
+                CREATE_TIME, UPDATE_TIME
+        );
+    }
+
+    private ProductDetail createProductDetail() {
+        return new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, PRODUCT_IMAGES);
+    }
+
+    @Nested
+    @DisplayName("toOrderVO")
+    class ToOrderVOTests {
+
+        @Test
+        @DisplayName("应正确映射所有字段（脱敏模式）")
+        void toOrderVO_withMaskSensitive_shouldMapAllFields() {
+            OrderReadModel order = createOrder();
+            ProductDetail product = createProductDetail();
+            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
+
+            OrderVO vo = assembler.toOrderVO(order, productMap, true);
+
+            assertThat(vo.getId()).isEqualTo(ORDER_ID);
+            assertThat(vo.getOrderNo()).isEqualTo(ORDER_NO);
+            assertThat(vo.getBuyerId()).isEqualTo(BUYER_ID);
+            assertThat(vo.getSellerId()).isEqualTo(SELLER_ID);
+            assertThat(vo.getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(vo.getAmount()).isEqualByComparingTo(AMOUNT);
+            assertThat(vo.getStatus()).isEqualTo(STATUS);
+            assertThat(vo.getStatusDesc()).isEqualTo(STATUS_DESC);
+            assertThat(vo.getRemark()).isEqualTo(REMARK);
+            assertThat(vo.getCreateTime()).isEqualTo(CREATE_TIME);
+            assertThat(vo.getUpdateTime()).isEqualTo(UPDATE_TIME);
+
+            // product fields
+            assertThat(vo.getProductTitle()).isEqualTo(PRODUCT_TITLE);
+            assertThat(vo.getProductImage()).isEqualTo(PRODUCT_IMAGES.getFirst());
+
+            // sensitive fields masked
+            assertThat(vo.getAddress()).contains("***");
+            assertThat(vo.getPhone()).contains("****");
+        }
+
+        @Test
+        @DisplayName("应正确映射所有字段（非脱敏模式）")
+        void toOrderVO_withoutMaskSensitive_shouldMapAllFields() {
+            OrderReadModel order = createOrder();
+            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, createProductDetail());
+
+            OrderVO vo = assembler.toOrderVO(order, productMap, false);
+
+            // address should be exact, phone should still be masked
+            assertThat(vo.getAddress()).isEqualTo(ADDRESS); // NOT masked when maskSensitive=false
+            assertThat(vo.getPhone()).contains("****");     // always masked
+            assertThat(vo.getProductTitle()).isEqualTo(PRODUCT_TITLE);
+        }
+
+        @Test
+        @DisplayName("商品不存在时应映射基础字段而不填充商品信息")
+        void toOrderVO_withMissingProduct_shouldMapWithoutProductInfo() {
+            OrderReadModel order = createOrder();
+
+            OrderVO vo = assembler.toOrderVO(order, Map.of(), true);
+
+            assertThat(vo.getId()).isEqualTo(ORDER_ID);
+            assertThat(vo.getProductTitle()).isNull();
+            assertThat(vo.getProductImage()).isNull();
+        }
+
+        @Test
+        @DisplayName("商品无图片时应仅设置标题不设图片")
+        void toOrderVO_withProductNoImages_shouldSetTitleOnly() {
+            OrderReadModel order = createOrder();
+            ProductDetail product = new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of());
+            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
+
+            OrderVO vo = assembler.toOrderVO(order, productMap, true);
+
+            assertThat(vo.getProductTitle()).isEqualTo(PRODUCT_TITLE);
+            assertThat(vo.getProductImage()).isNull();
+        }
+
+        @Test
+        @DisplayName("null 字段应优雅处理")
+        void toOrderVO_withNullFields_shouldHandleGracefully() {
+            OrderReadModel order = new OrderReadModel(
+                    ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, PRODUCT_ID, AMOUNT,
+                    STATUS, STATUS_DESC, PAYMENT_STATUS,
+                    null, null, null, null, null,
+                    CREATE_TIME, UPDATE_TIME
+            );
+
+            OrderVO vo = assembler.toOrderVO(order, Map.of(), true);
+
+            assertThat(vo.getAddress()).isNull();
+            assertThat(vo.getPhone()).isNull();
+            assertThat(vo.getRemark()).isNull();
+            assertThat(vo.getProductTitle()).isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("toOrderVOs")
+    class ToOrderVOsTests {
+
+        @Test
+        @DisplayName("多个订单应全部映射")
+        void toOrderVOs_withMultipleOrders_shouldMapAll() {
+            OrderReadModel order1 = createOrder();
+            OrderReadModel order2 = new OrderReadModel(
+                    101L, "ORD101", 3L, 4L, 201L, new BigDecimal("49.99"),
+                    1, "已付款", 1, "上海市浦东新区", "13900139000", "备注2", null, null,
+                    LocalDateTime.now(), LocalDateTime.now()
+            );
+
+            ProductDetail product1 = createProductDetail();
+            ProductDetail product2 = new ProductDetail(201L, "商品2", new BigDecimal("49.99"), 1, List.of("img2.jpg"));
+            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, 201L, product2);
+
+            List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap);
+
+            assertThat(vos).hasSize(2);
+            assertThat(vos.get(0).getId()).isEqualTo(ORDER_ID);
+            assertThat(vos.get(1).getId()).isEqualTo(101L);
+            assertThat(vos.get(1).getAmount()).isEqualByComparingTo(new BigDecimal("49.99"));
+        }
+
+        @Test
+        @DisplayName("空列表应返回空列表")
+        void toOrderVOs_withEmptyList_shouldReturnEmptyList() {
+            assertThat(assembler.toOrderVOs(List.of(), Map.of())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("null 输入应返回空列表")
+        void toOrderVOs_withNullList_shouldReturnEmptyList() {
+            assertThat(assembler.toOrderVOs(null, Map.of())).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("buildProductMap")
+    class BuildProductMapTests {
+
+        @Test
+        @DisplayName("应正确构建商品映射")
+        void buildProductMap_shouldMapById() {
+            ProductDetail p1 = new ProductDetail(1L, "商品1", BigDecimal.TEN, 1, List.of());
+            ProductDetail p2 = new ProductDetail(2L, "商品2", BigDecimal.valueOf(20), 1, List.of());
+
+            Map<Long, ProductDetail> map = assembler.buildProductMap(List.of(p1, p2));
+
+            assertThat(map).hasSize(2);
+            assertThat(map.get(1L).title()).isEqualTo("商品1");
+            assertThat(map.get(2L).title()).isEqualTo("商品2");
+        }
+
+        @Test
+        @DisplayName("空列表应返回空映射")
+        void buildProductMap_withEmptyList_shouldReturnEmptyMap() {
+            assertThat(assembler.buildProductMap(List.of())).isEmpty();
+        }
+
+        @Test
+        @DisplayName("null 输入应返回空映射")
+        void buildProductMap_withNullList_shouldReturnEmptyMap() {
+            assertThat(assembler.buildProductMap(null)).isEmpty();
+        }
+    }
+}

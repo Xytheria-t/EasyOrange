@@ -28,7 +28,7 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
+@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderIntegrationTestConfig.class)
 @Testcontainers
 @Tag("integration")
 @DisplayName("OrderCachePort 性能测试")

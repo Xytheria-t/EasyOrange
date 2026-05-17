@@ -36,7 +36,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderTestApplication.class)
+@SpringBootTest(classes = com.cartethyia.easyorange.order.OrderIntegrationTestConfig.class)
 @Testcontainers
 @Tag("integration")
 @DisplayName("CreateOrderSaga 端到端集成测试")

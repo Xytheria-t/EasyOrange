@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.order.infrastructure.cache;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.order.adapter.outbound.cache.RedisOrderCacheAdapter;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
-import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,23 +22,30 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-@DisplayName("订单缓存端口测试")
+@DisplayName("订单缓存适配器测试")
 class OrderCacheServiceTest {
 
     @Mock
-    private OrderCachePort orderCachePort;
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
+
+    private RedisOrderCacheAdapter orderCachePort;
 
     private Long testBuyerId;
     private PageResult<OrderVO> testOrderPage;
 
     @BeforeEach
     void setUp() {
+        orderCachePort = new RedisOrderCacheAdapter(redisTemplate);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
         testBuyerId = 999999L;
 
         OrderVO order1 = OrderVO.builder()
@@ -66,7 +73,7 @@ class OrderCacheServiceTest {
     @DisplayName("设置和获取订单列表缓存")
     void testPutAndGetOrderListCache() {
         String cacheKey = "eo:order:list:999999:status:0:page:1:size:10";
-        when(orderCachePort.getOrderList(cacheKey)).thenReturn(Optional.of(testOrderPage));
+        when(valueOperations.get(cacheKey)).thenReturn(testOrderPage);
 
         orderCachePort.putOrderList(cacheKey, testOrderPage);
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
@@ -75,14 +82,14 @@ class OrderCacheServiceTest {
         assertThat(cachedResult.get().records()).hasSize(2);
         assertThat(cachedResult.get().total()).isEqualTo(2);
 
-        verify(orderCachePort).putOrderList(eq(cacheKey), eq(testOrderPage));
+        verify(valueOperations).set(eq(cacheKey), eq(testOrderPage), eq(30L), eq(TimeUnit.MINUTES));
     }
 
     @Test
     @DisplayName("获取不存在的订单缓存")
     void testGetNonExistentOrderCache() {
         String cacheKey = "eo:order:list:999998:status:0:page:1:size:10";
-        when(orderCachePort.getOrderList(cacheKey)).thenReturn(Optional.empty());
+        when(valueOperations.get(cacheKey)).thenReturn(null);
 
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
 
@@ -96,7 +103,7 @@ class OrderCacheServiceTest {
 
         orderCachePort.evictOrderList(cacheKey);
 
-        verify(orderCachePort).evictOrderList(cacheKey);
+        verify(redisTemplate).delete(cacheKey);
     }
 
     @Test
@@ -116,27 +123,31 @@ class OrderCacheServiceTest {
         orderCachePort.getOrderList(null);
         orderCachePort.evictOrderList(null);
 
-        verify(orderCachePort, never()).putOrderList(isNull(), any());
+        verify(valueOperations, never()).set(anyString(), any(), anyLong(), any());
+        verify(valueOperations, never()).get(anyString());
+        verify(redisTemplate, never()).delete(anyString());
     }
 
     @Test
     @DisplayName("清除买家订单缓存")
     void testEvictBuyerOrders() {
         Long buyerId = 123456L;
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictBuyerOrders(buyerId);
 
-        verify(orderCachePort).evictBuyerOrders(buyerId);
+        verify(redisTemplate).keys("eo:order:list:123456:*");
     }
 
     @Test
     @DisplayName("清除卖家订单缓存")
     void testEvictSellerOrders() {
         Long sellerId = 789012L;
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictSellerOrders(sellerId);
 
-        verify(orderCachePort).evictSellerOrders(sellerId);
+        verify(redisTemplate).keys("eo:order:list:789012:*");
     }
 
     @Test
@@ -144,30 +155,36 @@ class OrderCacheServiceTest {
     void testEvictOrderCache() {
         Long buyerId = 111222L;
         Long sellerId = 333444L;
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictOrderCache(buyerId, sellerId);
 
-        verify(orderCachePort).evictOrderCache(buyerId, sellerId);
+        verify(redisTemplate).keys("eo:order:list:111222:*");
+        verify(redisTemplate).keys("eo:order:list:333444:*");
     }
 
     @Test
     @DisplayName("清除订单缓存时买家 ID 为 null")
     void testEvictOrderCacheWithNullBuyerId() {
         Long sellerId = 555666L;
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictOrderCache(null, sellerId);
 
-        verify(orderCachePort).evictOrderCache(isNull(), eq(sellerId));
+        verify(redisTemplate, never()).keys("eo:order:list:null:*");
+        verify(redisTemplate).keys("eo:order:list:555666:*");
     }
 
     @Test
     @DisplayName("清除订单缓存时卖家 ID 为 null")
     void testEvictOrderCacheWithNullSellerId() {
         Long buyerId = 777888L;
+        when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictOrderCache(buyerId, null);
 
-        verify(orderCachePort).evictOrderCache(eq(buyerId), isNull());
+        verify(redisTemplate).keys("eo:order:list:777888:*");
+        verify(redisTemplate, never()).keys("eo:order:list:null:*");
     }
 
     @Test
@@ -175,6 +192,6 @@ class OrderCacheServiceTest {
     void testEvictOrderCacheWithNullIds() {
         orderCachePort.evictOrderCache(null, null);
 
-        verify(orderCachePort).evictOrderCache(isNull(), isNull());
+        verify(redisTemplate, never()).keys(anyString());
     }
 }
