@@ -171,3 +171,17 @@ easy-orange:
         - "P@ssw0rd!"
         - "Password!1"
         - "Admin@123"
+
+easyorange:
+  file:
+    image:
+      quality: 0.80
+      thumbnail-quality: 0.75
+      responsive-quality: 0.75
+      progressive-jpeg:
+        enabled: true
+        min-size: 102400
+      smart-crop:
+        enabled: true
+        default-aspect-ratio: 1:1
+        min-entropy-threshold: 0.5

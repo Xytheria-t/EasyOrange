@@ -73,6 +73,23 @@ file:
     url-prefix: /api/file/                # 文件访问 URL 前缀
 
 # -------------------------------------------------------------------
+# 图片处理配置
+# -------------------------------------------------------------------
+easyorange:
+  file:
+    image:
+      quality: 0.80
+      thumbnail-quality: 0.75
+      responsive-quality: 0.75
+      progressive-jpeg:
+        enabled: true
+        min-size: 102400
+      smart-crop:
+        enabled: true
+        default-aspect-ratio: 1:1
+        min-entropy-threshold: 0.5
+
+# -------------------------------------------------------------------
 # JWT Token 配置
 # -------------------------------------------------------------------
 jwt:
