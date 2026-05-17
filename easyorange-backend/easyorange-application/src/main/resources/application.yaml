@@ -64,6 +64,11 @@ spring:
     out-of-order: false
     ignore-migration-patterns: '*:ignored'
 
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
+    connection-timeout: 5s
+    socket-timeout: 30s
+
   lifecycle:
     timeout-per-shutdown-phase: 90s
 
@@ -173,6 +178,10 @@ easy-orange:
         - "Admin@123"
 
 easyorange:
+  search:
+    elasticsearch:
+      enabled: false
+
   file:
     image:
       quality: 0.80
