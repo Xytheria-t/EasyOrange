@@ -13,6 +13,8 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | Flyway | 11.14.1 |
 | JJWT | 0.13.0 |
 | ArchUnit | 1.4.1 |
+| Spring Data Elasticsearch | 6.0.3 |
+| Elasticsearch | 8.17.3 |
 
 ## DDD 分层规则
 

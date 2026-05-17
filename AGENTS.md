@@ -9,6 +9,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | **后端** | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16 |
 | **前端** | TypeScript, React |
 | **数据库** | MySQL 8.4, Redis 7.4 |
+| **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
 | **认证** | JWT (Access + Refresh Token) |
 | **迁移** | Flyway 11.14.1 |
 | **部署** | Docker, docker-compose |
@@ -122,9 +123,16 @@ easy-orange/
 │   │   └── dto/
 │   │       ├── request/                             # 16 个请求 DTO（含 AdminReviewDeleteRequest, AdminReviewQueryRequest）
 │   │       └── response/                            # 20 个响应 VO（含 AdminReviewVO）
-│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
-│       ├── adapter/event/ProductAuditEventListener.java    # 审核→站内消息通知
-│       └── adapter/event/ReportProcessedEventListener.java # 举报处理→站内消息通知(AFTER_COMMIT+Async)
+│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
+│       ├── adapter/event/ProductAuditEventListener.java       # 审核→站内消息通知
+│       ├── adapter/event/ReportProcessedEventListener.java    # 举报处理→站内消息通知(AFTER_COMMIT+Async)
+│       ├── adapter/outbound/elasticsearch/
+│       │   ├── ProductDocument.java                           # ES 映射 POJO
+│       │   ├── ElasticsearchIndexManager.java                 # 索引创建/管理
+│       │   ├── ElasticsearchProductSearchIndexAdapter.java    # 索引写入适配器
+│       │   ├── ElasticsearchProductSearchQueryAdapter.java    # 索引查询适配器（含分类/价格/成色分面聚合）
+│       │   └── ReindexService.java                            # 全量重建索引服务
+│       └── controller/AdminSearchReindexController.java       # 管理端重索引端点 (POST /api/admin/search/reindex)
 ├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
 │   ├── src/testUtils/           # 测试基础设施 (vitest + testing-library + msw)
 │   ├── src/admin/               # 管理后台
@@ -154,6 +162,10 @@ easy-orange/
 │   │   └── notifications.css
 │   ├── src/components/notification/
 │   │   └── NotificationBell.tsx                  # Header 铃铛图标（30s 轮询未读数）
+│   ├── src/components/search/
+│   │   └── FacetFilter.tsx                       # ES 搜索分面过滤组件（分类/价格/成色筛选）
+│   ├── src/hooks/product/useSearch.ts            # ES 搜索 hook（含分面数据）
+│   ├── src/pages/profile/SearchPage.tsx          # 搜索页（集成 FacetFilter 分面筛选）
 │   ├── src/api/notificationApi.ts                # 通知 API（列表/未读数/已读/全部已读）
 │   └── src/types/notification.ts                 # NotificationItem, UnreadCount 类型
 ├── doc/                         # 项目文档
@@ -234,6 +246,8 @@ admin → framework, common, user (optional), product (optional), order (optiona
 |------|------|
 | [图片优化设计-Spec](doc/specs/2026-05-17-image-optimization-design.md) | 图片压缩/智能裁剪/可插拔存储设计规格 |
 | [图片优化计划-Plan](doc/plans/2026-05-17-image-optimization.md) | 实施计划（12 个任务，3 阶段） |
+| [ES搜索设计-Spec](doc/specs/2026-05-17-elasticsearch-search-design.md) | ES 商品搜索+CQRS Port/Adapter+IK分词器设计规格 |
+| [ES搜索计划-Plan](doc/plans/2026-05-17-elasticsearch-search.md) | 实施计划（15 个任务，5 批次） |
 
 ## 开发规范
 
@@ -275,8 +289,9 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw test -pl easyorange-framework
 ./mvnw test -pl easyorange-order
 
-# 启动开发环境 (MySQL + Redis)
+# 启动开发环境 (MySQL + Redis + 可选 ES)
 docker-compose up -d
+docker compose up -d elasticsearch   # 启用 ES 搜索（需先构建镜像: docker compose build elasticsearch）
 
 # 启动后端
 ./mvnw spring-boot:run -pl easyorange-application

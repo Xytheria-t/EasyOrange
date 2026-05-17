@@ -152,8 +152,9 @@ cd easy-orange
 ### 2. 启动基础设施
 
 ```bash
-# 使用 Docker Compose 启动 MySQL 和 Redis
+# 使用 Docker Compose 启动 MySQL、Redis 和可选 ES
 docker-compose up -d
+docker compose up -d elasticsearch   # 可选：启用 Elasticsearch 搜索
 ```
 
 ### 3. 配置环境变量

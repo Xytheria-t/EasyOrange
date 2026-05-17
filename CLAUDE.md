@@ -21,7 +21,7 @@ easy-orange/
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
-│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试
+│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 ├── easyorange-frontend/         # React 前端
 │   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统，前后端已完整对接）
 │   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃 210px), AdminHeader
