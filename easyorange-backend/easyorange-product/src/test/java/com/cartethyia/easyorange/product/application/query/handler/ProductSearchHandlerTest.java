@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -42,7 +43,7 @@ class ProductSearchHandlerTest {
 
     @BeforeEach
     void setUp() {
-        searchHandler = new ProductSearchHandler(productQueryRepository, searchHistoryService);
+        searchHandler = new ProductSearchHandler(productQueryRepository, searchHistoryService, Optional.empty());
 
         testProduct = new ProductReadModel(
                 1L, 10L, "卖家", null, 2L, "分类",

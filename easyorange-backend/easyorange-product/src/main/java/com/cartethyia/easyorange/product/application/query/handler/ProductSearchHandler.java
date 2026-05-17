@@ -7,6 +7,8 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.service.SearchHistoryService;
+import com.cartethyia.easyorange.product.domain.port.output.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.domain.port.output.SearchResult;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -27,9 +30,29 @@ public class ProductSearchHandler {
 
     private final ProductQueryRepository productQueryRepository;
     private final SearchHistoryService searchHistoryService;
+    private final Optional<ProductSearchQueryPort> searchQueryPort;
 
     @Transactional(readOnly = true)
     public PageResult<ProductResponse> handleSearch(ProductSearchRequest request) {
+        if (searchQueryPort.isPresent()) {
+            ProductSearchQueryPort.ProductSearchQuery query = new ProductSearchQueryPort.ProductSearchQuery(
+                    request.getKeyword(),
+                    request.getCategoryId(),
+                    request.getStatus(),
+                    request.getMinPrice(),
+                    request.getMaxPrice(),
+                    request.getConditionLevel(),
+                    request.getSortField(),
+                    request.getPageNum() != null ? request.getPageNum() : 1,
+                    request.getPageSize() != null ? request.getPageSize() : 20
+            );
+            SearchResult searchResult = searchQueryPort.get().search(query);
+            List<ProductResponse> responses = searchResult.records().stream()
+                    .map(this::toProductResponse)
+                    .collect(Collectors.toList());
+            return PageResult.of(responses, searchResult.total(), searchResult.pageNum(), searchResult.pageSize());
+        }
+
         Page<ProductReadModel> page = productQueryRepository.searchProducts(
                 request.getKeyword(),
                 request.getCategoryId(),

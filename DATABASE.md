@@ -550,6 +550,8 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | file_type | VARCHAR(50) | | 扩展名 |
 | mime_type | VARCHAR(100) | | MIME 类型 |
 | md5 | VARCHAR(32) | | MD5 校验 |
+| storage_type | VARCHAR(32) | NOT NULL DEFAULT 'LOCAL' | 存储类型（LOCAL/S3/OSS，V6 新增） |
+| storage_key | VARCHAR(500) | | 存储后端标识键（V6 新增） |
 | business_type | VARCHAR(50) | | 业务类型 |
 | business_id | BIGINT | | 业务 ID |
 | uploader_id | BIGINT | | 上传者 ID |

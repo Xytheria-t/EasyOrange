@@ -23,6 +23,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | `eo_product_detail` | 商品详情表 | JSON 格式 |
 | `eo_product_report` | 举报记录表 | 4状态: PENDING(0)/PROCESSING(1)/RESOLVED(2)/DISMISSED(3); 含reason_type分类+24h重复检测 |
 | `eo_report_handle_history` | 举报处理历史表 | 记录每次管理员操作(action/remark/operator_id) |
+| `eo_upload_file` | 文件上传记录表 | 含 storage_type/storage_key 支持多后端存储 |
 
 ## 商品审核工作流
 
@@ -60,7 +61,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (10 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理)
 │   ├── easyorange-user/         # 用户模块 (DDD)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流)
 │   │   ├── domain/
@@ -226,6 +227,13 @@ admin → framework, common, user (optional), product (optional), order (optiona
 |------|------|
 | [测试补充计划-Spec](doc/specs/2026-05-16-test-coverage-plan.md) | 测试补充设计规格（34 个测试文件，152+ 测试方法） |
 | [测试补充计划-Plan](doc/plans/2026-05-16-test-coverage.md) | 实施计划（3 批独立并行） |
+
+## 功能设计文档
+
+| 文档 | 内容 |
+|------|------|
+| [图片优化设计-Spec](doc/specs/2026-05-17-image-optimization-design.md) | 图片压缩/智能裁剪/可插拔存储设计规格 |
+| [图片优化计划-Plan](doc/plans/2026-05-17-image-optimization.md) | 实施计划（12 个任务，3 阶段） |
 
 ## 开发规范
 
