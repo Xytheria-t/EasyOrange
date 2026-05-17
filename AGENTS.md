@@ -233,7 +233,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
-- 测试覆盖率目标 ≥ 80%（backend: framework~60%/order~50%/admin Controller~80%）
+- 测试覆盖率目标 ≥ 80%（后端全面覆盖中；admin 模块 100% 服务层覆盖，message 模块 161 测试/6 服务已覆盖，user 模块 149 测试/8 服务已覆盖，product 模块 109 测试、payment 模块 134 测试；前端 95 测试文件/919 测试，用户页面覆盖率达 ~74%）
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 

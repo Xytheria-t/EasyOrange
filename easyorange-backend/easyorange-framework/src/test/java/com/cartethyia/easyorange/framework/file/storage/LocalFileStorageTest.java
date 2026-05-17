@@ -21,6 +21,7 @@ class LocalFileStorageTest {
         storage = new LocalFileStorage();
         ReflectionTestUtils.setField(storage, "uploadPath", tempDir.toString());
         ReflectionTestUtils.setField(storage, "urlPrefix", "/api/file/");
+        storage.init(); // initialize @PostConstruct
     }
 
     @Test

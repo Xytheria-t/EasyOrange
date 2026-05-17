@@ -14,7 +14,8 @@
 | **构建** | Vite 8 | 极速构建工具 |
 | **样式** | Tailwind CSS 4 | 原子化 CSS |
 | **图标** | Lucide React | 图标库 |
-| **测试** | Playwright | E2E 测试 |
+| **测试** | Vitest + Testing Library | 单元/组件测试（95 文件, 919 测试） |
+| | Playwright | E2E 测试 |
 | **质量** | ESLint + Prettier + jsx-a11y | 代码规范与可访问性检查 |
 
 ## 项目结构
@@ -127,7 +128,7 @@ npm run preview
 | 订单详情 | `/orders/:id` | 订单详情 | 是 |
 | 收银台 | `/payment` | 在线支付 | 是 |
 | 支付结果 | `/payment/result` | 支付结果展示 | 是 |
-| 登录 | `/login` | 用户登录 | 否 |
+| 登录/注册 | `/login` | 用户登录+注册（Tab 切换，无独立注册页） | 否 |
 | 找回密码 | `/forgot-password` | 密码找回 | 否 |
 | 管理后台 | `/admin` | 管理端仪表盘（重定向到 /admin/dashboard） | 是 |
 | 管理仪表盘 | `/admin/dashboard` | 数据概览、待办事项、最近动态 | 是 |

@@ -281,7 +281,7 @@ npm run dev
 | 订单详情 | `/orders/:id` | 订单详情 | 是 |
 | 收银台 | `/payment` | 在线支付 | 是 |
 | 支付结果 | `/payment/result` | 支付结果展示 | 是 |
-| 登录 | `/login` | 用户登录 | 否 |
+| 登录/注册 | `/login` | 用户登录+注册（Tab 切换，无独立注册页） | 否 |
 | 找回密码 | `/forgot-password` | 密码找回 | 否 |
 
 ### 核心功能

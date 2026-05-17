@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class ImageProcessingProperties {
 
     /** Default output quality (0.0 - 1.0) */
-    private float quality = 0.80f;
+    private float quality = 0.8f;
 
     /** Thumbnail output quality */
     private float thumbnailQuality = 0.75f;

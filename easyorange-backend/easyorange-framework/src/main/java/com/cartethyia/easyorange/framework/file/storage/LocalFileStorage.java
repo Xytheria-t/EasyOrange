@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.file.storage;
 
 import com.cartethyia.easyorange.common.exception.FileException;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,13 @@ public class LocalFileStorage implements FileStorage {
     @Value("${file.upload.url-prefix:/api/file/}")
     private String urlPrefix;
 
+    private Path basePath;
+
+    @PostConstruct
+    void init() {
+        this.basePath = Paths.get(uploadPath).normalize();
+    }
+
     @Override
     public String store(byte[] content, String originalFilename, String contentType) throws IOException {
         String extension = extractExtension(originalFilename, contentType);
@@ -32,9 +40,9 @@ public class LocalFileStorage implements FileStorage {
         String uuidName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
         String relativePath = datePath + "/" + uuidName;
 
-        Path fullPath = Paths.get(uploadPath, relativePath).normalize();
+        Path fullPath = basePath.resolve(relativePath).normalize();
 
-        if (!fullPath.startsWith(Paths.get(uploadPath).normalize())) {
+        if (!fullPath.startsWith(basePath)) {
             throw new FileException("非法文件路径");
         }
 
@@ -47,9 +55,9 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public byte[] load(String identifier) throws IOException {
-        Path fullPath = Paths.get(uploadPath, identifier).normalize();
+        Path fullPath = basePath.resolve(identifier).normalize();
 
-        if (!fullPath.startsWith(Paths.get(uploadPath).normalize())) {
+        if (!fullPath.startsWith(basePath)) {
             throw new FileException("非法文件路径");
         }
         if (!Files.exists(fullPath)) {
@@ -61,9 +69,9 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public void delete(String identifier) throws IOException {
-        Path fullPath = Paths.get(uploadPath, identifier).normalize();
+        Path fullPath = basePath.resolve(identifier).normalize();
 
-        if (!fullPath.startsWith(Paths.get(uploadPath).normalize())) {
+        if (!fullPath.startsWith(basePath)) {
             throw new FileException("非法文件路径");
         }
 

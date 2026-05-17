@@ -18,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -41,27 +42,36 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         String outputExtension = format.getExtension();
         File outputFile = File.createTempFile("processed_", "." + outputExtension);
 
-        Thumbnails.Builder<File> builder = Thumbnails.of(source)
-                .size(width, height)
-                .outputQuality(quality)
-                .outputFormat(outputExtension);
+        try {
+            Thumbnails.Builder<File> builder = Thumbnails.of(source)
+                    .size(width, height)
+                    .outputQuality(quality)
+                    .outputFormat(outputExtension);
 
-        if (width > 0 && height > 0) {
-            builder.crop(Positions.CENTER);
+            if (width > 0 && height > 0) {
+                builder.crop(Positions.CENTER);
+            }
+
+            if (format == ImageFormat.JPEG && properties.getProgressiveJpeg().isEnabled()
+                    && source.length() >= properties.getProgressiveJpeg().getMinSize()) {
+                BufferedImage processed = builder.asBufferedImage();
+                writeProgressiveJpeg(processed, outputFile, quality);
+            } else {
+                builder.toFile(outputFile);
+            }
+
+            log.debug("Processed image: {} -> {} ({}x{}, quality={}, format={})",
+                    source.getName(), outputFile.getName(), width, height, quality, format);
+
+            return new ProcessedImage(outputFile, format.getMimeType(), outputFile.length());
+        } catch (IOException e) {
+            try {
+                Files.deleteIfExists(outputFile.toPath());
+            } catch (IOException ex) {
+                log.warn("Failed to delete temp file on error: {}", outputFile, ex);
+            }
+            throw e;
         }
-
-        if (format == ImageFormat.JPEG && properties.getProgressiveJpeg().isEnabled()
-                && source.length() >= properties.getProgressiveJpeg().getMinSize()) {
-            BufferedImage processed = builder.asBufferedImage();
-            writeProgressiveJpeg(processed, outputFile, quality);
-        } else {
-            builder.toFile(outputFile);
-        }
-
-        log.debug("Processed image: {} -> {} ({}x{}, quality={}, format={})",
-                source.getName(), outputFile.getName(), width, height, quality, format);
-
-        return new ProcessedImage(outputFile, format.getMimeType(), outputFile.length());
     }
 
     @Override
@@ -73,16 +83,25 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
     public ProcessedImage createThumbnail(File source, int size, float quality) throws IOException {
         File outputFile = File.createTempFile("thumb_", ".jpg");
 
-        Thumbnails.of(source)
-                .size(size, size)
-                .outputQuality(quality)
-                .outputFormat("jpg")
-                .toFile(outputFile);
+        try {
+            Thumbnails.of(source)
+                    .size(size, size)
+                    .outputQuality(quality)
+                    .outputFormat("jpg")
+                    .toFile(outputFile);
 
-        log.debug("Created thumbnail: {} -> {} ({}x{}, quality={})",
-                source.getName(), outputFile.getName(), size, size, quality);
+            log.debug("Created thumbnail: {} -> {} ({}x{}, quality={})",
+                    source.getName(), outputFile.getName(), size, size, quality);
 
-        return new ProcessedImage(outputFile, "image/jpeg", outputFile.length());
+            return new ProcessedImage(outputFile, "image/jpeg", outputFile.length());
+        } catch (IOException e) {
+            try {
+                Files.deleteIfExists(outputFile.toPath());
+            } catch (IOException ex) {
+                log.warn("Failed to delete temp file on error: {}", outputFile, ex);
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -171,15 +190,14 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         int[] histogram = new int[256];
         int total = w * h;
 
-        for (int py = y; py < y + h && py < image.getHeight(); py++) {
-            for (int px = x; px < x + w && px < image.getWidth(); px++) {
-                int rgb = image.getRGB(px, py);
-                int r = (rgb >> 16) & 0xFF;
-                int g = (rgb >> 8) & 0xFF;
-                int b = rgb & 0xFF;
-                int gray = (77 * r + 151 * g + 28 * b) >> 8;
-                histogram[Math.min(gray, 255)]++;
-            }
+        int[] pixels = new int[w * h];
+        image.getRGB(x, y, w, h, pixels, 0, w);
+        for (int rgb : pixels) {
+            int r = (rgb >> 16) & 0xFF;
+            int g = (rgb >> 8) & 0xFF;
+            int b = rgb & 0xFF;
+            int gray = (77 * r + 151 * g + 28 * b) >> 8;
+            histogram[Math.min(gray, 255)]++;
         }
 
         float entropy = 0;
