@@ -196,3 +196,30 @@ InvalidDefinitionException: Cannot construct instance of XxxEvent (no Creators, 
 2. `framework/.../JacksonConfig.java` — `mapper.registerModule(new ParameterNamesModule())`
 
 **注意**：新增领域事件类时无需添加任何 Jackson 注解，遵循现有模式即可。
+
+### Spring Boot 4 @WebMvcTest 路径变化
+
+Spring Boot 4.0 将 `@WebMvcTest` 和 `@AutoConfigureMockMvc` 从 `org.springframework.boot.test.autoconfigure.web.servlet` 迁移到 `org.springframework.boot.webmvc.test.autoconfigure.web.servlet` 包。
+
+**Controller 测试必须使用新路径**：
+```java
+import org.springframework.boot.webmvc.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+```
+
+**`@WebMvcTest` 需要 `@SpringBootConfiguration`**：如果模块没有默认的配置类（如 `easyorange-admin`），需在 test 源码下创建 `TestAdminApplication.java`：
+```java
+@SpringBootApplication
+public class TestAdminApplication {}
+```
+
+**`@WebMvcTest` 的 component-scan 陷阱**：`@ComponentScan` 范围过大会拉入 persistence 类（依赖 MyBatis/DataSource），在 web 切片中不可用。解决办法：限制 scan 范围为 web controller 包。
+- 已修复：`easyorange-order` 的 `OrderTestApplication` 已将 `@ComponentScan` 从扫描整个包改为仅扫描 `adapter.inbound.web`
+
+### framework 模块集成测试
+
+`easyorange-framework` 的集成测试（Redis Cache/EventIdempotencyChecker/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。该模块的 `pom.xml` **未全局配置** `excludedGroups=integration`，执行时需命令行指定：
+
+```bash
+./mvnw test -pl easyorange-framework -DexcludedGroups=integration
+```

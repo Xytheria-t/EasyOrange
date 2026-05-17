@@ -275,6 +275,7 @@ npm run dev
 | 个人中心 | `/profile` | 个人信息、密码修改、偏好设置 | 是 |
 | 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
 | 消息中心 | `/messages` | 站内消息列表 | 是 |
+| 通知中心 | `/notifications` | 系统通知列表、查看详情 | 是 |
 | 聊天窗口 | `/messages/:targetUserId` | 实时聊天（STOMP WebSocket） | 是 |
 | 我的订单 | `/orders` | 订单列表 | 是 |
 | 订单详情 | `/orders/:id` | 订单详情 | 是 |
@@ -474,8 +475,17 @@ cd easyorange-backend
 ```bash
 cd easyorange-frontend
 
-# 运行 E2E 测试
-npx playwright test
+# 运行所有单元/组件/Hook 测试（81 个文件, 734 个用例）
+npm test
+
+# 监听模式
+npm run test:watch
+
+# 覆盖率报告（当前 ~42%）
+npm run test:coverage
+
+# E2E 测试（42 个用例，需先启动 dev server）
+npm run test:e2e
 
 # 类型检查
 npm run typecheck

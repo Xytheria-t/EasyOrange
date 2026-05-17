@@ -189,7 +189,8 @@ admin → framework, common, user (optional), product (optional), order (optiona
 
 ## 已知问题
 
-（暂无）
+- **AdminDashboardService.getDescription()**: `ProductStatus` 枚举无 `getDescription()` 方法，已修复为 `getDesc()`
+- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`EventIdempotencyCheckerIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker，默认 `mvn test` 不会执行（已标注 `@Tag("integration")`），执行时需 `-DexcludedGroups=integration`
 
 ## 错误码规范
 
@@ -219,13 +220,20 @@ admin → framework, common, user (optional), product (optional), order (optiona
 | [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) | Flyway 规范 |
 | [架构-部署演进.md](doc/架构/架构-部署演进.md) | 部署与演进 |
 
+## 测试规划文档
+
+| 文档 | 内容 |
+|------|------|
+| [测试补充计划-Spec](doc/specs/2026-05-16-test-coverage-plan.md) | 测试补充设计规格（34 个测试文件，152+ 测试方法） |
+| [测试补充计划-Plan](doc/plans/2026-05-16-test-coverage.md) | 实施计划（3 批独立并行） |
+
 ## 开发规范
 
 - 编码规则见 `.trae/rules/` 目录
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
-- 测试覆盖率目标 ≥ 80%
+- 测试覆盖率目标 ≥ 80%（backend: framework~60%/order~50%/admin Controller~80%）
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 
@@ -249,9 +257,15 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 # 运行所有测试
 ./mvnw test
 
-# 运行特定模块测试
-./mvnw test -pl easyorange-message -am
+# 运行特定模块测试（排除集成测试）
+./mvnw test -pl easyorange-framework -DexcludedGroups=integration
 ./mvnw test -pl easyorange-admin
+./mvnw test -pl easyorange-order -DexcludedGroups=integration
+./mvnw test -pl easyorange-message -am
+
+# 含集成测试（需 Docker 环境）
+./mvnw test -pl easyorange-framework
+./mvnw test -pl easyorange-order
 
 # 启动开发环境 (MySQL + Redis)
 docker-compose up -d
@@ -262,13 +276,13 @@ docker-compose up -d
 # 前端测试
 cd easyorange-frontend
 
-# 运行所有单元/组件/Hook 测试（15 个文件, 123 个用例）
+# 运行所有单元/组件/Hook 测试
 npm test
 
 # 监听模式
 npm run test:watch
 
-# 覆盖率报告（当前 ~7% 整体覆盖率，第一阶段目标）
+# 覆盖率报告（当前 ~42% 整体覆盖率）
 npm run test:coverage
 
 # E2E 测试（需先启动 dev server）
