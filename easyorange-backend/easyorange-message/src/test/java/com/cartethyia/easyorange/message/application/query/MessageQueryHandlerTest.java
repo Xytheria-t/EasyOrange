@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.application.query;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -68,9 +67,8 @@ class MessageQueryHandlerTest {
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", "avatar.jpg"),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 MessageVO vo = queryHandler.getMessageDetail(MESSAGE_ID);
 
                 assertThat(vo).isNotNull();
@@ -78,6 +76,8 @@ class MessageQueryHandlerTest {
                 assertThat(vo.getSenderId()).isEqualTo(SENDER_ID);
                 assertThat(vo.getReceiverId()).isEqualTo(USER_ID);
                 assertThat(vo.getTitle()).isEqualTo("标题");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -86,11 +86,12 @@ class MessageQueryHandlerTest {
         void getMessageDetail_notFound_throws() {
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(null);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 assertThatThrownBy(() -> queryHandler.getMessageDetail(MESSAGE_ID))
                         .isInstanceOf(MessageNotFoundException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -100,11 +101,12 @@ class MessageQueryHandlerTest {
             Message message = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(message);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
-
+            TestSecurityUtil.setSecurityContext(999L);
+            try {
                 assertThatThrownBy(() -> queryHandler.getMessageDetail(MESSAGE_ID))
                         .isInstanceOf(BusinessException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -124,13 +126,14 @@ class MessageQueryHandlerTest {
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 PageResult<MessageVO> result = queryHandler.getMyMessages(request);
 
                 assertThat(result.records()).hasSize(1);
                 assertThat(result.total()).isEqualTo(1);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -141,13 +144,14 @@ class MessageQueryHandlerTest {
             PageResult<Message> pageResult = PageResult.of(List.of(), 0L, 1, 20);
             when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyLong())).thenReturn(pageResult);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 PageResult<MessageVO> result = queryHandler.getMyMessages(request);
 
                 assertThat(result.records()).isEmpty();
                 assertThat(result.total()).isZero();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -167,12 +171,13 @@ class MessageQueryHandlerTest {
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 PageResult<MessageVO> result = queryHandler.getUnreadMessages(request);
 
                 assertThat(result.records()).hasSize(1);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -191,13 +196,14 @@ class MessageQueryHandlerTest {
                     .build();
             when(queryRepository.countUnreadByReceiverId(anyLong())).thenReturn(countVO);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 UnreadCountVO result = queryHandler.getUnreadCount();
 
                 assertThat(result).isNotNull();
                 assertThat(result.getTotal()).isEqualTo(5L);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }

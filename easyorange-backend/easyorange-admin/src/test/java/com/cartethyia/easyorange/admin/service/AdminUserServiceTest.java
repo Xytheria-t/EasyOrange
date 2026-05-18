@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminUserVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
@@ -75,7 +75,7 @@ class AdminUserServiceTest {
                         return p;
                     });
 
-            PageResult<AdminUserVO> result = userService.listUsers(request);
+            PageResult<AdminUserResponse> result = userService.listUsers(request);
 
             assertThat(result.records()).hasSize(1);
             assertThat(result.records().get(0).getUsername()).isEqualTo("testuser");
@@ -96,7 +96,7 @@ class AdminUserServiceTest {
                         return p;
                     });
 
-            PageResult<AdminUserVO> result = userService.listUsers(request);
+            PageResult<AdminUserResponse> result = userService.listUsers(request);
 
             assertThat(result.records()).hasSize(1);
         }
@@ -114,7 +114,7 @@ class AdminUserServiceTest {
                         return p;
                     });
 
-            PageResult<AdminUserVO> result = userService.listUsers(request);
+            PageResult<AdminUserResponse> result = userService.listUsers(request);
 
             assertThat(result.records()).isEmpty();
             assertThat(result.total()).isZero();
@@ -130,7 +130,7 @@ class AdminUserServiceTest {
         void getUserDetail_success() {
             when(userMapper.selectById(USER_ID)).thenReturn(createTestUser());
 
-            AdminUserVO vo = userService.getUserDetail(USER_ID);
+            AdminUserResponse vo = userService.getUserDetail(USER_ID);
 
             assertThat(vo).isNotNull();
             assertThat(vo.getUserId()).isEqualTo(USER_ID);

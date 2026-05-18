@@ -12,21 +12,31 @@ application/
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
 │       │   │   ├── PaymentInitiationEventListener.java
+│       │   │   ├── ProductAuditEventListener.java
+│       │   │   ├── ReportProcessedEventListener.java
 │       │   │   └── StockReservationEventListener.java
 │       │   └── outbound/                  # 跨模块适配器实现
+│       │       ├── elasticsearch/         # ES 搜索索引适配器
+│       │       │   ├── ElasticsearchIndexManager.java
+│       │       │   ├── ElasticsearchProductSearchIndexAdapter.java
+│       │       │   ├── ElasticsearchProductSearchQueryAdapter.java
+│       │       │   ├── ProductDocument.java
+│       │       │   └── ReindexService.java
 │       │       ├── payment/
 │       │       │   └── OrderPaymentGatewayAdapter.java
 │       │       ├── product/
 │       │       │   ├── FavoriteProductInfoAdapter.java
 │       │       │   ├── OrderProductInventoryAdapter.java
-│       │       │   └── OrderProductQueryAdapter.java
+│       │       │   ├── OrderProductQueryAdapter.java
+│       │       │   └── ProductSearchIndexAdapter.java
 │       │       └── user/
 │       │           ├── MessageUserInfoAdapter.java
 │       │           ├── OrderUserInfoAdapter.java
 │       │           └── SellerInfoAdapter.java
 │       └── controller/
-│           ├── HealthController.java      # 健康检查
-│           └── PlatformStatsController.java # 平台统计
+│           ├── AdminSearchReindexController.java # ES 重索引管理
+│           ├── HealthController.java              # 健康检查
+│           └── PlatformStatsController.java       # 平台统计
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
 │   ├── application-dev.yaml               # 开发环境
@@ -115,6 +125,19 @@ easyorange-application
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 卖家信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
+| `ProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | MySQL search_text 索引写入 |
+| `ElasticsearchProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | ES 搜索索引写入（条件激活） |
+| `ElasticsearchProductSearchQueryAdapter` | — | — | ES 商品搜索查询（含分面聚合） |
+
+`adapter/outbound/elasticsearch/` 搜索基础设施组件：
+
+| 组件 | 职责 |
+|------|------|
+| `ElasticsearchIndexManager` | ES 索引创建/映射管理 |
+| `ProductDocument` | ES 索引映射 POJO |
+| `ReindexService` | MySQL → ES 全量重建索引 |
+| `ElasticsearchProductSearchIndexAdapter` | 索引写入适配器（`@ConditionalOnProperty` 激活） |
+| `ElasticsearchProductSearchQueryAdapter` | 索引查询适配器（分类/价格/成色分面聚合） |
 
 `adapter/event/` 目录存放跨模块事件监听器：
 
@@ -122,6 +145,8 @@ easyorange-application
 |--------|------|------|
 | `PaymentInitiationEventListener` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
 | `StockReservationEventListener` | `StockReservationRequestedEvent` | 扣减库存 |
+| `ProductAuditEventListener` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
+| `ReportProcessedEventListener` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
 
 所有事件监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
 

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
@@ -22,7 +22,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -52,14 +51,11 @@ class PaymentCommandHandlerTest {
     @Captor
     private ArgumentCaptor<PaymentAggregate> aggregateCaptor;
 
-    private MockedStatic<SecurityContextUtil> securityContextMock;
-
     private PaymentAggregate testAggregate;
 
     @BeforeEach
     void setUp() {
-        securityContextMock = mockStatic(SecurityContextUtil.class);
-        securityContextMock.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(3001L);
+        TestSecurityUtil.setSecurityContext(3001L);
 
         testAggregate = PaymentAggregate.reconstruct(
                 1001L, "PAY123", 2001L, 3001L,
@@ -70,7 +66,7 @@ class PaymentCommandHandlerTest {
 
     @AfterEach
     void tearDown() {
-        securityContextMock.close();
+        TestSecurityUtil.clearSecurityContext();
     }
 
     @Nested

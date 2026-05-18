@@ -3,9 +3,9 @@ package com.cartethyia.easyorange.admin.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailVO;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderVO;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
@@ -111,7 +111,7 @@ class AdminOrderServiceTest {
             orderTestProduct.setDelFlag(0);
             when(productMapper.selectBatchIds(anyCollection())).thenReturn(List.of(orderTestProduct));
 
-            PageResult<AdminOrderVO> result = orderService.listOrders(request);
+            PageResult<AdminOrderResponse> result = orderService.listOrders(request);
 
             assertThat(result.records()).hasSize(1);
             assertThat(result.total()).isEqualTo(1);
@@ -134,7 +134,7 @@ class AdminOrderServiceTest {
             when(productMapper.selectById(PRODUCT_ID)).thenReturn(
                     ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build());
 
-            AdminOrderDetailVO detail = orderService.getOrderDetail(ORDER_ID);
+            AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
 
             assertThat(detail).isNotNull();
             assertThat(detail.orderId()).isEqualTo(ORDER_ID);
@@ -167,7 +167,7 @@ class AdminOrderServiceTest {
             when(orderReadRepository.countByStatus(OrderStatus.REFUNDED.getCode())).thenReturn(5L);
             when(orderMapper.selectCount(any())).thenReturn(10L);
 
-            OrderStatsVO stats = orderService.getOrderStats();
+            OrderStatsResponse stats = orderService.getOrderStats();
 
             assertThat(stats.totalOrders()).isEqualTo(100);
             assertThat(stats.pendingPayment()).isEqualTo(20);

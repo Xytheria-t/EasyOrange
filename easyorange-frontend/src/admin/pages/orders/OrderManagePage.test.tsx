@@ -6,8 +6,6 @@ import type { PageData, AdminOrder } from '../../types/admin';
 
 // ─── Hook mocks ───
 const mockUseAdminOrders = vi.fn();
-let mockDetailModalOpen = false;
-let mockDetailModalOrderId: number | null = null;
 
 vi.mock('../../hooks', () => ({
   useAdminOrders: (...args: unknown[]) => mockUseAdminOrders(...args),
@@ -26,8 +24,6 @@ vi.mock('./OrderDetailModal', () => ({
     orderId: number | null;
     onClose: () => void;
   }) => {
-    mockDetailModalOpen = open;
-    mockDetailModalOrderId = orderId;
     if (!open) return null;
     return (
       <div data-testid="order-detail-modal" data-order-id={orderId}>
@@ -40,13 +36,11 @@ vi.mock('./OrderDetailModal', () => ({
 // Mock AdminTable
 vi.mock('../../components/AdminTable', () => ({
   AdminTable: ({
-    columns,
     data,
     loading,
     pagination,
     emptyText,
   }: {
-    columns: unknown[];
     data: unknown[];
     loading: boolean;
     pagination: unknown;
@@ -75,7 +69,7 @@ vi.mock('../../components/AdminTable', () => ({
               </button>
             </div>
           ))}
-          {pagination && (
+          {!!pagination && (
             <div data-testid="pagination">
               <button onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}>
                 下一页

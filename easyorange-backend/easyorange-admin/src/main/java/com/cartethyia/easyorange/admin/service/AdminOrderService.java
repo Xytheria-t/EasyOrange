@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailVO;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderVO;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -41,11 +41,11 @@ public class AdminOrderService {
     private final ProductMapper productMapper;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public PageResult<AdminOrderVO> listOrders(AdminOrderQueryRequest request) {
+    public PageResult<AdminOrderResponse> listOrders(AdminOrderQueryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
 
-        LambdaQueryWrapper<OrderDO> wrapper = new LambdaQueryWrapper<OrderDO>()
+        var wrapper = ChainWrappers.lambdaQueryChain(orderMapper)
             .eq(OrderDO::getDelFlag, 0);
 
         if (StringUtils.hasText(request.getOrderNo())) {
@@ -80,20 +80,20 @@ public class AdminOrderService {
 
         wrapper.orderByDesc(OrderDO::getCreateTime);
 
-        Page<OrderDO> page = orderMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        Page<OrderDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
         Map<Long, UserEntity> userMap = batchGetUsers(page);
         Map<Long, ProductDO> productMap = batchGetProducts(page);
 
-        List<AdminOrderVO> records = page.getRecords().stream()
-            .map(order -> toAdminOrderVO(order, userMap, productMap))
+        List<AdminOrderResponse> records = page.getRecords().stream()
+            .map(order -> toAdminOrderResponse(order, userMap, productMap))
             .collect(Collectors.toList());
 
         return PageResult.of(records, page.getTotal(), pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
-    public AdminOrderDetailVO getOrderDetail(Long id) {
+    public AdminOrderDetailResponse getOrderDetail(Long id) {
         OrderReadModel model = orderReadRepository.findById(new OrderId(id))
             .orElseThrow(() -> BusinessException.of("订单不存在"));
 
@@ -101,18 +101,18 @@ public class AdminOrderService {
         UserEntity seller = userMapper.selectById(model.sellerId());
         ProductDO product = productMapper.selectById(model.productId());
 
-        return AdminOrderDetailVO.builder()
+        return AdminOrderDetailResponse.builder()
             .orderId(model.id())
             .orderNo(model.orderNo())
-            .buyer(buyer != null ? new AdminOrderDetailVO.BuyerInfo(
+            .buyer(buyer != null ? new AdminOrderDetailResponse.BuyerInfo(
                 buyer.getId(), buyer.getNickName(), buyer.getAvatar(), buyer.getPhone()
-            ) : new AdminOrderDetailVO.BuyerInfo(model.buyerId(), null, null, null))
-            .seller(seller != null ? new AdminOrderDetailVO.SellerInfo(
+            ) : new AdminOrderDetailResponse.BuyerInfo(model.buyerId(), null, null, null))
+            .seller(seller != null ? new AdminOrderDetailResponse.SellerInfo(
                 seller.getId(), seller.getNickName(), seller.getAvatar(), seller.getPhone()
-            ) : new AdminOrderDetailVO.SellerInfo(model.sellerId(), null, null, null))
-            .product(product != null ? new AdminOrderDetailVO.ProductInfo(
+            ) : new AdminOrderDetailResponse.SellerInfo(model.sellerId(), null, null, null))
+            .product(product != null ? new AdminOrderDetailResponse.ProductInfo(
                 product.getId(), product.getName(), null, product.getPrice()
-            ) : new AdminOrderDetailVO.ProductInfo(model.productId(), null, null, null))
+            ) : new AdminOrderDetailResponse.ProductInfo(model.productId(), null, null, null))
             .amount(model.amount())
             .status(model.status())
             .statusDesc(model.statusDesc())
@@ -126,7 +126,7 @@ public class AdminOrderService {
     }
 
     @Transactional(readOnly = true)
-    public OrderStatsVO getOrderStats() {
+    public OrderStatsResponse getOrderStats() {
         long totalOrders = orderReadRepository.countByStatus(null);
         long pendingPayment = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode());
         long paid = orderReadRepository.countByStatus(OrderStatus.PAID.getCode());
@@ -138,16 +138,15 @@ public class AdminOrderService {
 
         LocalDate today = LocalDate.now();
         LocalDateTime todayStart = today.atStartOfDay();
-        long todayOrders = orderMapper.selectCount(
-            new LambdaQueryWrapper<OrderDO>()
-                .eq(OrderDO::getDelFlag, 0)
-                .ge(OrderDO::getCreateTime, todayStart)
-        );
+        long todayOrders = ChainWrappers.lambdaQueryChain(orderMapper)
+            .eq(OrderDO::getDelFlag, 0)
+            .ge(OrderDO::getCreateTime, todayStart)
+            .count();
 
         BigDecimal totalRevenue = BigDecimal.ZERO;
         BigDecimal todayRevenue = BigDecimal.ZERO;
 
-        return OrderStatsVO.builder()
+        return OrderStatsResponse.builder()
             .totalOrders(totalOrders)
             .todayOrders(todayOrders)
             .pendingPayment(pendingPayment)
@@ -239,13 +238,13 @@ public class AdminOrderService {
         return products.stream().collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
     }
 
-    private AdminOrderVO toAdminOrderVO(OrderDO order, Map<Long, UserEntity> userMap, Map<Long, ProductDO> productMap) {
+    private AdminOrderResponse toAdminOrderResponse(OrderDO order, Map<Long, UserEntity> userMap, Map<Long, ProductDO> productMap) {
         UserEntity buyer = userMap.get(order.getBuyerId());
         UserEntity seller = userMap.get(order.getSellerId());
         ProductDO product = productMap.get(order.getProductId());
         OrderStatus status = OrderStatus.fromCode(order.getStatus());
 
-        return new AdminOrderVO(
+        return new AdminOrderResponse(
             order.getId(),
             order.getOrderNo(),
             order.getBuyerId(),

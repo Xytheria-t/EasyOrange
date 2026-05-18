@@ -1,35 +1,37 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.port.output.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-@RequiredArgsConstructor
-public class MybatisOrderReadRepository implements OrderReadRepository {
+public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, OrderDO> implements OrderReadRepository {
 
-    private final OrderMapper orderMapper;
     private final OrderDataConverter converter;
+
+    public MybatisOrderReadRepository(OrderMapper orderMapper, OrderDataConverter converter) {
+        super(orderMapper);
+        this.converter = converter;
+    }
 
     @Override
     public Optional<OrderReadModel> findById(OrderId id) {
-        OrderDO orderDO = orderMapper.selectById(id.value());
+        OrderDO orderDO = mapper.selectById(id.value());
         return Optional.ofNullable(converter.toReadModel(orderDO));
     }
 
     @Override
     public PageResult<OrderReadModel> findPage(OrderQueryCondition condition) {
         Page<OrderDO> page = new Page<>(condition.pageNum(), condition.pageSize());
-        LambdaQueryWrapper<OrderDO> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = lambdaQuery();
 
         wrapper.eq(StringUtils.isNotBlank(condition.orderNo()), OrderDO::getOrderNo, condition.orderNo());
         wrapper.eq(condition.status() != null, OrderDO::getStatus, condition.status());
@@ -39,7 +41,7 @@ public class MybatisOrderReadRepository implements OrderReadRepository {
 
         wrapper.orderByDesc(OrderDO::getCreateTime);
 
-        Page<OrderDO> orderPage = orderMapper.selectPage(page, wrapper);
+        Page<OrderDO> orderPage = wrapper.page(page);
 
         return PageResult.of(
                 orderPage.getRecords().stream().map(converter::toReadModel).toList(),
@@ -49,8 +51,8 @@ public class MybatisOrderReadRepository implements OrderReadRepository {
 
     @Override
     public long countByStatus(Integer status) {
-        LambdaQueryWrapper<OrderDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(OrderDO::getStatus, status);
-        return orderMapper.selectCount(wrapper);
+        return lambdaQuery()
+                .eq(OrderDO::getStatus, status)
+                .count();
     }
 }

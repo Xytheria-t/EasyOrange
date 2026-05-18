@@ -119,7 +119,7 @@ describe('useTrend', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: [{ date: '2026-05-01', count: 10 }],
+          data: [{ month: '2026-05', users: 10, products: 5, orders: 3 }],
           timestamp: Date.now(),
         });
       }),
@@ -129,8 +129,8 @@ describe('useTrend', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].date).toBe('2026-05-01');
-    expect(result.current.data![0].count).toBe(10);
+    expect(result.current.data![0].month).toBe('2026-05');
+    expect(result.current.data![0].users).toBe(10);
   });
 });
 
@@ -141,7 +141,7 @@ describe('useRecentActivity', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: [{ id: 1, action: 'LOGIN', userName: 'admin', timestamp: '2026-05-16 12:00:00' }],
+          data: [{ time: '2026-05-16 12:00:00', text: 'LOGIN', type: 'user' }],
           timestamp: Date.now(),
         });
       }),
@@ -151,7 +151,7 @@ describe('useRecentActivity', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].action).toBe('LOGIN');
+    expect(result.current.data![0].text).toBe('LOGIN');
   });
 });
 
@@ -183,7 +183,7 @@ describe('useTopProducts', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: [{ productId: 1, name: '热销商品', salesCount: 50 }],
+          data: [{ productId: 1, name: '热销商品', viewCount: 50, price: 100, status: 1, statusDesc: '上架', mainImage: null }],
           timestamp: Date.now(),
         });
       }),
@@ -194,6 +194,6 @@ describe('useTopProducts', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
     expect(result.current.data![0].name).toBe('热销商品');
-    expect(result.current.data![0].salesCount).toBe(50);
+    expect(result.current.data![0].viewCount).toBe(50);
   });
 });

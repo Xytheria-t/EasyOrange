@@ -17,18 +17,18 @@ import type {
   AdminOrderDetail,
   AdminOrderQuery,
   OrderInterventionRequest,
-  OrderStatsVO,
+  OrderStatsResponse,
   AdminReport,
   AdminReportQuery,
   ReportHandleRequest,
-  ReportStatsVO,
-  CategoryVO,
-  CategoryTreeVO,
+  ReportStatsResponse,
+  CategoryResponse,
+  CategoryTreeResponse,
   CategoryCreateRequest,
   CategoryUpdateRequest,
   BatchAuditRequest,
   ProductAuditRequest,
-  AuditLogVO,
+  AuditLogResponse,
   UserRoleRequest,
   ResetPasswordRequest,
   UserUnlockRequest,
@@ -149,7 +149,7 @@ export const adminApi = {
   },
 
   getAuditLogs(id: number) {
-    return request<AuditLogVO[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
+    return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
   },
 
   getOrders(params: AdminOrderQuery) {
@@ -163,7 +163,7 @@ export const adminApi = {
   },
 
   getOrderStats() {
-    return request<OrderStatsVO>(`${ADMIN_API_PREFIX}/orders/stats`);
+    return request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
   },
 
   cancelOrder(id: number, data: OrderInterventionRequest) {
@@ -188,11 +188,11 @@ export const adminApi = {
   },
 
   getCategories() {
-    return request<CategoryVO[]>(`${ADMIN_API_PREFIX}/categories`);
+    return request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories`);
   },
 
   getCategoryTree() {
-    return request<CategoryTreeVO[]>(`${ADMIN_API_PREFIX}/categories/tree`);
+    return request<CategoryTreeResponse[]>(`${ADMIN_API_PREFIX}/categories/tree`);
   },
 
   createCategory(data: CategoryCreateRequest) {
@@ -233,7 +233,7 @@ export const adminApi = {
   },
 
   getReportStats() {
-    return request<ReportStatsVO>(`${ADMIN_API_PREFIX}/reports/stats`);
+    return request<ReportStatsResponse>(`${ADMIN_API_PREFIX}/reports/stats`);
   },
 
   handleReport(id: number, data: ReportHandleRequest) {

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.ResetPasswordVO;
+import com.cartethyia.easyorange.admin.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserServiceExtension;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +49,9 @@ class AdminUserControllerExtensionTest {
 
     @Test
     void resetPassword_shouldReturnNewPassword() throws Exception {
-        var resetVO = ResetPasswordVO.builder()
+        var resetResponse = ResetPasswordResponse.builder()
             .newPassword("newPass123!").message("密码已重置").build();
-        when(adminUserServiceExtension.resetPassword(eq(1L), any())).thenReturn(resetVO);
+        when(adminUserServiceExtension.resetPassword(eq(1L), any())).thenReturn(resetResponse);
 
         mockMvc.perform(put("/api/admin/users/1/reset-password")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -9,7 +9,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -195,7 +194,7 @@ public class SecurityProperties {
      * @return 不可变路径列表
      */
     public List<String> getIgnorePaths() {
-        return Collections.unmodifiableList(ignorePaths);
+        return List.copyOf(ignorePaths);
     }
 
     /**
@@ -204,7 +203,7 @@ public class SecurityProperties {
      * @return 不可变路径列表
      */
     public List<String> getProductPaths() {
-        return Collections.unmodifiableList(productPaths);
+        return List.copyOf(productPaths);
     }
 
     /**
@@ -213,7 +212,7 @@ public class SecurityProperties {
      * @return 不可变路径列表
      */
     public List<String> getStaticPaths() {
-        return Collections.unmodifiableList(staticPaths);
+        return List.copyOf(staticPaths);
     }
 
     /**
@@ -222,6 +221,6 @@ public class SecurityProperties {
      * @return 不可变源列表
      */
     public List<String> getAllowedOrigins() {
-        return Collections.unmodifiableList(allowedOrigins);
+        return List.copyOf(allowedOrigins);
     }
 }

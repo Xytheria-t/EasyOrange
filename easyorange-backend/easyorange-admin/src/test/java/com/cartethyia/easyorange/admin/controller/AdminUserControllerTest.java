@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminUserVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;
@@ -35,8 +35,8 @@ class AdminUserControllerTest {
     @Test
     void listUsers_shouldReturnPaginatedUsers() throws Exception {
         var users = List.of(
-            AdminUserVO.builder().userId(1L).username("alice").status("1").statusDesc("正常").build(),
-            AdminUserVO.builder().userId(2L).username("bob").status("1").statusDesc("正常").build()
+            AdminUserResponse.builder().userId(1L).username("alice").status("1").statusDesc("正常").build(),
+            AdminUserResponse.builder().userId(2L).username("bob").status("1").statusDesc("正常").build()
         );
         var pageResult = PageResult.of(users, 2L, 1, 20);
         when(adminUserService.listUsers(any())).thenReturn(pageResult);
@@ -55,7 +55,7 @@ class AdminUserControllerTest {
     @Test
     void listUsers_withKeyword_shouldFilterByKeyword() throws Exception {
         var users = List.of(
-            AdminUserVO.builder().userId(1L).username("alice").build()
+            AdminUserResponse.builder().userId(1L).username("alice").build()
         );
         var pageResult = PageResult.of(users, 1L, 1, 20);
         when(adminUserService.listUsers(any())).thenReturn(pageResult);
@@ -68,7 +68,7 @@ class AdminUserControllerTest {
 
     @Test
     void getUserDetail_shouldReturnUser() throws Exception {
-        var user = AdminUserVO.builder()
+        var user = AdminUserResponse.builder()
             .userId(1L).username("alice").nickname("Alice").email("alice@test.com")
             .status("1").statusDesc("正常").createTime(LocalDateTime.of(2026, 1, 1, 0, 0))
             .build();

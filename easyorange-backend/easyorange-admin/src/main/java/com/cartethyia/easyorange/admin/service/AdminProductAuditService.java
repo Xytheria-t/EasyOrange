@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.admin.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.dto.response.AuditLogVO;
-import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultVO;
+import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
+import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
@@ -95,7 +95,7 @@ public class AdminProductAuditService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public BatchAuditResultVO batchAudit(BatchAuditRequest request) {
+    public BatchAuditResultResponse batchAudit(BatchAuditRequest request) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
 
@@ -166,7 +166,7 @@ public class AdminProductAuditService {
             }
         }
 
-        return new BatchAuditResultVO(
+        return new BatchAuditResultResponse(
                 request.getItems().size(),
                 successCount,
                 errors.size(),
@@ -175,13 +175,13 @@ public class AdminProductAuditService {
     }
 
     @Transactional(readOnly = true)
-    public List<AuditLogVO> getAuditLogs(Long productId) {
+    public List<AuditLogResponse> getAuditLogs(Long productId) {
         List<ProductAuditLogDO> logs = productAuditLogMapper.selectByProductId(productId);
-        return logs.stream().map(this::toAuditLogVO).toList();
+        return logs.stream().map(this::toAuditLogResponse).toList();
     }
 
-    private AuditLogVO toAuditLogVO(ProductAuditLogDO log) {
-        return new AuditLogVO(
+    private AuditLogResponse toAuditLogResponse(ProductAuditLogDO log) {
+        return new AuditLogResponse(
                 log.getId(),
                 log.getProductId(),
                 log.getOperatorId(),

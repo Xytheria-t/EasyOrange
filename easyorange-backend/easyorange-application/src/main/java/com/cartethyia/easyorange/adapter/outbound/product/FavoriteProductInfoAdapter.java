@@ -45,7 +45,7 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
     @Override
     public Map<Long, SellerInfo> findSellersByIds(Set<Long> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         return productQueryRepository.findSellersByIds(sellerIds).stream()
                 .collect(Collectors.toMap(

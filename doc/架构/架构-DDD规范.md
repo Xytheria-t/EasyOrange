@@ -124,14 +124,19 @@ public interface UserRepository {
 }
 
 // adapter/outbound/persistence/UserRepositoryImpl.java
-public class UserRepositoryImpl implements UserRepository {
-    private final UserMapper mapper;
+// 继承 framework/repository/BaseRepository 获取 lambdaQuery()/lambdaUpdate() 便利方法
+public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> implements UserRepository {
 
     @Override
     public User save(User user) {
         UserEntity entity = UserAssembler.toEntity(user);
         mapper.insertOrUpdate(entity);
         return UserAssembler.toDomain(entity);
+    }
+
+    @Override
+    public Optional<User> findByUsername(String username) {
+        return findOne(UserEntity::getUsername, username).map(this::toDomain);
     }
 }
 ```
@@ -237,15 +242,15 @@ throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 public class UserInfoAdapter implements UserInfoPort {
     private final UserRepository userRepository;
 
-    public UserInfoVO getUserInfo(Long userId) {
+    public UserInfoResponse getUserInfo(Long userId) {
         return userRepository.findById(userId)
-            .map(this::toUserInfoVO)
+            .map(this::toUserInfoResponse)
             .orElseThrow(() -> new OrderDomainException("用户不存在"));
     }
 
-    // 外部 User 模型 → 内部 Order 模块的 UserInfoVO
-    private UserInfoVO toUserInfoVO(User user) {
-        return new UserInfoVO(user.getId(), user.getUsername(), user.getContactInfo().phone());
+    // 外部 User 模型 → 内部 Order 模块的 UserInfoResponse
+    private UserInfoResponse toUserInfoResponse(User user) {
+        return new UserInfoResponse(user.getId(), user.getUsername(), user.getContactInfo().phone());
     }
 }
 ```
@@ -463,7 +468,7 @@ public class UserRegistrationDomainService {
 | 职责 | 用例编排、事务管理、端口协调 | 纯业务规则、多聚合协调、聚合持久化 |
 | 依赖 | 依赖领域服务 + 输出端口 | 仅依赖领域模型 + 仓储接口 |
 | 框架 | 可包含 @Transactional 等注解 | 绝对无框架依赖 |
-| 返回值 | DTO/VO | 聚合根/值对象 |
+| 返回值 | DTO/Response | 聚合根/值对象 |
 | 拆分原则 | **按用例拆分**，一个类一个完整场景 | **按业务领域拆分**，一个类一个业务子域 |
 
 **应用服务拆分原则：**

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminProductVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;
@@ -35,9 +35,9 @@ class AdminProductControllerTest {
     @Test
     void listProducts_shouldReturnPaginatedProducts() throws Exception {
         var products = List.of(
-            AdminProductVO.builder().productId(1L).name("Product1").price(BigDecimal.valueOf(100))
+            AdminProductResponse.builder().productId(1L).name("Product1").price(BigDecimal.valueOf(100))
                 .status(1).statusDesc("上架").build(),
-            AdminProductVO.builder().productId(2L).name("Product2").price(BigDecimal.valueOf(200))
+            AdminProductResponse.builder().productId(2L).name("Product2").price(BigDecimal.valueOf(200))
                 .status(0).statusDesc("草稿").build()
         );
         var pageResult = PageResult.of(products, 2L, 1, 20);
@@ -55,7 +55,7 @@ class AdminProductControllerTest {
     @Test
     void listProducts_withStatusFilter_shouldFilterByStatus() throws Exception {
         var products = List.of(
-            AdminProductVO.builder().productId(1L).name("Online").status(1).build()
+            AdminProductResponse.builder().productId(1L).name("Online").status(1).build()
         );
         var pageResult = PageResult.of(products, 1L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
@@ -67,7 +67,7 @@ class AdminProductControllerTest {
 
     @Test
     void getProductDetail_shouldReturnProduct() throws Exception {
-        var product = AdminProductVO.builder()
+        var product = AdminProductResponse.builder()
             .productId(1L).name("DetailProduct").description("A detailed product")
             .price(BigDecimal.valueOf(150)).status(1).statusDesc("上架").build();
         when(adminProductService.getProductDetail(1L)).thenReturn(product);

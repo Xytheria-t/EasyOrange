@@ -1,7 +1,8 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.repository;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -72,7 +73,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
             return convertToReadModelPage(resultPage);
         }
 
-        LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
         if (categoryId != null) {
             List<Long> categoryIds = resolveCategoryIdsWithChildren(categoryId);
             wrapper.in(ProductDO::getCategoryId, categoryIds);
@@ -94,7 +95,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         applySort(wrapper, sort);
 
-        Page<ProductDO> productPage = productMapper.selectPage(page, wrapper);
+        Page<ProductDO> productPage = wrapper.page(page);
         return convertToReadModelPage(productPage);
     }
 
@@ -120,14 +121,14 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     public Page<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
                                                           Integer pageNum, Integer pageSize) {
         Page<ProductDO> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
         wrapper.eq(ProductDO::getUserId, sellerId);
         if (status != null) {
             wrapper.eq(ProductDO::getStatus, status);
         }
         wrapper.orderByDesc(ProductDO::getCreateTime);
 
-        Page<ProductDO> productPage = productMapper.selectPage(page, wrapper);
+        Page<ProductDO> productPage = wrapper.page(page);
         return convertToReadModelPage(productPage);
     }
 
@@ -172,10 +173,10 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
 
         Page<SearchHistoryDO> historyPage = new Page<>(1, lim);
-        Page<SearchHistoryDO> result = searchHistoryMapper.selectPage(historyPage,
-                new LambdaQueryWrapper<SearchHistoryDO>()
-                        .eq(SearchHistoryDO::getUserId, userId)
-                        .orderByDesc(SearchHistoryDO::getSearchTime));
+        Page<SearchHistoryDO> result = ChainWrappers.lambdaQueryChain(searchHistoryMapper)
+                .eq(SearchHistoryDO::getUserId, userId)
+                .orderByDesc(SearchHistoryDO::getSearchTime)
+                .page(historyPage);
 
         return result.getRecords().stream()
                 .map(h -> new SearchHistoryReadModel(h.getId(), h.getKeyword(), h.getSearchTime()))
@@ -200,9 +201,9 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
 
         Page<HotKeywordDO> keywordPage = new Page<>(1, lim);
-        Page<HotKeywordDO> keywordResult = hotKeywordMapper.selectPage(keywordPage,
-                new LambdaQueryWrapper<HotKeywordDO>()
-                        .orderByDesc(HotKeywordDO::getSearchCount));
+        Page<HotKeywordDO> keywordResult = ChainWrappers.lambdaQueryChain(hotKeywordMapper)
+                .orderByDesc(HotKeywordDO::getSearchCount)
+                .page(keywordPage);
 
         return keywordResult.getRecords().stream()
                 .map(k -> new HotKeywordReadModel(k.getId(), k.getKeyword(), k.getSearchCount(), calculateHotLevel(k.getSearchCount())))
@@ -229,10 +230,10 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         int suggestionLimit = limit != null ? limit : 10;
         Page<HotKeywordDO> suggestionPage = new Page<>(1, suggestionLimit);
-        Page<HotKeywordDO> suggestionResult = hotKeywordMapper.selectPage(suggestionPage,
-                new LambdaQueryWrapper<HotKeywordDO>()
-                        .like(HotKeywordDO::getKeyword, keyword)
-                        .orderByDesc(HotKeywordDO::getSearchCount));
+        Page<HotKeywordDO> suggestionResult = ChainWrappers.lambdaQueryChain(hotKeywordMapper)
+                .like(HotKeywordDO::getKeyword, keyword)
+                .orderByDesc(HotKeywordDO::getSearchCount)
+                .page(suggestionPage);
 
         return suggestionResult.getRecords().stream()
                 .map(HotKeywordDO::getKeyword)
@@ -276,11 +277,10 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         if (productIds == null || productIds.isEmpty()) {
             return List.of();
         }
-        List<ProductImageDO> images = productImageMapper.selectList(
-                new LambdaQueryWrapper<ProductImageDO>()
-                        .in(ProductImageDO::getProductId, productIds)
-                        .orderByAsc(ProductImageDO::getSortOrder)
-        );
+        List<ProductImageDO> images = ChainWrappers.lambdaQueryChain(productImageMapper)
+                .in(ProductImageDO::getProductId, productIds)
+                .orderByAsc(ProductImageDO::getSortOrder)
+                .list();
         return images.stream()
                 .map(img -> new ProductImageInfo(img.getProductId(), img.getImageUrl(), img.getSortOrder(), img.getIsMain() != null && img.getIsMain().equals(1)))
                 .collect(Collectors.toList());
@@ -305,26 +305,24 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         String key = ProductCacheConstant.searchHistoryKey(userId);
         redisTemplate.delete(key);
 
-        searchHistoryMapper.delete(
-                new LambdaQueryWrapper<SearchHistoryDO>()
-                        .eq(SearchHistoryDO::getUserId, userId)
-        );
+        ChainWrappers.lambdaUpdateChain(searchHistoryMapper)
+                .eq(SearchHistoryDO::getUserId, userId)
+                .remove();
     }
 
     @Override
     public void deleteSearchHistoryById(Long historyId, Long userId) {
-        searchHistoryMapper.delete(
-                new LambdaQueryWrapper<SearchHistoryDO>()
-                        .eq(SearchHistoryDO::getId, historyId)
-                        .eq(SearchHistoryDO::getUserId, userId)
-        );
+        ChainWrappers.lambdaUpdateChain(searchHistoryMapper)
+                .eq(SearchHistoryDO::getId, historyId)
+                .eq(SearchHistoryDO::getUserId, userId)
+                .remove();
     }
 
     @Override
     public long countByStatus(Integer status) {
-        LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductDO::getStatus, status);
-        return productMapper.selectCount(wrapper);
+        return ChainWrappers.lambdaQueryChain(productMapper)
+                .eq(ProductDO::getStatus, status)
+                .count();
     }
 
     private Page<ProductReadModel> convertToReadModelPage(Page<ProductDO> productPage) {
@@ -362,7 +360,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         );
     }
 
-    private void applySort(LambdaQueryWrapper<ProductDO> wrapper, String sort) {
+    private void applySort(LambdaQueryChainWrapper<ProductDO> wrapper, String sort) {
         if (sort == null || sort.isBlank() || "default".equals(sort)) {
             wrapper.orderByDesc(ProductDO::getCreateTime);
             return;

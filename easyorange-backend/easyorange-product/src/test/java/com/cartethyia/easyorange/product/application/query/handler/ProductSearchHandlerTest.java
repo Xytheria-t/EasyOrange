@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.product.application.query.handler;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -68,7 +69,7 @@ class ProductSearchHandlerTest {
         when(productQueryRepository.searchProducts("手机", 2L, 1, 1, 20))
                 .thenReturn(page);
 
-        PageResult<ProductResponse> result = searchHandler.handleSearch(request);
+        SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
 
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
@@ -91,8 +92,7 @@ class ProductSearchHandlerTest {
         when(productQueryRepository.searchProducts("不存在", null, null, 1, 20))
                 .thenReturn(page);
 
-        PageResult<ProductResponse> result = searchHandler.handleSearch(request);
-
+        SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
         assertThat(result.records()).isEmpty();
         assertThat(result.total()).isZero();
     }
@@ -117,9 +117,8 @@ class ProductSearchHandlerTest {
     @Test
     @DisplayName("获取搜索历史应返回历史列表")
     void getMySearchHistory_shouldReturnHistory() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
-
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             SearchHistoryReadModel history = new SearchHistoryReadModel(100L, "手机", LocalDateTime.now());
             when(productQueryRepository.findSearchHistoryByUserId(1L, 10))
                     .thenReturn(List.of(history));
@@ -129,30 +128,34 @@ class ProductSearchHandlerTest {
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getId()).isEqualTo(100L);
             assertThat(result.get(0).getKeyword()).isEqualTo("手机");
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("清除搜索历史应委托给 service")
     void clearMySearchHistory_shouldDelegateToService() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
-
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             searchHandler.clearMySearchHistory();
 
             verify(searchHistoryService).clearSearchHistory(1L);
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("删除单条搜索历史应委托给 service")
     void deleteSearchHistory_shouldDelegateToService() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
-
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             searchHandler.deleteSearchHistory(100L);
 
             verify(searchHistoryService).deleteSearchHistoryById(100L, 1L);
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
@@ -186,12 +189,13 @@ class ProductSearchHandlerTest {
     @Test
     @DisplayName("记录搜索应委托给 service")
     void recordSearch_shouldDelegateToService() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
-
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             searchHandler.recordSearch("手机");
 
             verify(searchHistoryService).saveSearchHistory(1L, "手机");
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 }

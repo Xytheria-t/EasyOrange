@@ -259,6 +259,7 @@ npm run dev
 | **管理端-商品** | `GET/PUT /api/admin/products/*` | 商品列表、详情、状态、审核(带原因)、批量审核 |
 | **管理端-订单** | `GET/PUT /api/admin/orders/*` | 订单列表、详情、取消、强制完成、退款、统计 |
 | **管理端-分类** | CRUD `/api/admin/categories` | 分类 CRUD、树形结构、启用禁用 |
+| **管理端-评价** | `GET/DELETE /api/admin/reviews/*` | 评价列表、详情、删除 |
 | **管理端-举报** | `GET/PUT /api/admin/reports/*` | 举报列表、详情、处理(6种动作)、统计 |
 
 ## 功能模块

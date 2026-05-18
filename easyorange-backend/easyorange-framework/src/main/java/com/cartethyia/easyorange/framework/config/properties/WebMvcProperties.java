@@ -7,7 +7,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -24,10 +23,10 @@ public class WebMvcProperties {
     private int interceptorOrder = 0;
 
     public List<String> getExcludePaths() {
-        return Collections.unmodifiableList(excludePaths);
+        return List.copyOf(excludePaths);
     }
 
     public List<String> getSkipLoggingPaths() {
-        return Collections.unmodifiableList(skipLoggingPaths);
+        return List.copyOf(skipLoggingPaths);
     }
 }

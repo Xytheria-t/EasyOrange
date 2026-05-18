@@ -64,7 +64,7 @@ payment/
 │   │   ├── PaymentId.java, PaymentNo.java
 │   │   ├── PaymentAmount.java
 │   │   ├── IdempotencyKey.java
-│   │   └── PaymentMethodVO.java
+│   │   └── PaymentMethodResponse.java
 │   ├── event/
 │   │   ├── PaymentCreatedEvent.java
 │   │   ├── PaymentSucceededEvent.java

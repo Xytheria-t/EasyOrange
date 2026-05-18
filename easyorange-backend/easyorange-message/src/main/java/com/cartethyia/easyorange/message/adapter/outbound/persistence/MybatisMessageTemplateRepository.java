@@ -1,26 +1,27 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
 import java.util.List;
 
 @Repository
-@RequiredArgsConstructor
-public class MybatisMessageTemplateRepository implements MessageTemplateRepository {
+public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemplateMapper, MessageTemplate> implements MessageTemplateRepository {
 
-    private final MessageTemplateMapper mapper;
+    public MybatisMessageTemplateRepository(MessageTemplateMapper mapper) {
+        super(mapper);
+    }
 
     @Override
     public MessageTemplate findByCode(String templateCode) {
-        return mapper.selectOne(new LambdaQueryWrapper<MessageTemplate>()
+        return lambdaQuery()
                 .eq(MessageTemplate::getTemplateCode, templateCode)
-                .eq(MessageTemplate::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED));
+                .eq(MessageTemplate::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED)
+                .one();
     }
 
     @Override
@@ -41,7 +42,7 @@ public class MybatisMessageTemplateRepository implements MessageTemplateReposito
 
     @Override
     public List<MessageTemplate> findByCondition(MessageTemplate condition) {
-        LambdaQueryWrapper<MessageTemplate> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = lambdaQuery();
         if (condition != null) {
             if (condition.getTemplateCode() != null) {
                 wrapper.like(MessageTemplate::getTemplateCode, condition.getTemplateCode());
@@ -57,14 +58,15 @@ public class MybatisMessageTemplateRepository implements MessageTemplateReposito
             }
         }
         wrapper.orderByDesc(MessageTemplate::getCreateTime);
-        return mapper.selectList(wrapper);
+        return wrapper.list();
     }
 
     @Override
     public boolean existsByCodeExcludingId(String templateCode, Long excludeId) {
-        Long count = mapper.selectCount(new LambdaQueryWrapper<MessageTemplate>()
+        Long count = lambdaQuery()
                 .eq(MessageTemplate::getTemplateCode, templateCode)
-                .ne(excludeId != null, MessageTemplate::getId, excludeId));
+                .ne(excludeId != null, MessageTemplate::getId, excludeId)
+                .count();
         return count > 0;
     }
 }

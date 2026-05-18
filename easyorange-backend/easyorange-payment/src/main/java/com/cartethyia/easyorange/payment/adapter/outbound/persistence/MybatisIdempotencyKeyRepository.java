@@ -1,22 +1,21 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.IdempotencyKeyMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.IdempotencyKeyPO;
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
 import com.cartethyia.easyorange.payment.domain.port.output.IdempotencyKeyRepositoryPort;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
-@RequiredArgsConstructor
-public class MybatisIdempotencyKeyRepository implements IdempotencyKeyRepositoryPort {
+public class MybatisIdempotencyKeyRepository extends BaseRepository<IdempotencyKeyMapper, IdempotencyKeyPO> implements IdempotencyKeyRepositoryPort {
 
-    private final IdempotencyKeyMapper mapper;
+    public MybatisIdempotencyKeyRepository(IdempotencyKeyMapper mapper) {
+        super(mapper);
+    }
 
     @Override
     public void save(IdempotencyKey key) {
@@ -33,26 +32,26 @@ public class MybatisIdempotencyKeyRepository implements IdempotencyKeyRepository
 
     @Override
     public Optional<IdempotencyKey> findByKey(String key) {
-        LambdaQueryWrapper<IdempotencyKeyPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(IdempotencyKeyPO::getIdempotencyKey, key);
-        IdempotencyKeyPO po = mapper.selectOne(wrapper);
+        IdempotencyKeyPO po = lambdaQuery()
+                .eq(IdempotencyKeyPO::getIdempotencyKey, key)
+                .one();
         return Optional.ofNullable(po).map(this::toDomain);
     }
 
     @Override
     public void updateResponse(String key, String responseData, String status) {
-        LambdaUpdateWrapper<IdempotencyKeyPO> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(IdempotencyKeyPO::getIdempotencyKey, key)
+        lambdaUpdate()
+                .eq(IdempotencyKeyPO::getIdempotencyKey, key)
                 .set(IdempotencyKeyPO::getResponseData, responseData)
-                .set(IdempotencyKeyPO::getStatus, status);
-        mapper.update(null, wrapper);
+                .set(IdempotencyKeyPO::getStatus, status)
+                .update();
     }
 
     @Override
     public void deleteExpiredKeys() {
-        LambdaQueryWrapper<IdempotencyKeyPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.lt(IdempotencyKeyPO::getExpiresAt, LocalDateTime.now());
-        mapper.delete(wrapper);
+        lambdaUpdate()
+                .lt(IdempotencyKeyPO::getExpiresAt, LocalDateTime.now())
+                .remove();
     }
 
     private IdempotencyKey toDomain(IdempotencyKeyPO po) {

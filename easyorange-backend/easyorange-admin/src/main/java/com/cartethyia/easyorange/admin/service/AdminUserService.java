@@ -1,12 +1,12 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminUserVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
@@ -28,11 +28,11 @@ public class AdminUserService {
     private final UserMapper userMapper;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public PageResult<AdminUserVO> listUsers(AdminUserQueryRequest request) {
+    public PageResult<AdminUserResponse> listUsers(AdminUserQueryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
 
-        LambdaQueryWrapper<UserEntity> wrapper = new LambdaQueryWrapper<UserEntity>()
+        var wrapper = ChainWrappers.lambdaQueryChain(userMapper)
             .eq(UserEntity::getDelFlag, 0);
 
         if (StringUtils.hasText(request.getKeyword())) {
@@ -77,22 +77,22 @@ public class AdminUserService {
 
         wrapper.orderByDesc(UserEntity::getCreateTime);
 
-        Page<UserEntity> page = userMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        Page<UserEntity> page = wrapper.page(new Page<>(pageNum, pageSize));
 
-        List<AdminUserVO> records = page.getRecords().stream()
-            .map(this::toAdminUserVO)
+        List<AdminUserResponse> records = page.getRecords().stream()
+            .map(this::toAdminUserResponse)
             .collect(Collectors.toList());
 
         return PageResult.of(records, page.getTotal(), pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
-    public AdminUserVO getUserDetail(Long id) {
+    public AdminUserResponse getUserDetail(Long id) {
         UserEntity entity = userMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("用户不存在");
         }
-        return toAdminUserVO(entity);
+        return toAdminUserResponse(entity);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -107,8 +107,8 @@ public class AdminUserService {
         userMapper.updateById(entity);
     }
 
-    private AdminUserVO toAdminUserVO(UserEntity entity) {
-        return AdminUserVO.builder()
+    private AdminUserResponse toAdminUserResponse(UserEntity entity) {
+        return AdminUserResponse.builder()
             .userId(entity.getId())
             .username(entity.getUsername())
             .nickname(entity.getNickName())

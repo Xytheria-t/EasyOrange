@@ -54,7 +54,7 @@ order/
 │   ├── assembler/
 │   │   └── OrderVOAssembler.java
 │   └── dto/
-│       └── OrderVO.java                  # 响应 VO（被 assembler/controller/outbound 共用）
+│       └── OrderResponse.java                  # 响应 Response（被 assembler/controller/outbound 共用）
 ├── domain/
 │   ├── aggregate/
 │   │   └── OrderAggregate.java             # 订单聚合根 (不可变)

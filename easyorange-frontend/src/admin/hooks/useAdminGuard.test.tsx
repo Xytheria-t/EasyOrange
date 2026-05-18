@@ -4,8 +4,8 @@ import { useAuthStore } from '@/store';
 import { useAdminGuard } from './useAdminGuard';
 import type { User } from '@/types';
 
-const mockAdminUser = { id: '1', userType: '00', username: 'admin' } as User;
-const mockRegularUser = { id: '2', userType: '01', username: 'user' } as User;
+const mockAdminUser = { id: '1', userType: '00', username: 'admin' } as unknown as User;
+const mockRegularUser = { id: '2', userType: '01', username: 'user' } as unknown as User;
 
 beforeEach(() => {
   useAuthStore.setState({

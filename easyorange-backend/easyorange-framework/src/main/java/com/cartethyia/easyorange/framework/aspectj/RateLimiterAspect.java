@@ -70,7 +70,7 @@ public class RateLimiterAspect {
 
         String combineKey = getCombineKey(rateLimiter, point);
 
-        List<String> keys = Collections.singletonList(combineKey);
+        List<String> keys = List.of(combineKey);
         Long number = redisCache.executeLuaScript(RATE_LIMIT_SCRIPT, keys, count, timeInSeconds);
 
         if (number == null || number > count) {

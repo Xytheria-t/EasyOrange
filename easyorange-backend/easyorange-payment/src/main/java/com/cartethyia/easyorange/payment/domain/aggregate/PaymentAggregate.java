@@ -308,7 +308,7 @@ public class PaymentAggregate {
     }
     
     public List<BaseDomainEvent> domainEvents() {
-        return Collections.unmodifiableList(this.domainEvents);
+        return List.copyOf(this.domainEvents);
     }
     
     public void clearDomainEvents() {

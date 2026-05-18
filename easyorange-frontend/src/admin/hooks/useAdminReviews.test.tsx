@@ -65,7 +65,7 @@ describe('useAdminReviewDetail', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.id).toBe('rev-1');
+    expect(result.current.data?.reviewId).toBe('rev-1');
     expect(result.current.data?.rating).toBe(5);
   });
 });

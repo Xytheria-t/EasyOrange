@@ -41,10 +41,10 @@ vi.mock('../../components/AdminTable', () => ({
               <span data-testid="review-rating">{review.rating}</span>
               <span data-testid="review-product">{review.productName}</span>
               <span data-testid="review-user">{review.username}</span>
-              {columns.find((c: { key: string }) => c.key === 'actions')?.render(null, review)}
+              {(columns as Array<{ key: string; render: (...args: unknown[]) => React.ReactNode }>).find((c) => c.key === 'actions')?.render(null, review)}
             </div>
           ))}
-          {pagination && (
+          {!!pagination && (
             <div data-testid="pagination">
               <button
                 onClick={() =>

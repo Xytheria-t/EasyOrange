@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.application.query;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
@@ -13,8 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -28,35 +31,28 @@ public class ConversationQueryHandler {
     public List<ConversationVO> getConversation(Long otherUserId) {
         Long currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w
-                        .eq(Message::getSenderId, currentUserId)
-                        .eq(Message::getReceiverId, otherUserId)
+        List<Message> messages = ChainWrappers.lambdaQueryChain(messageMapper)
+                .and(w -> w
+                        .eq(Message::getSenderId, currentUserId).eq(Message::getReceiverId, otherUserId)
                         .or()
-                        .eq(Message::getSenderId, otherUserId)
-                        .eq(Message::getReceiverId, currentUserId)
+                        .eq(Message::getSenderId, otherUserId).eq(Message::getReceiverId, currentUserId)
                 )
                 .eq(Message::getDelFlag, 0)
-                .orderByAsc(Message::getCreateTime);
-
-        List<Message> messages = messageMapper.selectList(wrapper);
+                .orderByAsc(Message::getCreateTime)
+                .list();
 
         if (messages.isEmpty()) {
             return List.of();
         }
 
-        Set<Long> userIds = new HashSet<>();
-        userIds.add(currentUserId);
-        userIds.add(otherUserId);
-
-        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(userIds);
+        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(Set.of(currentUserId, otherUserId));
 
         return messages.stream()
-                .map(m -> toConversationVO(m, userMap, currentUserId))
-                .collect(Collectors.toList());
+                .map(msg -> toConversationVO(msg, userMap))
+                .toList();
     }
 
-    private ConversationVO toConversationVO(Message message, Map<Long, UserInfo> userMap, Long currentUserId) {
+    private ConversationVO toConversationVO(Message message, Map<Long, UserInfo> userMap) {
         UserInfo sender = userMap.get(message.getSenderId());
         UserInfo receiver = userMap.get(message.getReceiverId());
 
@@ -78,50 +74,49 @@ public class ConversationQueryHandler {
     public List<ConversationListVO> getConversations() {
         Long currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
-        wrapper.and(w -> w
+        List<Message> messages = ChainWrappers.lambdaQueryChain(messageMapper)
+                .and(w -> w
                         .eq(Message::getSenderId, currentUserId)
                         .or()
                         .eq(Message::getReceiverId, currentUserId)
                 )
                 .eq(Message::getDelFlag, 0)
-                .orderByDesc(Message::getCreateTime);
+                .orderByDesc(Message::getCreateTime)
+                .list();
 
-        List<Message> allMessages = messageMapper.selectList(wrapper);
-
-        if (allMessages.isEmpty()) {
+        if (messages.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, Message> latestMap = new LinkedHashMap<>();
-        Map<Long, Integer> unreadCountMap = new HashMap<>();
+        Map<Long, Message> latestByUser = new LinkedHashMap<>();
+        Map<Long, Integer> unreadCounts = new HashMap<>();
 
-        for (Message msg : allMessages) {
+        for (Message msg : messages) {
             Long otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
-            latestMap.putIfAbsent(otherUserId, msg);
+            latestByUser.putIfAbsent(otherUserId, msg);
             if (msg.getReceiverId().equals(currentUserId) && msg.isUnread()) {
-                unreadCountMap.merge(otherUserId, 1, Integer::sum);
+                unreadCounts.merge(otherUserId, 1, Integer::sum);
             }
         }
 
-        Set<Long> userIds = new HashSet<>(latestMap.keySet());
-        userIds.add(currentUserId);
-        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(userIds);
+        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(latestByUser.keySet());
+        userMap.put(currentUserId, userMap.get(currentUserId));
 
-        return latestMap.entrySet().stream()
-                .map(entry -> {
-                    Long targetUserId = entry.getKey();
-                    Message latestMsg = entry.getValue();
-                    UserInfo targetUser = userMap.get(targetUserId);
-                    return ConversationListVO.builder()
-                            .targetUserId(targetUserId)
-                            .targetUserName(targetUser != null ? targetUser.username() : "未知用户")
-                            .targetUserAvatar(targetUser != null ? targetUser.avatar() : null)
-                            .lastMessage(latestMsg.getContent())
-                            .lastMessageTime(latestMsg.getCreateTime())
-                            .unreadCount(unreadCountMap.getOrDefault(targetUserId, 0))
-                            .build();
-                })
-                .collect(Collectors.toList());
+        return latestByUser.entrySet().stream()
+                .map(entry -> buildConversationListVO(entry.getKey(), entry.getValue(), userMap, unreadCounts))
+                .toList();
+    }
+
+    private ConversationListVO buildConversationListVO(Long targetUserId, Message latestMsg,
+                                                        Map<Long, UserInfo> userMap, Map<Long, Integer> unreadCounts) {
+        UserInfo targetUser = userMap.get(targetUserId);
+        return ConversationListVO.builder()
+                .targetUserId(targetUserId)
+                .targetUserName(targetUser != null ? targetUser.username() : "未知用户")
+                .targetUserAvatar(targetUser != null ? targetUser.avatar() : null)
+                .lastMessage(latestMsg.getContent())
+                .lastMessageTime(latestMsg.getCreateTime())
+                .unreadCount(unreadCounts.getOrDefault(targetUserId, 0))
+                .build();
     }
 }

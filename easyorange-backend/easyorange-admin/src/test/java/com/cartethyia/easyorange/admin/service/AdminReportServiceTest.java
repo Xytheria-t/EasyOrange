@@ -2,12 +2,12 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.cartethyia.easyorange.admin.dto.request.BatchHandleRequest;
 import com.cartethyia.easyorange.admin.dto.request.ReportHandleRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminReportVO;
-import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryVO;
-import com.cartethyia.easyorange.admin.dto.response.ReportStatsVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryResponse;
+import com.cartethyia.easyorange.admin.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -105,10 +104,10 @@ class AdminReportServiceTest {
             reportTestProduct.setDelFlag(0);
             when(productMapper.selectBatchIds(anyList())).thenReturn(List.of(reportTestProduct));
 
-            PageResult<AdminReportVO> result = reportService.listReports(1, 20, 0);
+            PageResult<AdminReportResponse> result = reportService.listReports(1, 20, 0);
 
             assertThat(result.records()).hasSize(1);
-            AdminReportVO vo = result.records().get(0);
+            AdminReportResponse vo = result.records().get(0);
             assertThat(vo.reportId()).isEqualTo(REPORT_ID);
             assertThat(vo.productName()).isEqualTo("测试商品");
             assertThat(vo.reporterName()).isEqualTo("举报人");
@@ -131,7 +130,7 @@ class AdminReportServiceTest {
             testProduct2.setDelFlag(0);
             when(productMapper.selectBatchIds(anyList())).thenReturn(List.of(testProduct2));
 
-            AdminReportVO vo = reportService.getReportDetail(REPORT_ID);
+            AdminReportResponse vo = reportService.getReportDetail(REPORT_ID);
 
             assertThat(vo).isNotNull();
             assertThat(vo.reportId()).isEqualTo(REPORT_ID);
@@ -162,14 +161,16 @@ class AdminReportServiceTest {
             request.setAction("resolve");
             request.setRemark("已核实处理");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 reportService.handleReport(REPORT_ID, request);
 
                 verify(productReportRepository).update(report);
                 verify(reportHandleHistoryRepository).save(any(ReportHandleHistory.class));
                 verify(eventPublisher).publishEvent(any(Object.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -182,13 +183,15 @@ class AdminReportServiceTest {
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("dismiss");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 reportService.handleReport(REPORT_ID, request);
 
                 verify(productReportRepository).update(report);
                 verify(reportHandleHistoryRepository).save(any(ReportHandleHistory.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -201,12 +204,14 @@ class AdminReportServiceTest {
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("resolve");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 assertThatThrownBy(() -> reportService.handleReport(REPORT_ID, request))
                         .isInstanceOf(BusinessException.class)
                         .hasMessageContaining("已被处理");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -218,12 +223,14 @@ class AdminReportServiceTest {
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("resolve");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 assertThatThrownBy(() -> reportService.handleReport(REPORT_ID, request))
                         .isInstanceOf(BusinessException.class)
                         .hasMessageContaining("举报记录不存在");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -239,13 +246,15 @@ class AdminReportServiceTest {
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("PRODUCT_OFFLINE");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 reportService.handleReport(REPORT_ID, request);
 
                 assertThat(product.getStatus()).isEqualTo(2);
                 verify(productMapper).updateById(product);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -269,13 +278,15 @@ class AdminReportServiceTest {
             request.setReportIds(List.of(100L, 101L));
             request.setAction("dismiss");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 reportService.batchHandleReports(request);
 
                 verify(productReportRepository, times(2)).update(any(ProductReport.class));
                 verify(reportHandleHistoryRepository, times(2)).save(any(ReportHandleHistory.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -318,7 +329,7 @@ class AdminReportServiceTest {
             when(productReportRepository.countByStatus(2)).thenReturn(2L);
             when(productReportRepository.countByStatus(3)).thenReturn(1L);
 
-            ReportStatsVO stats = reportService.getReportStats();
+            ReportStatsResponse stats = reportService.getReportStats();
 
             assertThat(stats.totalReports()).isEqualTo(10);
             assertThat(stats.pendingReports()).isEqualTo(5);
@@ -335,7 +346,7 @@ class AdminReportServiceTest {
             when(reportHandleHistoryRepository.findByReportId(REPORT_ID)).thenReturn(List.of(history));
             when(userMapper.selectBatchIds(anyList())).thenReturn(java.util.List.of(createUser(OPERATOR_ID, "管理员")));
 
-            List<ReportHandleHistoryVO> historyList = reportService.getReportHistory(REPORT_ID);
+            List<ReportHandleHistoryResponse> historyList = reportService.getReportHistory(REPORT_ID);
 
             assertThat(historyList).hasSize(1);
             assertThat(historyList.get(0).action()).isEqualTo("resolve");

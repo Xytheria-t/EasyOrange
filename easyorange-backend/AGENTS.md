@@ -115,11 +115,11 @@ PageResult.of(records, total, page, size)
 | 领域服务 | `*DomainService` | `AuthenticationDomainService` |
 | 应用服务 | `*AppService` / `*CommandHandler` | `UserAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
-| 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` | `UserRepositoryImpl` |
+| 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity>` |
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
 | 控制器 | `*Controller` | `AuthController` |
 | 请求 DTO | `*Request` / `*Command` | `LoginRequest` |
-| 响应 DTO | `*Response` / `*VO` | `UserVO` |
+| 响应 DTO | `*Response` / `*Response` | `UserResponse` |
 | 数据对象 | `*DO` / `*PO` | `UserEntity`, `PaymentPO` |
 
 ## 数据对象基类
@@ -150,6 +150,8 @@ public class BaseDO {
 
 架构守卫测试位于 `easyorange-application/src/test/.../ArchitectureRulesTest.java`。
 
+**TestSecurityUtil 模式**：测试中设置 `SecurityContextHolder` 统一使用 `TestSecurityUtil.setSecurityContext(userId)`（位于 `easyorange-framework` 的 main 源码），替代 `mockStatic(SecurityContextUtil.class)`。`clearSecurityContext()` 必须在 `finally` 块中调用保证测试间隔离。
+
 ## Flyway 迁移规范
 
 - DDL 脚本: `db/migration/V{N}__description.sql`
@@ -165,6 +167,21 @@ public class BaseDO {
 - 防重: `@RepeatSubmit`
 - XSS: `XssFilter` + `XssHttpServletRequestWrapper`
 - CORS: 生产环境严格白名单
+
+## 不可变集合约定
+
+全项目 Java 代码**禁止使用 `Collections` 工具类**创建空/单元素/不可包装集合，统一使用 Java 9+ 工厂方法：
+
+| 场景 | ✅ 推荐 | ❌ 禁止 |
+|------|---------|---------|
+| 空 List | `List.of()` | `Collections.emptyList()` |
+| 空 Set | `Set.of()` | `Collections.emptySet()` |
+| 空 Map | `Map.of()` | `Collections.emptyMap()` |
+| 单元素 List | `List.of(x)` | `Collections.singletonList(x)` |
+| 单元素 Set | `Set.of(x)` | `Collections.singleton(x)` |
+| 不可变包装 | `List.copyOf(x)` / `Set.copyOf(x)` / `Map.copyOf(x)` | `Collections.unmodifiableXxx(x)` |
+
+此约定已通过全局 grep 清理完毕，新代码须直接使用工厂方法。
 
 ## 踩坑警示
 
@@ -220,8 +237,23 @@ public class TestAdminApplication {}
 
 ### framework 模块集成测试
 
-`easyorange-framework` 的集成测试（Redis Cache/EventIdempotencyChecker/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。该模块的 `pom.xml` **未全局配置** `excludedGroups=integration`，执行时需命令行指定：
+`easyorange-framework` 的集成测试（Redis Cache/EventIdempotencyChecker/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""`：
 
 ```bash
-./mvnw test -pl easyorange-framework -DexcludedGroups=integration
+./mvnw test -pl easyorange-framework -DexcludedGroups=""
 ```
+
+### MapStruct + IntelliJ 误报
+
+`@Mapper(componentModel = "spring")` 会在生成类上加 `@Component`，但 IntelliJ 的 Spring 插件静态分析会同时将接口上的 `@Mapper(componentModel = "spring")` 和生成类上的 `@Component` 都计为 bean，导致误报 "存在多个 XxxMapper 类型的 Bean"。
+
+**实际上运行时只有 1 个 bean**（MapStruct 生成的实现类），`@MapperScan(annotationClass = org.apache.ibatis.annotations.Mapper.class)` 不会注册 MapStruct 接口。
+
+**修复方式**：在注入字段上加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`：
+
+```java
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+private final UserEntityMapper entityMapper;
+```
+
+当前已修复：`UserEntityMapper`（UserRepositoryImpl）、`UserAssembler`（UserLoginAppService / UserAppService）。新增 MapStruct mapper 后按此方式处理即可。

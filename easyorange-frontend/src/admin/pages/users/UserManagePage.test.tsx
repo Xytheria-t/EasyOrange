@@ -7,8 +7,6 @@ import type { PageData, AdminUser } from '../../types/admin';
 // ─── Hook mocks ───
 const mockUseAdminUsers = vi.fn();
 const mockUseUpdateUserStatus = vi.fn();
-let mockModalOpen = false;
-let mockModalUser: AdminUser | null = null;
 
 vi.mock('../../hooks', () => ({
   useAdminUsers: (...args: unknown[]) => mockUseAdminUsers(...args),
@@ -31,8 +29,6 @@ vi.mock('./UserDetailModal', () => ({
     onSave: (status: string) => Promise<void>;
     loading: boolean;
   }) => {
-    mockModalOpen = open;
-    mockModalUser = user;
     if (!open || !user) return null;
     return (
       <div data-testid="user-detail-modal" data-user-id={user.userId}>
@@ -49,7 +45,7 @@ vi.mock('./UserDetailModal', () => ({
 // Mock AdminTable
 vi.mock('../../components/AdminTable', () => ({
   AdminTable: ({
-    columns,
+    columns: _columns,
     data,
     loading,
     pagination,
@@ -78,7 +74,7 @@ vi.mock('../../components/AdminTable', () => ({
               </button>
             </div>
           ))}
-          {pagination && (
+          {!!pagination && (
             <div data-testid="pagination">
               <button
                 onClick={() =>
@@ -193,9 +189,6 @@ function setupMocks(
     mutateAsync: vi.fn().mockResolvedValue({}),
     isPending: false,
   });
-
-  mockModalOpen = false;
-  mockModalUser = null;
 }
 
 describe('UserManagePage', () => {

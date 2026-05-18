@@ -9,7 +9,7 @@ import {
   useUpdateCategoryStatus,
   useDeleteCategory,
 } from '../../hooks';
-import type { CategoryTreeVO, CategoryCreateRequest, CategoryUpdateRequest } from '../../types/admin';
+import type { CategoryTreeResponse, CategoryCreateRequest, CategoryUpdateRequest } from '../../types/admin';
 
 type SortField = 'name' | 'sortOrder';
 type SortDir = 'asc' | 'desc';
@@ -50,7 +50,7 @@ export default function CategoryManagePage() {
   const [editStatus, setEditStatus] = useState(1);
 
   // Delete confirm
-  const [deleteTarget, setDeleteTarget] = useState<CategoryTreeVO | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryTreeResponse | null>(null);
 
   // Toggle expand/collapse
   const toggleExpand = useCallback((id: number) => {
@@ -66,8 +66,8 @@ export default function CategoryManagePage() {
 
   // Collect flat list for parent dropdown
   const allCategories = useMemo(() => {
-    const flatten = (nodes: CategoryTreeVO[]): CategoryTreeVO[] => {
-      const result: CategoryTreeVO[] = [];
+    const flatten = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] => {
+      const result: CategoryTreeResponse[] = [];
       for (const node of nodes) {
         result.push(node);
         if (node.children && node.children.length > 0) {
@@ -83,23 +83,23 @@ export default function CategoryManagePage() {
   const filteredTree = useMemo(() => {
     if (!treeData) {return [];}
 
-    const filterNode = (node: CategoryTreeVO): CategoryTreeVO | null => {
+    const filterNode = (node: CategoryTreeResponse): CategoryTreeResponse | null => {
       const matchStatus = !statusFilter || node.status === Number(statusFilter);
       const matchSearch = !searchInput || node.name.toLowerCase().includes(searchInput.toLowerCase());
       const selfMatch = matchStatus && matchSearch;
 
-      let filteredChildren: CategoryTreeVO[] = [];
+      let filteredChildren: CategoryTreeResponse[] = [];
       if (node.children && node.children.length > 0) {
         filteredChildren = node.children
           .map(filterNode)
-          .filter((n): n is CategoryTreeVO => n !== null);
+          .filter((n): n is CategoryTreeResponse => n !== null);
       }
 
       if (!selfMatch && filteredChildren.length === 0) {return null;}
       return { ...node, children: filteredChildren };
     };
 
-    const sortNodes = (nodes: CategoryTreeVO[]): CategoryTreeVO[] => {
+    const sortNodes = (nodes: CategoryTreeResponse[]): CategoryTreeResponse[] => {
       const sorted = [...nodes].sort((a, b) => {
         let cmp: number;
         if (sortField === 'name') {
@@ -112,7 +112,7 @@ export default function CategoryManagePage() {
       return sorted.map((n) => ({ ...n, children: n.children ? sortNodes(n.children) : [] }));
     };
 
-    return sortNodes(treeData.map(filterNode).filter((n): n is CategoryTreeVO => n !== null));
+    return sortNodes(treeData.map(filterNode).filter((n): n is CategoryTreeResponse => n !== null));
   }, [treeData, statusFilter, searchInput, sortField, sortDir]);
 
   // Create handler
@@ -163,13 +163,13 @@ export default function CategoryManagePage() {
   }, [deleteTarget, deleteMutation]);
 
   // Open edit modal
-  const openEdit = useCallback((node: CategoryTreeVO) => {
+  const openEdit = useCallback((node: CategoryTreeResponse) => {
     setEditId(node.categoryId);
     setEditName(node.name);
     setEditSortOrder(node.sortOrder);
     setEditStatus(node.status);
     // Find parent ID from flattened list
-    // Since CategoryTreeVO doesn't have parentId, we use the flat list
+    // Since CategoryTreeResponse doesn't have parentId, we use the flat list
     setEditParentId(undefined);
     setEditOpen(true);
   }, []);
@@ -178,7 +178,7 @@ export default function CategoryManagePage() {
   const totalCount = allCategories.length;
 
   // Render tree node recursively
-  function renderTreeNode(node: CategoryTreeVO, depth: number) {
+  function renderTreeNode(node: CategoryTreeResponse, depth: number) {
     const hasChildren = node.children && node.children.length > 0;
     const isExpanded = expandedIds.has(node.categoryId);
     const isEnabled = node.status === 1;

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import com.cartethyia.easyorange.message.dto.request.SubscriptionRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageSubscriptionVO;
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
@@ -46,9 +45,8 @@ class MessageSubscriptionServiceTest {
 
             when(messageSubscriptionRepository.findByUserId(USER_ID)).thenReturn(List.of(sub1, sub2));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 List<MessageSubscriptionVO> result = subscriptionService.getMySubscriptions();
 
                 assertThat(result).hasSize(2);
@@ -57,6 +55,8 @@ class MessageSubscriptionServiceTest {
                 assertThat(result.get(0).getEnabled()).isTrue();
                 assertThat(result.get(1).getMessageType()).isEqualTo("MARKETING");
                 assertThat(result.get(1).getEnabled()).isFalse();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -65,12 +65,13 @@ class MessageSubscriptionServiceTest {
         void getMySubscriptions_noSubscriptions_returnsEmpty() {
             when(messageSubscriptionRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 List<MessageSubscriptionVO> result = subscriptionService.getMySubscriptions();
 
                 assertThat(result).isEmpty();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -92,14 +93,15 @@ class MessageSubscriptionServiceTest {
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(existing);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 subscriptionService.updateSubscription(request);
 
                 assertThat(existing.isEnabled()).isTrue();
                 verify(messageSubscriptionRepository).update(existing);
                 verify(messageSubscriptionRepository, never()).save(any());
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -116,14 +118,15 @@ class MessageSubscriptionServiceTest {
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(existing);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 subscriptionService.updateSubscription(request);
 
                 assertThat(existing.isEnabled()).isFalse();
                 verify(messageSubscriptionRepository).update(existing);
                 verify(messageSubscriptionRepository, never()).save(any());
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -138,9 +141,8 @@ class MessageSubscriptionServiceTest {
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(null);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 subscriptionService.updateSubscription(request);
 
                 ArgumentCaptor<MessageSubscription> captor = ArgumentCaptor.forClass(MessageSubscription.class);
@@ -152,6 +154,8 @@ class MessageSubscriptionServiceTest {
                 assertThat(saved.getMessageType()).isEqualTo("SYSTEM");
                 assertThat(saved.getPushChannel()).isEqualTo("WEBSOCKET");
                 assertThat(saved.isEnabled()).isTrue();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }

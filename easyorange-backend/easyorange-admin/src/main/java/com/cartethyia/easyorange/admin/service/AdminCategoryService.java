@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.dto.response.CategoryTreeVO;
-import com.cartethyia.easyorange.admin.dto.response.CategoryVO;
+import com.cartethyia.easyorange.admin.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
@@ -26,33 +26,31 @@ public class AdminCategoryService {
 
     private static final int MAX_CATEGORY_LEVEL = 3;
 
-    public List<CategoryVO> listCategories(Long parentId) {
+    public List<CategoryResponse> listCategories(Long parentId) {
         List<CategoryDO> entities;
         if (parentId != null) {
             entities = categoryQueryRepository.findByParentId(parentId);
         } else {
-            entities = categoryMapper.selectList(
-                new LambdaQueryWrapper<CategoryDO>()
-                    .eq(CategoryDO::getDelFlag, 0)
-                    .orderByAsc(CategoryDO::getSortOrder)
-            );
+            entities = ChainWrappers.lambdaQueryChain(categoryMapper)
+                .eq(CategoryDO::getDelFlag, 0)
+                .orderByAsc(CategoryDO::getSortOrder)
+                .list();
         }
 
         Map<Long, Long> productCountMap = countProductMaps(entities);
         Map<Long, String> parentNameMap = buildParentNameMap(entities);
 
         return entities.stream()
-            .map(cat -> toCategoryVO(cat, productCountMap, parentNameMap))
+            .map(cat -> toCategoryResponse(cat, productCountMap, parentNameMap))
             .collect(Collectors.toList());
     }
 
-    public List<CategoryTreeVO> categoryTree() {
-        List<CategoryDO> all = categoryMapper.selectList(
-            new LambdaQueryWrapper<CategoryDO>()
-                .eq(CategoryDO::getStatus, 1)
-                .eq(CategoryDO::getDelFlag, 0)
-                .orderByAsc(CategoryDO::getSortOrder)
-        );
+    public List<CategoryTreeResponse> categoryTree() {
+        List<CategoryDO> all = ChainWrappers.lambdaQueryChain(categoryMapper)
+            .eq(CategoryDO::getStatus, 1)
+            .eq(CategoryDO::getDelFlag, 0)
+            .orderByAsc(CategoryDO::getSortOrder)
+            .list();
 
         Map<Long, List<CategoryDO>> groupedByParent = all.stream()
             .collect(Collectors.groupingBy(
@@ -61,12 +59,12 @@ public class AdminCategoryService {
                 Collectors.toList()
             ));
 
-        Function<Long, List<CategoryTreeVO>> buildChildren = new Function<>() {
+        Function<Long, List<CategoryTreeResponse>> buildChildren = new Function<>() {
             @Override
-            public List<CategoryTreeVO> apply(Long pid) {
+            public List<CategoryTreeResponse> apply(Long pid) {
                 List<CategoryDO> children = groupedByParent.getOrDefault(pid, List.of());
                 return children.stream()
-                    .map(cat -> CategoryTreeVO.builder()
+                    .map(cat -> CategoryTreeResponse.builder()
                         .categoryId(cat.getId())
                         .name(cat.getName())
                         .level(cat.getLevel())
@@ -82,7 +80,7 @@ public class AdminCategoryService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public CategoryVO createCategory(CategoryCreateRequest request) {
+    public CategoryResponse createCategory(CategoryCreateRequest request) {
         int level = 1;
         if (request.getParentId() != null) {
             CategoryDO parent = categoryMapper.selectById(request.getParentId());
@@ -108,11 +106,11 @@ public class AdminCategoryService {
 
         categoryMapper.insert(entity);
 
-        return toCategoryVO(entity, Map.of(), Map.of());
+        return toCategoryResponse(entity, Map.of(), Map.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public CategoryVO updateCategory(Long id, CategoryUpdateRequest request) {
+    public CategoryResponse updateCategory(Long id, CategoryUpdateRequest request) {
         CategoryDO entity = categoryMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("分类不存在");
@@ -151,7 +149,7 @@ public class AdminCategoryService {
         categoryMapper.updateById(entity);
 
         Map<Long, Long> productCountMap = countProductMaps(List.of(entity));
-        return toCategoryVO(entity, productCountMap, Map.of());
+        return toCategoryResponse(entity, productCountMap, Map.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -171,11 +169,10 @@ public class AdminCategoryService {
             throw BusinessException.of("分类不存在");
         }
 
-        long childCount = categoryMapper.selectCount(
-            new LambdaQueryWrapper<CategoryDO>()
-                .eq(CategoryDO::getParentId, id)
-                .eq(CategoryDO::getDelFlag, 0)
-        );
+        long childCount = ChainWrappers.lambdaQueryChain(categoryMapper)
+            .eq(CategoryDO::getParentId, id)
+            .eq(CategoryDO::getDelFlag, 0)
+            .count();
         if (childCount > 0) {
             throw BusinessException.of("该分类下存在子分类，无法删除");
         }
@@ -231,8 +228,8 @@ public class AdminCategoryService {
             .collect(Collectors.toMap(CategoryDO::getId, CategoryDO::getName, (a, b) -> a));
     }
 
-    private CategoryVO toCategoryVO(CategoryDO dobj, Map<Long, Long> productCountMap, Map<Long, String> parentNameMap) {
-        return CategoryVO.builder()
+    private CategoryResponse toCategoryResponse(CategoryDO dobj, Map<Long, Long> productCountMap, Map<Long, String> parentNameMap) {
+        return CategoryResponse.builder()
             .categoryId(dobj.getId())
             .name(dobj.getName())
             .parentId(dobj.getParentId())

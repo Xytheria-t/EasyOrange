@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.admin.controller;
 
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.dto.response.AuditLogVO;
-import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultVO;
+import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
+import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +68,7 @@ class AdminProductAuditControllerTest {
 
     @Test
     void batchAudit_shouldReturnResult() throws Exception {
-        var result = new BatchAuditResultVO(3, 2, 1, List.of("商品ID 3: 不存在"));
+        var result = new BatchAuditResultResponse(3, 2, 1, List.of("商品ID 3: 不存在"));
         when(adminProductAuditService.batchAudit(any(BatchAuditRequest.class))).thenReturn(result);
 
         mockMvc.perform(post("/api/admin/products/batch-audit")
@@ -116,7 +116,7 @@ class AdminProductAuditControllerTest {
     @Test
     void getAuditLogs_withData_shouldReturnList() throws Exception {
         var logs = List.of(
-            new AuditLogVO(1L, 1L, 10L, "admin", 1, "通过", null, List.of(),
+            new AuditLogResponse(1L, 1L, 10L, "admin", 1, "通过", null, List.of(),
                 4, "待审核", 1, "上架", null, LocalDateTime.of(2026, 5, 16, 10, 0))
         );
         when(adminProductAuditService.getAuditLogs(1L)).thenReturn(logs);

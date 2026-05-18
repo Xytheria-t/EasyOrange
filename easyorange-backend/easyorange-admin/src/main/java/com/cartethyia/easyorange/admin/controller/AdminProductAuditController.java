@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.admin.controller;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.dto.response.AuditLogVO;
-import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultVO;
+import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
+import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +29,14 @@ class AdminProductAuditController {
     }
 
     @PostMapping("/batch-audit")
-    public Result<BatchAuditResultVO> batchAudit(
+    public Result<BatchAuditResultResponse> batchAudit(
         @Valid @RequestBody BatchAuditRequest request
     ) {
         return Result.success(adminProductAuditService.batchAudit(request));
     }
 
     @GetMapping("/{id}/audit-logs")
-    public Result<List<AuditLogVO>> getAuditLogs(@PathVariable Long id) {
+    public Result<List<AuditLogResponse>> getAuditLogs(@PathVariable Long id) {
         return Result.success(adminProductAuditService.getAuditLogs(id));
     }
 }

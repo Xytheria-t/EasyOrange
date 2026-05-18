@@ -83,7 +83,7 @@ describe('useAdminOrderStats', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: { totalOrders: 100, pendingOrders: 10, completedOrders: 80 },
+          data: { totalOrders: 100, pendingPayment: 5, toShip: 3, toReceive: 2, completed: 80, cancelled: 5, refunded: 2, todayOrders: 10, totalRevenue: 10000, todayRevenue: 1000 },
           timestamp: Date.now(),
         });
       }),
@@ -95,7 +95,7 @@ describe('useAdminOrderStats', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.totalOrders).toBe(100);
-    expect(result.current.data?.pendingOrders).toBe(10);
+    expect(result.current.data?.pendingPayment).toBe(5);
   });
 });
 

@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.admin.controller;
 
 import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.dto.response.CategoryTreeVO;
-import com.cartethyia.easyorange.admin.dto.response.CategoryVO;
+import com.cartethyia.easyorange.admin.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminCategoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +36,8 @@ class AdminCategoryControllerTest {
     @Test
     void listCategories_shouldReturnAll() throws Exception {
         var categories = List.of(
-            CategoryVO.builder().categoryId(1L).name("电子产品").level(1).sortOrder(1).status(1).productCount(10L).build(),
-            CategoryVO.builder().categoryId(2L).name("服装配饰").level(1).sortOrder(2).status(1).productCount(5L).build()
+            CategoryResponse.builder().categoryId(1L).name("电子产品").level(1).sortOrder(1).status(1).productCount(10L).build(),
+            CategoryResponse.builder().categoryId(2L).name("服装配饰").level(1).sortOrder(2).status(1).productCount(5L).build()
         );
         when(adminCategoryService.listCategories(isNull())).thenReturn(categories);
 
@@ -52,7 +52,7 @@ class AdminCategoryControllerTest {
     @Test
     void listCategories_withParentId_shouldFilterByParent() throws Exception {
         var categories = List.of(
-            CategoryVO.builder().categoryId(3L).name("手机").parentId(1L).level(2).build()
+            CategoryResponse.builder().categoryId(3L).name("手机").parentId(1L).level(2).build()
         );
         when(adminCategoryService.listCategories(1L)).thenReturn(categories);
 
@@ -65,10 +65,10 @@ class AdminCategoryControllerTest {
     @Test
     void categoryTree_shouldReturnTree() throws Exception {
         var tree = List.of(
-            CategoryTreeVO.builder()
+            CategoryTreeResponse.builder()
                 .categoryId(1L).name("电子产品").level(1).sortOrder(1).status(1)
                 .children(List.of(
-                    CategoryTreeVO.builder()
+                    CategoryTreeResponse.builder()
                         .categoryId(3L).name("手机").level(2).sortOrder(1).status(1)
                         .children(List.of()).build()
                 )).build()
@@ -85,7 +85,7 @@ class AdminCategoryControllerTest {
 
     @Test
     void createCategory_shouldReturnCreated() throws Exception {
-        var created = CategoryVO.builder().categoryId(1L).name("新分类").level(1).sortOrder(0).status(1).build();
+        var created = CategoryResponse.builder().categoryId(1L).name("新分类").level(1).sortOrder(0).status(1).build();
         when(adminCategoryService.createCategory(any(CategoryCreateRequest.class))).thenReturn(created);
 
         mockMvc.perform(post("/api/admin/categories")
@@ -107,7 +107,7 @@ class AdminCategoryControllerTest {
 
     @Test
     void createCategory_withParentId_shouldSucceed() throws Exception {
-        var created = CategoryVO.builder().categoryId(4L).name("子分类").parentId(1L).level(2).build();
+        var created = CategoryResponse.builder().categoryId(4L).name("子分类").parentId(1L).level(2).build();
         when(adminCategoryService.createCategory(any(CategoryCreateRequest.class))).thenReturn(created);
 
         mockMvc.perform(post("/api/admin/categories")
@@ -120,7 +120,7 @@ class AdminCategoryControllerTest {
 
     @Test
     void updateCategory_shouldReturnUpdated() throws Exception {
-        var updated = CategoryVO.builder().categoryId(1L).name("更新名称").level(1).build();
+        var updated = CategoryResponse.builder().categoryId(1L).name("更新名称").level(1).build();
         when(adminCategoryService.updateCategory(eq(1L), any(CategoryUpdateRequest.class))).thenReturn(updated);
 
         mockMvc.perform(put("/api/admin/categories/1")

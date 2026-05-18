@@ -1,12 +1,12 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminProductVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
@@ -34,11 +34,11 @@ public class AdminProductService {
     private final ProductImageMapper productImageMapper;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public PageResult<AdminProductVO> listProducts(AdminProductQueryRequest request) {
+    public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
 
-        LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<ProductDO>()
+        var wrapper = ChainWrappers.lambdaQueryChain(productMapper)
             .eq(ProductDO::getDelFlag, 0);
 
         if (StringUtils.hasText(request.getKeyword())) {
@@ -75,7 +75,7 @@ public class AdminProductService {
 
         wrapper.orderByDesc(ProductDO::getCreateTime);
 
-        Page<ProductDO> page = productMapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
+        Page<ProductDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
         List<Long> productIds = page.getRecords().stream()
             .map(ProductDO::getId)
@@ -83,15 +83,15 @@ public class AdminProductService {
 
         Map<Long, List<String>> imagesMap = getImagesMap(productIds);
 
-        List<AdminProductVO> records = page.getRecords().stream()
-            .map(p -> toAdminProductVO(p, imagesMap))
+        List<AdminProductResponse> records = page.getRecords().stream()
+            .map(p -> toAdminProductResponse(p, imagesMap))
             .collect(Collectors.toList());
 
         return PageResult.of(records, page.getTotal(), pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
-    public AdminProductVO getProductDetail(Long id) {
+    public AdminProductResponse getProductDetail(Long id) {
         ProductDO product = productMapper.selectById(id);
         if (product == null || product.getDelFlag() != 0) {
             throw BusinessException.of("商品不存在");
@@ -102,8 +102,8 @@ public class AdminProductService {
         List<ProductDetailDO> details = productDetailMapper.selectDetailsByProductIds(List.of(id));
         String description = details.isEmpty() ? null : details.get(0).getDescription();
 
-        AdminProductVO vo = toAdminProductVO(product, imagesMap);
-        return AdminProductVO.builder()
+        AdminProductResponse vo = toAdminProductResponse(product, imagesMap);
+        return AdminProductResponse.builder()
             .productId(vo.getProductId())
             .name(vo.getName())
             .description(description)
@@ -148,11 +148,10 @@ public class AdminProductService {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }
-        List<ProductImageDO> images = productImageMapper.selectList(
-            new LambdaQueryWrapper<ProductImageDO>()
-                .in(ProductImageDO::getProductId, productIds)
-                .orderByAsc(ProductImageDO::getSortOrder)
-        );
+        List<ProductImageDO> images = ChainWrappers.lambdaQueryChain(productImageMapper)
+            .in(ProductImageDO::getProductId, productIds)
+            .orderByAsc(ProductImageDO::getSortOrder)
+            .list();
         return images.stream()
             .collect(Collectors.groupingBy(
                 ProductImageDO::getProductId,
@@ -160,11 +159,11 @@ public class AdminProductService {
             ));
     }
 
-    private AdminProductVO toAdminProductVO(ProductDO product, Map<Long, List<String>> imagesMap) {
+    private AdminProductResponse toAdminProductResponse(ProductDO product, Map<Long, List<String>> imagesMap) {
         List<String> images = imagesMap.getOrDefault(product.getId(), List.of());
         String mainImage = images.isEmpty() ? null : images.get(0);
 
-        return AdminProductVO.builder()
+        return AdminProductResponse.builder()
             .productId(product.getId())
             .name(product.getName())
             .price(product.getPrice())

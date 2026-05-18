@@ -149,7 +149,7 @@ public class FavoriteService {
     public Map<Long, Boolean> batchCheckFavorited(List<Long> productIds) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         if (productIds == null || productIds.isEmpty()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         Set<Long> favoritedIds = favoriteRepository.findFavoritedProductIds(userId, productIds);
         return productIds.stream()

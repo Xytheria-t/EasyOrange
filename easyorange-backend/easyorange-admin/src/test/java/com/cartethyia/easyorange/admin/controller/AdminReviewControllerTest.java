@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminReviewVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminReviewResponse;
 import com.cartethyia.easyorange.admin.service.AdminReviewService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;
@@ -36,10 +36,10 @@ class AdminReviewControllerTest {
     @Test
     void listReviews_shouldReturnPaginatedReviews() throws Exception {
         var reviews = List.of(
-            AdminReviewVO.builder().reviewId(1L).productId(100L).productName("Product1")
+            AdminReviewResponse.builder().reviewId(1L).productId(100L).productName("Product1")
                 .userId(10L).username("user1").rating(5).content("好评！")
                 .likes(3).status(1).createTime(LocalDateTime.of(2026, 5, 16, 10, 0)).build(),
-            AdminReviewVO.builder().reviewId(2L).productId(100L).productName("Product1")
+            AdminReviewResponse.builder().reviewId(2L).productId(100L).productName("Product1")
                 .userId(11L).username("user2").rating(4).content("不错")
                 .likes(1).status(1).createTime(LocalDateTime.of(2026, 5, 16, 11, 0)).build()
         );
@@ -59,7 +59,7 @@ class AdminReviewControllerTest {
     @Test
     void listReviews_withRatingFilter_shouldFilterByRating() throws Exception {
         var reviews = List.of(
-            AdminReviewVO.builder().reviewId(1L).rating(5).content("好评").build()
+            AdminReviewResponse.builder().reviewId(1L).rating(5).content("好评").build()
         );
         var pageResult = PageResult.of(reviews, 1L, 1, 20);
         when(adminReviewService.listReviews(any())).thenReturn(pageResult);
@@ -71,7 +71,7 @@ class AdminReviewControllerTest {
 
     @Test
     void getReviewDetail_found_shouldReturnReview() throws Exception {
-        var review = AdminReviewVO.builder().reviewId(1L).productId(100L).productName("Product1")
+        var review = AdminReviewResponse.builder().reviewId(1L).productId(100L).productName("Product1")
             .userId(10L).username("user1").rating(5).content("好评！")
             .likes(3).status(1).createTime(LocalDateTime.of(2026, 5, 16, 10, 0)).build();
         when(adminReviewService.getReviewDetail(1L)).thenReturn(review);

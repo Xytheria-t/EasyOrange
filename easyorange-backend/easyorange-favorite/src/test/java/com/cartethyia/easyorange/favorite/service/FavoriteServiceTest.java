@@ -13,14 +13,13 @@ import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -44,21 +43,19 @@ class FavoriteServiceTest {
 
     private FavoriteService favoriteService;
 
-    private MockedStatic<SecurityContextUtil> securityContextMock;
     private static final Long TEST_USER_ID = 1001L;
     private static final Long TEST_PRODUCT_ID = 2001L;
 
     @BeforeEach
     void setUp() {
-        securityContextMock = mockStatic(SecurityContextUtil.class);
-        securityContextMock.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(TEST_USER_ID);
+        TestSecurityUtil.setSecurityContext(TEST_USER_ID);
 
         favoriteService = new FavoriteService(favoriteRepository, productInfoPort);
     }
 
     @AfterEach
     void tearDown() {
-        securityContextMock.close();
+        TestSecurityUtil.clearSecurityContext();
     }
 
     @Test

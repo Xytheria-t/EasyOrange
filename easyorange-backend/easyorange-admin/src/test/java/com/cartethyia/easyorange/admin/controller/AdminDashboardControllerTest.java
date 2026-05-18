@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.ActivityVO;
-import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
-import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentProductVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
-import com.cartethyia.easyorange.admin.dto.response.TopProductVO;
-import com.cartethyia.easyorange.admin.dto.response.TrendVO;
-import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapVO;
+import com.cartethyia.easyorange.admin.dto.response.ActivityResponse;
+import com.cartethyia.easyorange.admin.dto.response.DashboardStatsResponse;
+import com.cartethyia.easyorange.admin.dto.response.PendingItemsResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
+import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
+import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ class AdminDashboardControllerTest {
 
     @Test
     void getStats_shouldReturnDashboardStats() throws Exception {
-        var stats = DashboardStatsVO.builder()
+        var stats = DashboardStatsResponse.builder()
             .totalUsers(100L)
             .todayNewUsers(5L)
             .totalProducts(200L)
@@ -63,7 +63,7 @@ class AdminDashboardControllerTest {
 
     @Test
     void getPendingItems_shouldReturnPendingItems() throws Exception {
-        var pending = PendingItemsVO.builder()
+        var pending = PendingItemsResponse.builder()
             .pendingReports(3L)
             .pendingOrders(5L)
             .pendingProducts(10L)
@@ -83,8 +83,8 @@ class AdminDashboardControllerTest {
     @Test
     void getRecentUsers_shouldReturnUserList() throws Exception {
         var users = List.of(
-            RecentUserVO.builder().userId(1L).username("user1").nickname("User1").build(),
-            RecentUserVO.builder().userId(2L).username("user2").nickname("User2").build()
+            RecentUserResponse.builder().userId(1L).username("user1").nickname("User1").build(),
+            RecentUserResponse.builder().userId(2L).username("user2").nickname("User2").build()
         );
         when(adminDashboardService.getRecentUsers(10)).thenReturn(users);
 
@@ -99,7 +99,7 @@ class AdminDashboardControllerTest {
     @Test
     void getRecentProducts_shouldReturnProductList() throws Exception {
         var products = List.of(
-            RecentProductVO.builder().productId(1L).name("Product1").price(BigDecimal.valueOf(100)).build()
+            RecentProductResponse.builder().productId(1L).name("Product1").price(BigDecimal.valueOf(100)).build()
         );
         when(adminDashboardService.getRecentProducts(10)).thenReturn(products);
 
@@ -113,7 +113,7 @@ class AdminDashboardControllerTest {
     @Test
     void getTrend_shouldReturnTrendList() throws Exception {
         var trends = List.of(
-            TrendVO.builder().month("2026-01").users(10L).products(5L).orders(3L).build()
+            TrendResponse.builder().month("2026-01").users(10L).products(5L).orders(3L).build()
         );
         when(adminDashboardService.getTrend()).thenReturn(trends);
 
@@ -127,7 +127,7 @@ class AdminDashboardControllerTest {
     @Test
     void getActivity_shouldReturnActivityList() throws Exception {
         var activities = List.of(
-            ActivityVO.builder().time("2026-05-16 10:00").text("新用户 test 完成注册").type("user").build()
+            ActivityResponse.builder().time("2026-05-16 10:00").text("新用户 test 完成注册").type("user").build()
         );
         when(adminDashboardService.getRecentActivity()).thenReturn(activities);
 
@@ -141,8 +141,8 @@ class AdminDashboardControllerTest {
     @Test
     void getUserActivityHeatmap_shouldReturnHeatmapData() throws Exception {
         var heatmap = List.of(
-            new UserActivityHeatmapVO(2, 10, 5L),
-            new UserActivityHeatmapVO(3, 14, 8L)
+            new UserActivityHeatmapResponse(2, 10, 5L),
+            new UserActivityHeatmapResponse(3, 14, 8L)
         );
         when(adminDashboardService.getUserActivityHeatmap()).thenReturn(heatmap);
 
@@ -157,7 +157,7 @@ class AdminDashboardControllerTest {
     @Test
     void getTopProducts_shouldReturnTopProducts() throws Exception {
         var topProducts = List.of(
-            TopProductVO.builder().productId(1L).name("Top1").viewCount(1000)
+            TopProductResponse.builder().productId(1L).name("Top1").viewCount(1000)
                 .price(BigDecimal.valueOf(99)).status(1).statusDesc("上架").build()
         );
         when(adminDashboardService.getTopProducts(10)).thenReturn(topProducts);
@@ -172,7 +172,7 @@ class AdminDashboardControllerTest {
     @Test
     void getTopProducts_withCustomLimit_shouldUseGivenLimit() throws Exception {
         var topProducts = List.of(
-            TopProductVO.builder().productId(1L).name("Top1").viewCount(500).build()
+            TopProductResponse.builder().productId(1L).name("Top1").viewCount(500).build()
         );
         when(adminDashboardService.getTopProducts(5)).thenReturn(topProducts);
 

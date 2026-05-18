@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.OrderInterventionRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailVO;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderVO;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,17 +20,17 @@ public class AdminOrderController {
     private final AdminOrderService adminOrderService;
 
     @GetMapping
-    public Result<PageResult<AdminOrderVO>> listOrders(AdminOrderQueryRequest request) {
+    public Result<PageResult<AdminOrderResponse>> listOrders(AdminOrderQueryRequest request) {
         return Result.success(adminOrderService.listOrders(request));
     }
 
     @GetMapping("/{id}")
-    public Result<AdminOrderDetailVO> getOrderDetail(@PathVariable Long id) {
+    public Result<AdminOrderDetailResponse> getOrderDetail(@PathVariable Long id) {
         return Result.success(adminOrderService.getOrderDetail(id));
     }
 
     @GetMapping("/stats")
-    public Result<OrderStatsVO> getOrderStats() {
+    public Result<OrderStatsResponse> getOrderStats() {
         return Result.success(adminOrderService.getOrderStats());
     }
 

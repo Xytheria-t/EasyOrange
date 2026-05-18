@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.ReportHandleRequest;
 import com.cartethyia.easyorange.admin.dto.request.BatchHandleRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminReportVO;
-import com.cartethyia.easyorange.admin.dto.response.ReportStatsVO;
-import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.dto.response.ReportStatsResponse;
+import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
@@ -39,7 +39,7 @@ public class AdminReportService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
-    public PageResult<AdminReportVO> listReports(Integer pageNum, Integer pageSize, Integer status) {
+    public PageResult<AdminReportResponse> listReports(Integer pageNum, Integer pageSize, Integer status) {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
@@ -48,15 +48,15 @@ public class AdminReportService {
         Map<Long, UserEntity> userMap = batchGetUsers(reportPage.records());
         Map<Long, ProductDO> productMap = batchGetProducts(reportPage.records());
 
-        List<AdminReportVO> records = reportPage.records().stream()
-            .map(r -> toAdminReportVO(r, userMap, productMap))
+        List<AdminReportResponse> records = reportPage.records().stream()
+            .map(r -> toAdminReportResponse(r, userMap, productMap))
             .collect(Collectors.toList());
 
         return PageResult.of(records, reportPage.total(), page, size);
     }
 
     @Transactional(readOnly = true)
-    public AdminReportVO getReportDetail(Long id) {
+    public AdminReportResponse getReportDetail(Long id) {
         ProductReport report = productReportRepository.findById(id);
         if (report == null) {
             throw BusinessException.of("举报记录不存在");
@@ -65,7 +65,7 @@ public class AdminReportService {
         Map<Long, UserEntity> userMap = batchGetUsers(List.of(report));
         Map<Long, ProductDO> productMap = batchGetProducts(List.of(report));
 
-        return toAdminReportVO(report, userMap, productMap);
+        return toAdminReportResponse(report, userMap, productMap);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -76,13 +76,13 @@ public class AdminReportService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReportHandleHistoryVO> getReportHistory(Long reportId) {
+    public List<ReportHandleHistoryResponse> getReportHistory(Long reportId) {
         List<ReportHandleHistory> histories = reportHandleHistoryRepository.findByReportId(reportId);
 
         Map<Long, UserEntity> operatorMap = batchGetOperators(histories);
 
         return histories.stream()
-            .map(h -> toHistoryVO(h, operatorMap))
+            .map(h -> toHistoryResponse(h, operatorMap))
             .collect(Collectors.toList());
     }
 
@@ -109,8 +109,8 @@ public class AdminReportService {
     }
 
     @Transactional(readOnly = true)
-    public ReportStatsVO getReportStats() {
-        return ReportStatsVO.builder()
+    public ReportStatsResponse getReportStats() {
+        return ReportStatsResponse.builder()
             .totalReports(productReportRepository.countByStatus(null))
             .pendingReports(productReportRepository.countByStatus(ProductReportStatus.PENDING.getCode()))
             .processingReports(productReportRepository.countByStatus(ProductReportStatus.PROCESSING.getCode()))
@@ -240,7 +240,7 @@ public class AdminReportService {
         return products.stream().collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
     }
 
-    private AdminReportVO toAdminReportVO(
+    private AdminReportResponse toAdminReportResponse(
         ProductReport report,
         Map<Long, UserEntity> userMap,
         Map<Long, ProductDO> productMap
@@ -266,7 +266,7 @@ public class AdminReportService {
 
         LocalDateTime handleTime = report.isPending() ? null : report.getUpdateTime();
 
-        return AdminReportVO.builder()
+        return AdminReportResponse.builder()
             .reportId(report.getId())
             .productId(report.getProductId())
             .productName(product != null ? product.getName() : null)
@@ -285,7 +285,7 @@ public class AdminReportService {
             .build();
     }
 
-    private ReportHandleHistoryVO toHistoryVO(
+    private ReportHandleHistoryResponse toHistoryResponse(
         ReportHandleHistory history,
         Map<Long, UserEntity> operatorMap
     ) {
@@ -301,7 +301,7 @@ public class AdminReportService {
             default -> history.getAction();
         };
 
-        return ReportHandleHistoryVO.builder()
+        return ReportHandleHistoryResponse.builder()
             .id(history.getId())
             .reportId(history.getReportId())
             .operatorName(operator != null ? operator.getNickName() : null)

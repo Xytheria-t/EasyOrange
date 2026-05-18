@@ -49,11 +49,11 @@ message/
 │   │   ├── TemplateMessageRequest.java
 │   │   └── WsMessage.java
 │   └── vo/
-│       ├── MessageVO.java
-│       ├── ConversationVO.java
-│       ├── UnreadCountVO.java
-│       ├── MessageSubscriptionVO.java
-│       └── MessageTemplateVO.java
+│       ├── MessageResponse.java
+│       ├── ConversationResponse.java
+│       ├── UnreadCountResponse.java
+│       ├── MessageSubscriptionResponse.java
+│       └── MessageTemplateResponse.java
 ├── domain/                            # [DDD] 领域层
 │   ├── event/
 │   │   ├── MessageSentEvent.java

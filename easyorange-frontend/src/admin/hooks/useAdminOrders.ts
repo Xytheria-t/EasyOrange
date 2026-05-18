@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type { AdminOrderDetail, AdminOrderQuery, OrderInterventionRequest, OrderStatsVO } from '../types/admin';
+import type { AdminOrderDetail, AdminOrderQuery, OrderInterventionRequest, OrderStatsResponse } from '../types/admin';
 
 export const ADMIN_ORDER_KEYS = {
   all: ['admin', 'orders'] as const,
@@ -39,7 +39,7 @@ export function useAdminOrderDetail(id: number) {
 }
 
 export function useAdminOrderStats() {
-  return useQuery<OrderStatsVO>({
+  return useQuery<OrderStatsResponse>({
     queryKey: ADMIN_ORDER_KEYS.stats(),
     queryFn: async () => {
       const response = await adminApi.getOrderStats();

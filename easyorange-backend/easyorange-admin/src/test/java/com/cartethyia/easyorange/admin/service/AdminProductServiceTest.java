@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminProductVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
@@ -84,7 +84,7 @@ class AdminProductServiceTest {
             when(productImageMapper.selectList(any(LambdaQueryWrapper.class)))
                     .thenReturn(List.of());
 
-            PageResult<AdminProductVO> result = productService.listProducts(request);
+            PageResult<AdminProductResponse> result = productService.listProducts(request);
 
             assertThat(result.records()).hasSize(1);
             assertThat(result.records().get(0).getName()).isEqualTo("测试商品");
@@ -111,7 +111,7 @@ class AdminProductServiceTest {
             when(productImageMapper.selectList(any(LambdaQueryWrapper.class)))
                     .thenReturn(List.of());
 
-            PageResult<AdminProductVO> result = productService.listProducts(request);
+            PageResult<AdminProductResponse> result = productService.listProducts(request);
 
             assertThat(result.records()).hasSize(1);
             assertThat(result.records().get(0).getName()).isEqualTo("测试商品");
@@ -133,7 +133,7 @@ class AdminProductServiceTest {
             when(productDetailMapper.selectDetailsByProductIds(anyList()))
                     .thenReturn(List.of(ProductDetailDO.builder().description("商品描述").build()));
 
-            AdminProductVO vo = productService.getProductDetail(PRODUCT_ID);
+            AdminProductResponse vo = productService.getProductDetail(PRODUCT_ID);
 
             assertThat(vo).isNotNull();
             assertThat(vo.getProductId()).isEqualTo(PRODUCT_ID);

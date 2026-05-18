@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
@@ -22,7 +22,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -104,15 +103,16 @@ class MessageCommandHandlerTest {
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
             when(routingService.decideRoute(anyLong())).thenReturn(decision);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository).save(any(Message.class));
                 verify(rateLimiterService).allowSendMessage(USER_ID);
                 verify(sensitiveWordFilterService).filter("hello");
                 verify(domainEventPublisher).publish(any(MessageSentEvent.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -128,14 +128,15 @@ class MessageCommandHandlerTest {
 
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(false);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(MessageDomainException.class)
                         .hasMessageContaining("发送过于频繁");
 
                 verify(messageRepository, never()).save(any());
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -155,14 +156,15 @@ class MessageCommandHandlerTest {
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
             when(routingService.decideRoute(anyLong())).thenReturn(decision);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository).save(argThat(msg ->
                         msg.getContent().equals("包含***")
                 ));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -207,13 +209,14 @@ class MessageCommandHandlerTest {
             Message message = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(RECEIVER_ID);
-
+            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository).update(message);
                 verify(domainEventPublisher).publish(any(MessageReadEvent.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -226,11 +229,12 @@ class MessageCommandHandlerTest {
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(RECEIVER_ID);
-
+            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(MessageNotFoundException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -244,11 +248,12 @@ class MessageCommandHandlerTest {
             Message message = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
-
+            TestSecurityUtil.setSecurityContext(999L);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(BusinessException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -274,12 +279,13 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById(101L)).thenReturn(Optional.of(msg2));
             when(messageRepository.findById(102L)).thenReturn(Optional.of(msg3));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(RECEIVER_ID);
-
+            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository, times(3)).update(any(Message.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -294,12 +300,13 @@ class MessageCommandHandlerTest {
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
             when(messageRepository.findById(999L)).thenReturn(Optional.empty());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(RECEIVER_ID);
-
+            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository, times(1)).update(any(Message.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -318,13 +325,14 @@ class MessageCommandHandlerTest {
             Message message = createTestMessageForRecall();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository).update(message);
                 verify(domainEventPublisher).publish(any(MessageRecalledEvent.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -337,11 +345,12 @@ class MessageCommandHandlerTest {
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(MessageNotFoundException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -360,13 +369,14 @@ class MessageCommandHandlerTest {
             Message message = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(RECEIVER_ID);
-
+            TestSecurityUtil.setSecurityContext(RECEIVER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(messageRepository).delete(MESSAGE_ID);
                 verify(domainEventPublisher).publish(any(MessageDeletedEvent.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -380,13 +390,14 @@ class MessageCommandHandlerTest {
             Message message = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(message));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
-
+            TestSecurityUtil.setSecurityContext(999L);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(BusinessException.class);
 
                 verify(messageRepository, never()).delete(anyLong());
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }

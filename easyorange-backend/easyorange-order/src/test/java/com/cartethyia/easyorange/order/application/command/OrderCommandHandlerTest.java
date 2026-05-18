@@ -1,7 +1,9 @@
 package com.cartethyia.easyorange.order.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -21,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
+
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -102,14 +104,15 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
-
+            TestSecurityUtil.setSecurityContext(BUYER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -122,11 +125,12 @@ class OrderCommandHandlerTest {
 
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
-
+            TestSecurityUtil.setSecurityContext(BUYER_ID);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(OrderDomainException.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -140,11 +144,12 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
-
+            TestSecurityUtil.setSecurityContext(999L);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(Exception.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -164,14 +169,15 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
-
+            TestSecurityUtil.setSecurityContext(BUYER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -190,14 +196,15 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(SELLER_ID);
-
+            TestSecurityUtil.setSecurityContext(SELLER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -211,11 +218,12 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(999L);
-
+            TestSecurityUtil.setSecurityContext(999L);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(Exception.class);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -234,14 +242,15 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createShippedAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
-
+            TestSecurityUtil.setSecurityContext(BUYER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -261,14 +270,15 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
-
+            TestSecurityUtil.setSecurityContext(BUYER_ID);
+            try {
                 commandHandler.handle(command);
 
                 verify(paymentGatewayPort).refundPayment(ORDER_ID, "商品有问题");
                 verify(orderRepository).update(any(OrderAggregate.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -283,12 +293,13 @@ class OrderCommandHandlerTest {
             OrderAggregate aggregate = createPaidButUnpaidPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(BUYER_ID);
-
+            TestSecurityUtil.setSecurityContext(BUYER_ID);
+            try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(Exception.class)
                     .hasMessageContaining("无法退款");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }

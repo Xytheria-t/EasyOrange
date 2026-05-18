@@ -1,23 +1,18 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
-import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public record TagSet(Set<String> tags) {
 
-    public static final TagSet EMPTY = new TagSet(Collections.emptySet());
+    public static final TagSet EMPTY = new TagSet(Set.of());
 
     public TagSet {
-        if (tags == null || tags.isEmpty()) {
-            tags = Collections.emptySet();
-        } else {
-            tags = tags.stream()
-                    .filter(t -> t != null && !t.isBlank())
-                    .map(String::trim)
-                    .collect(Collectors.toUnmodifiableSet());
-        }
+        tags = tags == null || tags.isEmpty()
+                ? Set.of()
+                : Set.copyOf(tags.stream()
+                        .filter(t -> t != null && !t.isBlank())
+                        .map(String::trim)
+                        .toList());
     }
 
     public static TagSet empty() {
@@ -25,7 +20,7 @@ public record TagSet(Set<String> tags) {
     }
 
     public static TagSet of(String... tags) {
-        return new TagSet(Stream.of(tags).collect(Collectors.toUnmodifiableSet()));
+        return new TagSet(Set.of(tags));
     }
 
     public boolean contains(String tag) {

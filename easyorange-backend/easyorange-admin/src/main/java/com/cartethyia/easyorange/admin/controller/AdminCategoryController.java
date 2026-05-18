@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.admin.controller;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.dto.response.CategoryTreeVO;
-import com.cartethyia.easyorange.admin.dto.response.CategoryVO;
+import com.cartethyia.easyorange.admin.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,22 +20,22 @@ public class AdminCategoryController {
     private final AdminCategoryService adminCategoryService;
 
     @GetMapping
-    public Result<List<CategoryVO>> listCategories(@RequestParam(required = false) Long parentId) {
+    public Result<List<CategoryResponse>> listCategories(@RequestParam(required = false) Long parentId) {
         return Result.success(adminCategoryService.listCategories(parentId));
     }
 
     @GetMapping("/tree")
-    public Result<List<CategoryTreeVO>> categoryTree() {
+    public Result<List<CategoryTreeResponse>> categoryTree() {
         return Result.success(adminCategoryService.categoryTree());
     }
 
     @PostMapping
-    public Result<CategoryVO> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
+    public Result<CategoryResponse> createCategory(@Valid @RequestBody CategoryCreateRequest request) {
         return Result.success(adminCategoryService.createCategory(request));
     }
 
     @PutMapping("/{id}")
-    public Result<CategoryVO> updateCategory(
+    public Result<CategoryResponse> updateCategory(
         @PathVariable Long id,
         @Valid @RequestBody CategoryUpdateRequest request
     ) {

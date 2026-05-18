@@ -25,7 +25,7 @@ easy-orange/
 ├── easyorange-frontend/         # React 前端
 │   ├── src/admin/              # 管理端模块（暖橙指挥中心设计系统，前后端已完整对接）
 │   │   ├── layout/             # AdminLayout, AdminSidebar(毛玻璃 210px), AdminHeader
-│   │   ├── pages/              # dashboard / users / products / orders / reports / stats
+│   │   ├── pages/              # dashboard / users / products / orders / categories / reviews / reports / stats
 │   │   ├── users/UserDetailModal.tsx       # 用户详情弹窗（Portal挂载body）
 │   │   ├── products/ProductDetailDrawer.tsx # 商品审核抽屉（Portal+驳回弹窗+图片预览）
 │   │   └── orders/OrderDetailModal.tsx      # 订单详情弹窗（Portal挂载body）
@@ -34,7 +34,7 @@ easy-orange/
 │   │   ├── chat/              # 聊天组件（ChatHeader, MessageBubble[长按菜单], MessageList[虚拟滚动], ChatInputBar, TypingIndicator）
 │   │   ├── hooks/             # useAdmin* / useAdminProductAudit / useAdminGuard
 │   │   │   └── chat/          # useStompChat(STOMP连接), useChatMessages(react-query+store合并), useMessageRecall, useChatNotification(桌面通知+声音), useOfflineQueue
-│   │   ├── api/adminApi.ts    # 33 个 API 函数，与后端 6 个 Controller 完全对齐
+│   │   ├── api/adminApi.ts    # 39 个 API 函数，覆盖 8 个管理端 Controller
 │   │   ├── api/messageApi.ts  # 消息 API（conversations, send, recall, typing, markAsRead）
 │   │   ├── types/admin.ts     # 完整类型定义（Order/Report/Category/Audit/User 操作）
 │   │   ├── stores/chatStore.ts# 聊天全局状态（Zustand: messages, typingUsers, connectionStatus）
@@ -133,6 +133,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **Zustand store 写入规则**: zustand store **只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 useEffect 内写入 store**。原因：zustand 的 `...spread` 操作每次产生新对象引用 → effect 内写 store → 新引用触发重渲染 → effect 再执行 → 无限循环（Maximum update depth exceeded）。正确做法：react-query 提供 `staleTime: Infinity` 初始数据，zustand store 叠加实时更新（selector 纯读取安全）
 - **聊天 conversationId 格式**: 前后端统一使用排序双 ID 格式 `conv_{minId}_{maxId}`（如 `conv_123_456`），确保 A→B 和 B→A 的会话 ID 一致。前端：`conv_${[currentUserId, targetUserId].sort().join('_')}`；后端：`"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
 - **Mockito Java 25 兼容**: Java 25 下 Mockito inline mock maker 使用 ByteBuddy attach 机制会失败（WSL2 环境尤为明显）。已配置 `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` 使用 `mock-maker-subclass` 模式。**新测试不要尝试改回 inline 模式**
+- **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（SubclassByteBuddyMockMaker 不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId)` + `} finally { TestSecurityUtil.clearSecurityContext(); }` 模式。工具类位于 `easyorange-framework/src/main/java/.../util/TestSecurityUtil.java`，所有模块测试通用。`clearSecurityContext()` 必须在 `finally` 块中调用，确保测试间隔离
+- **不可变集合**: 全项目统一使用 Java 9+ 不可变集合工厂方法，**禁止使用 `Collections` 工具类创建空/单元素/不可包装集合**。具体规则见 `.trae/rules/java/coding-style.md` §Immutability
 - **前端 ESLint jsx-a11y**: 所有非交互元素（div/span/article）上的点击事件必须改为语义化的 `button` 元素，或添加 `role="button"` + `tabIndex={0}` + `onKeyDown`。`label` 元素必须通过 `htmlFor` 关联表单控件或使用嵌套结构
 - **前端 ESLint curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`
 - **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect

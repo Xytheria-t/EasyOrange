@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
@@ -78,9 +78,8 @@ class ProductCommandServiceTest {
     @Test
     @DisplayName("创建商品应调用仓储保存")
     void createProduct_shouldSaveToRepository() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
-
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             doAnswer(invocation -> {
                 Product p = invocation.getArgument(0);
                 p.assignId(42L);
@@ -104,14 +103,16 @@ class ProductCommandServiceTest {
             assertThat(productId).isEqualTo(42L);
             verify(productRepository).save(any(Product.class));
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("更新商品后应使缓存失效")
     void updateProduct_shouldEvictCache() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
             UpdateProductCommand command = UpdateProductCommand.builder()
@@ -124,14 +125,16 @@ class ProductCommandServiceTest {
 
             verify(productCachePort).evictProductCache(1L);
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("更新不存在的商品应抛出异常")
     void updateProduct_whenNotFound_shouldThrow() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.empty());
 
             UpdateProductCommand command = UpdateProductCommand.builder()
@@ -141,34 +144,40 @@ class ProductCommandServiceTest {
 
             assertThatThrownBy(() -> commandService.updateProduct(command))
                     .isInstanceOf(ProductNotFoundException.class);
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("扣减库存后应使缓存失效")
     void decrementStock_shouldEvictCache() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
             commandService.decrementStock(new DecrementStockCommand(1L, 1));
 
             verify(productCachePort).evictProductCache(1L);
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
     @DisplayName("标记售出后应使缓存失效")
     void markAsSold_shouldEvictCache() {
-        try (var mocked = mockStatic(SecurityContextUtil.class)) {
-            mocked.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
+        TestSecurityUtil.setSecurityContext(1L);
+        try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
             commandService.markAsSold(new MarkAsSoldCommand(1L));
 
             verify(productCachePort).evictProductCache(1L);
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
         }
     }
 }

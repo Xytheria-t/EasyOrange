@@ -1,11 +1,9 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.entity.OfflineMessage;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -13,10 +11,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class MybatisOfflineMessageRepository implements OfflineMessageRepository {
+public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessageMapper, OfflineMessage> implements OfflineMessageRepository {
 
-    private final OfflineMessageMapper mapper;
+    public MybatisOfflineMessageRepository(OfflineMessageMapper mapper) {
+        super(mapper);
+    }
 
     @Override
     public OfflineMessage save(OfflineMessage message) {
@@ -26,10 +25,11 @@ public class MybatisOfflineMessageRepository implements OfflineMessageRepository
 
     @Override
     public List<OfflineMessage> findPendingByUserId(Long userId) {
-        return mapper.selectList(new LambdaQueryWrapper<OfflineMessage>()
+        return lambdaQuery()
                         .eq(OfflineMessage::getUserId, userId)
                         .eq(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
-                        .orderByAsc(OfflineMessage::getCreateTime))
+                        .orderByAsc(OfflineMessage::getCreateTime)
+                .list()
                 .stream()
                 .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
                 .collect(Collectors.toList());
@@ -37,24 +37,27 @@ public class MybatisOfflineMessageRepository implements OfflineMessageRepository
 
     @Override
     public void markAsPushed(Long offlineMessageId) {
-        mapper.update(null, new LambdaUpdateWrapper<OfflineMessage>()
+        lambdaUpdate()
                 .eq(OfflineMessage::getId, offlineMessageId)
                 .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PUSHED)
-                .set(OfflineMessage::getPushTime, LocalDateTime.now()));
+                .set(OfflineMessage::getPushTime, LocalDateTime.now())
+                .update();
     }
 
     @Override
     public void markAsFailed(Long offlineMessageId) {
-        mapper.update(null, new LambdaUpdateWrapper<OfflineMessage>()
+        lambdaUpdate()
                 .eq(OfflineMessage::getId, offlineMessageId)
-                .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_FAILED));
+                .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_FAILED)
+                .update();
     }
 
     @Override
     public void incrementRetryCount(Long offlineMessageId) {
-        mapper.update(null, new LambdaUpdateWrapper<OfflineMessage>()
+        lambdaUpdate()
                 .eq(OfflineMessage::getId, offlineMessageId)
                 .setSql("retry_count = retry_count + 1")
-                .set(OfflineMessage::getLastRetryTime, LocalDateTime.now()));
+                .set(OfflineMessage::getLastRetryTime, LocalDateTime.now())
+                .update();
     }
 }

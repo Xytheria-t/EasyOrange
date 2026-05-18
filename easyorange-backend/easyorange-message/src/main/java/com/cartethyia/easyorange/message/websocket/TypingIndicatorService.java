@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -29,12 +28,12 @@ public class TypingIndicatorService {
 
     public Set<Long> getTypingUsers(String conversationId, Long excludeUserId) {
         if (conversationId == null) {
-            return Collections.emptySet();
+            return Set.of();
         }
         String pattern = TYPING_KEY.formatted(conversationId, "*");
         var keys = redisTemplate.keys(pattern);
         if (keys == null || keys.isEmpty()) {
-            return Collections.emptySet();
+            return Set.of();
         }
         return keys.stream()
                 .map(k -> {

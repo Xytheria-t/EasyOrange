@@ -1,34 +1,36 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentConfigMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentConfigPO;
 import com.cartethyia.easyorange.payment.constant.PaymentConstant;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentConfigResponse;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class PaymentConfigRepository {
+public class PaymentConfigRepository extends BaseRepository<PaymentConfigMapper, PaymentConfigPO> {
 
-    private final PaymentConfigMapper paymentConfigMapper;
+    public PaymentConfigRepository(PaymentConfigMapper paymentConfigMapper) {
+        super(paymentConfigMapper);
+    }
 
     public PaymentConfigPO getByChannelCode(String channelCode) {
-        return paymentConfigMapper.selectOne(new LambdaQueryWrapper<PaymentConfigPO>()
+        return lambdaQuery()
                 .eq(PaymentConfigPO::getChannelCode, channelCode)
-                .eq(PaymentConfigPO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED));
+                .eq(PaymentConfigPO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
+                .one();
     }
 
     public List<PaymentConfigResponse> getEnabledChannels() {
-        return paymentConfigMapper.selectList(new LambdaQueryWrapper<PaymentConfigPO>()
+        return lambdaQuery()
                         .eq(PaymentConfigPO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
                         .select(PaymentConfigPO::getId, PaymentConfigPO::getChannelCode,
                                 PaymentConfigPO::getChannelName, PaymentConfigPO::getSandbox,
-                                PaymentConfigPO::getStatus))
+                                PaymentConfigPO::getStatus)
+                        .list()
                 .stream()
                 .map(config -> PaymentConfigResponse.builder()
                         .id(config.getId())

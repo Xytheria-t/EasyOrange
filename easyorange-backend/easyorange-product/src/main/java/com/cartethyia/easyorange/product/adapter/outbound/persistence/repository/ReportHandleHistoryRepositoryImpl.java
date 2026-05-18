@@ -1,38 +1,37 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.repository;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ReportHandleHistoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ReportHandleHistoryMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class ReportHandleHistoryRepositoryImpl implements ReportHandleHistoryRepository {
+public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHandleHistoryMapper, ReportHandleHistoryDO> implements ReportHandleHistoryRepository {
 
-    private final ReportHandleHistoryMapper reportHandleHistoryMapper;
+    public ReportHandleHistoryRepositoryImpl(ReportHandleHistoryMapper reportHandleHistoryMapper) {
+        super(reportHandleHistoryMapper);
+    }
 
     @Override
     public void save(ReportHandleHistory history) {
         ReportHandleHistoryDO historyDO = convertToDO(history);
-        reportHandleHistoryMapper.insert(historyDO);
+        mapper.insert(historyDO);
         history.assignId(historyDO.getId());
     }
 
     @Override
     public List<ReportHandleHistory> findByReportId(Long reportId) {
-        LambdaQueryWrapper<ReportHandleHistoryDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ReportHandleHistoryDO::getReportId, reportId)
-                .orderByDesc(ReportHandleHistoryDO::getCreateTime);
-
-        return reportHandleHistoryMapper.selectList(wrapper).stream()
+        return lambdaQuery()
+                .eq(ReportHandleHistoryDO::getReportId, reportId)
+                .orderByDesc(ReportHandleHistoryDO::getCreateTime)
+                .list()
+                .stream()
                 .map(this::convertToDomain)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private ReportHandleHistory convertToDomain(ReportHandleHistoryDO do_) {

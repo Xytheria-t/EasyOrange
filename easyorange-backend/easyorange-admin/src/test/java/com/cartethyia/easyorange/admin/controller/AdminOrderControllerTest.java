@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailVO;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderVO;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ class AdminOrderControllerTest {
     @Test
     void listOrders_shouldReturnPaginatedOrders() throws Exception {
         var orders = List.of(
-            new AdminOrderVO(1L, "ORD001", 10L, "buyer1", 20L, "seller1",
+            new AdminOrderResponse(1L, "ORD001", 10L, "buyer1", 20L, "seller1",
                 100L, "Product1", BigDecimal.valueOf(199), 1, "待付款", 0, "未支付",
                 LocalDateTime.of(2026, 5, 16, 10, 0))
         );
@@ -57,11 +57,11 @@ class AdminOrderControllerTest {
 
     @Test
     void getOrderDetail_shouldReturnDetail() throws Exception {
-        var detail = AdminOrderDetailVO.builder()
+        var detail = AdminOrderDetailResponse.builder()
             .orderId(1L).orderNo("ORD001")
-            .buyer(new AdminOrderDetailVO.BuyerInfo(10L, "buyer1", "avatar1", "13800138000"))
-            .seller(new AdminOrderDetailVO.SellerInfo(20L, "seller1", "avatar2", "13900139000"))
-            .product(new AdminOrderDetailVO.ProductInfo(100L, "Product1", "img.jpg", BigDecimal.valueOf(199)))
+            .buyer(new AdminOrderDetailResponse.BuyerInfo(10L, "buyer1", "avatar1", "13800138000"))
+            .seller(new AdminOrderDetailResponse.SellerInfo(20L, "seller1", "avatar2", "13900139000"))
+            .product(new AdminOrderDetailResponse.ProductInfo(100L, "Product1", "img.jpg", BigDecimal.valueOf(199)))
             .amount(BigDecimal.valueOf(199)).status(1).statusDesc("待付款").createTime(LocalDateTime.of(2026, 5, 16, 10, 0))
             .build();
         when(adminOrderService.getOrderDetail(1L)).thenReturn(detail);
@@ -78,7 +78,7 @@ class AdminOrderControllerTest {
 
     @Test
     void getOrderStats_shouldReturnStats() throws Exception {
-        var stats = OrderStatsVO.builder()
+        var stats = OrderStatsResponse.builder()
             .totalOrders(1000L).todayOrders(50L).pendingPayment(200L)
             .toShip(100L).toReceive(150L).completed(500L).cancelled(30L).refunded(20L)
             .totalRevenue(BigDecimal.valueOf(50000)).todayRevenue(BigDecimal.valueOf(3000))

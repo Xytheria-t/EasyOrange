@@ -9,11 +9,11 @@ import java.util.stream.Collectors;
 
 public record ImageSet(List<ProductImage> images) {
 
-    public static final ImageSet EMPTY = new ImageSet(Collections.emptyList());
+    public static final ImageSet EMPTY = new ImageSet(List.of());
 
     public ImageSet {
         if (images == null || images.isEmpty()) {
-            images = Collections.emptyList();
+            images = List.of();
         } else {
             long mainCount = images.stream().filter(ProductImage::isMain).count();
             BizRequire.requireTrue(mainCount <= 1, "主图只能有一个");

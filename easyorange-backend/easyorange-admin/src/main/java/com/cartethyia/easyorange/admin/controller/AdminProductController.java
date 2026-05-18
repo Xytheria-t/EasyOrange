@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminProductVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +18,12 @@ public class AdminProductController {
     private final AdminProductService adminProductService;
 
     @GetMapping
-    public Result<PageResult<AdminProductVO>> listProducts(AdminProductQueryRequest request) {
+    public Result<PageResult<AdminProductResponse>> listProducts(AdminProductQueryRequest request) {
         return Result.success(adminProductService.listProducts(request));
     }
 
     @GetMapping("/{id}")
-    public Result<AdminProductVO> getProductDetail(@PathVariable Long id) {
+    public Result<AdminProductResponse> getProductDetail(@PathVariable Long id) {
         return Result.success(adminProductService.getProductDetail(id));
     }
 

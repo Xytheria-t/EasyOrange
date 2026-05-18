@@ -1,15 +1,16 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface ConfirmModalProps {
   open: boolean;
   title: string;
-  content: string;
+  content: ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => Promise<void> | void;
   onCancel: () => void;
   loading?: boolean;
+  confirmDisabled?: boolean;
   variant?: 'danger' | 'warning' | 'info';
 }
 

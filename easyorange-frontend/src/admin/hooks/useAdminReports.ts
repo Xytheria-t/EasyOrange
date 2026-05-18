@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type { AdminReport, AdminReportQuery, ReportHandleRequest, ReportStatsVO } from '../types/admin';
+import type { AdminReport, AdminReportQuery, ReportHandleRequest, ReportStatsResponse } from '../types/admin';
 
 export const ADMIN_REPORT_KEYS = {
   all: ['admin', 'reports'] as const,
@@ -39,7 +39,7 @@ export function useAdminReportDetail(id: number) {
 }
 
 export function useAdminReportStats() {
-  return useQuery<ReportStatsVO>({
+  return useQuery<ReportStatsResponse>({
     queryKey: ADMIN_REPORT_KEYS.stats(),
     queryFn: async () => {
       const response = await adminApi.getReportStats();

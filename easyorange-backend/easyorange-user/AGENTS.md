@@ -19,8 +19,8 @@ user/
 │   │   │   └── UpdateUserRequest.java
 │   │   ├── dto/response/                # 出站 DTO
 │   │   │   ├── LoginResponse.java
-│   │   │   ├── UserVO.java
-│   │   │   └── UserProfileVO.java
+│   │   │   ├── UserResponse.java
+│   │   │   └── UserProfileResponse.java
 │   │   └── validation/                  # 自定义校验
 │   │       ├── Password.java + PasswordValidator.java
 │   │       └── Unique.java + UniqueFieldValidator.java
@@ -41,8 +41,8 @@ user/
 │           └── LocalAvatarFileStorage.java
 ├── application/
 │   ├── dto/                             # 应用层 DTO（assembler/service/controller 共用）
-│   │   ├── UserVO.java
-│   │   └── UserProfileVO.java
+│   │   ├── UserResponse.java
+│   │   └── UserProfileResponse.java
 │   ├── service/                         # 应用服务
 │   │   ├── UserLoginAppService.java
 │   │   ├── UserRegistrationAppService.java
@@ -102,7 +102,7 @@ user/
 | Mapper | 方向 | 位置 | 说明 |
 |--------|------|------|------|
 | `UserEntityMapper` | Entity ↔ Domain | `adapter/outbound/persistence/` | 扁平字段 ↔ 嵌套值对象（record 构造） |
-| `UserAssembler` | Domain ↔ VO | `application/assembler/` | 聚合根 ↔ 应用层 DTO（含脱敏、枚举转码） |
+| `UserAssembler` | Domain ↔ Response | `application/assembler/` | 聚合根 ↔ 应用层 DTO（含脱敏、枚举转码） |
 
 `UserEntity` 是纯数据库实体，不含任何 `toDomain()` / `from()` 方法。所有持久化映射逻辑集中在 `UserEntityMapper`。
 
@@ -147,7 +147,7 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 3. 创建 Flyway 迁移脚本
 4. 更新 `UserEntity`（新增字段）
 5. 更新 `UserEntityMapper`（toDomain/from 的 @Mapping 或 default 方法）
-6. 更新 `application/dto/UserVO` / `UpdateUserRequest`
+6. 更新 `application/dto/UserResponse` / `UpdateUserRequest`
 7. 更新 `UserAssembler`（如需 MapStruct 显式映射）
 8. 更新 `User` 聚合根的相关修改方法
 9. 添加测试

@@ -31,7 +31,7 @@ public class SellerInfoAdapter implements SellerInfoPort {
     @Override
     public Map<Long, SellerInfo> getSellerInfos(Collection<Long> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         return userRepository.findAllById(sellerIds).stream()
                 .collect(Collectors.toMap(

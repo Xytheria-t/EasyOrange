@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -112,7 +111,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .build();
 
         when(productDetailMapper.selectById(100L)).thenReturn(null);
-        when(productImageMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(productImageMapper.selectList(any())).thenReturn(List.of());
         when(categoryMapper.selectById(300L)).thenReturn(null);
 
         ProductDocument doc = adapter.buildDocument(product);
@@ -135,7 +134,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .build();
 
         when(productDetailMapper.selectById(100L)).thenReturn(null);
-        when(productImageMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(productImageMapper.selectList(any())).thenReturn(List.of());
 
         ProductDocument doc = adapter.buildDocument(product);
 
@@ -196,7 +195,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
 
         when(productMapper.selectById(100L)).thenReturn(product);
         when(productDetailMapper.selectById(100L)).thenReturn(null);
-        when(productImageMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(productImageMapper.selectList(any())).thenReturn(List.of());
         when(categoryMapper.selectById(300L)).thenReturn(null);
 
         adapter.indexProduct(100L);

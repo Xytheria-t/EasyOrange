@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminReportVO;
-import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryVO;
-import com.cartethyia.easyorange.admin.dto.response.ReportStatsVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryResponse;
+import com.cartethyia.easyorange.admin.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminReportService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;
@@ -37,10 +37,10 @@ class AdminReportControllerTest {
     @Test
     void listReports_shouldReturnPaginatedReports() throws Exception {
         var reports = List.of(
-            new AdminReportVO(1L, 100L, "Product1", null, 10L, "reporter1",
+            new AdminReportResponse(1L, 100L, "Product1", null, 10L, "reporter1",
                 1, "虚假信息", "描述", 0, "待处理", null, null,
                 LocalDateTime.of(2026, 5, 16, 10, 0), null),
-            new AdminReportVO(2L, 101L, "Product2", null, 11L, "reporter2",
+            new AdminReportResponse(2L, 101L, "Product2", null, 11L, "reporter2",
                 2, "侵权投诉", "描述2", 1, "处理中", null, null,
                 LocalDateTime.of(2026, 5, 16, 11, 0), null)
         );
@@ -59,7 +59,7 @@ class AdminReportControllerTest {
     @Test
     void listReports_withStatusFilter_shouldFilterByStatus() throws Exception {
         var reports = List.of(
-            new AdminReportVO(2L, 101L, "Product2", null, 11L, "reporter2",
+            new AdminReportResponse(2L, 101L, "Product2", null, 11L, "reporter2",
                 2, "侵权投诉", "描述", 1, "处理中", null, null,
                 LocalDateTime.of(2026, 5, 16, 11, 0), null)
         );
@@ -73,7 +73,7 @@ class AdminReportControllerTest {
 
     @Test
     void getReportDetail_shouldReturnReport() throws Exception {
-        var report = new AdminReportVO(1L, 100L, "Product1", null, 10L, "reporter1",
+        var report = new AdminReportResponse(1L, 100L, "Product1", null, 10L, "reporter1",
             1, "虚假信息", "描述", 0, "待处理", null, null,
             LocalDateTime.of(2026, 5, 16, 10, 0), null);
         when(adminReportService.getReportDetail(1L)).thenReturn(report);
@@ -89,7 +89,7 @@ class AdminReportControllerTest {
     @Test
     void getReportHistory_shouldReturnHistoryList() throws Exception {
         var history = List.of(
-            ReportHandleHistoryVO.builder()
+            ReportHandleHistoryResponse.builder()
                 .id(1L).reportId(1L).operatorName("admin")
                 .action("resolve").actionDesc("处理通过")
                 .remark("举报已处理").createTime(LocalDateTime.of(2026, 5, 16, 12, 0))
@@ -153,7 +153,7 @@ class AdminReportControllerTest {
 
     @Test
     void getReportStats_shouldReturnStats() throws Exception {
-        var stats = ReportStatsVO.builder()
+        var stats = ReportStatsResponse.builder()
             .totalReports(100L).pendingReports(30L).processingReports(10L)
             .resolvedReports(40L).dismissedReports(20L)
             .build();

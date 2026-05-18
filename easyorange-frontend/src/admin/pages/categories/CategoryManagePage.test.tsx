@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import CategoryManagePage from './CategoryManagePage';
-import type { CategoryTreeVO } from '../../types/admin';
+import type { CategoryTreeResponse } from '../../types/admin';
 
 // ─── Hook mocks ───
 const mockUseAdminCategoryTree = vi.fn();
@@ -46,9 +46,6 @@ vi.mock('../../components/AdminSelect', () => ({
 }));
 
 const mockConfirmModalFn = vi.fn();
-let mockConfirmModalOpen = false;
-let mockConfirmModalOnConfirm = () => {};
-let mockConfirmModalOnCancel = () => {};
 
 vi.mock('../../components/ConfirmModal', () => ({
   ConfirmModal: (props: {
@@ -62,9 +59,6 @@ vi.mock('../../components/ConfirmModal', () => ({
     onConfirm: () => void;
     onCancel: () => void;
   }) => {
-    mockConfirmModalOpen = props.open;
-    mockConfirmModalOnConfirm = props.onConfirm;
-    mockConfirmModalOnCancel = props.onCancel;
     mockConfirmModalFn(props);
     if (!props.open) return null;
     return (
@@ -83,7 +77,7 @@ vi.mock('../../components/ConfirmModal', () => ({
 }));
 
 // ─── Sample data ───
-const sampleTree: CategoryTreeVO[] = [
+const sampleTree: CategoryTreeResponse[] = [
   {
     categoryId: 1,
     name: '电子产品',
@@ -111,7 +105,7 @@ const sampleTree: CategoryTreeVO[] = [
   },
 ];
 
-function setupMocks(overrides: Partial<{ tree: CategoryTreeVO[]; isLoading: boolean; isError: boolean }> = {}) {
+function setupMocks(overrides: Partial<{ tree: CategoryTreeResponse[]; isLoading: boolean; isError: boolean }> = {}) {
   const { tree = sampleTree, isLoading = false, isError = false } = overrides;
 
   mockUseAdminCategoryTree.mockReturnValue({
@@ -283,7 +277,7 @@ describe('CategoryManagePage', () => {
 
   // ── Test 10: Loading state ──
   it('shows loading spinner when loading', () => {
-    setupMocks({ isLoading: true, tree: undefined as unknown as CategoryTreeVO[] });
+    setupMocks({ isLoading: true, tree: undefined as unknown as CategoryTreeResponse[] });
     renderWithProviders(<CategoryManagePage />);
 
     expect(screen.getByText('加载分类数据...')).toBeInTheDocument();
@@ -300,7 +294,7 @@ describe('CategoryManagePage', () => {
 
   // ── Test 12: Error state ──
   it('shows error banner with refresh button when isError', () => {
-    setupMocks({ isError: true, tree: undefined as unknown as CategoryTreeVO[] });
+    setupMocks({ isError: true, tree: undefined as unknown as CategoryTreeResponse[] });
     renderWithProviders(<CategoryManagePage />);
 
     expect(screen.getByText('数据加载失败')).toBeInTheDocument();

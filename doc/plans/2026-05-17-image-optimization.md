@@ -726,7 +726,7 @@ git commit -m "feat: add FileStorage interface and LocalFileStorage implementati
 
 **Files:**
 - Modify: `easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/service/impl/FileServiceImpl.java`
-- Modify: `easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/dto/UploadFileVO.java`
+- Modify: `easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/dto/UploadFileResponse.java`
 - Modify: `easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/service/FileService.java`
 
 - [ ] **Step 1: Update `FileService` interface — change `downloadFile` return type to support both local and remote files**
@@ -744,7 +744,7 @@ import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileException;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
+import com.cartethyia.easyorange.framework.file.dto.UploadFileResponse;
 import com.cartethyia.easyorange.framework.file.entity.UploadFile;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
 import com.cartethyia.easyorange.framework.file.service.FileService;
@@ -781,13 +781,13 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UploadFileVO uploadFile(MultipartFile file, String businessType) {
+    public UploadFileResponse uploadFile(MultipartFile file, String businessType) {
         return uploadFile(file, businessType, null);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UploadFileVO uploadFile(MultipartFile file, String businessType, Long businessId) {
+    public UploadFileResponse uploadFile(MultipartFile file, String businessType, Long businessId) {
         BizRequire.notNull(file, "上传文件不能为空");
         BizRequire.requireTrue(!file.isEmpty(), "上传文件不能为空");
 
@@ -823,7 +823,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
             save(uploadFile);
 
             log.info("action=file_upload, filename={}, size={}", file.getOriginalFilename(), FileUtils.formatFileSize(file.getSize()));
-            return convertToVO(uploadFile);
+            return convertToResponse(uploadFile);
         } catch (IOException e) {
             log.error("文件上传失败：{}", e.getMessage());
             throw new FileException("文件上传失败：" + e.getMessage(), e);
@@ -832,7 +832,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<UploadFileVO> uploadFiles(List<MultipartFile> files, String businessType) {
+    public List<UploadFileResponse> uploadFiles(List<MultipartFile> files, String businessType) {
         BizRequire.notEmpty(files, "上传的文件列表不能为空");
         BizRequire.noNullElements(files, "文件列表不能包含空元素");
         BizRequire.notBlank(businessType, "业务类型不能为空");
@@ -844,10 +844,10 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     }
 
     @Override
-    public UploadFileVO getFileInfo(Long fileId) {
+    public UploadFileResponse getFileInfo(Long fileId) {
         UploadFile file = getById(fileId);
         BizRequire.notNull(file, "文件不存在");
-        return convertToVO(file);
+        return convertToResponse(file);
     }
 
     @Override
@@ -884,7 +884,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     }
 
     @Override
-    public List<UploadFileVO> getFilesByBusiness(String businessType, Long businessId) {
+    public List<UploadFileResponse> getFilesByBusiness(String businessType, Long businessId) {
         LambdaQueryWrapper<UploadFile> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UploadFile::getBusinessType, businessType)
                 .eq(UploadFile::getBusinessId, businessId)
@@ -893,7 +893,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
         List<UploadFile> files = list(wrapper);
         return files.stream()
-                .map(this::convertToVO)
+                .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -921,8 +921,8 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
                 + java.io.File.separator + relativePath;
     }
 
-    private UploadFileVO convertToVO(UploadFile file) {
-        return UploadFileVO.builder()
+    private UploadFileResponse convertToResponse(UploadFile file) {
+        return UploadFileResponse.builder()
                 .id(file.getId())
                 .fileName(file.getFileName())
                 .filePath(file.getFilePath())
@@ -938,9 +938,9 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 }
 ```
 
-- [ ] **Step 3: Update `UploadFileVO` to include new fields**
+- [ ] **Step 3: Update `UploadFileResponse` to include new fields**
 
-Read the current `UploadFileVO.java` and add `storageType` and `storageKey` fields. The file currently has builder pattern. Add:
+Read the current `UploadFileResponse.java` and add `storageType` and `storageKey` fields. The file currently has builder pattern. Add:
 
 ```java
     private String storageType;
@@ -955,7 +955,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 5: Commit**
 
 ```bash
-git add easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/service/impl/FileServiceImpl.java easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/dto/UploadFileVO.java
+git add easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/service/impl/FileServiceImpl.java easyorange-backend/easyorange-framework/src/main/java/com/cartethyia/easyorange/framework/file/dto/UploadFileResponse.java
 git commit -m "refactor: extract file IO to FileStorage, keep business logic in FileServiceImpl"
 ```
 
@@ -985,11 +985,11 @@ Update the `/upload` endpoint to accept optional crop parameter and apply smart 
 ```java
 @PostMapping("/upload")
 @PreAuthorize("isAuthenticated()")
-public Result<UploadFileVO> uploadFile(
+public Result<UploadFileResponse> uploadFile(
         @RequestParam("file") MultipartFile file,
         @RequestParam(value = "businessType", required = false) String businessType,
         @RequestParam(value = "crop", required = false) String crop) throws IOException {
-    UploadFileVO result = fileService.uploadFile(file, businessType);
+    UploadFileResponse result = fileService.uploadFile(file, businessType);
 
     // Apply smart crop if requested and file is an image
     if (crop != null && imageProcessingService.isImage(file.getContentType())) {
@@ -1359,7 +1359,7 @@ git commit -m "test: add LocalFileStorage unit tests"
 ```java
 package com.cartethyia.easyorange.framework.file.service.impl;
 
-import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
+import com.cartethyia.easyorange.framework.file.dto.UploadFileResponse;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.storage.FileStorage;
 import com.cartethyia.easyorange.framework.file.storage.LocalFileStorage;

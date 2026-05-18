@@ -1,12 +1,12 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.cartethyia.easyorange.admin.dto.response.ActivityVO;
-import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
-import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
-import com.cartethyia.easyorange.admin.dto.response.TopProductVO;
-import com.cartethyia.easyorange.admin.dto.response.TrendVO;
-import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapVO;
+import com.cartethyia.easyorange.admin.dto.response.ActivityResponse;
+import com.cartethyia.easyorange.admin.dto.response.DashboardStatsResponse;
+import com.cartethyia.easyorange.admin.dto.response.PendingItemsResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
+import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
+import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
@@ -83,7 +83,7 @@ class AdminDashboardServiceTest {
             when(orderReadRepository.countByStatus(null)).thenReturn(300L);
             when(productReportRepository.countPendingReports()).thenReturn(8L);
 
-            DashboardStatsVO stats = dashboardService.getDashboardStats();
+            DashboardStatsResponse stats = dashboardService.getDashboardStats();
 
             assertThat(stats.getTotalUsers()).isEqualTo(100);
             assertThat(stats.getTodayNewUsers()).isEqualTo(5);
@@ -111,7 +111,7 @@ class AdminDashboardServiceTest {
                                     LocalDateTime.now(), LocalDateTime.now(), 1)
                     ));
 
-            PendingItemsVO items = dashboardService.getPendingItems();
+            PendingItemsResponse items = dashboardService.getPendingItems();
 
             assertThat(items.getPendingReports()).isEqualTo(3);
             assertThat(items.getPendingOrders()).isEqualTo(5);
@@ -129,7 +129,7 @@ class AdminDashboardServiceTest {
         void getRecentUsers_returnsUsers() {
             when(userMapper.selectList(any())).thenReturn(List.of(createTestUser()));
 
-            List<RecentUserVO> users = dashboardService.getRecentUsers(5);
+            List<RecentUserResponse> users = dashboardService.getRecentUsers(5);
 
             assertThat(users).hasSize(1);
             assertThat(users.get(0).getUsername()).isEqualTo("testuser");
@@ -151,10 +151,10 @@ class AdminDashboardServiceTest {
                 .thenReturn(List.of())
                 .thenReturn(List.of());
 
-            List<TrendVO> trend = dashboardService.getTrend();
+            List<TrendResponse> trend = dashboardService.getTrend();
 
             assertThat(trend).isNotEmpty();
-            TrendVO last = trend.get(trend.size() - 1);
+            TrendResponse last = trend.get(trend.size() - 1);
             assertThat(last.getMonth()).startsWith("2026-0");
         }
     }
@@ -168,7 +168,7 @@ class AdminDashboardServiceTest {
         void getRecentActivity_noData_returnsEmptyList() {
             when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of());
 
-            List<ActivityVO> activities = dashboardService.getRecentActivity();
+            List<ActivityResponse> activities = dashboardService.getRecentActivity();
 
             assertThat(activities).isEmpty();
         }
@@ -192,7 +192,7 @@ class AdminDashboardServiceTest {
                 .thenReturn(List.of())
                 .thenReturn(List.of());
 
-            List<ActivityVO> activities = dashboardService.getRecentActivity();
+            List<ActivityResponse> activities = dashboardService.getRecentActivity();
 
             assertThat(activities).hasSize(2);
             assertThat(activities.get(0).getText()).contains("张三");
@@ -220,7 +220,7 @@ class AdminDashboardServiceTest {
             when(jdbcTemplate.queryForList(anyString(), any(LocalDateTime.class)))
                 .thenReturn(List.of(row1, row2));
 
-            List<UserActivityHeatmapVO> result = dashboardService.getUserActivityHeatmap();
+            List<UserActivityHeatmapResponse> result = dashboardService.getUserActivityHeatmap();
 
             assertThat(result).hasSize(2);
             assertThat(result.get(0).dayOfWeek()).isEqualTo(1);
@@ -246,7 +246,7 @@ class AdminDashboardServiceTest {
 
             when(jdbcTemplate.queryForList(anyString(), anyInt())).thenReturn(List.of(row));
 
-            List<TopProductVO> result = dashboardService.getTopProducts(10);
+            List<TopProductResponse> result = dashboardService.getTopProducts(10);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getName()).isEqualTo("高等数学教材");

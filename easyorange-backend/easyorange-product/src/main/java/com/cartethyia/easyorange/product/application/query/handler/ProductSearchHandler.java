@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.product.application.query.handler;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -19,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,7 +35,7 @@ public class ProductSearchHandler {
     private final Optional<ProductSearchQueryPort> searchQueryPort;
 
     @Transactional(readOnly = true)
-    public PageResult<ProductResponse> handleSearch(ProductSearchRequest request) {
+    public SearchPageResponse<ProductResponse> handleSearch(ProductSearchRequest request) {
         if (searchQueryPort.isPresent()) {
             ProductSearchQueryPort.ProductSearchQuery query = new ProductSearchQueryPort.ProductSearchQuery(
                     request.getKeyword(),
@@ -50,7 +52,9 @@ public class ProductSearchHandler {
             List<ProductResponse> responses = searchResult.records().stream()
                     .map(this::toProductResponse)
                     .collect(Collectors.toList());
-            return PageResult.of(responses, searchResult.total(), searchResult.pageNum(), searchResult.pageSize());
+            List<FacetBucketResponse> facets = mergeFacets(searchResult);
+            return SearchPageResponse.of(responses, searchResult.total(), searchResult.pageNum(),
+                    searchResult.pageSize(), facets);
         }
 
         Page<ProductReadModel> page = productQueryRepository.searchProducts(
@@ -65,7 +69,7 @@ public class ProductSearchHandler {
                 .map(this::toProductResponse)
                 .collect(Collectors.toList());
 
-        return PageResult.of(responses, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+        return SearchPageResponse.of(responses, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
     }
 
     @Transactional(readOnly = true)
@@ -128,5 +132,16 @@ public class ProductSearchHandler {
                 .location(model.location())
                 .createTime(model.createTime())
                 .build();
+    }
+
+    private List<FacetBucketResponse> mergeFacets(SearchResult result) {
+        var list = new ArrayList<FacetBucketResponse>();
+        result.categoryFacets().forEach(fb ->
+                list.add(new FacetBucketResponse("category_" + fb.key(), fb.count())));
+        result.conditionFacets().forEach(fb ->
+                list.add(new FacetBucketResponse("condition_" + fb.key(), fb.count())));
+        result.priceRangeFacets().forEach(fb ->
+                list.add(new FacetBucketResponse("price_" + fb.key(), fb.count())));
+        return List.copyOf(list);
     }
 }

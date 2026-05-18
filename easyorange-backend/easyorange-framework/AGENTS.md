@@ -40,6 +40,8 @@ framework/
 │       └── RequestConfig.java
 ├── entity/
 │   └── BaseDO.java              # 数据对象基类 (id, createTime, updateTime, delFlag, version)
+├── repository/
+│   ├── BaseRepository.java      # 仓储基类，封装 lambdaQuery()/lambdaUpdate() + findOne/findList/findIn 等常见查询模式
 ├── event/                   # 领域事件基础设施
 │   ├── DomainEventPublisherImpl.java    # 事件发布实现 (持久化+异步)
 │   ├── DomainEventPersistenceService.java # 事件持久化
@@ -67,7 +69,7 @@ framework/
 │   ├── service/impl/FileServiceImpl.java
 │   ├── service/ImageProcessingService.java
 │   ├── service/impl/ImageProcessingServiceImpl.java
-│   ├── dto/UploadFileVO.java
+│   ├── dto/UploadFileResponse.java
 │   ├── entity/UploadFile.java
 │   └── mapper/UploadFileMapper.java
 ├── filter/                  # Servlet 过滤器

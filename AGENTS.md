@@ -122,7 +122,7 @@ easy-orange/
 │   │   │   └── AdminReviewService.java             # 评价管理（列表/详情/软删除）
 │   │   └── dto/
 │   │       ├── request/                             # 16 个请求 DTO（含 AdminReviewDeleteRequest, AdminReviewQueryRequest）
-│   │       └── response/                            # 20 个响应 VO（含 AdminReviewVO）
+│   │       └── response/                            # 20 个响应 Response（含 AdminReviewResponse）
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 │       ├── adapter/event/ProductAuditEventListener.java       # 审核→站内消息通知
 │       ├── adapter/event/ReportProcessedEventListener.java    # 举报处理→站内消息通知(AFTER_COMMIT+Async)
@@ -153,7 +153,7 @@ easy-orange/
 │   │   │   ├── reports/                     # 举报处理（ReportManagePage）
 │   │   │   └── stats/                       # 数据统计（StatsPage）
 │   │   ├── hooks/                           # 12 个 hooks 含 useAdminReviews, useAdminCategories, useAdminProductAudit 等
-│   │   ├── types/admin.ts                   # 含 AuditLogVO, AuditDimension, AdminReview 等类型
+│   │   ├── types/admin.ts                   # 含 AuditLogResponse, AuditDimension, AdminReview 等类型
 │   │   └── api/adminApi.ts                  # 管理后台所有 API 端点
 │   ├── src/pages/products/ProductDetailPage.tsx  # 用户商品详情（审核状态标签+重提交按钮）
 │   ├── src/pages/products/MyProductsPage.tsx      # 我的发布（状态筛选/查看/编辑）
@@ -203,7 +203,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 ## 已知问题
 
 - **AdminDashboardService.getDescription()**: `ProductStatus` 枚举无 `getDescription()` 方法，已修复为 `getDesc()`
-- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`EventIdempotencyCheckerIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker，默认 `mvn test` 不会执行（已标注 `@Tag("integration")`），执行时需 `-DexcludedGroups=integration`
+- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`EventIdempotencyCheckerIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
 
 ## 错误码规范
 
@@ -256,6 +256,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
 - 测试覆盖率目标 ≥ 80%（后端全面覆盖中；admin 模块 100% 服务层覆盖，message 模块 161 测试/6 服务已覆盖，user 模块 149 测试/8 服务已覆盖，product 模块 109 测试、payment 模块 134 测试；前端 95 测试文件/919 测试，用户页面覆盖率达 ~74%）
+- **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/`
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 
@@ -280,14 +281,14 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 ./mvnw test
 
 # 运行特定模块测试（排除集成测试）
-./mvnw test -pl easyorange-framework -DexcludedGroups=integration
+./mvnw test -pl easyorange-framework
 ./mvnw test -pl easyorange-admin
-./mvnw test -pl easyorange-order -DexcludedGroups=integration
+./mvnw test -pl easyorange-order
 ./mvnw test -pl easyorange-message -am
 
 # 含集成测试（需 Docker 环境）
-./mvnw test -pl easyorange-framework
-./mvnw test -pl easyorange-order
+./mvnw test -pl easyorange-framework -DexcludedGroups=""
+./mvnw test -pl easyorange-order -DexcludedGroups=""
 
 # 启动开发环境 (MySQL + Redis + 可选 ES)
 docker-compose up -d

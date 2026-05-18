@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,12 +12,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Repository
-public class MybatisFavoriteRepository extends ServiceImpl<FavoriteMapper, FavoriteDO> implements FavoriteRepository {
+public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, FavoriteDO> implements FavoriteRepository {
+
+    public MybatisFavoriteRepository(FavoriteMapper mapper) {
+        super(mapper);
+    }
 
     @Override
     public Optional<Favorite> findById(Long id) {
-        FavoriteDO dataObject = baseMapper.selectById(id);
-        return Optional.ofNullable(toDomain(dataObject));
+        return Optional.ofNullable(mapper.selectById(id)).map(this::toDomain);
     }
 
     @Override
@@ -26,87 +28,83 @@ public class MybatisFavoriteRepository extends ServiceImpl<FavoriteMapper, Favor
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        List<FavoriteDO> dataObjects = baseMapper.selectBatchIds(ids);
-        return dataObjects.stream().map(this::toDomain).collect(Collectors.toList());
+        return mapper.selectBatchIds(ids).stream()
+            .map(this::toDomain)
+            .toList();
     }
 
     @Override
     public Optional<Favorite> findByUserIdAndProductId(Long userId, Long productId) {
-        FavoriteDO dataObject = baseMapper.selectOne(
-                new LambdaQueryWrapper<FavoriteDO>()
-                        .eq(FavoriteDO::getUserId, userId)
-                        .eq(FavoriteDO::getProductId, productId)
-                        .eq(FavoriteDO::getDelFlag, 0)
-        );
+        FavoriteDO dataObject = lambdaQuery()
+                .eq(FavoriteDO::getUserId, userId)
+                .eq(FavoriteDO::getProductId, productId)
+                .eq(FavoriteDO::getDelFlag, 0)
+                .one();
         return Optional.ofNullable(toDomain(dataObject));
     }
 
     @Override
     public List<Favorite> findByUserId(Long userId, long offset, long limit) {
         long pageNum = offset / limit + 1;
-        Page<FavoriteDO> page = new Page<>(pageNum, limit);
-        List<FavoriteDO> dataObjects = baseMapper.selectPage(page,
-                new LambdaQueryWrapper<FavoriteDO>()
-                        .eq(FavoriteDO::getUserId, userId)
-                        .eq(FavoriteDO::getDelFlag, 0)
-                        .orderByDesc(FavoriteDO::getCreateTime))
+        List<FavoriteDO> dataObjects = lambdaQuery()
+                .eq(FavoriteDO::getUserId, userId)
+                .eq(FavoriteDO::getDelFlag, 0)
+                .orderByDesc(FavoriteDO::getCreateTime)
+                .page(new Page<>(pageNum, limit))
                 .getRecords();
-        return dataObjects.stream().map(this::toDomain).collect(Collectors.toList());
+        return dataObjects.stream().map(this::toDomain).toList();
     }
 
     @Override
     public long countByUserId(Long userId) {
-        return baseMapper.selectCount(
-                new LambdaQueryWrapper<FavoriteDO>()
-                        .eq(FavoriteDO::getUserId, userId)
-                        .eq(FavoriteDO::getDelFlag, 0)
-        );
+        return lambdaQuery()
+                .eq(FavoriteDO::getUserId, userId)
+                .eq(FavoriteDO::getDelFlag, 0)
+                .count();
     }
 
     @Override
     public Favorite save(Favorite favorite) {
-        FavoriteDO softDeleted = baseMapper.selectSoftDeletedByUserIdAndProductId(
+        FavoriteDO softDeleted = mapper.selectSoftDeletedByUserIdAndProductId(
                 favorite.getUserId(), favorite.getProductId());
 
         if (softDeleted != null) {
-            baseMapper.reviveById(softDeleted.getId(), favorite.getUserId());
-            FavoriteDO revived = baseMapper.selectById(softDeleted.getId());
+            mapper.reviveById(softDeleted.getId(), favorite.getUserId());
+            FavoriteDO revived = mapper.selectById(softDeleted.getId());
             return Favorite.reconstitute(revived.getId(), revived.getUserId(), revived.getProductId(), revived.getCreateTime());
         }
 
         FavoriteDO dataObject = toDataObject(favorite);
-        baseMapper.insert(dataObject);
+        mapper.insert(dataObject);
         return Favorite.reconstitute(dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
     }
 
     @Override
     public void removeById(Long id) {
-        baseMapper.deleteById(id);
+        mapper.deleteById(id);
     }
 
     @Override
     public int removeByIds(List<Long> ids) {
-        return baseMapper.deleteByIds(ids);
+        return mapper.deleteByIds(ids);
     }
 
     @Override
     public boolean existsByUserIdAndProductId(Long userId, Long productId) {
-        return baseMapper.selectCount(
-                new LambdaQueryWrapper<FavoriteDO>()
-                        .eq(FavoriteDO::getUserId, userId)
-                        .eq(FavoriteDO::getProductId, productId)
-                        .eq(FavoriteDO::getDelFlag, 0)
-        ) > 0;
+        return lambdaQuery()
+                .eq(FavoriteDO::getUserId, userId)
+                .eq(FavoriteDO::getProductId, productId)
+                .eq(FavoriteDO::getDelFlag, 0)
+                .count() > 0;
     }
 
     @Override
     public Set<Long> findFavoritedProductIds(Long userId, List<Long> productIds) {
-        List<FavoriteDO> dataObjects = baseMapper.selectList(
-                new LambdaQueryWrapper<FavoriteDO>()
-                        .eq(FavoriteDO::getUserId, userId)
-                        .in(FavoriteDO::getProductId, productIds)
-                        .eq(FavoriteDO::getDelFlag, 0)
-        );
+        List<FavoriteDO> dataObjects = lambdaQuery()
+                .eq(FavoriteDO::getUserId, userId)
+                .in(FavoriteDO::getProductId, productIds)
+                .eq(FavoriteDO::getDelFlag, 0)
+                .list();
         return dataObjects.stream()
                 .map(FavoriteDO::getProductId)
                 .collect(Collectors.toSet());

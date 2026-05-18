@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.admin.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.ActivityVO;
-import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
-import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentProductVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
-import com.cartethyia.easyorange.admin.dto.response.TopProductVO;
-import com.cartethyia.easyorange.admin.dto.response.TrendVO;
-import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapVO;
+import com.cartethyia.easyorange.admin.dto.response.ActivityResponse;
+import com.cartethyia.easyorange.admin.dto.response.DashboardStatsResponse;
+import com.cartethyia.easyorange.admin.dto.response.PendingItemsResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
+import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
+import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
 import com.cartethyia.easyorange.common.result.Result;
 import lombok.RequiredArgsConstructor;
@@ -26,42 +26,42 @@ public class AdminDashboardController {
     private final AdminDashboardService adminDashboardService;
 
     @GetMapping("/stats")
-    public Result<DashboardStatsVO> getStats() {
+    public Result<DashboardStatsResponse> getStats() {
         return Result.success(adminDashboardService.getDashboardStats());
     }
 
     @GetMapping("/pending")
-    public Result<PendingItemsVO> getPendingItems() {
+    public Result<PendingItemsResponse> getPendingItems() {
         return Result.success(adminDashboardService.getPendingItems());
     }
 
     @GetMapping("/recent-users")
-    public Result<List<RecentUserVO>> getRecentUsers() {
+    public Result<List<RecentUserResponse>> getRecentUsers() {
         return Result.success(adminDashboardService.getRecentUsers(10));
     }
 
     @GetMapping("/recent-products")
-    public Result<List<RecentProductVO>> getRecentProducts() {
+    public Result<List<RecentProductResponse>> getRecentProducts() {
         return Result.success(adminDashboardService.getRecentProducts(10));
     }
 
     @GetMapping("/trend")
-    public Result<List<TrendVO>> getTrend() {
+    public Result<List<TrendResponse>> getTrend() {
         return Result.success(adminDashboardService.getTrend());
     }
 
     @GetMapping("/activity")
-    public Result<List<ActivityVO>> getActivity() {
+    public Result<List<ActivityResponse>> getActivity() {
         return Result.success(adminDashboardService.getRecentActivity());
     }
 
     @GetMapping("/user-activity-heatmap")
-    public Result<List<UserActivityHeatmapVO>> getUserActivityHeatmap() {
+    public Result<List<UserActivityHeatmapResponse>> getUserActivityHeatmap() {
         return Result.success(adminDashboardService.getUserActivityHeatmap());
     }
 
     @GetMapping("/top-products")
-    public Result<List<TopProductVO>> getTopProducts(@RequestParam(defaultValue = "10") int limit) {
+    public Result<List<TopProductResponse>> getTopProducts(@RequestParam(defaultValue = "10") int limit) {
         return Result.success(adminDashboardService.getTopProducts(limit));
     }
 }

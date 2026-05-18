@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.ResetPasswordRequest;
 import com.cartethyia.easyorange.admin.dto.request.UserRoleRequest;
 import com.cartethyia.easyorange.admin.dto.request.UserUnlockRequest;
-import com.cartethyia.easyorange.admin.dto.response.ResetPasswordVO;
+import com.cartethyia.easyorange.admin.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserServiceExtension;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class AdminUserControllerExtension {
     }
 
     @PutMapping("/{id}/reset-password")
-    public Result<ResetPasswordVO> resetPassword(
+    public Result<ResetPasswordResponse> resetPassword(
         @PathVariable Long id,
         @Valid @RequestBody ResetPasswordRequest request
     ) {

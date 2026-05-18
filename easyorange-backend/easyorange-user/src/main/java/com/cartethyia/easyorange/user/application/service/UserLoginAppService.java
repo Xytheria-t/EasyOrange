@@ -18,6 +18,7 @@ public class UserLoginAppService {
 
     private final AuthenticationDomainService authenticationDomainService;
     private final TokenService tokenService;
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final UserAssembler userAssembler;
 
     @Transactional(rollbackFor = Exception.class)

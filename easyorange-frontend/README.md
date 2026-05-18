@@ -35,7 +35,7 @@ easyorange-frontend/
 │   │   └── ...
 │   ├── admin/                # 管理端模块（暖橙指挥中心设计系统）
 │   │   ├── layout/           # AdminLayout, AdminSidebar, AdminHeader
-│   │   ├── pages/            # dashboard / users / products / orders / reports / stats
+│   │   ├── pages/            # dashboard / users / products / orders / categories / reviews / reports / stats
 │   │   ├── components/       # AdminTable, AdminSelect(Portal), StatusBadge, ConfirmModal
 │   │   └── styles/           # admin.css, admin-layout.css
 │   ├── components/           # 可复用组件
@@ -135,6 +135,8 @@ npm run preview
 | 用户管理 | `/admin/users` | 用户列表、搜索、详情弹窗、状态变更 | 是 |
 | 商品管理 | `/admin/products` | 商品审核列表、详情抽屉、通过/拒绝 | 是 |
 | 订单管理 | `/admin/orders` | 订单列表、筛选、状态追踪 | 是 |
+| 分类管理 | `/admin/categories` | 分类树、CRUD 操作、启用禁用 | 是 |
+| 评价管理 | `/admin/reviews` | 评价列表、详情、删除 | 是 |
 | 举报管理 | `/admin/reports` | 举报处理、处理/驳回操作 | 是 |
 | 数据统计 | `/admin/stats` | 统计卡片、图表、活动时间线 | 是 |
 

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type { BatchAuditRequest, ProductAuditRequest, AuditLogVO } from '../types/admin';
+import type { BatchAuditRequest, ProductAuditRequest, AuditLogResponse } from '../types/admin';
 
 export const ADMIN_AUDIT_KEYS = {
   all: ['admin', 'audit'] as const,
@@ -38,11 +38,11 @@ export function useBatchAuditProducts() {
 export function useAuditLogs(productId: number | null) {
   return useQuery({
     queryKey: ADMIN_AUDIT_KEYS.logs(productId ?? 0),
-    queryFn: async (): Promise<{ data: AuditLogVO[] }> => {
+    queryFn: async (): Promise<{ data: AuditLogResponse[] }> => {
       if (!productId) {return { data: [] };}
       return adminApi.getAuditLogs(productId);
     },
     enabled: productId != null && productId > 0,
-    select: (res): AuditLogVO[] => res.data,
+    select: (res): AuditLogResponse[] => res.data,
   });
 }

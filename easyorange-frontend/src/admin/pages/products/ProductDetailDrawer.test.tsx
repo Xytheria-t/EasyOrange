@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { ProductDetailDrawer } from './ProductDetailDrawer';
-import type { AdminProduct, AuditLogVO } from '../../types/admin';
+import type { AdminProduct, AuditLogResponse } from '../../types/admin';
 
 // ─── Mock scrollIntoView for AdminSelect portal (used in drawer's parent) ───
 beforeAll(() => {
@@ -49,7 +49,7 @@ const sampleProduct: AdminProduct = {
   updateTime: '2026-05-16T10:00:00',
 };
 
-const auditLogs: AuditLogVO[] = [
+const auditLogs: AuditLogResponse[] = [
   {
     id: 1,
     productId: 1,

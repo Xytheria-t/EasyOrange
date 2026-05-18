@@ -1,31 +1,33 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.message.entity.MessageSubscription;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-@RequiredArgsConstructor
-public class MybatisMessageSubscriptionRepository implements MessageSubscriptionRepository {
+public class MybatisMessageSubscriptionRepository extends BaseRepository<MessageSubscriptionMapper, MessageSubscription> implements MessageSubscriptionRepository {
 
-    private final MessageSubscriptionMapper mapper;
+    public MybatisMessageSubscriptionRepository(MessageSubscriptionMapper mapper) {
+        super(mapper);
+    }
 
     @Override
     public List<MessageSubscription> findByUserId(Long userId) {
-        return mapper.selectList(new LambdaQueryWrapper<MessageSubscription>()
-                .eq(MessageSubscription::getUserId, userId));
+        return lambdaQuery()
+                .eq(MessageSubscription::getUserId, userId)
+                .list();
     }
 
     @Override
     public MessageSubscription findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel) {
-        return mapper.selectOne(new LambdaQueryWrapper<MessageSubscription>()
+        return lambdaQuery()
                 .eq(MessageSubscription::getUserId, userId)
                 .eq(MessageSubscription::getMessageType, messageType)
-                .eq(MessageSubscription::getPushChannel, pushChannel));
+                .eq(MessageSubscription::getPushChannel, pushChannel)
+                .one();
     }
 
     @Override
@@ -41,11 +43,12 @@ public class MybatisMessageSubscriptionRepository implements MessageSubscription
 
     @Override
     public boolean existsEnabled(Long userId, String messageType, String pushChannel) {
-        Long count = mapper.selectCount(new LambdaQueryWrapper<MessageSubscription>()
+        Long count = lambdaQuery()
                 .eq(MessageSubscription::getUserId, userId)
                 .eq(MessageSubscription::getMessageType, messageType)
                 .eq(MessageSubscription::getPushChannel, pushChannel)
-                .eq(MessageSubscription::getEnabled, true));
+                .eq(MessageSubscription::getEnabled, true)
+                .count();
         return count > 0;
     }
 }

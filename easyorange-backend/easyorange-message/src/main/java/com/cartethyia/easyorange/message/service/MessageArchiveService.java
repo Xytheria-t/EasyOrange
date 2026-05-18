@@ -1,12 +1,13 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +20,7 @@ import java.util.List;
 public class MessageArchiveService {
 
     private final MessageMapper messageMapper;
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Value("${easyorange.message.retention-days:90}")
     private int retentionDays;
@@ -78,12 +79,12 @@ public class MessageArchiveService {
     }
 
     private List<Message> selectMessagesBefore(LocalDateTime targetDate) {
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
-        wrapper.lt(Message::getCreateTime, targetDate)
+        return ChainWrappers.lambdaQueryChain(messageMapper)
+                .lt(Message::getCreateTime, targetDate)
                 .eq(Message::getDelFlag, 0)
                 .orderByAsc(Message::getCreateTime)
-                .last("LIMIT " + BATCH_SIZE);
-        return messageMapper.selectList(wrapper);
+                .last("LIMIT " + BATCH_SIZE)
+                .list();
     }
 
     private void batchInsertArchive(List<Message> messages) {
@@ -91,35 +92,34 @@ public class MessageArchiveService {
             return;
         }
 
-        StringBuilder sql = new StringBuilder(
-                "INSERT INTO eo_message_archive (id, sender_id, receiver_id, type, title, content, " +
-                "is_read, read_time, business_id, conversation_id, create_time, update_time, create_by, update_by) VALUES "
-        );
+        String sql = """
+            INSERT INTO eo_message_archive
+            (id, sender_id, receiver_id, type, title, content, is_read, read_time,
+             business_id, conversation_id, create_time, update_time, create_by, update_by)
+            VALUES
+            (:id, :senderId, :receiverId, :type, :title, :content, :isRead, :readTime,
+             :businessId, :conversationId, :createTime, :updateTime, :createBy, :updateBy)
+            """;
 
-        for (int i = 0; i < messages.size(); i++) {
-            Message msg = messages.get(i);
-            if (i > 0) {
-                sql.append(", ");
-            }
-            sql.append(String.format("(%d, %s, %d, %d, %s, %s, %d, %s, %s, %s, %s, %s, %s, %s)",
-                    msg.getId(),
-                    msg.getSenderId() != null ? msg.getSenderId().toString() : "NULL",
-                    msg.getReceiverId(),
-                    msg.getType() != null ? msg.getType() : 0,
-                    msg.getTitle() != null ? "'" + escapeSql(msg.getTitle()) + "'" : "NULL",
-                    "'" + escapeSql(msg.getContent()) + "'",
-                    msg.getIsRead() != null ? msg.getIsRead() : 0,
-                    msg.getReadTime() != null ? "'" + msg.getReadTime() + "'" : "NULL",
-                    msg.getBusinessId() != null ? msg.getBusinessId().toString() : "NULL",
-                    msg.getConversationId() != null ? msg.getConversationId().toString() : "NULL",
-                    msg.getCreateTime() != null ? "'" + msg.getCreateTime() + "'" : "NULL",
-                    msg.getUpdateTime() != null ? "'" + msg.getUpdateTime() + "'" : "NULL",
-                    msg.getCreateBy() != null ? msg.getCreateBy().toString() : "NULL",
-                    msg.getUpdateBy() != null ? msg.getUpdateBy().toString() : "NULL"
-            ));
-        }
+        MapSqlParameterSource[] batchParams = messages.stream()
+                .map(msg -> new MapSqlParameterSource()
+                        .addValue("id", msg.getId())
+                        .addValue("senderId", msg.getSenderId())
+                        .addValue("receiverId", msg.getReceiverId())
+                        .addValue("type", msg.getType())
+                        .addValue("title", msg.getTitle())
+                        .addValue("content", msg.getContent())
+                        .addValue("isRead", msg.getIsRead())
+                        .addValue("readTime", msg.getReadTime())
+                        .addValue("businessId", msg.getBusinessId())
+                        .addValue("conversationId", msg.getConversationId())
+                        .addValue("createTime", msg.getCreateTime())
+                        .addValue("updateTime", msg.getUpdateTime())
+                        .addValue("createBy", msg.getCreateBy())
+                        .addValue("updateBy", msg.getUpdateBy()))
+                .toArray(MapSqlParameterSource[]::new);
 
-        jdbcTemplate.execute(sql.toString());
+        namedParameterJdbcTemplate.batchUpdate(sql, batchParams);
     }
 
     private void deleteByIds(List<Long> ids) {
@@ -130,16 +130,9 @@ public class MessageArchiveService {
     }
 
     private int deleteExpiredBatch(LocalDateTime expireDate) {
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
-        wrapper.lt(Message::getCreateTime, expireDate)
-                .last("LIMIT " + BATCH_SIZE);
-        return messageMapper.delete(wrapper);
-    }
-
-    private String escapeSql(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.replace("'", "''");
+        return ChainWrappers.lambdaUpdateChain(messageMapper)
+                .lt(Message::getCreateTime, expireDate)
+                .last("LIMIT " + BATCH_SIZE)
+                .remove() ? 1 : 0;
     }
 }

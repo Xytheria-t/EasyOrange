@@ -73,7 +73,7 @@ public class RedisCacheImpl implements RedisCache {
 
     private <T> Set<T> filterByType(Set<?> candidates, Class<T> type) {
         if (candidates == null || candidates.isEmpty()) {
-            return Collections.emptySet();
+            return Set.of();
         }
         return candidates.stream()
                 .filter(type::isInstance)
@@ -84,12 +84,12 @@ public class RedisCacheImpl implements RedisCache {
     @SuppressWarnings("unchecked")
     private <T> Map<String, T> multiGetInternal(Collection<String> keys, Class<T> type) {
         if (keys == null || keys.isEmpty()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         List<String> rawKeys = keys.stream().map(this::generateKey).toList();
         List<Object> values = redisTemplate.opsForValue().multiGet(rawKeys);
         if (values == null) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         List<String> keyList = keys instanceof List<String> l ? l : List.copyOf(keys);
         Map<String, T> result = new HashMap<>(keys.size());
@@ -220,7 +220,7 @@ public class RedisCacheImpl implements RedisCache {
         try {
             return redisTemplate.execute(
                     UNLOCK_SCRIPT_INSTANCE,
-                    Collections.singletonList(generateKey(key)),
+                    List.of(generateKey(key)),
                     value
             ) != null;
         } catch (Exception e) {
@@ -389,7 +389,7 @@ public class RedisCacheImpl implements RedisCache {
     public Set<String> keys(String pattern) {
         Set<String> rawKeys = redisTemplate.keys(pattern);
         if (rawKeys == null) {
-            return Collections.emptySet();
+            return Set.of();
         }
         return rawKeys.stream()
                 .map(this::stripPrefix)

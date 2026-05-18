@@ -81,7 +81,7 @@ describe('useCreateCategory', () => {
 
     const { result } = renderHook(() => useCreateCategory(), { wrapper: Wrapper });
 
-    result.current.mutate({ name: '新分类', parentId: 0, sort: 1 });
+    result.current.mutate({ name: '新分类', parentId: 0, sortOrder: 1 });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBe(1);
@@ -103,7 +103,7 @@ describe('useUpdateCategory', () => {
 
     const { result } = renderHook(() => useUpdateCategory(), { wrapper: Wrapper });
 
-    result.current.mutate({ id: 1, data: { name: '更新名', sort: 2 } });
+    result.current.mutate({ id: 1, data: { name: '更新名', sortOrder: 2 } });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });

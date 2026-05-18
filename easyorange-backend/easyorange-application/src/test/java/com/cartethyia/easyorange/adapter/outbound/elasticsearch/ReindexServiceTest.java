@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
 
-import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,7 +68,7 @@ class ReindexServiceTest {
     @DisplayName("无在线商品时应跳过批量保存")
     void reindexAll_shouldHandleEmptyProducts() {
         when(indexOps.exists()).thenReturn(false);
-        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(Collections.emptyList());
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
         int count = reindexService.reindexAll();
 
@@ -82,7 +81,7 @@ class ReindexServiceTest {
     @DisplayName("索引不存在时不调用删除")
     void reindexAll_shouldNotDeleteIfIndexNotExists() {
         when(indexOps.exists()).thenReturn(false);
-        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(Collections.emptyList());
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
         reindexService.reindexAll();
 

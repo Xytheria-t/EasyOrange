@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.admin.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
 import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.dto.response.CategoryTreeVO;
-import com.cartethyia.easyorange.admin.dto.response.CategoryVO;
+import com.cartethyia.easyorange.admin.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
@@ -62,7 +62,7 @@ class AdminCategoryServiceTest {
 
             when(categoryMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(parent, child));
 
-            List<CategoryTreeVO> tree = categoryService.categoryTree();
+            List<CategoryTreeResponse> tree = categoryService.categoryTree();
 
             assertThat(tree).hasSize(1);
             assertThat(tree.get(0).name()).isEqualTo("电子数码");
@@ -75,7 +75,7 @@ class AdminCategoryServiceTest {
         void categoryTree_empty_returnsEmpty() {
             when(categoryMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
-            List<CategoryTreeVO> tree = categoryService.categoryTree();
+            List<CategoryTreeResponse> tree = categoryService.categoryTree();
 
             assertThat(tree).isEmpty();
         }
@@ -89,7 +89,7 @@ class AdminCategoryServiceTest {
         @DisplayName("创建一级分类成功")
         void createCategory_root_success() {
             when(categoryQueryRepository.findByName("新分类")).thenReturn(null);
-            // Set ID on insert to avoid NPE in toCategoryVO (entity.id would be null after mocked insert)
+            // Set ID on insert to avoid NPE in toCategoryResponse (entity.id would be null after mocked insert)
             doAnswer(invocation -> {
                 CategoryDO entity = invocation.getArgument(0);
                 entity.setId(99L);

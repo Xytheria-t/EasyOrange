@@ -1,16 +1,15 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,21 +17,22 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class MybatisMessageQueryRepository implements MessageQueryRepository {
+public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper, Message> implements MessageQueryRepository {
 
-    private final MessageMapper messageMapper;
+    public MybatisMessageQueryRepository(MessageMapper messageMapper) {
+        super(messageMapper);
+    }
 
     @Override
     public Message findById(Long id) {
-        return messageMapper.selectById(id);
+        return mapper.selectById(id);
     }
 
     @Override
     public PageResult<Message> findByReceiverId(QueryMessageRequest request, Long userId) {
         PageRequest normalized = request.normalized();
         Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = lambdaQuery();
         wrapper.eq(Message::getReceiverId, userId);
 
         if (request.getType() != null) {
@@ -44,7 +44,7 @@ public class MybatisMessageQueryRepository implements MessageQueryRepository {
 
         wrapper.orderByDesc(Message::getCreateTime);
 
-        Page<Message> messagePage = messageMapper.selectPage(page, wrapper);
+        Page<Message> messagePage = wrapper.page(page);
         return toPageResult(messagePage);
     }
 
@@ -52,7 +52,7 @@ public class MybatisMessageQueryRepository implements MessageQueryRepository {
     public PageResult<Message> findUnreadByReceiverId(QueryMessageRequest request, Long userId) {
         PageRequest normalized = request.normalized();
         Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
-        LambdaQueryWrapper<Message> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = lambdaQuery();
         wrapper.eq(Message::getReceiverId, userId)
                 .eq(Message::getIsRead, MessageStatus.UNREAD.getCode());
 
@@ -62,13 +62,13 @@ public class MybatisMessageQueryRepository implements MessageQueryRepository {
 
         wrapper.orderByDesc(Message::getCreateTime);
 
-        Page<Message> messagePage = messageMapper.selectPage(page, wrapper);
+        Page<Message> messagePage = wrapper.page(page);
         return toPageResult(messagePage);
     }
 
     @Override
     public UnreadCountVO countUnreadByReceiverId(Long userId) {
-        List<Map<String, Object>> counts = messageMapper.countUnreadByType(userId, MessageStatus.UNREAD.getCode());
+        List<Map<String, Object>> counts = mapper.countUnreadByType(userId, MessageStatus.UNREAD.getCode());
 
         Map<Integer, Long> countMap = counts.stream()
                 .collect(Collectors.toMap(

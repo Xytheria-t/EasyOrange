@@ -146,7 +146,7 @@ class RedisCacheImplIntegrationTest {
         @Test
         @DisplayName("delete 空集合返回 0")
         void deleteEmptyCollection() {
-            assertThat(redisCache.delete(Collections.emptyList())).isZero();
+            assertThat(redisCache.delete(List.of())).isZero();
         }
 
         @Test
@@ -279,7 +279,7 @@ class RedisCacheImplIntegrationTest {
         @Test
         @DisplayName("multiGet 不存在字段返回空 map")
         void multiGetEmptyKeys() {
-            Map<String, String> result = redisCache.multiGet(Collections.emptyList());
+            Map<String, String> result = redisCache.multiGet(List.of());
             assertThat(result).isEmpty();
         }
 
@@ -296,7 +296,7 @@ class RedisCacheImplIntegrationTest {
         @Test
         @DisplayName("multiSet空map抛出异常")
         void multiSetEmptyThrows() {
-            assertThatThrownBy(() -> redisCache.multiSet(Collections.emptyMap()))
+            assertThatThrownBy(() -> redisCache.multiSet(Map.of()))
                     .isInstanceOf(RuntimeException.class);
         }
     }

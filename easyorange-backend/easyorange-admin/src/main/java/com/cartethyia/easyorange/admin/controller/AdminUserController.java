@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.AdminUserQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminUserVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +18,12 @@ public class AdminUserController {
     private final AdminUserService adminUserService;
 
     @GetMapping
-    public Result<PageResult<AdminUserVO>> listUsers(AdminUserQueryRequest request) {
+    public Result<PageResult<AdminUserResponse>> listUsers(AdminUserQueryRequest request) {
         return Result.success(adminUserService.listUsers(request));
     }
 
     @GetMapping("/{id}")
-    public Result<AdminUserVO> getUserDetail(@PathVariable Long id) {
+    public Result<AdminUserResponse> getUserDetail(@PathVariable Long id) {
         return Result.success(adminUserService.getUserDetail(id));
     }
 

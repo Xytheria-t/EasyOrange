@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
 import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
@@ -14,7 +14,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -82,9 +81,8 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_normal_sendsMessage() {
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(rateLimiterService).allowSendMessage(USER_ID);
@@ -106,6 +104,8 @@ class ChatWebSocketHandlerTest {
                         eq("/queue/unread-count"),
                         any(Map.class)
                 );
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -115,13 +115,14 @@ class ChatWebSocketHandlerTest {
             wsMessage.setTitle(null);
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
                 assertThat(commandCaptor.getValue().getTitle()).isEmpty();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -131,13 +132,14 @@ class ChatWebSocketHandlerTest {
             wsMessage.setType(null);
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
                 assertThat(commandCaptor.getValue().getType()).isZero();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -147,13 +149,14 @@ class ChatWebSocketHandlerTest {
             wsMessage.setBusinessId(999L);
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
                 assertThat(commandCaptor.getValue().getBusinessId()).isEqualTo(999L);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -162,9 +165,8 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_rateLimited_sendsError() {
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(false);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messagingTemplate).convertAndSendToUser(
@@ -175,6 +177,8 @@ class ChatWebSocketHandlerTest {
                         )
                 );
                 verify(messageCommandHandler, never()).handle(any(SendMessageCommand.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -183,9 +187,8 @@ class ChatWebSocketHandlerTest {
         void handleChatMessage_unreadNotification_containsCorrectFields() {
             when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messagingTemplate).convertAndSendToUser(
@@ -198,6 +201,8 @@ class ChatWebSocketHandlerTest {
                         .containsEntry("conversationId", CONVERSATION_ID)
                         .containsEntry("increment", 1)
                         .containsKey("timestamp");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -209,9 +214,8 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("正常发送正在输入指示")
         void handleTyping_normal_broadcasts() {
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleTyping(wsMessage, principal);
 
                 verify(typingService).setTyping(CONVERSATION_ID, USER_ID);
@@ -223,6 +227,8 @@ class ChatWebSocketHandlerTest {
                 assertThat(payload)
                         .containsEntry("userId", USER_ID)
                         .containsKey("timestamp");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -231,9 +237,8 @@ class ChatWebSocketHandlerTest {
         void handleTyping_nullConversationId_stillSetsTyping() {
             wsMessage.setConversationId(null);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleTyping(wsMessage, principal);
 
                 verify(typingService).setTyping(null, USER_ID);
@@ -241,21 +246,24 @@ class ChatWebSocketHandlerTest {
                         eq("/topic/chat/null/typing"),
                         (Object) any(Map.class)
                 );
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
         @Test
         @DisplayName("正在输入时广播到正确主题")
         void handleTyping_broadcastsToCorrectTopic() {
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(USER_ID);
-
+            TestSecurityUtil.setSecurityContext(USER_ID);
+            try {
                 handler.handleTyping(wsMessage, principal);
 
                 verify(messagingTemplate).convertAndSend(
                         eq("/topic/chat/" + CONVERSATION_ID + "/typing"),
                         (Object) any(Map.class)
                 );
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }

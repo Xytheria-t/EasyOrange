@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.dto.response.AuditLogVO;
-import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultVO;
+import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
+import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -79,14 +78,16 @@ class AdminProductAuditServiceTest {
             request.setAction(1);
             request.setReason("审核通过");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 auditService.auditProduct(PRODUCT_ID, request);
 
                 assertThat(product.getStatus()).isEqualTo(1);
                 verify(productMapper).updateById(product);
                 verify(productAuditLogMapper).insert(any(ProductAuditLogDO.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
             verify(eventPublisher).publishEvent(any(Object.class));
         }
@@ -101,16 +102,18 @@ class AdminProductAuditServiceTest {
             request.setAction(2);
             request.setReason("商品信息不完整");
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 auditService.auditProduct(PRODUCT_ID, request);
 
                 assertThat(product.getStatus()).isEqualTo(5);
                 verify(productMapper).updateById(product);
                 verify(productAuditLogMapper).insert(any(ProductAuditLogDO.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
-            // eventPublisher verification must be outside MockedStatic block to avoid scope issues
+            // eventPublisher verification must be outside TestSecurityUtil context to avoid scope issues
             verify(eventPublisher).publishEvent(any(Object.class));
         }
 
@@ -124,12 +127,14 @@ class AdminProductAuditServiceTest {
             request.setAction(2);
             request.setReason(null);
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
                 assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
                         .isInstanceOf(BaseBusinessException.class)
                         .hasMessageContaining("拒绝时必须填写原因");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -179,15 +184,16 @@ class AdminProductAuditServiceTest {
                     new BatchAuditRequest.AuditItem(101L, 2, "信息不符", null)
             ));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
-                BatchAuditResultVO result = auditService.batchAudit(request);
+                BatchAuditResultResponse result = auditService.batchAudit(request);
 
                 assertThat(result.success()).isEqualTo(2);
                 assertThat(result.failed()).isZero();
-                // use any(ProductDO.class) to avoid ambiguous method reference
                 verify(productMapper, times(2)).updateById(any(ProductDO.class));
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -203,13 +209,15 @@ class AdminProductAuditServiceTest {
                     new BatchAuditRequest.AuditItem(101L, 1, "通过", null)
             ));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(OPERATOR_ID);
+            TestSecurityUtil.setSecurityContext(OPERATOR_ID);
+            try {
 
-                BatchAuditResultVO result = auditService.batchAudit(request);
+                BatchAuditResultResponse result = auditService.batchAudit(request);
 
                 assertThat(result.success()).isEqualTo(1);
                 assertThat(result.failed()).isEqualTo(1);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -233,7 +241,7 @@ class AdminProductAuditServiceTest {
 
             when(productAuditLogMapper.selectByProductId(PRODUCT_ID)).thenReturn(List.of(log));
 
-            List<AuditLogVO> logs = auditService.getAuditLogs(PRODUCT_ID);
+            List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 
             assertThat(logs).hasSize(1);
             assertThat(logs.get(0).productId()).isEqualTo(PRODUCT_ID);
@@ -246,7 +254,7 @@ class AdminProductAuditServiceTest {
         void getAuditLogs_empty_returnsEmptyList() {
             when(productAuditLogMapper.selectByProductId(PRODUCT_ID)).thenReturn(List.of());
 
-            List<AuditLogVO> logs = auditService.getAuditLogs(PRODUCT_ID);
+            List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 
             assertThat(logs).isEmpty();
         }

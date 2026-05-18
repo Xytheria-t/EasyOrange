@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.file.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.FileException;
@@ -145,13 +145,12 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     @Override
     public List<UploadFileVO> getFilesByBusiness(String businessType, Long businessId) {
-        LambdaQueryWrapper<UploadFile> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(UploadFile::getBusinessType, businessType)
+        List<UploadFile> files = ChainWrappers.lambdaQueryChain(baseMapper)
+                .eq(UploadFile::getBusinessType, businessType)
                 .eq(UploadFile::getBusinessId, businessId)
                 .eq(UploadFile::getStatus, CommonConstant.FILE_STATUS_NORMAL)
-                .orderByAsc(UploadFile::getCreateTime);
-
-        List<UploadFile> files = list(wrapper);
+                .orderByAsc(UploadFile::getCreateTime)
+                .list();
         return files.stream()
                 .map(this::convertToVO)
                 .collect(Collectors.toList());

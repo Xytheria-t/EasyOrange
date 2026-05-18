@@ -30,6 +30,7 @@ public class UserAppService {
     private final UserRepository userRepository;
     private final PasswordEncoderPort passwordEncoder;
     private final AvatarFilePort avatarFilePort;
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final UserAssembler userAssembler;
     private final UserEventPort userEventPort;
 

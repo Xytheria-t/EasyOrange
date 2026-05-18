@@ -27,7 +27,7 @@ easyorange-admin/
     ├── service/              # 业务服务层
     └── dto/                  # 数据传输对象
         ├── request/          # 请求 DTO
-        └── response/         # 响应 VO
+        └── response/         # 响应 Response
 ```
 
 ## 设计原则
@@ -52,7 +52,7 @@ easyorange-admin ──optional──> easyorange-common   (Result, PageResult, 
 ### 添加新的管理端接口
 
 1. 在 `dto/request/` 添加请求 DTO
-2. 在 `dto/response/` 添加响应 VO
+2. 在 `dto/response/` 添加响应 Response
 3. 在 `service/` 中编写业务逻辑
 4. 在 `controller/` 中添加端点
 5. 更新本 AGENTS.md 中的功能域表

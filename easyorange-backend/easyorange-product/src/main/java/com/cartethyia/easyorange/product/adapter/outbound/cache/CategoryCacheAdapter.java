@@ -64,7 +64,7 @@ public class CategoryCacheAdapter implements CategoryCachePort {
 
         List<CategoryDO> categories = categoryQueryRepository.findByLevel(level);
         if (categories == null) {
-            categories = Collections.emptyList();
+            categories = List.of();
         }
         List<CategoryReadModel> models = categories.stream().map(this::toReadModel).toList();
 
@@ -101,7 +101,7 @@ public class CategoryCacheAdapter implements CategoryCachePort {
 
         List<CategoryDO> categories = categoryQueryRepository.findByParentId(parentId);
         if (categories == null) {
-            categories = Collections.emptyList();
+            categories = List.of();
         }
         List<CategoryReadModel> models = categories.stream().map(this::toReadModel).toList();
 

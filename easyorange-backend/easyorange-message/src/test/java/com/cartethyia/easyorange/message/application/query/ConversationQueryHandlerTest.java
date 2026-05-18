@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.application.query;
 
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
@@ -67,15 +66,16 @@ class ConversationQueryHandlerTest {
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "对方用户", "avatar.jpg")
                     ));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(CURRENT_USER_ID);
-
+            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
+            try {
                 List<ConversationVO> result = handler.getConversation(OTHER_USER_ID);
 
                 assertThat(result).hasSize(2);
                 assertThat(result.get(0).getContent()).isEqualTo("你好");
                 assertThat(result.get(0).getSenderId()).isEqualTo(CURRENT_USER_ID);
                 assertThat(result.get(0).getReceiverId()).isEqualTo(OTHER_USER_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -84,12 +84,13 @@ class ConversationQueryHandlerTest {
         void getConversation_noMessages_returnsEmpty() {
             when(messageMapper.selectList(any())).thenReturn(List.of());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(CURRENT_USER_ID);
-
+            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
+            try {
                 List<ConversationVO> result = handler.getConversation(OTHER_USER_ID);
 
                 assertThat(result).isEmpty();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }
@@ -113,9 +114,8 @@ class ConversationQueryHandlerTest {
                             THIRD_USER_ID, new UserInfo(THIRD_USER_ID, "用户3", "b.jpg")
                     ));
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(CURRENT_USER_ID);
-
+            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
+            try {
                 List<ConversationListVO> result = handler.getConversations();
 
                 assertThat(result).hasSize(2);
@@ -128,6 +128,8 @@ class ConversationQueryHandlerTest {
 
                 assertThat(convWithUser2.getTargetUserName()).isEqualTo("用户2");
                 assertThat(convWithUser3.getTargetUserName()).isEqualTo("用户3");
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 
@@ -136,12 +138,13 @@ class ConversationQueryHandlerTest {
         void getConversations_noMessages_returnsEmpty() {
             when(messageMapper.selectList(any())).thenReturn(List.of());
 
-            try (MockedStatic<SecurityContextUtil> mockedStatic = mockStatic(SecurityContextUtil.class)) {
-                mockedStatic.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(CURRENT_USER_ID);
-
+            TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
+            try {
                 List<ConversationListVO> result = handler.getConversations();
 
                 assertThat(result).isEmpty();
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
     }

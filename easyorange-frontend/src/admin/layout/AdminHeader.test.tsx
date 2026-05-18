@@ -41,7 +41,7 @@ describe('AdminHeader', () => {
   });
 
   it('renders correct title based on pathname', () => {
-    window.location = { pathname: '/admin/users' } as Location;
+    window.location.pathname = '/admin/users';
     render(<AdminHeader />);
     expect(screen.getByText('用户管理')).toBeInTheDocument();
   });

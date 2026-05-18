@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import { useAuditProduct, useAuditLogs } from '../../hooks/useAdminProductAudit';
-import type { AuditLogVO, AuditDimension } from '../../types/admin';
+import type { AuditLogResponse, AuditDimension } from '../../types/admin';
 
 interface ProductDetailDrawerProps {
   open: boolean;
@@ -338,7 +338,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         📜 审核记录
                       </h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-                        {auditLogs.data.map((log: AuditLogVO) => (
+                        {auditLogs.data.map((log: AuditLogResponse) => (
                           <div key={log.id} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
                             <div style={{
                               width: 8, height: 8, borderRadius: '50%', marginTop: '5px', flexShrink: 0,

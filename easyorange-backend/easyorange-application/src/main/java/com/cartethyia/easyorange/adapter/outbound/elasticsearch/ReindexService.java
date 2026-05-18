@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -38,10 +38,9 @@ public class ReindexService {
         }
 
         // 读取所有在线商品（ONLINE status = 1）
-        List<ProductDO> products = productMapper.selectList(
-                new LambdaQueryWrapper<ProductDO>()
-                        .eq(ProductDO::getStatus, ProductStatus.ONLINE.getCode())
-        );
+        List<ProductDO> products = ChainWrappers.lambdaQueryChain(productMapper)
+                .eq(ProductDO::getStatus, ProductStatus.ONLINE.getCode())
+                .list();
 
         // 批量写入
         List<ProductDocument> docs = products.stream()

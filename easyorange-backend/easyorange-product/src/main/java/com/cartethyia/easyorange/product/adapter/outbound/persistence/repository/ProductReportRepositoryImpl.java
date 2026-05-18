@@ -1,90 +1,85 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.repository;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReportDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReportMapper;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
-@RequiredArgsConstructor
-public class ProductReportRepositoryImpl implements ProductReportRepository {
+public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMapper, ProductReportDO> implements ProductReportRepository {
 
-    private final ProductReportMapper productReportMapper;
+    public ProductReportRepositoryImpl(ProductReportMapper productReportMapper) {
+        super(productReportMapper);
+    }
 
     @Override
     public ProductReport findById(Long id) {
-        ProductReportDO reportDO = productReportMapper.selectById(id);
+        ProductReportDO reportDO = mapper.selectById(id);
         return convertToDomain(reportDO);
     }
 
     @Override
     public List<ProductReport> findPendingReports(int pageNum, int pageSize) {
         Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<ProductReportDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode())
-                .orderByDesc(ProductReportDO::getCreateTime);
-
-        Page<ProductReportDO> resultPage = productReportMapper.selectPage(page, wrapper);
+        Page<ProductReportDO> resultPage = lambdaQuery()
+                .eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode())
+                .orderByDesc(ProductReportDO::getCreateTime)
+                .page(page);
         return resultPage.getRecords().stream()
                 .map(this::convertToDomain)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public long countPendingReports() {
-        LambdaQueryWrapper<ProductReportDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode());
-        return productReportMapper.selectCount(wrapper);
+        return lambdaQuery()
+                .eq(ProductReportDO::getStatus, ProductReportStatus.PENDING.getCode())
+                .count();
     }
 
     @Override
     public PageResult<ProductReport> findByStatus(Integer status, int pageNum, int pageSize) {
         Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<ProductReportDO> wrapper = new LambdaQueryWrapper<>();
-
+        var wrapper = lambdaQuery();
         if (status != null) {
             wrapper.eq(ProductReportDO::getStatus, status);
         }
         wrapper.orderByDesc(ProductReportDO::getCreateTime);
-
-        Page<ProductReportDO> resultPage = productReportMapper.selectPage(page, wrapper);
+        Page<ProductReportDO> resultPage = wrapper.page(page);
         List<ProductReport> reports = resultPage.getRecords().stream()
                 .map(this::convertToDomain)
-                .collect(Collectors.toList());
+                .toList();
 
         return PageResult.of(reports, resultPage.getTotal(), pageNum, pageSize);
     }
 
     @Override
     public long countByStatus(Integer status) {
-        LambdaQueryWrapper<ProductReportDO> wrapper = new LambdaQueryWrapper<>();
+        var wrapper = lambdaQuery();
         if (status != null) {
             wrapper.eq(ProductReportDO::getStatus, status);
         }
-        return productReportMapper.selectCount(wrapper);
+        return wrapper.count();
     }
 
     @Override
     public PageResult<ProductReport> findByReporterId(Long reporterId, int pageNum, int pageSize) {
         Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<ProductReportDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductReportDO::getReporterId, reporterId)
-                .orderByDesc(ProductReportDO::getCreateTime);
-
-        Page<ProductReportDO> resultPage = productReportMapper.selectPage(page, wrapper);
+        Page<ProductReportDO> resultPage = lambdaQuery()
+                .eq(ProductReportDO::getReporterId, reporterId)
+                .orderByDesc(ProductReportDO::getCreateTime)
+                .page(page);
         List<ProductReport> reports = resultPage.getRecords().stream()
                 .map(this::convertToDomain)
-                .collect(Collectors.toList());
+                .toList();
 
         return PageResult.of(reports, resultPage.getTotal(), pageNum, pageSize);
     }
@@ -92,23 +87,23 @@ public class ProductReportRepositoryImpl implements ProductReportRepository {
     @Override
     public void save(ProductReport report) {
         ProductReportDO reportDO = convertToDO(report);
-        productReportMapper.insert(reportDO);
+        mapper.insert(reportDO);
         report.assignId(reportDO.getId());
     }
 
     @Override
     public void update(ProductReport report) {
         ProductReportDO reportDO = convertToDO(report);
-        productReportMapper.updateById(reportDO);
+        mapper.updateById(reportDO);
     }
 
     @Override
     public boolean existsRecentReport(Long productId, Long reporterId) {
-        LambdaQueryWrapper<ProductReportDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductReportDO::getProductId, productId)
+        return lambdaQuery()
+                .eq(ProductReportDO::getProductId, productId)
                 .eq(ProductReportDO::getReporterId, reporterId)
-                .ge(ProductReportDO::getCreateTime, LocalDateTime.now().minusHours(24));
-        return productReportMapper.selectCount(wrapper) > 0;
+                .ge(ProductReportDO::getCreateTime, LocalDateTime.now().minusHours(24))
+                .count() > 0;
     }
 
     private ProductReport convertToDomain(ProductReportDO do_) {

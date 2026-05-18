@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.dto.request.AdminReviewDeleteRequest;
 import com.cartethyia.easyorange.admin.dto.request.AdminReviewQueryRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminReviewVO;
+import com.cartethyia.easyorange.admin.dto.response.AdminReviewResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
@@ -20,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -111,13 +110,13 @@ class AdminReviewServiceTest {
             when(productMapper.selectBatchIds(anySet())).thenReturn(List.of(createProduct(PRODUCT_ID, "测试商品")));
             when(userMapper.selectBatchIds(anySet())).thenReturn(List.of(createUser(USER_ID, "testuser", "测试用户")));
 
-            PageResult<AdminReviewVO> result = reviewService.listReviews(request);
+            PageResult<AdminReviewResponse> result = reviewService.listReviews(request);
 
             assertThat(result).isNotNull();
             assertThat(result.records()).hasSize(1);
             assertThat(result.total()).isEqualTo(1);
 
-            AdminReviewVO vo = result.records().get(0);
+            AdminReviewResponse vo = result.records().get(0);
             assertThat(vo.reviewId()).isEqualTo(REVIEW_ID);
             assertThat(vo.productName()).isEqualTo("测试商品");
             assertThat(vo.username()).isEqualTo("测试用户");
@@ -135,7 +134,7 @@ class AdminReviewServiceTest {
 
             when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(emptyPage);
 
-            PageResult<AdminReviewVO> result = reviewService.listReviews(request);
+            PageResult<AdminReviewResponse> result = reviewService.listReviews(request);
 
             assertThat(result).isNotNull();
             assertThat(result.records()).isEmpty();
@@ -156,7 +155,7 @@ class AdminReviewServiceTest {
             when(productMapper.selectBatchIds(anySet())).thenReturn(List.of(createProduct(PRODUCT_ID, "测试商品")));
             when(userMapper.selectBatchIds(anySet())).thenReturn(List.of(createUser(USER_ID, "testuser", "测试用户")));
 
-            AdminReviewVO result = reviewService.getReviewDetail(REVIEW_ID);
+            AdminReviewResponse result = reviewService.getReviewDetail(REVIEW_ID);
 
             assertThat(result).isNotNull();
             assertThat(result.reviewId()).isEqualTo(REVIEW_ID);
@@ -197,12 +196,14 @@ class AdminReviewServiceTest {
             request.setReason("违规内容");
 
             when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
-            try (MockedStatic<SecurityContextUtil> securityMock = mockStatic(SecurityContextUtil.class)) {
-                securityMock.when(SecurityContextUtil::getCurrentUserIdOrThrow).thenReturn(1L);
+            TestSecurityUtil.setSecurityContext(1L);
+            try {
 
                 reviewService.deleteReview(REVIEW_ID, request);
 
                 verify(reviewMapper).deleteById(REVIEW_ID);
+            } finally {
+                TestSecurityUtil.clearSecurityContext();
             }
         }
 

@@ -41,10 +41,10 @@ vi.mock('../../components/AdminTable', () => ({
               <span data-testid="report-reason">{report.reason}</span>
               <span data-testid="report-reporter">{report.reporterName}</span>
               <span data-testid="report-status">{report.status}</span>
-              {columns.find((c: { key: string }) => c.key === 'actions')?.render(null, report)}
+              {(columns as Array<{ key: string; render: (...args: unknown[]) => React.ReactNode }>).find((c) => c.key === 'actions')?.render(null, report)}
             </div>
           ))}
-          {pagination && (
+          {!!pagination && (
             <div data-testid="pagination">
               <button
                 onClick={() =>
@@ -92,9 +92,6 @@ vi.mock('../../components/AdminSelect', () => ({
 }));
 
 // Mock ConfirmModal
-let confirmModalResolve: (() => void) | null = null;
-let confirmModalCancel: (() => void) | null = null;
-
 vi.mock('../../components/ConfirmModal', () => ({
   ConfirmModal: (props: {
     open: boolean;
@@ -106,8 +103,6 @@ vi.mock('../../components/ConfirmModal', () => ({
     onConfirm: () => void;
     onCancel: () => void;
   }) => {
-    confirmModalResolve = props.onConfirm;
-    confirmModalCancel = props.onCancel;
     if (!props.open) return null;
     return (
       <div data-testid="confirm-modal">
@@ -190,8 +185,6 @@ function setupMocks(
 describe('ReportManagePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    confirmModalResolve = null;
-    confirmModalCancel = null;
     setupMocks();
   });
 

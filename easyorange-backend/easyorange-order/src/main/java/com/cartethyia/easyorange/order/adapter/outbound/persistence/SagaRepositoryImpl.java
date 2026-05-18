@@ -1,52 +1,53 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
+import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
 import com.cartethyia.easyorange.order.domain.saga.SagaState;
 import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
 import tools.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 
 @Slf4j
 @Repository
-@RequiredArgsConstructor
-public class SagaRepositoryImpl implements SagaRepository {
+public class SagaRepositoryImpl extends BaseRepository<SagaMapper, SagaDO> implements SagaRepository {
 
-    private final SagaMapper sagaMapper;
     private final ObjectMapper objectMapper;
+
+    public SagaRepositoryImpl(SagaMapper sagaMapper, ObjectMapper objectMapper) {
+        super(sagaMapper);
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public void save(SagaStatus sagaStatus) {
         SagaDO sagaDO = toDataObject(sagaStatus);
-        sagaMapper.insert(sagaDO);
+        mapper.insert(sagaDO);
     }
 
     @Override
     public Optional<SagaStatus> findById(String sagaId) {
-        SagaDO sagaDO = sagaMapper.selectById(sagaId);
+        SagaDO sagaDO = mapper.selectById(sagaId);
         return Optional.ofNullable(sagaDO).map(this::toDomain);
     }
 
     @Override
     public Optional<SagaStatus> findByOrderId(Long orderId) {
-        SagaDO sagaDO = sagaMapper.selectOne(
-            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SagaDO>()
+        SagaDO sagaDO = lambdaQuery()
                 .eq(SagaDO::getPayload, orderId.toString())
                 .orderByDesc(SagaDO::getCreatedAt)
                 .last("LIMIT 1")
-        );
+                .one();
         return Optional.ofNullable(sagaDO).map(this::toDomain);
     }
 
     @Override
     public void update(SagaStatus sagaStatus) {
         SagaDO sagaDO = toDataObject(sagaStatus);
-        sagaMapper.updateById(sagaDO);
+        mapper.updateById(sagaDO);
     }
 
     private SagaDO toDataObject(SagaStatus sagaStatus) {

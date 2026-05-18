@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import StatsPage from './StatsPage';
-import type { DashboardStats, OrderStatsVO, CategoryVO, TrendItem, ActivityItem } from '../../types/admin';
+import type { DashboardStats, OrderStatsResponse, CategoryResponse, TrendItem, ActivityItem } from '../../types/admin';
 
 // ─── Hook mocks ───
 const mockUseDashboardStats = vi.fn();
@@ -21,12 +21,12 @@ vi.mock('../../hooks', () => ({
 
 // Mock TrendChart
 vi.mock('../dashboard/charts/TrendChart', () => ({
-  default: ({ data, compact, height }: { data: TrendItem[]; compact: boolean; height: number }) => (
+  default: ({ data: _data, compact, height }: { data: TrendItem[]; compact: boolean; height: number }) => (
     <div data-testid="trend-chart" data-compact={compact} data-height={height}>
       TrendChart
     </div>
   ),
-  TrendChart: ({ data, compact, height }: { data: TrendItem[]; compact: boolean; height: number }) => (
+  TrendChart: ({ data: _data, compact, height }: { data: TrendItem[]; compact: boolean; height: number }) => (
     <div data-testid="trend-chart" data-compact={compact} data-height={height}>
       TrendChart
     </div>
@@ -45,7 +45,7 @@ const sampleStats: DashboardStats = {
   pendingReports: 3,
 };
 
-const sampleOrderStats: OrderStatsVO = {
+const sampleOrderStats: OrderStatsResponse = {
   totalOrders: 300,
   todayOrders: 15,
   pendingPayment: 5,
@@ -58,7 +58,7 @@ const sampleOrderStats: OrderStatsVO = {
   todayRevenue: 3000,
 };
 
-const sampleCategories: CategoryVO[] = [
+const sampleCategories: CategoryResponse[] = [
   { categoryId: 1, name: '电子产品', parentId: null, parentName: null, level: 0, sortOrder: 1, status: 1, productCount: 100, createTime: null, updateTime: null },
   { categoryId: 2, name: '图书', parentId: null, parentName: null, level: 0, sortOrder: 2, status: 1, productCount: 50, createTime: null, updateTime: null },
   { categoryId: 3, name: '服装', parentId: null, parentName: null, level: 0, sortOrder: 3, status: 0, productCount: 30, createTime: null, updateTime: null },
@@ -78,9 +78,9 @@ function setupMocks(
   overrides: Partial<{
     stats: DashboardStats | undefined;
     statsLoading: boolean;
-    categories: CategoryVO[] | undefined;
+    categories: CategoryResponse[] | undefined;
     categoriesLoading: boolean;
-    orderStats: OrderStatsVO | undefined;
+    orderStats: OrderStatsResponse | undefined;
     trend: TrendItem[];
     activity: ActivityItem[];
   }> = {},

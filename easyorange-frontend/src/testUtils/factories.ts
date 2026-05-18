@@ -4,7 +4,7 @@ import type {
   AdminReport,
   AdminReportQuery,
   AdminProductQuery,
-  ReportStatsVO,
+  ReportStatsResponse,
 } from '@/admin/types/admin';
 
 export function createMockProduct(overrides: Partial<Product> = {}): Product {
@@ -106,7 +106,7 @@ export function createMockAdminReportQuery(overrides: Partial<AdminReportQuery> 
   };
 }
 
-export function createMockReportStats(overrides: Partial<ReportStatsVO> = {}): ReportStatsVO {
+export function createMockReportStats(overrides: Partial<ReportStatsResponse> = {}): ReportStatsResponse {
   return {
     totalReports: 10,
     pendingReports: 3,

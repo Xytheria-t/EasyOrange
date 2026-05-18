@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
@@ -18,7 +18,6 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -78,13 +77,12 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         ProductDetailDO detail = productDetailMapper.selectById(productId);
 
         // 查询图片（取主图 URL，取第一张作为主图）
-        List<ProductImageDO> imageList = productImageMapper.selectList(
-                new LambdaQueryWrapper<ProductImageDO>()
-                        .eq(ProductImageDO::getProductId, productId)
-                        .orderByAsc(ProductImageDO::getSortOrder)
-        );
+        List<ProductImageDO> imageList = ChainWrappers.lambdaQueryChain(productImageMapper)
+                .eq(ProductImageDO::getProductId, productId)
+                .orderByAsc(ProductImageDO::getSortOrder)
+                .list();
         String mainImage = null;
-        List<String> imageUrls = Collections.emptyList();
+        List<String> imageUrls = List.of();
         if (!imageList.isEmpty()) {
             // 取 isMain=1 的图片，或第一张
             mainImage = imageList.stream()
@@ -112,7 +110,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                         .map(String::trim)
                         .filter(s -> !s.isEmpty())
                         .collect(Collectors.toList())
-                : Collections.emptyList();
+                : List.of();
 
         return ProductDocument.builder()
                 .id(String.valueOf(productId))

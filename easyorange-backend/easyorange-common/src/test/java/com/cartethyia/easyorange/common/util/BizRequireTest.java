@@ -5,8 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -111,7 +109,7 @@ class BizRequireTest {
         @Test
         @DisplayName("空集合抛出异常")
         void notEmpty_emptyCollection_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.notEmpty(Collections.emptyList(), "不能为空"));
+            assertThrows(BusinessException.class, () -> BizRequire.notEmpty(List.of(), "不能为空"));
         }
 
         @Test

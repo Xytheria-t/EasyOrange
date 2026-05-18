@@ -109,7 +109,7 @@ public class ProductReviewQueryService {
                 .collect(Collectors.toSet());
 
         if (userIds.isEmpty()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
 
         return sellerInfoPort.getSellerInfos(userIds);

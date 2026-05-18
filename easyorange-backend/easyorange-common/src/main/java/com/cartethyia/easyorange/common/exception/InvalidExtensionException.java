@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.common.exception;
 import com.cartethyia.easyorange.common.enums.FileResultCode;
 import lombok.Getter;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -21,7 +20,7 @@ public class InvalidExtensionException extends FileException {
 
     public InvalidExtensionException(List<String> allowedExtensions, String extension, String filename) {
         super(FileResultCode.FILE_TYPE_NOT_ALLOWED, "文件类型不正确，允许的类型：" + String.join(", ", allowedExtensions));
-        this.allowedExtensions = Collections.unmodifiableList(allowedExtensions);
+        this.allowedExtensions = List.copyOf(allowedExtensions);
         this.extension = extension;
         this.filename = filename;
     }

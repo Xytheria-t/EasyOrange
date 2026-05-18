@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web;
 
-import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
 import com.cartethyia.easyorange.product.application.query.handler.ProductSearchHandler;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
@@ -31,8 +31,8 @@ public class SearchController {
     private final ProductSearchHandler searchHandler;
 
     @GetMapping
-    public Result<PageResult<ProductResponse>> searchProducts(@Valid ProductSearchRequest request) {
-        PageResult<ProductResponse> result = searchHandler.handleSearch(request);
+    public Result<SearchPageResponse<ProductResponse>> searchProducts(@Valid ProductSearchRequest request) {
+        SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
         return Result.success(result);
     }
 

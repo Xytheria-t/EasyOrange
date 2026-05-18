@@ -21,7 +21,7 @@ favorite/
 │   ├── dto/
 │   │   ├── AddFavoriteDTO.java
 │   │   ├── FavoritePageQuery.java
-│   │   ├── FavoriteVO.java
+│   │   ├── FavoriteResponse.java
 │   │   └── RemoveFavoriteDTO.java
 │   └── service/
 │       └── FavoriteService.java

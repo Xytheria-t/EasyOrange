@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cartethyia.easyorange.admin.dto.response.ActivityVO;
-import com.cartethyia.easyorange.admin.dto.response.DashboardStatsVO;
-import com.cartethyia.easyorange.admin.dto.response.PendingItemsVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentProductVO;
-import com.cartethyia.easyorange.admin.dto.response.RecentUserVO;
-import com.cartethyia.easyorange.admin.dto.response.TopProductVO;
-import com.cartethyia.easyorange.admin.dto.response.TrendVO;
-import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapVO;
+import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.dto.response.ActivityResponse;
+import com.cartethyia.easyorange.admin.dto.response.DashboardStatsResponse;
+import com.cartethyia.easyorange.admin.dto.response.PendingItemsResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
+import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
+import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
+import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -16,7 +16,6 @@ import com.cartethyia.easyorange.product.domain.repository.ProductReportReposito
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -27,10 +26,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -43,56 +43,63 @@ public class AdminDashboardService {
     private final JdbcTemplate jdbcTemplate;
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
+    private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final int TREND_MONTHS = 6;
+    private static final Map<Integer, String> PRODUCT_STATUS_MAP;
 
-    public DashboardStatsVO getDashboardStats() {
-        long totalUsers = userMapper.selectCount(
-            new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getDelFlag, 0)
-        );
+    static {
+        Map<Integer, String> map = new HashMap<>();
+        for (ProductStatus s : ProductStatus.values()) {
+            map.put(s.getCode(), s.getDesc());
+        }
+        PRODUCT_STATUS_MAP = Map.copyOf(map);
+    }
+
+    public DashboardStatsResponse getDashboardStats() {
+        long totalUsers = ChainWrappers.lambdaQueryChain(userMapper)
+            .eq(UserEntity::getDelFlag, 0)
+            .count();
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-        long todayNewUsers = userMapper.selectCount(
-            new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getDelFlag, 0)
-                .ge(UserEntity::getCreateTime, todayStart)
-        );
+        long todayNewUsers = ChainWrappers.lambdaQueryChain(userMapper)
+            .eq(UserEntity::getDelFlag, 0)
+            .ge(UserEntity::getCreateTime, todayStart)
+            .count();
 
         long totalProducts = productQueryRepository.countByStatus(null);
         long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
         long totalOrders = orderReadRepository.countByStatus(null);
-        long todayOrders = countTodayOrders();
         long pendingReports = productReportRepository.countPendingReports();
 
-        return DashboardStatsVO.builder()
+        return DashboardStatsResponse.builder()
             .totalUsers(totalUsers)
             .todayNewUsers(todayNewUsers)
             .totalProducts(totalProducts)
             .pendingProducts(pendingProducts)
             .totalOrders(totalOrders)
-            .todayOrders(todayOrders)
+            .todayOrders(0L)
             .totalRevenue(0L)
             .pendingReports(pendingReports)
             .build();
     }
 
-    public PendingItemsVO getPendingItems() {
+    public PendingItemsResponse getPendingItems() {
         long pendingReports = productReportRepository.countPendingReports();
         long pendingOrders = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode());
         long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
 
-        List<PendingItemsVO.PendingReportItem> recentReports = productReportRepository
+        List<PendingItemsResponse.PendingReportItem> recentReports = productReportRepository
             .findPendingReports(1, 5)
             .stream()
-            .map(report -> PendingItemsVO.PendingReportItem.builder()
+            .map(report -> PendingItemsResponse.PendingReportItem.builder()
                 .id(report.getId())
                 .productId(report.getProductId())
                 .reason(report.getReason())
                 .createTime(report.getCreateTime() != null ? report.getCreateTime().toString() : null)
                 .build())
-            .collect(Collectors.toList());
+            .toList();
 
-        return PendingItemsVO.builder()
+        return PendingItemsResponse.builder()
             .pendingReports(pendingReports)
             .pendingOrders(pendingOrders)
             .pendingProducts(pendingProducts)
@@ -100,30 +107,30 @@ public class AdminDashboardService {
             .build();
     }
 
-    public List<RecentUserVO> getRecentUsers(int limit) {
+    public List<RecentUserResponse> getRecentUsers(int limit) {
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
-        return userMapper.selectList(
-            new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getDelFlag, 0)
-                .ge(UserEntity::getCreateTime, todayStart)
-                .orderByDesc(UserEntity::getCreateTime)
-                .last("LIMIT " + limit)
-        ).stream()
-            .map(this::toRecentUserVO)
-            .collect(Collectors.toList());
+        return ChainWrappers.lambdaQueryChain(userMapper)
+            .eq(UserEntity::getDelFlag, 0)
+            .ge(UserEntity::getCreateTime, todayStart)
+            .orderByDesc(UserEntity::getCreateTime)
+            .last("LIMIT " + limit)
+            .list()
+            .stream()
+            .map(this::toRecentUserResponse)
+            .toList();
     }
 
-    public List<RecentProductVO> getRecentProducts(int limit) {
+    public List<RecentProductResponse> getRecentProducts(int limit) {
         return productQueryRepository.findProductsByIds(
             getRecentProductIds(limit)
         ).stream()
-            .map(this::toRecentProductVO)
-            .collect(Collectors.toList());
+            .map(this::toRecentProductResponse)
+            .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<TrendVO> getTrend() {
+    public List<TrendResponse> getTrend() {
         LocalDate since = LocalDate.now().minusMonths(TREND_MONTHS);
 
         Map<String, Long> usersByMonth = countByMonth(
@@ -145,11 +152,11 @@ public class AdminDashboardService {
             since
         );
 
-        List<TrendVO> result = new ArrayList<>();
+        List<TrendResponse> result = new ArrayList<>();
         LocalDate cursor = since;
         while (!cursor.isAfter(LocalDate.now())) {
             String monthKey = cursor.format(MONTH_FORMAT);
-            result.add(TrendVO.builder()
+            result.add(TrendResponse.builder()
                 .month(monthKey)
                 .users(usersByMonth.getOrDefault(monthKey, 0L))
                 .products(productsByMonth.getOrDefault(monthKey, 0L))
@@ -161,66 +168,62 @@ public class AdminDashboardService {
     }
 
     @Transactional(readOnly = true)
-    public List<ActivityVO> getRecentActivity() {
-        List<ActivityVO> activities = new ArrayList<>();
+    public List<ActivityResponse> getRecentActivity() {
+        return Stream.concat(
+                Stream.concat(getRecentUserActivities(), getRecentProductActivities()),
+                Stream.concat(getRecentOrderActivities(), getRecentReportActivities())
+            )
+            .sorted(Comparator.comparing(ActivityResponse::getTime).reversed())
+            .limit(10)
+            .toList();
+    }
 
-        // Recent user registrations
-        List<Map<String, Object>> userRows = jdbcTemplate.queryForList(
+    private Stream<ActivityResponse> getRecentUserActivities() {
+        return jdbcTemplate.queryForList(
             "SELECT id, nickname, create_time FROM eo_user WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5"
-        );
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        for (Map<String, Object> row : userRows) {
+        ).stream().map(row -> {
             long id = ((Number) row.get("id")).longValue();
             String nickname = row.get("nickname") != null ? (String) row.get("nickname") : "用户" + id;
-            activities.add(ActivityVO.builder()
-                .time(toLocalDateTime(row.get("create_time")).format(dtf))
+            return ActivityResponse.builder()
+                .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
                 .text("新用户 " + nickname + " 完成注册")
                 .type("user")
-                .build());
-        }
+                .build();
+        });
+    }
 
-        // Recent products
-        List<Map<String, Object>> productRows = jdbcTemplate.queryForList(
+    private Stream<ActivityResponse> getRecentProductActivities() {
+        return jdbcTemplate.queryForList(
             "SELECT id, name, create_time FROM eo_product WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5"
-        );
-        for (Map<String, Object> row : productRows) {
-            activities.add(ActivityVO.builder()
-                .time(toLocalDateTime(row.get("create_time")).format(dtf))
-                .text("商品「" + row.get("name") + "」发布上架")
-                .type("product")
-                .build());
-        }
+        ).stream().map(row -> ActivityResponse.builder()
+            .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
+            .text("商品「" + row.get("name") + "」发布上架")
+            .type("product")
+            .build());
+    }
 
-        // Recent orders
-        List<Map<String, Object>> orderRows = jdbcTemplate.queryForList(
+    private Stream<ActivityResponse> getRecentOrderActivities() {
+        return jdbcTemplate.queryForList(
             "SELECT id, order_no, create_time FROM eo_order WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5"
-        );
-        for (Map<String, Object> row : orderRows) {
-            activities.add(ActivityVO.builder()
-                .time(toLocalDateTime(row.get("create_time")).format(dtf))
-                .text("订单 " + row.get("order_no") + " 创建成功")
-                .type("order")
-                .build());
-        }
+        ).stream().map(row -> ActivityResponse.builder()
+            .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
+            .text("订单 " + row.get("order_no") + " 创建成功")
+            .type("order")
+            .build());
+    }
 
-        // Recent reports
-        List<Map<String, Object>> reportRows = jdbcTemplate.queryForList(
-            "SELECT id, reason, create_time FROM eo_product_report ORDER BY create_time DESC LIMIT 5"
-        );
-        for (Map<String, Object> row : reportRows) {
-            activities.add(ActivityVO.builder()
-                .time(toLocalDateTime(row.get("create_time")).format(dtf))
-                .text("收到1条新的举报: " + row.get("reason"))
-                .type("report")
-                .build());
-        }
-
-        activities.sort(Comparator.comparing(ActivityVO::getTime).reversed());
-        return activities.stream().limit(10).collect(Collectors.toList());
+    private Stream<ActivityResponse> getRecentReportActivities() {
+        return jdbcTemplate.queryForList(
+            "SELECT id, reason, create_time FROM eo_product_report WHERE del_flag = 0 ORDER BY create_time DESC LIMIT 5"
+        ).stream().map(row -> ActivityResponse.builder()
+            .time(toLocalDateTime(row.get("create_time")).format(DATETIME_FORMAT))
+            .text("收到1条新的举报: " + row.get("reason"))
+            .type("report")
+            .build());
     }
 
     @Transactional(readOnly = true)
-    public List<UserActivityHeatmapVO> getUserActivityHeatmap() {
+    public List<UserActivityHeatmapResponse> getUserActivityHeatmap() {
         LocalDateTime since = LocalDate.now().minusDays(30).atStartOfDay();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
             "SELECT DAYOFWEEK(oper_time) AS day_of_week, HOUR(oper_time) AS hour, COUNT(*) AS cnt " +
@@ -229,9 +232,9 @@ public class AdminDashboardService {
             "ORDER BY day_of_week, hour",
             since
         );
-        List<UserActivityHeatmapVO> result = new ArrayList<>();
+        List<UserActivityHeatmapResponse> result = new ArrayList<>();
         for (Map<String, Object> row : rows) {
-            result.add(new UserActivityHeatmapVO(
+            result.add(new UserActivityHeatmapResponse(
                 ((Number) row.get("day_of_week")).intValue(),
                 ((Number) row.get("hour")).intValue(),
                 ((Number) row.get("cnt")).longValue()
@@ -241,34 +244,25 @@ public class AdminDashboardService {
     }
 
     @Transactional(readOnly = true)
-    public List<TopProductVO> getTopProducts(int limit) {
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(
+    public List<TopProductResponse> getTopProducts(int limit) {
+        return jdbcTemplate.queryForList(
             "SELECT p.id, p.name, p.view_count, p.price, p.main_image, p.status " +
             "FROM eo_product p WHERE p.del_flag = 0 AND p.status = 1 " +
-            "ORDER BY p.view_count DESC LIMIT ?",
-            limit
-        );
-
-        ProductStatus[] statuses = ProductStatus.values();
-        Map<Integer, String> statusMap = new java.util.HashMap<>();
-        for (ProductStatus s : statuses) {
-            statusMap.put(s.getCode(), s.getDesc());
-        }
-
-        List<TopProductVO> result = new ArrayList<>();
-        for (Map<String, Object> row : rows) {
-            int statusCode = row.get("status") != null ? ((Number) row.get("status")).intValue() : -1;
-            result.add(TopProductVO.builder()
-                .productId(((Number) row.get("id")).longValue())
-                .name((String) row.get("name"))
-                .viewCount(row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0)
-                .price(row.get("price") != null ? (java.math.BigDecimal) row.get("price") : java.math.BigDecimal.ZERO)
-                .mainImage((String) row.get("main_image"))
-                .status(statusCode)
-                .statusDesc(statusMap.getOrDefault(statusCode, "未知"))
-                .build());
-        }
-        return result;
+            "ORDER BY p.view_count DESC LIMIT " + limit
+        ).stream()
+            .map(row -> {
+                int statusCode = row.get("status") != null ? ((Number) row.get("status")).intValue() : -1;
+                return TopProductResponse.builder()
+                    .productId(((Number) row.get("id")).longValue())
+                    .name((String) row.get("name"))
+                    .viewCount(row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0)
+                    .price(row.get("price") != null ? (java.math.BigDecimal) row.get("price") : java.math.BigDecimal.ZERO)
+                    .mainImage((String) row.get("main_image"))
+                    .status(statusCode)
+                    .statusDesc(PRODUCT_STATUS_MAP.getOrDefault(statusCode, "未知"))
+                    .build();
+            })
+            .toList();
     }
 
     private static LocalDateTime toLocalDateTime(Object value) {
@@ -292,17 +286,13 @@ public class AdminDashboardService {
 
     private List<Long> getRecentProductIds(int limit) {
         return jdbcTemplate.queryForList(
-            "SELECT id FROM eo_product WHERE del_flag = 0 ORDER BY create_time DESC LIMIT ?",
-            Long.class, limit
+            "SELECT id FROM eo_product WHERE del_flag = 0 ORDER BY create_time DESC LIMIT " + limit,
+            Long.class
         );
     }
 
-    private long countTodayOrders() {
-        return 0L;
-    }
-
-    private RecentUserVO toRecentUserVO(UserEntity entity) {
-        return RecentUserVO.builder()
+    private RecentUserResponse toRecentUserResponse(UserEntity entity) {
+        return RecentUserResponse.builder()
             .userId(entity.getId())
             .username(entity.getUsername())
             .nickname(entity.getNickName())
@@ -317,10 +307,10 @@ public class AdminDashboardService {
             .build();
     }
 
-    private RecentProductVO toRecentProductVO(
+    private RecentProductResponse toRecentProductResponse(
         com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel model
     ) {
-        return RecentProductVO.builder()
+        return RecentProductResponse.builder()
             .productId(model.id())
             .name(model.title())
             .price(model.price())

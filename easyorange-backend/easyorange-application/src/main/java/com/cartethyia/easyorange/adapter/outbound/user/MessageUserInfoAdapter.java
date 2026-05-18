@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -31,7 +30,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
     @Override
     public Map<Long, UserInfo> getUserInfoMap(Collection<Long> userIds) {
         if (userIds == null || userIds.isEmpty()) {
-            return Collections.emptyMap();
+            return Map.of();
         }
         return userRepository.findAllById(userIds).stream()
                 .collect(Collectors.toMap(

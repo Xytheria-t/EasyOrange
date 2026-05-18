@@ -216,7 +216,7 @@ export interface OrderInterventionRequest {
   reason: string;
 }
 
-export interface OrderStatsVO {
+export interface OrderStatsResponse {
   totalOrders: number;
   todayOrders: number;
   pendingPayment: number;
@@ -262,7 +262,7 @@ export interface ReportHandleRequest {
   remark?: string;
 }
 
-export interface ReportStatsVO {
+export interface ReportStatsResponse {
   totalReports: number;
   pendingReports: number;
   resolvedReports: number;
@@ -271,7 +271,7 @@ export interface ReportStatsVO {
 
 // ==================== Category Types ====================
 
-export interface CategoryVO {
+export interface CategoryResponse {
   categoryId: number;
   name: string;
   parentId: number | null;
@@ -284,13 +284,13 @@ export interface CategoryVO {
   updateTime: string | null;
 }
 
-export interface CategoryTreeVO {
+export interface CategoryTreeResponse {
   categoryId: number;
   name: string;
   level: number;
   sortOrder: number;
   status: number;
-  children: CategoryTreeVO[];
+  children: CategoryTreeResponse[];
 }
 
 export interface CategoryCreateRequest {
@@ -340,7 +340,7 @@ export interface ActivityItem {
   type: 'user' | 'product' | 'order' | 'report';
 }
 
-export interface AuditLogVO {
+export interface AuditLogResponse {
   id: number;
   productId: number;
   operatorId: number;

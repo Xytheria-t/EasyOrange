@@ -55,12 +55,13 @@ function formatConditionLabel(value: string): string {
 }
 
 function formatPriceLabel(value: string): string {
-  const parts = value.split('_');
-  if (parts.length !== 2) return value;
-  const [min, max] = parts;
-  if (min === '0' && max) return `¥0 - ¥${max}`;
-  if (min && max) return `¥${min} - ¥${max}`;
-  if (min) return `¥${min}+`;
+  const parts = value.split('-');
+  if (parts.length === 2) {
+    const [min, max] = parts;
+    if (min === '*' && max) return `¥0 - ¥${max}`;
+    if (min && max === '*') return `¥${min}+`;
+    if (min && max) return `¥${min} - ¥${max}`;
+  }
   return value;
 }
 

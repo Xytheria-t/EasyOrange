@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -114,7 +113,7 @@ class TypingIndicatorServiceTest {
         @Test
         @DisplayName("没有正在输入的用户时返回空集合")
         void getTypingUsers_noKeys_returnsEmpty() {
-            when(redisTemplate.keys(anyString())).thenReturn(Collections.emptySet());
+            when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
             Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
@@ -143,7 +142,7 @@ class TypingIndicatorServiceTest {
         @Test
         @DisplayName("正确构建 redis key pattern")
         void getTypingUsers_correctKeyPattern() {
-            when(redisTemplate.keys(anyString())).thenReturn(Collections.emptySet());
+            when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
             typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
