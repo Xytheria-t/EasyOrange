@@ -44,6 +44,10 @@ public class ProductDocument {
     private List<String> images;
     private String sellerName;
     private String sellerAvatar;
+
+    @Field(type = FieldType.Auto)
+    private List<Float> nameEmbedding;
+
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

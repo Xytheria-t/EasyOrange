@@ -369,6 +369,16 @@ export interface UserUnlockRequest {
   reason?: string;
 }
 
+// ==================== AI Review Types ====================
+
+export interface AiReviewResult {
+  suggestedAction: boolean;
+  suggestedActionDesc: string;
+  confidenceScore: number;
+  riskFlags: string[];
+  reasoning: string;
+}
+
 // ==================== Review Types ====================
 
 export interface AdminReview {

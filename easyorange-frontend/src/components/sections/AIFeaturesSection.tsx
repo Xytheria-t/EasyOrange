@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './ai-features.css'
 
 interface AIFeature {
@@ -71,9 +72,17 @@ const aiFeatures: AIFeature[] = [
   }
 ]
 
+const FEATURE_ROUTES: Record<string, string> = {
+  pricing: '/publish',
+  recommend: '/products',
+  classify: '/publish',
+  generate: '/publish',
+}
+
 function AIFeatureCard({ feature, index }: { feature: AIFeature; index: number }) {
   const [isVisible, setIsVisible] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -108,7 +117,13 @@ function AIFeatureCard({ feature, index }: { feature: AIFeature; index: number }
         </div>
         <h3 className="ai-feature-title">{feature.title}</h3>
         <p className="ai-feature-description">{feature.description}</p>
-        <button className="ai-feature-demo">
+        <button
+          className="ai-feature-demo"
+          onClick={() => {
+            const route = FEATURE_ROUTES[feature.id]
+            if (route) navigate(route)
+          }}
+        >
           <span>{feature.demo}</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M5 12h14M12 5l7 7-7 7" />

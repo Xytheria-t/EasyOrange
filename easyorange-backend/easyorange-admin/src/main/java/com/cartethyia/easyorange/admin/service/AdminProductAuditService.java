@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.admin.service;
 
+import com.cartethyia.easyorange.ai.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
@@ -8,8 +10,12 @@ import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.application.query.dto.SellerInfo;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -23,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -33,6 +41,7 @@ public class AdminProductAuditService {
     private final ProductAuditLogMapper productAuditLogMapper;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
+    private final AiReviewService aiReviewService;
 
     @Transactional(rollbackFor = Exception.class)
     public void auditProduct(Long id, ProductAuditRequest request) {
@@ -178,6 +187,39 @@ public class AdminProductAuditService {
     public List<AuditLogResponse> getAuditLogs(Long productId) {
         List<ProductAuditLogDO> logs = productAuditLogMapper.selectByProductId(productId);
         return logs.stream().map(this::toAuditLogResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AiReviewResult getAiReview(Long productId) {
+        ProductDO product = productMapper.selectById(productId);
+        if (product == null || product.getDelFlag() != 0) {
+            throw BusinessException.of("商品不存在");
+        }
+
+        List<ProductDetailDO> details = productMapper.selectDetailsByProductIds(List.of(productId));
+        String description = details.isEmpty() ? null : details.get(0).getDescription();
+
+        List<CategoryDO> categories = productMapper.selectCategoriesByIds(List.of(product.getCategoryId()));
+        String categoryName = categories.isEmpty() ? null : categories.get(0).getName();
+
+        Set<Long> sellerIds = Set.of(product.getUserId());
+        List<SellerInfo> sellers = productMapper.selectSellersByIds(sellerIds);
+        String sellerName = sellers.isEmpty() ? null : sellers.get(0).nickName();
+
+        List<ProductImageDO> images = productMapper.selectImagesByProductIds(List.of(productId));
+        List<String> imageUrls = images.stream()
+                .map(ProductImageDO::getImageUrl)
+                .collect(Collectors.toList());
+
+        return aiReviewService.reviewProduct(
+                product.getName(),
+                description,
+                categoryName,
+                product.getConditionLevel(),
+                product.getPrice().toString(),
+                sellerName,
+                imageUrls
+        );
     }
 
     private AuditLogResponse toAuditLogResponse(ProductAuditLogDO log) {

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.file.storage;
 
-import com.cartethyia.easyorange.common.exception.FileException;
+import com.cartethyia.easyorange.common.exception.file.FileException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

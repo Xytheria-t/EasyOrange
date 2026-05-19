@@ -32,6 +32,8 @@ easyorange-frontend/
 │   │   │   └── index.ts      # 统一导出
 │   │   ├── productApi.ts     # 商品 API
 │   │   ├── orderApi.ts       # 订单 API
+│   │   ├── aiApi.ts          # AI 功能 API（定价/审核/语义搜索/问答/拍照上架）
+│   │   ├── creditApi.ts      # 信用评分 API
 │   │   └── ...
 │   ├── admin/                # 管理端模块（暖橙指挥中心设计系统）
 │   │   ├── layout/           # AdminLayout, AdminSidebar, AdminHeader
@@ -40,6 +42,7 @@ easyorange-frontend/
 │   │   └── styles/           # admin.css, admin-layout.css
 │   ├── components/           # 可复用组件
 │   │   ├── layout/           # 布局组件
+│   │   ├── ai/               # AI 组件（AiPricingBadge, AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, CreditScoreCard）
 │   │   ├── sections/         # 页面区块组件
 │   │   ├── profile/          # 个人中心组件
 │   │   ├── products/         # 商品相关组件
@@ -48,6 +51,10 @@ easyorange-frontend/
 │   │   └── auth/             # 认证模块
 │   │       └── session.ts    # TokenRefreshManager
 │   ├── hooks/                # 自定义 Hooks
+│   │   ├── useAiPricing.ts   # AI 定价 Hook
+│   │   ├── useAutoListing.ts # 拍照上架 Hook
+│   │   ├── useSemanticSearch.ts # 语义搜索 Hook
+│   │   ├── useAiQa.ts        # AI 问答 Hook
 │   │   ├── auth/             # 认证相关 Hooks
 │   │   ├── order/            # 订单相关 Hooks
 │   │   ├── product/          # 商品相关 Hooks
@@ -56,7 +63,7 @@ easyorange-frontend/
 │   ├── pages/                # 页面组件
 │   │   └── publish/          # 发布商品子模块
 │   ├── routes/               # 路由配置
-│   ├── store/                # Zustand 状态管理（认证、用户状态等）
+│   ├── store/                # Zustand 状态管理（认证、用户状态、AI 状态）
 │   ├── stores/               # Zustand 状态管理（聊天模块独立 store）
 │   ├── styles/               # 样式文件
 │   ├── types/                # 类型定义
@@ -123,6 +130,7 @@ npm run preview
 | 个人中心 | `/profile` | 个人信息、密码修改 | 是 |
 | 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
 | 消息中心 | `/messages` | 站内消息列表 | 是 |
+| 信用评分 | `/credit` | 信用评分展示、变更记录 | 是 |
 | 通知中心 | `/notifications` | 系统通知列表、查看详情 | 是 |
 | 我的订单 | `/orders` | 订单列表 | 是 |
 | 订单详情 | `/orders/:id` | 订单详情 | 是 |
@@ -164,6 +172,14 @@ npm run preview
 - 商品收藏
 - 站内消息
 - 系统通知
+
+### AI 系统
+- **智能定价** - AI 分析市场行情给出定价建议（AiPricingBadge + useAiPricing）
+- **拍照上架** - 上传图片自动生成商品信息（AiPhotoCapture + useAutoListing）
+- **AI 审核** - AI 分析商品信息给出审核建议（AiReviewSuggestion + useAdminProductAudit）
+- **语义搜索** - 基于语义向量搜索相似商品（SemanticSearchToggle + useSemanticSearch）
+- **智能问答** - 基于商品上下文回答买家问题（AiQaPanel + useAiQa）
+- **信用评分** - 基于交易数据的信用评分体系（CreditScoreCard + creditApi）
 
 ## 环境变量
 

@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUserRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ChangePasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateUserRequest;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
@@ -299,7 +299,7 @@ class UserAppServiceTest {
             verify(userRepository).update(any(User.class));
 
             ArgumentCaptor<PasswordChangedEvent> eventCaptor = ArgumentCaptor.forClass(PasswordChangedEvent.class);
-            verify(userEventPort).publish(eventCaptor.capture());
+            verify(userEventPort).publishPasswordChanged(eventCaptor.capture());
             PasswordChangedEvent event = eventCaptor.getValue();
             assertThat(event.getUserId()).isEqualTo(1L);
         }
@@ -319,7 +319,7 @@ class UserAppServiceTest {
                 .hasMessageContaining("密码错误");
 
             verify(userRepository, never()).update(any());
-            verify(userEventPort, never()).publish(any());
+            verify(userEventPort, never()).publishPasswordChanged(any());
         }
 
         @Test

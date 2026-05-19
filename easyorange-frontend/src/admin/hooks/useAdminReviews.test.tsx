@@ -54,7 +54,7 @@ describe('useAdminReviewDetail', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: { id: 'rev-1', content: '好评', rating: 5, productId: 1 },
+          data: { reviewId: 'rev-1', content: '好评', rating: 5, productId: '1' } as const,
           timestamp: Date.now(),
         });
       }),

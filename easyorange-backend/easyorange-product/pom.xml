@@ -30,20 +30,4 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.6.0</version>
-                <configuration>
-                    <configLocation>sun_checks.xml</configLocation>
-                    <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
-                    <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
 </project>

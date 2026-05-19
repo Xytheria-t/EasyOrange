@@ -20,6 +20,7 @@ easy-orange/
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
+│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision)
 │   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 ├── easyorange-frontend/         # React 前端
@@ -109,7 +110,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - 编码规则见 `.trae/rules/` 目录
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
-- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
+- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，在 `PageResult` 基础上增加 `facets` 分面桶列表）
 - 测试覆盖率目标 ≥ 80%
 - **多模块构建**: 修改子模块后启动前必须先执行 `mvn clean install -Dmaven.test.skip=true`，确保子模块 JAR 安装到本地仓库，否则 DevTools 运行时会 ClassNotFoundException
 - **前端CSS导入**: 共享组件（如 ProductCard）使用的样式CSS必须在组件文件自身 import，禁止仅依赖页面级导入。首页通过 React.lazy 懒加载 section 组件时，页面级CSS不会随组件chunk加载，导致首次渲染无样式

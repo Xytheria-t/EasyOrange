@@ -60,16 +60,28 @@ product、order、payment 模块使用 CQRS：
 
 ## 领域事件机制
 
+业务模块在 domain/port/output/ 下定义带领域语义的事件发布 Port（如 `UserEventPort`），adapter 层实现委派给框架的 `DomainEventPublisher`：
+
 ```java
-@PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
-@Transactional(rollbackFor = Exception.class)
-public Long register(RegisterRequest request) { ... }
+// Port 定义（domain 层）
+public interface UserEventPort extends OutboundPort {
+    void publishUserRegistered(UserRegisteredEvent event);
+}
+
+// Adapter 实现（adapter 层）
+@Component
+public class UserEventPublisher implements UserEventPort {
+    private final DomainEventPublisher domainEventPublisher;
+    public void publishUserRegistered(UserRegisteredEvent event) {
+        domainEventPublisher.publish(event);
+    }
+}
 ```
 
-- `@PublishEvent` 注解标记需要发布事件的方法
-- AOP 切面在事务提交后异步发布事件
-- EventExtractor 负责从方法参数/返回值提取事件数据
-- 事件持久化到 `eo_domain_event` 表，保证可靠投递
+- 应用服务注入 Port 接口发布事件，不直接依赖 `DomainEventPublisher`
+- `DomainEventPublisher`（common/event/）同步发布到 Spring EventBus
+- 监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")`
+- 需要 Outbox 可靠投递的模块（如支付）通过 `framework/outbox/` 在业务事务内持久化事件
 
 ## 跨模块通信
 
@@ -84,7 +96,8 @@ public Long register(RegisterRequest request) { ... }
 - 写操作通过领域事件解耦（如 `PaymentInitiationRequestedEvent`、`StockReservationRequestedEvent`）
 - 事件监听器在 `easyorange-application/adapter/event/` 包下
 - 使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式
-- Outbox 模式保证事件可靠投递（`framework/outbox/`）
+- `DomainEventPublisher`（common/event/）同步发布，`DomainEventPublisherImpl` 转发到 Spring EventBus
+- 需要 Outbox 可靠投递的模块（如支付）通过 `framework/outbox/` 存储在业务事务内持久化事件
 
 **查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
 
@@ -237,7 +250,7 @@ public class TestAdminApplication {}
 
 ### framework 模块集成测试
 
-`easyorange-framework` 的集成测试（Redis Cache/EventIdempotencyChecker/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""`：
+`easyorange-framework` 的集成测试（Redis Cache/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""`：
 
 ```bash
 ./mvnw test -pl easyorange-framework -DexcludedGroups=""

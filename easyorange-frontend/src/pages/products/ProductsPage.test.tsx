@@ -13,11 +13,22 @@ const mockUseAuthStore = vi.hoisted(() =>
 );
 const mockNavigate = vi.hoisted(() => vi.fn());
 
+const mockUseSemanticSearch = vi.hoisted(() => vi.fn(() => ({
+  results: [],
+  isSearching: false,
+  isSemanticMode: false,
+  total: 0,
+  search: vi.fn(),
+  toggleSemanticMode: vi.fn(),
+  setResults: vi.fn(),
+})));
+
 vi.mock('@/hooks', () => ({
   useProducts: mockUseProducts,
   useCategories: mockUseCategories,
   useFavoriteCheck: mockUseFavoriteCheck,
   useColumnCount: mockUseColumnCount,
+  useSemanticSearch: mockUseSemanticSearch,
 }));
 
 vi.mock('@/store/authStore', () => ({

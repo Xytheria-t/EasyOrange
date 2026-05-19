@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.common.exception;
 
 import com.cartethyia.easyorange.common.enums.FileResultCode;
+import com.cartethyia.easyorange.common.exception.file.FileException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -108,7 +109,7 @@ class FileExceptionTest {
             FileException exception = FileException.of("测试异常");
 
             // Assert
-            assertThat(exception.defaultCode()).isEqualTo(FileResultCode.FILE_UPLOAD_FAILED.getCode());
+            assertThat(exception.getCode()).isEqualTo(FileResultCode.FILE_UPLOAD_FAILED.getCode());
         }
     }
 

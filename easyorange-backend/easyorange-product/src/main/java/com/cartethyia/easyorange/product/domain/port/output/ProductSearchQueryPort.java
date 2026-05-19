@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.product.domain.port.output;
 
+import java.util.List;
+
 /**
  * 商品搜索查询端口 — ES 实现此接口，不可用时降级到 ProductQueryRepository.
  */
@@ -16,6 +18,8 @@ public interface ProductSearchQueryPort extends OutboundPort {
         Integer conditionLevel,
         String sort,
         int pageNum,
-        int pageSize
+        int pageSize,
+        List<Float> queryEmbedding,
+        boolean useSemanticSearch
     ) { }
 }

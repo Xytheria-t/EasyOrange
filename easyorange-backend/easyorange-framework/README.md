@@ -78,8 +78,7 @@ public class Application {
 | 组件 | 说明 |
 |------|------|
 | `DomainEventPublisher` | 领域事件发布接口 |
-| `DomainEventPublisherImpl` | 领域事件发布实现 |
-| `DomainEventPersistenceService` | 事件持久化服务 |
+| `DomainEventPublisherImpl` | 领域事件发布实现（同步到 Spring EventBus） |
 
 ### AOP 组件
 

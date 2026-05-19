@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.admin.controller;
 
+import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
@@ -38,5 +39,10 @@ class AdminProductAuditController {
     @GetMapping("/{id}/audit-logs")
     public Result<List<AuditLogResponse>> getAuditLogs(@PathVariable Long id) {
         return Result.success(adminProductAuditService.getAuditLogs(id));
+    }
+
+    @GetMapping("/{id}/ai-review")
+    public Result<AiReviewResult> getAiReview(@PathVariable Long id) {
+        return Result.success(adminProductAuditService.getAiReview(id));
     }
 }

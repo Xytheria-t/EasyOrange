@@ -230,24 +230,20 @@ CacheTypeMismatchException: 缓存类型不匹配 - Key: user:123, 期望类型:
 
 **改进内容**：
 
-- 统一同步和异步发布逻辑
-- 确保事件监听器能接收异步发布的事件
+- 统一事件发布入口，仅保留同步发布
+- 确保事件监听器能接收到事件
 
 **使用示例**：
 
 ```java
-// 同步发布
 domainEventPublisher.publish(new UserCreatedEvent(userId));
-
-// 异步发布
-domainEventPublisher.publishAsync(new UserCreatedEvent(userId));
 ```
 
 **注意事项**：
 
-- 异步发布使用 `domainEventExecutor` 线程池
 - 事件监听器需要标注 `@EventListener`
 - 确保事件类继承 `BaseDomainEvent`
+- 需要 Outbox 可靠投递的模块通过 `OutboxRepository` 在业务事务内持久化事件
 
 ---
 

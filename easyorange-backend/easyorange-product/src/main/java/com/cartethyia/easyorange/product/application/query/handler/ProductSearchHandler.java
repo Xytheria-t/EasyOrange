@@ -46,7 +46,9 @@ public class ProductSearchHandler {
                     request.getConditionLevel(),
                     request.getSortField(),
                     request.getPageNum() != null ? request.getPageNum() : 1,
-                    request.getPageSize() != null ? request.getPageSize() : 20
+                    request.getPageSize() != null ? request.getPageSize() : 20,
+                    null,
+                    false
             );
             SearchResult searchResult = searchQueryPort.get().search(query);
             List<ProductResponse> responses = searchResult.records().stream()

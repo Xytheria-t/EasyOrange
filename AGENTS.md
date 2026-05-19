@@ -25,6 +25,10 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | `eo_product_report` | 举报记录表 | 4状态: PENDING(0)/PROCESSING(1)/RESOLVED(2)/DISMISSED(3); 含reason_type分类+24h重复检测 |
 | `eo_report_handle_history` | 举报处理历史表 | 记录每次管理员操作(action/remark/operator_id) |
 | `eo_upload_file` | 文件上传记录表 | 含 storage_type/storage_key 支持多后端存储 |
+| `eo_product_question` | 商品问答表 | buyer_id+product_id+question+answer+status, 含索引 |
+| `eo_audit_suggestion` | AI 审核建议表 | admin_id+product_id+suggested_action+confidence+risk_flags+reasoning |
+| `eo_user_credit` | 用户信用分表 | score(0-200)+total_trades+completed_trades+cancelled_trades+total_reports+confirmed_reports+avg_rating |
+| `eo_credit_change_log` | 信用变更日志 | user_id+change_amount+reason+before_score+after_score |
 
 ## 商品审核工作流
 
@@ -56,11 +60,25 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | 处理历史 | `GET /api/admin/reports/{id}/history` | 操作记录 |
 | 统计数据 | `GET /api/admin/reports/stats` | 统计信息 |
 
+## AI 功能 API
+
+| 功能 | 路由 | 说明 |
+|------|------|------|
+| 智能定价 | `POST /api/ai/pricing` | 分析商品信息给出定价建议，参数：productName, description, categoryName, conditionLevel |
+| 拍照上架 | `POST /api/ai/auto-listing` | 上传图片自动生成商品信息（标题/描述/分类/价格） |
+| AI 审核 | `POST /api/ai/review` | AI 分析商品信息给出审核建议（通过/拒绝+风险标签） |
+| 语义搜索 | `GET /api/ai/semantic-search` | 基于语义向量搜索商品，参数：keyword, pageNum, pageSize |
+| 智能问答 | `POST /api/ai/qa` | 基于商品上下文回答买家问题 |
+| 我的信用 | `GET /api/credit/my` | 查看当前用户信用评分 |
+| 信用详情 | `GET /api/credit/detail/{userId}` | 查看指定用户信用分+最近变更记录 |
+| 重新计算 | `POST /api/credit/recalculate` | 触发当前用户信用分重新计算 |
+| AI 审核(admin) | `GET /api/admin/products/{id}/ai-review` | 管理端获取 AI 审核建议 |
+
 ## 项目结构
 
 ```
 easy-orange/
-├── easyorange-backend/          # Spring Boot 后端 (10 Maven 模块)
+├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理)
 │   ├── easyorange-user/         # 用户模块 (DDD)
@@ -104,6 +122,17 @@ easy-orange/
 │   │   │   └── WebSocketEventListener.java      # @EventListener MessageRecalledEvent → WS 推送
 │   │   └── TypingIndicatorService.java          # Redis TTL typing 状态管理
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
+│   ├── easyorange-ai/           # AI 模块 (Port/Adapter: LlmPort/VisionPort + DeepSeek/Qwen-VL 适配器)
+│   │   ├── port/LlmPort.java          # LLM 文本生成/Embedding 端口
+│   │   ├── port/VisionPort.java       # 视觉分析端口
+│   │   ├── adapter/DeepSeekLlmAdapter.java  # DeepSeek API 适配器
+│   │   ├── adapter/QwenVlVisionAdapter.java # Qwen-VL API 适配器
+│   │   ├── service/AiPricingService.java    # AI 智能定价
+│   │   ├── service/AutoListingService.java  # 拍照自动上架
+│   │   ├── service/AiReviewService.java     # AI 商品审核
+│   │   ├── service/SemanticSearchService.java # 语义搜索
+│   │   ├── service/AiQaService.java         # AI 智能问答
+│   │   └── service/CreditScoringService.java # 信用评分引擎
 │   ├── easyorange-admin/        # 管理端模块 (独立模块，管理API + 审核工作流)
 │   │   ├── controller/
 │   │   │   ├── AdminProductController.java        # 商品管理（列表/详情/状态变更）
@@ -180,7 +209,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: `@PublishEvent` 注解 + AOP 切面发布
+5. **领域事件**: 应用服务通过领域语义的 Port（如 `UserEventPort`）调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
 6. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 7. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已有统一处理器返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
 
@@ -195,15 +224,16 @@ order → framework, product, user, payment (通过 Port 接口隔离，optional
 payment → framework
 message → framework, user (通过 UserInfoPort 隔离，optional)
 favorite → framework, product (通过 ProductInfoPort 隔离，optional)
-admin → framework, common, user (optional), product (optional), order (optional), payment (optional)
+ai → framework, common, product (通过 ProductSearchQueryPort 隔离)
+admin → framework, common, user (optional), product (optional), order (optional), payment (optional), ai (optional)
 ```
 
-> **状态 (2026-05-09)**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。写操作通过事件驱动解耦，查询操作保留同步端口调用。
+> **状态**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。写操作通过事件驱动解耦，查询操作保留同步端口调用。
 
 ## 已知问题
 
 - **AdminDashboardService.getDescription()**: `ProductStatus` 枚举无 `getDescription()` 方法，已修复为 `getDesc()`
-- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`EventIdempotencyCheckerIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
+- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
 
 ## 错误码规范
 
@@ -248,13 +278,27 @@ admin → framework, common, user (optional), product (optional), order (optiona
 | [图片优化计划-Plan](doc/plans/2026-05-17-image-optimization.md) | 实施计划（12 个任务，3 阶段） |
 | [ES搜索设计-Spec](doc/specs/2026-05-17-elasticsearch-search-design.md) | ES 商品搜索+CQRS Port/Adapter+IK分词器设计规格 |
 | [ES搜索计划-Plan](doc/plans/2026-05-17-elasticsearch-search.md) | 实施计划（15 个任务，5 批次） |
+| [搜索集成修复-Spec](doc/specs/2026-05-18-search-integration-fix.md) | 搜索链路数据修复（SearchPageResponse/FacetBucketResponse DTO） |
+| [搜索集成修复-Plan](doc/plans/2026-05-18-search-integration-fix.md) | 实施计划（5 个任务，2 批次） |
+| [AI功能计划-Plan](doc/superpowers/plans/2026-05-18-ai-features-plan.md) | AI功能实施计划（6 AI服务/6前端组件/2 DDL迁移，5阶段） |
+
+## 环境变量
+
+| 变量 | 值 | 说明 |
+|------|------|------|
+| `DEEPSEEK_API_KEY` | - | DeepSeek API 密钥（智能定价/审核/问答/Embedding） |
+| `DEEPSEEK_BASE_URL` | `https://api.deepseek.com/v1` | DeepSeek API 地址 |
+| `DEEPSEEK_MODEL` | `deepseek-chat` | DeepSeek 文本模型 |
+| `QWENVL_API_KEY` | - | 通义千问 VL API 密钥（拍照上架图片识别） |
+| `QWENVL_BASE_URL` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 通义千问 API 地址 |
+| `QWENVL_MODEL` | `qwen-vl-max` | 通义千问视觉模型 |
 
 ## 开发规范
 
 - 编码规则见 `.trae/rules/` 目录
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
-- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`
+- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，在 `PageResult` 基础上增加 `facets` 分面桶列表）
 - 测试覆盖率目标 ≥ 80%（后端全面覆盖中；admin 模块 100% 服务层覆盖，message 模块 161 测试/6 服务已覆盖，user 模块 149 测试/8 服务已覆盖，product 模块 109 测试、payment 模块 134 测试；前端 95 测试文件/919 测试，用户页面覆盖率达 ~74%）
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/`
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）

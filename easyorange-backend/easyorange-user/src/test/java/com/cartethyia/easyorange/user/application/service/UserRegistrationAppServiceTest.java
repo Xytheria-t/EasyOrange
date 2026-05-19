@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.RegisterRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.RegisterRequest;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
 import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
@@ -67,7 +67,7 @@ class UserRegistrationAppServiceTest {
         verify(userRegistrationDomainService).register(username, password, phone, email, generatedNickname);
 
         ArgumentCaptor<UserRegisteredEvent> eventCaptor = ArgumentCaptor.forClass(UserRegisteredEvent.class);
-        verify(userEventPort).publish(eventCaptor.capture());
+        verify(userEventPort).publishUserRegistered(eventCaptor.capture());
         UserRegisteredEvent event = eventCaptor.getValue();
         assertThat(event.getUserId()).isEqualTo(100L);
         assertThat(event.getUsername()).isEqualTo("newuser");
@@ -95,6 +95,6 @@ class UserRegistrationAppServiceTest {
 
         assertThat(result).isEqualTo(101L);
         verify(userRegistrationDomainService).register(username, password, null, null, generatedNickname);
-        verify(userEventPort).publish(any(UserRegisteredEvent.class));
+        verify(userEventPort).publishUserRegistered(any(UserRegisteredEvent.class));
     }
 }

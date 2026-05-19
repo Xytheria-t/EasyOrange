@@ -29,6 +29,7 @@ import type {
   BatchAuditRequest,
   ProductAuditRequest,
   AuditLogResponse,
+  AiReviewResult,
   UserRoleRequest,
   ResetPasswordRequest,
   UserUnlockRequest,
@@ -150,6 +151,10 @@ export const adminApi = {
 
   getAuditLogs(id: number) {
     return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
+  },
+
+  aiReviewProduct(id: number) {
+    return request<AiReviewResult>(`${ADMIN_API_PREFIX}/products/${id}/ai-review`);
   },
 
   getOrders(params: AdminOrderQuery) {

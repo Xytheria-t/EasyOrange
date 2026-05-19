@@ -11,19 +11,23 @@ user/
 │   │   ├── AuthController.java          # 认证端点 (登录/注册/刷新/登出)
 │   │   ├── UserController.java          # 用户信息端点
 │   │   ├── dto/request/                 # 入站 DTO
-│   │   │   ├── LoginRequest.java
-│   │   │   ├── RegisterRequest.java
-│   │   │   ├── RefreshTokenRequest.java
-│   │   │   ├── ForgotPasswordRequest.java
-│   │   │   ├── ChangePasswordRequest.java
-│   │   │   └── UpdateUserRequest.java
+│   │   │   ├── auth/                    # 认证相关
+│   │   │   │   ├── LoginRequest.java
+│   │   │   │   ├── RegisterRequest.java
+│   │   │   │   └── RefreshTokenRequest.java
+│   │   │   ├── password/                # 密码管理
+│   │   │   │   ├── ForgotPasswordRequest.java
+│   │   │   │   └── ChangePasswordRequest.java
+│   │   │   └── profile/                 # 用户资料
+│   │   │       └── UpdateUserRequest.java
 │   │   ├── dto/response/                # 出站 DTO
 │   │   │   ├── LoginResponse.java
 │   │   │   ├── UserResponse.java
 │   │   │   └── UserProfileResponse.java
-│   │   └── validation/                  # 自定义校验
+│   │   └── validation/                  # 自定义校验（纯格式校验，无 I/O 副作用）
 │   │       ├── Password.java + PasswordValidator.java
-│   │       └── Unique.java + UniqueFieldValidator.java
+│   │       ├── Phone.java + PhoneValidator.java
+│   │       └── Username.java + UsernameValidator.java
 │   └── outbound/
 │       ├── persistence/                 # 持久化适配器
 │       │   ├── UserEntity.java          # 纯数据库实体（不含映射逻辑）
@@ -75,6 +79,7 @@ user/
 │   │   ├── OutboundPort.java            # 端口标记接口
 │   │   ├── AvatarFilePort.java
 │   │   ├── LoginAttemptPort.java
+│   │   ├── NicknameGenerationPort.java
 │   │   ├── PasswordEncoderPort.java
 │   │   ├── SmsCodePort.java
 │   │   ├── SmsRateLimitPort.java
@@ -112,11 +117,7 @@ user/
 
 ### 领域事件发布
 
-```java
-@PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
-@Transactional(rollbackFor = Exception.class)
-public Long register(RegisterRequest request) { ... }
-```
+应用服务注入 `UserEventPort`（domain port），调用 `publishUserRegistered()` / `publishPasswordChanged()` / `publishForgotPassword()` 发布事件。Adapter 层 `UserEventPublisher` 委派给框架的 `DomainEventPublisher`，同步发布到 Spring EventBus。
 
 ### 出站端口隔离
 
@@ -124,12 +125,20 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 - `PasswordEncoderPort` → `PasswordEncoderAdapter` (BCrypt)
 - `LoginAttemptPort` → `RedisLoginAttemptAdapter` (Redis)
 - `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
+- `NicknameGenerationPort` → `NicknameGenerator` (随机昵称生成)
 - `UserEventPort` → `UserEventPublisher` (Spring Events)
 
 ### 自定义校验注解 (Jakarta Bean Validation)
 
+validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分层原则：
+
 - **`@Password`** — 密码强度校验（字段级）。规则来自 `UserConstant.PASSWORD_REGEX`（8-128位，含大小写+数字+特殊字符）；弱密码黑名单通过 `application.yaml` 的 `easy-orange.validation.password.weak-list` 配置注入。使用示例: `@Password String password`
-- **`@Unique(field="username", entityClass=UserEntity.class)`** — 数据库唯一性校验（类级别，支持 `@Repeatable` 多字段）。通过 `ApplicationContext` 动态查找对应 Mapper，不再硬编码实体。新增实体只需指定 `entityClass` 即可复用。详见设计文档: [2026-05-11-validation-package-redesign.md](../../docs/superpowers/specs/2026-05-11-validation-package-redesign.md)
+- **`@Phone`** — 手机号格式校验（字段级）。正则来自 `UserConstant.PHONE_REGEX`，支持自定义 `regexp` 参数。使用示例: `@Phone String phone`
+- **`@Username`** — 用户名格式校验（字段级）。校验长度（3-50位）和字符集（字母、数字、下划线）。使用示例: `@Username String username`
+
+业务规则校验（如唯一性）在 application / domain 层处理，不在 adapter 层做：
+- 注册唯一性 → `UserRegistrationDomainService.validateUsernameNotExists()` + `validateUniqueContactInfo()`
+- 更新唯一性 → `UserAppService.validateUniqueFieldsIfChanged()`
 
 ## 安全要点
 
@@ -162,7 +171,8 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 ### 添加新领域事件
 
 1. 创建事件类继承 `BaseDomainEvent`
-2. 创建 EventExtractor 实现
-3. 在应用服务方法上标注 `@PublishEvent`
-4. 添加事件监听器（如需）
-5. 添加测试
+2. 在 `UserEventPort` 接口中添加对应 publish 方法
+3. 在 `UserEventPublisher` 中实现该方法的委派逻辑
+4. 在应用服务中调用 Port 方法发布事件
+5. 添加事件监听器（如需）
+6. 添加测试

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.framework.util;
 
-import com.cartethyia.easyorange.common.exception.FileException;
-import com.cartethyia.easyorange.common.exception.FileSizeLimitExceededException;
-import com.cartethyia.easyorange.common.exception.InvalidExtensionException;
+import com.cartethyia.easyorange.common.exception.file.FileException;
+import com.cartethyia.easyorange.common.exception.file.FileSizeLimitExceededException;
+import com.cartethyia.easyorange.common.exception.file.InvalidExtensionException;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 

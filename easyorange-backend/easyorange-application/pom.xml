@@ -60,6 +60,12 @@
             <artifactId>easyorange-admin</artifactId>
         </dependency>
 
+        <!-- 依赖 AI 模块 -->
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-ai</artifactId>
+        </dependency>
+
         <!-- Spring Boot Actuator -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

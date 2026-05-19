@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ForgotPasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ForgotPasswordRequest;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
 import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
@@ -52,10 +52,9 @@ class PasswordResetAppServiceTest {
         service.forgotPassword(request);
 
         ArgumentCaptor<ForgotPasswordEvent> eventCaptor = ArgumentCaptor.forClass(ForgotPasswordEvent.class);
-        verify(userEventPort).publish(eventCaptor.capture());
+        verify(userEventPort).publishForgotPassword(eventCaptor.capture());
         ForgotPasswordEvent event = eventCaptor.getValue();
         assertThat(event.getUserId()).isEqualTo(1L);
-        assertThat(event.getPhone()).isEqualTo(phone);
     }
 
     @Test
@@ -71,6 +70,6 @@ class PasswordResetAppServiceTest {
 
         service.forgotPassword(request);
 
-        verify(userEventPort, never()).publish(any());
+        verify(userEventPort, never()).publishForgotPassword(any());
     }
 }

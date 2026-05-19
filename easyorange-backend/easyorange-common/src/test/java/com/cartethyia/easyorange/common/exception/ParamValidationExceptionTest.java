@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.common.exception;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -175,7 +176,7 @@ class ParamValidationExceptionTest {
             ParamValidationException exception = new ParamValidationException(Map.of());
 
             // Assert
-            assertThat(exception.defaultCode()).isEqualTo(ResultCode.VALIDATE_FAILED.getCode());
+            assertThat(exception.getCode()).isEqualTo(ResultCode.VALIDATE_FAILED.getCode());
         }
     }
 

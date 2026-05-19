@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ForgotPasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ForgotPasswordRequest;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
 import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
@@ -31,7 +31,7 @@ public class PasswordResetAppService {
             return;
         }
 
-        userEventPort.publish(new ForgotPasswordEvent(user.getId(), request.phone()));
+        userEventPort.publishForgotPassword(new ForgotPasswordEvent(user.getId()));
 
     }
 

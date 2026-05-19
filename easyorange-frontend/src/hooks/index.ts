@@ -3,3 +3,4 @@ export { useProducts, useProduct, useCreateProduct, useUpdateProduct, useDeleteP
 export { useMyOrders, useSoldOrders, useOrderDetail, useCancelOrder, useReceiveOrder, useRefundOrder, usePayOrder, useCreateOrder, usePayment, usePaymentByOrder, usePaymentStatus, useCreatePayment, useRefundPayment, useClosePayment } from './order';
 export { useScrollReveal, usePlatformStats, useColumnCount } from './ui';
 export type { ColumnBreakpoint } from './ui';
+export { useSemanticSearch } from './useSemanticSearch';

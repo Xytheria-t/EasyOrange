@@ -38,7 +38,6 @@ payment/
 │   │   ├── PaymentQuery.java
 │   │   └── PaymentView.java
 │   ├── event/
-│   │   ├── OutboxEventPublisher.java        # Outbox 模式事件发布
 │   │   └── PaymentEventListener.java        # 领域事件持久化到 Outbox
 │   ├── idempotency/
 │   │   └── IdempotencyService.java          # 幂等服务 (SHA-256 请求哈希)
@@ -103,9 +102,9 @@ payment/
 保证领域事件可靠投递：
 
 1. 业务操作与事件存储在同一事务中 (`DomainEventStorePort`)
-2. `OutboxEventPublisher` 异步扫描未投递事件并发布
-3. 事件存储在 `eo_domain_event` 表，状态: PENDING → PUBLISHED → FAILED
-4. 事件实体统一使用 Framework 模块的 `OutboxMessage`
+2. 事件存储在 `eo_domain_event` 表，状态: PENDING → PUBLISHED → FAILED
+3. 事件实体统一使用 Framework 模块的 `OutboxMessage`
+4. 当前事件的消费由下游模块自行调度（需扫描 `eo_domain_event` 表处理 PENDING 事件）
 
 ## 幂等保护
 

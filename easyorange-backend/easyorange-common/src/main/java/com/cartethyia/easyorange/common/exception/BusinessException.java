@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.common.exception;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
-import com.cartethyia.easyorange.common.enums.ResultCode;
 
 public class BusinessException extends BaseBusinessException {
 
@@ -43,10 +42,5 @@ public class BusinessException extends BaseBusinessException {
 
     public static BusinessException of(IResultCode resultCode, String message, Throwable cause) {
         return new BusinessException(resultCode, message, cause);
-    }
-
-    @Override
-    protected String defaultCode() {
-        return ResultCode.BUSINESS_ERROR.getCode();
     }
 }

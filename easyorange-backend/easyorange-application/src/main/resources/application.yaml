@@ -194,3 +194,15 @@ easyorange:
         enabled: true
         default-aspect-ratio: 1:1
         min-entropy-threshold: 0.5
+
+  ai:
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: https://api.deepseek.com
+      model: deepseek-chat
+      timeout: 30000
+    qwen-vl:
+      api-key: ${QWEN_VL_API_KEY:}
+      base-url: https://dashscope.aliyuncs.com/api/v1
+      model: qwen-vl-max
+      timeout: 60000

@@ -26,11 +26,14 @@ common/
 │   ├── DomainEventPublisher.java # 领域事件发布接口
 │   └── DomainEventSubscriber.java # 领域事件订阅接口
 ├── exception/
-│   ├── BaseBusinessException.java  # 业务异常基类
-│   ├── BusinessException.java      # 通用业务异常
-│   ├── ParamValidationException.java # 参数校验异常
-│   ├── FileException.java          # 文件操作异常
-│   └── ...                         # 文件相关异常
+│   ├── BaseBusinessException.java       # 业务异常基类
+│   ├── BusinessException.java           # 通用业务异常
+│   ├── file/
+│   │   ├── FileException.java               # 文件操作异常
+│   │   ├── FileSizeLimitExceededException.java # 文件大小超限
+│   │   └── InvalidExtensionException.java     # 非法扩展名
+│   └── validation/
+│       └── ParamValidationException.java     # 参数校验异常
 ├── notification/
 │   └── NotificationService.java # 通知服务接口
 ├── result/

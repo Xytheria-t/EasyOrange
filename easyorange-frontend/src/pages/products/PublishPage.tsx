@@ -11,6 +11,10 @@ import { productApi } from '@/api/productApi';
 import { compressImage } from '@/utils/imageCompress';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import { useUIStore } from '@/store/uiStore';
+import { AiPricingBadge } from '@/components/ai/AiPricingBadge';
+import { AiPhotoCapture } from '@/components/ai/AiPhotoCapture';
+import { useAiPricing } from '@/hooks/useAiPricing';
+import { useAutoListing } from '@/hooks/useAutoListing';
 import './publish.css';
 
 interface FormState {
@@ -68,6 +72,8 @@ function PublishPage() {
   const addToast = useUIStore((s) => s.addToast);
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
+  const { suggestion, isLoading: aiPricingLoading, getPricing, clearSuggestion } = useAiPricing();
+  const { result: autoListingResult, isLoading: autoListingLoading, analyzeImages, clearResult: clearAutoListing } = useAutoListing();
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -84,6 +90,29 @@ function PublishPage() {
     }, 100);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (autoListingResult) {
+      updateField('name', autoListingResult.title);
+      updateField('description', autoListingResult.description);
+      if (autoListingResult.price > 0) {
+        updateField('price', String(autoListingResult.price));
+      }
+      if (autoListingResult.conditionLevel > 0) {
+        updateField('conditionLevel', String(autoListingResult.conditionLevel));
+      }
+      if (autoListingResult.location) {
+        updateField('location', autoListingResult.location);
+      }
+      if (autoListingResult.categoryName) {
+        const cat = categories?.find(c => c.name === autoListingResult.categoryName);
+        if (cat) {
+          updateField('categoryId', String(cat.id));
+        }
+      }
+      clearAutoListing();
+    }
+  }, [autoListingResult]);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -418,6 +447,13 @@ function PublishPage() {
                     )}
                   </div>
                 )}
+                {form.imageUrls.length > 0 && (
+                  <AiPhotoCapture
+                    onAnalyze={() => analyzeImages(form.imageUrls)}
+                    isLoading={autoListingLoading}
+                    hasImages={form.imageUrls.length > 0}
+                  />
+                )}
               </div>
               {errors.imageUrls && (
                 <div className="error-message-v2">
@@ -679,6 +715,46 @@ function PublishPage() {
                       比原价优惠 ¥{(Number(form.originalPrice) - Number(form.price)).toFixed(2)}
                     </span>
                   </div>
+                )}
+
+                {form.name && !suggestion && (
+                  <button
+                    className="ai-pricing-btn"
+                    onClick={() => {
+                      const cat = categories?.find(c => String(c.id) === form.categoryId)
+                      getPricing({
+                        productName: form.name,
+                        description: form.description || undefined,
+                        categoryName: cat?.name || undefined,
+                        conditionLevel: form.conditionLevel ? Number(form.conditionLevel) : undefined,
+                        originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
+                      })
+                    }}
+                    disabled={aiPricingLoading}
+                  >
+                    {aiPricingLoading ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        AI 分析中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={14} />
+                        AI 智能定价
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {suggestion && (
+                  <AiPricingBadge
+                    suggestion={suggestion}
+                    onApply={(price) => {
+                      updateField('price', String(price))
+                      clearSuggestion()
+                    }}
+                    isLoading={aiPricingLoading}
+                  />
                 )}
 
                 <div className="field-group-v2" style={{ maxWidth: '200px' }}>

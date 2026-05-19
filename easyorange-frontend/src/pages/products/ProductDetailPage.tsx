@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
+import { Bot, MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { useProduct, useSimilarProducts, useCreateOrder } from '@/hooks';
 import { favoriteApi } from '@/api/favoriteApi';
@@ -11,6 +11,8 @@ import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Image, preloadImages, buildThumbnailUrl } from '@/components/ui/Image';
+import AiQaPanel from '@/components/ai/AiQaPanel';
+import { useAiQa } from '@/hooks/useAiQa';
 import placeholderImage from '@/assets/placeholder.png';
 
 interface OrderFormData {
@@ -71,6 +73,7 @@ function ProductDetailPage() {
 
   const queryClient = useQueryClient();
   const createOrder = useCreateOrder();
+  const { qaHistory: aiQaHistory, isLoading: aiQaLoading, ask: aiAsk } = useAiQa();
   const [imageState, dispatchImage] = useReducer(imageReducer, { currentImageIndex: 0, imageLoaded: false });
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
@@ -702,6 +705,23 @@ function ProductDetailPage() {
           <div className="pdp-description-body">
             <p className="pdp-description-text">{product.description || '卖家暂未填写详细描述，可通过下方「联系卖家」了解更多信息'}</p>
           </div>
+        </div>
+
+        <div className="pdp-ai-qa-section">
+          <AiQaPanel
+            product={{
+              id: product.id,
+              title: product.title,
+              description: product.description,
+              categoryName: product.categoryName,
+              price: product.price,
+              conditionLevel: product.conditionLevel,
+              sellerName: product.sellerName,
+            }}
+            onAsk={aiAsk}
+            qaHistory={aiQaHistory}
+            isLoading={aiQaLoading}
+          />
         </div>
 
         <div className="pdp-section-divider" />

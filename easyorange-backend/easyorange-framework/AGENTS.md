@@ -43,23 +43,19 @@ framework/
 ├── repository/
 │   ├── BaseRepository.java      # 仓储基类，封装 lambdaQuery()/lambdaUpdate() + findOne/findList/findIn 等常见查询模式
 ├── event/                   # 领域事件基础设施
-│   ├── DomainEventPublisherImpl.java    # 事件发布实现 (持久化+异步)
-│   ├── DomainEventPersistenceService.java # 事件持久化
-│   └── idempotency/
-│       └── EventIdempotencyChecker.java  # 事件幂等校验
-├── outbox/                  # Outbox 模式 (事件可靠投递，统一入口)
+│   └── DomainEventPublisherImpl.java    # 事件发布实现 (同步到 Spring EventBus)
+├── outbox/                  # Outbox 模式 (事件可靠投递，支付模块使用)
 │   ├── util/
-│   │   └── OutboxEventUtils.java        # 共享工具 (反序列化+截断)
+│   │   └── OutboxEventUtils.java        # 共享工具 (截断+反序列化)
 │   ├── entity/
 │   │   ├── OutboxMessage.java           # 领域模型
 │   │   └── OutboxMessagePO.java         # 持久化实体 (唯一 PO 映射 eo_domain_event)
 │   ├── mapper/
 │   │   └── OutboxMessageMapper.java     # MyBatis Mapper
-│   ├── repository/
-│   │   └── OutboxRepository.java        # 仓储实现
-│   └── publisher/
-│       ├── OutboxEventPublisher.java    # 事件存储 + 定时扫描发布 (5s间隔, 唯一任务)
-│       └── OutboxDomainEventPublisherImpl.java
+│   ├── converter/
+│   │   └── OutboxMessageConverter.java  # PO ↔ Domain 转换
+│   └── repository/
+│       └── OutboxRepository.java        # 仓储实现
 ├── exception/
 │   ├── GlobalExceptionHandler.java  # 全局异常处理
 │   └── CacheTypeMismatchException.java
@@ -116,11 +112,7 @@ framework/
 
 ### 领域事件发布流程
 
-1. 业务方法标注 `@PublishEvent`
-2. AOP 切面拦截，事务提交后触发
-3. `DomainEventPublisherImpl` 持久化事件到 `eo_domain_event`
-4. 异步线程池发布事件到 Spring ApplicationEventBus
-5. `EventIdempotencyChecker` 保证幂等消费
+`DomainEventPublisherImpl` 将事件同步发布到 Spring ApplicationEventBus。业务模块可直接注入 `DomainEventPublisher` 调用 `publish()`。需要 Outbox 可靠投递的模块（如支付）通过 `OutboxRepository` 在业务事务内持久化事件，由各模块自行调度发布。
 
 ### Redis 缓存抽象
 
@@ -139,7 +131,6 @@ RedisCache.unlock(key, value)
 
 - Security 配置变更需同步检查所有模块的接口权限
 - Redis Key 命名规范: `eo:模块:业务:标识`
-- 线程池配置影响事件发布和异步操作，调优需谨慎
 - 新增 AOP 切面需评估性能影响
 - **JacksonConfig 同时配置了 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper`**：Spring Boot 4.0 默认使用 Jackson 3.x 作为 HTTP 消息转换器，两者都必须注册 `ToStringSerializer` 才能防止 Long 类型精度丢失。`JsonMapperBuilderCustomizer` 用于自动配置，`jsonMapper()` Bean 直接构建时也需添加模块
 - **JacksonConfig 的 ObjectMapper 注册了 ParameterNamesModule**，领域事件类无需 @JsonCreator 注解即可反序列化；修改 JacksonConfig 时勿遗漏此模块

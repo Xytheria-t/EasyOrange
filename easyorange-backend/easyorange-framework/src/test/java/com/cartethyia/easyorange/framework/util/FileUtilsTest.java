@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.util;
 
-import com.cartethyia.easyorange.common.exception.FileSizeLimitExceededException;
-import com.cartethyia.easyorange.common.exception.InvalidExtensionException;
+import com.cartethyia.easyorange.common.exception.file.FileSizeLimitExceededException;
+import com.cartethyia.easyorange.common.exception.file.InvalidExtensionException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

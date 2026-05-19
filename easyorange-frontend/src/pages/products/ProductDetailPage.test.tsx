@@ -27,6 +27,9 @@ HTMLCanvasElement.prototype.toDataURL = vi
   .fn()
   .mockImplementation(() => 'data:image/png;base64,test');
 
+// jsdom does not implement Element.scrollIntoView
+Element.prototype.scrollIntoView = vi.fn();
+
 // ── Module mocks ──
 vi.mock('@/hooks', () => ({
   useProduct: mockUseProduct,

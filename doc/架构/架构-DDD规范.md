@@ -148,7 +148,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 - **事件基类**：所有领域事件继承 `common` 中的 `BaseDomainEvent`
 - **事件命名**：使用过去时态（UserRegistered、OrderPaid、PasswordChanged）
 - **事件内容**：仅包含必要 ID 和状态，不传输完整聚合
-- **事件发布** `[现状]`：通过 `@PublishEvent` 注解 + AOP 切面实现，事务提交后异步发布
+- **事件发布** `[现状]`：应用服务通过领域语义的 Port 调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
 
 ```java
 // 领域事件定义
@@ -158,14 +158,15 @@ public class UserRegisteredEvent extends BaseDomainEvent {
 }
 
 // 应用服务中发布事件
-@PublishEvent(type = "UserRegistered", extractor = "userRegisteredEventExtractor")
 @Transactional(rollbackFor = Exception.class)
 public Long register(RegisterRequest request) {
     // 业务逻辑
+    UserRegisteredEvent event = new UserRegisteredEvent(user.getId(), user.getUsername());
+    userEventPort.publishUserRegistered(event);
 }
 ```
 
-`[现状]` Outbox 模式已统一为 Framework 层单入口（`OutboxMessagePO` / `OutboxEventPublisher`），Payment 等业务模块通过 `DomainEventStorePort` 委托写入。定时扫描发布为唯一任务（5s 间隔），无竞争。
+`[现状]` 需要 Outbox 可靠投递的模块（如支付）直接使用 Framework 的 `OutboxRepository` 在业务事务内持久化事件，当前框架层不再提供统一的定时扫描发布。事件消费由各模块自行调度。
 
 ---
 

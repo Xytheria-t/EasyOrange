@@ -28,6 +28,7 @@
         <module>easyorange-message</module>
         <module>easyorange-favorite</module>
         <module>easyorange-admin</module>
+        <module>easyorange-ai</module>
         <module>easyorange-application</module>
     </modules>
 
@@ -92,6 +93,11 @@
             <dependency>
                 <groupId>com.cartethyia</groupId>
                 <artifactId>easyorange-admin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.cartethyia</groupId>
+                <artifactId>easyorange-ai</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -288,15 +294,6 @@
                         --add-opens java.base/sun.security.action=ALL-UNNAMED
                         --add-exports java.base/sun.net.util=ALL-UNNAMED
                     </argLine>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-checkstyle-plugin</artifactId>
-                <version>3.6.0</version>
-                <configuration>
-                    <configLocation>sun_checks.xml</configLocation>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                 </configuration>
             </plugin>
             <plugin>

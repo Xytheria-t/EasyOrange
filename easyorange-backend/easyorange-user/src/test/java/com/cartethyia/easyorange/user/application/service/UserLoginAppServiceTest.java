@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.framework.service.TokenService;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.LoginRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.LoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.application.dto.UserVO;

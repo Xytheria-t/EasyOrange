@@ -20,7 +20,8 @@ EasyOrange 是一个面向校园用户的二手交易平台，采用现代化的
 - **安全可靠** - JWT 认证、BCrypt 加密、输入验证、SQL 注入防护
 - **现代化前端** - React 19 + TypeScript + Vite 8，极速开发体验
 - **DDD 架构** - 后端采用领域驱动设计，模块化高内聚低耦合
-- **完整生态** - 商品、订单、支付、收藏、消息全链路覆盖
+- **AI 赋能** - 智能定价、拍照上架、AI 审核、语义搜索、智能问答、信用评分
+- **完整生态** - 商品、订单、支付、收藏、消息、AI 全链路覆盖
 
 ## 系统架构
 
@@ -29,7 +30,7 @@ EasyOrange Platform
   Frontend (React 19 SPA)           Backend (Spring Boot 4.0)
   ┌──────────────────────┐          ┌──────────────────────┐
   │  React 19            │          │  DDD Modular          │
-  │  React Router v7     │  REST    │  12 Maven Modules     │
+  │  React Router v7     │  REST    │  11 Maven Modules     │
   │  TanStack Query 5    │◄───────►│  MyBatis-Plus         │
   │  Zustand 5           │  API     │  Spring Security      │
   │  Tailwind CSS 4      │          │  Saga Pattern         │

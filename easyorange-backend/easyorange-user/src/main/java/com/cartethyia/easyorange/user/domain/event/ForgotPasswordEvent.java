@@ -8,12 +8,10 @@ import lombok.Getter;
 public class ForgotPasswordEvent extends BaseDomainEvent {
 
     private final Long userId;
-    private final String phone;
 
-    public ForgotPasswordEvent(Long userId, String phone) {
+    public ForgotPasswordEvent(Long userId) {
         super(User.class);
         this.userId = userId;
-        this.phone = phone;
     }
 
     @Override

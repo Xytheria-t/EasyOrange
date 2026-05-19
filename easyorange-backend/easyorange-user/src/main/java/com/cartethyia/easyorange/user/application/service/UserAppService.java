@@ -4,8 +4,8 @@ import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.ChangePasswordRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.UpdateUserRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ChangePasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateUserRequest;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
@@ -91,7 +91,7 @@ public class UserAppService {
 
         BizRequire.requireTrue(updated, "修改密码失败，请稍后重试");
 
-        userEventPort.publish(new PasswordChangedEvent(user.getId()));
+        userEventPort.publishPasswordChanged(new PasswordChangedEvent(user.getId()));
     }
 
     @Transactional(rollbackFor = Exception.class)

@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { useProducts, useCategories, useFavoriteCheck, useColumnCount } from '@/hooks';
+import { useProducts, useCategories, useFavoriteCheck, useColumnCount, useSemanticSearch } from '@/hooks';
+import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { ProductCard } from '@/components/product/ProductCard';
 import { preloadImages } from '@/components/ui/Image';
 import { productApi } from '@/api/productApi';
@@ -35,15 +36,33 @@ function ProductsPage() {
   });
 
   const { data, isLoading } = useProducts(params);
-  const products = data?.records ?? [];
-  const total = data?.total ?? 0;
+  const {
+    results: semanticResults,
+    isSearching: isSemanticSearching,
+    isSemanticMode,
+    total: semanticTotal,
+    search: semanticSearch,
+    toggleSemanticMode,
+  } = useSemanticSearch();
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLooping, setIsLooping] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const products = isSemanticMode ? semanticResults : (data?.records ?? []);
+  const total = isSemanticMode ? semanticTotal : (data?.total ?? 0);
+  const isSearchLoading = isSemanticMode ? isSemanticSearching : isLoading;
+
   useEffect(() => {
-    if (!isLoading && products.length > 0) {
+    if (isSemanticMode && params.keyword) {
+      semanticSearch(params.keyword, params.pageNum, params.pageSize);
+    }
+  }, [isSemanticMode, params.keyword, params.pageNum, params.pageSize, semanticSearch]);
+
+  const displayProducts = isSemanticMode ? semanticResults : allProducts;
+
+  useEffect(() => {
+    if (!isLoading && !isSemanticMode && products.length > 0) {
       setAllProducts(prev => {
         if (params.pageNum === 1 || isLooping) {
           return [...products];
@@ -59,7 +78,7 @@ function ProductsPage() {
       });
       setIsLooping(false);
     }
-  }, [products, isLoading, params.pageNum, isLooping]);
+  }, [products, isLoading, params.pageNum, isLooping, isSemanticMode]);
 
   useEffect(() => {
     if (allProducts.length > 0 && token) {
@@ -67,10 +86,10 @@ function ProductsPage() {
     }
   }, [allProducts, token, checkFavorites]);
 
-  const hasNextPage = allProducts.length < total && total > 0;
+  const hasNextPage = !isSemanticMode && allProducts.length < total && total > 0;
 
   useEffect(() => {
-    if (!isLoading && products.length > 0 && hasNextPage) {
+    if (!isLoading && !isSemanticMode && products.length > 0 && hasNextPage) {
       const nextPageNum = (params.pageNum || 1) + 1;
       const nextParams = { ...params, pageNum: nextPageNum };
       queryClient.prefetchQuery({
@@ -90,7 +109,7 @@ function ProductsPage() {
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) {return;}
+    if (!sentinel || isSemanticMode) {return;}
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -133,17 +152,15 @@ function ProductsPage() {
 
   const rows = useMemo(() => {
     const result: (Product | null)[][] = [];
-    for (let i = 0; i < allProducts.length; i += COLUMN_COUNT) {
-      result.push(allProducts.slice(i, i + COLUMN_COUNT));
+    for (let i = 0; i < displayProducts.length; i += COLUMN_COUNT) {
+      result.push(displayProducts.slice(i, i + COLUMN_COUNT));
     }
-    if (isLoading && allProducts.length > 0 && hasNextPage) {
+    if (isSearchLoading && displayProducts.length > 0 && hasNextPage) {
       result.push(Array(COLUMN_COUNT).fill(null));
       result.push(Array(COLUMN_COUNT).fill(null));
     }
     return result;
-  }, [allProducts, COLUMN_COUNT, isLoading, hasNextPage]);
-
-  const parentRef = useRef<HTMLDivElement>(null);
+  }, [displayProducts, COLUMN_COUNT, isSearchLoading, hasNextPage]);
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -164,8 +181,18 @@ function ProductsPage() {
     setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
   }, [resetAllProducts]);
 
-  const handleFilterChange = useCallback((_filter: string) => {
-  }, []);
+  const handleFilterChange = useCallback((filter: string) => {
+    const filterSortMap: Record<string, ProductQueryParams['sort']> = {
+      all: 'newest',
+      new: 'newest',
+      hot: 'popular',
+    };
+    const sort = filterSortMap[filter];
+    if (sort) {
+      resetAllProducts();
+      setParams(prev => ({ ...prev, sort, pageNum: 1 }));
+    }
+  }, [resetAllProducts]);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
     resetAllProducts();
@@ -203,7 +230,7 @@ function ProductsPage() {
     toggleFavorite(productId, shouldFavorite);
   }, [token, navigate, toggleFavorite]);
 
-  if (isLoading && allProducts.length === 0) {
+  if (isSearchLoading && displayProducts.length === 0) {
     return (
       <div className="products-page-wrapper">
         <div className="products-container">
@@ -256,6 +283,10 @@ function ProductsPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <SemanticSearchToggle
+              isActive={isSemanticMode}
+              onToggle={toggleSemanticMode}
+            />
             <button
               className="filter-toggle-btn"
               onClick={() => setIsFilterOpen(true)}
@@ -285,7 +316,7 @@ function ProductsPage() {
           </div>
         </div>
 
-        <div ref={parentRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+        <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
             if (!row) {return null;}
@@ -330,11 +361,11 @@ function ProductsPage() {
           })}
         </div>
 
-        {allProducts.length > 0 && (
+        {displayProducts.length > 0 && (
           <div ref={sentinelRef} className="scroll-sentinel" />
         )}
 
-        {!isLoading && allProducts.length === 0 && (
+        {!isSearchLoading && displayProducts.length === 0 && (
           <div className="no-results-premium">
             <div className="no-results-icon-premium">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -344,7 +375,19 @@ function ProductsPage() {
               </svg>
             </div>
             <h3>未找到相关商品</h3>
-            <p>尝试调整筛选条件或搜索其他关键词</p>
+            {isSemanticMode ? (
+              <>
+                <p>语义搜索暂不可用或未匹配到结果</p>
+                <button
+                  className="semantic-fallback-btn"
+                  onClick={toggleSemanticMode}
+                >
+                  切换到关键词搜索
+                </button>
+              </>
+            ) : (
+              <p>尝试调整筛选条件或搜索其他关键词</p>
+            )}
           </div>
         )}
       </div>

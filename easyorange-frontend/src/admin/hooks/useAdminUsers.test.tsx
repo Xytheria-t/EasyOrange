@@ -54,7 +54,7 @@ describe('useAdminUserDetail', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: { id: 1, username: 'admin', email: 'admin@test.com', userType: '00' },
+          data: { userId: 1, username: 'admin', email: 'admin@test.com', userType: '00' } as const,
           timestamp: Date.now(),
         });
       }),

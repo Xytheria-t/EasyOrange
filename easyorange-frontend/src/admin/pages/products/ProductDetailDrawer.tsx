@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import { useAuditProduct, useAuditLogs } from '../../hooks/useAdminProductAudit';
-import type { AuditLogResponse, AuditDimension } from '../../types/admin';
+import type { AuditLogResponse, AuditDimension, AiReviewResult } from '../../types/admin';
+import { adminApi } from '../../api/adminApi';
+import { AiReviewSuggestion } from '../../../components/ai/AiReviewSuggestion';
 
 interface ProductDetailDrawerProps {
   open: boolean;
@@ -31,16 +33,44 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
   const [state, setState] = useState(createInitialState);
   const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
 
+  const [aiReviewResult, setAiReviewResult] = useState<AiReviewResult | null>(null);
+  const [aiReviewLoading, setAiReviewLoading] = useState(false);
+
   if (stateKey !== prevStateKeyRef.current) {
     prevStateKeyRef.current = stateKey;
     if (stateKey) {
       setState(createInitialState());
+      setAiReviewResult(null);
+      setAiReviewLoading(false);
     }
   }
 
   const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
   const updateStatus = useAuditProduct();
   const auditLogs = useAuditLogs(productId);
+
+  const handleGetAiSuggestion = async () => {
+    if (!product) {return;}
+    setAiReviewLoading(true);
+    setAiReviewResult(null);
+    try {
+      const response = await adminApi.aiReviewProduct(product.productId);
+      setAiReviewResult(response.data);
+    } catch {
+      setAiReviewResult(null);
+    } finally {
+      setAiReviewLoading(false);
+    }
+  };
+
+  const handleApplyAiSuggestion = (action: 'approve' | 'reject') => {
+    if (!product) {return;}
+    if (action === 'approve') {
+      handleApproveWithDimensions();
+    } else {
+      setState(prev => ({ ...prev, showRejectModal: true }));
+    }
+  };
 
   useEffect(() => {
     if (open && productId) {
@@ -408,6 +438,16 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
               borderTop: '1px solid rgba(229,224,219,0.4)',
               background: 'linear-gradient(180deg, rgba(250,248,245,0.5), rgba(250,248,245,0.9))',
             }}>
+              {/* AI 审核建议 */}
+              {product && (
+                <AiReviewSuggestion
+                  result={aiReviewResult}
+                  isLoading={aiReviewLoading}
+                  onGetSuggestion={handleGetAiSuggestion}
+                  onApply={handleApplyAiSuggestion}
+                />
+              )}
+
               {/* 审核维度 */}
               <div>
                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.45rem' }}>

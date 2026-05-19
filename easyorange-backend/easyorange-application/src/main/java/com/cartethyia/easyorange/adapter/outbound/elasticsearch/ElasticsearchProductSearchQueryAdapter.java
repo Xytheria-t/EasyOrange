@@ -38,9 +38,28 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         int page = Math.max(query.pageNum(), 1);
         int size = Math.max(query.pageSize(), 1);
 
-        // Build the search JSON (query + sort + aggregations only; pagination via PageRequest)
         ObjectNode root = objectMapper.createObjectNode();
-        root.set("query", buildQuery(query));
+
+        boolean useKnn = query.useSemanticSearch()
+                && query.queryEmbedding() != null
+                && !query.queryEmbedding().isEmpty();
+
+        if (useKnn) {
+            ObjectNode knn = objectMapper.createObjectNode();
+            knn.put("field", "nameEmbedding");
+            ArrayNode queryVector = knn.putArray("query_vector");
+            for (Float v : query.queryEmbedding()) {
+                queryVector.add(v);
+            }
+            knn.put("k", size * 2);
+            knn.put("num_candidates", 100);
+            root.set("knn", knn);
+
+            root.set("query", buildFilterQuery(query));
+        } else {
+            root.set("query", buildQuery(query));
+        }
+
         root.set("sort", buildSort(query.sort()));
         root.set("aggs", buildAggregations());
 
@@ -95,6 +114,46 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         bool.set("must", must);
 
         // Filter clauses
+        ArrayNode filter = objectMapper.createArrayNode();
+        if (query.status() != null) {
+            filter.add(objectMapper.createObjectNode().set("term",
+                    objectMapper.createObjectNode().put("status", query.status())));
+        }
+        if (query.categoryId() != null) {
+            filter.add(objectMapper.createObjectNode().set("term",
+                    objectMapper.createObjectNode().put("categoryId", query.categoryId())));
+        }
+        if (query.conditionLevel() != null) {
+            filter.add(objectMapper.createObjectNode().set("term",
+                    objectMapper.createObjectNode().put("conditionLevel", query.conditionLevel())));
+        }
+        if (query.minPrice() != null || query.maxPrice() != null) {
+            ObjectNode range = objectMapper.createObjectNode();
+            ObjectNode priceRange = objectMapper.createObjectNode();
+            if (query.minPrice() != null) {
+                priceRange.put("gte", query.minPrice());
+            }
+            if (query.maxPrice() != null) {
+                priceRange.put("lte", query.maxPrice());
+            }
+            range.set("price", priceRange);
+            filter.add(objectMapper.createObjectNode().set("range", range));
+        }
+
+        if (filter.size() > 0) {
+            bool.set("filter", filter);
+        }
+
+        return objectMapper.createObjectNode().set("bool", bool);
+    }
+
+    private JsonNode buildFilterQuery(ProductSearchQuery query) {
+        ObjectNode bool = objectMapper.createObjectNode();
+
+        ArrayNode must = objectMapper.createArrayNode();
+        must.add(objectMapper.createObjectNode().set("match_all", objectMapper.createObjectNode()));
+        bool.set("must", must);
+
         ArrayNode filter = objectMapper.createArrayNode();
         if (query.status() != null) {
             filter.add(objectMapper.createObjectNode().set("term",

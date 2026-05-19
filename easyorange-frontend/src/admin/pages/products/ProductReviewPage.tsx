@@ -259,8 +259,20 @@ export default function ProductReviewPage() {
                 </span>
                 商品审核
               </h1>
-              <p style={{ fontSize: '0.88rem', color: '#9B9590', marginTop: '0.3rem', paddingLeft: '36px' }}>
+              <p style={{ fontSize: '0.88rem', color: '#9B9590', marginTop: '0.3rem', paddingLeft: '36px', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 审核待上架商品，管理通过与驳回
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: '0.75rem', fontWeight: 600,
+                  padding: '0.15rem 0.5rem', borderRadius: 6,
+                  background: 'linear-gradient(135deg, rgba(249,115,22,0.08), rgba(195,155,211,0.06))',
+                  color: '#C2410C',
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                  </svg>
+                  AI 审核
+                </span>
               </p>
             </div>
 

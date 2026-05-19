@@ -1,20 +1,13 @@
 package com.cartethyia.easyorange.user.adapter.outbound.messaging;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
+import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
+import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
 import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * 用户事件发布器 - 适配器实现
- * <p>
- * 职责：
- * <ul>
- *   <li>实现 {@link UserEventPort} 接口</li>
- *   <li>委托给通用的 {@link DomainEventPublisher}</li>
- * </ul>
- */
 @Component
 @RequiredArgsConstructor
 public class UserEventPublisher implements UserEventPort {
@@ -22,7 +15,17 @@ public class UserEventPublisher implements UserEventPort {
     private final DomainEventPublisher domainEventPublisher;
 
     @Override
-    public void publish(BaseDomainEvent event) {
+    public void publishUserRegistered(UserRegisteredEvent event) {
+        domainEventPublisher.publish(event);
+    }
+
+    @Override
+    public void publishPasswordChanged(PasswordChangedEvent event) {
+        domainEventPublisher.publish(event);
+    }
+
+    @Override
+    public void publishForgotPassword(ForgotPasswordEvent event) {
         domainEventPublisher.publish(event);
     }
 }
