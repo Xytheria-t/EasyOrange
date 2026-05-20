@@ -2754,39 +2754,6 @@
   transform: rotate(15deg);
 }
 
-/* View / Sort Options */
-.view-options {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  border-radius: var(--radius-lg);
-  background: rgba(17, 24, 39, 0.04);
-}
-
-.view-btn {
-  padding: 0.5rem 1rem;
-  border-radius: 0.625rem;
-  border: none;
-  background: transparent;
-  color: var(--text-tertiary);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-  white-space: nowrap;
-}
-
-.view-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.view-btn.active {
-  color: var(--white);
-  background: var(--gradient-primary);
-  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
-}
-
 /* ============ FILTER SIDEBAR - PREMIUM ============ */
 .filter-overlay {
   position: fixed;
