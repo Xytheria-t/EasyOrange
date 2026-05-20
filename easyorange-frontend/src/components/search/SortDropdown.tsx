@@ -29,7 +29,7 @@ export default function SortDropdown({ value, onChange }: SortDropdownProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentLabel = SORT_OPTIONS.find(o => o.value === value)?.label ?? '排序方式';
+  const selectedLabel = SORT_OPTIONS.find(o => o.value === value)?.label ?? '排序方式';
 
   return (
     <div ref={ref} className="sort-dropdown relative">
@@ -37,16 +37,20 @@ export default function SortDropdown({ value, onChange }: SortDropdownProps) {
         type="button"
         onClick={() => setOpen(!open)}
         className="sort-dropdown-trigger"
+        aria-expanded={open}
+        aria-haspopup="listbox"
       >
-        <span>{currentLabel}</span>
+        <span>{selectedLabel}</span>
         <ChevronDown size={14} className={`sort-dropdown-arrow ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="sort-dropdown-panel">
+        <div className="sort-dropdown-panel" role="listbox">
           {SORT_OPTIONS.map(option => (
             <button
               key={option.value}
               type="button"
+              role="option"
+              aria-selected={value === option.value}
               className={`sort-dropdown-item ${value === option.value ? 'active' : ''}`}
               onClick={() => {
                 onChange(option.value);
