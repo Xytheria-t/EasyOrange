@@ -7,19 +7,19 @@ interface ToolsPlazaProps {
 }
 
 export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'ai' | 'discount'>('all');
   const [aiMode, setAiMode] = useState(false);
 
-  const handleFilterClick = (filter: string) => {
+  const handleFilterClick = (filter: 'all' | 'ai' | 'discount') => {
+    if (filter === 'ai') {
+      setAiMode(!aiMode);
+      setActiveFilter('ai');
+      onFilterChange?.('ai');
+      return;
+    }
     setActiveFilter(filter);
     setAiMode(false);
     onFilterChange?.(filter);
-  };
-
-  const handleAiClick = () => {
-    setAiMode(!aiMode);
-    setActiveFilter('ai');
-    onFilterChange?.('ai');
   };
 
   return (
@@ -46,7 +46,7 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
       <div className="plaza-tools">
         <button
           className={`plaza-tool plaza-ai-tool ${aiMode ? 'active' : ''}`}
-          onClick={handleAiClick}
+          onClick={() => handleFilterClick('ai')}
         >
           <div className="tool-icon">
             <Sparkles size={16} />
@@ -77,31 +77,6 @@ export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
             <div className="tool-badge">ALL</div>
           </button>
 
-          <button
-            className={`plaza-tool ${activeFilter === 'new' && !aiMode ? 'active' : ''}`}
-            onClick={() => handleFilterClick('new')}
-          >
-            <div className="tool-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
-            </div>
-            <span className="tool-label">最新发布</span>
-            <div className="tool-badge">NEW</div>
-          </button>
-
-          <button
-            className={`plaza-tool ${activeFilter === 'hot' && !aiMode ? 'active' : ''}`}
-            onClick={() => handleFilterClick('hot')}
-          >
-            <div className="tool-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-              </svg>
-            </div>
-            <span className="tool-label">热门商品</span>
-            <div className="tool-badge">HOT</div>
-          </button>
 
           <button
             className={`plaza-tool ${activeFilter === 'discount' && !aiMode ? 'active' : ''}`}

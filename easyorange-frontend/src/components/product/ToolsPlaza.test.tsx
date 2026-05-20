@@ -18,12 +18,12 @@ describe('ToolsPlaza', () => {
     expect(screen.getByText('0 件商品')).toBeInTheDocument();
   });
 
-  it('renders all filter buttons', () => {
+  it('renders filter buttons without sort options', () => {
     render(<ToolsPlaza />);
     expect(screen.getByText('全部')).toBeInTheDocument();
-    expect(screen.getByText('最新发布')).toBeInTheDocument();
-    expect(screen.getByText('热门商品')).toBeInTheDocument();
     expect(screen.getByText('特价优惠')).toBeInTheDocument();
+    expect(screen.queryByText('最新发布')).not.toBeInTheDocument();
+    expect(screen.queryByText('热门商品')).not.toBeInTheDocument();
   });
 
   it('renders AI推荐 button', () => {
@@ -31,11 +31,11 @@ describe('ToolsPlaza', () => {
     expect(screen.getByText('AI推荐')).toBeInTheDocument();
   });
 
-  it('calls onFilterChange when clicking filter', () => {
+  it('calls onFilterChange with "all" when clicking 全部', () => {
     const onFilterChange = vi.fn();
     render(<ToolsPlaza onFilterChange={onFilterChange} />);
-    fireEvent.click(screen.getByText('最新发布'));
-    expect(onFilterChange).toHaveBeenCalledWith('new');
+    fireEvent.click(screen.getByText('全部'));
+    expect(onFilterChange).toHaveBeenCalledWith('all');
   });
 
   it('calls onFilterChange with "ai" when clicking AI button', () => {
@@ -59,9 +59,8 @@ describe('ToolsPlaza', () => {
     expect(screen.queryByText(/AI正在根据您的浏览习惯/)).not.toBeInTheDocument();
   });
 
-  it('sets all active by default', () => {
+  it('sets 全部 active by default', () => {
     render(<ToolsPlaza />);
-    // "全部" should have active class (aiMode=false and activeFilter='all')
     const allBtn = screen.getByText('全部').closest('button');
     expect(allBtn?.className).toContain('active');
   });
@@ -72,7 +71,6 @@ describe('ToolsPlaza', () => {
     fireEvent.click(screen.getByText('AI推荐'));
     expect(onFilterChange).toHaveBeenCalledWith('ai');
     fireEvent.click(screen.getByText('AI推荐'));
-    // On second click, aiMode toggles to false and calls onFilterChange with 'ai' again
     expect(onFilterChange).toHaveBeenCalledTimes(2);
   });
 });
