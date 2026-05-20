@@ -125,16 +125,14 @@ describe('ProductsPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders sort options and filter button', () => {
+  it('renders SortDropdown with default "最新发布" and filter button', () => {
     renderPage();
 
-    expect(screen.getAllByText('最新发布').length).toBeGreaterThanOrEqual(1);
-    const sortButtons = document.querySelectorAll('.view-options .view-btn');
-    expect(sortButtons.length).toBe(4);
-    expect(sortButtons[0]).toHaveTextContent('最新发布');
-    expect(sortButtons[1]).toHaveTextContent('价格从低到高');
-    expect(sortButtons[2]).toHaveTextContent('价格从高到低');
-    expect(sortButtons[3]).toHaveTextContent('最受欢迎');
+    // SortDropdown trigger shows "最新发布" by default (button element)
+    const newestTexts = screen.getAllByText('最新发布');
+    const triggerBtn = newestTexts.find(el => el.tagName === 'SPAN' && el.closest('button'));
+    expect(triggerBtn).toBeTruthy();
+    // Filter button
     expect(screen.getByText('筛选')).toBeInTheDocument();
   });
 
@@ -191,25 +189,34 @@ describe('ProductsPage', () => {
     await user.click(clearBtn);
   });
 
-  it('shows active sort class on the default sort button', () => {
+  it('shows default sort as newest in SortDropdown trigger', () => {
     renderPage();
 
-    const activeBtn = document.querySelector('.view-btn.active');
-    expect(activeBtn).toBeInTheDocument();
-    expect(activeBtn).toHaveTextContent('最新发布');
+    // SortDropdown trigger shows "最新发布" by default
+    const newestTexts = screen.getAllByText('最新发布');
+    const triggerSpan = newestTexts.find(el => el.closest('button'));
+    expect(triggerSpan).toBeTruthy();
   });
 
-  it('changes active sort when a sort option is clicked', async () => {
+  it('opens SortDropdown panel and changes sort on selection', async () => {
     renderPage();
 
     const user = userEvent.setup();
-    const sortButtons = document.querySelectorAll('.view-options .view-btn');
-    expect(sortButtons.length).toBe(4);
+    // Find the SortDropdown trigger button (contains "最新发布" span inside a button)
+    const newestTexts = screen.getAllByText('最新发布');
+    const triggerSpan = newestTexts.find(el => el.closest('button')) as HTMLElement;
+    const trigger = triggerSpan?.closest('button') as HTMLElement;
+    await user.click(trigger);
 
-    const priceAscBtn = sortButtons[1];
-    await user.click(priceAscBtn);
+    // Panel should show all options
+    const priceAscTexts = screen.getAllByText('价格从低到高');
+    const priceAscOption = priceAscTexts.find(el => el.closest('.sort-dropdown-panel')) as HTMLElement;
+    expect(priceAscOption).toBeInTheDocument();
 
-    const activeBtn = document.querySelector('.view-btn.active');
-    expect(activeBtn).toHaveTextContent('价格从低到高');
+    // Click price_asc option in the panel
+    await user.click(priceAscOption);
+
+    // Trigger should update to reflect new value
+    expect(trigger).toHaveTextContent('价格从低到高');
   });
 });

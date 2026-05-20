@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import { useProducts, useCategories, useFavoriteCheck, useColumnCount, useSemanticSearch } from '@/hooks';
 import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -11,6 +11,8 @@ import { productApi } from '@/api/productApi';
 import { normalizeProduct } from '@/utils/product';
 import { PRODUCT_KEYS } from '@/hooks/product/useProducts';
 
+import SortDropdown from '@/components/search/SortDropdown';
+import type { SortOption } from '@/components/search/SortDropdown';
 import { ToolsPlaza } from '@/components/product/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';
@@ -41,6 +43,7 @@ function ProductsPage() {
     isSearching: isSemanticSearching,
     isSemanticMode,
     total: semanticTotal,
+    error: semanticError,
     search: semanticSearch,
     toggleSemanticMode,
   } = useSemanticSearch();
@@ -105,7 +108,7 @@ function ProductsPage() {
         staleTime: 30 * 1000,
       }).catch(() => {});
     }
-  }, [isLoading, products.length, hasNextPage, params, queryClient]);
+  }, [isLoading, products.length, hasNextPage, params.pageNum, queryClient]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -169,29 +172,18 @@ function ProductsPage() {
     overscan: 8,
   });
 
-  const sortOptions: { value: NonNullable<ProductQueryParams['sort']>; label: string }[] = [
-    { value: 'newest', label: '最新发布' },
-    { value: 'price_asc', label: '价格从低到高' },
-    { value: 'price_desc', label: '价格从高到低' },
-    { value: 'popular', label: '最受欢迎' },
-  ];
-
-  const handleSortChange = useCallback((sort: NonNullable<ProductQueryParams['sort']>) => {
+  const handleSortChange = useCallback((sort: SortOption) => {
     resetAllProducts();
     setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
   }, [resetAllProducts]);
 
   const handleFilterChange = useCallback((filter: string) => {
-    const filterSortMap: Record<string, ProductQueryParams['sort']> = {
-      all: 'newest',
-      new: 'newest',
-      hot: 'popular',
-    };
-    const sort = filterSortMap[filter];
-    if (sort) {
-      resetAllProducts();
-      setParams(prev => ({ ...prev, sort, pageNum: 1 }));
+    resetAllProducts();
+    if (filter === 'all') {
+      setParams(prev => ({ ...prev, sort: 'newest', pageNum: 1 }));
     }
+    // 'ai' is handled internally by ToolsPlaza via isSemanticMode toggle
+    // 'discount' is reserved for future use
   }, [resetAllProducts]);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
@@ -302,19 +294,27 @@ function ProductsPage() {
               <span>筛选</span>
             </button>
 
-            <div className="view-options">
-              {sortOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleSortChange(option.value)}
-                  className={`view-btn ${params.sort === option.value ? 'active' : ''}`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            <SortDropdown
+              value={(params.sort ?? 'newest') as SortOption}
+              onChange={handleSortChange}
+            />
           </div>
         </div>
+
+        {isSemanticMode && params.keyword && !semanticError && (
+          <div className="semantic-search-banner">
+            <div className="semantic-banner-icon">
+              <Sparkles size={16} />
+            </div>
+            <div className="semantic-banner-content">
+              <span className="semantic-banner-title">AI 语义搜索</span>
+              <span className="semantic-banner-query">"{params.keyword}"</span>
+            </div>
+            <span className="semantic-banner-badge">
+              找到 {total} 件商品
+            </span>
+          </div>
+        )}
 
         <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
@@ -367,26 +367,58 @@ function ProductsPage() {
 
         {!isSearchLoading && displayProducts.length === 0 && (
           <div className="no-results-premium">
-            <div className="no-results-icon-premium">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-                <path d="M8 8l6 6M14 8l-6 6" />
-              </svg>
+            <div className={`no-results-icon-premium ${semanticError ? 'error' : ''}`}>
+              {semanticError ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" />
+                  <path d="M8 8l6 6M14 8l-6 6" />
+                </svg>
+              )}
             </div>
-            <h3>未找到相关商品</h3>
-            {isSemanticMode ? (
+            {semanticError ? (
               <>
-                <p>语义搜索暂不可用或未匹配到结果</p>
-                <button
-                  className="semantic-fallback-btn"
-                  onClick={toggleSemanticMode}
-                >
-                  切换到关键词搜索
-                </button>
+                <h3>语义搜索暂不可用</h3>
+                <p className="no-results-error">{semanticError}</p>
+                <div className="no-results-actions">
+                  <button
+                    className="semantic-retry-btn"
+                    onClick={() => params.keyword && semanticSearch(params.keyword)}
+                  >
+                    重试
+                  </button>
+                  <button
+                    className="semantic-fallback-btn"
+                    onClick={toggleSemanticMode}
+                  >
+                    切换到关键词搜索
+                  </button>
+                </div>
+              </>
+            ) : isSemanticMode ? (
+              <>
+                <h3>未找到相关商品</h3>
+                <p>语义搜索未匹配到结果，试试其他关键词</p>
+                <div className="no-results-actions">
+                  <button
+                    className="semantic-fallback-btn"
+                    onClick={toggleSemanticMode}
+                  >
+                    切换到关键词搜索
+                  </button>
+                </div>
               </>
             ) : (
-              <p>尝试调整筛选条件或搜索其他关键词</p>
+              <>
+                <h3>未找到相关商品</h3>
+                <p>尝试调整筛选条件或搜索其他关键词</p>
+              </>
             )}
           </div>
         )}
