@@ -1,20 +1,28 @@
 import { useState } from 'react';
 import { Sparkles, Zap } from 'lucide-react';
 
+export type ToolsPlazaFilter = 'all' | 'ai' | 'discount';
+
 interface ToolsPlazaProps {
-  onFilterChange?: (filter: string) => void;
+  onFilterChange?: (filter: ToolsPlazaFilter) => void;
   total?: number;
 }
 
 export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
-  const [activeFilter, setActiveFilter] = useState<'all' | 'ai' | 'discount'>('all');
+  const [activeFilter, setActiveFilter] = useState<ToolsPlazaFilter>('all');
   const [aiMode, setAiMode] = useState(false);
 
-  const handleFilterClick = (filter: 'all' | 'ai' | 'discount') => {
+  const handleFilterClick = (filter: ToolsPlazaFilter) => {
     if (filter === 'ai') {
-      setAiMode(!aiMode);
-      setActiveFilter('ai');
-      onFilterChange?.('ai');
+      const nextAiMode = !aiMode;
+      setAiMode(nextAiMode);
+      if (nextAiMode) {
+        setActiveFilter('ai');
+        onFilterChange?.('ai');
+      } else {
+        setActiveFilter('all');
+        onFilterChange?.('all');
+      }
       return;
     }
     setActiveFilter(filter);

@@ -65,12 +65,14 @@ describe('ToolsPlaza', () => {
     expect(allBtn?.className).toContain('active');
   });
 
-  it('toggles AI mode on second click', () => {
+  it('toggles AI mode on second click and falls back to default', () => {
     const onFilterChange = vi.fn();
     render(<ToolsPlaza onFilterChange={onFilterChange} />);
     fireEvent.click(screen.getByText('AI推荐'));
     expect(onFilterChange).toHaveBeenCalledWith('ai');
     fireEvent.click(screen.getByText('AI推荐'));
+    // Second click should call onFilterChange with 'all' (fallback to default)
+    expect(onFilterChange).toHaveBeenLastCalledWith('all');
     expect(onFilterChange).toHaveBeenCalledTimes(2);
   });
 });
