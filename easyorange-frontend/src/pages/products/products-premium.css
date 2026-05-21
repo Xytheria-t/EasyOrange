@@ -3405,12 +3405,6 @@
     padding: 1rem;
   }
 
-  .view-options {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 2px;
-  }
-
   .plaza-tools {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
