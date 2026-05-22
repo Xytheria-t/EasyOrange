@@ -1,4 +1,4 @@
-export type UserType = string;
+export type AdminUserType = string;
 export type UserStatus = string;
 export type ProductStatus = number;
 
@@ -135,7 +135,7 @@ export interface PageData<T> {
 }
 
 export interface ActionResponse {
-  success: boolean;
+  isSuccess: boolean;
   message: string;
 }
 
@@ -372,7 +372,7 @@ export interface UserUnlockRequest {
 // ==================== AI Review Types ====================
 
 export interface AiReviewResult {
-  suggestedAction: boolean;
+  isApproved: boolean;
   suggestedActionDesc: string;
   confidenceScore: number;
   riskFlags: string[];

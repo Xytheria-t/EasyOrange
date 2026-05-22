@@ -89,9 +89,9 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
     }
   };
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) {return '—';}
-    return new Date(dateStr).toLocaleString('zh-CN', {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) {return '—';}
+    return new Date(dateString).toLocaleString('zh-CN', {
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
@@ -101,9 +101,9 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
 
   if (!open || !productId) {return null;}
 
-  const p = product as AdminProduct | undefined;
-  const images = p?.images ?? [];
-  const actions = getAvailableActions(p?.status ?? null);
+  const productData = product as AdminProduct | undefined;
+  const images = productData?.images ?? [];
+  const actions = getAvailableActions(productData?.status ?? null);
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
@@ -195,7 +195,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
               }} />
               <span style={{ fontSize: '0.87rem', color: '#9B9590' }}>加载中...</span>
             </div>
-          ) : p ? (
+          ) : productData ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Image gallery */}
               {images.length > 0 && (
@@ -213,7 +213,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                     onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && images[selectedImage]) { setPreviewImage(images[selectedImage]); } }}
                   >
                     {images[selectedImage] ? (
-                      <img src={images[selectedImage]} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={images[selectedImage]} alt={productData.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#B5AEA8' }}>
                         <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -251,7 +251,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                   fontSize: '1.15rem', fontWeight: 700, color: '#2A2520',
                   lineHeight: 1.3, marginBottom: '0.35rem',
                 }}>
-                  {p.name}
+                  {productData.name}
                 </h3>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
                   <span style={{
@@ -261,11 +261,11 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',
                   }}>
-                    {formatPrice(p.price)}
+                    {formatPrice(productData.price)}
                   </span>
-                  {p.originalPrice && p.originalPrice > (p.price ?? 0) && (
+                  {productData.originalPrice && productData.originalPrice > (productData.price ?? 0) && (
                     <span style={{ fontSize: '0.85rem', color: '#B5AEA8', textDecoration: 'line-through' }}>
-                      {formatPrice(p.originalPrice)}
+                      {formatPrice(productData.originalPrice)}
                     </span>
                   )}
                 </div>
@@ -273,12 +273,12 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
 
               {/* Info grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <InfoCell label="新旧程度" value={conditionLabels[p.conditionLevel || 8] || '未知'} />
-                <InfoCell label="分类" value={p.categoryName || '—'} />
-                <InfoCell label="卖家" value={p.sellerName || '—'} />
-                <InfoCell label="浏览量" value={p.viewCount ?? 0} />
-                <InfoCell label="发布时间" value={formatDate(p.createTime)} />
-                <InfoCell label="更新时间" value={formatDate(p.updateTime)} />
+                <InfoCell label="新旧程度" value={conditionLabels[productData.conditionLevel || 8] || '未知'} />
+                <InfoCell label="分类" value={productData.categoryName || '—'} />
+                <InfoCell label="卖家" value={productData.sellerName || '—'} />
+                <InfoCell label="浏览量" value={productData.viewCount ?? 0} />
+                <InfoCell label="发布时间" value={formatDate(productData.createTime)} />
+                <InfoCell label="更新时间" value={formatDate(productData.updateTime)} />
               </div>
 
               {/* Status bar */}
@@ -294,12 +294,12 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                   padding: '0.2rem 0.6rem', borderRadius: 6,
                   background: 'rgba(249,115,22,0.06)',
                 }}>
-                  {p.statusDesc ?? '未知'}
+                  {productData.statusDesc ?? '未知'}
                 </span>
               </div>
 
               {/* Description */}
-              {p.description && (
+              {productData.description && (
                 <div style={{
                   padding: '0.85rem 1rem',
                   background: 'linear-gradient(135deg, rgba(249,115,22,0.03), rgba(195,155,211,0.02))',
@@ -307,19 +307,19 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                   border: '1px solid rgba(229,224,219,0.35)',
                 }}>
                   <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.35rem' }}>商品描述</p>
-                  <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{p.description}</p>
+                  <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{productData.description}</p>
                 </div>
               )}
 
               {/* Location */}
-              {p.location && (
+              {productData.location && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <span style={{ color: '#9B9590' }}>交易地点：</span>
-                  <span style={{ color: '#2A2520', fontWeight: 600 }}>{p.location}</span>
+                  <span style={{ color: '#2A2520', fontWeight: 600 }}>{productData.location}</span>
                 </div>
               )}
             </div>
@@ -332,7 +332,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
         </div>
 
         {/* Footer - Status actions */}
-        {p && actions.length > 0 && (
+        {productData && actions.length > 0 && (
           <div style={{
             display: 'flex', gap: '0.65rem',
             padding: '1rem 1.5rem',

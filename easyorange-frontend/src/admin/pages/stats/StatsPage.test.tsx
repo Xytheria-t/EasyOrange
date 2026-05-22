@@ -21,13 +21,13 @@ vi.mock('../../hooks', () => ({
 
 // Mock TrendChart
 vi.mock('../dashboard/charts/TrendChart', () => ({
-  default: ({ data: _data, compact, height }: { data: TrendItem[]; compact: boolean; height: number }) => (
-    <div data-testid="trend-chart" data-compact={compact} data-height={height}>
+  default: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
+    <div data-testid="trend-chart" data-compact={isCompact} data-height={height}>
       TrendChart
     </div>
   ),
-  TrendChart: ({ data: _data, compact, height }: { data: TrendItem[]; compact: boolean; height: number }) => (
-    <div data-testid="trend-chart" data-compact={compact} data-height={height}>
+  TrendChart: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
+    <div data-testid="trend-chart" data-compact={isCompact} data-height={height}>
       TrendChart
     </div>
   ),

@@ -6,7 +6,12 @@ import { normalizeProduct } from '@/utils/product';
 export const PRODUCT_KEYS = {
   all: ['products'] as const,
   lists: () => [...PRODUCT_KEYS.all, 'list'] as const,
-  list: (params: ProductQueryParams) => [...PRODUCT_KEYS.lists(), params] as const,
+  list: (params: ProductQueryParams) =>
+    [...PRODUCT_KEYS.lists(),
+      params.pageNum, params.pageSize, params.keyword,
+      params.categoryId, params.sort, params.priceMin,
+      params.priceMax, params.conditions,
+    ] as const,
   details: () => [...PRODUCT_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...PRODUCT_KEYS.details(), id] as const,
 };
@@ -100,5 +105,20 @@ export function useSimilarProducts(productId: string) {
     },
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useMyProducts(params: { pageNum?: number; pageSize?: number; status?: number } = {}) {
+  return useQuery<PageResult<Product>>({
+    queryKey: [...PRODUCT_KEYS.all, 'my', params.pageNum, params.pageSize, params.status],
+    queryFn: async () => {
+      const response = await productApi.getMyProducts(params);
+      const data = response.data;
+      return {
+        ...data,
+        records: (data.records ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>)),
+      };
+    },
+    staleTime: 2 * 60 * 1000,
   });
 }

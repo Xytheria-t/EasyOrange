@@ -6,7 +6,7 @@ import { AdminSelect } from '../../components/AdminSelect';
 import { useAdminReports, useHandleReport } from '../../hooks';
 import type { AdminReport } from '../../types/admin';
 
-const statusFilterOptions = [
+const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
   { value: '0', label: '待处理' },
   { value: '1', label: '处理中' },
@@ -14,7 +14,7 @@ const statusFilterOptions = [
   { value: '3', label: '已驳回' },
 ];
 
-const typeFilterOptions = [
+const TYPE_FILTER_OPTIONS = [
   { value: '', label: '全部类型' },
   { value: '0', label: '违规商品' },
   { value: '1', label: '虚假信息' },
@@ -57,8 +57,8 @@ export default function ReportManagePage() {
     if (e.key === 'Enter') {handleSearch();}
   }, [handleSearch]);
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
   const handleConfirmAction = async () => {
     try {
@@ -87,10 +87,10 @@ export default function ReportManagePage() {
       key: 'reason',
       title: '类型',
       render: () => {
-        const t = TYPE_LABELS[0];
+        const typeLabel = TYPE_LABELS[0];
         return (
-          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: t.color }}>
-            {t.emoji} {t.label}
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: typeLabel.color }}>
+            {typeLabel.emoji} {typeLabel.label}
           </span>
         );
       },
@@ -128,9 +128,9 @@ export default function ReportManagePage() {
       title: '举报时间',
       sortable: true,
       render: (value) => {
-        const timeStr = value as string | undefined;
+        const timeString = value as string | undefined;
         return (
-          <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{timeStr ? formatDate(timeStr) : '-'}</span>
+          <span style={{ color: '#9B9590', fontSize: '0.84rem' }}>{timeString ? formatDate(timeString) : '-'}</span>
         );
       },
     },
@@ -281,9 +281,9 @@ export default function ReportManagePage() {
               状态
             </span>
             <AdminSelect
-              options={statusFilterOptions}
+              options={STATUS_FILTER_OPTIONS}
               value={statusFilter}
-              onChange={(val) => { setStatusFilter(val); setPage(1); }}
+              onChange={(value) => { setStatusFilter(value); setPage(1); }}
             />
           </div>
           <div style={{ width: 1, height: 20, background: '#E5E0DB', flexShrink: 0 }} />
@@ -293,9 +293,9 @@ export default function ReportManagePage() {
               类型
             </span>
             <AdminSelect
-              options={typeFilterOptions}
+              options={TYPE_FILTER_OPTIONS}
               value={typeFilter}
-              onChange={(val) => { setTypeFilter(val); setPage(1); }}
+              onChange={(value) => { setTypeFilter(value); setPage(1); }}
             />
           </div>
           <div style={{ flex: 1 }} />
@@ -329,12 +329,12 @@ export default function ReportManagePage() {
       </div>
 
       <ConfirmModal
-        open={confirmModal.open}
+        isOpen={confirmModal.open}
         title={confirmModal.action === 'resolve' ? '确认处理举报' : '确认驳回举报'}
         content={confirmModal.action === 'resolve' ? '确定要处理该举报吗？将对举报对象采取相应措施。' : '确定要驳回该举报吗？驳回后举报将被关闭。'}
         confirmText={confirmModal.action === 'resolve' ? '确认处理' : '确认驳回'}
         onConfirm={handleConfirmAction}
-        loading={handleReport.isPending}
+        isLoading={handleReport.isPending}
         onCancel={() => setConfirmModal({ open: false, reportId: 0, action: 'resolve' })}
         variant={confirmModal.action === 'resolve' ? 'warning' : 'info'}
       />

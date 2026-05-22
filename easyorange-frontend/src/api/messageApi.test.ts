@@ -12,7 +12,7 @@ describe('messageApi', () => {
   });
 
   it('getList calls request with correct path', () => {
-    messageApi.getList();
+    messageApi.getMessages();
     expect(mockRequest).toHaveBeenCalledWith('/messages/list', { method: 'GET' });
   });
 
@@ -52,7 +52,7 @@ describe('messageApi', () => {
   });
 
   it('delete calls request with DELETE', () => {
-    messageApi.delete('msg-1');
+    messageApi.deleteMessage('msg-1');
     expect(mockRequest).toHaveBeenCalledWith('/messages/msg-1', {
       method: 'DELETE',
     });
@@ -68,7 +68,7 @@ describe('messageApi', () => {
   });
 
   it('recall calls request with PUT', () => {
-    messageApi.recall('msg-1');
+    messageApi.recallMessage('msg-1');
     expect(mockRequest).toHaveBeenCalledWith('/messages/msg-1/recall', {
       method: 'PUT',
     });

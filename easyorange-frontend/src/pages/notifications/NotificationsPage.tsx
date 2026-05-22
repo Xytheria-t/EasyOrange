@@ -27,8 +27,8 @@ function getNotificationIcon(title: string) {
   return { icon: Info, color: '#6B7280' };
 }
 
-function formatTime(timeStr: string): string {
-  const date = new Date(timeStr);
+function formatTime(timeString: string): string {
+  const date = new Date(timeString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
@@ -54,8 +54,8 @@ export default function NotificationsPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications', page],
     queryFn: async () => {
-      const res = await notificationApi.getNotifications(page, PAGE_SIZE);
-      return res.data;
+      const response = await notificationApi.getNotifications(page, PAGE_SIZE);
+      return response.data;
     },
   });
 

@@ -7,7 +7,7 @@ describe('ConfirmModal', () => {
   it('renders title and content', () => {
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认删除"
         content="确定要删除吗？"
         onConfirm={() => {}}
@@ -21,7 +21,7 @@ describe('ConfirmModal', () => {
   it('renders nothing when open is false', () => {
     const { container } = render(
       <ConfirmModal
-        open={false}
+        isOpen={false}
         title="确认删除"
         content="确定要删除吗？"
         onConfirm={() => {}}
@@ -35,7 +35,7 @@ describe('ConfirmModal', () => {
     const onConfirm = vi.fn();
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认"
         content="确定？"
         onConfirm={onConfirm}
@@ -52,7 +52,7 @@ describe('ConfirmModal', () => {
     const onCancel = vi.fn();
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认"
         content="确定？"
         onConfirm={() => {}}
@@ -67,7 +67,7 @@ describe('ConfirmModal', () => {
     const onCancel = vi.fn();
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认"
         content="确定？"
         onConfirm={() => {}}
@@ -81,7 +81,7 @@ describe('ConfirmModal', () => {
   it('uses custom confirmText and cancelText', () => {
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认"
         content="确定？"
         confirmText="Yes"
@@ -97,7 +97,7 @@ describe('ConfirmModal', () => {
   it('has dialog role', () => {
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认"
         content="确定？"
         onConfirm={() => {}}
@@ -110,12 +110,12 @@ describe('ConfirmModal', () => {
   it('shows loading state', () => {
     render(
       <ConfirmModal
-        open={true}
+        isOpen={true}
         title="确认"
         content="确定？"
         onConfirm={() => {}}
         onCancel={() => {}}
-        loading={true}
+        isLoading={true}
       />,
     );
     expect(screen.getByText('处理中...')).toBeInTheDocument();

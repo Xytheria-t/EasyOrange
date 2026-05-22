@@ -21,7 +21,7 @@ export interface AutoListingResult {
 }
 
 export interface AiReviewResult {
-    suggestedAction: boolean;
+    isApproved: boolean;
     suggestedActionDesc: string;
     confidenceScore: number;
     riskFlags: string[];
@@ -49,7 +49,7 @@ export interface QaRequest {
 
 export interface QaResponse {
     answer: string;
-    confidence: boolean;
+    hasConfidence: boolean;
 }
 
 export interface PriceSuggestionParams {
@@ -58,6 +58,20 @@ export interface PriceSuggestionParams {
     categoryName?: string;
     conditionLevel?: number;
     originalPrice?: number;
+}
+
+export interface CopyGenerationParams {
+    productName: string;
+    categoryName?: string;
+    conditionLevel?: number;
+    originalPrice?: string;
+    style?: 'standard' | 'detailed' | 'concise' | 'emotional';
+}
+
+export interface CopyGenerationResult {
+    title: string;
+    description: string;
+    style: string;
 }
 
 export const aiApi = {
@@ -86,6 +100,13 @@ export const aiApi = {
         return request<QaResponse>('/ai/qa', {
             method: 'POST',
             body: data
+        });
+    },
+
+    generateCopy(params: CopyGenerationParams) {
+        return request<CopyGenerationResult>('/ai/generate-copy', {
+            method: 'POST',
+            params: params as unknown as Record<string, unknown>
         });
     }
 };

@@ -65,18 +65,18 @@ describe('ChatInputBar', () => {
   });
 
   it('textarea is disabled when disabled prop is true', () => {
-    render(<ChatInputBar onSend={() => {}} onTyping={() => {}} disabled={true} />);
+    render(<ChatInputBar onSend={() => {}} onTyping={() => {}} isDisabled={true} />);
     expect(screen.getByPlaceholderText('')).toBeDisabled();
   });
 
   it('send button is disabled when disabled prop is true', () => {
-    render(<ChatInputBar onSend={() => {}} onTyping={() => {}} disabled={true} />);
+    render(<ChatInputBar onSend={() => {}} onTyping={() => {}} isDisabled={true} />);
     expect(screen.getByLabelText('发送')).toBeDisabled();
   });
 
   it('does not call onSend when disabled', async () => {
     const onSend = vi.fn();
-    render(<ChatInputBar onSend={onSend} onTyping={() => {}} disabled={true} />);
+    render(<ChatInputBar onSend={onSend} onTyping={() => {}} isDisabled={true} />);
     await userEvent.click(screen.getByLabelText('发送'));
     expect(onSend).not.toHaveBeenCalled();
   });

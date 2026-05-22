@@ -579,21 +579,6 @@
   color: white;
 }
 
-.demo-badge {
-  position: absolute;
-  top: 1rem;
-  right: 3.5rem;
-  padding: 0.25rem 0.5rem;
-  background: rgba(107, 114, 128, 0.85);
-  backdrop-filter: blur(4px);
-  border-radius: var(--radius-md);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: white;
-  z-index: 2;
-  cursor: help;
-}
-
 .match-score {
   position: absolute;
   top: 1rem;

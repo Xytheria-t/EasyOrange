@@ -4,8 +4,7 @@ import {
   Package, Edit, Eye, ChevronRight, Plus,
   Clock, CheckCircle, XCircle, RefreshCw, ShoppingBag
 } from 'lucide-react';
-import { useCurrentUser } from '@/hooks';
-import { useProducts } from '@/hooks/product/useProducts';
+import { useMyProducts } from '@/hooks/product/useProducts';
 import { STATUS_LABEL_MAP, PRODUCT_STATUS_CODE } from '@/constants/product';
 import type { Product, ProductStatus } from '@/types';
 
@@ -69,21 +68,19 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
 
 function MyProductsPage() {
   const navigate = useNavigate();
-  const { data: user } = useCurrentUser();
   const [activeTab, setActiveTab] = useState('all');
 
   const queryParams = useMemo(() => {
     const tab = STATUS_OPTIONS.find(t => t.id === activeTab);
     const code = tab?.status ? Number(Object.entries(PRODUCT_STATUS_CODE).find(([, v]) => v === tab.status)?.[0]) : undefined;
     return {
-      sellerId: user?.userId,
       pageNum: 1,
       pageSize: 50,
-      ...(code !== undefined ? { status: code as unknown as ProductStatus } : {}),
+      ...(code !== undefined ? { status: code } : {}),
     };
-  }, [activeTab, user?.userId]);
+  }, [activeTab]);
 
-  const { data, isLoading, isError, refetch } = useProducts(queryParams);
+  const { data, isLoading, isError, refetch } = useMyProducts(queryParams);
 
   const products = useMemo(() => data?.records ?? [], [data]);
 

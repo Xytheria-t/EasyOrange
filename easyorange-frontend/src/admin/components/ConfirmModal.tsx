@@ -2,14 +2,14 @@ import { useEffect, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 export interface ConfirmModalProps {
-  open: boolean;
+  isOpen: boolean;
   title: string;
   content: ReactNode;
   confirmText?: string;
   cancelText?: string;
   onConfirm: () => Promise<void> | void;
   onCancel: () => void;
-  loading?: boolean;
+  isLoading?: boolean;
   confirmDisabled?: boolean;
   variant?: 'danger' | 'warning' | 'info';
 }
@@ -54,14 +54,14 @@ const VARIANT_CONFIG = {
 };
 
 export function ConfirmModal({
-  open,
+  isOpen,
   title,
   content,
   confirmText = '确认',
   cancelText = '取消',
   onConfirm,
   onCancel,
-  loading = false,
+  isLoading = false,
   variant = 'danger',
 }: ConfirmModalProps) {
   const handleConfirm = useCallback(async () => {
@@ -70,16 +70,16 @@ export function ConfirmModal({
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open && !loading) {
+      if (e.key === 'Escape' && isOpen && !isLoading) {
         onCancel();
       }
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [open, loading, onCancel]);
+  }, [isOpen, isLoading, onCancel]);
 
   useEffect(() => {
-    if (open) {
+    if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -87,11 +87,11 @@ export function ConfirmModal({
     return () => {
       document.body.style.overflow = '';
     };
-  }, [open]);
+  }, [isOpen]);
 
-  if (!open) {return null;}
+  if (!isOpen) {return null;}
 
-  const cfg = VARIANT_CONFIG[variant];
+  const variantConfig = VARIANT_CONFIG[variant];
 
   return createPortal(
     <div style={{
@@ -108,8 +108,8 @@ export function ConfirmModal({
           WebkitBackdropFilter: 'blur(6px)',
           animation: 'confirmFadeIn 0.2s ease-out',
         }}
-        onClick={() => !loading && onCancel()}
-        onKeyDown={(e) => e.key === 'Enter' && !loading && onCancel()}
+        onClick={() => !isLoading && onCancel()}
+        onKeyDown={(e) => e.key === 'Enter' && !isLoading && onCancel()}
         aria-label="关闭对话框"
       />
 
@@ -138,9 +138,9 @@ export function ConfirmModal({
             <div style={{
               width: 44, height: 44, borderRadius: 14, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: cfg.iconBg, color: cfg.iconColor,
+              background: variantConfig.iconBg, color: variantConfig.iconColor,
             }}>
-              {cfg.icon}
+              {variantConfig.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <h3 id="confirm-modal-title" style={{
@@ -166,35 +166,35 @@ export function ConfirmModal({
         }}>
           <button
             onClick={onCancel}
-            disabled={loading}
+            disabled={isLoading}
             style={{
               padding: '0.6rem 1.2rem', borderRadius: 12,
               border: '1.5px solid #E5E0DB', background: '#fff',
               fontSize: '0.87rem', fontWeight: 600, color: '#6B6460',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s ease', opacity: loading ? 0.5 : 1,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              transition: 'all 0.15s ease', opacity: isLoading ? 0.5 : 1,
             }}
-            onMouseEnter={(e) => { if (!loading) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
+            onMouseEnter={(e) => { if (!isLoading) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
             onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
           >
             {cancelText}
           </button>
           <button
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={isLoading}
             style={{
               padding: '0.6rem 1.5rem', borderRadius: 12,
               border: 'none',
-              background: loading ? '#D6CEC5' : cfg.gradient,
+              background: isLoading ? '#D6CEC5' : variantConfig.gradient,
               fontSize: '0.87rem', fontWeight: 600, color: '#fff',
-              cursor: loading ? 'not-allowed' : 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
-              boxShadow: loading ? 'none' : `0 3px 12px ${cfg.shadow}`,
+              boxShadow: isLoading ? 'none' : `0 3px 12px ${variantConfig.shadow}`,
             }}
-            onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 5px 18px ${cfg.hoverShadow}`; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = loading ? 'none' : `0 3px 12px ${cfg.shadow}`; }}
+            onMouseEnter={(e) => { if (!isLoading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = `0 5px 18px ${variantConfig.hoverShadow}`; } }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = isLoading ? 'none' : `0 3px 12px ${variantConfig.shadow}`; }}
           >
-            {loading ? (
+            {isLoading ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 <svg style={{ width: 15, height: 15, animation: 'spin 0.7s linear infinite' }} fill="none" viewBox="0 0 24 24">
                   <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />

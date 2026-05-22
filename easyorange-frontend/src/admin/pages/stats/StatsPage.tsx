@@ -170,7 +170,7 @@ export default function StatsPage() {
               </svg>
               月度趋势
             </h3>
-            <TrendChart data={trend} compact={false} height={280} />
+            <TrendChart data={trend} isCompact={false} height={280} />
           </div>
 
           {/* Category distribution — powered by useAdminCategories() */}

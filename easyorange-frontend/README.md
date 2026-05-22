@@ -42,7 +42,7 @@ easyorange-frontend/
 │   │   └── styles/           # admin.css, admin-layout.css
 │   ├── components/           # 可复用组件
 │   │   ├── layout/           # 布局组件
-│   │   ├── ai/               # AI 组件（AiPricingBadge, AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, CreditScoreCard）
+│   │   ├── ai/               # AI 组件（AiPricingBadge, AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, AiCopyGeneration, CreditScoreCard）
 │   │   ├── sections/         # 页面区块组件
 │   │   ├── profile/          # 个人中心组件
 │   │   ├── products/         # 商品相关组件
@@ -55,6 +55,7 @@ easyorange-frontend/
 │   │   ├── useAutoListing.ts # 拍照上架 Hook
 │   │   ├── useSemanticSearch.ts # 语义搜索 Hook
 │   │   ├── useAiQa.ts        # AI 问答 Hook
+│   │   ├── useAiCopyGeneration.ts # AI 文案生成 Hook
 │   │   ├── auth/             # 认证相关 Hooks
 │   │   ├── order/            # 订单相关 Hooks
 │   │   ├── product/          # 商品相关 Hooks
@@ -179,6 +180,7 @@ npm run preview
 - **AI 审核** - AI 分析商品信息给出审核建议（AiReviewSuggestion + useAdminProductAudit）
 - **语义搜索** - 基于语义向量搜索相似商品（SemanticSearchToggle + useSemanticSearch）
 - **智能问答** - 基于商品上下文回答买家问题（AiQaPanel + useAiQa）
+- **智能文案** - 基于商品信息自动生成商品描述和标题（AiCopyGeneration + useAiCopyGeneration）
 - **信用评分** - 基于交易数据的信用评分体系（CreditScoreCard + creditApi）
 
 ## 环境变量

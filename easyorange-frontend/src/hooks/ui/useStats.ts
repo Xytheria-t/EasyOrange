@@ -5,8 +5,8 @@ export function usePlatformStats() {
   return useQuery<PlatformStats>({
     queryKey: ['platform', 'stats'],
     queryFn: async () => {
-      const res = await statsApi.getPlatformStats();
-      return res.data ?? { activeUsers: 0, onlineProducts: 0, completedOrders: 0 };
+      const response = await statsApi.getPlatformStats();
+      return response.data ?? { activeUsers: 0, onlineProducts: 0, completedOrders: 0 };
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

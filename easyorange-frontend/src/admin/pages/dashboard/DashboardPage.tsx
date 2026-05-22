@@ -999,7 +999,7 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div style={{ padding: '0.75rem 0.5rem' }}>
-              <TrendChart data={trend} compact height={180} />
+              <TrendChart data={trend} isCompact height={180} />
             </div>
           </section>
 

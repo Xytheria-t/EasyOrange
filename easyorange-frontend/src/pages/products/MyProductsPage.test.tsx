@@ -6,17 +6,12 @@ import type { Product } from '@/types';
 import MyProductsPage from './MyProductsPage';
 
 // ── Hoisted mock functions ──
-const mockUseCurrentUser = vi.hoisted(() => vi.fn());
-const mockUseProducts = vi.hoisted(() => vi.fn());
+const mockUseMyProducts = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
 
 // ── Module mocks ──
-vi.mock('@/hooks', () => ({
-  useCurrentUser: mockUseCurrentUser,
-}));
-
 vi.mock('@/hooks/product/useProducts', () => ({
-  useProducts: mockUseProducts,
+  useMyProducts: mockUseMyProducts,
 }));
 
 vi.mock('react-router-dom', async () => {
@@ -59,16 +54,12 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockUseCurrentUser.mockReturnValue({
-    data: { userId: 'user1', username: 'testuser' },
-    isLoading: false,
-  });
 });
 
 // ── Tests ──
 describe('MyProductsPage', () => {
   it('renders the page title "我发布的商品"', () => {
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: [], total: 0, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,
@@ -84,7 +75,7 @@ describe('MyProductsPage', () => {
   });
 
   it('shows loading state', () => {
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: undefined,
       isLoading: true,
       isError: false,
@@ -98,7 +89,7 @@ describe('MyProductsPage', () => {
 
   it('shows error state with retry button', async () => {
     const mockRefetch = vi.fn();
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
@@ -117,7 +108,7 @@ describe('MyProductsPage', () => {
   });
 
   it('shows empty state with "还没有发布商品"', () => {
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: [], total: 0, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,
@@ -139,7 +130,7 @@ describe('MyProductsPage', () => {
       createMockProduct({ id: '2', title: '商品二', status: 'PENDING_REVIEW' }),
       createMockProduct({ id: '3', title: '商品三', status: 'SOLD' }),
     ];
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: products, total: 3, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,
@@ -161,7 +152,7 @@ describe('MyProductsPage', () => {
   });
 
   it('renders status filter tabs', () => {
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: [], total: 0, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,
@@ -181,7 +172,7 @@ describe('MyProductsPage', () => {
 
   it('navigates to edit page when edit button is clicked', async () => {
     const products = [createMockProduct({ id: '1', title: '可编辑商品' })];
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: products, total: 1, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,
@@ -198,7 +189,7 @@ describe('MyProductsPage', () => {
 
   it('navigates to product detail when view button is clicked', async () => {
     const products = [createMockProduct({ id: '2', title: '可查看商品' })];
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: products, total: 1, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,
@@ -214,7 +205,7 @@ describe('MyProductsPage', () => {
   });
 
   it('navigates to publish page when "发布新商品" button is clicked', async () => {
-    mockUseProducts.mockReturnValue({
+    mockUseMyProducts.mockReturnValue({
       data: { records: [], total: 0, pages: 1, current: 1, size: 20 },
       isLoading: false,
       isError: false,

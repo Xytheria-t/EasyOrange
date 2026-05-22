@@ -37,7 +37,7 @@ export function useOrderDetail(id: string) {
   return useQuery<OrderDetail>({
     queryKey: ORDER_KEYS.detail(id),
     queryFn: async () => {
-      const response = await orderApi.getDetail(id);
+      const response = await orderApi.getOrderDetail(id);
       return response.data;
     },
     enabled: !!id,
@@ -64,7 +64,7 @@ export function useCancelOrder() {
 
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
-      await orderApi.cancel(id, reason);
+      await orderApi.cancelOrder(id, reason);
     },
     onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: ORDER_KEYS.all });
@@ -116,7 +116,7 @@ export function usePayOrder() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await orderApi.pay(id);
+      await orderApi.payOrder(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
@@ -129,7 +129,7 @@ export function useShipOrder() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await orderApi.ship(id);
+      await orderApi.shipOrder(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
@@ -142,7 +142,7 @@ export function useReceiveOrder() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await orderApi.receive(id);
+      await orderApi.receiveOrder(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });
@@ -155,7 +155,7 @@ export function useRefundOrder() {
 
   return useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
-      await orderApi.refund(id, reason);
+      await orderApi.refundOrder(id, reason);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ORDER_KEYS.all });

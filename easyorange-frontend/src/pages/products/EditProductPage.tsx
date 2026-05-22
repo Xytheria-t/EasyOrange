@@ -107,8 +107,7 @@ function EditProductPage() {
                 if (result.data?.url) {
                     updateField('imageUrls', [...form.imageUrls, result.data.url]);
                 }
-            } catch (error) {
-                console.error('图片上传失败:', error);
+            } catch {
             } finally {
                 setUploadingIndex(null);
             }
@@ -140,7 +139,7 @@ function EditProductPage() {
             });
             navigate(`/products/${id}`);
         } catch {
-            console.error('更新商品失败');
+            // update failed
         }
     };
 
@@ -149,7 +148,7 @@ function EditProductPage() {
             await deleteProduct.mutateAsync(id ?? '');
             navigate('/products');
         } catch {
-            console.error('删除商品失败');
+            // delete failed
         }
     };
 

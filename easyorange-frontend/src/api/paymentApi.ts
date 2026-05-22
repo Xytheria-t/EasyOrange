@@ -58,13 +58,13 @@ export const paymentApi = {
         return request<PaymentStatusResponse>(`/payments/${id}/status`);
     },
 
-    refund(id: string) {
+    refundPayment(id: string) {
         return request(`/payments/${id}/refund`, {
             method: 'POST'
         });
     },
 
-    close(id: string) {
+    closePayment(id: string) {
         return request(`/payments/${id}/close`, {
             method: 'POST'
         });

@@ -37,12 +37,12 @@ class TokenRefreshManager {
     subscribe(callback: (token: string) => void): () => void {
         this.refreshSubscribers.push(callback);
         return () => {
-            this.refreshSubscribers = this.refreshSubscribers.filter(cb => cb !== callback);
+            this.refreshSubscribers = this.refreshSubscribers.filter(subscriber => subscriber !== callback);
         };
     }
 
     notifySubscribers(token: string): void {
-        this.refreshSubscribers.forEach(cb => cb(token));
+        this.refreshSubscribers.forEach(subscriber => subscriber(token));
         this.refreshSubscribers = [];
     }
 

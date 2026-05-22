@@ -109,5 +109,12 @@ export const productApi = {
         return request<void>(`/products/${id}/submit`, {
             method: 'PUT'
         });
+    },
+
+    getMyProducts(params?: { pageNum?: number; pageSize?: number; status?: number }) {
+        return request<PageResult<Product>>('/products/my', {
+            method: 'GET',
+            params: params as Record<string, unknown>,
+        });
     }
 };

@@ -33,10 +33,10 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
           <span>AI 审核建议</span>
         </div>
         <div className="ai-review-result">
-          <div className={`ai-review-action ${result.suggestedAction ? 'pass' : 'reject'}`}>
-            {result.suggestedAction ? <CheckCircle size={16} /> : <XCircle size={16} />}
+          <div className={`ai-review-action ${result.isApproved ? 'pass' : 'reject'}`}>
+            {result.isApproved ? <CheckCircle size={16} /> : <XCircle size={16} />}
             <span>
-              {result.suggestedAction ? '建议通过' : '建议拒绝'}
+              {result.isApproved ? '建议通过' : '建议拒绝'}
               <span style={{ marginLeft: 8, fontWeight: 400, opacity: 0.8 }}>
                 置信度 {result.confidenceScore}%
               </span>
@@ -57,7 +57,7 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
           </div>
           <button
             className="ai-apply-btn"
-            onClick={() => onApply(result.suggestedAction ? 'approve' : 'reject')}
+            onClick={() => onApply(result.isApproved ? 'approve' : 'reject')}
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
             }}

@@ -94,16 +94,16 @@ vi.mock('../../components/AdminSelect', () => ({
 // Mock ConfirmModal
 vi.mock('../../components/ConfirmModal', () => ({
   ConfirmModal: (props: {
-    open: boolean;
+    isOpen: boolean;
     title: string;
     content: string;
     confirmText: string;
-    loading: boolean;
+    isLoading: boolean;
     variant: string;
     onConfirm: () => void;
     onCancel: () => void;
   }) => {
-    if (!props.open) return null;
+    if (!props.isOpen) return null;
     return (
       <div data-testid="confirm-modal">
         <div>{props.title}</div>

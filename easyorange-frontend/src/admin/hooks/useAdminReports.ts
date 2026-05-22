@@ -5,7 +5,11 @@ import type { AdminReport, AdminReportQuery, ReportHandleRequest, ReportStatsRes
 export const ADMIN_REPORT_KEYS = {
   all: ['admin', 'reports'] as const,
   lists: () => [...ADMIN_REPORT_KEYS.all, 'list'] as const,
-  list: (params: AdminReportQuery) => [...ADMIN_REPORT_KEYS.lists(), params] as const,
+  list: (params: AdminReportQuery) =>
+    [...ADMIN_REPORT_KEYS.lists(),
+      params.pageNum, params.pageSize, params.status,
+      params.type, params.keyword, params.startTime, params.endTime,
+    ] as const,
   details: () => [...ADMIN_REPORT_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...ADMIN_REPORT_KEYS.details(), id] as const,
   stats: () => [...ADMIN_REPORT_KEYS.all, 'stats'] as const,

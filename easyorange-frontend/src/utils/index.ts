@@ -23,8 +23,8 @@ export {
 export { cn } from './cn';
 
 // 函数工具
-export { debounce, throttle } from './function';
-export type { DebounceOptions } from './function';
+export { debounce, throttle } from './functionUtils';
+export type { DebounceOptions } from './functionUtils';
 
 // 商品工具
 export { calculateDiscount, getConditionNameFromString, isHotProduct, normalizeProduct } from './product';

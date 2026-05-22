@@ -11,7 +11,7 @@ const mockRemove = vi.hoisted(() => vi.fn());
 const mockRemoveMany = vi.hoisted(() => vi.fn());
 
 vi.mock('@/api/favoriteApi', () => ({
-  favoriteApi: { getList: mockGetList, remove: mockRemove, removeMany: mockRemoveMany },
+  favoriteApi: { getFavorites: mockGetList, removeFavorite: mockRemove, removeMany: mockRemoveMany },
 }));
 
 vi.mock('@/store/uiStore', () => ({

@@ -5,7 +5,12 @@ import type { AdminReview, AdminReviewQuery, AdminReviewDeleteRequest } from '..
 export const ADMIN_REVIEW_KEYS = {
   all: ['admin', 'reviews'] as const,
   lists: () => [...ADMIN_REVIEW_KEYS.all, 'list'] as const,
-  list: (params: AdminReviewQuery) => [...ADMIN_REVIEW_KEYS.lists(), params] as const,
+  list: (params: AdminReviewQuery) =>
+    [...ADMIN_REVIEW_KEYS.lists(),
+      params.pageNum, params.pageSize, params.productId,
+      params.userId, params.rating, params.status,
+      params.keyword, params.startTime, params.endTime,
+    ] as const,
   details: () => [...ADMIN_REVIEW_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...ADMIN_REVIEW_KEYS.details(), id] as const,
 };

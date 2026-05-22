@@ -10,9 +10,9 @@ export function useAiPricing() {
   const getPricing = useCallback(async (params: PriceSuggestionParams) => {
     setIsLoading(true)
     try {
-      const res = await aiApi.suggestPrice(params)
-      if (res.data) {
-        setSuggestion(res.data)
+      const result = await aiApi.suggestPrice(params)
+      if (result.data) {
+        setSuggestion(result.data)
       }
     } catch {
       addToast({ type: 'error', message: 'AI 定价建议获取失败，请稍后重试' })

@@ -22,6 +22,7 @@ const OrderDetailPage = lazy(() => import('@/pages/orders/OrderDetailPage'));
 const PaymentPage = lazy(() => import('@/pages/orders/PaymentPage'));
 const PaymentResultPage = lazy(() => import('@/pages/orders/PaymentResultPage'));
 const PublishPage = lazy(() => import('@/pages/products/PublishPage'));
+const MyProductsPage = lazy(() => import('@/pages/products/MyProductsPage'));
 const SearchPage = lazy(() => import('@/pages/profile/SearchPage'));
 const EditProductPage = lazy(() => import('@/pages/products/EditProductPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
@@ -131,6 +132,14 @@ export const router = createBrowserRouter(
           element={
             <ProtectedRoute>
               {withSuspense(PublishPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="my-products"
+          element={
+            <ProtectedRoute>
+              {withSuspense(MyProductsPage)}
             </ProtectedRoute>
           }
         />

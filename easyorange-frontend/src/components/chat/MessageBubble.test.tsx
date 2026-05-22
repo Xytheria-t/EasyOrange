@@ -100,8 +100,8 @@ describe('MessageBubble', () => {
     const { container } = render(
       <MessageBubble message={{ ...baseMessage, status: 'READ' }} isOwn={true} />,
     );
-    // READ has two check SVGs
-    const paths = container.querySelectorAll('path[d="M2 6l2.5 2.5L10 4"]');
+    // READ shows CheckCheck icon (two checkmarks)
+    const paths = container.querySelectorAll('path[d="M18 6 7 17l-5-5"], path[d="m22 10-7.5 7.5L13 16"]');
     expect(paths.length).toBe(2);
   });
 

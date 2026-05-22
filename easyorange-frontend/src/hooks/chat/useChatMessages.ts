@@ -1,57 +1,53 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messageApi } from '@/api/messageApi';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatStore } from '@/store/chatStore';
 import type { ChatMessage } from '@/types/message';
 
 const PAGE_SIZE = 50;
+const EMPTY_MESSAGES: ChatMessage[] = [];
 
-export function useChatMessages(conversationId: string | null) {
+export function useChatMessages(targetUserId: string | null, conversationId: string) {
   const [hasMore, setHasMore] = useState(true);
   const queryClient = useQueryClient();
 
   const storeMessages = useChatStore((s) =>
-    conversationId ? (s.messages[conversationId] ?? []) : []
+    conversationId ? (s.messages[conversationId] ?? EMPTY_MESSAGES) : EMPTY_MESSAGES
   );
 
-  const { isLoading, error } = useQuery({
-    queryKey: ['chat', 'messages', conversationId],
+  const { data: baseMessages = EMPTY_MESSAGES, isLoading, error } = useQuery({
+    queryKey: ['chat', 'messages', targetUserId],
     queryFn: async () => {
-      if (!conversationId) {return [] as ChatMessage[];}
-      const response = await messageApi.getConversation(conversationId);
+      if (!targetUserId) return EMPTY_MESSAGES;
+      const response = await messageApi.getConversation(targetUserId);
       const data = (response.data ?? []) as unknown as ChatMessage[];
       return data.slice(-PAGE_SIZE);
     },
-    enabled: !!conversationId,
+    enabled: !!targetUserId,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 
-  const baseMessages = queryClient.getQueryData<ChatMessage[]>(['chat', 'messages', conversationId]) ?? [];
-
-  const storeMessageMap = new Map(storeMessages.map((m) => [m.id, m]));
-
-  const messages: ChatMessage[] = baseMessages.map((base) => {
-    const stored = storeMessageMap.get(base.id);
-    if (!stored) {return base;}
-    return stored;
-  });
-
-  storeMessages.forEach((stored) => {
-    if (!messages.some((m) => m.id === stored.id)) {
-      messages.push(stored);
+  const messages = useMemo(() => {
+    const map = new Map<string, ChatMessage>();
+    for (const msg of baseMessages) {
+      map.set(msg.id, msg);
     }
-  });
+    for (const msg of storeMessages) {
+      map.set(msg.id, msg);
+    }
+    return Array.from(map.values());
+  }, [baseMessages, storeMessages]);
+
+  const oldestMessageId = messages[0]?.id;
 
   const loadOlder = useCallback(async () => {
-    if (!conversationId || !hasMore) {return;}
-    const oldestMessage = messages[0];
-    if (!oldestMessage) {return;}
+    if (!targetUserId || !hasMore || !oldestMessageId) return;
 
     try {
-      const response = await messageApi.getConversation(conversationId);
+      const response = await messageApi.getConversation(targetUserId);
       const allMessages = (response.data ?? []) as unknown as ChatMessage[];
-      const oldestIndex = allMessages.findIndex((m) => m.id === oldestMessage.id);
+      const oldestIndex = allMessages.findIndex((m) => m.id === oldestMessageId);
 
       if (oldestIndex <= 0) {
         setHasMore(false);
@@ -62,11 +58,14 @@ export function useChatMessages(conversationId: string | null) {
       if (oldestIndex <= PAGE_SIZE) {
         setHasMore(false);
       }
-      return olderBatch;
-    } catch (e) {
-      console.error('[useChatMessages] Failed to load older messages', e);
+
+      queryClient.setQueryData<ChatMessage[]>(['chat', 'messages', targetUserId], (old) => {
+        return olderBatch.concat(old ?? []);
+      });
+    } catch {
+      // Failed to load older messages
     }
-  }, [conversationId, messages, hasMore]);
+  }, [targetUserId, oldestMessageId, hasMore, queryClient]);
 
   return {
     messages,

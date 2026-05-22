@@ -22,9 +22,9 @@ export function useAutoListing() {
     }
     setIsLoading(true)
     try {
-      const res = await aiApi.autoListing(imageUrls)
-      if (res.data) {
-        setResult(res.data)
+      const result = await aiApi.autoListing(imageUrls)
+      if (result.data) {
+        setResult(result.data)
         addToast({ type: 'success', message: 'AI 智能识别完成，已自动填充信息' })
       }
     } catch {

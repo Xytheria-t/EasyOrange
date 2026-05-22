@@ -13,7 +13,7 @@ import { PRODUCT_KEYS } from '@/hooks/product/useProducts';
 
 import SortDropdown from '@/components/search/SortDropdown';
 import type { SortOption } from '@/components/search/SortDropdown';
-import { ToolsPlaza } from '@/components/product/ToolsPlaza';
+import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';
 import type { ProductQueryParams, Product } from '@/types';
@@ -28,6 +28,7 @@ function ProductsPage() {
   const initialCategoryId = searchParams.get('category') || searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<ToolsPlazaFilter>('all');
 
   const [params, setParams] = useState<ProductQueryParams>({
     pageNum: 1,
@@ -62,7 +63,24 @@ function ProductsPage() {
     }
   }, [isSemanticMode, params.keyword, params.pageNum, params.pageSize, semanticSearch]);
 
-  const displayProducts = isSemanticMode ? semanticResults : allProducts;
+  const displayProducts = useMemo(() => {
+    const baseProducts = isSemanticMode ? semanticResults : allProducts;
+    if (activeFilter === 'discount') {
+      return baseProducts.filter((p: Product) => 
+        p.originalPrice !== null && 
+        p.originalPrice !== undefined && 
+        p.originalPrice > p.price
+      );
+    }
+    return baseProducts;
+  }, [isSemanticMode, semanticResults, allProducts, activeFilter]);
+
+  const displayTotal = useMemo(() => {
+    if (activeFilter === 'discount') {
+      return displayProducts.length;
+    }
+    return total;
+  }, [activeFilter, displayProducts.length, total]);
 
   useEffect(() => {
     if (!isLoading && !isSemanticMode && products.length > 0) {
@@ -177,17 +195,20 @@ function ProductsPage() {
     setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
   }, [resetAllProducts]);
 
-  const handleFilterChange = useCallback((filter: string) => {
-    resetAllProducts();
+  const handleFilterChange = useCallback((filter: ToolsPlazaFilter) => {
+    setActiveFilter(filter);
     if (filter === 'all') {
+      resetAllProducts();
       setParams(prev => ({ ...prev, sort: 'newest', pageNum: 1 }));
+    } else if (filter === 'discount') {
+      resetAllProducts();
+      setParams(prev => ({ ...prev, pageNum: 1 }));
     }
-    // 'ai' is handled internally by ToolsPlaza via isSemanticMode toggle
-    // 'discount' is reserved for future use
   }, [resetAllProducts]);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
     resetAllProducts();
+    setActiveFilter('all');
     setParams(prev => ({
       ...prev,
       categoryId: filters.categories.length === 1 ? filters.categories[0] : undefined,
@@ -202,6 +223,7 @@ function ProductsPage() {
 
   const handleResetFilters = useCallback(() => {
     resetAllProducts();
+    setActiveFilter('all');
     setParams({
       pageNum: 1,
       pageSize: 20,
@@ -211,6 +233,7 @@ function ProductsPage() {
 
   const handleClearCategory = useCallback(() => {
     resetAllProducts();
+    setActiveFilter('all');
     setParams(prev => ({ ...prev, categoryId: undefined, pageNum: 1 }));
   }, [resetAllProducts]);
 
@@ -259,7 +282,7 @@ function ProductsPage() {
       />
 
       <div className="products-container">
-        <ToolsPlaza onFilterChange={handleFilterChange} total={total} />
+        <ToolsPlaza onFilterChange={handleFilterChange} total={displayTotal} activeFilter={activeFilter} />
 
         <div className="products-toolbar">
           <div className="results-info">
@@ -270,7 +293,7 @@ function ProductsPage() {
                 <X size={12} className="category-clear" />
               </button>
             )}
-            <span className="results-count">{total}</span>
+            <span className="results-count">{displayTotal}</span>
             <span className="results-text"> 件商品</span>
           </div>
 

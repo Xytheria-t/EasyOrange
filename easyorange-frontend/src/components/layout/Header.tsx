@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { Search, MessageCircle } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
-import { throttle } from '@/utils/function'
+import { throttle } from '@/utils/functionUtils'
 import { useAdminGuard } from '@/admin/hooks/useAdminGuard'
 
 export function Header() {

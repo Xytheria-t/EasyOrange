@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, MoreVertical } from 'lucide-react'
 
 interface TargetUser {
   id: string
@@ -13,33 +13,45 @@ interface ChatHeaderProps {
 
 function ChatHeader({ targetUser, onBack }: ChatHeaderProps) {
   return (
-    <header className="flex items-center h-14 px-4 border-b border-gray-200 bg-white shadow-sm">
-      <button
-        onClick={onBack}
-        className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
-        aria-label="返回"
-      >
-        <ArrowLeft size={20} className="text-gray-700" />
-      </button>
+    <header className="chat-header">
+      <div className="chat-header-inner">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="chat-back-btn"
+            aria-label="返回"
+          >
+            <ArrowLeft size={20} />
+          </button>
 
-      {targetUser && (
-        <div className="flex items-center gap-3 ml-2">
-          <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-sm font-medium overflow-hidden shrink-0">
-            {targetUser.avatar ? (
-              <img
-                src={targetUser.avatar}
-                alt={targetUser.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              targetUser.name.charAt(0)
-            )}
-          </div>
-          <span className="text-sm font-medium text-gray-900 truncate max-w-[160px]">
-            {targetUser.name}
-          </span>
+          {targetUser && (
+            <div className="flex items-center gap-3">
+              <div className="chat-avatar">
+                {targetUser.avatar ? (
+                  <img
+                    src={targetUser.avatar}
+                    alt={targetUser.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="chat-avatar-text">{targetUser.name.charAt(0)}</span>
+                )}
+                <span className="chat-avatar-status" />
+              </div>
+              <div className="flex flex-col">
+                <span className="chat-header-name">{targetUser.name}</span>
+                <span className="chat-header-status">在线</span>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+
+        <div className="flex items-center gap-1">
+          <button className="chat-action-btn" aria-label="更多选项">
+            <MoreVertical size={18} />
+          </button>
+        </div>
+      </div>
     </header>
   )
 }

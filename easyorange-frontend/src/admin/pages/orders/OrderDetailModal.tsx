@@ -24,9 +24,9 @@ const PAYMENT_STATUS: Record<number, string> = {
   2: '已退款',
 };
 
-function formatDateTime(dateStr: string | null) {
-  if (!dateStr) {return '—';}
-  return new Date(dateStr).toLocaleString('zh-CN', {
+function formatDateTime(dateString: string | null) {
+  if (!dateString) {return '—';}
+  return new Date(dateString).toLocaleString('zh-CN', {
     year: 'numeric', month: '2-digit', day: '2-digit',
     hour: '2-digit', minute: '2-digit',
   });
@@ -64,8 +64,8 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
 
   if (!open || !orderId) {return null;}
 
-  const o = order as AdminOrderDetail | undefined;
-  const statusCfg = STATUS_CONFIG[o?.status ?? 0] ?? STATUS_CONFIG[0];
+  const orderData = order as AdminOrderDetail | undefined;
+  const statusCfg = STATUS_CONFIG[orderData?.status ?? 0] ?? STATUS_CONFIG[0];
 
   return createPortal(
     <div style={{
@@ -157,7 +157,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
               }} />
               <span style={{ fontSize: '0.87rem', color: '#9B9590' }}>加载中...</span>
             </div>
-          ) : o ? (
+          ) : orderData ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {/* Status & amount bar */}
               <div style={{
@@ -175,13 +175,13 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '1.35rem', fontWeight: 700, color: '#EA580C' }}>
-                    ¥{o.amount.toFixed(2)}
+                    ¥{orderData.amount.toFixed(2)}
                   </span>
                 </div>
                 <span style={{
                   fontFamily: "'DM Sans', monospace", fontSize: '0.78rem', fontWeight: 600,
                   color: '#9B9590', letterSpacing: '0.03em', flexShrink: 0,
-                }}>{o.orderNo}</span>
+                }}>{orderData.orderNo}</span>
               </div>
 
               {/* Product info */}
@@ -189,8 +189,8 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                 display: 'flex', gap: '0.85rem', padding: '0.85rem',
                 background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(229,224,219,0.4)', borderRadius: 14,
               }}>
-                {o.product?.mainImage ? (
-                  <img src={o.product.mainImage} alt="" style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
+                {orderData.product?.mainImage ? (
+                  <img src={orderData.product.mainImage} alt="" style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
                 ) : (
                   <div style={{ width: 60, height: 60, borderRadius: 12, background: 'linear-gradient(135deg, #F5F2EE, #EDE8E3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B5AEA8' }}>
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
@@ -198,38 +198,38 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                 )}
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <p style={{ fontWeight: 700, color: '#2A2520', fontSize: '0.93rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {o.product?.name || '—'}
+                    {orderData.product?.name || '—'}
                   </p>
-                  <p style={{ fontSize: '0.81rem', color: '#9B9590', marginTop: 2 }}>单价: ¥{o.product?.price?.toFixed(2) ?? '—'}</p>
+                  <p style={{ fontSize: '0.81rem', color: '#9B9590', marginTop: 2 }}>单价: ¥{orderData.product?.price?.toFixed(2) ?? '—'}</p>
                 </div>
               </div>
 
               {/* Info grid - row 1 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <InfoCell label="买家" value={o.buyer?.nickname || '—'} />
-                <InfoCell label="卖家" value={o.seller?.nickname || '—'} />
-                <InfoCell label="支付状态" value={PAYMENT_STATUS[o.paymentStatus] ?? '未知'} />
-                <InfoCell label="支付金额" value={o.paidAmount != null ? `¥${o.paidAmount.toFixed(2)}` : '—'} />
+                <InfoCell label="买家" value={orderData.buyer?.nickname || '—'} />
+                <InfoCell label="卖家" value={orderData.seller?.nickname || '—'} />
+                <InfoCell label="支付状态" value={PAYMENT_STATUS[orderData.paymentStatus] ?? '未知'} />
+                <InfoCell label="支付金额" value={orderData.paidAmount != null ? `¥${orderData.paidAmount.toFixed(2)}` : '—'} />
               </div>
 
               {/* Time info */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <InfoCell label="下单时间" value={formatDateTime(o.createTime)} />
-                <InfoCell label="支付时间" value={formatDateTime(o.payTime)} />
-                <InfoCell label="更新时间" value={formatDateTime(o.updateTime)} />
-                <InfoCell label="取消时间" value={formatDateTime(o.cancelTime)} />
+                <InfoCell label="下单时间" value={formatDateTime(orderData.createTime)} />
+                <InfoCell label="支付时间" value={formatDateTime(orderData.payTime)} />
+                <InfoCell label="更新时间" value={formatDateTime(orderData.updateTime)} />
+                <InfoCell label="取消时间" value={formatDateTime(orderData.cancelTime)} />
               </div>
 
               {/* Payment No */}
-              {(o.paymentNo || o.refundedAmount) && (
+              {(orderData.paymentNo || orderData.refundedAmount) && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                  {o.paymentNo && <InfoCell label="支付单号" value={<span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.8rem' }}>{o.paymentNo}</span>} />}
-                  {o.refundedAmount != null && <InfoCell label="退款金额" value={`¥${o.refundedAmount.toFixed(2)}`} />}
+                  {orderData.paymentNo && <InfoCell label="支付单号" value={<span style={{ fontFamily: "'DM Sans', monospace", fontSize: '0.8rem' }}>{orderData.paymentNo}</span>} />}
+                  {orderData.refundedAmount != null && <InfoCell label="退款金额" value={`¥${orderData.refundedAmount.toFixed(2)}`} />}
                 </div>
               )}
 
               {/* Shipping address */}
-              {o.shippingAddress && (
+              {orderData.shippingAddress && (
                 <div style={{
                   padding: '0.85rem 1rem',
                   background: 'linear-gradient(135deg, rgba(251,191,36,0.03), rgba(195,155,211,0.02))',
@@ -240,31 +240,31 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                     收货地址
                   </p>
                   <p style={{ fontSize: '0.87rem', color: '#2A2520', lineHeight: 1.55 }}>
-                    {o.shippingAddress.receiverName} {o.shippingAddress.phone}
-                    <br />{o.shippingAddress.detailAddress}
+                    {orderData.shippingAddress.receiverName} {orderData.shippingAddress.phone}
+                    <br />{orderData.shippingAddress.detailAddress}
                   </p>
                 </div>
               )}
 
               {/* Remark / Cancel reason */}
-              {o.remark && (
+              {orderData.remark && (
                 <div style={{
                   padding: '0.85rem 1rem',
                   background: 'rgba(255,255,255,0.6)',
                   border: '1px solid rgba(229,224,219,0.4)', borderRadius: 14,
                 }}>
                   <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.35rem' }}>备注</p>
-                  <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{o.remark}</p>
+                  <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{orderData.remark}</p>
                 </div>
               )}
-              {o.cancelReason && (
+              {orderData.cancelReason && (
                 <div style={{
                   padding: '0.85rem 1rem',
                   background: 'linear-gradient(135deg, rgba(244,63,94,0.04), rgba(251,113,133,0.02))',
                   border: '1px solid rgba(244,63,94,0.15)', borderRadius: 14,
                 }}>
                   <p style={{ fontSize: '0.78rem', fontWeight: 600, color: '#E11D48', marginBottom: '0.35rem' }}>取消原因</p>
-                  <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{o.cancelReason}</p>
+                  <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{orderData.cancelReason}</p>
                 </div>
               )}
             </div>

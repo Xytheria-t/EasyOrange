@@ -15,8 +15,8 @@ interface MessageListProps {
   canRecallFn?: (message: ChatMessage) => boolean
 }
 
-function formatMessageDate(timeStr: string): string {
-  const date = new Date(timeStr)
+function formatMessageDate(timeString: string): string {
+  const date = new Date(timeString)
   const now = new Date()
   const isToday =
     date.getDate() === now.getDate() &&
@@ -34,9 +34,10 @@ function formatMessageDate(timeStr: string): string {
 
   if (isYesterday) {return '昨天'}
 
+  const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
-  return `${month}月${day}日`
+  return `${year}年${month}月${day}日`
 }
 
 function shouldShowDateSeparator(index: number, messages: ChatMessage[]): boolean {
@@ -105,7 +106,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
     const virtualItems = virtualizer.getVirtualItems()
 
     return (
-      <div ref={setRefs} style={{ overflow: 'auto', height: '100%' }}>
+      <div ref={setRefs} style={{ overflow: 'auto', height: '100%', minHeight: 0 }}>
         <div style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
           {virtualItems.map((virtualItem) => {
             const isLoadMoreRow = hasMore && virtualItem.index === 0
@@ -116,7 +117,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                 <button
                   key="load-more"
                   onClick={onLoadMore}
-                  className="absolute top-0 left-0 w-full py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                  className="chat-load-more"
                   style={{ transform: `translateY(${virtualItem.start}px)` }}
                 >
                   加载更多消息
@@ -131,7 +132,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
                   className="absolute left-0 w-full"
                   style={{ transform: `translateY(${virtualItem.start}px)` }}
                 >
-                  <TypingIndicator userName={targetUserName} visible={isTyping} />
+                  <TypingIndicator userName={targetUserName} isVisible={isTyping} />
                 </div>
               )
             }
@@ -149,7 +150,7 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
               >
                 {showDateSeparator && (
                   <div className="chat-date-separator">
-                    {formatMessageDate(message.createTime)}
+                    <span>{formatMessageDate(message.createTime)}</span>
                   </div>
                 )}
                 <MessageBubble

@@ -1,8 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { ChatHeader, MessageList, ChatInputBar } from '@/components/chat';
 import { useStompChat, useMessageRecall, useChatMessages } from '@/hooks/chat';
-import { useChatStore } from '@/stores/chatStore';
+import { useChatStore } from '@/store/chatStore';
 import { useAuthStore } from '@/store/authStore';
 import { messageApi } from '@/api/messageApi';
 import './chat-window.css';
@@ -14,46 +14,40 @@ function ChatWindowPage() {
   const { user } = useAuthStore();
   const currentUserId = user?.userId ?? '';
 
-  const conversationId = targetUserId && currentUserId
-    ? `conv_${[currentUserId, targetUserId].sort().join('_')}`
-    : '';
+  const conversationId = useMemo(() => {
+    if (!targetUserId || !currentUserId) return '';
+    return `conv_${[currentUserId, targetUserId].sort().join('_')}`;
+  }, [targetUserId, currentUserId]);
 
   const connectionStatus = useChatStore((s) => s.connectionStatus);
   const typingUsers = useChatStore((s) => s.typingUsers);
 
   const { sendMessage, sendTyping, subscribe, unsubscribe } = useStompChat();
-  const { messages, isLoading, loadOlder, hasMore } = useChatMessages(targetUserId ?? null);
+  const { messages, isLoading, loadOlder, hasMore } = useChatMessages(targetUserId ?? null, conversationId);
   const { canRecall, recallMessage } = useMessageRecall(conversationId);
 
-  const subscribedRef = useRef(false);
-
   useEffect(() => {
-    if (!targetUserId || subscribedRef.current) {return;}
-    subscribedRef.current = true;
+    if (!conversationId) return;
     subscribe(conversationId);
-
-    return () => {
-      unsubscribe(conversationId);
-      subscribedRef.current = false;
-    };
-  }, [targetUserId]);
+    return () => unsubscribe(conversationId);
+  }, [conversationId, subscribe, unsubscribe]);
 
   useEffect(() => {
-    if (messages.length > 0 && targetUserId) {
-      const unreadIds = messages
-        .filter((m) => m.senderId !== targetUserId && m.status !== 'READ')
-        .map((m) => m.id);
-      if (unreadIds.length > 0) {
-        messageApi.markAsRead(unreadIds.map((id) => Number(id))).catch(console.error);
-      }
+    if (messages.length === 0 || !targetUserId) return;
+
+    const unreadIds = messages
+      .filter((m) => m.senderId !== targetUserId && m.status !== 'READ')
+      .map((m) => m.id);
+
+    if (unreadIds.length > 0) {
+      messageApi.markAsRead(unreadIds.map((id) => Number(id))).catch(console.error);
     }
   }, [messages.length, targetUserId]);
 
   const handleSend = useCallback(
     (content: string) => {
-      if (!targetUserId || !content.trim()) {return;}
-
-      sendMessage(conversationId, {
+      if (!targetUserId || !content.trim()) return;
+      sendMessage({
         receiverId: targetUserId,
         content: content.trim(),
         type: 0,
@@ -69,7 +63,7 @@ function ChatWindowPage() {
     }
   }, [targetUserId, conversationId, sendTyping]);
 
-  const handleBack = () => navigate(-1);
+  const handleBack = useCallback(() => navigate(-1), [navigate]);
 
   const isTyping = typingUsers.size > 0;
   const targetUserName = targetUserId ?? '用户';
@@ -82,8 +76,9 @@ function ChatWindowPage() {
 
       <div className="chat-messages-area">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-            加载消息中...
+          <div className="chat-loading">
+            <div className="chat-loading-spinner" />
+            <span className="text-sm font-medium">加载消息中...</span>
           </div>
         ) : (
           <MessageList
@@ -103,7 +98,7 @@ function ChatWindowPage() {
         <ChatInputBar
           onSend={handleSend}
           onTyping={handleTyping}
-          disabled={!targetUserId}
+          isDisabled={!targetUserId}
         />
       </div>
     </div>

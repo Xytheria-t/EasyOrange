@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import { useAuditProduct, useAuditLogs } from '../../hooks/useAdminProductAudit';
@@ -27,27 +27,25 @@ const createInitialState = () => ({
 });
 
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
-  const prevStateKeyRef = useRef<string | null>(null);
-  const stateKey = open && productId ? `${open}-${productId}` : null;
-  
   const [state, setState] = useState(createInitialState);
   const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
 
   const [aiReviewResult, setAiReviewResult] = useState<AiReviewResult | null>(null);
   const [aiReviewLoading, setAiReviewLoading] = useState(false);
 
-  if (stateKey !== prevStateKeyRef.current) {
-    prevStateKeyRef.current = stateKey;
-    if (stateKey) {
-      setState(createInitialState());
-      setAiReviewResult(null);
-      setAiReviewLoading(false);
-    }
-  }
-
   const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
   const updateStatus = useAuditProduct();
   const auditLogs = useAuditLogs(productId);
+
+  // Reset state and refetch when opening drawer or switching products
+  useEffect(() => {
+    if (open && productId) {
+      setState(createInitialState());
+      setAiReviewResult(null);
+      setAiReviewLoading(false);
+      refetch();
+    }
+  }, [open, productId, refetch]);
 
   const handleGetAiSuggestion = async () => {
     if (!product) {return;}
@@ -71,12 +69,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
       setState(prev => ({ ...prev, showRejectModal: true }));
     }
   };
-
-  useEffect(() => {
-    if (open && productId) {
-      refetch();
-    }
-  }, [open, productId, refetch]);
 
   useEffect(() => {
     if (!open) {return;}
@@ -113,12 +105,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to reject product:', error);
     }
   };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleString('zh-CN', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString('zh-CN', {
       year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit',
     });
@@ -392,12 +383,12 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                               )}
                               {log.dimensions && log.dimensions.length > 0 && (
                                 <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                                  {log.dimensions.map((d) => (
-                                    <span key={d} style={{
+                                  {log.dimensions.map((dimension) => (
+                                    <span key={dimension} style={{
                                       fontSize: '0.72rem', padding: '0.1rem 0.4rem', borderRadius: 4,
                                       background: 'rgba(249,115,22,0.06)', color: '#C2410C',
                                     }}>
-                                      {d === 'basic' ? '基本信息' : d === 'compliance' ? '内容合规' : d === 'image' ? '图片质量' : '价格合理'}
+                                      {dimension === 'basic' ? '基本信息' : dimension === 'compliance' ? '内容合规' : dimension === 'image' ? '图片质量' : '价格合理'}
                                     </span>
                                   ))}
                                 </div>
@@ -465,7 +456,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                       onClick={() => setState(prev => ({
                         ...prev,
                         selectedDimensions: prev.selectedDimensions.includes(dim.key)
-                          ? prev.selectedDimensions.filter(d => d !== dim.key)
+                          ? prev.selectedDimensions.filter(dimension => dimension !== dim.key)
                           : [...prev.selectedDimensions, dim.key]
                       }))}
                       style={{

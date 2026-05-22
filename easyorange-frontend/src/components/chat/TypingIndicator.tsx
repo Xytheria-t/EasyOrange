@@ -1,20 +1,20 @@
 interface TypingIndicatorProps {
   userName: string
-  visible: boolean
+  isVisible: boolean
 }
 
-function TypingIndicator({ userName, visible }: TypingIndicatorProps) {
-  if (!visible) {return null}
+function TypingIndicator({ userName, isVisible }: TypingIndicatorProps) {
+  if (!isVisible) {return null}
 
   return (
-    <div className="flex justify-start mb-3">
-      <div className="flex items-center gap-1.5 text-xs text-gray-400">
-        <span>{userName} 正在输入</span>
-        <span className="flex items-center gap-0.5">
-          <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-          <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-          <span className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
-        </span>
+    <div className="flex justify-start mb-4">
+      <div className="typing-indicator">
+        <div className="typing-dots">
+          <span className="typing-dot" />
+          <span className="typing-dot" />
+          <span className="typing-dot" />
+        </div>
+        <span className="typing-text">{userName} 正在输入</span>
       </div>
     </div>
   )

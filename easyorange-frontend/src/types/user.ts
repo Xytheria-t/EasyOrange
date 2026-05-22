@@ -1,4 +1,4 @@
-export type UserType = '00' | '01';
+export type UserType = '00' | '01' | '02';
 
 export interface User {
     userId: string;

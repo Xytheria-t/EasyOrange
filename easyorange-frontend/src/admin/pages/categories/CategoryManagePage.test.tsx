@@ -49,18 +49,18 @@ const mockConfirmModalFn = vi.fn();
 
 vi.mock('../../components/ConfirmModal', () => ({
   ConfirmModal: (props: {
-    open: boolean;
+    isOpen: boolean;
     title: string;
     content: string;
     confirmText: string;
     cancelText: string;
     variant: string;
-    loading: boolean;
+    isLoading: boolean;
     onConfirm: () => void;
     onCancel: () => void;
   }) => {
     mockConfirmModalFn(props);
-    if (!props.open) return null;
+    if (!props.isOpen) return null;
     return (
       <div data-testid="confirm-modal">
         <div>{props.title}</div>

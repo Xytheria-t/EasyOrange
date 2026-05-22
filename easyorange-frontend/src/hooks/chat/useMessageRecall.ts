@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { messageApi } from '@/api/messageApi'
-import { useChatStore } from '@/stores/chatStore'
+import { useChatStore } from '@/store/chatStore'
 
 const RECALL_TIMEOUT_MS = 2 * 60 * 1000
 
@@ -20,7 +20,7 @@ export function useMessageRecall(conversationId: string) {
   const recallMessage = useCallback(
     async (messageId: string) => {
       try {
-        await messageApi.recall(messageId)
+        await messageApi.recallMessage(messageId)
         updateMessage(conversationId, messageId, {
           status: 'RECALLED',
           content: '[消息已撤回]',
@@ -28,8 +28,7 @@ export function useMessageRecall(conversationId: string) {
           recalledAt: new Date().toISOString(),
         })
         return true
-      } catch (e) {
-        console.error('[useMessageRecall] Failed to recall message', e)
+      } catch {
         return false
       }
     },

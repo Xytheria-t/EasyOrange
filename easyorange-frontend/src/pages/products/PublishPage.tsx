@@ -13,8 +13,10 @@ import { CONDITION_LABEL_MAP } from '@/constants';
 import { useUIStore } from '@/store/uiStore';
 import { AiPricingBadge } from '@/components/ai/AiPricingBadge';
 import { AiPhotoCapture } from '@/components/ai/AiPhotoCapture';
+import { AiCopyGeneration } from '@/components/ai/AiCopyGeneration';
 import { useAiPricing } from '@/hooks/useAiPricing';
 import { useAutoListing } from '@/hooks/useAutoListing';
+import { useAiCopyGeneration } from '@/hooks/useAiCopyGeneration';
 import './publish.css';
 
 interface FormState {
@@ -74,6 +76,7 @@ function PublishPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const { suggestion, isLoading: aiPricingLoading, getPricing, clearSuggestion } = useAiPricing();
   const { result: autoListingResult, isLoading: autoListingLoading, analyzeImages, clearResult: clearAutoListing } = useAutoListing();
+  const { result: copyResult, isLoading: copyLoading, generateCopy, clearResult: clearCopy } = useAiCopyGeneration();
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -105,9 +108,9 @@ function PublishPage() {
         updateField('location', autoListingResult.location);
       }
       if (autoListingResult.categoryName) {
-        const cat = categories?.find(c => c.name === autoListingResult.categoryName);
-        if (cat) {
-          updateField('categoryId', String(cat.id));
+        const category = categories?.find(c => c.name === autoListingResult.categoryName);
+        if (category) {
+          updateField('categoryId', String(category.id));
         }
       }
       clearAutoListing();
@@ -169,8 +172,7 @@ function PublishPage() {
         if (result.data?.url) {
           setForm(prev => ({ ...prev, imageUrls: [...prev.imageUrls, result.data.url] }));
         }
-      } catch (error) {
-        console.error('Image upload failed:', error);
+      } catch {
         addToast({ type: 'error', message: '图片上传失败，请重试' });
       } finally {
         setUploadingIndex(null);
@@ -604,6 +606,26 @@ function PublishPage() {
                     />
                     <span className="char-count-v2">{form.description.length}/2000</span>
                   </div>
+                  <AiCopyGeneration
+                    productName={form.name}
+                    onGenerate={(style) => {
+                      const category = categories?.find(c => String(c.id) === form.categoryId)
+                      generateCopy({
+                        productName: form.name,
+                        categoryName: category?.name || undefined,
+                        conditionLevel: form.conditionLevel ? Number(form.conditionLevel) : undefined,
+                        originalPrice: form.originalPrice || undefined,
+                        style,
+                      })
+                    }}
+                    onApply={(result) => {
+                      updateField('name', result.title)
+                      updateField('description', result.description)
+                      clearCopy()
+                    }}
+                    result={copyResult}
+                    isLoading={copyLoading}
+                  />
                 </div>
 
                 <div className="field-row-v2">
@@ -721,11 +743,11 @@ function PublishPage() {
                   <button
                     className="ai-pricing-btn"
                     onClick={() => {
-                      const cat = categories?.find(c => String(c.id) === form.categoryId)
+                      const category = categories?.find(c => String(c.id) === form.categoryId)
                       getPricing({
                         productName: form.name,
                         description: form.description || undefined,
-                        categoryName: cat?.name || undefined,
+                        categoryName: category?.name || undefined,
                         conditionLevel: form.conditionLevel ? Number(form.conditionLevel) : undefined,
                         originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
                       })

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ProductCard } from '@/components/product/ProductCard'
 import { useProducts, useFavoriteCheck } from '@/hooks'
@@ -23,11 +23,15 @@ export default function ProductsSection() {
 
   const products = data?.records ?? []
 
+  // Use a ref to stabilize the products reference and avoid cascading re-renders
+  const prevProductsKeyRef = useRef<string>('');
   useEffect(() => {
-    if (products.length > 0 && token) {
-      checkFavorites(products.map(p => p.id))
+    const productsKey = products.length > 0 ? products.map(p => p.id).join(',') : '';
+    if (productsKey && productsKey !== prevProductsKeyRef.current && token) {
+      prevProductsKeyRef.current = productsKey;
+      checkFavorites(products.map(p => p.id));
     }
-  }, [products, token, checkFavorites])
+  }, [products.length, token, checkFavorites])
 
   const handleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
     if (!token) {

@@ -9,8 +9,8 @@ export function NotificationBell() {
   const { data: unreadCount } = useQuery({
     queryKey: ['unread-count'],
     queryFn: async () => {
-      const res = await notificationApi.getUnreadCount();
-      return res.data;
+      const response = await notificationApi.getUnreadCount();
+      return response.data;
     },
     refetchInterval: 30_000,
     staleTime: 15_000,

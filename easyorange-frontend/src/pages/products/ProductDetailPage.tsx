@@ -91,8 +91,8 @@ function ProductDetailPage() {
   const { data: isFavorited = false } = useQuery({
     queryKey: ['favorite-check', productId],
     queryFn: async () => {
-      const res = await favoriteApi.check(productId);
-      return res.data === true;
+      const response = await favoriteApi.checkFavorite(productId);
+      return response.data === true;
     },
     enabled: !!token && !!productId,
     staleTime: 30 * 1000,
@@ -101,8 +101,8 @@ function ProductDetailPage() {
   const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
     queryKey: ['reviews', productId],
     queryFn: async () => {
-      const res = await reviewApi.getList(productId, { pageNum: 1, pageSize: 10 });
-      return res.data;
+      const response = await reviewApi.getReviews(productId);
+      return response.data;
     },
     enabled: !!productId,
     staleTime: 60 * 1000,
@@ -128,15 +128,15 @@ function ProductDetailPage() {
     if (!showChatModal || !product?.sellerId || !token) {return;}
     const loadChatHistory = async () => {
       try {
-        const res = await messageApi.getConversation(product.sellerId);
-        const rawData = res.data as unknown as Record<string, unknown>[];
-        const messages = (rawData ?? []).map((msg) => ({
-          id: msg.id as number,
-          senderId: msg.senderId as number,
-          receiverId: msg.receiverId as number,
-          content: msg.content as string,
-          createTime: msg.createTime as string,
-          isMine: msg.senderId === user?.userId,
+        const response = await messageApi.getConversation(product.sellerId);
+        const rawData = response.data as unknown as Record<string, unknown>[];
+        const messages = (rawData ?? []).map((message) => ({
+          id: message.id as number,
+          senderId: message.senderId as number,
+          receiverId: message.receiverId as number,
+          content: message.content as string,
+          createTime: message.createTime as string,
+          isMine: message.senderId === user?.userId,
         }));
         setChatMessages(messages.reverse());
       } catch {
@@ -148,7 +148,7 @@ function ProductDetailPage() {
 
   const submitReview = useMutation({
     mutationFn: async () => {
-      await reviewApi.create(productId, {
+      await reviewApi.createReview(productId, {
         rating: reviewForm.rating,
         content: reviewForm.content,
       });
@@ -251,10 +251,10 @@ function ProductDetailPage() {
     setIsFavoriteLoading(true);
     try {
       if (isFavorited) {
-        await favoriteApi.remove(productId);
+        await favoriteApi.removeFavorite(productId);
         addToast({ type: 'success', message: '已取消收藏' });
       } else {
-        await favoriteApi.add(productId);
+        await favoriteApi.addFavorite(productId);
         addToast({ type: 'success', message: '已收藏' });
       }
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
@@ -275,13 +275,35 @@ function ProductDetailPage() {
     setShowOrderModal(true);
   };
 
-  const handleContactSeller = () => {
+  const handleContactSeller = async () => {
     if (!token) {
       navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
-    if (isOwner) {return;}
-    navigate(`/messages/${product.sellerId}`);
+    if (!product || isOwner) {return;}
+
+    // Prefetch chat data and await completion before navigating.
+    // This ensures query.state.data exists when ChatWindowPage mounts,
+    // preventing the TanStack Query + React 19 + StrictMode infinite loop:
+    // render-time getOptimisticResult uses mounted=FALSE → optimistic fetchStatus,
+    // subscribe+updateResult switches to mounted=TRUE → different snapshot →
+    // useSyncExternalStore detects mismatch → forceStoreRerender → nest to 50.
+    const targetUserId = product.sellerId;
+    try {
+      await queryClient.prefetchQuery({
+        queryKey: ['chat', 'messages', targetUserId],
+        queryFn: () =>
+          messageApi.getConversation(targetUserId).then((res) => {
+            const data = (res.data ?? []) as unknown[];
+            return data.slice(-50);
+          }),
+        staleTime: Infinity,
+      });
+    } catch {
+      // Navigate even if prefetch fails — ChatWindowPage handles error state natively
+    }
+
+    navigate(`/messages/${targetUserId}`);
   };
 
   const handleShare = () => {
@@ -356,8 +378,8 @@ function ProductDetailPage() {
     }
   };
 
-  const formatRelativeTime = (dateStr: string) => {
-    const date = new Date(dateStr);
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));

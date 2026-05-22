@@ -26,9 +26,9 @@ export {
   useAdminOrders,
   useAdminOrderDetail,
   useAdminOrderStats,
-  useCancelOrder,
+  useAdminCancelOrder,
   useForceCompleteOrder,
-  useRefundOrder,
+  useAdminRefundOrder,
   ADMIN_ORDER_KEYS,
 } from './useAdminOrders';
 export {

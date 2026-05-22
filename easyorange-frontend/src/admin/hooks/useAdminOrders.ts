@@ -5,7 +5,12 @@ import type { AdminOrderDetail, AdminOrderQuery, OrderInterventionRequest, Order
 export const ADMIN_ORDER_KEYS = {
   all: ['admin', 'orders'] as const,
   lists: () => [...ADMIN_ORDER_KEYS.all, 'list'] as const,
-  list: (params: AdminOrderQuery) => [...ADMIN_ORDER_KEYS.lists(), params] as const,
+  list: (params: AdminOrderQuery) =>
+    [...ADMIN_ORDER_KEYS.lists(),
+      params.pageNum, params.pageSize, params.orderNo,
+      params.buyerId, params.sellerId, params.status,
+      params.paymentStatus, params.startTime, params.endTime,
+    ] as const,
   details: () => [...ADMIN_ORDER_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...ADMIN_ORDER_KEYS.details(), id] as const,
   stats: () => [...ADMIN_ORDER_KEYS.all, 'stats'] as const,
@@ -51,7 +56,7 @@ export function useAdminOrderStats() {
   });
 }
 
-export function useCancelOrder() {
+export function useAdminCancelOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -79,7 +84,7 @@ export function useForceCompleteOrder() {
   });
 }
 
-export function useRefundOrder() {
+export function useAdminRefundOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({

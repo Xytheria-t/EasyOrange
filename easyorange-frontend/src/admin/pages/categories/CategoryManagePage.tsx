@@ -14,7 +14,7 @@ import type { CategoryTreeResponse, CategoryCreateRequest, CategoryUpdateRequest
 type SortField = 'name' | 'sortOrder';
 type SortDir = 'asc' | 'desc';
 
-const statusFilterOptions = [
+const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
   { value: '1', label: '启用' },
   { value: '0', label: '禁用' },
@@ -486,7 +486,7 @@ export default function CategoryManagePage() {
               状态
             </span>
             <AdminSelect
-              options={statusFilterOptions}
+              options={STATUS_FILTER_OPTIONS}
               value={statusFilter}
               onChange={(val) => setStatusFilter(val)}
             />
@@ -939,13 +939,13 @@ export default function CategoryManagePage() {
 
       {/* ===== Delete Confirm ===== */}
       <ConfirmModal
-        open={deleteTarget !== null}
+        isOpen={deleteTarget !== null}
         title="删除分类"
         content={deleteTarget ? `确定要删除分类「${deleteTarget.name}」吗？如果该分类下有子分类或关联商品，将无法删除。` : ''}
         confirmText="删除"
         cancelText="取消"
         variant="danger"
-        loading={deleteMutation.isPending}
+        isLoading={deleteMutation.isPending}
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
       />

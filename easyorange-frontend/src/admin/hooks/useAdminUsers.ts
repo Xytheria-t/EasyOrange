@@ -5,7 +5,11 @@ import type { AdminUser, AdminUserQuery, UpdateStatusRequest } from '../types/ad
 export const ADMIN_USER_KEYS = {
   all: ['admin', 'users'] as const,
   lists: () => [...ADMIN_USER_KEYS.all, 'list'] as const,
-  list: (params: AdminUserQuery) => [...ADMIN_USER_KEYS.lists(), params] as const,
+  list: (params: AdminUserQuery) =>
+    [...ADMIN_USER_KEYS.lists(),
+      params.pageNum, params.pageSize, params.keyword,
+      params.userType, params.status, params.startTime, params.endTime,
+    ] as const,
   details: () => [...ADMIN_USER_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...ADMIN_USER_KEYS.details(), id] as const,
 };

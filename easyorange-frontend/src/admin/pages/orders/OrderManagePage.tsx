@@ -6,7 +6,7 @@ import { useAdminOrders } from '../../hooks';
 import type { AdminOrder } from '../../types/admin';
 import { OrderDetailModal } from './OrderDetailModal';
 
-const statusFilterOptions = [
+const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
   { value: '0', label: '待付款' },
   { value: '1', label: '待发货' },
@@ -40,8 +40,8 @@ export default function OrderManagePage() {
     if (e.key === 'Enter') {handleSearch();}
   }, [handleSearch]);
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
   const columns: Column<AdminOrder>[] = [
     {
@@ -231,7 +231,7 @@ export default function OrderManagePage() {
               状态
             </span>
             <AdminSelect
-              options={statusFilterOptions}
+              options={STATUS_FILTER_OPTIONS}
               value={statusFilter}
               onChange={(val) => { setStatusFilter(val); setPage(1); }}
             />

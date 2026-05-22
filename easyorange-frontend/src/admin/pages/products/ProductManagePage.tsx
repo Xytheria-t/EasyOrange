@@ -6,7 +6,7 @@ import { useAdminProducts, useUpdateProductStatus } from '../../hooks';
 import type { AdminProduct } from '../../types/admin';
 import { ProductManageDetailModal } from './ProductManageDetailModal';
 
-const statusFilterOptions = [
+const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
   { value: '0', label: '草稿' },
   { value: '4', label: '待审核' },
@@ -16,7 +16,7 @@ const statusFilterOptions = [
   { value: '3', label: '下架' },
 ];
 
-const categoryFilterOptions = [
+const CATEGORY_FILTER_OPTIONS = [
   { value: '', label: '全部分类' },
   { value: '1', label: '电子产品' },
   { value: '2', label: '图书教材' },
@@ -81,9 +81,9 @@ export default function ProductManagePage() {
 
   const formatPrice = (price: number | null) => price != null ? `¥${price.toFixed(2)}` : '—';
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) {return '—';}
-    return new Date(dateStr).toLocaleDateString('zh-CN', {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) {return '—';}
+    return new Date(dateString).toLocaleDateString('zh-CN', {
       year: 'numeric', month: '2-digit', day: '2-digit',
     });
   };
@@ -369,7 +369,7 @@ export default function ProductManagePage() {
               状态
             </span>
             <AdminSelect
-              options={statusFilterOptions}
+              options={STATUS_FILTER_OPTIONS}
               value={statusFilter}
               onChange={(val) => { setStatusFilter(val); setPage(1); }}
             />
@@ -382,7 +382,7 @@ export default function ProductManagePage() {
               分类
             </span>
             <AdminSelect
-              options={categoryFilterOptions}
+              options={CATEGORY_FILTER_OPTIONS}
               value={categoryFilter}
               onChange={(val) => { setCategoryFilter(val); setPage(1); }}
               minWidth={120}

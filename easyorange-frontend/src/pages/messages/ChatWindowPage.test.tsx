@@ -3,11 +3,12 @@ import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ChatWindowPage from './ChatWindowPage';
+import type { ChatMessage } from '@/types/message';
 
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockSendMessage = vi.hoisted(() => vi.fn());
 const mockUseChatMessages = vi.hoisted(() =>
-  vi.fn(() => ({ messages: [], isLoading: true, loadOlder: vi.fn(), hasMore: false })),
+  vi.fn(() => ({ messages: [] as ChatMessage[], isLoading: true, loadOlder: vi.fn(), hasMore: false })),
 );
 const mockRecallMessage = vi.hoisted(() => vi.fn());
 
@@ -17,7 +18,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('@/stores/chatStore', () => ({
-  useChatStore: vi.fn((sel) => {
+  useChatStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) => {
     const s = { connectionStatus: 'connected', typingUsers: new Set() };
     return sel ? sel(s) : s;
   }),
@@ -44,14 +45,14 @@ vi.mock('@/api/messageApi', () => ({
 
 vi.mock('@/components/chat', () => ({
   ChatHeader: () => <div data-testid="chat-header" />,
-  MessageList: ({ messages }) => (
+  MessageList: ({ messages }: { messages: ChatMessage[] }) => (
     <div data-testid="message-list">
-      {messages.map((m) => (
+      {messages.map((m: ChatMessage) => (
         <div key={m.id} data-testid="message-item">{m.content}</div>
       ))}
     </div>
   ),
-  ChatInputBar: ({ onSend }) => (
+  ChatInputBar: ({ onSend }: { onSend: (content: string) => void }) => (
     <div data-testid="chat-input-bar">
       <button onClick={() => onSend?.('hello')}>send-btn</button>
     </div>
@@ -80,9 +81,10 @@ describe('ChatWindowPage', () => {
         {
           id: 'msg1',
           senderId: 'user2',
+          receiverId: 'user1',
           content: '你好',
-          type: 'TEXT',
-          status: 'SENT',
+          type: 'TEXT' as const,
+          status: 'SENT' as const,
           createTime: '2026-05-15T10:00:00Z',
           readTime: null,
           recalledAt: null,
@@ -99,7 +101,7 @@ describe('ChatWindowPage', () => {
 
   it('sends a message via ChatInputBar', async () => {
     mockUseChatMessages.mockReturnValue({
-      messages: [],
+      messages: [] as ChatMessage[],
       isLoading: false,
       loadOlder: vi.fn(),
       hasMore: false,
@@ -108,8 +110,7 @@ describe('ChatWindowPage', () => {
     const user = userEvent.setup();
     await user.click(screen.getByText('send-btn'));
     expect(mockSendMessage).toHaveBeenCalledWith(
-      'conv_user1_user2',
-      expect.objectContaining({ content: 'hello', receiverId: 'user2' }),
+      expect.objectContaining({ content: 'hello', receiverId: 'user2', conversationId: 'conv_user1_user2' }),
     );
   });
 });

@@ -71,7 +71,7 @@ export function useRefundPayment() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await paymentApi.refund(id);
+      await paymentApi.refundPayment(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PAYMENT_KEYS.all });
@@ -84,7 +84,7 @@ export function useClosePayment() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      await paymentApi.close(id);
+      await paymentApi.closePayment(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PAYMENT_KEYS.all });

@@ -4,7 +4,7 @@
  */
 
 export interface DebounceOptions {
-    immediate?: boolean;
+    isImmediate?: boolean;
 }
 
 export function debounce<T extends (...args: unknown[]) => unknown>(
@@ -12,15 +12,15 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
     delay = 300,
     options: DebounceOptions = {}
 ): ((...args: Parameters<T>) => void) & { cancel: () => void } {
-    const { immediate = false } = options;
+    const { isImmediate = false } = options;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const debounced = function (this: unknown, ...args: Parameters<T>) {
-        const callNow = immediate && !timeoutId;
+        const callNow = isImmediate && !timeoutId;
         if (timeoutId) {clearTimeout(timeoutId);}
         timeoutId = setTimeout(() => {
             timeoutId = null;
-            if (!immediate) {func.apply(this, args);}
+            if (!isImmediate) {func.apply(this, args);}
         }, delay);
         if (callNow) {func.apply(this, args);}
     };

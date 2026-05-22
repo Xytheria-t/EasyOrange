@@ -279,7 +279,6 @@
   box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255,255,255,0.5) inset;
   animation: slideUp 0.8s var(--ease-out) 0.3s both;
   position: relative;
-  overflow: hidden;
 }
 
 .publish-form-v2::before {
@@ -290,6 +289,7 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
+  border-radius: var(--radius-3xl) var(--radius-3xl) 0 0;
 }
 
 /* ============ FORM SECTIONS ============ */

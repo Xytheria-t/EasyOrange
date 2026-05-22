@@ -16,7 +16,7 @@ const statusOptions: { value: number | ''; label: string }[] = [
   { value: 3, label: '下架' },
 ];
 
-const categoryOptions = [
+const CATEGORY_OPTIONS = [
   { value: '', label: '全部分类' },
   { value: 'electronics', label: '电子产品' },
   { value: 'books', label: '图书教材' },
@@ -27,7 +27,7 @@ const categoryOptions = [
   { value: 'other', label: '其他' },
 ];
 
-const sortOptions = [
+const SORT_OPTIONS = [
   { value: 'createTime', label: '发布时间' },
   { value: 'viewCount', label: '浏览量' },
   { value: 'price', label: '价格' },
@@ -73,8 +73,8 @@ export default function ProductReviewPage() {
 
   const formatPrice = (price: number) => `¥${price.toFixed(2)}`;
 
-  const formatTime = (timeStr: string) => {
-    const date = new Date(timeStr);
+  const formatTime = (timeString: string) => {
+    const date = new Date(timeString);
     const diff = Date.now() - date.getTime();
     const minutes = Math.floor(diff / 60000);
     const hours = Math.floor(diff / 3600000);
@@ -340,7 +340,7 @@ export default function ProductReviewPage() {
             <AdminSelect
               options={statusOptions}
               value={statusFilter}
-              onChange={(val) => { setStatusFilter(val as number | ''); setPage(1); }}
+              onChange={(value) => { setStatusFilter(value as number | ''); setPage(1); }}
             />
           </div>
 
@@ -351,9 +351,9 @@ export default function ProductReviewPage() {
               分类
             </span>
             <AdminSelect
-              options={categoryOptions}
+              options={CATEGORY_OPTIONS}
               value={categoryFilter}
-              onChange={(val) => { setCategoryFilter(val); setPage(1); }}
+              onChange={(value) => { setCategoryFilter(value); setPage(1); }}
               minWidth={120}
             />
           </div>
@@ -368,9 +368,9 @@ export default function ProductReviewPage() {
               排序
             </span>
             <AdminSelect
-              options={sortOptions}
+              options={SORT_OPTIONS}
               value={sortBy}
-              onChange={(val) => { setSortBy(val); setPage(1); }}
+              onChange={(value) => { setSortBy(value); setPage(1); }}
               minWidth={120}
             />
           </div>

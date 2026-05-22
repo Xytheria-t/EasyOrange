@@ -6,7 +6,7 @@ import type { Favorite, PageResult } from '@/types';
 import { request } from './core/request';
 
 export const favoriteApi = {
-    getList(params?: { pageNum?: number; pageSize?: number }) {
+    getFavorites(params?: { pageNum?: number; pageSize?: number }) {
         return request<PageResult<Favorite>>('/favorites', {
             method: 'GET',
             params: {
@@ -16,13 +16,13 @@ export const favoriteApi = {
         });
     },
 
-    add(productId: string) {
+    addFavorite(productId: string) {
         return request(`/favorites/${productId}`, {
             method: 'POST'
         });
     },
 
-    remove(productId: string) {
+    removeFavorite(productId: string) {
         return request(`/favorites/${productId}`, {
             method: 'DELETE'
         });
@@ -35,7 +35,7 @@ export const favoriteApi = {
         });
     },
 
-    check(productId: string) {
+    checkFavorite(productId: string) {
         return request<boolean>(`/favorites/check/${productId}`, {
             method: 'GET'
         });

@@ -28,7 +28,7 @@ function FavoritesPage() {
   const { data: favoritesData, isLoading, error } = useQuery({
     queryKey: ['favorites', pageNum, pageSize],
     queryFn: async () => {
-      const response = await favoriteApi.getList({ pageNum, pageSize });
+      const response = await favoriteApi.getFavorites({ pageNum, pageSize });
       return response.data;
     },
     staleTime: 30 * 1000,
@@ -36,7 +36,7 @@ function FavoritesPage() {
 
   const removeMutation = useMutation({
     mutationFn: async (productId: string) => {
-      await favoriteApi.remove(productId);
+      await favoriteApi.removeFavorite(productId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorites'] });
@@ -95,8 +95,8 @@ function FavoritesPage() {
     return price % 1 === 0 ? price.toString() : price.toFixed(2);
   };
 
-  const formatRelativeTime = (dateStr: string) => {
-    const date = new Date(dateStr);
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));

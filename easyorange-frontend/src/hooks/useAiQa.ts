@@ -22,7 +22,7 @@ export function useAiQa() {
         } catch {
             const errorItem: QaHistoryItem = {
                 question: request.question,
-                answer: { answer: '抱歉，AI 暂时无法回答，请稍后重试。', confidence: false }
+                answer: { answer: '抱歉，AI 暂时无法回答，请稍后重试。', hasConfidence: false }
             };
             setQaHistory(prev => [...prev, errorItem]);
         } finally {

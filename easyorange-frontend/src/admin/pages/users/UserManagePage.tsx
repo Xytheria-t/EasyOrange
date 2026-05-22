@@ -6,14 +6,14 @@ import { UserDetailModal } from './UserDetailModal';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
 import type { AdminUser } from '../../types/admin';
 
-const statusFilterOptions = [
+const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
   { value: '0', label: '正常' },
   { value: '1', label: '禁用' },
   { value: '2', label: '锁定' },
 ];
 
-const userTypeFilterOptions = [
+const USER_TYPE_FILTER_OPTIONS = [
   { value: '', label: '全部类型' },
   { value: '01', label: '学生' },
   { value: '02', label: '教师' },
@@ -68,8 +68,8 @@ export default function UserManagePage() {
     setSelectedUser(null);
   }, [selectedUser, updateStatusMutation]);
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
   const columns: Column<AdminUser>[] = [
     {
@@ -300,7 +300,7 @@ export default function UserManagePage() {
               状态
             </span>
             <AdminSelect
-              options={statusFilterOptions}
+              options={STATUS_FILTER_OPTIONS}
               value={statusFilter}
               onChange={(val) => { setStatusFilter(val); setPage(1); }}
             />
@@ -313,7 +313,7 @@ export default function UserManagePage() {
               类型
             </span>
             <AdminSelect
-              options={userTypeFilterOptions}
+              options={USER_TYPE_FILTER_OPTIONS}
               value={userTypeFilter}
               onChange={(val) => { setUserTypeFilter(val); setPage(1); }}
             />

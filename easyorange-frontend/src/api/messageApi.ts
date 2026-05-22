@@ -7,7 +7,7 @@ import type { RecallPayload } from '@/types/message';
 import { request } from './core/request';
 
 export const messageApi = {
-  getList(_params?: Record<string, unknown>) {
+  getMessages() {
     return request<PageResult<Record<string, unknown>>>('/messages/list', {
       method: 'GET'
     });
@@ -36,7 +36,7 @@ export const messageApi = {
     });
   },
 
-  delete(id: string) {
+  deleteMessage(id: string) {
     return request(`/messages/${id}`, {
       method: 'DELETE'
     });
@@ -49,7 +49,7 @@ export const messageApi = {
     });
   },
 
-  recall(messageId: string): Promise<{ data: RecallPayload }> {
+  recallMessage(messageId: string): Promise<{ data: RecallPayload }> {
     return request(`/messages/${messageId}/recall`, {
       method: 'PUT'
     });

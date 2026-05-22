@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { useChatStore } from '@/stores/chatStore'
+import { useChatStore } from '@/store/chatStore'
 import { useStompChat } from './useStompChat'
 
 const QUEUE_KEY = 'chat_offline_queue'
@@ -12,7 +12,7 @@ interface QueuedMessage {
   timestamp: number
 }
 
-function getQueue(): QueuedMessage[] {
+function loadQueue(): QueuedMessage[] {
   try {
     const raw = localStorage.getItem(QUEUE_KEY)
     return raw ? JSON.parse(raw) : []
@@ -21,7 +21,7 @@ function getQueue(): QueuedMessage[] {
   }
 }
 
-function setQueue(queue: QueuedMessage[]) {
+function saveQueue(queue: QueuedMessage[]) {
   try {
     localStorage.setItem(QUEUE_KEY, JSON.stringify(queue.slice(0, MAX_QUEUE_SIZE)))
   } catch {
@@ -37,23 +37,23 @@ export function useOfflineQueue() {
   const isSendingRef = useRef(false)
 
   const flushQueue = useCallback(() => {
-    if (isSendingRef.current || connectionStatus !== 'connected') {return}
+    if (isSendingRef.current || connectionStatus !== 'connected') return
 
-    const queue = getQueue()
-    if (queue.length === 0) {return}
+    const queue = loadQueue()
+    if (queue.length === 0) return
 
     isSendingRef.current = true
 
     for (const item of queue) {
       try {
-        sendMessage(item.conversationId, item.payload)
+        sendMessage(item.payload)
         updateMessage(item.conversationId, item.id, { status: 'SENDING' })
       } catch {
         updateMessage(item.conversationId, item.id, { status: 'FAILED' })
       }
     }
 
-    setQueue([])
+    saveQueue([])
     isSendingRef.current = false
   }, [sendMessage, updateMessage, connectionStatus])
 
@@ -74,9 +74,9 @@ export function useOfflineQueue() {
         recalledAt: null,
       })
 
-      const queue = getQueue()
+      const queue = loadQueue()
       queue.push({ id: pendingId, conversationId, payload, timestamp: Date.now() })
-      setQueue(queue)
+      saveQueue(queue)
 
       if (connectionStatus === 'connected') {
         flushQueue()
@@ -100,15 +100,15 @@ export function useOfflineQueue() {
   }, [connectionStatus, flushQueue])
 
   const clearFailedMessages = useCallback(() => {
-    const queue = getQueue()
+    const queue = loadQueue()
     for (const item of queue) {
       updateMessage(item.conversationId, item.id, { status: 'FAILED' })
     }
-    setQueue([])
+    saveQueue([])
   }, [updateMessage])
 
   const getPendingCount = useCallback(() => {
-    return getQueue().length
+    return loadQueue().length
   }, [])
 
   return { enqueue, flushQueue, clearFailedMessages, getPendingCount }

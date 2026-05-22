@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles, Zap } from 'lucide-react';
 
 export type ToolsPlazaFilter = 'all' | 'ai' | 'discount';
@@ -6,26 +6,34 @@ export type ToolsPlazaFilter = 'all' | 'ai' | 'discount';
 interface ToolsPlazaProps {
   onFilterChange?: (filter: ToolsPlazaFilter) => void;
   total?: number;
+  activeFilter?: ToolsPlazaFilter;
 }
 
-export function ToolsPlaza({ onFilterChange, total = 0 }: ToolsPlazaProps) {
-  const [activeFilter, setActiveFilter] = useState<ToolsPlazaFilter>('all');
+export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalActiveFilter }: ToolsPlazaProps) {
+  const [internalActiveFilter, setInternalActiveFilter] = useState<ToolsPlazaFilter>('all');
   const [aiMode, setAiMode] = useState(false);
+  
+  const activeFilter = externalActiveFilter ?? internalActiveFilter;
+
+  useEffect(() => {
+    if (externalActiveFilter && externalActiveFilter !== 'ai') {
+      setAiMode(false);
+    }
+  }, [externalActiveFilter]);
 
   const handleFilterClick = (filter: ToolsPlazaFilter) => {
     if (filter === 'ai') {
       const nextAiMode = !aiMode;
       setAiMode(nextAiMode);
+      setInternalActiveFilter(nextAiMode ? 'ai' : 'all');
       if (nextAiMode) {
-        setActiveFilter('ai');
         onFilterChange?.('ai');
       } else {
-        setActiveFilter('all');
         onFilterChange?.('all');
       }
       return;
     }
-    setActiveFilter(filter);
+    setInternalActiveFilter(filter);
     setAiMode(false);
     onFilterChange?.(filter);
   };

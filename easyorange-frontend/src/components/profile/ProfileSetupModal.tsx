@@ -18,7 +18,7 @@ interface FormField {
   label: string
   placeholder: string
   icon: typeof User
-  required: boolean
+  isRequired: boolean
   type: string
   maxLength?: number
   validate?: (value: string) => string | null
@@ -32,7 +32,7 @@ const formFields: FormField[] = [
     label: '真实姓名',
     placeholder: '请输入您的真实姓名',
     icon: User,
-    required: true,
+    isRequired: true,
     type: 'text',
     validate: (value) => {
       if (!value || value.trim().length < 2) {return '真实姓名至少需要2个字符'}
@@ -45,7 +45,7 @@ const formFields: FormField[] = [
     label: '学号',
     placeholder: '请输入您的学号',
     icon: GraduationCap,
-    required: true,
+    isRequired: true,
     type: 'text',
     validate: (value) => {
       if (!value || value.trim().length < 5) {return '请输入有效的学号'}
@@ -57,7 +57,7 @@ const formFields: FormField[] = [
     label: '邮箱',
     placeholder: '请输入您的邮箱地址',
     icon: Mail,
-    required: true,
+    isRequired: true,
     type: 'email',
     validate: (value) => {
       if (!value) {return '邮箱不能为空'}
@@ -70,7 +70,7 @@ const formFields: FormField[] = [
     label: '手机号',
     placeholder: '请输入您的手机号',
     icon: Phone,
-    required: true,
+    isRequired: true,
     type: 'tel',
     maxLength: 11,
     validate: (value) => {
@@ -102,7 +102,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
   }, [addToast, onClose, navigate])
 
   const validateField = (field: FormField, value: string): string | null => {
-    if (field.required && !value.trim()) {
+    if (field.isRequired && !value.trim()) {
       return `${field.label}为必填项`
     }
     if (field.validate && value.trim()) {

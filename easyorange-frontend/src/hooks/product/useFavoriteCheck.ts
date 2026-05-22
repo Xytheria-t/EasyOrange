@@ -16,8 +16,8 @@ export function useFavoriteCheck() {
       return
     }
     try {
-      const res = await favoriteApi.batchCheck(productIds)
-      setFavoriteMap(res.data ?? {})
+      const response = await favoriteApi.batchCheck(productIds)
+      setFavoriteMap(response.data ?? {})
     } catch {
       setFavoriteMap({})
     }
@@ -29,10 +29,10 @@ export function useFavoriteCheck() {
     }
     try {
       if (shouldFavorite) {
-        await favoriteApi.add(productId)
+        await favoriteApi.addFavorite(productId)
         addToast({ type: 'success', message: '已收藏' })
       } else {
-        await favoriteApi.remove(productId)
+        await favoriteApi.removeFavorite(productId)
         addToast({ type: 'success', message: '已取消收藏' })
       }
       setFavoriteMap(prev => ({ ...prev, [productId]: shouldFavorite }))

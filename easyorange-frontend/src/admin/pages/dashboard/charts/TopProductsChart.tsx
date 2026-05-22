@@ -54,8 +54,8 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
             boxShadow: '0 8px 24px rgba(42,37,32,0.08)',
           }}
           formatter={(value: number, _name: string, item: { payload?: { fullName?: string; price?: number } }) => {
-            const p = item?.payload;
-            return [`浏览量: ${value.toLocaleString()} | ¥${p?.price?.toFixed(2) ?? '-'}`, p?.fullName ?? ''];
+            const payload = item?.payload;
+            return [`浏览量: ${value.toLocaleString()} | ¥${payload?.price?.toFixed(2) ?? '-'}`, payload?.fullName ?? ''];
           }}
           labelFormatter={() => ''}
         />

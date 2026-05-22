@@ -6,13 +6,13 @@ import { ConfirmModal } from '../../components/ConfirmModal';
 import { useAdminReviews, useDeleteReview } from '../../hooks';
 import type { AdminReview } from '../../types/admin';
 
-const statusOptions = [
+const STATUS_OPTIONS = [
   { value: '', label: '全部状态' },
   { value: '1', label: '正常' },
   { value: '0', label: '隐藏' },
 ];
 
-const ratingOptions = [
+const RATING_OPTIONS = [
   { value: '', label: '全部评分' },
   { value: '5', label: '5星' },
   { value: '4', label: '4星' },
@@ -76,8 +76,8 @@ export default function ReviewManagePage() {
     }
   };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
   const columns: Column<AdminReview>[] = [
     {
@@ -101,8 +101,8 @@ export default function ReviewManagePage() {
       title: '评分',
       render: (value) => {
         const rating = value as number;
-        const t = RATING_LABELS[rating] ?? { emoji: '⭐', label: '未知', color: '#9B9590' };
-        return <span style={{ fontSize: '0.82rem', fontWeight: 600, color: t.color }}>{t.emoji}</span>;
+        const ratingLabel = RATING_LABELS[rating] ?? { emoji: '⭐', label: '未知', color: '#9B9590' };
+        return <span style={{ fontSize: '0.82rem', fontWeight: 600, color: ratingLabel.color }}>{ratingLabel.emoji}</span>;
       },
     },
     {
@@ -138,8 +138,8 @@ export default function ReviewManagePage() {
       key: 'createTime',
       title: '评价时间',
       render: (value) => {
-        const timeStr = value as string | undefined;
-        return <span style={{ color: '#9B9590', fontSize: '0.82rem' }}>{timeStr ? formatDate(timeStr) : '-'}</span>;
+        const timeString = value as string | undefined;
+        return <span style={{ color: '#9B9590', fontSize: '0.82rem' }}>{timeString ? formatDate(timeString) : '-'}</span>;
       },
     },
     {
@@ -300,9 +300,9 @@ export default function ReviewManagePage() {
               状态
             </span>
             <AdminSelect
-              options={statusOptions}
+              options={STATUS_OPTIONS}
               value={statusFilter}
-              onChange={(val) => { setStatusFilter(val); setPage(1); }}
+              onChange={(value) => { setStatusFilter(value); setPage(1); }}
             />
           </div>
 
@@ -315,9 +315,9 @@ export default function ReviewManagePage() {
               评分
             </span>
             <AdminSelect
-              options={ratingOptions}
+              options={RATING_OPTIONS}
               value={ratingFilter}
-              onChange={(val) => { setRatingFilter(val); setPage(1); }}
+              onChange={(value) => { setRatingFilter(value); setPage(1); }}
             />
           </div>
 
@@ -355,7 +355,7 @@ export default function ReviewManagePage() {
 
       {/* Delete confirm modal */}
       <ConfirmModal
-        open={deleteModal.open}
+        isOpen={deleteModal.open}
         title="确认删除评价"
         content={
           <div style={{ fontSize: '0.88rem', lineHeight: 1.6, color: '#6B6460' }}>
@@ -394,7 +394,7 @@ export default function ReviewManagePage() {
         }
         confirmText="确认删除"
         onConfirm={handleDeleteConfirm}
-        loading={deleteReview.isPending}
+        isLoading={deleteReview.isPending}
         confirmDisabled={!deleteReason.trim()}
         onCancel={() => setDeleteModal({ open: false, reviewId: '', reviewContent: '' })}
         variant="danger"

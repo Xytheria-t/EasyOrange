@@ -7,9 +7,9 @@ import {
   useAdminOrders,
   useAdminOrderDetail,
   useAdminOrderStats,
-  useCancelOrder,
+  useAdminCancelOrder,
   useForceCompleteOrder,
-  useRefundOrder,
+  useAdminRefundOrder,
 } from './useAdminOrders';
 import type { ReactNode } from 'react';
 
@@ -99,7 +99,7 @@ describe('useAdminOrderStats', () => {
   });
 });
 
-describe('useCancelOrder', () => {
+describe('useAdminCancelOrder', () => {
   it('cancels order successfully', async () => {
     server.use(
       http.put('/api/admin/orders/1/cancel', () => {
@@ -112,7 +112,7 @@ describe('useCancelOrder', () => {
       }),
     );
 
-    const { result } = renderHook(() => useCancelOrder(), {
+    const { result } = renderHook(() => useAdminCancelOrder(), {
       wrapper: Wrapper,
     });
 
@@ -145,7 +145,7 @@ describe('useForceCompleteOrder', () => {
   });
 });
 
-describe('useRefundOrder', () => {
+describe('useAdminRefundOrder', () => {
   it('refunds order successfully', async () => {
     server.use(
       http.put('/api/admin/orders/1/refund', () => {
@@ -158,7 +158,7 @@ describe('useRefundOrder', () => {
       }),
     );
 
-    const { result } = renderHook(() => useRefundOrder(), {
+    const { result } = renderHook(() => useAdminRefundOrder(), {
       wrapper: Wrapper,
     });
 

@@ -5,7 +5,12 @@ import type { AdminProduct, AdminProductQuery, UpdateStatusRequest } from '../ty
 export const ADMIN_PRODUCT_KEYS = {
   all: ['admin', 'products'] as const,
   lists: () => [...ADMIN_PRODUCT_KEYS.all, 'list'] as const,
-  list: (params: AdminProductQuery) => [...ADMIN_PRODUCT_KEYS.lists(), params] as const,
+  list: (params: AdminProductQuery) =>
+    [...ADMIN_PRODUCT_KEYS.lists(),
+      params.pageNum, params.pageSize, params.keyword,
+      params.categoryId, params.status, params.sellerId,
+      params.startTime, params.endTime,
+    ] as const,
   details: () => [...ADMIN_PRODUCT_KEYS.all, 'detail'] as const,
   detail: (id: number) => [...ADMIN_PRODUCT_KEYS.details(), id] as const,
 };

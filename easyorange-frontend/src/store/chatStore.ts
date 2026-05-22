@@ -3,14 +3,20 @@ import type { ChatMessage } from '@/types/message';
 
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'reconnecting';
 
+interface TargetUser {
+  id: string;
+  name: string;
+  avatar: string | null;
+}
+
 interface ChatState {
   activeConversationId: string | null;
-  activeTargetUser: { id: string; name: string; avatar: string | null } | null;
+  activeTargetUser: TargetUser | null;
   messages: Record<string, ChatMessage[]>;
   typingUsers: Set<string>;
   connectionStatus: ConnectionStatus;
 
-  setActiveConversation: (convId: string | null, user?: { id: string; name: string; avatar: string | null } | null) => void;
+  setActiveConversation: (convId: string | null, user?: TargetUser | null) => void;
   addMessage: (convId: string, message: ChatMessage) => void;
   updateMessage: (convId: string, msgId: string, patch: Partial<ChatMessage>) => void;
   setMessages: (convId: string, messages: ChatMessage[]) => void;
@@ -23,7 +29,7 @@ interface ChatState {
 
 const initialState = {
   activeConversationId: null as string | null,
-  activeTargetUser: null as { id: string; name: string; avatar: string | null } | null,
+  activeTargetUser: null as TargetUser | null,
   messages: {} as Record<string, ChatMessage[]>,
   typingUsers: new Set<string>(),
   connectionStatus: 'disconnected' as ConnectionStatus,
@@ -39,7 +45,7 @@ export const useChatStore = create<ChatState>()((set) => ({
     set((state) => ({
       messages: {
         ...state.messages,
-        [convId]: [...(state.messages[convId] || []), message],
+        [convId]: [...(state.messages[convId] ?? []), message],
       },
     })),
 
@@ -47,7 +53,7 @@ export const useChatStore = create<ChatState>()((set) => ({
     set((state) => ({
       messages: {
         ...state.messages,
-        [convId]: (state.messages[convId] || []).map((m) =>
+        [convId]: (state.messages[convId] ?? []).map((m) =>
           m.id === msgId ? { ...m, ...patch } : m
         ),
       },
@@ -62,7 +68,7 @@ export const useChatStore = create<ChatState>()((set) => ({
     set((state) => ({
       messages: {
         ...state.messages,
-        [convId]: [...messages, ...(state.messages[convId] || [])],
+        [convId]: [...messages, ...(state.messages[convId] ?? [])],
       },
     })),
 
