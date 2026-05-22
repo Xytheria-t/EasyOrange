@@ -15,7 +15,6 @@ import java.util.Optional;
 @Repository
 public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> implements UserRepository {
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final UserEntityMapper entityMapper;
 
     public UserRepositoryImpl(UserMapper userMapper, UserEntityMapper entityMapper) {
@@ -61,12 +60,16 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
         if (account == null || account.isBlank()) {
             return Optional.empty();
         }
+        String trimmedAccount = account.trim();
         return Optional.ofNullable(lambdaQuery()
-            .eq(UserEntity::getUsername, account)
-            .or().eq(UserEntity::getEmail, account)
-            .or().eq(UserEntity::getPhone, account)
-            .one())
-            .map(entityMapper::toDomain);
+                .and(wrapper -> wrapper
+                        .eq(UserEntity::getUsername, trimmedAccount)
+                        .or()
+                        .eq(UserEntity::getEmail, trimmedAccount)
+                        .or()
+                        .eq(UserEntity::getPhone, trimmedAccount))
+                .one())
+                .map(entityMapper::toDomain);
     }
 
     @Override
@@ -85,6 +88,10 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
         return mapper.updateById(entity) > 0;
     }
 
+    /**
+     * 更新用户登录信息（IP和时间），使用独立事务确保登录记录不受主业务事务影响。
+     * 即使用户注册/登录主流程失败，登录记录也应被保存用于安全审计。
+     */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public boolean updateLoginInfo(Long userId, String loginIp) {

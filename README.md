@@ -233,6 +233,7 @@ npm run dev
 | | `PUT /api/users/password` | 修改密码 |
 | | `POST /api/users/forgot-password` | 忘记密码 |
 | **商品** | `GET /api/products` | 商品列表（分页） |
+| | `GET /api/products/my` | 我的商品列表（支持状态筛选） |
 | | `GET /api/products/{id}` | 商品详情 |
 | | `POST /api/products` | 发布商品 |
 | | `PUT /api/products/{id}` | 更新商品 |
@@ -276,6 +277,7 @@ npm run dev
 | 发布商品 | `/publish` | 商品发布表单（多图上传、草稿保存） | 是 |
 | 编辑商品 | `/products/:id/edit` | 编辑已发布商品 | 是 |
 | 个人中心 | `/profile` | 个人信息、密码修改、偏好设置 | 是 |
+| 我的发布 | `/my-products` | 我发布的商品列表（状态筛选/查看/编辑） | 是 |
 | 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
 | 消息中心 | `/messages` | 站内消息列表 | 是 |
 | 通知中心 | `/notifications` | 系统通知列表、查看详情 | 是 |

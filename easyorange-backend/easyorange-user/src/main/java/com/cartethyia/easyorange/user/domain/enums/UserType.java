@@ -9,8 +9,9 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum UserType implements IEnum<String> {
-    ADMIN("00", "管理员"),
-    NORMAL("01", "普通用户");
+    ADMIN("00", "超级管理员"),
+    NORMAL("01", "普通用户"),
+    MANAGER("02", "管理员");
 
     @EnumValue
     @JsonValue

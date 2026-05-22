@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.junit.jupiter.api.DisplayName;
@@ -19,13 +20,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class UserTest {
 
     @Nested
-    @DisplayName("register")
-    class RegisterTests {
+    @DisplayName("create")
+    class CreateTests {
 
         @Test
         @DisplayName("应创建正常状态的普通用户")
         void shouldCreateNormalUser() {
-            User user = User.register("testuser", "encodedPassword", "阳光橙子");
+            User user = User.create("testuser", "encodedPassword", "阳光橙子");
 
             assertThat(user.getUsername()).isEqualTo("testuser");
             assertThat(user.getPassword()).isEqualTo("encodedPassword");
@@ -38,7 +39,7 @@ class UserTest {
         @Test
         @DisplayName("用户名为空应抛出异常")
         void shouldThrowWhenUsernameIsNull() {
-            assertThatThrownBy(() -> User.register(null, "password", "nickname"))
+            assertThatThrownBy(() -> User.create(null, "password", "nickname"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("username");
         }
@@ -46,7 +47,7 @@ class UserTest {
         @Test
         @DisplayName("密码为空应抛出异常")
         void shouldThrowWhenPasswordIsNull() {
-            assertThatThrownBy(() -> User.register("testuser", null, "nickname"))
+            assertThatThrownBy(() -> User.create("testuser", null, "nickname"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("password");
         }
@@ -166,7 +167,7 @@ class UserTest {
         @DisplayName("空值不应覆盖已有字段")
         void shouldNotOverrideWithBlankValues() {
             ContactInfo contactInfo = new ContactInfo("old@example.com", "13812345678");
-            PersonalInfo personalInfo = new PersonalInfo(null, null, null, null, null);
+            PersonalInfo personalInfo = ImmutablePersonalInfo.builder().build();
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "password"))
@@ -188,7 +189,7 @@ class UserTest {
         @Test
         @DisplayName("应更新头像URL")
         void shouldUpdateAvatarUrl() {
-            PersonalInfo personalInfo = new PersonalInfo(null, null, null, null, "/avatar/old.png");
+            PersonalInfo personalInfo = ImmutablePersonalInfo.builder().avatar("/avatar/old.png").build();
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "password"))
@@ -249,7 +250,13 @@ class UserTest {
         @DisplayName("Builder 应正确创建 User 对象")
         void shouldCreateUserCorrectly() {
             ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = new PersonalInfo("张三", "小张", Sex.MALE, "2024001", "/avatar/test.png");
+            PersonalInfo personalInfo = ImmutablePersonalInfo.builder()
+                .realName("张三")
+                .nickName("小张")
+                .sex(Sex.MALE)
+                .studentId("2024001")
+                .avatar("/avatar/test.png")
+                .build();
             LoginInfo loginInfo = new LoginInfo("192.168.1.1", null, null);
             AuditInfo auditInfo = AuditInfo.create(1L);
 
@@ -315,7 +322,7 @@ class UserTest {
         @DisplayName("toBuilder 应保留所有字段")
         void shouldPreserveAllFields() {
             ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = new PersonalInfo(null, "nickname", null, null, null);
+            PersonalInfo personalInfo = ImmutablePersonalInfo.builder().nickName("nickname").build();
             User original = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "password"))

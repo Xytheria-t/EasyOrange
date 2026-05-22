@@ -61,24 +61,22 @@ public class RedisSmsCodeAdapter implements SmsCodePort, SmsRateLimitPort {
 
     @Override
     public long incrementDailyCount(String phone) {
-        Long count = redisCache.increment(DAILY_COUNT_PREFIX + phone);
+        String key = DAILY_COUNT_PREFIX + phone;
+        Long count = redisCache.increment(key);
+        if (count != null && count == 1) {
+            redisCache.expire(key, 1, TimeUnit.DAYS);
+        }
         return count != null ? count : 0;
-    }
-
-    @Override
-    public void expireDailyCount(String phone, Duration ttl) {
-        redisCache.expire(DAILY_COUNT_PREFIX + phone, ttl.toDays(), TimeUnit.DAYS);
     }
 
     @Override
     public long incrementVerifyCount(String phone) {
-        Long count = redisCache.increment(VERIFY_COUNT_PREFIX + phone);
+        String key = VERIFY_COUNT_PREFIX + phone;
+        Long count = redisCache.increment(key);
+        if (count != null && count == 1) {
+            redisCache.expire(key, 10, TimeUnit.MINUTES);
+        }
         return count != null ? count : 0;
-    }
-
-    @Override
-    public void expireVerifyCount(String phone, Duration ttl) {
-        redisCache.expire(VERIFY_COUNT_PREFIX + phone, ttl.toMinutes(), TimeUnit.MINUTES);
     }
 
     @Override

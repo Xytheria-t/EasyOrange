@@ -8,13 +8,13 @@ import java.time.Duration;
  * 职责：
  * <ul>
  *   <li>发送间隔控制（防止短信轰炸）</li>
- *   <li>每日发送配额管理</li>
- *   <li>验证次数限制</li>
+ *   <li>每日发送配额管理（TTL 由实现层内部管理）</li>
+ *   <li>验证次数限制（TTL 由实现层内部管理）</li>
  * </ul>
  * 
  * <p>实现类通常基于 Redis 等缓存存储
  */
-public interface SmsRateLimitPort extends OutboundPort {
+public interface SmsRateLimitPort {
 
     /**
      * 检查是否可以发送短信
@@ -33,7 +33,7 @@ public interface SmsRateLimitPort extends OutboundPort {
     void setSendInterval(String phone, Duration interval);
 
     /**
-     * 递增每日发送次数
+     * 递增每日发送次数，首次递增时自动管理 TTL
      * 
      * @param phone 手机号
      * @return 递增后的次数
@@ -41,28 +41,12 @@ public interface SmsRateLimitPort extends OutboundPort {
     long incrementDailyCount(String phone);
 
     /**
-     * 设置每日发送计数的过期时间
-     * 
-     * @param phone 手机号
-     * @param ttl 过期时长
-     */
-    void expireDailyCount(String phone, Duration ttl);
-
-    /**
-     * 递增验证尝试次数
+     * 递增验证尝试次数，首次递增时自动管理 TTL
      * 
      * @param phone 手机号
      * @return 递增后的次数
      */
     long incrementVerifyCount(String phone);
-
-    /**
-     * 设置验证计数的过期时间
-     * 
-     * @param phone 手机号
-     * @param ttl 过期时长
-     */
-    void expireVerifyCount(String phone, Duration ttl);
 
     /**
      * 清除验证计数（验证成功后）

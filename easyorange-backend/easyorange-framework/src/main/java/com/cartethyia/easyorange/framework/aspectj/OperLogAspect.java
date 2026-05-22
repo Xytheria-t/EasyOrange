@@ -132,8 +132,8 @@ public class OperLogAspect {
                 operationTitle = OperLogUtil.deriveOperationTitle(method.getName());
             }
             businessType = effectiveLog.type();
-            saveRequestData = effectiveLog.isSaveRequestData();
-            saveResponseData = effectiveLog.isSaveResponseData();
+            saveRequestData = effectiveLog.saveRequestData();
+            saveResponseData = effectiveLog.saveResponseData();
             excludeParamNames = effectiveLog.excludeParamNames();
         } else {
             moduleName = OperLogUtil.deriveModuleName(className);
@@ -218,14 +218,14 @@ public class OperLogAspect {
                 continue;
             }
 
-            String objJson;
+            String json;
             try {
-                objJson = objectMapper.writeValueAsString(value);
+                json = objectMapper.writeValueAsString(value);
             } catch (JacksonException e) {
                 continue;
             }
-            if (objJson != null) {
-                String maskedJson = maskSensitiveFields(objJson, excludeParamNames);
+            if (json != null) {
+                String maskedJson = maskSensitiveFields(json, excludeParamNames);
                 params.append(maskedJson).append(" ");
             }
         }

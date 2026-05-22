@@ -24,7 +24,7 @@ public interface UserAssembler {
     @Mapping(target = "realName", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "studentId", source = "personalInfo.studentId")
+    @Mapping(target = "studentId", ignore = true)
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     UserVO toVo(User user);
@@ -39,7 +39,7 @@ public interface UserAssembler {
     @Mapping(target = "gender", ignore = true)
     @Mapping(target = "userType", ignore = true)
     @Mapping(target = "avatar", ignore = true)
-    @Mapping(target = "studentId", source = "user.personalInfo.studentId")
+    @Mapping(target = "studentId", ignore = true)
     @Mapping(target = "createTime", ignore = true)
     @Mapping(target = "updateTime", ignore = true)
     UserProfileVO toProfileVo(User user, Set<String> roles, Set<String> permissions, Long loginTime);
@@ -63,12 +63,14 @@ public interface UserAssembler {
         String realName = personalInfo != null ? personalInfo.realName() : null;
         String nickName = personalInfo != null ? personalInfo.nickName() : null;
         String avatar = personalInfo != null ? personalInfo.avatar() : null;
+        String studentId = personalInfo != null ? personalInfo.studentId() : null;
 
         vo.setNickname(nickName);
         vo.setEmail(MaskUtils.maskEmail(email));
         vo.setPhone(MaskUtils.maskPhone(phone));
         vo.setRealName(MaskUtils.maskName(realName));
         vo.setAvatar(avatar);
+        vo.setStudentId(studentId);
         vo.setStatus(user.getStatus() != null
             ? Integer.parseInt(user.getStatus().getCode()) : 0);
         vo.setUserType(user.getUserType());
@@ -87,6 +89,7 @@ public interface UserAssembler {
         String realName = personalInfo != null ? personalInfo.realName() : null;
         String nickName = personalInfo != null ? personalInfo.nickName() : null;
         String avatar = personalInfo != null ? personalInfo.avatar() : null;
+        String studentId = personalInfo != null ? personalInfo.studentId() : null;
         var sex = personalInfo != null ? personalInfo.sex() : null;
 
         vo.setNickname(nickName);
@@ -94,6 +97,7 @@ public interface UserAssembler {
         vo.setPhone(MaskUtils.maskPhone(phone));
         vo.setRealName(MaskUtils.maskName(realName));
         vo.setAvatar(avatar);
+        vo.setStudentId(studentId);
         vo.setStatus(user.getStatus() != null
             ? Integer.parseInt(user.getStatus().getCode()) : 0);
         vo.setStatusDesc(user.getStatus() != null
@@ -101,6 +105,6 @@ public interface UserAssembler {
         vo.setGender(sex != null
             ? Integer.parseInt(sex.getCode()) : null);
         vo.setUserType(user.getUserType() != null
-            ? user.getUserType().getDescription() : null);
+            ? user.getUserType().getCode() : null);
     }
 }

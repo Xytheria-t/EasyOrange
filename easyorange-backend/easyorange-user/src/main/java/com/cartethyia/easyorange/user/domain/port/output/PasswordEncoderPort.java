@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.domain.port.output;
 
-public interface PasswordEncoderPort extends OutboundPort {
+public interface PasswordEncoderPort {
 
     String encode(String rawPassword);
 

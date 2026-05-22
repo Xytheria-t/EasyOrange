@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.mapstruct.Mapper;
@@ -18,7 +19,7 @@ import java.util.function.Function;
     imports = {
         Credentials.class,
         ContactInfo.class,
-        PersonalInfo.class,
+        ImmutablePersonalInfo.class,
         LoginInfo.class,
         AuditInfo.class
     }
@@ -27,7 +28,7 @@ public interface UserEntityMapper {
 
     @Mapping(target = "credentials", expression = "java(new Credentials(entity.getUsername(), entity.getPassword()))")
     @Mapping(target = "contactInfo", expression = "java(new ContactInfo(entity.getEmail(), entity.getPhone()))")
-    @Mapping(target = "personalInfo", expression = "java(new PersonalInfo(entity.getRealName(), entity.getNickName(), entity.getSex(), entity.getStudentId(), entity.getAvatar()))")
+    @Mapping(target = "personalInfo", expression = "java(ImmutablePersonalInfo.builder().realName(entity.getRealName()).nickName(entity.getNickName()).sex(entity.getSex()).studentId(entity.getStudentId()).avatar(entity.getAvatar()).build())")
     @Mapping(target = "loginInfo", expression = "java(new LoginInfo(entity.getLoginIp(), entity.getLoginDate(), entity.getPwdUpdateDate()))")
     @Mapping(target = "auditInfo", expression = "java(new AuditInfo(entity.getCreateTime(), entity.getUpdateTime(), entity.getCreateBy(), entity.getUpdateBy(), entity.getDelFlag(), entity.getVersion()))")
     User toDomain(UserEntity entity);

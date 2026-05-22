@@ -1,7 +1,7 @@
 -- ===================================================================
 -- EasyOrange 校园二手交易平台 - 数据库初始化
--- Version: V1
--- 职责: 创建初始表结构、索引、约束（纯 DDL）
+-- Version: V1 (合并 V1+V4+V7+V8)
+-- 职责: 创建所有初始表结构、索引、约束（纯 DDL）
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
 -- ===================================================================
@@ -43,7 +43,7 @@ CREATE TABLE `eo_user` (
     KEY `idx_eo_user_create_time` (`create_time`),
     CONSTRAINT `chk_eo_user_status` CHECK (`status` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_user_sex` CHECK (`sex` IS NULL OR `sex` IN (0, 1, 2)),
-    CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('00', '01'))
+    CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('01', '02'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
 
 -- ===================================================================
@@ -186,7 +186,8 @@ CREATE TABLE `eo_product_report` (
     `product_id` BIGINT NOT NULL COMMENT '被举报商品 ID',
     `reporter_id` BIGINT NOT NULL COMMENT '举报人 ID',
     `reason` VARCHAR(500) NOT NULL COMMENT '举报原因',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '处理状态（0 待处理 1 已处理 2 已忽略）',
+    `reason_type` TINYINT DEFAULT NULL COMMENT '举报类型（1 虚假信息 2 侵权投诉 3 违规内容 4 其他）',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '处理状态（0 待处理 1 处理中 2 已解决 3 已驳回）',
     `handle_result` VARCHAR(500) DEFAULT NULL COMMENT '处理结果',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -198,8 +199,25 @@ CREATE TABLE `eo_product_report` (
     KEY `idx_eo_product_report_product_id` (`product_id`),
     KEY `idx_eo_product_report_reporter_id` (`reporter_id`),
     KEY `idx_eo_product_report_status_time` (`status`, `create_time` DESC),
-    CONSTRAINT `chk_eo_product_report_status` CHECK (`status` IN (0, 1, 2))
+    CONSTRAINT `chk_eo_product_report_status` CHECK (`status` IN (0, 1, 2, 3))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品举报表';
+
+CREATE TABLE `eo_report_handle_history` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `report_id` BIGINT NOT NULL COMMENT '举报ID',
+    `operator_id` BIGINT NOT NULL COMMENT '操作人ID',
+    `action` VARCHAR(30) NOT NULL COMMENT '动作类型（IGNORE/PRODUCT_OFFLINE/WARN_SENDER/BAN_PRODUCT）',
+    `remark` VARCHAR(500) DEFAULT NULL COMMENT '备注',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_report_handle_history_report_id` (`report_id`),
+    KEY `idx_eo_report_handle_history_operator_id` (`operator_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='举报处理历史表';
 
 CREATE TABLE `eo_favorite` (
     `id` BIGINT NOT NULL COMMENT '主键 ID',
@@ -361,6 +379,8 @@ CREATE TABLE `eo_message` (
     `title` VARCHAR(200) DEFAULT NULL COMMENT '消息标题',
     `content` TEXT NOT NULL COMMENT '消息内容',
     `is_read` TINYINT NOT NULL DEFAULT 0 COMMENT '是否已读（0 未读 1 已读）',
+    `msg_status` VARCHAR(20) NOT NULL DEFAULT 'SENT' COMMENT '消息状态（SENT/DELIVERED/READ/RECALLED）',
+    `recalled_at` DATETIME DEFAULT NULL COMMENT '撤回时间',
     `read_time` DATETIME DEFAULT NULL COMMENT '已读时间',
     `business_id` BIGINT DEFAULT NULL COMMENT '业务 ID',
     `conversation_id` BIGINT DEFAULT NULL COMMENT '会话 ID',
@@ -473,6 +493,8 @@ CREATE TABLE `eo_upload_file` (
     `file_type` VARCHAR(50) DEFAULT NULL COMMENT '文件扩展名',
     `mime_type` VARCHAR(100) DEFAULT NULL COMMENT 'MIME 类型',
     `md5` VARCHAR(32) DEFAULT NULL COMMENT '文件 MD5',
+    `storage_type` VARCHAR(32) NOT NULL DEFAULT 'LOCAL' COMMENT '存储类型（LOCAL/S3/OSS）',
+    `storage_key` VARCHAR(500) DEFAULT NULL COMMENT '存储后端标识键',
     `business_type` VARCHAR(50) DEFAULT NULL COMMENT '业务类型',
     `business_id` BIGINT DEFAULT NULL COMMENT '业务 ID',
     `uploader_id` BIGINT DEFAULT NULL COMMENT '上传者 ID',
@@ -543,7 +565,104 @@ CREATE TABLE `eo_oper_log_archive` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志归档表';
 
 -- ===================================================================
--- 9. 领域事件表 (Outbox 模式)
+-- 9. AI 功能模块
+-- ===================================================================
+
+CREATE TABLE `eo_product_question` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `product_id` BIGINT NOT NULL COMMENT '商品 ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户 ID',
+    `question` TEXT NOT NULL COMMENT '问题内容',
+    `answer` TEXT DEFAULT NULL COMMENT 'AI 回答内容',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态（0 待回答 1 已回答 2 已驳回）',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_product_question_product_id` (`product_id`),
+    KEY `idx_eo_product_question_user_id` (`user_id`),
+    KEY `idx_eo_product_question_status_time` (`status`, `create_time` DESC),
+    CONSTRAINT `chk_eo_product_question_status` CHECK (`status` IN (0, 1, 2))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品问答表';
+
+CREATE TABLE `eo_audit_suggestion` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `product_id` BIGINT NOT NULL COMMENT '商品 ID',
+    `suggestion_type` VARCHAR(50) NOT NULL COMMENT '建议类型（PRICE_AUDIT/DESCRIPTION_AUDIT/CATEGORY_AUDIT/IMAGE_AUDIT）',
+    `suggestion_content` JSON DEFAULT NULL COMMENT '建议内容（JSON）',
+    `confidence` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT '置信度（0.00-1.00）',
+    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态（0 待处理 1 已采纳 2 已忽略）',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '处理时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '处理者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_audit_suggestion_product_id` (`product_id`),
+    KEY `idx_eo_audit_suggestion_type_status` (`suggestion_type`, `status`, `create_time` DESC),
+    CONSTRAINT `chk_eo_audit_suggestion_status` CHECK (`status` IN (0, 1, 2)),
+    CONSTRAINT `chk_eo_audit_suggestion_confidence` CHECK (`confidence` >= 0.00 AND `confidence` <= 1.00)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='AI 审核建议表';
+
+-- ===================================================================
+-- 10. 信用评分模块
+-- ===================================================================
+
+CREATE TABLE `eo_user_credit` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户 ID',
+    `credit_score` INT NOT NULL DEFAULT 100 COMMENT '信用评分（0-200）',
+    `level` VARCHAR(20) NOT NULL DEFAULT 'NORMAL' COMMENT '信用等级（EXCELLENT/GOOD/NORMAL/LOW/BLACKLIST）',
+    `total_trades` INT NOT NULL DEFAULT 0 COMMENT '总交易数',
+    `completed_trades` INT NOT NULL DEFAULT 0 COMMENT '已完成交易数',
+    `cancelled_trades` INT NOT NULL DEFAULT 0 COMMENT '已取消交易数',
+    `total_reports` INT NOT NULL DEFAULT 0 COMMENT '总举报数',
+    `confirmed_reports` INT NOT NULL DEFAULT 0 COMMENT '已确认举报数',
+    `review_avg_rating` DECIMAL(3,2) DEFAULT NULL COMMENT '评价平均分',
+    `last_updated` DATETIME DEFAULT NULL COMMENT '最后评分更新时间',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `create_by` BIGINT DEFAULT NULL COMMENT '创建者',
+    `update_by` BIGINT DEFAULT NULL COMMENT '更新者',
+    `del_flag` TINYINT NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 2 删除）',
+    `version` INT NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_eo_user_credit_user_id` (`user_id`),
+    KEY `idx_eo_user_credit_score` (`credit_score`),
+    KEY `idx_eo_user_credit_level` (`level`),
+    KEY `idx_eo_user_credit_last_updated` (`last_updated`),
+    CONSTRAINT `chk_eo_user_credit_score` CHECK (`credit_score` >= 0 AND `credit_score` <= 200),
+    CONSTRAINT `chk_eo_user_credit_total_trades` CHECK (`total_trades` >= 0),
+    CONSTRAINT `chk_eo_user_credit_completed_trades` CHECK (`completed_trades` >= 0),
+    CONSTRAINT `chk_eo_user_credit_cancelled_trades` CHECK (`cancelled_trades` >= 0),
+    CONSTRAINT `chk_eo_user_credit_total_reports` CHECK (`total_reports` >= 0),
+    CONSTRAINT `chk_eo_user_credit_confirmed_reports` CHECK (`confirmed_reports` >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信用评分表';
+
+CREATE TABLE `eo_credit_change_log` (
+    `id` BIGINT NOT NULL COMMENT '主键 ID',
+    `user_id` BIGINT NOT NULL COMMENT '用户 ID',
+    `change_amount` INT NOT NULL COMMENT '变更分值',
+    `before_score` INT NOT NULL COMMENT '变更前评分',
+    `after_score` INT NOT NULL COMMENT '变更后评分',
+    `change_type` VARCHAR(30) NOT NULL COMMENT '变更类型（TRADE_COMPLETE/TRADE_CANCEL/REPORT_CONFIRMED/REVIEW_RATING/RECALCULATE/ADMIN_ADJUST）',
+    `reason` VARCHAR(500) DEFAULT NULL COMMENT '变更原因',
+    `reference_id` BIGINT DEFAULT NULL COMMENT '关联业务 ID（订单ID/举报ID等）',
+    `create_by` BIGINT DEFAULT NULL COMMENT '操作人/系统 ID',
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY `idx_eo_credit_change_log_user_id` (`user_id`),
+    KEY `idx_eo_credit_change_log_type_time` (`change_type`, `create_time` DESC),
+    KEY `idx_eo_credit_change_log_create_time` (`create_time` DESC),
+    CONSTRAINT `chk_eo_credit_change_log_change_amount` CHECK (`change_amount` <> 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='信用变更日志表';
+
+-- ===================================================================
+-- 11. 领域事件表 (Outbox 模式)
 -- ===================================================================
 
 CREATE TABLE `eo_domain_event` (
@@ -572,7 +691,7 @@ CREATE TABLE `eo_domain_event` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='领域事件表';
 
 -- ===================================================================
--- 10. Saga 分布式事务状态表
+-- 12. Saga 分布式事务状态表
 -- ===================================================================
 
 CREATE TABLE `eo_saga_status` (
@@ -596,7 +715,7 @@ CREATE TABLE `eo_saga_status` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Saga 分布式事务状态表';
 
 -- ===================================================================
--- 11. 幂等性键表
+-- 13. 幂等性键表
 -- ===================================================================
 
 CREATE TABLE `eo_idempotency_key` (

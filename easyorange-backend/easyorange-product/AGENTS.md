@@ -8,11 +8,12 @@
 product/
 ├── adapter/
 │   ├── inbound/web/
-│   │   ├── ProductController.java       # 商品写操作 (创建/更新/删除/状态)
-│   │   ├── ProductQueryController.java  # 商品读操作 (详情/列表)
-│   │   ├── SearchController.java        # 搜索 (关键词/历史/热词)
-│   │   ├── ProductReportController.java # 举报管理
-│   │   ├── ProductReviewController.java # 评价管理
+│   │   ├── controller/
+│   │   │   ├── ProductCommandController.java   # 商品写操作 (创建/更新/删除/状态)
+│   │   │   ├── ProductQueryController.java     # 商品读操作 (详情/列表)
+│   │   │   ├── ProductSearchController.java    # 搜索 (关键词/历史/热词)
+│   │   │   ├── ProductReportController.java    # 举报管理
+│   │   │   └── ProductReviewController.java    # 评价管理
 │   │   ├── dto/request/
 │   │   └── dto/response/
 │   └── outbound/
@@ -63,7 +64,7 @@ product/
 │   │   ├── ProductTitle.java, ProductDescription.java
 │   │   ├── ImageUrl.java, ImageSet.java, TagSet.java
 │   │   ├── ContactMethod.java, TradeLocation.java
-│   │   └── ProductSnapshotPort.java (接口)
+│   │   └── SellerInfo.java
 │   ├── event/
 │   │   ├── ProductCreatedEvent.java
 │   │   ├── ProductUpdatedEvent.java

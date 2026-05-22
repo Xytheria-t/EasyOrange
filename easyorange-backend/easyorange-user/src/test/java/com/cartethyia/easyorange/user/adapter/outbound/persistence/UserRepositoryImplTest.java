@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
@@ -84,7 +85,13 @@ class UserRepositoryImplTest {
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
             .contactInfo(new ContactInfo("test@example.com", "13812345678"))
-            .personalInfo(new PersonalInfo("张三", "小张", Sex.MALE, "2024001", "/avatar/test.png"))
+            .personalInfo(ImmutablePersonalInfo.builder()
+                .realName("张三")
+                .nickName("小张")
+                .sex(Sex.MALE)
+                .studentId("2024001")
+                .avatar("/avatar/test.png")
+                .build())
             .loginInfo(new LoginInfo(
                 "192.168.1.1",
                 LocalDateTime.of(2024, 1, 1, 12, 0),

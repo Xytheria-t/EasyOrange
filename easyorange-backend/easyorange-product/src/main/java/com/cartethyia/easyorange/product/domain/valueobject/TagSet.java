@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
+import java.util.Arrays;
 import java.util.Set;
 
 public record TagSet(Set<String> tags) {
@@ -20,7 +21,14 @@ public record TagSet(Set<String> tags) {
     }
 
     public static TagSet of(String... tags) {
-        return new TagSet(Set.of(tags));
+        if (tags == null || tags.length == 0) {
+            return EMPTY;
+        }
+        var filtered = Arrays.stream(tags)
+                .filter(t -> t != null && !t.isBlank())
+                .map(String::trim)
+                .toList();
+        return filtered.isEmpty() ? EMPTY : new TagSet(Set.copyOf(filtered));
     }
 
     public boolean contains(String tag) {

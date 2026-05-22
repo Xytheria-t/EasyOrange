@@ -28,12 +28,12 @@ public @interface Log {
     /**
      * 是否保存请求参数
      */
-    boolean isSaveRequestData() default true;
+    boolean saveRequestData() default true;
     
     /**
      * 是否保存响应参数
      */
-    boolean isSaveResponseData() default true;
+    boolean saveResponseData() default true;
     
     /**
      * 排除指定的参数名

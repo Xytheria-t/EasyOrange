@@ -35,7 +35,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String ADMIN_USER_TYPE = "00";
+    private static final String SUPER_ADMIN_USER_TYPE = "00";
+    private static final String MANAGER_USER_TYPE = "02";
     private static final String ADMIN_PATH_PREFIX = "/api/admin";
 
     private final JwtUtil jwtUtil;
@@ -44,6 +45,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final SecurityProperties securityProperties;
     private final StringRedisTemplate stringRedisTemplate;
     private final Cache<String, Boolean> tokenUuidCache;
+
+    private static final Set<String> AUTH_REQUIRED_PRODUCT_PATHS = Set.of("/api/products/my");
 
     @Override
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
@@ -54,7 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         if ("GET".equals(method) && matchesAnyPattern(path, securityProperties.getProductPaths())) {
-            return true;
+            return !AUTH_REQUIRED_PRODUCT_PATHS.contains(path);
         }
         return false;
     }
@@ -123,7 +126,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             String path = request.getRequestURI();
             String userType = claims.get("userType", String.class);
-            if (path.startsWith(ADMIN_PATH_PREFIX) && !ADMIN_USER_TYPE.equals(userType)) {
+            if (path.startsWith(ADMIN_PATH_PREFIX) && !isAdminUserType(userType)) {
                 log.warn("Non-admin access to admin path: {}, userType: {}, IP: {}",
                     path, userType, RequestUtil.getClientIp(request));
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
@@ -165,7 +168,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private List<SimpleGrantedAuthority> resolveAuthorities(Claims claims) {
         String userType = claims.get("userType", String.class);
-        if (ADMIN_USER_TYPE.equals(userType)) {
+        if (isAdminUserType(userType)) {
             return List.of(
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
                 new SimpleGrantedAuthority("ROLE_USER")
@@ -185,6 +188,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private String getTokenKey(String uuid) {
         return LoginCacheConstants.buildTokenKey(uuid);
+    }
+
+    private static boolean isAdminUserType(String userType) {
+        return SUPER_ADMIN_USER_TYPE.equals(userType) || MANAGER_USER_TYPE.equals(userType);
     }
 
     private boolean isTokenValid(String uuid) {

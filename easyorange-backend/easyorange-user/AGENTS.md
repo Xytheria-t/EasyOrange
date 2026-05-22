@@ -48,11 +48,16 @@ user/
 │   │   ├── UserResponse.java
 │   │   └── UserProfileResponse.java
 │   ├── service/                         # 应用服务
-│   │   ├── UserLoginAppService.java
-│   │   ├── UserRegistrationAppService.java
-│   │   ├── UserAppService.java
-│   │   ├── PasswordResetAppService.java
-│   │   └── SmsCodeAppService.java
+│   │   ├── auth/
+│   │   │   ├── RegisterAppService.java
+│   │   │   ├── LoginAppService.java
+│   │   │   └── ForgotPasswordAppService.java
+│   │   ├── profile/
+│   │   │   └── ProfileAppService.java
+│   │   ├── password/
+│   │   │   └── ChangePasswordAppService.java
+│   │   └── verification/
+│   │       └── SmsCodeAppService.java
 │   └── assembler/
 │       └── UserAssembler.java           # DTO 组装
 ├── domain/
@@ -63,28 +68,27 @@ user/
 │   │   ├── ContactInfo.java              # 联系方式 (email, phone)
 │   │   ├── Credentials.java              # 认证凭据 (username, encodedPassword)
 │   │   ├── LoginInfo.java                # 登录轨迹 (loginIp, loginDate, pwdUpdateDate)
-│   │   └── PersonalInfo.java             # 个人信息+展示 (realName, nickName, sex, studentId, avatar)
+│   │   └── PersonalInfo.java             # 个人信息+展示 (Immutables @Value.Immutable)
 │   ├── event/
 │   │   ├── UserRegisteredEvent.java
 │   │   ├── PasswordChangedEvent.java
 │   │   └── ForgotPasswordEvent.java
 │   ├── service/                         # 领域服务
-│   │   ├── AuthenticationDomainService.java
-│   │   ├── LoginSecurityDomainService.java
-│   │   ├── SmsCodeDomainService.java
-│   │   └── UserRegistrationDomainService.java
+│   │   ├── AuthenticationService.java
+│   │   ├── LoginSecurityService.java
+│   │   ├── SmsCodeService.java
+│   │   └── RegistrationService.java
 │   ├── repository/
 │   │   └── UserRepository.java
 │   ├── port/output/                     # 出站端口
-│   │   ├── OutboundPort.java            # 端口标记接口
 │   │   ├── AvatarFilePort.java
 │   │   ├── LoginAttemptPort.java
-│   │   ├── NicknameGenerationPort.java
+│   │   ├── NicknameGeneratorPort.java
 │   │   ├── PasswordEncoderPort.java
 │   │   ├── SmsCodePort.java
 │   │   ├── SmsRateLimitPort.java
 │   │   └── UserEventPort.java
-│   ├── constants/
+│   ├── constant/
 │   │   ├── UserConstant.java
 │   │   └── UserSecurityConstant.java
 │   ├── enums/
@@ -93,12 +97,40 @@ user/
 │   │   └── UserResultCode.java
 │   └── exception/
 │       └── UserDomainException.java
+├── config/
+│   └── UserDomainConfig.java            # Port → Bean 绑定（含 NicknameGeneratorPort）
 └── infrastructure/
-    ├── config/UserDomainConfig.java
     └── util/NicknameGenerator.java
 ```
 
 ## 核心模式
+
+### 值对象模式
+
+模块内值对象采用两种实现方式：
+
+| 值对象 | 实现方式 | 原因 |
+|--------|----------|------|
+| `Credentials` | record | 字段少（2个），构造简单 |
+| `ContactInfo` | record | 字段少（2个），构造简单 |
+| `LoginInfo` | record | 含语义化方法（`recordLogin`, `updatePasswordTime`） |
+| `AuditInfo` | record | 含语义化方法（`update`, `markDeleted`） |
+| `PersonalInfo` | **Immutables** | 字段多（5个），需自动生成 with 方法 |
+
+**PersonalInfo (Immutables) 使用示例**：
+```java
+// 构建
+PersonalInfo info = ImmutablePersonalInfo.builder()
+    .realName("张三")
+    .nickName("小张")
+    .build();
+
+// 修改（返回新实例）
+PersonalInfo updated = info.withNickName("新昵称");
+
+// 空实例
+PersonalInfo empty = PersonalInfo.empty();
+```
 
 ### 对象映射策略
 
@@ -113,11 +145,21 @@ user/
 
 ### 登录策略模式
 
-`LoginMethod` 枚举定义登录方式（用户名/手机号），`AuthenticationDomainService` 根据策略分发认证逻辑。
+`LoginMethod` 枚举定义登录方式（用户名/手机号），`AuthenticationService` 根据策略分发认证逻辑。
 
-### 领域事件发布
+### 领域事件发布与消费
 
 应用服务注入 `UserEventPort`（domain port），调用 `publishUserRegistered()` / `publishPasswordChanged()` / `publishForgotPassword()` 发布事件。Adapter 层 `UserEventPublisher` 委派给框架的 `DomainEventPublisher`，同步发布到 Spring EventBus。
+
+事件消费监听器位于 `easyorange-application/adapter/event/`：
+
+| 监听器 | 消费事件 | 行为 |
+|--------|---------|------|
+| `UserRegisteredEventListener` | `UserRegisteredEvent` | 发送欢迎系统消息 |
+| `PasswordChangedEventListener` | `PasswordChangedEvent` | 发送密码变更安全提醒 |
+| `ForgotPasswordEventListener` | `ForgotPasswordEvent` | 发送找回密码通知 |
+
+所有监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
 
 ### 出站端口隔离
 
@@ -125,7 +167,7 @@ domain 层通过 `port/output/` 接口与基础设施解耦：
 - `PasswordEncoderPort` → `PasswordEncoderAdapter` (BCrypt)
 - `LoginAttemptPort` → `RedisLoginAttemptAdapter` (Redis)
 - `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
-- `NicknameGenerationPort` → `NicknameGenerator` (随机昵称生成)
+- `NicknameGeneratorPort` → `NicknameGenerator` (随机昵称生成)
 - `UserEventPort` → `UserEventPublisher` (Spring Events)
 
 ### 自定义校验注解 (Jakarta Bean Validation)
@@ -137,8 +179,8 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 - **`@Username`** — 用户名格式校验（字段级）。校验长度（3-50位）和字符集（字母、数字、下划线）。使用示例: `@Username String username`
 
 业务规则校验（如唯一性）在 application / domain 层处理，不在 adapter 层做：
-- 注册唯一性 → `UserRegistrationDomainService.validateUsernameNotExists()` + `validateUniqueContactInfo()`
-- 更新唯一性 → `UserAppService.validateUniqueFieldsIfChanged()`
+- 注册唯一性 → `RegistrationService.validateUsernameNotExists()` + `validateUniqueContactInfo()`
+- 更新唯一性 → `ProfileAppService.validateUniqueFieldsIfChanged()`
 
 ## 安全要点
 
@@ -152,10 +194,12 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 ### 添加新用户字段
 
 1. 判断字段归属的值对象（Credentials / ContactInfo / PersonalInfo / LoginInfo / AuditInfo）或是否应留在聚合根（id, userType, status）
-2. 在对应值对象 record 中新增字段 + 紧凑构造器校验 + `withXxx()` 方法
+2. 在对应值对象中新增字段：
+   - **record 值对象**（Credentials / ContactInfo / LoginInfo / AuditInfo）：新增字段 + 紧凑构造器校验 + `withXxx()` 方法
+   - **Immutables 值对象**（PersonalInfo）：新增 `@Nullable abstract` 方法 + `withXxx()` 委托方法
 3. 创建 Flyway 迁移脚本
 4. 更新 `UserEntity`（新增字段）
-5. 更新 `UserEntityMapper`（toDomain/from 的 @Mapping 或 default 方法）
+5. 更新 `UserEntityMapper`（toDomain 使用 `ImmutableXxx.builder()` / from 使用 getter）
 6. 更新 `application/dto/UserResponse` / `UpdateUserRequest`
 7. 更新 `UserAssembler`（如需 MapStruct 显式映射）
 8. 更新 `User` 聚合根的相关修改方法
@@ -164,7 +208,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 ### 添加新登录方式
 
 1. `LoginMethod` 枚举新增值
-2. `AuthenticationDomainService` 添加对应认证逻辑
+2. `AuthenticationService` 添加对应认证逻辑
 3. `LoginRequest` 添加字段
 4. 添加测试
 

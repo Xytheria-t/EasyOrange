@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
@@ -230,6 +231,27 @@ public class Product {
         }
         touch();
         addDomainEvent(new ProductDeletedEvent(id.value(), userId));
+    }
+
+    /**
+     * 提交审核
+     *
+     * @param userId 操作人（卖家）ID
+     * @return 审核前状态码，供应用层记录审核日志使用
+     */
+    public int submitForReview(Long userId) {
+        if (!this.sellerId.equals(SellerId.of(userId))) {
+            throw new InvalidProductStatusException("只能提交自己的商品审核", id, status);
+        }
+        if (!status.canSubmitForReview()) {
+            throw new InvalidProductStatusException("当前状态不支持提交审核", id, status);
+        }
+        int beforeStatus = status.getCode();
+        this.status = ProductStatus.PENDING_REVIEW;
+        touch();
+        addDomainEvent(new ProductSubmittedForReviewEvent(
+                id.value(), sellerId.value(), beforeStatus, status.getCode()));
+        return beforeStatus;
     }
 
     public void incrementViewCount() {

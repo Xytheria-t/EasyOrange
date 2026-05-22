@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
@@ -36,13 +37,13 @@ class UserAssemblerTest {
             "test@example.com",
             "13812345678"
         );
-        PersonalInfo personalInfo = new PersonalInfo(
-            "张三",
-            "小张",
-            Sex.MALE,
-            "2024001",
-            "/avatar/test.png"
-        );
+        PersonalInfo personalInfo = ImmutablePersonalInfo.builder()
+            .realName("张三")
+            .nickName("小张")
+            .sex(Sex.MALE)
+            .studentId("2024001")
+            .avatar("/avatar/test.png")
+            .build();
         AuditInfo auditInfo = new AuditInfo(
             LocalDateTime.of(2024, 1, 1, 0, 0),
             LocalDateTime.of(2024, 6, 1, 0, 0),
@@ -135,7 +136,7 @@ class UserAssemblerTest {
             assertThat(vo.getStatus()).isEqualTo(0);
             assertThat(vo.getStatusDesc()).isEqualTo("正常");
             assertThat(vo.getGender()).isEqualTo(Integer.parseInt(Sex.MALE.getCode()));
-            assertThat(vo.getUserType()).isEqualTo("普通用户");
+            assertThat(vo.getUserType()).isEqualTo(UserType.NORMAL.getCode());
             assertThat(vo.getAvatar()).isEqualTo("/avatar/test.png");
             assertThat(vo.getRoles()).isEqualTo(roles);
             assertThat(vo.getPermissions()).isEqualTo(permissions);

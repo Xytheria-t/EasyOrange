@@ -11,10 +11,13 @@ application/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
+│       │   │   ├── ForgotPasswordEventListener.java
+│       │   │   ├── PasswordChangedEventListener.java
 │       │   │   ├── PaymentInitiationEventListener.java
 │       │   │   ├── ProductAuditEventListener.java
 │       │   │   ├── ReportProcessedEventListener.java
-│       │   │   └── StockReservationEventListener.java
+│       │   │   ├── StockReservationEventListener.java
+│       │   │   └── UserRegisteredEventListener.java
 │       │   └── outbound/                  # 跨模块适配器实现
 │       │       ├── elasticsearch/         # ES 搜索索引适配器
 │       │       │   ├── ElasticsearchIndexManager.java
@@ -43,13 +46,14 @@ application/
 │   ├── application-prod.yaml              # 生产环境
 │   ├── application-test.yaml              # 测试环境
 │   ├── logback-spring.xml                 # 日志配置
-│   └── db/
-│       ├── migration/                     # Flyway DDL 迁移
-│       │   ├── V1__init_schema.sql
-│       │   ├── V2__seed_categories.sql
-│       │   └── V3__payment_infrastructure.sql
-│       └── dev/                           # 开发环境数据
-│           └── test_data.sql
+│       └── db/
+│           ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
+│           │   ├── V1__init_schema.sql
+│           │   ├── R__seed_categories.sql
+│           │   ├── R__seed_message_templates.sql
+│           │   └── R__seed_payment_config.sql
+│           └── dev/                           # 开发环境数据
+│               └── R__insert_dev_test_data.sql
 └── src/test/java/
     └── com/cartethyia/easyorange/
         ├── architecture/
@@ -143,10 +147,13 @@ easyorange-application
 
 | 监听器 | 事件 | 功能 |
 |--------|------|------|
+| `ForgotPasswordEventListener` | `ForgotPasswordEvent` | 找回密码→站内消息通知 |
+| `PasswordChangedEventListener` | `PasswordChangedEvent` | 密码变更→安全提醒站内消息 |
 | `PaymentInitiationEventListener` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
-| `StockReservationEventListener` | `StockReservationRequestedEvent` | 扣减库存 |
 | `ProductAuditEventListener` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventListener` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
+| `StockReservationEventListener` | `StockReservationRequestedEvent` | 扣减库存 |
+| `UserRegisteredEventListener` | `UserRegisteredEvent` | 用户注册→欢迎消息通知 |
 
 所有事件监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
 

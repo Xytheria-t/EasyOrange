@@ -20,10 +20,9 @@ import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
+import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
@@ -44,7 +43,6 @@ public class ProductCommandService {
     private final ProductRepository productRepository;
     private final ProductCachePort productCachePort;
     private final DomainEventPublisher domainEventPublisher;
-    private final ProductMapper productMapper;
     private final ProductAuditLogMapper productAuditLogMapper;
 
     public Long createProduct(CreateProductCommand command) {
@@ -173,24 +171,15 @@ public class ProductCommandService {
 
     public void submitForReview(Long productId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        ProductId pid = ProductId.of(productId);
 
-        ProductDO product = productMapper.selectById(productId);
-        if (product == null || product.getDelFlag() != 0) {
-            throw new ProductNotFoundException(productId);
-        }
+        Product product = productRepository.findById(pid)
+                .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        if (!product.getUserId().equals(userId)) {
-            throw new IllegalArgumentException("只能提交自己的商品");
-        }
-
-        ProductStatus current = ProductStatus.fromCode(product.getStatus());
-        if (current == null || !current.canSubmitForReview()) {
-            throw new InvalidProductStatusException("当前状态不支持重新提交审核", current);
-        }
-
-        int beforeStatus = product.getStatus();
-        product.setStatus(ProductStatus.PENDING_REVIEW.getCode());
-        productMapper.updateById(product);
+        int beforeStatus = product.submitForReview(userId);
+        productRepository.update(product);
+        publishEvents(product);
+        productCachePort.evictProductCache(productId);
 
         ProductAuditLogDO auditLog = ProductAuditLogDO.builder()
                 .productId(productId)

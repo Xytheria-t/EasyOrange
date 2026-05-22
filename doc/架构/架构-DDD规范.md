@@ -97,7 +97,7 @@ public record ContactInfo(String email, String phone) {
 - **与应用层区分**：领域服务处理纯业务规则，应用层处理用例编排和事务管理
 
 ```java
-public class AuthenticationDomainService {
+public class AuthenticationService {
     public void validateRegistration(User user, List<User> existingUsers) {
         if (existingUsers.stream().anyMatch(u -> u.getContactInfo().phone().equals(user.getContactInfo().phone()))) {
             throw new UserDomainException("手机号已注册");
@@ -402,7 +402,7 @@ class AuthAppServiceTest {
 
 ```java
 // BAD — 领域服务只创建对象，应用服务负责保存，逻辑分散
-public class UserRegistrationDomainService {
+public class RegistrationService {
     public User register(...) {
         User user = User.register(...);
         return user; // 不保存
@@ -410,7 +410,7 @@ public class UserRegistrationDomainService {
 }
 
 // GOOD — 领域服务自己完成持久化，逻辑内聚
-public class UserRegistrationDomainService {
+public class RegistrationService {
     private final UserRepository userRepository;
 
     public User register(...) {
@@ -476,7 +476,7 @@ public class UserRegistrationDomainService {
 
 - **禁止"上帝类"**：单个应用服务不应处理超过 3 个不相关的用例
 - **按完整用户场景拆分**：注册、登录、密码重置、验证码发送应各自独立
-- **命名规范**：`{场景}AppService`，如 `UserRegistrationAppService`、`UserLoginAppService`
+- **命名规范**：`{场景}AppService`，如 `RegisterAppService`、`LoginAppService`、`ProfileAppService`
 - **事务边界**：每个应用服务方法就是一个完整的事务边界
 
 **领域服务设计原则：**
@@ -488,7 +488,7 @@ public class UserRegistrationDomainService {
 
 ### 8. CQRS 渐进式引入
 
-- **早期/简单场景**：使用传统应用服务（`UserAppService`），同时处理读写
+- **早期/简单场景**：使用传统应用服务（如 `ProfileAppService`、`RegisterAppService`），同时处理读写
 - **读写模型差异大时**：拆分为 `command/handler` 和 `query/handler`
 - **复杂查询场景**：Query 侧可使用物化视图、读库副本、ES 等
 - **不推荐一刀切**：简单 CRUD 场景强制 CQRS 会增加大量样板代码
@@ -545,7 +545,6 @@ throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 - 领域层定义端口接口（`domain/port/output/`、`domain/repository/`）
 - 适配器层实现端口接口（`adapter/outbound/`）
 - 应用层通过端口接口与外部交互，不直接依赖具体实现
-- `OutboundPort` 标记接口统一标识所有出站端口
 
 ### 4. 防腐层（ACL）
 

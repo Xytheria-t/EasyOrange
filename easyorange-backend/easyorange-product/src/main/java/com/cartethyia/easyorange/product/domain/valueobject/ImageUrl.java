@@ -10,8 +10,8 @@ public record ImageUrl(String value) {
 
     public ImageUrl {
         BizRequire.notBlank(value, "图片URL不能为空");
-        BizRequire.requireTrue(URL_PATTERN.matcher(value).matches(), "图片URL格式不正确");
         value = value.trim();
+        BizRequire.requireTrue(URL_PATTERN.matcher(value).matches(), "图片URL格式不正确");
     }
 
     public static ImageUrl of(String value) {

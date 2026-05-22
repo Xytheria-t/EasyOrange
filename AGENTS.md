@@ -18,7 +18,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 
 | 表名 | 说明 | 备注 |
 |------|------|------|
-| `eo_user` | 用户信息表 | 含角色/状态/手机号 |
+| `eo_user` | 用户信息表 | user_type 枚举: 00(ADMIN)/01(NORMAL)/02(MANAGER) |
 | `eo_product` | 商品信息表 | 6状态: DRAFT(0)/PENDING_REVIEW(4)/REJECTED(5)/ONLINE(1)/SOLD(2)/OFFLINE(3) |
 | `eo_product_audit_log` | 审核记录表 | action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照 |
 | `eo_product_detail` | 商品详情表 | JSON 格式 |
@@ -69,6 +69,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | AI 审核 | `POST /api/ai/review` | AI 分析商品信息给出审核建议（通过/拒绝+风险标签） |
 | 语义搜索 | `GET /api/ai/semantic-search` | 基于语义向量搜索商品，参数：keyword, pageNum, pageSize |
 | 智能问答 | `POST /api/ai/qa` | 基于商品上下文回答买家问题 |
+| 智能文案 | `POST /api/ai/generate-copy` | 基于商品信息自动生成商品描述和标题（4种风格: standard/detailed/concise/emotional） |
 | 我的信用 | `GET /api/credit/my` | 查看当前用户信用评分 |
 | 信用详情 | `GET /api/credit/detail/{userId}` | 查看指定用户信用分+最近变更记录 |
 | 重新计算 | `POST /api/credit/recalculate` | 触发当前用户信用分重新计算 |
@@ -81,122 +82,22 @@ easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理)
-│   ├── easyorange-user/         # 用户模块 (DDD)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流)
-│   │   ├── domain/
-│   │   │   ├── enums/ProductStatus.java    # 6状态: DRAFT/PENDING_REVIEW/REJECTED/ONLINE/SOLD/OFFLINE
-│   │   │   ├── enums/ProductReportStatus.java # 4状态: PENDING/PROCESSING/RESOLVED/DISMISSED
-│   │   │   ├── enums/ReportReasonType.java    # 4类型: FAKE_INFO/INFRINGEMENT/VIOLATION/OTHER
-│   │   │   ├── entity/ProductReport.java      # 举报聚合根（含ReportDomainException内部类）
-│   │   │   ├── entity/ReportHandleHistory.java # 处理历史实体（含reconstitute工厂方法）
-│   │   │   ├── event/ProductAuditedEvent.java  # 审核完成领域事件
-│   │   │   └── event/ReportProcessedEvent.java # 举报处理完成事件
-│   │   ├── adapter/outbound/persistence/
-│   │   │   ├── dataobject/ProductAuditLogDO.java     # 审核日志 DO (Builder模式)
-│   │   │   ├── dataobject/ProductReportDO.java       # 举报记录 DO
-│   │   │   ├── dataobject/ReportHandleHistoryDO.java # 处理历史 DO
-│   │   │   ├── mapper/ProductAuditLogMapper.java      # 审核日志 Mapper
-│   │   │   ├── mapper/ReportHandleHistoryMapper.java  # 处理历史 Mapper
-│   │   │   ├── mapper/xml/ProductAuditLogMapper.xml  # 审核日志 SQL
-│   │   │   └── repository/
-│   │   │       └── ReportHandleHistoryRepositoryImpl.java # 处理历史仓储实现
-│   │   ├── application/command/handler/CreateProductReportHandler.java  # 创建举报(含24h重复检测)
-│   │   ├── application/query/handler/GetMyReportsHandler.java          # 我的举报查询
-│   │   ├── application/query/handler/GetReportDetailHandler.java      # 举报详情查询
-│   │   └── application/command/ProductCommandService.java # 含 submitForReview()
+│   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket + 聊天)
-│   │   ├── domain/
-│   │   │   ├── entity/Message.java              # 消息实体（含 recall()/isSender(), msgStatus, recalledAt）
-│   │   │   ├── event/MessageRecalledEvent.java   # 撤回领域事件
-│   │   │   ├── service/SensitiveWordFilterService.java # 敏感词过滤（***替换）
-│   │   │   └── service/RateLimiterService.java   # Redis 滑动窗口限流（消息5条/s, typing1次/2s）
-│   │   ├── application/command/
-│   │   │   ├── SendSystemMessageCommand.java    # 系统通知命令（含 businessId 支持导航）
-│   │   │   ├── RecallMessageCommand.java        # 撤回命令
-│   │   │   └── MessageCommandHandler.java       # 含 recall() + 限流 + 敏感词过滤
-│   │   ├── controller/MessageCommandController.java  # 新增 /{id}/recall, POST /typing
-│   │   ├── websocket/
-│   │   │   ├── ChatWebSocketHandler.java        # STOMP: /chat.send, /chat.typing, broadcastRecallEvent
-│   │   │   └── WebSocketEventListener.java      # @EventListener MessageRecalledEvent → WS 推送
-│   │   └── TypingIndicatorService.java          # Redis TTL typing 状态管理
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
-│   ├── easyorange-ai/           # AI 模块 (Port/Adapter: LlmPort/VisionPort + DeepSeek/Qwen-VL 适配器)
-│   │   ├── port/LlmPort.java          # LLM 文本生成/Embedding 端口
-│   │   ├── port/VisionPort.java       # 视觉分析端口
-│   │   ├── adapter/DeepSeekLlmAdapter.java  # DeepSeek API 适配器
-│   │   ├── adapter/QwenVlVisionAdapter.java # Qwen-VL API 适配器
-│   │   ├── service/AiPricingService.java    # AI 智能定价
-│   │   ├── service/AutoListingService.java  # 拍照自动上架
-│   │   ├── service/AiReviewService.java     # AI 商品审核
-│   │   ├── service/SemanticSearchService.java # 语义搜索
-│   │   ├── service/AiQaService.java         # AI 智能问答
-│   │   └── service/CreditScoringService.java # 信用评分引擎
-│   ├── easyorange-admin/        # 管理端模块 (独立模块，管理API + 审核工作流)
-│   │   ├── controller/
-│   │   │   ├── AdminProductController.java        # 商品管理（列表/详情/状态变更）
-│   │   │   ├── AdminProductAuditController.java  # 审核管理（单条/批量审核，审核日志）
-│   │   │   ├── AdminReportController.java        # 举报管理（列表/详情/处理/批量处理/历史/统计）
-│   │   │   └── AdminReviewController.java        # 评价管理（列表/详情/删除）
-│   │   ├── service/
-│   │   │   ├── AdminDashboardService.java
-│   │   │   ├── AdminUserService.java
-│   │   │   ├── AdminUserServiceExtension.java
-│   │   │   ├── AdminProductService.java
-│   │   │   ├── AdminProductAuditService.java       # 状态校验→写日志→发事件
-│   │   │   ├── AdminOrderService.java
-│   │   │   ├── AdminCategoryService.java
-│   │   │   ├── AdminReportService.java             # 含批量处理+处理历史+事件发布
-│   │   │   └── AdminReviewService.java             # 评价管理（列表/详情/软删除）
-│   │   └── dto/
-│   │       ├── request/                             # 16 个请求 DTO（含 AdminReviewDeleteRequest, AdminReviewQueryRequest）
-│   │       └── response/                            # 20 个响应 Response（含 AdminReviewResponse）
+│   ├── easyorange-ai/           # AI 模块 (Port/Adapter: LLM + Embedding + Vision)
+│   ├── easyorange-admin/        # 管理端模块 (商品/举报/订单/评价/分类/用户管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
-│       ├── adapter/event/ProductAuditEventListener.java       # 审核→站内消息通知
-│       ├── adapter/event/ReportProcessedEventListener.java    # 举报处理→站内消息通知(AFTER_COMMIT+Async)
-│       ├── adapter/outbound/elasticsearch/
-│       │   ├── ProductDocument.java                           # ES 映射 POJO
-│       │   ├── ElasticsearchIndexManager.java                 # 索引创建/管理
-│       │   ├── ElasticsearchProductSearchIndexAdapter.java    # 索引写入适配器
-│       │   ├── ElasticsearchProductSearchQueryAdapter.java    # 索引查询适配器（含分类/价格/成色分面聚合）
-│       │   └── ReindexService.java                            # 全量重建索引服务
-│       └── controller/AdminSearchReindexController.java       # 管理端重索引端点 (POST /api/admin/search/reindex)
 ├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
-│   ├── src/testUtils/           # 测试基础设施 (vitest + testing-library + msw)
-│   ├── src/admin/               # 管理后台
-│   │   ├── components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal(Portal), StatCard, AdminMenuEntry
-│   │   ├── pages/
-│   │   │   ├── dashboard/                   # 仪表盘
-│   │   │   ├── users/                       # 用户管理（含 UserDetailModal）
-│   │   │   ├── products/
-│   │   │   │   ├── ProductManagePage.tsx             # 商品管理列表（搜索/筛选/详情/上下架）
-│   │   │   │   ├── ProductManageDetailModal.tsx      # 商品管理详情弹窗（Portal挂载body，含状态变更）
-│   │   │   │   ├── ProductReviewPage.tsx              # 商品审核页（默认待审核，含状态筛选）
-│   │   │   │   └── ProductDetailDrawer.tsx            # 商品详情抽屉（Portal挂载body，审核维度+原因输入+驳回弹窗+审核时间线）
-│   │   │   ├── categories/                 # 分类管理（CategoryManagePage）
-│   │   │   ├── orders/
-│   │   │   │   ├── OrderManagePage.tsx           # 订单管理列表
-│   │   │   │   └── OrderDetailModal.tsx          # 订单详情弹窗（Portal挂载body）
-│   │   │   ├── reviews/                     # 评价管理（ReviewManagePage）
-│   │   │   ├── reports/                     # 举报处理（ReportManagePage）
-│   │   │   └── stats/                       # 数据统计（StatsPage）
-│   │   ├── hooks/                           # 12 个 hooks 含 useAdminReviews, useAdminCategories, useAdminProductAudit 等
-│   │   ├── types/admin.ts                   # 含 AuditLogResponse, AuditDimension, AdminReview 等类型
-│   │   └── api/adminApi.ts                  # 管理后台所有 API 端点
-│   ├── src/pages/products/ProductDetailPage.tsx  # 用户商品详情（审核状态标签+重提交按钮）
-│   ├── src/pages/products/MyProductsPage.tsx      # 我的发布（状态筛选/查看/编辑）
-│   ├── src/pages/notifications/                  # 通知中心（系统消息列表，Header 铃铛入口）
-│   │   ├── NotificationsPage.tsx                 # 通知列表（分页/标记已读/导航至商品详情）
-│   │   └── notifications.css
-│   ├── src/components/notification/
-│   │   └── NotificationBell.tsx                  # Header 铃铛图标（30s 轮询未读数）
-│   ├── src/components/search/
-│   │   └── FacetFilter.tsx                       # ES 搜索分面过滤组件（分类/价格/成色筛选）
-│   ├── src/hooks/product/useSearch.ts            # ES 搜索 hook（含分面数据）
-│   ├── src/pages/profile/SearchPage.tsx          # 搜索页（集成 FacetFilter 分面筛选）
-│   ├── src/api/notificationApi.ts                # 通知 API（列表/未读数/已读/全部已读）
-│   └── src/types/notification.ts                 # NotificationItem, UnreadCount 类型
+│   ├── src/admin/               # 管理后台（完整 CRUD + 商品审核 + 举报处理）
+│   ├── src/pages/               # 用户端页面（商品详情/我的发布/通知/搜索/个人中心）
+│   ├── src/components/          # 共享组件（AdminTable, Search/Facet, Chat, Notification）
+│   ├── src/hooks/               # React Query hooks + 聊天/搜索 Hooks
+│   ├── src/api/                 # API 模块（admin/message/notification/search）
+│   └── src/types/               # 类型定义
 ├── doc/                         # 项目文档
 │   ├── 架构/                   # 架构规范文档（已切分为多个子文档）
 │   └── specs/                  # 功能设计规格文档
@@ -263,24 +164,12 @@ admin → framework, common, user (optional), product (optional), order (optiona
 | [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) | Flyway 规范 |
 | [架构-部署演进.md](doc/架构/架构-部署演进.md) | 部署与演进 |
 
-## 测试规划文档
-
-| 文档 | 内容 |
-|------|------|
-| [测试补充计划-Spec](doc/specs/2026-05-16-test-coverage-plan.md) | 测试补充设计规格（34 个测试文件，152+ 测试方法） |
-| [测试补充计划-Plan](doc/plans/2026-05-16-test-coverage.md) | 实施计划（3 批独立并行） |
-
 ## 功能设计文档
 
 | 文档 | 内容 |
 |------|------|
-| [图片优化设计-Spec](doc/specs/2026-05-17-image-optimization-design.md) | 图片压缩/智能裁剪/可插拔存储设计规格 |
-| [图片优化计划-Plan](doc/plans/2026-05-17-image-optimization.md) | 实施计划（12 个任务，3 阶段） |
-| [ES搜索设计-Spec](doc/specs/2026-05-17-elasticsearch-search-design.md) | ES 商品搜索+CQRS Port/Adapter+IK分词器设计规格 |
-| [ES搜索计划-Plan](doc/plans/2026-05-17-elasticsearch-search.md) | 实施计划（15 个任务，5 批次） |
-| [搜索集成修复-Spec](doc/specs/2026-05-18-search-integration-fix.md) | 搜索链路数据修复（SearchPageResponse/FacetBucketResponse DTO） |
-| [搜索集成修复-Plan](doc/plans/2026-05-18-search-integration-fix.md) | 实施计划（5 个任务，2 批次） |
-| [AI功能计划-Plan](doc/superpowers/plans/2026-05-18-ai-features-plan.md) | AI功能实施计划（6 AI服务/6前端组件/2 DDL迁移，5阶段） |
+| [排序筛选合并-Spec](doc/specs/2026-05-20-sort-filter-merge-design.md) | 搜索排序/筛选/整合设计规格 |
+| [排序筛选合并-Plan](doc/plans/2026-05-20-sort-filter-merge.md) | 实施计划 |
 
 ## 环境变量
 
@@ -338,8 +227,12 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 docker-compose up -d
 docker compose up -d elasticsearch   # 启用 ES 搜索（需先构建镜像: docker compose build elasticsearch）
 
-# 启动后端
-./mvnw spring-boot:run -pl easyorange-application
+# 启动后端（⚠️ 不要单独用 spring-boot:run -pl，会从本地仓库加载依赖模块旧 JAR）
+# 正确方式：先打包所有依赖模块，再 java -jar
+cd easyorange-backend && ./mvnw clean package -DskipTests -pl easyorange-application -am && java --sun-misc-unsafe-memory-access=allow -jar easyorange-application/target/easyorange-application-*.jar
+
+# 或先 install 所有模块到本地仓库，再用 spring-boot:run（spring-boot-maven-plugin 已配置 jvmArguments）
+cd easyorange-backend && ./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application
 
 # 前端测试
 cd easyorange-frontend

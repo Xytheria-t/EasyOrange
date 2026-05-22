@@ -6,19 +6,17 @@ package com.cartethyia.easyorange.user.domain.port.output;
  * 职责：
  * <ul>
  *   <li>记录和查询登录失败次数</li>
- *   <li>支持登录尝试次数的递增、过期和清除</li>
+ *   <li>支持登录尝试次数的递增（自动管理 TTL）和清除</li>
  *   <li>用于实现账户锁定、防暴力破解等安全策略</li>
  * </ul>
  * 
  * <p>实现类通常基于 Redis 等缓存存储
  */
-public interface LoginAttemptPort extends OutboundPort {
+public interface LoginAttemptPort {
 
     Long getAttempts(String account);
 
-    long incrementAttempts(String account);
-
-    void expireAttempts(String account, long minutes);
+    long incrementAndExpire(String account, long expireMinutes);
 
     void clearAttempts(String account);
 }

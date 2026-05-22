@@ -70,7 +70,7 @@ message/
 │   │   └── OfflineMessageStoreService.java
 │   ├── valueobject/
 │   │   ├── MessageContent.java
-│   │   ├── MessageType.java
+│   │   ├── MessageContentFormat.java
 │   │   └── Recipient.java
 │   └── exception/
 │       ├── MessageDomainException.java

@@ -11,7 +11,7 @@ package com.cartethyia.easyorange.user.domain.port.output;
  * 
  * <p>实现类可以基于本地文件系统、OSS（阿里云 OSS、AWS S3 等）等存储方式
  */
-public interface AvatarFilePort extends OutboundPort {
+public interface AvatarFilePort {
 
     /**
      * 上传头像

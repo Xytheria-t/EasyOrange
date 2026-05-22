@@ -12,11 +12,11 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.Refre
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.RegisterRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ForgotPasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
-import com.cartethyia.easyorange.user.application.service.PasswordResetAppService;
-import com.cartethyia.easyorange.user.application.service.SmsCodeAppService;
-import com.cartethyia.easyorange.user.application.service.UserLoginAppService;
-import com.cartethyia.easyorange.user.application.service.UserRegistrationAppService;
-import com.cartethyia.easyorange.user.domain.constants.UserConstant;
+import com.cartethyia.easyorange.user.application.service.auth.ForgotPasswordAppService;
+import com.cartethyia.easyorange.user.application.service.auth.LoginAppService;
+import com.cartethyia.easyorange.user.application.service.auth.RegisterAppService;
+import com.cartethyia.easyorange.user.application.service.verification.SmsCodeAppService;
+import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -28,9 +28,9 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final UserRegistrationAppService userRegistrationAppService;
-    private final UserLoginAppService userLoginAppService;
-    private final PasswordResetAppService passwordResetAppService;
+    private final RegisterAppService registerAppService;
+    private final LoginAppService loginAppService;
+    private final ForgotPasswordAppService forgotPasswordAppService;
     private final SmsCodeAppService smsCodeAppService;
     private final JwtProperties jwtProperties;
 
@@ -38,14 +38,14 @@ public class AuthController {
     @RateLimiter(key = "user:register", count = 5, limitType = LimitType.IP)
     @RepeatSubmit(interval = 5000, message = "请勿重复提交注册请求")
     public Result<Long> register(@Valid @RequestBody RegisterRequest request) {
-        return Result.success(userRegistrationAppService.register(request));
+        return Result.success(registerAppService.register(request));
     }
 
     @PostMapping("/login")
     @RateLimiter(key = "auth:login", count = 10, limitType = LimitType.IP)
     @RepeatSubmit(interval = 5000, message = "请勿重复提交登录请求")
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
-        return Result.success(userLoginAppService.login(loginRequest));
+        return Result.success(loginAppService.login(loginRequest));
     }
 
     @PostMapping("/logout")
@@ -63,7 +63,7 @@ public class AuthController {
             refreshToken = extractToken(refreshTokenHeader);
         }
 
-        userLoginAppService.logout(accessToken, refreshToken);
+        loginAppService.logout(accessToken, refreshToken);
         return Result.success();
     }
 
@@ -71,7 +71,7 @@ public class AuthController {
     @RateLimiter(key = "auth:refresh", count = 20, limitType = LimitType.IP)
     @RepeatSubmit(interval = 5000, message = "请勿重复刷新令牌")
     public Result<String> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        return Result.success(userLoginAppService.refreshToken(request.refreshToken()));
+        return Result.success(loginAppService.refreshToken(request.refreshToken()));
     }
 
     @PostMapping("/sms-code")
@@ -87,7 +87,7 @@ public class AuthController {
     @PostMapping("/password-reset")
     @RateLimiter(key = "user:forgot_password", count = 3, time = 3600, limitType = LimitType.IP)
     public Result<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        passwordResetAppService.forgotPassword(request);
+        forgotPasswordAppService.forgotPassword(request);
         return Result.success();
     }
 

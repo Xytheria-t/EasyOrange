@@ -38,7 +38,7 @@ easy-orange/
 │   │   ├── api/adminApi.ts    # 39 个 API 函数，覆盖 8 个管理端 Controller
 │   │   ├── api/messageApi.ts  # 消息 API（conversations, send, recall, typing, markAsRead）
 │   │   ├── types/admin.ts     # 完整类型定义（Order/Report/Category/Audit/User 操作）
-│   │   ├── stores/chatStore.ts# 聊天全局状态（Zustand: messages, typingUsers, connectionStatus）
+│   │   ├── store/chatStore.ts# 聊天全局状态（Zustand: messages, typingUsers, connectionStatus）
 │   │   └── styles/            # admin.css（侧边栏 210px/头部）, admin-layout.css（布局骨架）, chat-window.css
 │   ├── src/components/admin/   # 管理端共享组件（AdminMenuEntry 等，供用户侧 Header 引用）
 │   ├── src/api/core/            # API 核心模块 (请求/缓存/拦截器)
@@ -132,13 +132,16 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **父 POM 模块注册**: 新增后端子模块时（如 easyorange-admin），必须在 `easyorange-backend/pom.xml` 的 `<modules>` 中注册，否则该模块不会被构建/安装到本地仓库，依赖它的模块会报 `未解析的依赖项` 错误
 - **Flyway SQL 格式**: 迁移脚本中 CREATE TABLE 的列定义**禁止使用对齐格式**（列名与类型之间用大量空格填充对齐），必须使用紧凑格式。Flyway MySQL 解析器会对齐格式产生兼容性问题，导致 MySQL 1064 语法错误。详见 [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) 反模式章节
 - **Zustand store 写入规则**: zustand store **只接受事件驱动写入**（STOMP 回调、用户操作回调），**禁止在 useEffect 内写入 store**。原因：zustand 的 `...spread` 操作每次产生新对象引用 → effect 内写 store → 新引用触发重渲染 → effect 再执行 → 无限循环（Maximum update depth exceeded）。正确做法：react-query 提供 `staleTime: Infinity` 初始数据，zustand store 叠加实时更新（selector 纯读取安全）
+- **Zustand selector 稳定引用**: selector 中使用 `?? []` 或 `?? {}` 时**必须用模块级常量**（如 `const EMPTY_MESSAGES: ChatMessage[] = []`），禁止内联 `?? []`。原因：内联写法每次调用都创建新引用 → Zustand 用 `Object.is` 比较发现变化 → 触发重渲染 → selector 再执行 → 无限循环。配合 React 19 + StrictMode 的 `useSyncExternalStore` 双快照机制，循环会被放大到 50 层嵌套
 - **聊天 conversationId 格式**: 前后端统一使用排序双 ID 格式 `conv_{minId}_{maxId}`（如 `conv_123_456`），确保 A→B 和 B→A 的会话 ID 一致。前端：`conv_${[currentUserId, targetUserId].sort().join('_')}`；后端：`"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
 - **Mockito Java 25 兼容**: Java 25 下 Mockito inline mock maker 使用 ByteBuddy attach 机制会失败（WSL2 环境尤为明显）。已配置 `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` 使用 `mock-maker-subclass` 模式。**新测试不要尝试改回 inline 模式**
+- **`product-paths` 白名单陷阱**: `security.product-paths` 配置的路径会跳过 JWT 认证（`JwtAuthenticationFilter.shouldNotFilter` 中 `"GET".equals(method) && matchesAnyPattern(path, productPaths)`）。配置项如 `/api/products` 会匹配 `/api/products/my`，导致需要认证的接口被公开访问。如果新增需要认证的商品相关接口，必须在 `JwtAuthenticationFilter.AUTH_REQUIRED_PRODUCT_PATHS` 中显式排除，或改用更精确的 `ignore-paths` 配置
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（SubclassByteBuddyMockMaker 不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId)` + `} finally { TestSecurityUtil.clearSecurityContext(); }` 模式。工具类位于 `easyorange-framework/src/main/java/.../util/TestSecurityUtil.java`，所有模块测试通用。`clearSecurityContext()` 必须在 `finally` 块中调用，确保测试间隔离
 - **不可变集合**: 全项目统一使用 Java 9+ 不可变集合工厂方法，**禁止使用 `Collections` 工具类创建空/单元素/不可包装集合**。具体规则见 `.trae/rules/java/coding-style.md` §Immutability
 - **前端 ESLint jsx-a11y**: 所有非交互元素（div/span/article）上的点击事件必须改为语义化的 `button` 元素，或添加 `role="button"` + `tabIndex={0}` + `onKeyDown`。`label` 元素必须通过 `htmlFor` 关联表单控件或使用嵌套结构
 - **前端 ESLint curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`
 - **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect
+- **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
 
 ---
 

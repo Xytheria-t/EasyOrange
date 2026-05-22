@@ -6,7 +6,7 @@ public interface TokenService {
 
     String createRefreshToken(Long userId, String username, String userType);
 
-    void delToken(String token);
+    void deleteToken(String token);
 
     void revokeAllTokens(String accessToken, String refreshToken);
 

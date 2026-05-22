@@ -20,14 +20,11 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     }
 
     @Override
-    public long incrementAttempts(String account) {
-        Long count = redisCache.increment(LoginCacheConstants.buildAttemptsKey(account));
+    public long incrementAndExpire(String account, long expireMinutes) {
+        String key = LoginCacheConstants.buildAttemptsKey(account);
+        Long count = redisCache.increment(key);
+        redisCache.expire(key, expireMinutes, TimeUnit.MINUTES);
         return count != null ? count : 0;
-    }
-
-    @Override
-    public void expireAttempts(String account, long minutes) {
-        redisCache.expire(LoginCacheConstants.buildAttemptsKey(account), minutes, TimeUnit.MINUTES);
     }
 
     @Override

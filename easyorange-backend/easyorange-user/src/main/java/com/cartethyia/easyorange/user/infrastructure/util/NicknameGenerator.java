@@ -1,12 +1,10 @@
 package com.cartethyia.easyorange.user.infrastructure.util;
 
-import com.cartethyia.easyorange.user.domain.port.output.NicknameGenerationPort;
-import org.springframework.stereotype.Component;
+import com.cartethyia.easyorange.user.domain.port.output.NicknameGeneratorPort;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-@Component
-public class NicknameGenerator implements NicknameGenerationPort {
+public class NicknameGenerator implements NicknameGeneratorPort {
 
     private static final String[] ADJECTIVES = {
         "阳光", "活力", "快乐", "聪明", "可爱", "帅气", "机智", "乐观",

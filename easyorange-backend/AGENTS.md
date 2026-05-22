@@ -10,6 +10,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | Spring Boot | 4.0.3 |
 | MyBatis-Plus | 3.5.16 |
 | MapStruct | 1.6.3 |
+| Immutables | 2.10.0 |
 | Flyway | 11.14.1 |
 | JJWT | 0.13.0 |
 | ArchUnit | 1.4.1 |
@@ -34,7 +35,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 ├─────────────────────────────────────────────┤
 │  domain (领域层) — 纯业务逻辑，零框架依赖    │
 │  aggregate/: 聚合根                          │
-│  valueobject/: 值对象 (record)               │
+│  valueobject/: 值对象 (record / Immutables)  │
 │  event/: 领域事件                            │
 │  port/output/: 出站端口接口                  │
 │  repository/: 仓储接口                       │
@@ -64,7 +65,7 @@ product、order、payment 模块使用 CQRS：
 
 ```java
 // Port 定义（domain 层）
-public interface UserEventPort extends OutboundPort {
+public interface UserEventPort {
     void publishUserRegistered(UserRegisteredEvent event);
 }
 
@@ -125,8 +126,8 @@ PageResult.of(records, total, page, size)
 | 聚合根 | 名词 | `User`, `Product`, `OrderAggregate` |
 | 值对象 | 名词 (record) | `ProductId`, `Money`, `StockQuantity` |
 | 领域事件 | `*Event` | `UserRegisteredEvent` |
-| 领域服务 | `*DomainService` | `AuthenticationDomainService` |
-| 应用服务 | `*AppService` / `*CommandHandler` | `UserAppService` |
+| 领域服务 | `*Service` | `AuthenticationService` |
+| 应用服务 | `*AppService` / `*CommandHandler` | `RegisterAppService`, `ProfileAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
 | 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity>` |
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
@@ -168,7 +169,7 @@ public class BaseDO {
 ## Flyway 迁移规范
 
 - DDL 脚本: `db/migration/V{N}__description.sql`
-- 开发数据: `db/dev/test_data.sql`
+- 开发数据: `db/dev/R__insert_dev_test_data.sql`
 - 禁止修改已执行的迁移脚本
 - 新增字段必须可空或有默认值
 
@@ -256,6 +257,26 @@ public class TestAdminApplication {}
 ./mvnw test -pl easyorange-framework -DexcludedGroups=""
 ```
 
+### Port/Adapter IntelliJ 误报
+
+IntelliJ Spring 插件静态分析可能错误地将 domain port 接口文件（如 `PasswordEncoderPort.java`）识别为 Spring Bean，加上 `@Component` 标注的 Adapter 实现类，误报 "存在多个 XxxPort 类型的 Bean"。
+
+**实际上运行时只有 1 个 bean**（Adapter 实现类）。接口上无任何 Spring 注解，IntelliJ 误将接口本身也计为 bean。
+
+**修复方式**：在 Adapter 实现类上加 `@Primary`：
+
+```java
+@Primary
+@Component
+public class PasswordEncoderAdapter implements PasswordEncoderPort {
+    ...
+}
+```
+
+`@Primary` 语义上也正确 —— Adapter 是 port 接口的默认/唯一实现。
+
+当前已修复：`PasswordEncoderAdapter`。新增 Port/Adapter 后按此方式处理即可。
+
 ### MapStruct + IntelliJ 误报
 
 `@Mapper(componentModel = "spring")` 会在生成类上加 `@Component`，但 IntelliJ 的 Spring 插件静态分析会同时将接口上的 `@Mapper(componentModel = "spring")` 和生成类上的 `@Component` 都计为 bean，导致误报 "存在多个 XxxMapper 类型的 Bean"。
@@ -269,4 +290,4 @@ public class TestAdminApplication {}
 private final UserEntityMapper entityMapper;
 ```
 
-当前已修复：`UserEntityMapper`（UserRepositoryImpl）、`UserAssembler`（UserLoginAppService / UserAppService）。新增 MapStruct mapper 后按此方式处理即可。
+当前已修复：`UserEntityMapper`（UserRepositoryImpl）、`UserAssembler`（LoginAppService / ProfileAppService）。新增 MapStruct mapper 后按此方式处理即可。

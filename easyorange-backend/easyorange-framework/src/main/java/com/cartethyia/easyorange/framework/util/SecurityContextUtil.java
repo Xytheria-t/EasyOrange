@@ -30,16 +30,16 @@ public class SecurityContextUtil {
 
     // ==================== Current User ID ====================
 
+    public static Long getCurrentUserIdOrThrow() {
+        return getCurrentUserId()
+                .orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
+    }
+
     public static Optional<Long> getCurrentUserId() {
         return getAuthentication()
             .filter(Authentication::isAuthenticated)
             .map(Authentication::getPrincipal)
             .flatMap(SecurityContextUtil::convertPrincipal);
-    }
-
-    public static Long getCurrentUserIdOrThrow() {
-        return getCurrentUserId()
-            .orElseThrow(() -> BusinessException.of(ResultCode.UNAUTHORIZED, "用户未登录"));
     }
 
     // ==================== User Context ====================

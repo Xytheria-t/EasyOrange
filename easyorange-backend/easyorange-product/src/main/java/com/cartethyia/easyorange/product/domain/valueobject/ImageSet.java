@@ -3,9 +3,7 @@ package com.cartethyia.easyorange.product.domain.valueobject;
 import com.cartethyia.easyorange.common.util.BizRequire;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public record ImageSet(List<ProductImage> images) {
 
@@ -54,7 +52,7 @@ public record ImageSet(List<ProductImage> images) {
     public List<String> imageUrls() {
         return images.stream()
                 .map(img -> img.url() != null ? img.url().value() : null)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public int size() {

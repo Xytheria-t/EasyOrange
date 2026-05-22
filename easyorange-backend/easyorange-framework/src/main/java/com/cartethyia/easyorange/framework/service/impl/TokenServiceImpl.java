@@ -51,7 +51,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public void delToken(String token) {
+    public void deleteToken(String token) {
         try {
             jwtUtil.getClaim(token, "uuid", String.class).ifPresent(uuid -> stringRedisTemplate.delete(getTokenKey(uuid)));
         } catch (Exception e) {
@@ -63,10 +63,10 @@ public class TokenServiceImpl implements TokenService {
     public void revokeAllTokens(String accessToken, String refreshToken) {
         try {
             if (accessToken != null) {
-                delToken(accessToken);
+                deleteToken(accessToken);
             }
             if (refreshToken != null) {
-                delToken(refreshToken);
+                deleteToken(refreshToken);
             }
         } catch (Exception e) {
             log.error("撤销双令牌失败：{}", e.getMessage());
@@ -100,7 +100,7 @@ public class TokenServiceImpl implements TokenService {
             return null;
         }
 
-        delToken(refreshToken);
+        deleteToken(refreshToken);
 
         String username = jwtUtil.getClaim(refreshToken, "username", String.class).orElse(null);
         String userType = jwtUtil.getClaim(refreshToken, "userType", String.class).orElse(null);

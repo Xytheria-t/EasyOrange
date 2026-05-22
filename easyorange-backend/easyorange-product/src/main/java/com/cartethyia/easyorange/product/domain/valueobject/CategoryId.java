@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-import org.jetbrains.annotations.NotNull;
 
 public record CategoryId(Long value) {
 
@@ -13,6 +12,10 @@ public record CategoryId(Long value) {
         }
     }
 
+    public boolean isPersisted() {
+        return value != null;
+    }
+
     public static CategoryId of(Long value) {
         if (value == null) {
             return EMPTY;
@@ -21,8 +24,7 @@ public record CategoryId(Long value) {
     }
 
     @Override
-    @NotNull
     public String toString() {
-        return value != null ? value.toString() : "(未持久化)";
+        return isPersisted() ? value.toString() : "(未持久化)";
     }
 }

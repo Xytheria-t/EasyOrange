@@ -13,7 +13,7 @@ import java.time.Duration;
  * 
  * <p>实现类通常基于 Redis 等缓存存储，支持 TTL 自动过期
  */
-public interface SmsCodePort extends OutboundPort {
+public interface SmsCodePort {
 
     /**
      * 保存验证码

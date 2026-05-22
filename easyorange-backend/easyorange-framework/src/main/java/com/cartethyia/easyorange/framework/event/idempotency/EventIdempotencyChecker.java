@@ -2,10 +2,12 @@ package com.cartethyia.easyorange.framework.event.idempotency;
 
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@Component
 public class EventIdempotencyChecker {
 
     private static final String EVENT_LOCK_PREFIX = "eo:event:lock:";

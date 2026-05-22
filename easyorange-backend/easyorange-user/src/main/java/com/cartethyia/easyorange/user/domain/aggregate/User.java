@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
+import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import lombok.Builder;
@@ -34,7 +35,7 @@ public class User {
         return credentials != null ? credentials.encodedPassword() : null;
     }
 
-    public static User register(String username, String encodedPassword, String nickName) {
+    public static User create(String username, String encodedPassword, String nickName) {
         Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(encodedPassword, "password must not be null");
 
@@ -43,7 +44,7 @@ public class User {
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
             .contactInfo(ContactInfo.empty())
-            .personalInfo(new PersonalInfo(null, nickName, null, null, null))
+            .personalInfo(ImmutablePersonalInfo.builder().nickName(nickName).build())
             .loginInfo(LoginInfo.initial())
             .build();
     }

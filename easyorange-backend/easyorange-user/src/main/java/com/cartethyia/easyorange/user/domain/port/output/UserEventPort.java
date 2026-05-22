@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.user.domain.event.ForgotPasswordEvent;
 import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
 import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
 
-public interface UserEventPort extends OutboundPort {
+public interface UserEventPort {
 
     void publishUserRegistered(UserRegisteredEvent event);
 

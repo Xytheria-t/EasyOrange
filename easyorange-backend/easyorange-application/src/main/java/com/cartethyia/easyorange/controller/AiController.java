@@ -2,10 +2,12 @@ package com.cartethyia.easyorange.controller;
 
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
+import com.cartethyia.easyorange.ai.service.AiCopyGenerationService;
 import com.cartethyia.easyorange.ai.service.AiPricingService;
 import com.cartethyia.easyorange.ai.service.AiQaService;
 import com.cartethyia.easyorange.ai.service.AiReviewService;
@@ -33,6 +35,7 @@ public class AiController {
     private final AiReviewService reviewService;
     private final SemanticSearchService semanticSearchService;
     private final AiQaService qaService;
+    private final AiCopyGenerationService copyGenerationService;
 
     @PostMapping("/pricing")
     public Result<PricingSuggestion> suggestPrice(
@@ -83,5 +86,18 @@ public class AiController {
     public Result<QaResponse> answerQuestion(@RequestBody QaRequest request) {
         var response = qaService.answerQuestion(request);
         return Result.success(response);
+    }
+
+    @PostMapping("/generate-copy")
+    public Result<CopyGenerationResult> generateCopy(
+            @RequestParam String productName,
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) Integer conditionLevel,
+            @RequestParam(required = false) String originalPrice,
+            @RequestParam(defaultValue = "standard") String style
+    ) {
+        var result = copyGenerationService.generateCopy(
+                productName, categoryName, conditionLevel, originalPrice, style);
+        return Result.success(result);
     }
 }

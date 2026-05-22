@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.message.domain.valueobject;
 
-public record MessageContent(String value, MessageType type) {
+import com.cartethyia.easyorange.message.domain.valueobject.MessageContentFormat;
+
+public record MessageContent(String value, MessageContentFormat type) {
 
     public MessageContent {
         if (value == null || value.isBlank()) {
@@ -10,15 +12,15 @@ public record MessageContent(String value, MessageType type) {
             throw new IllegalArgumentException("Message content too long");
         }
         if (type == null) {
-            type = MessageType.TEXT;
+            type = MessageContentFormat.TEXT;
         }
     }
 
     public static MessageContent text(String content) {
-        return new MessageContent(content, MessageType.TEXT);
+        return new MessageContent(content, MessageContentFormat.TEXT);
     }
 
     public static MessageContent markdown(String content) {
-        return new MessageContent(content, MessageType.MARKDOWN);
+        return new MessageContent(content, MessageContentFormat.MARKDOWN);
     }
 }

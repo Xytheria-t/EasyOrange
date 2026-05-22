@@ -46,6 +46,7 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <jetbrains.annotations.version>26.0.2</jetbrains.annotations.version>
         <testcontainers.version>1.21.0</testcontainers.version>
+        <immutables.version>2.10.0</immutables.version>
     </properties>
 
     <dependencyManagement>
@@ -187,6 +188,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
+            <!-- ==================== Immutables ==================== -->
+            <dependency>
+                <groupId>org.immutables</groupId>
+                <artifactId>value</artifactId>
+                <version>${immutables.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -256,6 +264,8 @@
                         <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
                         <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
                         <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED</arg>
+                        <!-- Suppress: sun.misc.Unsafe::objectFieldOffset deprecated warning (JDK 24+, Lombok Permit class) -->
+                        <arg>-J--sun-misc-unsafe-memory-access=allow</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
@@ -279,6 +289,7 @@
                     <argLine>
                         -Djdk.attach.allowAttachSelf=true
                         -Dnet.bytebuddy.experimental=true
+                        --sun-misc-unsafe-memory-access=allow
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.lang.reflect=ALL-UNNAMED
                         --add-opens java.base/java.io=ALL-UNNAMED

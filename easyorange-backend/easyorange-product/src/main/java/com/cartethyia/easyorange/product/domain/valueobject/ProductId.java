@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-import org.jetbrains.annotations.NotNull;
 
 public record ProductId(Long value) {
 
@@ -25,7 +24,6 @@ public record ProductId(Long value) {
     }
 
     @Override
-    @NotNull
     public String toString() {
         return isPersisted() ? value.toString() : "(未持久化)";
     }

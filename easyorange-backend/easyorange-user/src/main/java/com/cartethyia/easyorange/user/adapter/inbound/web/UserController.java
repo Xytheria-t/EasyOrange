@@ -8,7 +8,8 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.C
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateUserRequest;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
-import com.cartethyia.easyorange.user.application.service.UserAppService;
+import com.cartethyia.easyorange.user.application.service.password.ChangePasswordAppService;
+import com.cartethyia.easyorange.user.application.service.profile.ProfileAppService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -19,24 +20,25 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final UserAppService userAppService;
+    private final ProfileAppService profileAppService;
+    private final ChangePasswordAppService changePasswordAppService;
 
     @GetMapping("/me")
     public Result<UserProfileVO> getCurrentUser() {
-        return Result.success(userAppService.getUserInfo());
+        return Result.success(profileAppService.getUserInfo());
     }
 
     @RepeatSubmit(interval = 3000, message = "请勿重复提交")
     @PutMapping("/me")
     public Result<UserVO> updateUserInfo(@Valid @RequestBody UpdateUserRequest request) {
-        return Result.success(userAppService.updateUserInfo(request));
+        return Result.success(profileAppService.updateUserInfo(request));
     }
 
     @RateLimiter(key = "user:change_password", count = 5, time = 60, limitType = LimitType.IP)
     @RepeatSubmit(interval = 3000, message = "请勿重复提交")
     @PutMapping("/me/password")
     public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        userAppService.changePassword(request);
+        changePasswordAppService.changePassword(request);
         return Result.success();
     }
 
@@ -47,7 +49,7 @@ public class UserController {
             byte[] content = avatar.getBytes();
             String contentType = avatar.getContentType();
             String originalFilename = avatar.getOriginalFilename();
-            return Result.success(userAppService.uploadAvatar(content, contentType, originalFilename));
+            return Result.success(profileAppService.uploadAvatar(content, contentType, originalFilename));
         } catch (java.io.IOException e) {
             throw new RuntimeException("头像读取失败", e);
         }
