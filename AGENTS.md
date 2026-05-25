@@ -28,6 +28,8 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | `eo_product_question` | 商品问答表 | buyer_id+product_id+question+answer+status, 含索引 |
 | `eo_audit_suggestion` | AI 审核建议表 | admin_id+product_id+suggested_action+confidence+risk_flags+reasoning |
 | `eo_user_credit` | 用户信用分表 | score(0-200)+total_trades+completed_trades+cancelled_trades+total_reports+confirmed_reports+avg_rating |
+| `eo_order` | 订单主表 | total_amount(行项总和); 状态机: PENDING_PAYMENT/PAID/SHIPPED/COMPLETED/CANCELLED/REFUNDED |
+| `eo_order_item` | 订单行项表 | 含 product_snapshot JSON 快照, unit_price, quantity, subtotal |
 | `eo_credit_change_log` | 信用变更日志 | user_id+change_amount+reason+before_score+after_score |
 
 ## 商品审核工作流
@@ -112,7 +114,7 @@ easy-orange/
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
 5. **领域事件**: 应用服务通过领域语义的 Port（如 `UserEventPort`）调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
 6. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
-7. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已有统一处理器返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
+7. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
 
 ## 模块依赖关系
 
@@ -170,6 +172,9 @@ admin → framework, common, user (optional), product (optional), order (optiona
 |------|------|
 | [排序筛选合并-Spec](doc/specs/2026-05-20-sort-filter-merge-design.md) | 搜索排序/筛选/整合设计规格 |
 | [排序筛选合并-Plan](doc/plans/2026-05-20-sort-filter-merge.md) | 实施计划 |
+| [订单行项-Spec](doc/specs/2026-05-24-order-line-items-design.md) | 订单行项（多商品/多数量）设计规格 |
+| [订单行项-Plan](doc/plans/2026-05-24-order-line-items.md) | 实施计划 |
+| [命名规范审查报告](doc/naming-convention-audit-report.md) | 全项目命名规范审查与修复记录 |
 
 ## 环境变量
 
@@ -188,7 +193,8 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，在 `PageResult` 基础上增加 `facets` 分面桶列表）
-- 测试覆盖率目标 ≥ 80%（后端全面覆盖中；admin 模块 100% 服务层覆盖，message 模块 161 测试/6 服务已覆盖，user 模块 149 测试/8 服务已覆盖，product 模块 109 测试、payment 模块 134 测试；前端 95 测试文件/919 测试，用户页面覆盖率达 ~74%）
+- 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
+- **测试统计**：后端 11 模块合计 1,392 测试用例（含 ai 33、common 175）；前端 98 测试文件/955 测试用例
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/`
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
@@ -222,6 +228,12 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 # 含集成测试（需 Docker 环境）
 ./mvnw test -pl easyorange-framework -DexcludedGroups=""
 ./mvnw test -pl easyorange-order -DexcludedGroups=""
+
+# 生成 JaCoCo 覆盖率报告
+./mvnw clean test jacoco:report
+
+# OWASP 依赖安全检查
+./mvnw org.owasp:dependency-check-maven:check
 
 # 启动开发环境 (MySQL + Redis + 可选 ES)
 docker-compose up -d

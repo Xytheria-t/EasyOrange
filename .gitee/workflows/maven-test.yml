@@ -1,0 +1,64 @@
+name: Maven Test
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('easyorange-backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Test framework module
+        run: ./mvnw test -pl easyorange-framework -am
+        working-directory: easyorange-backend
+
+      - name: Test application module
+        run: ./mvnw test -pl easyorange-application -am
+        working-directory: easyorange-backend
+
+      - name: Test admin module
+        run: ./mvnw test -pl easyorange-admin -am
+        working-directory: easyorange-backend
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: easyorange-frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: easyorange-frontend
+
+      - name: Lint check
+        run: npm run lint:check
+        working-directory: easyorange-frontend
+
+      - name: Run frontend tests
+        run: npm test
+        working-directory: easyorange-frontend

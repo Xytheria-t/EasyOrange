@@ -77,7 +77,7 @@ EasyOrange Platform
 
 ```
 easyorange/
-├── easyorange-backend/               # 后端服务 (10 Maven 模块)
+├── easyorange-backend/               # 后端服务 (11 Maven 模块)
 │   ├── easyorange-application/       # 应用层（启动类、健康检查、平台统计）
 │   ├── easyorange-admin/             # 管理端（用户/商品/订单/分类/举报/审核 API）
 │   ├── easyorange-common/            # 公共模块（Result, PageResult, 注解, 异常, 领域事件基类）
@@ -88,6 +88,7 @@ easyorange/
 │   ├── easyorange-payment/           # 支付域模块
 │   ├── easyorange-message/           # 消息域模块
 │   ├── easyorange-favorite/          # 收藏域模块
+│   ├── easyorange-ai/                # AI 模块（智能定价/审核/问答/文案）
 │   ├── pom.xml                       # Maven 父工程
 │
 ├── easyorange-frontend/              # 前端应用 (React SPA)
@@ -197,12 +198,20 @@ cd easyorange-frontend
 
 ### 4. 启动后端服务
 
+后端是多模块项目（11 Maven 模块），首次启动或依赖模块变更后需要使用正确的方式启动：
+
 ```bash
 cd easyorange-backend
 
-# 编译并启动
-./mvnw spring-boot:run -pl easyorange-application
+# 方式一（推荐）：先安装所有模块到本地仓库，再启动（确保依赖为最新）
+./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application
+
+# 方式二：打包并直接运行
+./mvnw clean package -DskipTests -pl easyorange-application -am
+java --sun-misc-unsafe-memory-access=allow -jar easyorange-application/target/easyorange-application-*.jar
 ```
+
+> ⚠️ **不要单独使用 `spring-boot:run -pl`**：这会从本地 Maven 仓库加载依赖模块的旧 JAR 包，导致 ClassNotFoundException 或运行时行为异常。必须先 install 所有依赖模块。
 
 后端服务将在 `http://localhost:8080` 启动
 
@@ -473,6 +482,9 @@ cd easyorange-backend
 
 # 生成测试覆盖率报告
 ./mvnw clean test jacoco:report
+
+# OWASP 依赖安全检查
+./mvnw org.owasp:dependency-check-maven:check
 ```
 
 ### 前端测试
@@ -480,7 +492,7 @@ cd easyorange-backend
 ```bash
 cd easyorange-frontend
 
-# 运行所有单元/组件/Hook 测试（81 个文件, 734 个用例）
+# 运行所有单元/组件/Hook 测试（98 个文件, 955 个用例）
 npm test
 
 # 监听模式

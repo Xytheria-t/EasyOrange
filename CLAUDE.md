@@ -13,7 +13,7 @@ tags:
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, Bloom 过滤器, AOP, 事件, 文件, 分布式 ID, 一致性哈希)
 │   ├── easyorange-user/         # 用户模块 (DDD)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
