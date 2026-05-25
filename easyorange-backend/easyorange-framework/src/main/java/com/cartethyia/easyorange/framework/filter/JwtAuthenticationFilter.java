@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.framework.filter;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
+import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
@@ -16,6 +18,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,6 +26,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,6 +49,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final SecurityProperties securityProperties;
     private final StringRedisTemplate stringRedisTemplate;
     private final Cache<String, Boolean> tokenUuidCache;
+    private final ObjectMapper objectMapper;
 
     private static final Set<String> AUTH_REQUIRED_PRODUCT_PATHS = Set.of("/api/products/my");
 
@@ -130,8 +135,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.warn("Non-admin access to admin path: {}, userType: {}, IP: {}",
                     path, userType, RequestUtil.getClientIp(request));
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"code\":\"403\",\"message\":\"权限不足\",\"data\":null,\"timestamp\":" + System.currentTimeMillis() + "}");
+                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.setCharacterEncoding("UTF-8");
+                objectMapper.writeValue(response.getOutputStream(), Result.error(ResultCode.FORBIDDEN));
                 return;
             }
         } catch (Exception e) {

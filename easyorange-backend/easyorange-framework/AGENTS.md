@@ -10,7 +10,13 @@ framework/
 │   ├── OperLogAspect.java       # 操作日志切面 (@Log)
 │   ├── RateLimiterAspect.java   # 限流切面 (@RateLimiter, Redis+Lua)
 │   └── RepeatSubmitAspect.java  # 防重提交切面 (@RepeatSubmit)
-├── config/                  # 框架配置
+├── bloom/                  # 布隆过滤器 (Redis Bitmap)
+│   ├── BloomFilter.java         # 过滤器接口
+│   └── RedisBitmapBloomFilter.java # Redis Bitmap 实现 (Lua 原子操作)
+├── cache/                  # 多级缓存门面
+│   ├── CacheLoader.java         # 回源加载器函数式接口
+│   └── MultiLevelCache.java     # L1 Caffeine → L2 Redis → DB 三级串联
+├── config/                 # 框架配置
 │   ├── async/                   # 线程池 + Jackson
 │   │   ├── ThreadPoolConfig.java
 │   │   ├── JacksonConfig.java
@@ -60,7 +66,7 @@ framework/
 │   ├── GlobalExceptionHandler.java  # 全局异常处理
 │   └── CacheTypeMismatchException.java
 ├── file/                    # 文件上传下载
-│   ├── controller/FileController.java
+│   ├── adapter/inbound/web/controller/FileController.java
 │   ├── service/FileService.java
 │   ├── service/impl/FileServiceImpl.java
 │   ├── service/ImageProcessingService.java
@@ -76,6 +82,13 @@ framework/
 │   ├── CustomMetaObjectHandler.java   # MyBatis-Plus 自动填充
 │   ├── JsonAuthenticationEntryPoint.java # 未认证响应
 │   └── LoggingInterceptor.java        # 请求日志拦截
+├── hash/                    # 一致性哈希
+│   ├── Node.java                    # 节点接口
+│   └── ConsistentHashRouter.java    # 虚拟节点 TreeMap 路由 (MD5 哈希)
+├── idgen/                   # 分布式 ID 生成器
+│   ├── WorkerIdProvider.java        # 工作节点接口
+│   ├── RedisWorkerIdProvider.java   # Redis 自动注册 + 心跳续期
+│   └── SnowflakeIdGenerator.java    # 增强版 Snowflake (时钟回拨容忍 + Redis WorkerId)
 ├── manager/
 │   └── AsyncManager.java         # 异步任务管理器
 ├── notification/
@@ -88,8 +101,8 @@ framework/
 │   ├── OperLogArchiveService.java
 │   └── dto/LogStorageStats.java
 ├── redis/                   # Redis 缓存抽象
-│   ├── RedisCache.java           # 缓存接口
-│   └── impl/RedisCacheImpl.java  # 实现 (String/Hash/List + 分布式锁)
+│   ├── RedisCache.java           # 缓存接口 (String/Hash/List/Set/ZSet + Lua + 分布式锁 + SCAN)
+│   └── impl/RedisCacheImpl.java  # 实现 (含 Lua 原子解锁、SCAN 替代 KEYS 防阻塞)
 ├── service/                 # Token 服务
 │   ├── TokenService.java
 │   └── impl/TokenServiceImpl.java
@@ -117,10 +130,84 @@ framework/
 ### Redis 缓存抽象
 
 ```java
+// 基础操作
 RedisCache.set(key, value, timeout, unit)
 RedisCache.get(key, clazz)
-RedisCache.tryLock(key, value, timeout)  // 分布式锁
+RedisCache.delete(key)
+
+// 位图操作 (Bloom Filter 使用)
+RedisCache.setBit(key, offset, value)
+RedisCache.getBit(key, offset)
+RedisCache.bitCount(key)
+
+// 分布式锁 (Lua 脚本原子释放, UUID 防误删)
+RedisCache.tryLock(key, value, timeout, unit)
 RedisCache.unlock(key, value)
+
+// 键扫描 (SCAN 替代 KEYS, 不阻塞 Redis)
+RedisCache.keys(pattern)
+
+// Lua 脚本执行
+RedisCache.executeLuaScript(script, keys, args)
+
+// 批量操作、Hash/List/Set/ZSet 等完整 API 见 RedisCache.java 接口
+```
+
+> **重要实现细节**: `keys()` 使用 `SCAN` 命令（cursor 迭代, count=1000），避免生产环境 `KEYS *` 阻塞 Redis。`unlock()` 和 `unlockIfValueMatches()` 使用 Lua 脚本原子 compare-and-delete。新增 `setBit`/`getBit`/`bitCount` 位图操作用于支持布隆过滤器。
+
+### 布隆过滤器 (bloom/)
+
+Redis 位图实现的布隆过滤器，用于缓存穿透防护：
+
+- 默认配置: 100 万预期插入, 1% 假阳性率 → 约 1.2MB 内存, 7 个哈希函数
+- 哈希策略: MD5 拆两个 long → k 个偏移量 (Less Hashing, Same Performance)
+- Lua 脚本保证 SETBIT/GETBIT 原子性 (单次 Redis 调用完成 k 次位操作)
+- 支持自定义预期数据量和假阳性率
+
+```java
+// 使用默认配置
+bloomFilter.put("eo:bloom:product:id", productId.toString());
+boolean exists = bloomFilter.mightContain("eo:bloom:product:id", productId.toString());
+
+// 自定义参数 (100 万, 1%)
+var custom = new RedisBitmapBloomFilter(redisCache, 1_000_000L, 0.01);
+```
+
+### 多级缓存门面 (cache/)
+
+```java
+// L1 Caffeine → L2 Redis → DB 三级串联
+ProductDetail detail = multiLevelCache.get(
+    "product:detail:" + id,
+    ProductDetail.class,
+    () -> repository.findDetail(id)
+);
+
+// 手动失效 (同时清除 L1 + L2)
+multiLevelCache.evict("product:detail:" + id);
+```
+
+### 分布式 ID 生成器 (idgen/)
+
+增强版 Snowflake，通过 Redis 自动分配 WorkerId：
+
+- 支持最多 32 个工作节点 (5 bit WorkerId)
+- Redis WorkerId 自动注册 + 心跳续期防过期
+- 容忍 10ms 内时钟回拨 (等待 + 自旋)
+- 可配置 DataCenterId
+
+```properties
+# 启用 Snowflake ID 生成器 (默认关闭)
+easyorange.idgen.enabled=true
+easyorange.idgen.data-center-id=1
+```
+
+### 一致性哈希 (hash/)
+
+```java
+List<RedisNode> nodes = List.of(new RedisNode("node-1"), new RedisNode("node-2"));
+var router = new ConsistentHashRouter<>(nodes, 200);  // 200 虚拟节点/物理节点
+RedisNode target = router.route("some-cache-key");
 ```
 
 ### 统一响应包装
@@ -135,3 +222,5 @@ RedisCache.unlock(key, value)
 - **JacksonConfig 同时配置了 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper`**：Spring Boot 4.0 默认使用 Jackson 3.x 作为 HTTP 消息转换器，两者都必须注册 `ToStringSerializer` 才能防止 Long 类型精度丢失。`JsonMapperBuilderCustomizer` 用于自动配置，`jsonMapper()` Bean 直接构建时也需添加模块
 - **JacksonConfig 的 ObjectMapper 注册了 ParameterNamesModule**，领域事件类无需 @JsonCreator 注解即可反序列化；修改 JacksonConfig 时勿遗漏此模块
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
+- **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
+- **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量

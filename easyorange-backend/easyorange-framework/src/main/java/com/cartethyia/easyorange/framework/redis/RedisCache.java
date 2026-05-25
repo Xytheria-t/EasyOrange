@@ -18,6 +18,16 @@ public interface RedisCache {
 
     <T> T get(String key, Class<T> type);
 
+    // ==================== Bitmap 操作 ====================
+
+    Boolean setBit(String key, long offset, boolean value);
+
+    Boolean getBit(String key, long offset);
+
+    Long bitCount(String key);
+
+    // ==================== Key 生命周期 ====================
+
     Boolean expire(String key, long timeout, TimeUnit timeUnit);
 
     long getExpire(String key, TimeUnit timeUnit);

@@ -9,7 +9,10 @@
 ### 核心功能
 
 - **安全认证**：JWT 认证、密码加密、CORS 配置
-- **缓存抽象**：Redis 缓存封装、本地缓存优化
+- **缓存抽象**：Redis 缓存封装（支持位图操作）、本地缓存（Caffeine）、多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联）
+- **布隆过滤器**：基于 Redis Bitmap + Lua 脚本实现的分布式布隆过滤器，用于缓存穿透防护
+- **分布式 ID**：增强版 Snowflake ID 生成器（Redis 自动注册 WorkerId、时钟回拨容忍）
+- **一致性哈希**：基于 TreeMap + 虚拟节点的一致性哈希路由，用于缓存分片等场景
 - **领域事件**：事件发布与订阅机制
 - **异常处理**：全局异常处理、友好错误信息
 - **AOP 增强**：限流、防重复提交、操作日志
@@ -23,7 +26,7 @@
 - Spring Data Redis
 - JWT (jjwt 0.13.0)
 - MyBatis-Plus 3.5.16
-- Caffeine Cache
+- Caffeine Cache 3.x
 - AspectJ
 
 ## 快速开始
@@ -69,9 +72,25 @@ public class Application {
 
 | 组件 | 说明 |
 |------|------|
-| `RedisCache` | Redis 缓存抽象接口 |
+| `RedisCache` | Redis 缓存抽象接口（支持 String/Hash/List/Set/ZSet/Bitmap/Lua） |
 | `RedisCacheImpl` | Redis 缓存实现 |
-| `LocalCacheConfig` | 本地缓存配置 |
+| `LocalCacheConfig` | Caffeine 本地缓存配置（tokenUuidCache / imageProcessCache / l1Cache） |
+| `MultiLevelCache` | 多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联，自动回填） |
+
+### 缓存防护组件
+
+| 组件 | 说明 |
+|------|------|
+| `BloomFilter` | 布隆过滤器接口 |
+| `RedisBitmapBloomFilter` | Redis Bitmap 实现（Lua 原子操作，默认 100 万/1% 假阳性率） |
+
+### 分布式基础设施
+
+| 组件 | 说明 |
+|------|------|
+| `SnowflakeIdGenerator` | 增强版 Snowflake（容忍时钟回拨 10ms） |
+| `WorkerIdProvider` / `RedisWorkerIdProvider` | Redis 自动注册 WorkerId + 心跳续期 |
+| `ConsistentHashRouter` | 一致性哈希路由（200 虚拟节点/物理节点，MD5 哈希） |
 
 ### 事件组件
 

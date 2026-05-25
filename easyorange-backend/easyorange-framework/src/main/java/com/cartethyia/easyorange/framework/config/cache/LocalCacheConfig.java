@@ -24,6 +24,12 @@ public class LocalCacheConfig {
     @Value("${image.cache.expire-hours:24}")
     private int imageCacheExpireHours;
 
+    @Value("${multi-level-cache.l1.max-size:5000}")
+    private int l1CacheMaxSize;
+
+    @Value("${multi-level-cache.l1.expire-minutes:10}")
+    private int l1CacheExpireMinutes;
+
     @Bean("tokenUuidCache")
     public Cache<String, Boolean> tokenUuidCache() {
         return Caffeine.newBuilder()
@@ -38,6 +44,15 @@ public class LocalCacheConfig {
         return Caffeine.newBuilder()
                 .maximumSize(imageCacheMaxSize)
                 .expireAfterAccess(imageCacheExpireHours, TimeUnit.HOURS)
+                .recordStats()
+                .build();
+    }
+
+    @Bean("l1Cache")
+    public Cache<String, Object> l1Cache() {
+        return Caffeine.newBuilder()
+                .maximumSize(l1CacheMaxSize)
+                .expireAfterWrite(l1CacheExpireMinutes, TimeUnit.MINUTES)
                 .recordStats()
                 .build();
     }

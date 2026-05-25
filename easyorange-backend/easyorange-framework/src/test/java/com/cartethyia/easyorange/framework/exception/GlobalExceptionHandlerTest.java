@@ -46,7 +46,7 @@ class GlobalExceptionHandlerTest {
     }
 
     @Nested
-    @DisplayName("handleBusinessException (已有行为回归)")
+    @DisplayName("BusinessException 通过 handleBaseBusinessException 处理（继承覆盖）")
     class BusinessExceptionRegressionTests {
 
         @Test
@@ -54,7 +54,7 @@ class GlobalExceptionHandlerTest {
         void handleBusinessException_stillWorks() {
             BusinessException ex = BusinessException.of(ResultCode.BUSINESS_ERROR, "业务错误");
 
-            ResponseEntity<Result<Void>> response = handler.handleBusinessException(ex);
+            ResponseEntity<Result<Void>> response = handler.handleBaseBusinessException(ex);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody().code()).isEqualTo(ResultCode.BUSINESS_ERROR.getCode());

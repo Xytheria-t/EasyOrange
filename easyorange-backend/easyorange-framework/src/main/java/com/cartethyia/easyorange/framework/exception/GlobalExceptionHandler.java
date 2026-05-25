@@ -2,8 +2,6 @@ package com.cartethyia.easyorange.framework.exception;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
-import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
@@ -34,17 +32,9 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException e) {
-        log.warn("业务异常[code={}]: {}", e.getCode(), e.getMessage());
-        return ResponseEntity
-                .status(e.httpStatus())
-                .body(Result.error(e.getCode(), e.getMessage()));
-    }
-
     @ExceptionHandler(BaseBusinessException.class)
     public ResponseEntity<Result<Void>> handleBaseBusinessException(BaseBusinessException e) {
-        log.warn("业务异常[code={}]: {}", e.getCode(), e.getMessage());
+        log.warn("业务异常[code={}, type={}]: {}", e.getCode(), e.getClass().getSimpleName(), e.getMessage());
         return ResponseEntity
                 .status(e.httpStatus())
                 .body(Result.error(e.getCode(), e.getMessage()));
@@ -54,14 +44,6 @@ public class GlobalExceptionHandler {
     public Result<Map<String, String>> handleParamValidationException(ParamValidationException e) {
         log.warn("action=validate_error, errors={}", e.getFieldErrors());
         return Result.error(ResultCode.VALIDATE_FAILED, e.getFirstErrorMessage());
-    }
-
-    @ExceptionHandler(FileException.class)
-    public ResponseEntity<Result<Void>> handleFileException(FileException e) {
-        log.warn("文件异常[code={}]: {}", e.getCode(), e.getMessage());
-        return ResponseEntity
-                .status(e.httpStatus())
-                .body(Result.error(e.getCode(), e.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)

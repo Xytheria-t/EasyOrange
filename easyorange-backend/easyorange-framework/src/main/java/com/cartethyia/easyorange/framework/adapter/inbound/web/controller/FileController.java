@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.file.controller;
+package com.cartethyia.easyorange.framework.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.cache.LocalCacheConfig;

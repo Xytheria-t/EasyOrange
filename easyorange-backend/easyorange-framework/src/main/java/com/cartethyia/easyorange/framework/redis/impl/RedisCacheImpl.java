@@ -6,10 +6,14 @@ import com.cartethyia.easyorange.framework.redis.RedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -192,6 +196,24 @@ public class RedisCacheImpl implements RedisCache {
         return redisTemplate.opsForValue().decrement(generateKey(key), delta);
     }
 
+    // ==================== Bitmap 操作 ====================
+
+    @Override
+    public Boolean setBit(String key, long offset, boolean value) {
+        return redisTemplate.opsForValue().setBit(generateKey(key), offset, value);
+    }
+
+    @Override
+    public Boolean getBit(String key, long offset) {
+        return redisTemplate.opsForValue().getBit(generateKey(key), offset);
+    }
+
+    @Override
+    public Long bitCount(String key) {
+        return redisTemplate.execute((RedisCallback<Long>) connection ->
+                connection.bitCount(generateKey(key).getBytes(StandardCharsets.UTF_8)));
+    }
+
     @Override
     public <T> Map<String, T> multiGet(Collection<String> keys) {
         return multiGetInternal(keys, null);
@@ -231,11 +253,7 @@ public class RedisCacheImpl implements RedisCache {
 
     @Override
     public Boolean unlockIfValueMatches(String key, String expectedValue) {
-        Object currentValue = redisTemplate.opsForValue().get(generateKey(key));
-        if (Objects.equals(expectedValue, currentValue)) {
-            return redisTemplate.delete(generateKey(key));
-        }
-        return false;
+        return unlock(key, expectedValue);
     }
 
     @Override
@@ -387,8 +405,20 @@ public class RedisCacheImpl implements RedisCache {
 
     @Override
     public Set<String> keys(String pattern) {
-        Set<String> rawKeys = redisTemplate.keys(pattern);
-        if (rawKeys == null) {
+        Set<String> rawKeys = redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
+            Set<String> keysTmp = new HashSet<>();
+            try (Cursor<byte[]> cursor = connection.scan(ScanOptions.scanOptions()
+                    .match(pattern).count(1000).build())) {
+                while (cursor.hasNext()) {
+                    keysTmp.add(new String(cursor.next(), StandardCharsets.UTF_8));
+                }
+            } catch (Exception e) {
+                log.error("Redis SCAN failed for pattern: {}", pattern, e);
+                throw new RuntimeException(e);
+            }
+            return keysTmp;
+        });
+        if (rawKeys == null || rawKeys.isEmpty()) {
             return Set.of();
         }
         return rawKeys.stream()
