@@ -43,7 +43,9 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
                 p.getTitle(),
                 p.getPrice(),
                 p.getStatus(),
-                p.getImages()
+                p.getImages(),
+                p.getDescription(),
+                p.getConditionDesc()
         );
     }
 }

@@ -9,9 +9,12 @@ import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
+import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
+import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
@@ -28,7 +31,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
 public class AdminOrderService {
 
     private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
     private final OrderReadRepository orderReadRepository;
     private final UserMapper userMapper;
     private final ProductMapper productMapper;
@@ -83,10 +86,11 @@ public class AdminOrderService {
         Page<OrderDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
         Map<Long, UserEntity> userMap = batchGetUsers(page);
-        Map<Long, ProductDO> productMap = batchGetProducts(page);
+        Map<Long, List<OrderItemDO>> itemsMap = batchGetOrderItems(page);
+        Map<Long, ProductDO> productMap = batchGetProductsFromItems(itemsMap);
 
         List<AdminOrderResponse> records = page.getRecords().stream()
-            .map(order -> toAdminOrderResponse(order, userMap, productMap))
+            .map(order -> toAdminOrderResponse(order, userMap, itemsMap, productMap))
             .collect(Collectors.toList());
 
         return PageResult.of(records, page.getTotal(), pageNum, pageSize);
@@ -99,7 +103,27 @@ public class AdminOrderService {
 
         UserEntity buyer = userMapper.selectById(model.buyerId());
         UserEntity seller = userMapper.selectById(model.sellerId());
-        ProductDO product = productMapper.selectById(model.productId());
+
+        List<Long> productIds = model.items().stream()
+            .map(OrderItemReadModel::productId)
+            .distinct()
+            .toList();
+        Map<Long, ProductDO> productMap;
+        if (!productIds.isEmpty()) {
+            productMap = productMapper.selectBatchIds(productIds).stream()
+                .collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
+        } else {
+            productMap = Map.of();
+        }
+
+        List<AdminOrderDetailResponse.ProductInfo> productInfos = model.items().stream()
+            .map(item -> {
+                ProductDO p = productMap.get(item.productId());
+                return p != null
+                    ? new AdminOrderDetailResponse.ProductInfo(p.getId(), p.getName(), null, p.getPrice())
+                    : new AdminOrderDetailResponse.ProductInfo(item.productId(), null, null, null);
+            })
+            .toList();
 
         return AdminOrderDetailResponse.builder()
             .orderId(model.id())
@@ -110,10 +134,8 @@ public class AdminOrderService {
             .seller(seller != null ? new AdminOrderDetailResponse.SellerInfo(
                 seller.getId(), seller.getNickName(), seller.getAvatar(), seller.getPhone()
             ) : new AdminOrderDetailResponse.SellerInfo(model.sellerId(), null, null, null))
-            .product(product != null ? new AdminOrderDetailResponse.ProductInfo(
-                product.getId(), product.getName(), null, product.getPrice()
-            ) : new AdminOrderDetailResponse.ProductInfo(model.productId(), null, null, null))
-            .amount(model.amount())
+            .products(productInfos)
+            .totalAmount(model.totalAmount())
             .status(model.status())
             .statusDesc(model.statusDesc())
             .paymentStatus(model.paymentStatus())
@@ -225,12 +247,26 @@ public class AdminOrderService {
         return users.stream().collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
     }
 
-    private Map<Long, ProductDO> batchGetProducts(Page<OrderDO> orderPage) {
-        List<Long> productIds = orderPage.getRecords().stream()
-            .map(OrderDO::getProductId)
+    private Map<Long, List<OrderItemDO>> batchGetOrderItems(Page<OrderDO> orderPage) {
+        List<Long> orderIds = orderPage.getRecords().stream()
+            .map(OrderDO::getId)
             .filter(Objects::nonNull)
-            .distinct()
-            .collect(Collectors.toList());
+            .toList();
+        if (orderIds.isEmpty()) {
+            return Map.of();
+        }
+        List<OrderItemDO> items = ChainWrappers.lambdaQueryChain(orderItemMapper)
+            .in(OrderItemDO::getOrderId, orderIds)
+            .list();
+        return items.stream().collect(Collectors.groupingBy(OrderItemDO::getOrderId));
+    }
+
+    private Map<Long, ProductDO> batchGetProductsFromItems(Map<Long, List<OrderItemDO>> itemsMap) {
+        Set<Long> productIds = itemsMap.values().stream()
+            .flatMap(Collection::stream)
+            .map(OrderItemDO::getProductId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
         if (productIds.isEmpty()) {
             return Map.of();
         }
@@ -238,11 +274,23 @@ public class AdminOrderService {
         return products.stream().collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
     }
 
-    private AdminOrderResponse toAdminOrderResponse(OrderDO order, Map<Long, UserEntity> userMap, Map<Long, ProductDO> productMap) {
+    private AdminOrderResponse toAdminOrderResponse(OrderDO order, Map<Long, UserEntity> userMap,
+                                                     Map<Long, List<OrderItemDO>> itemsMap,
+                                                     Map<Long, ProductDO> productMap) {
         UserEntity buyer = userMap.get(order.getBuyerId());
         UserEntity seller = userMap.get(order.getSellerId());
-        ProductDO product = productMap.get(order.getProductId());
         OrderStatus status = OrderStatus.fromCode(order.getStatus());
+
+        List<OrderItemDO> items = itemsMap.getOrDefault(order.getId(), List.of());
+        List<AdminOrderResponse.ItemInfo> itemInfos = items.stream()
+            .map(item -> {
+                ProductDO product = productMap.get(item.getProductId());
+                return new AdminOrderResponse.ItemInfo(
+                    item.getProductId(),
+                    product != null ? product.getName() : null
+                );
+            })
+            .toList();
 
         return new AdminOrderResponse(
             order.getId(),
@@ -251,9 +299,8 @@ public class AdminOrderService {
             buyer != null ? buyer.getNickName() : null,
             order.getSellerId(),
             seller != null ? seller.getNickName() : null,
-            order.getProductId(),
-            product != null ? product.getName() : null,
-            order.getAmount(),
+            itemInfos,
+            order.getTotalAmount(),
             order.getStatus(),
             status != null ? status.getDesc() : "未知状态",
             order.getPaymentStatus(),

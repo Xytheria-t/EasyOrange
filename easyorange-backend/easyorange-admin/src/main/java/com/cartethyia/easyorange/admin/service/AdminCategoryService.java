@@ -64,14 +64,14 @@ public class AdminCategoryService {
             public List<CategoryTreeResponse> apply(Long pid) {
                 List<CategoryDO> children = groupedByParent.getOrDefault(pid, List.of());
                 return children.stream()
-                    .map(cat -> CategoryTreeResponse.builder()
-                        .categoryId(cat.getId())
-                        .name(cat.getName())
-                        .level(cat.getLevel())
-                        .sortOrder(cat.getSortOrder())
-                        .status(cat.getStatus())
-                        .children(apply(cat.getId()))
-                        .build())
+                    .map(cat -> new CategoryTreeResponse(
+                        cat.getId(),
+                        cat.getName(),
+                        cat.getLevel(),
+                        cat.getSortOrder(),
+                        cat.getStatus(),
+                        apply(cat.getId())
+                    ))
                     .collect(Collectors.toList());
             }
         };
@@ -82,8 +82,8 @@ public class AdminCategoryService {
     @Transactional(rollbackFor = Exception.class)
     public CategoryResponse createCategory(CategoryCreateRequest request) {
         int level = 1;
-        if (request.getParentId() != null) {
-            CategoryDO parent = categoryMapper.selectById(request.getParentId());
+        if (request.parentId() != null) {
+            CategoryDO parent = categoryMapper.selectById(request.parentId());
             if (parent == null || parent.getDelFlag() != 0) {
                 throw BusinessException.of("父分类不存在");
             }
@@ -91,16 +91,16 @@ public class AdminCategoryService {
             if (level > MAX_CATEGORY_LEVEL) {
                 throw BusinessException.of("分类层级不能超过" + MAX_CATEGORY_LEVEL + "级");
             }
-            checkDuplicateName(request.getName(), request.getParentId());
+            checkDuplicateName(request.name(), request.parentId());
         } else {
-            checkDuplicateNameAtRoot(request.getName());
+            checkDuplicateNameAtRoot(request.name());
         }
 
         CategoryDO entity = CategoryDO.builder()
-            .name(request.getName())
-            .parentId(request.getParentId())
+            .name(request.name())
+            .parentId(request.parentId())
             .level(level)
-            .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0)
+            .sortOrder(request.sortOrder())
             .status(1)
             .build();
 
@@ -116,8 +116,8 @@ public class AdminCategoryService {
             throw BusinessException.of("分类不存在");
         }
 
-        if (request.getParentId() != null && !Objects.equals(request.getParentId(), entity.getParentId())) {
-            CategoryDO parent = categoryMapper.selectById(request.getParentId());
+        if (request.parentId() != null && !Objects.equals(request.parentId(), entity.getParentId())) {
+            CategoryDO parent = categoryMapper.selectById(request.parentId());
             if (parent == null || parent.getDelFlag() != 0) {
                 throw BusinessException.of("父分类不存在");
             }
@@ -126,24 +126,24 @@ public class AdminCategoryService {
                 throw BusinessException.of("移动后分类层级不能超过" + MAX_CATEGORY_LEVEL + "级");
             }
             entity.setLevel(newLevel);
-            entity.setParentId(request.getParentId());
-        } else if (request.getParentId() == null) {
+            entity.setParentId(request.parentId());
+        } else if (request.parentId() == null) {
             entity.setParentId(null);
             entity.setLevel(1);
         }
 
-        if (!Objects.equals(request.getName(), entity.getName())) {
+        if (!Objects.equals(request.name(), entity.getName())) {
             Long checkParentId = entity.getParentId() != null ? entity.getParentId() : null;
             if (checkParentId != null) {
-                checkDuplicateName(request.getName(), checkParentId);
+                checkDuplicateName(request.name(), checkParentId);
             } else {
-                checkDuplicateNameAtRoot(request.getName());
+                checkDuplicateNameAtRoot(request.name());
             }
-            entity.setName(request.getName());
+            entity.setName(request.name());
         }
 
-        if (request.getSortOrder() != null) {
-            entity.setSortOrder(request.getSortOrder());
+        if (request.sortOrder() != null) {
+            entity.setSortOrder(request.sortOrder());
         }
 
         categoryMapper.updateById(entity);
@@ -229,17 +229,17 @@ public class AdminCategoryService {
     }
 
     private CategoryResponse toCategoryResponse(CategoryDO dobj, Map<Long, Long> productCountMap, Map<Long, String> parentNameMap) {
-        return CategoryResponse.builder()
-            .categoryId(dobj.getId())
-            .name(dobj.getName())
-            .parentId(dobj.getParentId())
-            .parentName(dobj.getParentId() != null ? parentNameMap.get(dobj.getParentId()) : null)
-            .level(dobj.getLevel())
-            .sortOrder(dobj.getSortOrder())
-            .status(dobj.getStatus())
-            .productCount(productCountMap.getOrDefault(dobj.getId(), 0L))
-            .createTime(dobj.getCreateTime())
-            .updateTime(dobj.getUpdateTime())
-            .build();
+        return new CategoryResponse(
+            dobj.getId(),
+            dobj.getName(),
+            dobj.getParentId(),
+            dobj.getParentId() != null ? parentNameMap.get(dobj.getParentId()) : null,
+            dobj.getLevel(),
+            dobj.getSortOrder(),
+            dobj.getStatus(),
+            productCountMap.getOrDefault(dobj.getId(), 0L),
+            dobj.getCreateTime(),
+            dobj.getUpdateTime()
+        );
     }
 }

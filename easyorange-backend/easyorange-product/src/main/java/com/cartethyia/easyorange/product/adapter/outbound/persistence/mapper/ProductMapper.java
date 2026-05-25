@@ -26,7 +26,8 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
                                     @Param("status") Integer status,
                                     @Param("minPrice") BigDecimal minPrice,
                                     @Param("maxPrice") BigDecimal maxPrice,
-                                    @Param("conditionLevel") Integer conditionLevel);
+                                    @Param("conditionLevel") Integer conditionLevel,
+                                    @Param("hasDiscount") Boolean hasDiscount);
 
     List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<Long> productIds);
 

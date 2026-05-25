@@ -9,18 +9,18 @@ import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
+import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
+import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
-import com.cartethyia.easyorange.user.domain.enums.UserStatus;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -47,6 +47,9 @@ class AdminOrderServiceTest {
     private OrderMapper orderMapper;
 
     @Mock
+    private OrderItemMapper orderItemMapper;
+
+    @Mock
     private OrderReadRepository orderReadRepository;
 
     @Mock
@@ -69,8 +72,7 @@ class AdminOrderServiceTest {
         order.setOrderNo("ORD2026001");
         order.setBuyerId(BUYER_ID);
         order.setSellerId(SELLER_ID);
-        order.setProductId(PRODUCT_ID);
-        order.setAmount(new BigDecimal("99.99"));
+        order.setTotalAmount(new BigDecimal("99.99"));
         order.setStatus(status);
         order.setPaymentStatus(0);
         order.setCreateTime(LocalDateTime.now());
@@ -80,7 +82,8 @@ class AdminOrderServiceTest {
 
     private OrderReadModel createReadModel(int status) {
         return new OrderReadModel(
-                ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, PRODUCT_ID,
+                ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID,
+                List.of(new OrderItemReadModel(1L, PRODUCT_ID, "{}", new BigDecimal("99.99"), 1, new BigDecimal("99.99"))),
                 new BigDecimal("99.99"), status, "待支付", 0,
                 "地址", "13800138000", "备注", null, null,
                 LocalDateTime.now(), LocalDateTime.now()
@@ -107,6 +110,8 @@ class AdminOrderServiceTest {
             UserEntity buyer = UserEntity.builder().id(BUYER_ID).nickName("买家").build();
             UserEntity seller = UserEntity.builder().id(SELLER_ID).nickName("卖家").build();
             when(userMapper.selectBatchIds(anyCollection())).thenReturn(List.of(buyer, seller));
+            OrderItemDO item = OrderItemDO.builder().id(1L).orderId(ORDER_ID).productId(PRODUCT_ID).subtotal(new BigDecimal("99.99")).build();
+            when(orderItemMapper.selectList(any())).thenReturn(List.of(item));
             ProductDO orderTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
             orderTestProduct.setDelFlag(0);
             when(productMapper.selectBatchIds(anyCollection())).thenReturn(List.of(orderTestProduct));
@@ -131,8 +136,8 @@ class AdminOrderServiceTest {
                     UserEntity.builder().id(BUYER_ID).nickName("买家").build());
             when(userMapper.selectById(SELLER_ID)).thenReturn(
                     UserEntity.builder().id(SELLER_ID).nickName("卖家").build());
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(
-                    ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build());
+            when(productMapper.selectBatchIds(anyCollection())).thenReturn(
+                    List.of(ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build()));
 
             AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
 

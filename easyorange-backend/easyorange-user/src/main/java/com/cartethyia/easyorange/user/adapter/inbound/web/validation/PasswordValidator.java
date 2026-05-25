@@ -16,7 +16,7 @@ public class PasswordValidator implements ConstraintValidator<Password, String> 
 
     private final Set<String> weakPasswords;
 
-    public PasswordValidator(@Value("${easy-orange.validation.password.weak-list:}") Set<String> weakPasswords) {
+    public PasswordValidator(@Value("${easyorange.validation.password.weak-list:}") Set<String> weakPasswords) {
         this.weakPasswords = weakPasswords != null ? weakPasswords : Set.of();
     }
 

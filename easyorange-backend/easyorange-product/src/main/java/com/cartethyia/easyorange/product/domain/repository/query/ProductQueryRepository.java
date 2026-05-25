@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.domain.repository.query;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -12,15 +12,16 @@ import java.util.Set;
 
 public interface ProductQueryRepository {
 
-    Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+    PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
                                            Integer pageNum, Integer pageSize);
 
-    Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+    PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
                                           BigDecimal minPrice, BigDecimal maxPrice,
                                           Integer conditionLevel, String sort,
+                                          Boolean hasDiscount,
                                           Integer pageNum, Integer pageSize);
 
-    Page<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
+    PageResult<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
                                                    Integer pageNum, Integer pageSize);
 
     List<ProductReadModel> findProductsByIds(List<Long> ids);

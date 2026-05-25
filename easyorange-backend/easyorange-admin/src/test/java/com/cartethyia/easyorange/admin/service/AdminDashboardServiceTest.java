@@ -244,7 +244,7 @@ class AdminDashboardServiceTest {
             row.put("main_image", "http://example.com/img.jpg");
             row.put("status", 1);
 
-            when(jdbcTemplate.queryForList(anyString(), anyInt())).thenReturn(List.of(row));
+            when(jdbcTemplate.queryForList(anyString())).thenReturn(List.of(row));
 
             List<TopProductResponse> result = dashboardService.getTopProducts(10);
 

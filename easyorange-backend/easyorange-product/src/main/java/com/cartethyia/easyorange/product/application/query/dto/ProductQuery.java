@@ -21,6 +21,7 @@ public class ProductQuery {
     private Integer conditionLevel;
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
+    private Boolean hasDiscount;
     private String sortBy;
     private String sortOrder;
     private Integer pageNum;

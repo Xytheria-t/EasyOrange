@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.query.handler;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
@@ -59,7 +59,7 @@ public class ProductSearchHandler {
                     searchResult.pageSize(), facets);
         }
 
-        Page<ProductReadModel> page = productQueryRepository.searchProducts(
+        PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
                 request.getKeyword(),
                 request.getCategoryId(),
                 request.getStatus(),
@@ -67,11 +67,11 @@ public class ProductSearchHandler {
                 request.getPageSize() != null ? request.getPageSize() : 20
         );
 
-        List<ProductResponse> responses = page.getRecords().stream()
+        List<ProductResponse> responses = page.records().stream()
                 .map(this::toProductResponse)
                 .collect(Collectors.toList());
 
-        return SearchPageResponse.of(responses, page.getTotal(), (int) page.getCurrent(), (int) page.getSize());
+        return SearchPageResponse.of(responses, page.total(), page.current(), page.size());
     }
 
     @Transactional(readOnly = true)

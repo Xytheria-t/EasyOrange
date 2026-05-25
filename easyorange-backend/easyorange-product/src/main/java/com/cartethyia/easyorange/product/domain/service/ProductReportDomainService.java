@@ -14,7 +14,7 @@ public class ProductReportDomainService {
 
     private final ProductReportRepository productReportRepository;
     private final ProductRepository productRepository;
-    private final ProductCachePort productCachePort;
+    private final ProductCachePort<?> productCachePort;
 
     public void reportProduct(Long productId, Long reporterId, String reason, Integer reasonType) {
         ProductReport report = ProductReport.create(productId, reporterId, reason, reasonType);

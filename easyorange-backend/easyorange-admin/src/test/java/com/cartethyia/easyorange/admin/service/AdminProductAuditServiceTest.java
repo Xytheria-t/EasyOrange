@@ -7,10 +7,10 @@ import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
+import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,7 +37,8 @@ class AdminProductAuditServiceTest {
     private ProductMapper productMapper;
 
     @Mock
-    private ProductAuditLogMapper productAuditLogMapper;
+    private ProductAuditLogRepository productAuditLogRepository;
+
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -74,9 +75,7 @@ class AdminProductAuditServiceTest {
             ProductDO product = createProduct(4);
             when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
 
-            ProductAuditRequest request = new ProductAuditRequest();
-            request.setAction(1);
-            request.setReason("审核通过");
+            ProductAuditRequest request = new ProductAuditRequest(1, "审核通过", null, null);
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
             try {
@@ -85,7 +84,7 @@ class AdminProductAuditServiceTest {
 
                 assertThat(product.getStatus()).isEqualTo(1);
                 verify(productMapper).updateById(product);
-                verify(productAuditLogMapper).insert(any(ProductAuditLogDO.class));
+                verify(productAuditLogRepository).save(any(ProductAuditLog.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -98,9 +97,7 @@ class AdminProductAuditServiceTest {
             ProductDO product = createProduct(4);
             when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
 
-            ProductAuditRequest request = new ProductAuditRequest();
-            request.setAction(2);
-            request.setReason("商品信息不完整");
+            ProductAuditRequest request = new ProductAuditRequest(2, "商品信息不完整", null, null);
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
             try {
@@ -109,7 +106,7 @@ class AdminProductAuditServiceTest {
 
                 assertThat(product.getStatus()).isEqualTo(5);
                 verify(productMapper).updateById(product);
-                verify(productAuditLogMapper).insert(any(ProductAuditLogDO.class));
+                verify(productAuditLogRepository).save(any(ProductAuditLog.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -123,9 +120,7 @@ class AdminProductAuditServiceTest {
             ProductDO product = createProduct(4);
             when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
 
-            ProductAuditRequest request = new ProductAuditRequest();
-            request.setAction(2);
-            request.setReason(null);
+            ProductAuditRequest request = new ProductAuditRequest(2, null, null, null);
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
             try {
@@ -143,8 +138,7 @@ class AdminProductAuditServiceTest {
         void auditProduct_productNotFound_throws() {
             when(productMapper.selectById(PRODUCT_ID)).thenReturn(null);
 
-            ProductAuditRequest request = new ProductAuditRequest();
-            request.setAction(1);
+            ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
 
             assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
                     .isInstanceOf(BusinessException.class)
@@ -157,8 +151,7 @@ class AdminProductAuditServiceTest {
             ProductDO product = createProduct(1);
             when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
 
-            ProductAuditRequest request = new ProductAuditRequest();
-            request.setAction(1);
+            ProductAuditRequest request = new ProductAuditRequest(1, null, null, null);
 
             assertThatThrownBy(() -> auditService.auditProduct(PRODUCT_ID, request))
                     .isInstanceOf(BaseBusinessException.class)
@@ -229,8 +222,7 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("获取审核记录列表")
         void getAuditLogs_returnsLogs() {
-            ProductAuditLogDO log = ProductAuditLogDO.builder()
-                    .id(1L)
+            ProductAuditLog log = ProductAuditLog.builder()
                     .productId(PRODUCT_ID)
                     .operatorId(OPERATOR_ID)
                     .operatorName("管理员")
@@ -239,7 +231,7 @@ class AdminProductAuditServiceTest {
                     .afterStatus(1)
                     .build();
 
-            when(productAuditLogMapper.selectByProductId(PRODUCT_ID)).thenReturn(List.of(log));
+            when(productAuditLogRepository.findByProductId(PRODUCT_ID)).thenReturn(List.of(log));
 
             List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 
@@ -252,7 +244,7 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("没有审核记录时返回空列表")
         void getAuditLogs_empty_returnsEmptyList() {
-            when(productAuditLogMapper.selectByProductId(PRODUCT_ID)).thenReturn(List.of());
+            when(productAuditLogRepository.findByProductId(PRODUCT_ID)).thenReturn(List.of());
 
             List<AuditLogResponse> logs = auditService.getAuditLogs(PRODUCT_ID);
 

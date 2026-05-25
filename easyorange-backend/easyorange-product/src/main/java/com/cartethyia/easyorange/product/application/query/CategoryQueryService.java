@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryQueryService {
 
-    private final CategoryCachePort categoryCachePort;
+    private final CategoryCachePort<CategoryReadModel> categoryCachePort;
     private final CategoryQueryRepository categoryQueryRepository;
 
     @Transactional(readOnly = true)

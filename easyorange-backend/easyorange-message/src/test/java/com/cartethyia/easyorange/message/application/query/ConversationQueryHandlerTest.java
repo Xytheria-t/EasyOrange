@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,11 +109,11 @@ class ConversationQueryHandlerTest {
 
             when(messageMapper.selectList(any())).thenReturn(List.of(msgWithUser2, msgFromUser2, msgWithUser3));
             when(userInfoPort.getUserInfoMap(any(Set.class)))
-                    .thenReturn(Map.of(
+                    .thenReturn(new HashMap<>(Map.of(
                             CURRENT_USER_ID, new UserInfo(CURRENT_USER_ID, "我", null),
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", "a.jpg"),
                             THIRD_USER_ID, new UserInfo(THIRD_USER_ID, "用户3", "b.jpg")
-                    ));
+                    )));
 
             TestSecurityUtil.setSecurityContext(CURRENT_USER_ID);
             try {

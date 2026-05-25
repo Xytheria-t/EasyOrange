@@ -71,7 +71,7 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("分页查询商品列表")
         void listProducts_returnsPage() {
-            AdminProductQueryRequest request = new AdminProductQueryRequest();
+            AdminProductQueryRequest request = new AdminProductQueryRequest(null, null, null, null, null, null, null, null);
             ProductDO product = createProduct(1);
 
             when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
@@ -87,17 +87,14 @@ class AdminProductServiceTest {
             PageResult<AdminProductResponse> result = productService.listProducts(request);
 
             assertThat(result.records()).hasSize(1);
-            assertThat(result.records().get(0).getName()).isEqualTo("测试商品");
+            assertThat(result.records().get(0).name()).isEqualTo("测试商品");
             assertThat(result.total()).isEqualTo(1);
         }
 
         @Test
         @DisplayName("带关键词和状态过滤")
         void listProducts_withFilters_returnsFiltered() {
-            AdminProductQueryRequest request = new AdminProductQueryRequest();
-            request.setKeyword("测试");
-            request.setStatus(4);
-            request.setSellerId(SELLER_ID);
+            AdminProductQueryRequest request = new AdminProductQueryRequest(null, null, "测试", null, 4, SELLER_ID, null, null);
 
             ProductDO product = createProduct(4);
 
@@ -114,7 +111,7 @@ class AdminProductServiceTest {
             PageResult<AdminProductResponse> result = productService.listProducts(request);
 
             assertThat(result.records()).hasSize(1);
-            assertThat(result.records().get(0).getName()).isEqualTo("测试商品");
+            assertThat(result.records().get(0).name()).isEqualTo("测试商品");
         }
     }
 
@@ -136,10 +133,10 @@ class AdminProductServiceTest {
             AdminProductResponse vo = productService.getProductDetail(PRODUCT_ID);
 
             assertThat(vo).isNotNull();
-            assertThat(vo.getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(vo.getName()).isEqualTo("测试商品");
-            assertThat(vo.getDescription()).isEqualTo("商品描述");
-            assertThat(vo.getImages()).contains("img.jpg");
+            assertThat(vo.productId()).isEqualTo(PRODUCT_ID);
+            assertThat(vo.name()).isEqualTo("测试商品");
+            assertThat(vo.description()).isEqualTo("商品描述");
+            assertThat(vo.images()).contains("img.jpg");
         }
 
         @Test

@@ -29,17 +29,6 @@ class ArchitectureRulesTest {
     );
 
     private static final Set<String> DOMAIN_IMPORT_ALLOWLIST = Set.of(
-            "easyorange-order/src/main/java/com/cartethyia/easyorange/order/domain/saga/CreateOrderSaga.java|import org.springframework.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/ProductRepository.java|import com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepository.java|import com.baomidou.mybatisplus.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepository.java|import com.cartethyia.easyorange.*.dto.vo.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import com.baomidou.mybatisplus.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import com.cartethyia.easyorange.*.dto.vo.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import com.cartethyia.easyorange.*.mapper.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import org.springframework.data.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/repository/query/ProductQueryRepositoryImpl.java|import org.springframework.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/valueobject/ImageSet.java|import com.cartethyia.easyorange.product.infrastructure.persistence.dataobject.",
-            "easyorange-product/src/main/java/com/cartethyia/easyorange/product/domain/service/ProductReportDomainService.java|import org.springframework.",
             "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/query/MessageQueryRepository.java|import com.cartethyia.easyorange.*.dto.request.",
             "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/query/MessageQueryRepository.java|import com.cartethyia.easyorange.*.dto.vo.",
             "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/service/MessageRoutingService.java|import org.springframework.",
@@ -178,7 +167,8 @@ class ArchitectureRulesTest {
             "ProductNotificationPort",     // TODO: implement notification adapter
             "SmsRateLimitPort",            // implemented by RedisSmsCodeAdapter (name mismatch)
             "PaymentQueryRepositoryPort",  // TODO: implement query repository for payment
-            "CallbackSignatureVerifierPort" // implemented in infrastructure/security/ (not adapter/outbound/)
+            "CallbackSignatureVerifierPort", // implemented in infrastructure/security/ (not adapter/outbound/)
+            "NicknameGeneratorPort"        // implemented in user/infrastructure/util/ (not adapter/outbound/)
     );
 
     private static final Set<String> PORT_ADAPTER_SUFFIXES = Set.of(

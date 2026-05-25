@@ -20,9 +20,9 @@ import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
+import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
+import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
@@ -41,9 +41,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProductCommandService {
 
     private final ProductRepository productRepository;
-    private final ProductCachePort productCachePort;
+    private final ProductCachePort<?> productCachePort;
     private final DomainEventPublisher domainEventPublisher;
-    private final ProductAuditLogMapper productAuditLogMapper;
+    private final ProductAuditLogRepository productAuditLogRepository;
 
     public Long createProduct(CreateProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
@@ -181,7 +181,7 @@ public class ProductCommandService {
         publishEvents(product);
         productCachePort.evictProductCache(productId);
 
-        ProductAuditLogDO auditLog = ProductAuditLogDO.builder()
+        ProductAuditLog auditLog = ProductAuditLog.builder()
                 .productId(productId)
                 .operatorId(userId)
                 .operatorName(SecurityContextUtil.getUserContextOrThrow().username())
@@ -189,7 +189,7 @@ public class ProductCommandService {
                 .beforeStatus(beforeStatus)
                 .afterStatus(ProductStatus.PENDING_REVIEW.getCode())
                 .build();
-        productAuditLogMapper.insert(auditLog);
+        productAuditLogRepository.save(auditLog);
     }
 
     private void publishEvents(Product product) {

@@ -29,4 +29,6 @@ public class ProductQueryRequest extends PageRequest {
 
     @Pattern(regexp = "^(default|price_asc|price_desc|newest|view|popular)?$", message = "排序方式必须为 default、price_asc、price_desc、newest、view 或 popular")
     private String sort;
+
+    private Boolean hasDiscount;
 }

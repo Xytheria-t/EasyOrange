@@ -18,6 +18,12 @@ application/
 │       │   │   ├── ReportProcessedEventListener.java
 │       │   │   ├── StockReservationEventListener.java
 │       │   │   └── UserRegisteredEventListener.java
+│       │   ├── inbound/web/controller/  # Web 控制器
+│       │   │   ├── AiController.java                  # AI 服务端点
+│       │   │   ├── CreditScoreController.java         # 信用分数端点
+│       │   │   ├── AdminSearchReindexController.java  # ES 重索引管理
+│       │   │   ├── HealthController.java              # 健康检查
+│       │   │   └── PlatformStatsController.java       # 平台统计
 │       │   └── outbound/                  # 跨模块适配器实现
 │       │       ├── elasticsearch/         # ES 搜索索引适配器
 │       │       │   ├── ElasticsearchIndexManager.java
@@ -36,10 +42,6 @@ application/
 │       │           ├── MessageUserInfoAdapter.java
 │       │           ├── OrderUserInfoAdapter.java
 │       │           └── SellerInfoAdapter.java
-│       └── controller/
-│           ├── AdminSearchReindexController.java # ES 重索引管理
-│           ├── HealthController.java              # 健康检查
-│           └── PlatformStatsController.java       # 平台统计
 ├── src/main/resources/
 │   ├── application.yaml                   # 基础配置
 │   ├── application-dev.yaml               # 开发环境
@@ -58,8 +60,9 @@ application/
     └── com/cartethyia/easyorange/
         ├── architecture/
         │   └── ArchitectureRulesTest.java # ArchUnit 架构守卫
-        └── controller/
-            └── HealthControllerTest.java
+        └── adapter/inbound/web/controller/
+            ├── HealthControllerTest.java
+            └── AiControllerTest.java
 ```
 
 ## 模块依赖

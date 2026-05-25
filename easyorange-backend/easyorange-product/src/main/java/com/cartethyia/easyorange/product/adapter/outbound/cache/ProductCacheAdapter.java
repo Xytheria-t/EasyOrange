@@ -1,39 +1,39 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
+import com.cartethyia.easyorange.framework.bloom.RedisBitmapBloomFilter;
+import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ProductCacheAdapter implements ProductCachePort {
+public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-
-    private static final String PRODUCT_INFO_KEY = "eo:product:info:";
-    private static final long PRODUCT_CACHE_EXPIRE_HOURS = 24;
+    private final MultiLevelCache multiLevelCache;
+    private final RedisBitmapBloomFilter bloomFilter;
 
     @Override
     public ProductVO getProductCache(Long productId) {
         if (productId == null) {
             return null;
         }
-        String key = PRODUCT_INFO_KEY + productId;
+
+        String idStr = productId.toString();
+        if (!bloomFilter.mightContain(ProductCacheConstant.PRODUCT_BLOOM_KEY, idStr)) {
+            log.debug("action=bloom_filter_miss productId={}", productId);
+            return null;
+        }
+
         try {
-            Object cacheValue = redisTemplate.opsForValue().get(key);
-            if (cacheValue instanceof ProductVO productVO) {
-                return productVO;
-            }
+            return multiLevelCache.get(ProductCacheConstant.infoKey(productId), ProductVO.class, () -> null);
         } catch (Exception e) {
             log.error("获取商品缓存失败：productId={}, error={}", productId, e.getMessage());
+            return null;
         }
-        return null;
     }
 
     @Override
@@ -41,9 +41,9 @@ public class ProductCacheAdapter implements ProductCachePort {
         if (productId == null || productVO == null) {
             return;
         }
-        String key = PRODUCT_INFO_KEY + productId;
         try {
-            redisTemplate.opsForValue().set(key, productVO, PRODUCT_CACHE_EXPIRE_HOURS, TimeUnit.HOURS);
+            addToBloomFilter(productId);
+            multiLevelCache.put(ProductCacheConstant.infoKey(productId), productVO);
         } catch (Exception e) {
             log.error("设置商品缓存失败：productId={}, error={}", productId, e.getMessage());
         }
@@ -54,9 +54,8 @@ public class ProductCacheAdapter implements ProductCachePort {
         if (productId == null) {
             return;
         }
-        String key = PRODUCT_INFO_KEY + productId;
         try {
-            redisTemplate.delete(key);
+            multiLevelCache.evict(ProductCacheConstant.infoKey(productId));
         } catch (Exception e) {
             log.error("删除商品缓存失败：productId={}, error={}", productId, e.getMessage());
         }
@@ -67,11 +66,17 @@ public class ProductCacheAdapter implements ProductCachePort {
         if (categoryId == null) {
             return;
         }
-        String key = "eo:product:list:" + categoryId;
         try {
-            redisTemplate.delete(key);
+            multiLevelCache.evictL2(ProductCacheConstant.listKey(categoryId));
         } catch (Exception e) {
             log.error("删除商品列表缓存失败：categoryId={}, error={}", categoryId, e.getMessage());
         }
+    }
+
+    public void addToBloomFilter(Long productId) {
+        if (productId == null) {
+            return;
+        }
+        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId.toString());
     }
 }

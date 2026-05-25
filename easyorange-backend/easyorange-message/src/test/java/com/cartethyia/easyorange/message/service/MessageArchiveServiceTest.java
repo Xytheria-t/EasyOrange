@@ -10,7 +10,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,7 +29,7 @@ class MessageArchiveServiceTest {
     private MessageMapper messageMapper;
 
     @Mock
-    private JdbcTemplate jdbcTemplate;
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @InjectMocks
     private MessageArchiveService archiveService;
@@ -86,7 +87,7 @@ class MessageArchiveServiceTest {
             archiveService.archiveOldMessages();
 
             verify(messageMapper, times(2)).selectList(any());
-            verify(jdbcTemplate).execute(anyString());
+            verify(namedParameterJdbcTemplate).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
             verify(messageMapper).deleteBatchIds(List.of(1L, 2L));
         }
 
@@ -98,7 +99,7 @@ class MessageArchiveServiceTest {
             archiveService.archiveOldMessages();
 
             verify(messageMapper, times(1)).selectList(any());
-            verify(jdbcTemplate, never()).execute(anyString());
+            verify(namedParameterJdbcTemplate, never()).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
             verify(messageMapper, never()).deleteBatchIds(any());
         }
 
@@ -115,7 +116,7 @@ class MessageArchiveServiceTest {
 
             archiveService.archiveOldMessages();
 
-            verify(jdbcTemplate, times(2)).execute(anyString());
+            verify(namedParameterJdbcTemplate, times(2)).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
             verify(messageMapper, times(2)).deleteBatchIds(any());
         }
 
@@ -127,7 +128,7 @@ class MessageArchiveServiceTest {
             archiveService.archiveOldMessages();
 
             verify(messageMapper, times(1)).selectList(any());
-            verify(jdbcTemplate, never()).execute(anyString());
+            verify(namedParameterJdbcTemplate, never()).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
         }
     }
 }

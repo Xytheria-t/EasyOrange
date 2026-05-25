@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-public class CategoryCacheAdapter implements CategoryCachePort {
+public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel> {
 
     private final CategoryQueryRepository categoryQueryRepository;
     private final RedisCache redisCache;

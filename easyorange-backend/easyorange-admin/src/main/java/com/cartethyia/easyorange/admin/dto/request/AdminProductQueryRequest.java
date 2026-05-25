@@ -2,27 +2,15 @@ package com.cartethyia.easyorange.admin.dto.request;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import lombok.Data;
 
-@Data
-public class AdminProductQueryRequest {
-
-    @Min(value = 1, message = "页码最小为1")
-    private Integer pageNum = 1;
-
+public record AdminProductQueryRequest(
+    @Min(value = 1, message = "页码最小为1") Integer pageNum,
     @Min(value = 1, message = "每页条数最小为1")
-    @Max(value = 100, message = "每页条数最大为100")
-    private Integer pageSize = 20;
-
-    private String keyword;
-
-    private Long categoryId;
-
-    private Integer status;
-
-    private Long sellerId;
-
-    private String startTime;
-
-    private String endTime;
-}
+    @Max(value = 100, message = "每页条数最大为100") Integer pageSize,
+    String keyword,
+    Long categoryId,
+    Integer status,
+    Long sellerId,
+    String startTime,
+    String endTime
+) {}

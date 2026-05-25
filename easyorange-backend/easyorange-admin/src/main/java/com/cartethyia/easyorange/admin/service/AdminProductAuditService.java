@@ -8,13 +8,13 @@ import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
+import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.application.query.dto.SellerInfo;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public class AdminProductAuditService {
 
     private final ProductMapper productMapper;
-    private final ProductAuditLogMapper productAuditLogMapper;
+    private final ProductAuditLogRepository productAuditLogRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final ObjectMapper objectMapper;
     private final AiReviewService aiReviewService;
@@ -60,12 +60,12 @@ public class AdminProductAuditService {
                 .orElse("管理员");
 
         Integer beforeStatus = product.getStatus();
-        Integer action = request.getAction();
+        Integer action = request.action();
 
         if (action == 1) {
             product.setStatus(ProductStatus.ONLINE.getCode());
         } else if (action == 2) {
-            if (request.getReason() == null || request.getReason().isBlank()) {
+            if (request.reason() == null || request.reason().isBlank()) {
                 throw BusinessException.of("拒绝时必须填写原因");
             }
             product.setStatus(ProductStatus.REJECTED.getCode());
@@ -76,25 +76,25 @@ public class AdminProductAuditService {
         Integer afterStatus = product.getStatus();
         productMapper.updateById(product);
 
-        ProductAuditLogDO auditLog = ProductAuditLogDO.builder()
+        ProductAuditLog auditLog = ProductAuditLog.builder()
                 .productId(id)
                 .operatorId(operatorId)
                 .operatorName(operatorName)
                 .action(action)
-                .reason(request.getReason())
-                .auditDimensions(toJsonString(request.getDimensions()))
+                .reason(request.reason())
+                .auditDimensions(toJsonString(request.dimensions()))
                 .beforeStatus(beforeStatus)
                 .afterStatus(afterStatus)
-                .remark(request.getRemark())
+                .remark(request.remark())
                 .build();
-        productAuditLogMapper.insert(auditLog);
+        productAuditLogRepository.save(auditLog);
 
         ProductAuditedEvent event = new ProductAuditedEvent(
                 id,
                 product.getName(),
                 product.getUserId(),
                 action,
-                request.getReason(),
+                request.reason(),
                 LocalDateTime.now()
         );
         eventPublisher.publishEvent(event);
@@ -145,7 +145,7 @@ public class AdminProductAuditService {
                 Integer afterStatus = product.getStatus();
                 productMapper.updateById(product);
 
-                ProductAuditLogDO auditLog = ProductAuditLogDO.builder()
+                ProductAuditLog auditLog = ProductAuditLog.builder()
                         .productId(item.productId())
                         .operatorId(operatorId)
                         .operatorName(operatorName)
@@ -155,7 +155,7 @@ public class AdminProductAuditService {
                         .beforeStatus(beforeStatus)
                         .afterStatus(afterStatus)
                         .build();
-                productAuditLogMapper.insert(auditLog);
+                productAuditLogRepository.save(auditLog);
 
                 ProductAuditedEvent event = new ProductAuditedEvent(
                         item.productId(),
@@ -185,7 +185,7 @@ public class AdminProductAuditService {
 
     @Transactional(readOnly = true)
     public List<AuditLogResponse> getAuditLogs(Long productId) {
-        List<ProductAuditLogDO> logs = productAuditLogMapper.selectByProductId(productId);
+        var logs = productAuditLogRepository.findByProductId(productId);
         return logs.stream().map(this::toAuditLogResponse).toList();
     }
 
@@ -222,7 +222,7 @@ public class AdminProductAuditService {
         );
     }
 
-    private AuditLogResponse toAuditLogResponse(ProductAuditLogDO log) {
+    private AuditLogResponse toAuditLogResponse(ProductAuditLog log) {
         return new AuditLogResponse(
                 log.getId(),
                 log.getProductId(),

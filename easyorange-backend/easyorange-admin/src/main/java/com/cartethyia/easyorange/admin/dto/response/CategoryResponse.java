@@ -1,31 +1,16 @@
 package com.cartethyia.easyorange.admin.dto.response;
 
-import lombok.Builder;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 
-@Data
-@Builder
-public class CategoryResponse {
-
-    private Long categoryId;
-
-    private String name;
-
-    private Long parentId;
-
-    private String parentName;
-
-    private Integer level;
-
-    private Integer sortOrder;
-
-    private Integer status;
-
-    private Long productCount;
-
-    private LocalDateTime createTime;
-
-    private LocalDateTime updateTime;
-}
+public record CategoryResponse(
+    Long categoryId,
+    String name,
+    Long parentId,
+    String parentName,
+    Integer level,
+    Integer sortOrder,
+    Integer status,
+    Long productCount,
+    LocalDateTime createTime,
+    LocalDateTime updateTime
+) {}

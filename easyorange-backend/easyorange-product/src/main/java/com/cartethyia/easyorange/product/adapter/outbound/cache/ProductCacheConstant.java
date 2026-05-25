@@ -23,6 +23,8 @@ public final class ProductCacheConstant {
     public static final String CATEGORY_LIST_KEY = CATEGORY_PREFIX + "list";
     public static final long CATEGORY_INFO_EXPIRE_TIME = 120L;
 
+    public static final String PRODUCT_BLOOM_KEY = PRODUCT_PREFIX + "bloom:id";
+
     public static final String CRON_SYNC_HOT_KEYWORDS = "0 0/30 * * * ?";
     public static final String CRON_CLEANUP_SEARCH_HISTORY = "0 0 2 * * ?";
 

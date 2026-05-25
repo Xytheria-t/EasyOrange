@@ -14,7 +14,7 @@ public class ProductDomainConfig {
     public ProductReportDomainService productReportDomainService(
             ProductReportRepository productReportRepository,
             ProductRepository productRepository,
-            ProductCachePort productCachePort) {
+            ProductCachePort<?> productCachePort) {
         return new ProductReportDomainService(productReportRepository, productRepository, productCachePort);
     }
 }

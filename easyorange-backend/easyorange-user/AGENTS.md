@@ -8,8 +8,9 @@
 user/
 ├── adapter/
 │   ├── inbound/web/
-│   │   ├── AuthController.java          # 认证端点 (登录/注册/刷新/登出)
-│   │   ├── UserController.java          # 用户信息端点
+│   │   ├── controller/
+│   │   │   ├── AuthController.java          # 认证端点 (登录/注册/刷新/登出)
+│   │   │   ├── UserController.java          # 用户信息端点
 │   │   ├── dto/request/                 # 入站 DTO
 │   │   │   ├── auth/                    # 认证相关
 │   │   │   │   ├── LoginRequest.java

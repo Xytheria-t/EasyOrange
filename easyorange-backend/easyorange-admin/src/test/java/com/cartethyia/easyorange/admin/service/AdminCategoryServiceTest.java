@@ -96,9 +96,7 @@ class AdminCategoryServiceTest {
                 return 1;
             }).when(categoryMapper).insert(any(CategoryDO.class));
 
-            CategoryCreateRequest request = new CategoryCreateRequest();
-            request.setName("新分类");
-            request.setSortOrder(1);
+            CategoryCreateRequest request = new CategoryCreateRequest("新分类", null, 1);
 
             categoryService.createCategory(request);
 
@@ -117,9 +115,7 @@ class AdminCategoryServiceTest {
                 return 1;
             }).when(categoryMapper).insert(any(CategoryDO.class));
 
-            CategoryCreateRequest request = new CategoryCreateRequest();
-            request.setName("手机");
-            request.setParentId(CATEGORY_ID);
+            CategoryCreateRequest request = new CategoryCreateRequest("手机", CATEGORY_ID, null);
 
             categoryService.createCategory(request);
 
@@ -131,9 +127,7 @@ class AdminCategoryServiceTest {
         void createCategory_parentNotFound_throws() {
             when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(null);
 
-            CategoryCreateRequest request = new CategoryCreateRequest();
-            request.setName("新分类");
-            request.setParentId(CATEGORY_ID);
+            CategoryCreateRequest request = new CategoryCreateRequest("新分类", CATEGORY_ID, null);
 
             assertThatThrownBy(() -> categoryService.createCategory(request))
                     .isInstanceOf(BusinessException.class)
@@ -146,8 +140,7 @@ class AdminCategoryServiceTest {
             CategoryDO existing = createCategory(CATEGORY_ID, "已存在", null, 1);
             when(categoryQueryRepository.findByName("已存在")).thenReturn(existing);
 
-            CategoryCreateRequest request = new CategoryCreateRequest();
-            request.setName("已存在");
+            CategoryCreateRequest request = new CategoryCreateRequest("已存在", null, null);
 
             assertThatThrownBy(() -> categoryService.createCategory(request))
                     .isInstanceOf(BusinessException.class)
@@ -166,9 +159,7 @@ class AdminCategoryServiceTest {
             when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(existing);
             when(categoryQueryRepository.countProductsByCategoryIds(anyList())).thenReturn(Map.of(CATEGORY_ID, 0L));
 
-            CategoryUpdateRequest request = new CategoryUpdateRequest();
-            request.setName("新名称");
-            request.setSortOrder(2);
+            CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, 2);
 
             categoryService.updateCategory(CATEGORY_ID, request);
 
@@ -180,8 +171,7 @@ class AdminCategoryServiceTest {
         void updateCategory_notFound_throws() {
             when(categoryMapper.selectById(CATEGORY_ID)).thenReturn(null);
 
-            CategoryUpdateRequest request = new CategoryUpdateRequest();
-            request.setName("新名称");
+            CategoryUpdateRequest request = new CategoryUpdateRequest("新名称", null, null);
 
             assertThatThrownBy(() -> categoryService.updateCategory(CATEGORY_ID, request))
                     .isInstanceOf(BusinessException.class)

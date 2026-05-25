@@ -2,7 +2,9 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.repositor
 
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.result.PageResult;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -51,25 +53,26 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final HotKeywordMapper hotKeywordMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private final SearchHistoryBufferService searchHistoryBufferService;
-    private final CategoryCachePort categoryCachePort;
+    private final CategoryCachePort<CategoryReadModel> categoryCachePort;
 
     @Override
-    public Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+    public PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
                                           Integer pageNum, Integer pageSize) {
-        return searchProducts(keyword, categoryId, status, null, null, null, null, pageNum, pageSize);
+        return searchProducts(keyword, categoryId, status, null, null, null, null, null, pageNum, pageSize);
     }
 
     @Override
-    public Page<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+    public PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
                                           BigDecimal minPrice, BigDecimal maxPrice,
                                           Integer conditionLevel, String sort,
+                                          Boolean hasDiscount,
                                           Integer pageNum, Integer pageSize) {
         Page<ProductDO> page = new Page<>(pageNum, pageSize);
 
         if (keyword != null && !keyword.isBlank()) {
             Integer searchStatus = status != null ? status : ProductStatus.ONLINE.getCode();
             Page<ProductDO> resultPage = productMapper.searchByFullText(
-                    page, keyword, searchStatus, minPrice, maxPrice, conditionLevel);
+                    page, keyword, searchStatus, minPrice, maxPrice, conditionLevel, hasDiscount);
             return convertToReadModelPage(resultPage);
         }
 
@@ -91,6 +94,9 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         }
         if (conditionLevel != null) {
             wrapper.eq(ProductDO::getConditionLevel, conditionLevel);
+        }
+        if (hasDiscount != null && hasDiscount) {
+            wrapper.apply("original_price IS NOT NULL AND original_price > price");
         }
 
         applySort(wrapper, sort);
@@ -118,7 +124,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public Page<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
+    public PageResult<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
                                                           Integer pageNum, Integer pageSize) {
         Page<ProductDO> page = new Page<>(pageNum, pageSize);
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
@@ -325,12 +331,11 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 .count();
     }
 
-    private Page<ProductReadModel> convertToReadModelPage(Page<ProductDO> productPage) {
-        Page<ProductReadModel> readModelPage = new Page<>(productPage.getCurrent(), productPage.getSize(), productPage.getTotal());
-        readModelPage.setRecords(productPage.getRecords().stream()
+    private PageResult<ProductReadModel> convertToReadModelPage(Page<ProductDO> productPage) {
+        List<ProductReadModel> records = productPage.getRecords().stream()
                 .map(this::convertToReadModel)
-                .collect(Collectors.toList()));
-        return readModelPage;
+                .collect(Collectors.toList());
+        return PageResult.of(records, productPage.getTotal(), (int) productPage.getCurrent(), (int) productPage.getSize());
     }
 
     private ProductReadModel convertToReadModel(ProductDO product) {

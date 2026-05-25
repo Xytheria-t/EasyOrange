@@ -1,10 +1,7 @@
 package com.cartethyia.easyorange.admin.dto.response;
 
-import lombok.Builder;
-
 import java.util.List;
 
-@Builder
 public record CategoryTreeResponse(
     Long categoryId,
     String name,
@@ -14,7 +11,7 @@ public record CategoryTreeResponse(
     List<CategoryTreeResponse> children
 ) {
     public static CategoryTreeResponse from(CategoryResponse vo, List<CategoryTreeResponse> children) {
-        return new CategoryTreeResponse(vo.getCategoryId(), vo.getName(), vo.getLevel(),
-            vo.getSortOrder(), vo.getStatus(), children != null ? children : List.of());
+        return new CategoryTreeResponse(vo.categoryId(), vo.name(), vo.level(),
+            vo.sortOrder(), vo.status(), children != null ? children : List.of());
     }
 }

@@ -19,7 +19,7 @@ RUN apk add --no-cache curl tzdata && \
 RUN addgroup -S easyorange && adduser -S easyorange -G easyorange
 USER easyorange
 
-COPY --from=builder /build/easyorange-application/target/easyorange-application-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=builder /build/easyorange-application/target/easyorange-application-*.jar app.jar
 
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseZGC -XX:+ZGenerational"
 ENV SPRING_PROFILES_ACTIVE=prod

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.query.handler;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
@@ -63,9 +63,7 @@ class ProductSearchHandlerTest {
         request.setCategoryId(2L);
         request.setStatus(1);
 
-        Page<ProductReadModel> page = new Page<>(1, 20);
-        page.setRecords(List.of(testProduct));
-        page.setTotal(1);
+        PageResult<ProductReadModel> page = PageResult.of(List.of(testProduct), 1, 1, 20);
         when(productQueryRepository.searchProducts("手机", 2L, 1, 1, 20))
                 .thenReturn(page);
 
@@ -86,9 +84,7 @@ class ProductSearchHandlerTest {
         ProductSearchRequest request = new ProductSearchRequest();
         request.setKeyword("不存在");
 
-        Page<ProductReadModel> page = new Page<>(1, 20);
-        page.setRecords(List.of());
-        page.setTotal(0);
+        PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
         when(productQueryRepository.searchProducts("不存在", null, null, 1, 20))
                 .thenReturn(page);
 
@@ -103,9 +99,7 @@ class ProductSearchHandlerTest {
         ProductSearchRequest request = new ProductSearchRequest();
         request.setKeyword("手机");
 
-        Page<ProductReadModel> page = new Page<>(1, 20);
-        page.setRecords(List.of());
-        page.setTotal(0);
+        PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
         when(productQueryRepository.searchProducts("手机", null, null, 1, 20))
                 .thenReturn(page);
 

@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.product.application.event;
 
+import com.cartethyia.easyorange.framework.bloom.RedisBitmapBloomFilter;
+import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
@@ -27,10 +29,11 @@ public class ProductEventListener {
 
     private static final int LOW_STOCK_THRESHOLD = 5;
 
-    private final ProductCachePort productCachePort;
+    private final ProductCachePort<?> productCachePort;
     private final ProductQueryService productQueryService;
     private final Optional<ProductNotificationPort> notificationPort;
     private final Optional<ProductSearchIndexPort> searchIndexPort;
+    private final RedisBitmapBloomFilter bloomFilter;
 
     @Async("domainEventExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -38,6 +41,8 @@ public class ProductEventListener {
         Long productId = event.getProductId();
         log.info("event=ProductCreated productId={} userId={} name={} categoryId={}",
                 productId, event.getUserId(), event.getName(), event.getCategoryId());
+
+        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId.toString());
 
         evictListCache(event.getCategoryId());
 

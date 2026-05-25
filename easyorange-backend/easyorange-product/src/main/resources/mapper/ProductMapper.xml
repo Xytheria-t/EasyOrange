@@ -20,6 +20,9 @@
           <if test="conditionLevel != null">
               AND condition_level = #{conditionLevel}
           </if>
+          <if test="hasDiscount != null and hasDiscount">
+              AND original_price IS NOT NULL AND original_price > price
+          </if>
         ORDER BY relevance DESC, create_time DESC
     </select>
 

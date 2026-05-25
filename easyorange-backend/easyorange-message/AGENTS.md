@@ -2,12 +2,15 @@
 
 消息通知模块，混合架构（部分 DDD + 传统分层），支持站内消息、WebSocket 实时推送、消息模板。
 
-> **架构现状**: MyBatis Repository 实现已迁移到 `adapter/outbound/persistence/`。controller/service 层仍为传统分层结构，待进一步演进。
+> **架构现状**: MyBatis Repository 实现已迁移到 `adapter/outbound/persistence/`。Controller 层已迁移到 `adapter/inbound/web/controller/`，service 层仍为传统分层结构，待进一步演进。
 
 ## 目录结构
 
 ```
 message/
+├── adapter/inbound/web/controller/    # REST 控制器
+│   ├── MessageCommandController.java
+│   └── MessageQueryController.java
 ├── adapter/                           # 适配器层
 │   └── outbound/persistence/          # 出站适配器 (MyBatis 实现)
 │       ├── MessageMapper.java
@@ -32,9 +35,6 @@ message/
 │       ├── ConversationQueryHandler.java
 │       ├── MessageQuery.java
 │       └── UnreadCountQuery.java
-├── controller/                        # [传统] 控制器 (待迁移到 adapter/inbound/web/)
-│   ├── MessageCommandController.java
-│   └── MessageQueryController.java
 ├── service/                           # [传统] 服务层 (待迁移到 application/service/)
 │   ├── MessageArchiveService.java     # 消息归档定时服务
 │   ├── MessageSubscriptionService.java
@@ -130,7 +130,7 @@ message/
 
 1. ~~将 `domain/repository/` 中的 MyBatis 实现类迁移到 `adapter/outbound/persistence/`~~ ✅ 已完成
 2. 将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`
-3. 将 `controller/` 迁移到 `adapter/inbound/web/controller/`
+3. ~~将 `controller/` 迁移到 `adapter/inbound/web/controller/`~~ ✅ 已完成
 4. 将 `service/` 迁移到 `application/service/`
 5. 添加 `domain/port/output/` 端口接口
 

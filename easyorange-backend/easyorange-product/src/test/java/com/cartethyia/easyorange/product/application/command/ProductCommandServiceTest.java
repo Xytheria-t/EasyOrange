@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.application.command;
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
+import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
 import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;
@@ -42,7 +42,7 @@ class ProductCommandServiceTest {
     private DomainEventPublisher domainEventPublisher;
 
     @Mock
-    private ProductAuditLogMapper productAuditLogMapper;
+    private ProductAuditLogRepository productAuditLogRepository;
 
     private ProductCommandService commandService;
 
@@ -50,7 +50,7 @@ class ProductCommandServiceTest {
 
     @BeforeEach
     void setUp() {
-        commandService = new ProductCommandService(productRepository, productCachePort, domainEventPublisher, productAuditLogMapper);
+        commandService = new ProductCommandService(productRepository, productCachePort, domainEventPublisher, productAuditLogRepository);
 
         existingProduct = Product.create(
                 com.cartethyia.easyorange.product.domain.valueobject.SellerId.of(1L),

@@ -8,9 +8,10 @@
 payment/
 ├── adapter/
 │   ├── inbound/web/
-│   │   ├── PaymentCommandController.java    # 支付写端点
-│   │   ├── PaymentQueryController.java      # 支付读端点
-│   │   ├── MockPaymentController.java       # 模拟支付 (开发环境)
+│   │   ├── controller/
+│   │   │   ├── PaymentCommandController.java    # 支付写端点
+│   │   │   ├── PaymentQueryController.java      # 支付读端点
+│   │   │   ├── MockPaymentController.java       # 模拟支付 (开发环境)
 │   │   ├── assembler/PaymentCommandAssembler.java
 │   │   ├── request/                         # CreatePaymentRequest, RefundRequest, etc.
 │   │   └── response/                        # PaymentResponse, PaymentConfigResponse

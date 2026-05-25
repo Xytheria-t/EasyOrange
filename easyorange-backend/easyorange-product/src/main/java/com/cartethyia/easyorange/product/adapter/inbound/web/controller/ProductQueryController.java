@@ -33,7 +33,7 @@ public class ProductQueryController {
 
     private final ProductQueryService queryService;
     private final CategoryQueryService categoryQueryService;
-    private final CategoryCachePort categoryCachePort;
+    private final CategoryCachePort<?> categoryCachePort;
 
     @GetMapping
     @RateLimiter(key = "product_list", count = 30, time = 60, limitType = LimitType.IP)

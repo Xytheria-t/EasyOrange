@@ -4,6 +4,7 @@ import lombok.Builder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
 public record AdminOrderDetailResponse(
@@ -11,8 +12,8 @@ public record AdminOrderDetailResponse(
     String orderNo,
     BuyerInfo buyer,
     SellerInfo seller,
-    ProductInfo product,
-    BigDecimal amount,
+    List<ProductInfo> products,
+    BigDecimal totalAmount,
     Integer status,
     String statusDesc,
     Integer paymentStatus,

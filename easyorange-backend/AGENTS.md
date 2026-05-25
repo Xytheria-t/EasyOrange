@@ -161,6 +161,8 @@ public class BaseDO {
 | 集成测试 | Testcontainers (MySQL + Redis) | Repository、Cache、事件发布 |
 | 架构测试 | ArchUnit | DDD 分层合规、包依赖规则 |
 | 控制器测试 | MockMvc | API 端点 |
+| 覆盖率报告 | JaCoCo 0.8.12 | `prepare-package` 阶段生成报告 (`jacoco:report`)，门禁移到了 CI 层 |
+| 依赖安全 | OWASP Dependency Check 12.1.0 | `verify` 阶段检查，CVSS ≥ 8 阻断构建 |
 
 架构守卫测试位于 `easyorange-application/src/test/.../ArchitectureRulesTest.java`。
 

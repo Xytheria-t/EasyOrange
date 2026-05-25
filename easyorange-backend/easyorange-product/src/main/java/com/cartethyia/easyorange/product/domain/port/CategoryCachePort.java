@@ -1,17 +1,15 @@
 package com.cartethyia.easyorange.product.domain.port;
 
-import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-
 import java.util.List;
 import java.util.Optional;
 
-public interface CategoryCachePort {
+public interface CategoryCachePort<T> {
 
-    List<CategoryReadModel> getCategoriesByLevel(Integer level);
+    List<T> getCategoriesByLevel(Integer level);
 
-    List<CategoryReadModel> getCategoriesByParentId(Long parentId);
+    List<T> getCategoriesByParentId(Long parentId);
 
-    Optional<CategoryReadModel> getCategoryById(Long id);
+    Optional<T> getCategoryById(Long id);
 
     void evictAll();
 

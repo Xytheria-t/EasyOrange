@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.application.query;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
@@ -33,7 +32,7 @@ public class ProductQueryService {
     private final ProductRepository productRepository;
     private final ProductQueryRepository productQueryRepository;
     private final ProductReadModelAssembler readModelAssembler;
-    private final ProductCachePort productCachePort;
+    private final ProductCachePort<ProductVO> productCachePort;
     private final ProductViewCountService viewCountService;
 
     @Transactional(readOnly = true)
@@ -41,7 +40,7 @@ public class ProductQueryService {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
         int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
 
-        Page<ProductReadModel> page = productQueryRepository.searchProducts(
+        PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
                 request.getKeyword(),
                 request.getCategoryId(),
                 request.getStatus(),
@@ -49,18 +48,19 @@ public class ProductQueryService {
                 request.getMaxPrice(),
                 request.getConditionLevel(),
                 request.getSort(),
+                request.getHasDiscount(),
                 pageNum,
                 pageSize
         );
 
-        List<Long> productIds = page.getRecords().stream()
+        List<Long> productIds = page.records().stream()
                 .map(ProductReadModel::id)
                 .collect(Collectors.toList());
         Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
-        Set<Long> sellerIds = page.getRecords().stream()
+        Set<Long> sellerIds = page.records().stream()
                 .map(ProductReadModel::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
@@ -69,26 +69,26 @@ public class ProductQueryService {
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
 
-        List<ProductVO> vos = page.getRecords().stream()
+        List<ProductVO> vos = page.records().stream()
                 .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
 
-        return PageResult.of(vos, page.getTotal(), pageNum, pageSize);
+        return PageResult.of(vos, page.total(), pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
     public PageResult<ProductVO> getMyProducts(Long sellerId, Integer status, Integer pageNum, Integer pageSize) {
-        Page<ProductReadModel> page = productQueryRepository.findProductsBySellerId(
+        PageResult<ProductReadModel> page = productQueryRepository.findProductsBySellerId(
                 sellerId, status, pageNum, pageSize);
 
-        List<Long> productIds = page.getRecords().stream()
+        List<Long> productIds = page.records().stream()
                 .map(ProductReadModel::id)
                 .collect(Collectors.toList());
         Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
-        Set<Long> sellerIds = page.getRecords().stream()
+        Set<Long> sellerIds = page.records().stream()
                 .map(ProductReadModel::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
@@ -97,11 +97,11 @@ public class ProductQueryService {
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
 
-        List<ProductVO> vos = page.getRecords().stream()
+        List<ProductVO> vos = page.records().stream()
                 .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
 
-        return PageResult.of(vos, page.getTotal(), pageNum, pageSize);
+        return PageResult.of(vos, page.total(), pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
@@ -153,10 +153,10 @@ public class ProductQueryService {
         }
 
         int effectiveLimit = limit != null ? limit : 10;
-        Page<ProductReadModel> page = productQueryRepository.searchProducts(
-                null, product.categoryId(), null, null, null, null, null, 1, effectiveLimit + 1);
+        PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
+                null, product.categoryId(), null, null, null, null, null, null, 1, effectiveLimit + 1);
 
-        List<Long> similarIds = page.getRecords().stream()
+        List<Long> similarIds = page.records().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
                 .map(ProductReadModel::id)
@@ -165,7 +165,7 @@ public class ProductQueryService {
                 .findImagesByProductIds(similarIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
-        Set<Long> sellerIds = page.getRecords().stream()
+        Set<Long> sellerIds = page.records().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
                 .map(ProductReadModel::sellerId)
@@ -176,7 +176,7 @@ public class ProductQueryService {
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
 
-        return page.getRecords().stream()
+        return page.records().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
                 .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))

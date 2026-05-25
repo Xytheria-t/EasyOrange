@@ -35,39 +35,39 @@ public class AdminProductService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
-        int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
-        int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
+        int pageNum = request.pageNum() != null ? request.pageNum() : 1;
+        int pageSize = request.pageSize() != null ? request.pageSize() : 20;
 
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper)
             .eq(ProductDO::getDelFlag, 0);
 
-        if (StringUtils.hasText(request.getKeyword())) {
-            wrapper.like(ProductDO::getName, request.getKeyword());
+        if (StringUtils.hasText(request.keyword())) {
+            wrapper.like(ProductDO::getName, request.keyword());
         }
 
-        if (request.getCategoryId() != null) {
-            wrapper.eq(ProductDO::getCategoryId, request.getCategoryId());
+        if (request.categoryId() != null) {
+            wrapper.eq(ProductDO::getCategoryId, request.categoryId());
         }
 
-        if (request.getStatus() != null) {
-            wrapper.eq(ProductDO::getStatus, request.getStatus());
+        if (request.status() != null) {
+            wrapper.eq(ProductDO::getStatus, request.status());
         }
 
-        if (request.getSellerId() != null) {
-            wrapper.eq(ProductDO::getUserId, request.getSellerId());
+        if (request.sellerId() != null) {
+            wrapper.eq(ProductDO::getUserId, request.sellerId());
         }
 
-        if (StringUtils.hasText(request.getStartTime())) {
+        if (StringUtils.hasText(request.startTime())) {
             try {
-                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", DATE_FORMATTER);
+                LocalDateTime startTime = LocalDateTime.parse(request.startTime() + " 00:00:00", DATE_FORMATTER);
                 wrapper.ge(ProductDO::getCreateTime, startTime);
             } catch (Exception ignored) {
             }
         }
 
-        if (StringUtils.hasText(request.getEndTime())) {
+        if (StringUtils.hasText(request.endTime())) {
             try {
-                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", DATE_FORMATTER);
+                LocalDateTime endTime = LocalDateTime.parse(request.endTime() + " 23:59:59", DATE_FORMATTER);
                 wrapper.le(ProductDO::getCreateTime, endTime);
             } catch (Exception ignored) {
             }
@@ -104,27 +104,27 @@ public class AdminProductService {
 
         AdminProductResponse vo = toAdminProductResponse(product, imagesMap);
         return AdminProductResponse.builder()
-            .productId(vo.getProductId())
-            .name(vo.getName())
+            .productId(vo.productId())
+            .name(vo.name())
             .description(description)
-            .price(vo.getPrice())
-            .originalPrice(vo.getOriginalPrice())
-            .stock(vo.getStock())
-            .status(vo.getStatus())
-            .statusDesc(vo.getStatusDesc())
-            .conditionLevel(vo.getConditionLevel())
-            .location(vo.getLocation())
-            .contactMethod(vo.getContactMethod())
-            .images(vo.getImages())
-            .mainImage(vo.getMainImage())
-            .categoryId(vo.getCategoryId())
-            .categoryName(vo.getCategoryName())
-            .sellerId(vo.getSellerId())
-            .sellerName(vo.getSellerName())
-            .sellerAvatar(vo.getSellerAvatar())
-            .viewCount(vo.getViewCount())
-            .createTime(vo.getCreateTime())
-            .updateTime(vo.getUpdateTime())
+            .price(vo.price())
+            .originalPrice(vo.originalPrice())
+            .stock(vo.stock())
+            .status(vo.status())
+            .statusDesc(vo.statusDesc())
+            .conditionLevel(vo.conditionLevel())
+            .location(vo.location())
+            .contactMethod(vo.contactMethod())
+            .images(vo.images())
+            .mainImage(vo.mainImage())
+            .categoryId(vo.categoryId())
+            .categoryName(vo.categoryName())
+            .sellerId(vo.sellerId())
+            .sellerName(vo.sellerName())
+            .sellerAvatar(vo.sellerAvatar())
+            .viewCount(vo.viewCount())
+            .createTime(vo.createTime())
+            .updateTime(vo.updateTime())
             .build();
     }
 
