@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.service.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -22,8 +24,10 @@ import java.util.regex.Pattern;
 public class MessageTemplateServiceImpl implements MessageTemplateService {
 
     private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\$\\{([^}]+)}");
+    private static final String TEMPLATE_CACHE_KEY = "eo:message:templates";
 
     private final MessageTemplateRepository messageTemplateRepository;
+    private final RedisCache redisCache;
 
     @Override
     public MessageTemplate getByCode(String templateCode) {
@@ -96,16 +100,28 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
 
     @Override
     public void loadingTemplateCache() {
-        // TODO: to be implemented
+        log.info("开始加载消息模板缓存");
+        List<MessageTemplate> templates = messageTemplateRepository.findByCondition(new MessageTemplate());
+        Map<String, MessageTemplate> templateMap = new HashMap<>();
+        for (MessageTemplate template : templates) {
+            templateMap.put(template.getTemplateCode(), template);
+        }
+        if (!templateMap.isEmpty()) {
+            redisCache.hashPutAll(TEMPLATE_CACHE_KEY, templateMap);
+        }
+        log.info("消息模板缓存加载完成，共 {} 条", templateMap.size());
     }
 
     @Override
     public void clearTemplateCache() {
-        // TODO: to be implemented
+        log.info("清除消息模板缓存");
+        redisCache.delete(TEMPLATE_CACHE_KEY);
     }
 
     @Override
     public void resetTemplateCache() {
-        // TODO: to be implemented
+        log.info("重置消息模板缓存");
+        clearTemplateCache();
+        loadingTemplateCache();
     }
 }
