@@ -39,15 +39,21 @@ function createMockOrder(overrides: Partial<OrderDetail> = {}): OrderDetail {
     buyerUsername: '买家小明',
     sellerId: 'seller1',
     sellerUsername: '卖家张三',
-    productId: 'prod1',
-    productTitle: '测试商品名称',
-    productImage: 'https://example.com/image.jpg',
-    amount: 99.99,
+    items: [{
+      itemId: 'item1',
+      productId: 'prod1',
+      productName: '测试商品名称',
+      productImage: 'https://example.com/image.jpg',
+      unitPrice: 99.99,
+      quantity: 1,
+      subtotal: 99.99,
+    }],
+    totalAmount: 99.99,
+    singleItem: true,
     status: 0,
     statusDesc: '待付款',
     address: '北京市海淀区',
     phone: '13800138000',
-    quantity: 1,
     remark: null,
     createTime: '2026-05-01 10:00:00',
     updateTime: '2026-05-01 10:00:00',
@@ -87,7 +93,7 @@ describe('PaymentPage', () => {
   });
 
   it('renders payment page with order info', () => {
-    const order = createMockOrder({ productTitle: '测试手机', amount: 1999.00, quantity: 2 });
+    const order = createMockOrder({ items: [{ itemId: 'i1', productId: 'p1', productName: '测试手机', productImage: '', unitPrice: 1999.00, quantity: 2, subtotal: 3998.00 }], totalAmount: 1999.00 });
     mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false });
     renderPage();
     expect(screen.getByText('收银台')).toBeInTheDocument();

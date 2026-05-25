@@ -141,6 +141,16 @@ export interface ActionResponse {
 
 // ==================== Order Types ====================
 
+export interface AdminOrderItem {
+  itemId: number;
+  productId: number;
+  productName: string;
+  productImage: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
+}
+
 export interface AdminOrder {
   orderId: number;
   orderNo: string;
@@ -148,9 +158,9 @@ export interface AdminOrder {
   buyerName: string;
   sellerId: number;
   sellerName: string;
-  productId: number;
-  productName: string;
-  amount: number;
+  items: AdminOrderItem[];
+  totalAmount: number;
+  singleItem: boolean;
   status: number;
   statusDesc: string;
   paymentStatus: number;
@@ -163,8 +173,9 @@ export interface AdminOrderDetail {
   orderNo: string;
   buyer: OrderParticipant;
   seller: OrderParticipant;
-  product: OrderProductInfo;
-  amount: number;
+  items: AdminOrderDetailItem[];
+  totalAmount: number;
+  singleItem: boolean;
   status: number;
   statusDesc: string;
   paymentStatus: number;
@@ -178,6 +189,16 @@ export interface AdminOrderDetail {
   payTime: string | null;
   updateTime: string | null;
   cancelTime: string | null;
+}
+
+export interface AdminOrderDetailItem {
+  itemId: number;
+  productId: number;
+  productName: string;
+  productImage: string;
+  unitPrice: number;
+  quantity: number;
+  subtotal: number;
 }
 
 export interface OrderParticipant {

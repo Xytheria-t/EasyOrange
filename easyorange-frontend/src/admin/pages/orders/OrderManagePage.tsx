@@ -54,13 +54,18 @@ export default function OrderManagePage() {
       ),
     },
     {
-      key: 'productName',
+      key: 'items',
       title: '商品',
-      render: (value) => (
-        <span style={{ fontWeight: 500, color: '#4A4540', fontSize: '0.87rem', maxWidth: 180, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {value as string}
-        </span>
-      ),
+      render: (value) => {
+        const items = value as AdminOrder['items'];
+        const firstName = items?.[0]?.productName || '—';
+        const multi = items && items.length > 1;
+        return (
+          <span style={{ fontWeight: 500, color: '#4A4540', fontSize: '0.87rem', maxWidth: 180, display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {firstName}{multi ? ` 等${items.length}件` : ''}
+          </span>
+        );
+      },
     },
     {
       key: 'buyerName',
@@ -77,7 +82,7 @@ export default function OrderManagePage() {
       ),
     },
     {
-      key: 'amount',
+      key: 'totalAmount',
       title: '金额',
       render: (value) => (
         <span style={{

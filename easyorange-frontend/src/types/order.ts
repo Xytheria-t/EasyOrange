@@ -8,6 +8,16 @@ export type OrderStatus =
 
 export type PaymentMethod = 'WECHAT' | 'ALIPAY' | 'CAMPUS_CARD' | 'CASH';
 
+export interface OrderItemVO {
+    itemId: string;
+    productId: string;
+    productName: string;
+    productImage: string;
+    unitPrice: number;
+    quantity: number;
+    subtotal: number;
+}
+
 export interface Order {
     id: string;
     orderNo: string;
@@ -15,24 +25,20 @@ export interface Order {
     buyerUsername: string;
     sellerId: string;
     sellerUsername: string;
-    productId: string;
-    productTitle: string;
-    productImage: string;
-    amount: number;
+    items: OrderItemVO[];
+    totalAmount: number;
+    singleItem: boolean;
     status: number;
     statusDesc: string;
     address: string;
     phone: string;
-    quantity: number;
     remark: string | null;
     createTime: string;
     updateTime: string;
 }
 
 export interface CreateOrderRequest {
-    productId: string;
-    quantity?: number;
-    paymentMethod?: PaymentMethod;
+    items: { productId: string; quantity: number }[];
     address?: string;
     phone?: string;
     remark?: string;
@@ -43,7 +49,6 @@ export interface OrderQueryParams {
     status?: number | OrderStatus;
     buyerId?: string;
     sellerId?: string;
-    productId?: string;
     role?: 'buyer' | 'seller';
     pageNum?: number;
     pageSize?: number;

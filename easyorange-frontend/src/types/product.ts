@@ -40,6 +40,7 @@ export interface ProductQueryParams {
     sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
     pageNum?: number;
     pageSize?: number;
+    hasDiscount?: boolean;
 }
 
 export interface CreateProductRequest {

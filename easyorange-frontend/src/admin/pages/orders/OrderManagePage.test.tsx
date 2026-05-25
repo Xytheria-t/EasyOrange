@@ -56,8 +56,8 @@ vi.mock('../../components/AdminTable', () => ({
           {(data as AdminOrder[]).map((order) => (
             <div key={order.orderId} data-testid="order-row">
               <span data-testid="order-no">{order.orderNo}</span>
-              <span data-testid="order-product">{order.productName}</span>
-              <span data-testid="order-amount">{order.amount}</span>
+              <span data-testid="order-product">{order.items?.[0]?.productName || '—'}</span>
+              <span data-testid="order-amount">{order.totalAmount}</span>
               <span data-testid="order-status">{order.status}</span>
               <button
                 data-testid="view-detail-btn"
@@ -122,9 +122,9 @@ const samplePageData: PageData<AdminOrder> = {
       buyerName: '买家A',
       sellerId: 2,
       sellerName: '卖家B',
-      productId: 10,
-      productName: '测试商品1',
-      amount: 100.00,
+      items: [{ itemId: 1, productId: 10, productName: '测试商品1', productImage: '', unitPrice: 100.00, quantity: 1, subtotal: 100.00 }],
+      totalAmount: 100.00,
+      singleItem: true,
       status: 0,
       statusDesc: '待付款',
       paymentStatus: 0,
@@ -138,9 +138,9 @@ const samplePageData: PageData<AdminOrder> = {
       buyerName: '买家C',
       sellerId: 4,
       sellerName: '卖家D',
-      productId: 20,
-      productName: '测试商品2',
-      amount: 200.00,
+      items: [{ itemId: 2, productId: 20, productName: '测试商品2', productImage: '', unitPrice: 200.00, quantity: 1, subtotal: 200.00 }],
+      totalAmount: 200.00,
+      singleItem: true,
       status: 1,
       statusDesc: '待发货',
       paymentStatus: 1,
@@ -259,9 +259,9 @@ describe('OrderManagePage', () => {
         buyerName: `买家${i}`,
         sellerId: 2,
         sellerName: `卖家${i}`,
-        productId: 10 + i,
-        productName: `商品${i}`,
-        amount: (i + 1) * 100,
+        items: [{ itemId: i + 1, productId: 10 + i, productName: `商品${i}`, productImage: '', unitPrice: (i + 1) * 100, quantity: 1, subtotal: (i + 1) * 100 }],
+        totalAmount: (i + 1) * 100,
+        singleItem: true,
         status: i % 3,
         statusDesc: ['待付款', '待发货', '已发货'][i % 3],
         paymentStatus: i % 2,

@@ -10,7 +10,7 @@ export const PRODUCT_KEYS = {
     [...PRODUCT_KEYS.lists(),
       params.pageNum, params.pageSize, params.keyword,
       params.categoryId, params.sort, params.priceMin,
-      params.priceMax, params.conditions,
+      params.priceMax, params.conditions, params.hasDiscount,
     ] as const,
   details: () => [...PRODUCT_KEYS.all, 'detail'] as const,
   detail: (id: string) => [...PRODUCT_KEYS.details(), id] as const,

@@ -216,24 +216,29 @@ function OrderDetailPage() {
             <Package size={16} className="order-detail-section-icon" />
             <h3 className="order-detail-section-title">商品信息</h3>
           </div>
-          <div className="order-detail-product-premium">
-            <div className="order-detail-product-image-wrap">
-              <div className="order-detail-product-image-glow" />
-              {order.productImage ? (
-                <img src={order.productImage} alt={order.productTitle} className="order-detail-product-image" />
-              ) : (
-                <div className="order-detail-product-image-placeholder">
-                  <Package size={32} />
+          {order.items?.map((item) => (
+            <div key={item.itemId} className="order-detail-product-premium">
+              <div className="order-detail-product-image-wrap">
+                <div className="order-detail-product-image-glow" />
+                {item.productImage ? (
+                  <img src={item.productImage} alt={item.productName} className="order-detail-product-image" />
+                ) : (
+                  <div className="order-detail-product-image-placeholder">
+                    <Package size={32} />
+                  </div>
+                )}
+              </div>
+              <div className="order-detail-product-info">
+                <h4 className="order-detail-product-name">{item.productName}</h4>
+                <div className="order-detail-product-meta-row">
+                  <span className="order-detail-product-price">¥{item.unitPrice.toFixed(2)}</span>
+                  <span className="order-detail-product-qty">×{item.quantity}</span>
                 </div>
-              )}
-            </div>
-            <div className="order-detail-product-info">
-              <h4 className="order-detail-product-name">{order.productTitle}</h4>
-              <div className="order-detail-product-meta-row">
-                <span className="order-detail-product-price">¥{order.amount.toFixed(2)}</span>
-                <span className="order-detail-product-qty">×{order.quantity}</span>
               </div>
             </div>
+          ))}
+          <div style={{ textAlign: 'right', padding: '0.5rem 0', fontWeight: 700, fontSize: '1rem', color: '#EA580C' }}>
+            合计：¥{order.totalAmount.toFixed(2)}
           </div>
         </div>
 

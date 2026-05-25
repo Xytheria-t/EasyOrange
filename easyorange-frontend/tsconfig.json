@@ -38,7 +38,10 @@
     "node_modules",
     "dist",
     "src/**/*.bak",
-    "**/*.bak"
+    "**/*.bak",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/testUtils"
   ],
   "references": [
     { "path": "./tsconfig.node.json" }

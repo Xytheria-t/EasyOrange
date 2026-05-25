@@ -20,10 +20,11 @@ function checkIsAdmin(user: User | null): boolean {
   }
 
   if (typeof userType === 'object' && userType !== null) {
-    if ('code' in userType && (userType.code === '00' || userType.code === '02')) {
+    const ut = userType as Record<string, unknown>;
+    if (ut.code === '00' || ut.code === '02') {
       return true;
     }
-    if ('value' in userType && (userType.value === '00' || userType.value === '02')) {
+    if (ut.value === '00' || ut.value === '02') {
       return true;
     }
   }

@@ -47,7 +47,7 @@ export function useStompChat(): UseStompChatReturn {
       onWebSocketClose: () => {
         setConnectionStatus('reconnecting');
       },
-      onWebSocketError: (event: Event) => {
+      onWebSocketError: (_event: Event) => {
         // WebSocket error occurred
       },
       beforeConnect: () => {

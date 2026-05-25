@@ -2,11 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Product, ProductSearchResult } from '@/types';
 import SearchPage from './SearchPage';
 
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseProductSearch = vi.hoisted(() =>
-  vi.fn(() => ({ data: undefined, isLoading: false, isError: false, error: null })),
+  vi.fn(() => ({
+    data: undefined as ProductSearchResult | undefined,
+    isLoading: false as boolean,
+    isError: false as boolean,
+    error: null,
+  })),
 );
 const mockUseSearchSuggestions = vi.hoisted(() => vi.fn(() => ({ data: [] })));
 const mockUseHotKeywords = vi.hoisted(() =>
@@ -36,7 +42,9 @@ vi.mock('@tanstack/react-virtual', () => ({
 }));
 
 vi.mock('@/components/product/ProductCard', () => ({
-  ProductCard: ({ product }) => <div data-testid="product-card">{product.title}</div>,
+  ProductCard: ({ product }: { product: Pick<Product, 'title' | 'price'> }) => (
+    <div data-testid="product-card">{product.title}</div>
+  ),
 }));
 
 function renderPage() {
@@ -86,8 +94,8 @@ describe('SearchPage', () => {
   });
 
   it('submits search keyword', async () => {
-    const mockProducts = [
-      { id: 'p1', title: '测试手机', price: 1999, images: [], status: 'ONLINE', condition: 1, createTime: '2026-05-10T10:00:00Z', views: 100, categoryName: '电子数码', location: '北京', sellerName: '卖家', description: 'desc' },
+    const mockProducts: Product[] = [
+      { id: 'p1', title: '测试手机', price: 1999, images: [], status: 'ONLINE', condition: 1, createTime: '2026-05-10T10:00:00Z', views: 100, categoryName: '电子数码', location: '北京', sellerName: '卖家', description: 'desc', originalPrice: null, categoryId: 1, conditionLevel: 1, favorites: 0, sellerId: 's1', sellerAvatar: null, sellerRating: 0, updateTime: '2026-05-10T10:00:00Z' },
     ];
     mockUseProductSearch.mockReturnValue({
       data: { records: mockProducts, total: 1, pageNum: 1, pageSize: 20, facets: [] },

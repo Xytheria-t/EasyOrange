@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useReducer } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Bot, MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
+import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { useProduct, useSimilarProducts, useCreateOrder } from '@/hooks';
 import { favoriteApi } from '@/api/favoriteApi';
@@ -365,7 +365,7 @@ function ProductDetailPage() {
     }
     try {
       const order = await createOrder.mutateAsync({
-        productId: product.id,
+        items: [{ productId: product.id, quantity: 1 }],
         phone: orderForm.phone.trim(),
         remark: orderForm.remark.trim() || undefined,
       });

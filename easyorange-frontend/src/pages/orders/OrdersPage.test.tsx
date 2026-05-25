@@ -41,15 +41,21 @@ function createMockOrder(overrides: Partial<Order> = {}): Order {
     buyerUsername: '买家小明',
     sellerId: 'seller1',
     sellerUsername: '卖家张三',
-    productId: 'prod1',
-    productTitle: '测试商品名称',
-    productImage: 'https://example.com/image.jpg',
-    amount: 99.99,
+    items: [{
+      itemId: 'item1',
+      productId: 'prod1',
+      productName: '测试商品名称',
+      productImage: 'https://example.com/image.jpg',
+      unitPrice: 99.99,
+      quantity: 1,
+      subtotal: 99.99,
+    }],
+    totalAmount: 99.99,
+    singleItem: true,
     status: 0,
     statusDesc: '待付款',
     address: '北京市海淀区',
     phone: '13800138000',
-    quantity: 1,
     remark: null,
     createTime: '2026-05-01 10:00:00',
     updateTime: '2026-05-01 10:00:00',
@@ -109,8 +115,8 @@ describe('OrdersPage', () => {
 
   it('renders order cards with correct content', async () => {
     const orders = [
-      createMockOrder({ id: '1', productTitle: '商品A', amount: 50, status: 0 }),
-      createMockOrder({ id: '2', productTitle: '商品B', amount: 100, status: 2 }),
+      createMockOrder({ id: '1', items: [{ itemId: 'i1', productId: 'p1', productName: '商品A', productImage: '', unitPrice: 50, quantity: 1, subtotal: 50 }], totalAmount: 50, status: 0 }),
+      createMockOrder({ id: '2', items: [{ itemId: 'i2', productId: 'p2', productName: '商品B', productImage: '', unitPrice: 100, quantity: 1, subtotal: 100 }], totalAmount: 100, status: 2 }),
     ];
     mockUseMyOrders.mockReturnValue({ data: createMockPage(orders), isLoading: false, isError: false });
     renderPage();
@@ -267,7 +273,7 @@ describe('OrdersPage', () => {
   });
 
   it('shows quantity in order card', () => {
-    const order = createMockOrder({ quantity: 3 });
+    const order = createMockOrder({ items: [{ itemId: 'i1', productId: 'p1', productName: '测试商品名称', productImage: 'https://example.com/image.jpg', unitPrice: 99.99, quantity: 3, subtotal: 299.97 }], totalAmount: 299.97 });
     mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
     renderPage();
     expect(screen.getByText('×3')).toBeInTheDocument();

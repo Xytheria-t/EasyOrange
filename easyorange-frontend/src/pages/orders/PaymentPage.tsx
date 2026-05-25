@@ -97,12 +97,12 @@ function PaymentPage() {
       <div className="payment-amount-section">
         <p className="payment-amount-label">支付金额</p>
         <p className="payment-amount-value">
-          ¥{order?.amount?.toFixed(2) ?? '0.00'}
+          ¥{order?.totalAmount?.toFixed(2) ?? '0.00'}
         </p>
-        {order && (
+        {order && order.items?.[0] && (
           <div className="payment-order-summary">
-            <span className="payment-order-product">{order.productTitle}</span>
-            <span className="payment-order-quantity">×{order.quantity}</span>
+            <span className="payment-order-product">{order.items[0].productName}</span>
+            <span className="payment-order-quantity">×{order.items[0].quantity}</span>
           </div>
         )}
       </div>
@@ -143,7 +143,7 @@ function PaymentPage() {
         <div className="payment-footer-amount">
           <span>需支付：</span>
           <span className="payment-footer-price">
-            ¥{order?.amount?.toFixed(2) ?? '0.00'}
+            ¥{order?.totalAmount?.toFixed(2) ?? '0.00'}
           </span>
         </div>
         <button

@@ -232,6 +232,8 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
   const statusKey = getOrderStatusFromCode(order.status);
   const statusLabel = getOrderStatusLabel(order.status);
   const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.CANCELLED;
+  const firstItem = order.items?.[0];
+  const multiItemBadge = order.items && order.items.length > 1;
 
   return (
     <div
@@ -266,10 +268,10 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
       <div className="order-card-body-premium">
         <div className="order-card-image-wrap">
           <div className="order-card-image-glow" />
-          {order.productImage ? (
+          {firstItem?.productImage ? (
             <img
-              src={order.productImage}
-              alt={order.productTitle}
+              src={firstItem.productImage}
+              alt={firstItem.productName}
               className="order-card-image-premium"
             />
           ) : (
@@ -280,11 +282,12 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
         </div>
 
         <div className="order-card-info-premium">
-          <h3 className="order-card-title-premium">{order.productTitle}</h3>
+          <h3 className="order-card-title-premium">{firstItem?.productName || '未知商品'}</h3>
+          {multiItemBadge && <span className="order-card-multi-badge">等{order.items.length}件</span>}
           <p className="order-card-seller-premium">卖家：{order.sellerUsername}</p>
           <div className="order-card-price-row">
-            <span className="order-card-price-premium">¥{order.amount.toFixed(2)}</span>
-            <span className="order-card-qty">×{order.quantity}</span>
+            <span className="order-card-price-premium">¥{order.totalAmount.toFixed(2)}</span>
+            {firstItem && <span className="order-card-qty">×{firstItem.quantity}</span>}
           </div>
         </div>
 

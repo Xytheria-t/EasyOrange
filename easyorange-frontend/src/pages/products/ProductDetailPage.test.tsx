@@ -2,8 +2,27 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Product } from '@/types';
+import type { Product, User } from '@/types';
 import ProductDetailPage from './ProductDetailPage';
+
+/** Helper to create a mock User with sensible defaults (overridable per test). */
+function createMockUser(overrides: Partial<User> = {}): User {
+  return {
+    userId: 'currentUser',
+    username: 'testuser',
+    nickname: '测试用户',
+    email: 'test@example.com',
+    phone: null,
+    studentId: null,
+    realName: null,
+    avatar: null,
+    status: 1,
+    userType: '01',
+    createTime: '2026-01-01T00:00:00Z',
+    updateTime: '2026-01-01T00:00:00Z',
+    ...overrides,
+  };
+}
 
 // ── Hoisted mock functions for per-test control ──
 const mockUseProduct = vi.hoisted(() => vi.fn());
@@ -12,7 +31,11 @@ const mockUseCreateOrder = vi.hoisted(() =>
   vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({ id: 'order1' }), isPending: false })),
 );
 const mockUseAuthStore = vi.hoisted(() =>
-  vi.fn(() => ({ user: null, token: null, isAuthenticated: false })),
+  vi.fn(() => ({
+    user: null as User | null,
+    token: null as string | null,
+    isAuthenticated: false as boolean,
+  })),
 );
 const mockUseUIStore = vi.hoisted(() =>
   vi.fn((selector?: (s: { addToast: ReturnType<typeof vi.fn> }) => unknown) => {
@@ -171,8 +194,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -198,8 +222,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -212,8 +237,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -226,8 +252,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -240,8 +267,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -259,8 +287,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -279,8 +308,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -295,8 +325,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'otherUser' },
+      user: createMockUser({ userId: 'otherUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -309,7 +340,7 @@ describe('ProductDetailPage', () => {
   it('navigates to login when favorite is clicked without a token', async () => {
     const product = createMockProduct({ sellerId: 'seller1' });
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
-    mockUseAuthStore.mockReturnValue({ user: null, token: null });
+    mockUseAuthStore.mockReturnValue({ user: null, token: null, isAuthenticated: false });
 
     const { container } = renderPage();
     const user = userEvent.setup();
@@ -327,8 +358,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'otherUser' },
+      user: createMockUser({ userId: 'otherUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -345,8 +377,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -362,8 +395,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -384,8 +418,9 @@ describe('ProductDetailPage', () => {
       isLoading: false,
     });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();
@@ -400,8 +435,9 @@ describe('ProductDetailPage', () => {
     mockUseProduct.mockReturnValue({ data: product, isLoading: false });
     mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
     mockUseAuthStore.mockReturnValue({
-      user: { userId: 'currentUser' },
+      user: createMockUser({ userId: 'currentUser' }),
       token: 'mock-token',
+      isAuthenticated: true,
     });
 
     renderPage();

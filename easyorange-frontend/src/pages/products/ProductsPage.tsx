@@ -64,23 +64,10 @@ function ProductsPage() {
   }, [isSemanticMode, params.keyword, params.pageNum, params.pageSize, semanticSearch]);
 
   const displayProducts = useMemo(() => {
-    const baseProducts = isSemanticMode ? semanticResults : allProducts;
-    if (activeFilter === 'discount') {
-      return baseProducts.filter((p: Product) => 
-        p.originalPrice !== null && 
-        p.originalPrice !== undefined && 
-        p.originalPrice > p.price
-      );
-    }
-    return baseProducts;
-  }, [isSemanticMode, semanticResults, allProducts, activeFilter]);
+    return isSemanticMode ? semanticResults : allProducts;
+  }, [isSemanticMode, semanticResults, allProducts]);
 
-  const displayTotal = useMemo(() => {
-    if (activeFilter === 'discount') {
-      return displayProducts.length;
-    }
-    return total;
-  }, [activeFilter, displayProducts.length, total]);
+  const displayTotal = total;
 
   useEffect(() => {
     if (!isLoading && !isSemanticMode && products.length > 0) {
@@ -198,13 +185,11 @@ function ProductsPage() {
   const handleFilterChange = useCallback((filter: ToolsPlazaFilter) => {
     setActiveFilter(filter);
     if (filter === 'all') {
-      resetAllProducts();
-      setParams(prev => ({ ...prev, sort: 'newest', pageNum: 1 }));
+      setParams(prev => ({ ...prev, hasDiscount: undefined, sort: 'newest', pageNum: 1 }));
     } else if (filter === 'discount') {
-      resetAllProducts();
-      setParams(prev => ({ ...prev, pageNum: 1 }));
+      setParams(prev => ({ ...prev, hasDiscount: true, pageNum: 1 }));
     }
-  }, [resetAllProducts]);
+  }, []);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
     resetAllProducts();

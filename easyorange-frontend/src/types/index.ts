@@ -21,6 +21,7 @@ export type {
     Order,
     OrderStatus,
     PaymentMethod,
+    OrderItemVO,
     CreateOrderRequest,
     OrderQueryParams,
     OrderDetail,
@@ -29,3 +30,5 @@ export type {
 export type { ChatSession, ChatMessage } from './message';
 
 export type { RequestOptions } from './api';
+
+export type { NotificationItem, UnreadCount } from './notification';

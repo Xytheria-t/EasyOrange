@@ -175,7 +175,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '1.35rem', fontWeight: 700, color: '#EA580C' }}>
-                    ¥{orderData.amount.toFixed(2)}
+                    ¥{orderData.totalAmount.toFixed(2)}
                   </span>
                 </div>
                 <span style={{
@@ -185,24 +185,49 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
               </div>
 
               {/* Product info */}
-              <div style={{
-                display: 'flex', gap: '0.85rem', padding: '0.85rem',
-                background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(229,224,219,0.4)', borderRadius: 14,
-              }}>
-                {orderData.product?.mainImage ? (
-                  <img src={orderData.product.mainImage} alt="" style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
-                ) : (
-                  <div style={{ width: 60, height: 60, borderRadius: 12, background: 'linear-gradient(135deg, #F5F2EE, #EDE8E3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B5AEA8' }}>
-                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  </div>
-                )}
-                <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <p style={{ fontWeight: 700, color: '#2A2520', fontSize: '0.93rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {orderData.product?.name || '—'}
-                  </p>
-                  <p style={{ fontSize: '0.81rem', color: '#9B9590', marginTop: 2 }}>单价: ¥{orderData.product?.price?.toFixed(2) ?? '—'}</p>
+              {orderData.items?.length === 1 ? (
+                (() => {
+                  const item = orderData.items[0];
+                  return (
+                    <div style={{ display: 'flex', gap: '0.85rem', padding: '0.85rem', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(229,224,219,0.4)', borderRadius: 14 }}>
+                      {item.productImage ? (
+                        <img src={item.productImage} alt="" style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 60, height: 60, borderRadius: 12, background: 'linear-gradient(135deg, #F5F2EE, #EDE8E3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B5AEA8' }}>
+                          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <p style={{ fontWeight: 700, color: '#2A2520', fontSize: '0.93rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.productName || '—'}
+                        </p>
+                        <p style={{ fontSize: '0.81rem', color: '#9B9590', marginTop: 2 }}>单价: ¥{item.unitPrice.toFixed(2)}</p>
+                        <p style={{ fontSize: '0.81rem', color: '#9B9590', marginTop: 2 }}>数量: {item.quantity}</p>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {orderData.items?.map((item) => (
+                    <div key={item.itemId} style={{ display: 'flex', gap: '0.85rem', padding: '0.85rem', background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(229,224,219,0.4)', borderRadius: 14 }}>
+                      {item.productImage ? (
+                        <img src={item.productImage} alt="" style={{ width: 60, height: 60, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 60, height: 60, borderRadius: 12, background: 'linear-gradient(135deg, #F5F2EE, #EDE8E3)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#B5AEA8' }}>
+                          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        <p style={{ fontWeight: 700, color: '#2A2520', fontSize: '0.93rem', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.productName || '—'}
+                        </p>
+                        <p style={{ fontSize: '0.81rem', color: '#9B9590', marginTop: 2 }}>单价: ¥{item.unitPrice.toFixed(2)} × {item.quantity}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
 
               {/* Info grid - row 1 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
