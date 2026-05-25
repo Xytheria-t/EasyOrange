@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.domain.port.output;
 
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 
 import java.time.LocalDateTime;
@@ -25,4 +26,6 @@ public interface OrderRepository {
     List<OrderAggregate> findByStatus(Integer status);
 
     List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold);
+
+    List<OrderItem> findItemsByOrderId(Long orderId);
 }

@@ -57,20 +57,20 @@ class OrderQueryHandlerTest {
         handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, orderVOAssembler);
 
         testOrderReadModel = new OrderReadModel(
-                1L, "ORD001", 100L, 200L, 300L,
+                1L, "ORD001", 100L, 200L, List.of(),
                 new BigDecimal("99.99"), 0, "待付款", 0,
                 "北京市朝阳区", "13800138000", "备注", null, null,
                 LocalDateTime.now(), LocalDateTime.now()
         );
 
         testProductDetail = new ProductDetail(
-                300L, "测试商品", new BigDecimal("99.99"), 1, List.of("http://img.jpg")
+                300L, "测试商品", new BigDecimal("99.99"), 1, List.of("http://img.jpg"), null, null
         );
         
         OrderVO mockOrderVO = OrderVO.builder()
                 .id(1L)
                 .orderNo("ORD001")
-                .productTitle("测试商品")
+                .totalAmount(new BigDecimal("99.99"))
                 .build();
         
         when(orderVOAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
@@ -92,7 +92,7 @@ class OrderQueryHandlerTest {
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
         assertThat(result.getOrderNo()).isEqualTo("ORD001");
-        assertThat(result.getProductTitle()).isEqualTo("测试商品");
+        assertThat(result.getTotalAmount()).isEqualByComparingTo(new BigDecimal("99.99"));
     }
 
     @Test

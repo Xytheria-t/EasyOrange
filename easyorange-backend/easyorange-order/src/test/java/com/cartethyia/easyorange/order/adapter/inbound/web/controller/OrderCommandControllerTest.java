@@ -62,7 +62,7 @@ class OrderCommandControllerTest {
             OrderVO vo = OrderVO.builder()
                     .id(ORDER_ID)
                     .orderNo(ORDER_NO)
-                    .amount(new BigDecimal("99.99"))
+                    .totalAmount(new BigDecimal("99.99"))
                     .status(0)
                     .statusDesc("待付款")
                     .build();
@@ -70,7 +70,7 @@ class OrderCommandControllerTest {
 
             String requestBody = """
                     {
-                        "productId": 200,
+                        "items": [{"productId": 200, "quantity": 1}],
                         "phone": "13800138000",
                         "address": "北京市朝阳区",
                         "remark": "尽快发货"
@@ -96,7 +96,7 @@ class OrderCommandControllerTest {
         void createOrder_withInvalidPhone_shouldReturn400() throws Exception {
             String requestBody = """
                     {
-                        "productId": 200,
+                        "items": [{"productId": 200, "quantity": 1}],
                         "phone": "12345",
                         "address": "北京市朝阳区"
                     }
@@ -113,7 +113,7 @@ class OrderCommandControllerTest {
         void createOrder_withMissingRequiredFields_shouldReturn400() throws Exception {
             String requestBody = """
                     {
-                        "productId": null,
+                        "items": null,
                         "phone": ""
                     }
                     """;

@@ -64,7 +64,7 @@ class OrderTimeoutTaskTest {
     private OrderAggregate buildPendingOrder(Long orderId) {
         return OrderAggregate.fromRaw(
                 orderId, "ORD" + orderId,
-                BUYER_ID, SELLER_ID, 10L,
+                BUYER_ID, SELLER_ID,
                 java.math.BigDecimal.valueOf(99.99),
                 0, 0,
                 "地址", "13800138000", "备注",

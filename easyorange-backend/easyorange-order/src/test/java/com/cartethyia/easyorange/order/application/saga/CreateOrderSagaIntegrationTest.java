@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.domain.saga;
+package com.cartethyia.easyorange.order.application.saga;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
@@ -9,6 +9,10 @@ import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
+import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
+import com.cartethyia.easyorange.order.domain.saga.SagaState;
+import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,8 +29,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -105,7 +112,7 @@ class CreateOrderSagaIntegrationTest {
         @DisplayName("完整的订单创建流程")
         void execute_fullFlow_succeeds() {
             CreateOrderCommand command = new CreateOrderCommand();
-            command.setProductId(PRODUCT_ID);
+            command.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command.setAddress("北京市朝阳区");
             command.setPhone("13800138000");
             command.setRemark("测试订单");
@@ -128,7 +135,7 @@ class CreateOrderSagaIntegrationTest {
         @DisplayName("Saga 状态持久化验证")
         void execute_shouldPersistSagaStatus() {
             CreateOrderCommand command = new CreateOrderCommand();
-            command.setProductId(PRODUCT_ID);
+            command.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command.setAddress("北京市朝阳区");
             command.setPhone("13800138000");
 
@@ -149,7 +156,7 @@ class CreateOrderSagaIntegrationTest {
                 .thenThrow(new RuntimeException("支付服务不可用"));
 
             CreateOrderCommand command = new CreateOrderCommand();
-            command.setProductId(PRODUCT_ID);
+            command.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command.setAddress("北京市朝阳区");
             command.setPhone("13800138000");
 
@@ -170,7 +177,7 @@ class CreateOrderSagaIntegrationTest {
                 .thenReturn(Optional.empty());
 
             CreateOrderCommand command = new CreateOrderCommand();
-            command.setProductId(999L);
+            command.setItems(List.of(new CreateOrderItem(999L, 1)));
             command.setAddress("北京市朝阳区");
             command.setPhone("13800138000");
 
@@ -188,7 +195,7 @@ class CreateOrderSagaIntegrationTest {
                 )));
 
             CreateOrderCommand command = new CreateOrderCommand();
-            command.setProductId(PRODUCT_ID);
+            command.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command.setAddress("北京市朝阳区");
             command.setPhone("13800138000");
 
@@ -204,7 +211,7 @@ class CreateOrderSagaIntegrationTest {
                 .thenReturn(false);
 
             CreateOrderCommand command = new CreateOrderCommand();
-            command.setProductId(PRODUCT_ID);
+            command.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command.setAddress("北京市朝阳区");
             command.setPhone("13800138000");
 
@@ -222,12 +229,12 @@ class CreateOrderSagaIntegrationTest {
         @DisplayName("同一商品并发下单")
         void execute_concurrentOrders_handlesCorrectly() throws InterruptedException {
             CreateOrderCommand command1 = new CreateOrderCommand();
-            command1.setProductId(PRODUCT_ID);
+            command1.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command1.setAddress("地址1");
             command1.setPhone("13800138001");
 
             CreateOrderCommand command2 = new CreateOrderCommand();
-            command2.setProductId(PRODUCT_ID);
+            command2.setItems(List.of(new CreateOrderItem(PRODUCT_ID, 1)));
             command2.setAddress("地址2");
             command2.setPhone("13800138002");
 

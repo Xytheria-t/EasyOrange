@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,7 +53,9 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单创建事件后发布库存预留请求")
         void onOrderCreated_shouldPublishStockReservationRequest() {
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID, PRODUCT_ID, BigDecimal.valueOf(99.99));
+            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+                    BigDecimal.valueOf(99.99));
 
             subscriber.onOrderCreated(event);
 
@@ -81,7 +84,7 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单取消事件后恢复库存")
         void onOrderCancelled_shouldRestoreStock() {
-            OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, PRODUCT_ID, "取消原因");
+            OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
 
             subscriber.onOrderCancelled(event);
 
@@ -106,7 +109,7 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单完成事件后标记商品已售")
         void onOrderCompleted_shouldMarkAsSold() {
-            OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, PRODUCT_ID);
+            OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
 
             subscriber.onOrderCompleted(event);
 
@@ -131,7 +134,7 @@ class OrderEventSubscribersTest {
         @Test
         @DisplayName("收到订单退款事件后恢复库存")
         void onOrderRefunded_shouldRestoreStock() {
-            OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, PRODUCT_ID, "退款原因");
+            OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
 
             subscriber.onOrderRefunded(event);
 

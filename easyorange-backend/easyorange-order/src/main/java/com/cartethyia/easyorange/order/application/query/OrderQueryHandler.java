@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.output.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,7 +30,7 @@ public class OrderQueryHandler {
 
     private final OrderReadRepository orderReadRepository;
     private final ProductQueryPort productQueryPort;
-    private final OrderCachePort orderCachePort;
+    private final OrderCachePort<OrderVO> orderCachePort;
     private final OrderVOAssembler orderVOAssembler;
 
     @Transactional(readOnly = true)
@@ -37,7 +39,7 @@ public class OrderQueryHandler {
         if (order == null) {
             return null;
         }
-        Map<Long, ProductDetail> productMap = loadProducts(Set.of(order.productId()));
+        Map<Long, ProductDetail> productMap = loadProductMap(order);
         return orderVOAssembler.toOrderVO(order, productMap, true);
     }
 
@@ -51,7 +53,7 @@ public class OrderQueryHandler {
         BizRequire.requireTrue(order.buyerId().equals(userId) || order.sellerId().equals(userId),
                 OrderResultCode.ORDER_NOT_OWNER);
 
-        Map<Long, ProductDetail> productMap = loadProducts(Set.of(order.productId()));
+        Map<Long, ProductDetail> productMap = loadProductMap(order);
         return orderVOAssembler.toOrderVO(order, productMap, false);
     }
 
@@ -99,7 +101,6 @@ public class OrderQueryHandler {
                 request.getStatus(),
                 buyerId,
                 sellerId,
-                request.getProductId(),
                 normalized.getPageNum(),
                 normalized.getPageSize()
         );
@@ -116,9 +117,10 @@ public class OrderQueryHandler {
         }
 
         Set<Long> productIds = orders.stream()
-                .map(OrderReadModel::productId)
+                .flatMap(o -> o.items().stream())
+                .map(OrderItemReadModel::productId)
                 .filter(Objects::nonNull)
-                .collect(java.util.stream.Collectors.toSet());
+                .collect(Collectors.toSet());
 
         Map<Long, ProductDetail> productMap = loadProducts(productIds);
         return orderVOAssembler.toOrderVOs(orders, productMap);
@@ -133,6 +135,14 @@ public class OrderQueryHandler {
         return orderVOAssembler.buildProductMap(products);
     }
 
+    private Map<Long, ProductDetail> loadProductMap(OrderReadModel order) {
+        Set<Long> productIds = order.items().stream()
+                .map(OrderItemReadModel::productId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        return loadProducts(productIds);
+    }
+
     private OrderQueryCondition toCondition(QueryOrderRequest request) {
         QueryOrderRequest normalized = request.normalized();
         return new OrderQueryCondition(
@@ -140,7 +150,6 @@ public class OrderQueryHandler {
                 request.getStatus(),
                 request.getBuyerId(),
                 request.getSellerId(),
-                request.getProductId(),
                 normalized.getPageNum(),
                 normalized.getPageSize()
         );

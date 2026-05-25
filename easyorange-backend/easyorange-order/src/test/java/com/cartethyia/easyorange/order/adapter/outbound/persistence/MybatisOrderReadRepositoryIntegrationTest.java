@@ -59,33 +59,34 @@ class MybatisOrderReadRepositoryIntegrationTest {
 
     @BeforeEach
     void cleanUp() {
+        jdbcTemplate.execute("DELETE FROM eo_order_item");
         jdbcTemplate.execute("DELETE FROM eo_order");
         insertTestOrders();
     }
 
     private void insertTestOrders() {
-        // Order 1: PENDING_PAYMENT, buyer 10, seller 20, product 1
+        // Order 1: PENDING_PAYMENT, buyer 10, seller 20
         jdbcTemplate.update(
-                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, product_id, amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
-                100L, "ORD100", 10L, 20L, 1L, BigDecimal.valueOf(99.99), 0, 0, "北京市", "13800138000", "备注1"
+                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, total_amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
+                100L, "ORD100", 10L, 20L, BigDecimal.valueOf(99.99), 0, 0, "北京市", "13800138000", "备注1"
         );
 
-        // Order 2: PAID, buyer 10, seller 21, product 2
+        // Order 2: PAID, buyer 10, seller 21
         jdbcTemplate.update(
-                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, product_id, amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
-                101L, "ORD101", 10L, 21L, 2L, BigDecimal.valueOf(199.99), 1, 1, "上海市", "13900139000", "备注2"
+                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, total_amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
+                101L, "ORD101", 10L, 21L, BigDecimal.valueOf(199.99), 1, 1, "上海市", "13900139000", "备注2"
         );
 
-        // Order 3: SHIPPED, buyer 11, seller 20, product 3
+        // Order 3: SHIPPED, buyer 11, seller 20
         jdbcTemplate.update(
-                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, product_id, amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
-                102L, "ORD102", 11L, 20L, 3L, BigDecimal.valueOf(299.99), 2, 1, "广州市", "13700137000", "备注3"
+                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, total_amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
+                102L, "ORD102", 11L, 20L, BigDecimal.valueOf(299.99), 2, 1, "广州市", "13700137000", "备注3"
         );
 
-        // Order 4: COMPLETED, buyer 12, seller 22, product 4
+        // Order 4: COMPLETED, buyer 12, seller 22
         jdbcTemplate.update(
-                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, product_id, amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
-                103L, "ORD103", 12L, 22L, 4L, BigDecimal.valueOf(399.99), 3, 1, "深圳市", "13600136000", "备注4"
+                "INSERT INTO eo_order (id, order_no, buyer_id, seller_id, total_amount, status, payment_status, address, phone, remark, del_flag, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)",
+                103L, "ORD103", 12L, 22L, BigDecimal.valueOf(399.99), 3, 1, "深圳市", "13600136000", "备注4"
         );
     }
 
@@ -103,7 +104,7 @@ class MybatisOrderReadRepositoryIntegrationTest {
             assertThat(result.get().buyerId()).isEqualTo(10L);
             assertThat(result.get().sellerId()).isEqualTo(20L);
             assertThat(result.get().status()).isEqualTo(0);
-            assertThat(result.get().amount()).isEqualByComparingTo(BigDecimal.valueOf(99.99));
+            assertThat(result.get().totalAmount()).isEqualByComparingTo(BigDecimal.valueOf(99.99));
         }
 
         @Test
@@ -122,7 +123,7 @@ class MybatisOrderReadRepositoryIntegrationTest {
         @DisplayName("分页查询返回正确数据")
         void findPage_returnsPaginatedData() {
             OrderQueryCondition condition = new OrderQueryCondition(
-                    null, null, null, null, null, 1, 2
+                    null, null, null, null, 1, 2
             );
 
             PageResult<OrderReadModel> page = readRepository.findPage(condition);
@@ -136,7 +137,7 @@ class MybatisOrderReadRepositoryIntegrationTest {
         @DisplayName("按 buyerId 过滤")
         void findPage_filterByBuyerId() {
             OrderQueryCondition condition = new OrderQueryCondition(
-                    null, null, 10L, null, null, 1, 10
+                    null, null, 10L, null, 1, 10
             );
 
             PageResult<OrderReadModel> page = readRepository.findPage(condition);
@@ -148,7 +149,7 @@ class MybatisOrderReadRepositoryIntegrationTest {
         @DisplayName("按 sellerId 过滤")
         void findPage_filterBySellerId() {
             OrderQueryCondition condition = new OrderQueryCondition(
-                    null, null, null, 20L, null, 1, 10
+                    null, null, null, 20L, 1, 10
             );
 
             PageResult<OrderReadModel> page = readRepository.findPage(condition);
@@ -160,7 +161,7 @@ class MybatisOrderReadRepositoryIntegrationTest {
         @DisplayName("按 status 过滤")
         void findPage_filterByStatus() {
             OrderQueryCondition condition = new OrderQueryCondition(
-                    null, 0, null, null, null, 1, 10
+                    null, 0, null, null, 1, 10
             );
 
             PageResult<OrderReadModel> page = readRepository.findPage(condition);
@@ -172,7 +173,7 @@ class MybatisOrderReadRepositoryIntegrationTest {
         @DisplayName("按 orderNo 过滤")
         void findPage_filterByOrderNo() {
             OrderQueryCondition condition = new OrderQueryCondition(
-                    "ORD101", null, null, null, null, 1, 10
+                    "ORD101", null, null, null, 1, 10
             );
 
             PageResult<OrderReadModel> page = readRepository.findPage(condition);
@@ -181,22 +182,10 @@ class MybatisOrderReadRepositoryIntegrationTest {
         }
 
         @Test
-        @DisplayName("按 productId 过滤")
-        void findPage_filterByProductId() {
-            OrderQueryCondition condition = new OrderQueryCondition(
-                    null, null, null, null, 3L, 1, 10
-            );
-
-            PageResult<OrderReadModel> page = readRepository.findPage(condition);
-            assertThat(page.records()).hasSize(1);
-            assertThat(page.records().getFirst().productId()).isEqualTo(3L);
-        }
-
-        @Test
         @DisplayName("没有匹配数据返回空分页")
         void findPage_noMatch_returnsEmpty() {
             OrderQueryCondition condition = new OrderQueryCondition(
-                    "NONEXISTENT", null, null, null, null, 1, 10
+                    "NONEXISTENT", null, null, null, 1, 10
             );
 
             PageResult<OrderReadModel> page = readRepository.findPage(condition);

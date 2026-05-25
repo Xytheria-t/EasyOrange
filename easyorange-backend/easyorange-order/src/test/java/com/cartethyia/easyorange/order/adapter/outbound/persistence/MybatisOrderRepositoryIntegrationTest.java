@@ -63,7 +63,6 @@ class MybatisOrderRepositoryIntegrationTest {
                 "ORD" + orderId,
                 buyerId,
                 sellerId,
-                1L,
                 BigDecimal.valueOf(99.99),
                 OrderStatus.PENDING_PAYMENT.getCode(),
                 0,
@@ -77,6 +76,7 @@ class MybatisOrderRepositoryIntegrationTest {
 
     @BeforeEach
     void cleanUp() {
+        jdbcTemplate.execute("DELETE FROM eo_order_item");
         jdbcTemplate.execute("DELETE FROM eo_order");
     }
 
@@ -95,7 +95,7 @@ class MybatisOrderRepositoryIntegrationTest {
             assertThat(found.get().status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
             assertThat(found.get().buyerId().value()).isEqualTo(10L);
             assertThat(found.get().sellerId().value()).isEqualTo(20L);
-            assertThat(found.get().amount().amount()).isEqualByComparingTo(BigDecimal.valueOf(99.99));
+            assertThat(found.get().totalAmount().amount()).isEqualByComparingTo(BigDecimal.valueOf(99.99));
         }
     }
 
@@ -218,7 +218,7 @@ class MybatisOrderRepositoryIntegrationTest {
             orderRepository.save(createPendingOrder(700L, 10L, 20L));
 
             OrderAggregate paidOrder = OrderAggregate.fromRaw(
-                    701L, "ORD701", 11L, 21L, 2L,
+                    701L, "ORD701", 11L, 21L,
                     BigDecimal.valueOf(199), OrderStatus.PAID.getCode(), 1,
                     "上海市", "13900139000", null, null, null
             );
@@ -241,7 +241,7 @@ class MybatisOrderRepositoryIntegrationTest {
         @DisplayName("查询指定时间之前已发货的订单")
         void findShippedOrdersBefore_returnsMatching() {
             OrderAggregate shipped = OrderAggregate.fromRaw(
-                    800L, "ORD800", 10L, 20L, 1L,
+                    800L, "ORD800", 10L, 20L,
                     BigDecimal.valueOf(99), OrderStatus.SHIPPED.getCode(), 1,
                     "地址", "13800138000", null, null, null
             );
@@ -263,7 +263,7 @@ class MybatisOrderRepositoryIntegrationTest {
         @DisplayName("没有匹配的已发货订单返回空列表")
         void findShippedOrdersBefore_none_returnsEmpty() {
             OrderAggregate shipped = OrderAggregate.fromRaw(
-                    801L, "ORD801", 10L, 20L, 1L,
+                    801L, "ORD801", 10L, 20L,
                     BigDecimal.valueOf(99), OrderStatus.SHIPPED.getCode(), 1,
                     "地址", "13800138000", null, null, null
             );

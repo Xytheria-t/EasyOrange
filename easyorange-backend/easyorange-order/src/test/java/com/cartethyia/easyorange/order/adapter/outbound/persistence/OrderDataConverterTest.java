@@ -2,20 +2,41 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.valueobject.Address;
+import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.Phone;
+import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("OrderDataConverter 单元测试")
 class OrderDataConverterTest {
 
-    private final OrderDataConverter converter = new OrderDataConverter();
+    private final OrderDataConverter converter = new OrderDataConverter(createObjectMapper());
+
+    private static ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        return mapper;
+    }
 
     private static final Long ID = 100L;
     private static final String ORDER_NO = "ORD100";
@@ -24,7 +45,6 @@ class OrderDataConverterTest {
     private static final Long PRODUCT_ID = 200L;
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
     private static final Integer STATUS = OrderStatus.PENDING_PAYMENT.getCode();
-    private static final Integer PAYMENT_STATUS = 0;
     private static final String ADDRESS = "北京市朝阳区建国路88号";
     private static final String PHONE = "13800138000";
     private static final String REMARK = "尽快发货";
@@ -39,10 +59,9 @@ class OrderDataConverterTest {
                 .orderNo(ORDER_NO)
                 .buyerId(BUYER_ID)
                 .sellerId(SELLER_ID)
-                .productId(PRODUCT_ID)
-                .amount(AMOUNT)
+                .totalAmount(AMOUNT)
                 .status(STATUS)
-                .paymentStatus(PAYMENT_STATUS)
+                .paymentStatus(0)
                 .address(ADDRESS)
                 .phone(PHONE)
                 .remark(REMARK)
@@ -54,11 +73,22 @@ class OrderDataConverterTest {
         return orderDO;
     }
 
+    private static List<OrderItem> itemForTest() {
+        return List.of(OrderItem.builder()
+                .id(1L)
+                .productId(ProductId.of(PRODUCT_ID))
+                .unitPrice(Money.of(AMOUNT))
+                .quantity(1)
+                .subtotal(Money.of(AMOUNT))
+                .build());
+    }
+
     private OrderAggregate createAggregate() {
-        return OrderAggregate.fromRaw(
-                ID, ORDER_NO, BUYER_ID, SELLER_ID, PRODUCT_ID,
-                AMOUNT, STATUS, PAYMENT_STATUS,
-                ADDRESS, PHONE, REMARK, CANCEL_REASON, CANCEL_TIME
+        return OrderAggregate.from(
+                OrderId.of(ID), OrderNo.of(ORDER_NO),
+                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+                Money.of(AMOUNT), OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
+                Address.of(ADDRESS), Phone.of(PHONE), REMARK, CANCEL_REASON, CANCEL_TIME
         );
     }
 
@@ -78,10 +108,9 @@ class OrderDataConverterTest {
             assertThat(orderDO.getOrderNo()).isEqualTo(ORDER_NO);
             assertThat(orderDO.getBuyerId()).isEqualTo(BUYER_ID);
             assertThat(orderDO.getSellerId()).isEqualTo(SELLER_ID);
-            assertThat(orderDO.getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(orderDO.getAmount()).isEqualByComparingTo(AMOUNT);
+            assertThat(orderDO.getTotalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(orderDO.getStatus()).isEqualTo(STATUS);
-            assertThat(orderDO.getPaymentStatus()).isEqualTo(PAYMENT_STATUS);
+            assertThat(orderDO.getPaymentStatus()).isEqualTo(0);
             assertThat(orderDO.getAddress()).isEqualTo(ADDRESS);
             assertThat(orderDO.getPhone()).isEqualTo(PHONE);
             assertThat(orderDO.getRemark()).isEqualTo(REMARK);
@@ -112,10 +141,10 @@ class OrderDataConverterTest {
             assertThat(aggregate.orderNo().value()).isEqualTo(ORDER_NO);
             assertThat(aggregate.buyerId().value()).isEqualTo(BUYER_ID);
             assertThat(aggregate.sellerId().value()).isEqualTo(SELLER_ID);
-            assertThat(aggregate.productId().value()).isEqualTo(PRODUCT_ID);
-            assertThat(aggregate.amount().amount()).isEqualByComparingTo(AMOUNT);
+            assertThat(aggregate.items()).isEmpty();
+            assertThat(aggregate.totalAmount().amount()).isEqualByComparingTo(AMOUNT);
             assertThat(aggregate.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-            assertThat(aggregate.paymentStatus()).isEqualTo(PAYMENT_STATUS);
+            assertThat(aggregate.paymentStatus()).isEqualTo(PaymentStatus.UNPAID);
             assertThat(aggregate.address().value()).isEqualTo(ADDRESS);
             assertThat(aggregate.phone().value()).isEqualTo(PHONE);
             assertThat(aggregate.remark()).isEqualTo(REMARK);
@@ -146,11 +175,11 @@ class OrderDataConverterTest {
             assertThat(readModel.orderNo()).isEqualTo(ORDER_NO);
             assertThat(readModel.buyerId()).isEqualTo(BUYER_ID);
             assertThat(readModel.sellerId()).isEqualTo(SELLER_ID);
-            assertThat(readModel.productId()).isEqualTo(PRODUCT_ID);
-            assertThat(readModel.amount()).isEqualByComparingTo(AMOUNT);
+            assertThat(readModel.items()).isEmpty();
+            assertThat(readModel.totalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(readModel.status()).isEqualTo(STATUS);
             assertThat(readModel.statusDesc()).isEqualTo(OrderStatus.getDescByCode(STATUS));
-            assertThat(readModel.paymentStatus()).isEqualTo(PAYMENT_STATUS);
+            assertThat(readModel.paymentStatus()).isEqualTo(0);
             assertThat(readModel.address()).isEqualTo(ADDRESS);
             assertThat(readModel.phone()).isEqualTo(PHONE);
             assertThat(readModel.remark()).isEqualTo(REMARK);
@@ -177,6 +206,58 @@ class OrderDataConverterTest {
     }
 
     @Nested
+    @DisplayName("item 转换方法")
+    class ItemConversionTests {
+
+        @Test
+        @DisplayName("toItemDO 应将 OrderItem 正确映射")
+        void toItemDO_shouldMapAllFields() {
+            OrderItem item = itemForTest().get(0);
+            OrderItemDO itemDO = converter.toItemDO(ID, item);
+
+            assertThat(itemDO).isNotNull();
+            assertThat(itemDO.getId()).isEqualTo(item.id());
+            assertThat(itemDO.getOrderId()).isEqualTo(ID);
+            assertThat(itemDO.getProductId()).isEqualTo(item.productId().value());
+            assertThat(itemDO.getUnitPrice()).isEqualByComparingTo(item.unitPrice().amount());
+            assertThat(itemDO.getQuantity()).isEqualTo(item.quantity());
+            assertThat(itemDO.getSubtotal()).isEqualByComparingTo(item.subtotal().amount());
+            assertThat(itemDO.getProductSnapshot()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("toItemDO null 输入应返回 null")
+        void toItemDO_withNull_shouldReturnNull() {
+            assertThat(converter.toItemDO(ID, null)).isNull();
+        }
+
+        @Test
+        @DisplayName("toItemReadModel 应将 OrderItemDO 正确映射")
+        void toItemReadModel_shouldMapAllFields() {
+            OrderItemDO itemDO = OrderItemDO.builder()
+                    .id(1L).orderId(ID).productId(PRODUCT_ID)
+                    .productSnapshot("{}")
+                    .unitPrice(AMOUNT).quantity(1).subtotal(AMOUNT)
+                    .build();
+
+            OrderItemReadModel readModel = converter.toItemReadModel(itemDO);
+
+            assertThat(readModel).isNotNull();
+            assertThat(readModel.itemId()).isEqualTo(1L);
+            assertThat(readModel.productId()).isEqualTo(PRODUCT_ID);
+            assertThat(readModel.unitPrice()).isEqualByComparingTo(AMOUNT);
+            assertThat(readModel.quantity()).isEqualTo(1);
+            assertThat(readModel.subtotal()).isEqualByComparingTo(AMOUNT);
+        }
+
+        @Test
+        @DisplayName("toItemReadModel null 输入应返回 null")
+        void toItemReadModel_withNull_shouldReturnNull() {
+            assertThat(converter.toItemReadModel(null)).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("roundtrip")
     class RoundtripTests {
 
@@ -192,8 +273,8 @@ class OrderDataConverterTest {
             assertThat(restored.orderNo().value()).isEqualTo(original.orderNo().value());
             assertThat(restored.buyerId().value()).isEqualTo(original.buyerId().value());
             assertThat(restored.sellerId().value()).isEqualTo(original.sellerId().value());
-            assertThat(restored.productId().value()).isEqualTo(original.productId().value());
-            assertThat(restored.amount().amount()).isEqualByComparingTo(original.amount().amount());
+            assertThat(restored.items()).isEmpty();
+            assertThat(restored.totalAmount().amount()).isEqualByComparingTo(original.totalAmount().amount());
             assertThat(restored.status()).isEqualTo(original.status());
             assertThat(restored.paymentStatus()).isEqualTo(original.paymentStatus());
             assertThat(restored.address().value()).isEqualTo(original.address().value());
@@ -215,8 +296,7 @@ class OrderDataConverterTest {
             assertThat(converted.getOrderNo()).isEqualTo(original.getOrderNo());
             assertThat(converted.getBuyerId()).isEqualTo(original.getBuyerId());
             assertThat(converted.getSellerId()).isEqualTo(original.getSellerId());
-            assertThat(converted.getProductId()).isEqualTo(original.getProductId());
-            assertThat(converted.getAmount()).isEqualByComparingTo(original.getAmount());
+            assertThat(converted.getTotalAmount()).isEqualByComparingTo(original.getTotalAmount());
             assertThat(converted.getStatus()).isEqualTo(original.getStatus());
             assertThat(converted.getPaymentStatus()).isEqualTo(original.getPaymentStatus());
             assertThat(converted.getAddress()).isEqualTo(original.getAddress());

@@ -19,13 +19,15 @@ public class OrderCompletedEventSubscriber {
     @Async("domainEventExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderCompleted(OrderCompletedEvent event) {
-        log.info("收到订单完成事件: orderId={}, productId={}", event.getOrderId(), event.getProductId());
-        
-        try {
-            productInventoryPort.markAsSold(event.getProductId());
-            log.info("商品标记已售成功: productId={}", event.getProductId());
-        } catch (Exception e) {
-            log.error("商品标记已售失败: orderId={}, productId={}", event.getOrderId(), event.getProductId(), e);
+        log.info("收到订单完成事件: orderId={}, productCount={}", event.getOrderId(), event.getProductIds().size());
+
+        for (Long productId : event.getProductIds()) {
+            try {
+                productInventoryPort.markAsSold(productId);
+                log.info("商品标记已售成功: productId={}", productId);
+            } catch (Exception e) {
+                log.error("商品标记已售失败: orderId={}, productId={}", event.getOrderId(), productId, e);
+            }
         }
     }
 }

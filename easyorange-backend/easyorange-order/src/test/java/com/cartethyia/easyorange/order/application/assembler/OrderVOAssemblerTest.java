@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.application.assembler;
 
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -41,9 +42,14 @@ class OrderVOAssemblerTest {
     private static final Integer PRODUCT_STATUS = 1;
     private static final List<String> PRODUCT_IMAGES = List.of("http://example.com/img1.jpg");
 
+    private static List<OrderItemReadModel> testItems() {
+        return List.of(new OrderItemReadModel(1L, PRODUCT_ID, "{}", AMOUNT, 1, AMOUNT));
+    }
+
     private OrderReadModel createOrder() {
         return new OrderReadModel(
-                ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, PRODUCT_ID, AMOUNT,
+                ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, testItems(),
+                AMOUNT,
                 STATUS, STATUS_DESC, PAYMENT_STATUS,
                 ADDRESS, PHONE, REMARK, CANCEL_REASON, CANCEL_TIME,
                 CREATE_TIME, UPDATE_TIME
@@ -51,7 +57,7 @@ class OrderVOAssemblerTest {
     }
 
     private ProductDetail createProductDetail() {
-        return new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, PRODUCT_IMAGES);
+        return new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, PRODUCT_IMAGES, null, null);
     }
 
     @Nested
@@ -71,17 +77,22 @@ class OrderVOAssemblerTest {
             assertThat(vo.getOrderNo()).isEqualTo(ORDER_NO);
             assertThat(vo.getBuyerId()).isEqualTo(BUYER_ID);
             assertThat(vo.getSellerId()).isEqualTo(SELLER_ID);
-            assertThat(vo.getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(vo.getAmount()).isEqualByComparingTo(AMOUNT);
+            assertThat(vo.getTotalAmount()).isEqualByComparingTo(AMOUNT);
+            assertThat(vo.getSingleItem()).isTrue();
             assertThat(vo.getStatus()).isEqualTo(STATUS);
             assertThat(vo.getStatusDesc()).isEqualTo(STATUS_DESC);
             assertThat(vo.getRemark()).isEqualTo(REMARK);
             assertThat(vo.getCreateTime()).isEqualTo(CREATE_TIME);
             assertThat(vo.getUpdateTime()).isEqualTo(UPDATE_TIME);
 
-            // product fields
-            assertThat(vo.getProductTitle()).isEqualTo(PRODUCT_TITLE);
-            assertThat(vo.getProductImage()).isEqualTo(PRODUCT_IMAGES.getFirst());
+            // items
+            assertThat(vo.getItems()).hasSize(1);
+            assertThat(vo.getItems().get(0).getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(vo.getItems().get(0).getProductName()).isEqualTo(PRODUCT_TITLE);
+            assertThat(vo.getItems().get(0).getProductImage()).isEqualTo(PRODUCT_IMAGES.getFirst());
+            assertThat(vo.getItems().get(0).getUnitPrice()).isEqualByComparingTo(AMOUNT);
+            assertThat(vo.getItems().get(0).getQuantity()).isEqualTo(1);
+            assertThat(vo.getItems().get(0).getSubtotal()).isEqualByComparingTo(AMOUNT);
 
             // sensitive fields masked
             assertThat(vo.getAddress()).contains("***");
@@ -96,10 +107,10 @@ class OrderVOAssemblerTest {
 
             OrderVO vo = assembler.toOrderVO(order, productMap, false);
 
-            // address should be exact, phone should still be masked
-            assertThat(vo.getAddress()).isEqualTo(ADDRESS); // NOT masked when maskSensitive=false
-            assertThat(vo.getPhone()).contains("****");     // always masked
-            assertThat(vo.getProductTitle()).isEqualTo(PRODUCT_TITLE);
+            assertThat(vo.getAddress()).isEqualTo(ADDRESS);
+            assertThat(vo.getPhone()).contains("****");
+            assertThat(vo.getItems()).hasSize(1);
+            assertThat(vo.getItems().get(0).getProductName()).isEqualTo(PRODUCT_TITLE);
         }
 
         @Test
@@ -110,28 +121,31 @@ class OrderVOAssemblerTest {
             OrderVO vo = assembler.toOrderVO(order, Map.of(), true);
 
             assertThat(vo.getId()).isEqualTo(ORDER_ID);
-            assertThat(vo.getProductTitle()).isNull();
-            assertThat(vo.getProductImage()).isNull();
+            assertThat(vo.getItems()).hasSize(1);
+            assertThat(vo.getItems().get(0).getProductName()).isEmpty();
+            assertThat(vo.getItems().get(0).getProductImage()).isNull();
         }
 
         @Test
         @DisplayName("商品无图片时应仅设置标题不设图片")
         void toOrderVO_withProductNoImages_shouldSetTitleOnly() {
             OrderReadModel order = createOrder();
-            ProductDetail product = new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of());
+            ProductDetail product = new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of(), null, null);
             Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
             OrderVO vo = assembler.toOrderVO(order, productMap, true);
 
-            assertThat(vo.getProductTitle()).isEqualTo(PRODUCT_TITLE);
-            assertThat(vo.getProductImage()).isNull();
+            assertThat(vo.getItems()).hasSize(1);
+            assertThat(vo.getItems().get(0).getProductName()).isEqualTo(PRODUCT_TITLE);
+            assertThat(vo.getItems().get(0).getProductImage()).isNull();
         }
 
         @Test
         @DisplayName("null 字段应优雅处理")
         void toOrderVO_withNullFields_shouldHandleGracefully() {
             OrderReadModel order = new OrderReadModel(
-                    ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, PRODUCT_ID, AMOUNT,
+                    ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, testItems(),
+                    AMOUNT,
                     STATUS, STATUS_DESC, PAYMENT_STATUS,
                     null, null, null, null, null,
                     CREATE_TIME, UPDATE_TIME
@@ -142,7 +156,8 @@ class OrderVOAssemblerTest {
             assertThat(vo.getAddress()).isNull();
             assertThat(vo.getPhone()).isNull();
             assertThat(vo.getRemark()).isNull();
-            assertThat(vo.getProductTitle()).isNull();
+            assertThat(vo.getItems()).hasSize(1);
+            assertThat(vo.getItems().get(0).getProductName()).isEmpty();
         }
     }
 
@@ -155,13 +170,15 @@ class OrderVOAssemblerTest {
         void toOrderVOs_withMultipleOrders_shouldMapAll() {
             OrderReadModel order1 = createOrder();
             OrderReadModel order2 = new OrderReadModel(
-                    101L, "ORD101", 3L, 4L, 201L, new BigDecimal("49.99"),
+                    101L, "ORD101", 3L, 4L,
+                    List.of(new OrderItemReadModel(2L, 201L, "{}", new BigDecimal("49.99"), 1, new BigDecimal("49.99"))),
+                    new BigDecimal("49.99"),
                     1, "已付款", 1, "上海市浦东新区", "13900139000", "备注2", null, null,
                     LocalDateTime.now(), LocalDateTime.now()
             );
 
             ProductDetail product1 = createProductDetail();
-            ProductDetail product2 = new ProductDetail(201L, "商品2", new BigDecimal("49.99"), 1, List.of("img2.jpg"));
+            ProductDetail product2 = new ProductDetail(201L, "商品2", new BigDecimal("49.99"), 1, List.of("img2.jpg"), null, null);
             Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, 201L, product2);
 
             List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap);
@@ -169,7 +186,7 @@ class OrderVOAssemblerTest {
             assertThat(vos).hasSize(2);
             assertThat(vos.get(0).getId()).isEqualTo(ORDER_ID);
             assertThat(vos.get(1).getId()).isEqualTo(101L);
-            assertThat(vos.get(1).getAmount()).isEqualByComparingTo(new BigDecimal("49.99"));
+            assertThat(vos.get(1).getTotalAmount()).isEqualByComparingTo(new BigDecimal("49.99"));
         }
 
         @Test
@@ -192,8 +209,8 @@ class OrderVOAssemblerTest {
         @Test
         @DisplayName("应正确构建商品映射")
         void buildProductMap_shouldMapById() {
-            ProductDetail p1 = new ProductDetail(1L, "商品1", BigDecimal.TEN, 1, List.of());
-            ProductDetail p2 = new ProductDetail(2L, "商品2", BigDecimal.valueOf(20), 1, List.of());
+            ProductDetail p1 = new ProductDetail(1L, "商品1", BigDecimal.TEN, 1, List.of(), null, null);
+            ProductDetail p2 = new ProductDetail(2L, "商品2", BigDecimal.valueOf(20), 1, List.of(), null, null);
 
             Map<Long, ProductDetail> map = assembler.buildProductMap(List.of(p1, p2));
 

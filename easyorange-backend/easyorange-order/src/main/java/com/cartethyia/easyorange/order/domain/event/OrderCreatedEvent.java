@@ -4,30 +4,43 @@ import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import lombok.Getter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-/**
- * 订单创建事件
- */
 @Getter
 public class OrderCreatedEvent extends BaseDomainEvent {
 
     private final Long orderId;
     private final Long buyerId;
     private final Long sellerId;
-    private final Long productId;
-    private final BigDecimal amount;
+    private final List<OrderItemPayload> items;
+    private final BigDecimal totalAmount;
 
-    public OrderCreatedEvent(Long orderId, Long buyerId, Long sellerId, Long productId, BigDecimal amount) {
+    public OrderCreatedEvent(Long orderId, Long buyerId, Long sellerId, List<OrderItemPayload> items, BigDecimal totalAmount) {
         super(OrderCreatedEvent.class);
         this.orderId = orderId;
         this.buyerId = buyerId;
         this.sellerId = sellerId;
-        this.productId = productId;
-        this.amount = amount;
+        this.items = items;
+        this.totalAmount = totalAmount;
     }
 
     @Override
     public String eventType() {
         return "OrderCreated";
+    }
+
+    @Getter
+    public static class OrderItemPayload {
+        private final Long productId;
+        private final int quantity;
+        private final BigDecimal unitPrice;
+        private final BigDecimal subtotal;
+
+        public OrderItemPayload(Long productId, int quantity, BigDecimal unitPrice, BigDecimal subtotal) {
+            this.productId = productId;
+            this.quantity = quantity;
+            this.unitPrice = unitPrice;
+            this.subtotal = subtotal;
+        }
     }
 }

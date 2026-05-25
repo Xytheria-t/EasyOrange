@@ -25,7 +25,7 @@ public class OrderTimeoutTask {
     private final DomainEventPublisher domainEventPublisher;
     private final OrderTimeoutProperties properties;
     private final RedisCache redisCache;
-    private final OrderCachePort orderCachePort;
+    private final OrderCachePort<?> orderCachePort;
 
     private static final String CANCEL_LOCK_PREFIX = "eo:order:lock:cancel:";
 

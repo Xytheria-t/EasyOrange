@@ -5,7 +5,6 @@ public record OrderQueryCondition(
         Integer status,
         Long buyerId,
         Long sellerId,
-        Long productId,
         Integer pageNum,
         Integer pageSize
 ) {}

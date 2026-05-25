@@ -23,8 +23,7 @@ public class OrderDO extends BaseDO {
     private String orderNo;
     private Long buyerId;
     private Long sellerId;
-    private Long productId;
-    private BigDecimal amount;
+    private BigDecimal totalAmount;
     private Integer status;
     private Integer paymentStatus;
     private String address;

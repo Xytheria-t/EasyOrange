@@ -1,10 +1,12 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import org.springframework.stereotype.Repository;
 
@@ -16,15 +18,19 @@ import java.util.Optional;
 public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO> implements OrderRepository {
 
     private final OrderDataConverter converter;
+    private final OrderItemMapper orderItemMapper;
 
-    public MybatisOrderRepository(OrderMapper orderMapper, OrderDataConverter converter) {
+    public MybatisOrderRepository(OrderMapper orderMapper, OrderDataConverter converter,
+                                  OrderItemMapper orderItemMapper) {
         super(orderMapper);
         this.converter = converter;
+        this.orderItemMapper = orderItemMapper;
     }
 
     @Override
     public void save(OrderAggregate aggregate) {
         mapper.insert(converter.toDataObject(aggregate));
+        batchInsertItems(aggregate.id().value(), aggregate.items());
     }
 
     @Override
@@ -35,7 +41,11 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     @Override
     public Optional<OrderAggregate> findById(OrderId id) {
         OrderDO orderDO = mapper.selectById(id.value());
-        return Optional.ofNullable(converter.toAggregate(orderDO));
+        if (orderDO == null) {
+            return Optional.empty();
+        }
+        List<OrderItem> items = findItemsByOrderId(id.value());
+        return Optional.ofNullable(converter.toAggregate(orderDO, items));
     }
 
     @Override
@@ -82,5 +92,22 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
                 .lt(OrderDO::getUpdateTime, threshold)
                 .list()
                 .stream().map(converter::toAggregate).toList();
+    }
+
+    @Override
+    public List<OrderItem> findItemsByOrderId(Long orderId) {
+        return orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItemDO>()
+                        .eq(OrderItemDO::getOrderId, orderId)
+        ).stream().map(converter::toOrderItem).toList();
+    }
+
+    private void batchInsertItems(Long orderId, List<OrderItem> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        for (OrderItem item : items) {
+            orderItemMapper.insert(converter.toItemDO(orderId, item));
+        }
     }
 }

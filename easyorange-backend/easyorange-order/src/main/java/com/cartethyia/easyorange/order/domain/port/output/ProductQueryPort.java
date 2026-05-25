@@ -15,6 +15,8 @@ public interface ProductQueryPort extends OutboundPort {
             String title,
             BigDecimal price,
             Integer status,
-            List<String> images
+            List<String> images,
+            String description,
+            String conditionLevel
     ) {}
 }

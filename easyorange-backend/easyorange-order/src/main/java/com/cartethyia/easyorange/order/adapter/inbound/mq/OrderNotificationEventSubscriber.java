@@ -109,7 +109,7 @@ public class OrderNotificationEventSubscriber {
     @Async("domainEventExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderCancelled(OrderCancelledEvent event) {
-        String eventId = "cancelled:" + event.getOrderId() + ":" + event.getProductId();
+        String eventId = "cancelled:" + event.getOrderId();
         if (!tryAcquireLock("OrderCancelled", eventId)) {
             return;
         }
@@ -128,7 +128,7 @@ public class OrderNotificationEventSubscriber {
     @Async("domainEventExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderRefunded(OrderRefundedEvent event) {
-        String eventId = "refunded:" + event.getOrderId() + ":" + event.getProductId();
+        String eventId = "refunded:" + event.getOrderId();
         if (!tryAcquireLock("OrderRefunded", eventId)) {
             return;
         }

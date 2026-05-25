@@ -1,21 +1,20 @@
 package com.cartethyia.easyorange.order.domain.port.output;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.application.dto.OrderVO;
 
 import java.util.Optional;
 
-public interface OrderCachePort {
+public interface OrderCachePort<T> {
 
-    Optional<PageResult<OrderVO>> getOrderList(String cacheKey);
+    Optional<PageResult<T>> getOrderList(String cacheKey);
 
-    void putOrderList(String cacheKey, PageResult<OrderVO> pageResult);
+    void putOrderList(String cacheKey, PageResult<T> pageResult);
 
     void evictOrderList(String cacheKey);
 
-    Optional<OrderVO> getOrderDetail(Long orderId);
+    Optional<T> getOrderDetail(Long orderId);
 
-    void putOrderDetail(Long orderId, OrderVO orderVO);
+    void putOrderDetail(Long orderId, T orderVO);
 
     void evictOrderDetail(Long orderId);
 

@@ -52,7 +52,7 @@ class OrderCacheServiceTest {
                 .id(1L)
                 .orderNo("TEST001")
                 .buyerId(testBuyerId)
-                .amount(new BigDecimal("99.99"))
+                .totalAmount(new BigDecimal("99.99"))
                 .status(0)
                 .createTime(LocalDateTime.now())
                 .build();
@@ -61,7 +61,7 @@ class OrderCacheServiceTest {
                 .id(2L)
                 .orderNo("TEST002")
                 .buyerId(testBuyerId)
-                .amount(new BigDecimal("199.99"))
+                .totalAmount(new BigDecimal("199.99"))
                 .status(1)
                 .createTime(LocalDateTime.now())
                 .build();

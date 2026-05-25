@@ -1,6 +1,7 @@
-package com.cartethyia.easyorange.order.domain.saga;
+package com.cartethyia.easyorange.order.application.saga;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
@@ -8,10 +9,13 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
+import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +34,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,6 +74,12 @@ class CreateOrderSagaCompensationTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private ProductQueryPort productQueryPort;
+
+    @Mock
+    private SnowflakeIdGenerator snowflakeIdGenerator;
+
     private CreateOrderSaga saga;
 
     private static final Long BUYER_ID = 1L;
@@ -75,8 +87,8 @@ class CreateOrderSagaCompensationTest {
 
     @BeforeEach
     void setUp() {
-        saga = new CreateOrderSaga(orderRepository, productInventoryPort, paymentGatewayPort, 
-                eventPublisher, orderCachePort, redisCache, sagaRepository, objectMapper);
+        saga = new CreateOrderSaga(orderRepository, productInventoryPort, productQueryPort, paymentGatewayPort,
+                eventPublisher, orderCachePort, redisCache, sagaRepository, objectMapper, snowflakeIdGenerator);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
@@ -85,13 +97,15 @@ class CreateOrderSagaCompensationTest {
         SecurityContextHolder.getContext().setAuthentication(auth);
 
         when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+        when(productQueryPort.getProductsByIds(any())).thenReturn(List.of());
+        when(snowflakeIdGenerator.nextId()).thenReturn(100L);
     }
 
     @Test
     @DisplayName("正常创建订单 Saga 成功")
     void execute_normalFlow_succeeds() {
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setProductId(100L);
+        command.setItems(List.of(new CreateOrderItem(100L, 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
         command.setRemark("备注");
@@ -113,7 +127,7 @@ class CreateOrderSagaCompensationTest {
     @DisplayName("支付失败时执行订单补偿")
     void execute_paymentFails_cancelsOrder() {
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setProductId(100L);
+        command.setItems(List.of(new CreateOrderItem(100L, 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 
@@ -122,7 +136,7 @@ class CreateOrderSagaCompensationTest {
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
         OrderAggregate cancelledAggregate = OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID, 100L,
+                1L, "ORD1", BUYER_ID, SELLER_ID,
                 new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
                 "地址", "13800138000", "备注", null, null
         );
@@ -138,7 +152,7 @@ class CreateOrderSagaCompensationTest {
     @DisplayName("商品不存在时 Saga 失败")
     void execute_productNotFound_throws() {
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setProductId(999L);
+        command.setItems(List.of(new CreateOrderItem(999L, 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 
@@ -155,7 +169,7 @@ class CreateOrderSagaCompensationTest {
         when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(false);
 
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setProductId(100L);
+        command.setItems(List.of(new CreateOrderItem(100L, 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 

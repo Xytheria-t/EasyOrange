@@ -20,20 +20,21 @@ public class OrderCreatedEventSubscriber {
     @Async("domainEventExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onOrderCreated(OrderCreatedEvent event) {
-        log.info("收到订单创建事件: orderId={}, productId={}", event.getOrderId(), event.getProductId());
-        
+        log.info("收到订单创建事件: orderId={}, items count={}", event.getOrderId(), event.getItems().size());
+
         try {
-            StockReservationRequestedEvent stockEvent = new StockReservationRequestedEvent(
-                    event.getOrderId(),
-                    event.getProductId(),
-                    1
-            );
-            
-            domainEventPublisher.publish(stockEvent);
-            
-            log.info("库存预留请求已发布: orderId={}, productId={}", event.getOrderId(), event.getProductId());
+            for (OrderCreatedEvent.OrderItemPayload item : event.getItems()) {
+                StockReservationRequestedEvent stockEvent = new StockReservationRequestedEvent(
+                        event.getOrderId(),
+                        item.getProductId(),
+                        item.getQuantity()
+                );
+                domainEventPublisher.publish(stockEvent);
+            }
+
+            log.info("库存预留请求已发布: orderId={}", event.getOrderId());
         } catch (Exception e) {
-            log.error("发布库存预留请求失败: orderId={}, productId={}", event.getOrderId(), event.getProductId(), e);
+            log.error("发布库存预留请求失败: orderId={}", event.getOrderId(), e);
         }
     }
 }

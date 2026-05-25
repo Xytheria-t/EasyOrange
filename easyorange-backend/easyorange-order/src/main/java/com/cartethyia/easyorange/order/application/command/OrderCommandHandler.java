@@ -7,10 +7,11 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
-import com.cartethyia.easyorange.order.domain.saga.CreateOrderSaga;
+import com.cartethyia.easyorange.order.application.saga.CreateOrderSaga;
 import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class OrderCommandHandler {
     private final DomainEventPublisher domainEventPublisher;
     private final CreateOrderSaga createOrderSaga;
     private final PaymentGatewayPort paymentGatewayPort;
-    private final OrderCachePort orderCachePort;
+    private final OrderCachePort<?> orderCachePort;
 
     public CreateOrderResult handle(CreateOrderCommand command) {
         return createOrderSaga.execute(command);
@@ -73,7 +74,7 @@ public class OrderCommandHandler {
     @Transactional(rollbackFor = Exception.class)
     public void handle(RefundOrderCommand command) {
         OrderAggregate aggregate = validateBuyerOrder(command.getOrderId());
-        BizRequire.requireTrue(aggregate.paymentStatus() == 1, OrderResultCode.ORDER_CANNOT_REFUND);
+        BizRequire.requireTrue(aggregate.paymentStatus() == PaymentStatus.PAID, OrderResultCode.ORDER_CANNOT_REFUND);
         OrderAggregate.OrderRefundedResult result = aggregate.refund(command.getReason());
 
         paymentGatewayPort.refundPayment(aggregate.id().value(), command.getReason());

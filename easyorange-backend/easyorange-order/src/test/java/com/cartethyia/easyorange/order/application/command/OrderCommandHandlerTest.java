@@ -12,8 +12,16 @@ import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
-import com.cartethyia.easyorange.order.domain.saga.CreateOrderSaga;
+import com.cartethyia.easyorange.order.application.saga.CreateOrderSaga;
+import com.cartethyia.easyorange.order.domain.valueobject.Address;
+import com.cartethyia.easyorange.order.domain.valueobject.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.Phone;
+import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +35,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
+
+import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -73,7 +84,7 @@ class OrderCommandHandlerTest {
         @DisplayName("正常创建订单")
         void handle_createOrder_success() {
             CreateOrderCommand command = CreateOrderCommand.builder()
-                .productId(PRODUCT_ID)
+                .items(List.of(new CreateOrderItem(PRODUCT_ID, 1)))
                 .address("北京市朝阳区")
                 .phone("13800138000")
                 .remark("尽快发货")
@@ -304,35 +315,49 @@ class OrderCommandHandlerTest {
         }
     }
 
+    private List<OrderItem> itemForTest() {
+        return List.of(OrderItem.builder()
+                .id(1L)
+                .productId(ProductId.of(PRODUCT_ID))
+                .unitPrice(Money.of(new BigDecimal("99.99")))
+                .quantity(1)
+                .subtotal(Money.of(new BigDecimal("99.99")))
+                .build());
+    }
+
     private OrderAggregate createPendingPaymentAggregate() {
-        return OrderAggregate.fromRaw(
-            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-            new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
-            "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
+            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+            Money.of(new BigDecimal("99.99")), OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
+            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createPaidAggregate() {
-        return OrderAggregate.fromRaw(
-            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-            new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 1,
-            "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
+            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+            Money.of(new BigDecimal("99.99")), OrderStatus.PAID, PaymentStatus.PAID,
+            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createShippedAggregate() {
-        return OrderAggregate.fromRaw(
-            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-            new BigDecimal("99.99"), OrderStatus.SHIPPED.getCode(), 1,
-            "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
+            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+            Money.of(new BigDecimal("99.99")), OrderStatus.SHIPPED, PaymentStatus.PAID,
+            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createPaidButUnpaidPaymentAggregate() {
-        return OrderAggregate.fromRaw(
-            ORDER_ID, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-            new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 0,
-            "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
+            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+            Money.of(new BigDecimal("99.99")), OrderStatus.PAID, PaymentStatus.UNPAID,
+            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 }

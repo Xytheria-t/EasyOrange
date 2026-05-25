@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.application.assembler;
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 
 import java.util.*;
@@ -23,13 +24,32 @@ public class OrderVOAssembler {
     }
 
     public OrderVO toOrderVO(OrderReadModel order, Map<Long, ProductDetail> productMap, boolean maskSensitive) {
+        List<OrderVO.OrderItemVO> itemVOs = order.items().stream()
+                .map(item -> {
+                    ProductDetail product = productMap.get(item.productId());
+                    String productName = product != null ? product.title() : "";
+                    String productImage = (product != null && product.images() != null && !product.images().isEmpty())
+                            ? product.images().getFirst() : null;
+                    return new OrderVO.OrderItemVO(
+                            item.itemId(),
+                            item.productId(),
+                            productName,
+                            productImage,
+                            item.unitPrice(),
+                            item.quantity(),
+                            item.subtotal()
+                    );
+                })
+                .toList();
+
         OrderVO.OrderVOBuilder builder = OrderVO.builder()
                 .id(order.id())
                 .orderNo(order.orderNo())
                 .buyerId(order.buyerId())
                 .sellerId(order.sellerId())
-                .productId(order.productId())
-                .amount(order.amount())
+                .items(itemVOs)
+                .totalAmount(order.totalAmount())
+                .singleItem(itemVOs.size() == 1 && itemVOs.getFirst().getQuantity() == 1)
                 .status(order.status())
                 .statusDesc(order.statusDesc())
                 .remark(order.remark())
@@ -42,14 +62,6 @@ public class OrderVOAssembler {
         } else {
             builder.address(order.address())
                    .phone(MaskUtils.maskPhone(order.phone()));
-        }
-
-        ProductDetail product = productMap.get(order.productId());
-        if (product != null) {
-            builder.productTitle(product.title());
-            if (product.images() != null && !product.images().isEmpty()) {
-                builder.productImage(product.images().getFirst());
-            }
         }
 
         return builder.build();

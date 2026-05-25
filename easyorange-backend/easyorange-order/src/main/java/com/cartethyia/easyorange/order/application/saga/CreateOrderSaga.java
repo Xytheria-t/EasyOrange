@@ -1,58 +1,70 @@
-package com.cartethyia.easyorange.order.domain.saga;
+package com.cartethyia.easyorange.order.application.saga;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
+import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
 import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
+import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
+import com.cartethyia.easyorange.order.domain.saga.SagaState;
+import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
-import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
 public class CreateOrderSaga {
 
     private final OrderRepository orderRepository;
     private final ProductInventoryPort productInventoryPort;
+    private final ProductQueryPort productQueryPort;
     private final PaymentGatewayPort paymentGatewayPort;
     private final DomainEventPublisher eventPublisher;
-    private final OrderCachePort orderCachePort;
+    private final OrderCachePort<?> orderCachePort;
     private final RedisCache redisCache;
     private final SagaRepository sagaRepository;
     private final ObjectMapper objectMapper;
+    private final SnowflakeIdGenerator snowflakeIdGenerator;
 
     private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
     private static final String SAGA_TYPE = "CREATE_ORDER";
 
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult execute(CreateOrderCommand command) {
-        String lockKey = ORDER_LOCK_PREFIX + command.getProductId();
+        String lockKey = ORDER_LOCK_PREFIX + command.getItems().getFirst().getProductId();
         String lockValue = UUID.randomUUID().toString();
 
         Boolean locked = redisCache.tryLock(lockKey, lockValue, 10, TimeUnit.SECONDS);
@@ -88,7 +100,7 @@ public class CreateOrderSaga {
 
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
                     orderEvent.getOrderId(),
-                    orderEvent.getAmount(),
+                    orderEvent.getTotalAmount(),
                     command.getPaymentMethod() != null ? command.getPaymentMethod() : 1,
                     "ORDER",
                     "订单支付"
@@ -103,7 +115,7 @@ public class CreateOrderSaga {
 
         } catch (Exception e) {
             log.error("订单创建 Saga 失败 sagaId={} command={}", sagaId, command, e);
-            
+
             sagaStatus = sagaStatus.withState(SagaState.COMPENSATING)
                 .withStep("COMPENSATING")
                 .withError(e.getMessage());
@@ -141,7 +153,7 @@ public class CreateOrderSaga {
                 SAGA_TYPE,
                 SagaState.PENDING,
                 "INIT",
-                command.getProductId().toString(),
+                command.getItems().getFirst().getProductId().toString(),
                 null,
                 null,
                 0,
@@ -154,27 +166,68 @@ public class CreateOrderSaga {
     private OrderAggregate.OrderCreatedResult createOrder(CreateOrderCommand command) {
         Long buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductSnapshot snapshot = productInventoryPort.getSnapshot(command.getProductId())
-                .orElseThrow(() -> new OrderDomainException("商品不存在"));
-        BizRequire.requireTrue(snapshot.isOnline(), "商品已下架");
-        BizRequire.ne(snapshot.sellerId(), buyerId, "不能购买自己的商品");
-        BizRequire.requireTrue(snapshot.hasStock(), "商品库存不足");
+        record ItemPrep(ProductSnapshot snapshot, int quantity) {}
+        List<ItemPrep> preps = command.getItems().stream()
+                .map(ci -> {
+                    ProductSnapshot snapshot = productInventoryPort.getSnapshot(ci.getProductId())
+                            .orElseThrow(() -> new OrderDomainException("商品不存在: " + ci.getProductId()));
+                    BizRequire.requireTrue(snapshot.isOnline(), "商品已下架: " + ci.getProductId());
+                    BizRequire.requireTrue(snapshot.hasStock(), "商品库存不足: " + ci.getProductId());
+                    return new ItemPrep(snapshot, ci.getQuantity());
+                })
+                .toList();
+
+        Long sellerId = preps.getFirst().snapshot().sellerId();
+        BizRequire.ne(sellerId, buyerId, "不能购买自己的商品");
 
         String resolvedAddress = command.getAddress();
         if (resolvedAddress == null || resolvedAddress.isBlank()) {
-            resolvedAddress = snapshot.location() != null && !snapshot.location().isBlank()
-                    ? snapshot.location()
+            resolvedAddress = preps.getFirst().snapshot().location() != null
+                    && !preps.getFirst().snapshot().location().isBlank()
+                    ? preps.getFirst().snapshot().location()
                     : "未指定";
         }
 
+        Map<Long, ProductDetail> productDetailMap = productQueryPort.getProductsByIds(
+                        preps.stream().map(p -> p.snapshot().productId()).toList())
+                .stream().collect(Collectors.toMap(ProductDetail::id, d -> d));
+
+        List<OrderItem> items = preps.stream()
+                .map(prep -> {
+                    Money unitPrice = Money.of(prep.snapshot().price());
+                    Money subtotal = unitPrice.multiply(prep.quantity());
+                    ProductDetail detail = productDetailMap.get(prep.snapshot().productId());
+                    String name = detail != null ? detail.title() : "";
+                    String image = (detail != null && detail.images() != null && !detail.images().isEmpty())
+                            ? detail.images().getFirst() : "";
+                    String description = detail != null && detail.description() != null ? detail.description() : "";
+                    String conditionLevel = detail != null && detail.conditionLevel() != null ? detail.conditionLevel() : "";
+                    return OrderItem.builder()
+                            .id(snowflakeIdGenerator.nextId())
+                            .productId(ProductId.of(prep.snapshot().productId()))
+                            .snapshot(com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot.builder()
+                                    .productId(prep.snapshot().productId())
+                                    .name(name)
+                                    .image(image)
+                                    .description(description)
+                                    .price(unitPrice)
+                                    .conditionLevel(conditionLevel)
+                                    .build())
+                            .unitPrice(unitPrice)
+                            .quantity(prep.quantity())
+                            .subtotal(subtotal)
+                            .build();
+                })
+                .toList();
+
         OrderAggregate.OrderCreatedResult result = OrderAggregate.createOrder(
                 UserId.of(buyerId),
-                UserId.of(snapshot.sellerId()),
-                ProductId.of(command.getProductId()),
-                Money.of(snapshot.price()),
+                UserId.of(sellerId),
+                items,
                 Address.of(resolvedAddress),
                 Phone.of(command.getPhone()),
-                command.getRemark()
+                command.getRemark(),
+                snowflakeIdGenerator.nextId()
         );
 
         orderRepository.save(result.aggregate());
@@ -190,9 +243,9 @@ public class CreateOrderSaga {
 
     private String compensate(List<CompensatingAction> compensations, Exception cause) {
         log.warn("开始执行补偿逻辑，共 {} 个补偿操作", compensations.size());
-        
+
         List<String> compensationResults = new ArrayList<>();
-        
+
         for (int i = compensations.size() - 1; i >= 0; i--) {
             int stepIndex = compensations.size() - i;
             try {
@@ -203,7 +256,7 @@ public class CreateOrderSaga {
                 log.error("补偿操作失败 step={}，将继续执行其他补偿", stepIndex, e);
             }
         }
-        
+
         log.warn("补偿逻辑执行完成，结果: {}", compensationResults);
         return String.join("; ", compensationResults);
     }
@@ -237,10 +290,10 @@ public class CreateOrderSaga {
 
         try {
             CreateOrderCommand command = objectMapper.readValue(sagaStatus.payload(), CreateOrderCommand.class);
-            
+
             sagaStatus = sagaStatus.withRetry();
             sagaRepository.update(sagaStatus);
-            
+
             execute(command);
         } catch (Exception e) {
             log.error("Saga 重试失败 sagaId={}", sagaId, e);

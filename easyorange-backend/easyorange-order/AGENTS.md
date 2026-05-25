@@ -30,6 +30,8 @@ order/
 │       │   ├── SagaRepositoryImpl.java
 │       │   ├── OrderDO.java, SagaDO.java
 │       │   ├── OrderMapper.java, SagaMapper.java
+│       │   ├── OrderItemDO.java             # eo_order_item 实体
+│       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
 │       │   └── OrderDataConverter.java
 │       ├── cache/                           # 缓存
 │       │   └── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
@@ -39,6 +41,8 @@ order/
 │           ├── PaymentGatewayAdapter.java    # → payment 创建支付
 │           └── UserInfoAdapter.java          # → user 查询用户
 ├── application/
+│   ├── saga/                                 # Saga 编排（应用层）
+│   │   └── CreateOrderSaga.java            # 创建订单 Saga 编排
 │   ├── command/                             # 命令 (CQRS Write)
 │   │   ├── OrderCommandHandler.java
 │   │   ├── CreateOrderCommand.java / CreateOrderResult.java
@@ -58,8 +62,7 @@ order/
 ├── domain/
 │   ├── aggregate/
 │   │   └── OrderAggregate.java             # 订单聚合根 (不可变)
-│   ├── saga/
-│   │   ├── CreateOrderSaga.java            # 创建订单 Saga 编排
+│   ├── saga/                                 # Saga 支持类型（纯领域）
 │   │   ├── SagaRepository.java            # Saga 仓储接口
 │   │   ├── SagaState.java, SagaStatus.java
 │   │   └── OrderCreationException.java
@@ -68,6 +71,9 @@ order/
 │   │   ├── Money.java
 │   │   ├── Address.java, Phone.java
 │   │   ├── ProductId.java, UserId.java
+│   │   ├── OrderItem.java                 # 行项值对象（含 ProductSnapshot）
+│   │   ├── ProductSnapshot.java           # 下单时商品快照
+│   │   ├── PaymentStatus.java             # 支付状态枚举（UNPAID/PAID/REFUNDED）
 │   ├── event/
 │   │   ├── OrderCreatedEvent.java
 │   │   ├── OrderPaidEvent.java
@@ -76,7 +82,8 @@ order/
 │   │   ├── OrderCancelledEvent.java
 │   │   └── OrderRefundedEvent.java
 │   ├── readmodel/
-│   │   └── OrderReadModel.java
+│   │   ├── OrderReadModel.java
+│   │   └── OrderItemReadModel.java
 │   ├── port/output/                        # 出站端口
 │   │   ├── OrderRepository.java            # 写仓储
 │   │   ├── OrderReadRepository.java        # 读仓储
@@ -107,9 +114,15 @@ order/
 
 ```
 CreateOrderSaga.execute():
-  1. 扣减库存 (ProductInventoryPort)  ← 补偿: 恢复库存
-  2. 创建支付 (PaymentGatewayPort)    ← 补偿: 关闭支付
-  3. 保存订单 (OrderRepository)
+  1. 创建订单 (OrderAggregate + DomainEventPublisher)
+     ├── 遍历 items，逐项调用 ProductInventoryPort.getSnapshot()
+     │   └── 校验：商品在线、非自购、库存充足
+     ├── 批量调用 ProductQueryPort.getProductsByIds() 加载商品详情
+     │   └── 填充 ProductSnapshot（name/image/description/conditionLevel）
+     ├── 计算 totalAmount
+     ├── 保存 OrderAggregate + 批量插入 OrderItem
+     └── 发布 OrderCreatedEvent（附带 items 列表）
+  2. 创建支付 (PaymentGatewayPort)    ← 补偿: 取消订单
   失败时按逆序执行补偿操作
 ```
 

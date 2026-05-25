@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class RedisOrderCacheAdapter implements OrderCachePort {
+public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
 
     private final RedisTemplate<String, Object> redisTemplate;
 

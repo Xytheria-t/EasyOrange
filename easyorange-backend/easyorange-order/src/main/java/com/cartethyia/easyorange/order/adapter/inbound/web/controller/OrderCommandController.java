@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -28,8 +30,14 @@ public class OrderCommandController {
     @PostMapping
     @PreAuthorize("isAuthenticated()")
     public Result<OrderVO> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+        List<CreateOrderCommand.CreateOrderItem> items = request.getItems().stream()
+                .map(i -> CreateOrderCommand.CreateOrderItem.builder()
+                        .productId(i.getProductId())
+                        .quantity(i.getQuantity())
+                        .build())
+                .toList();
         CreateOrderCommand command = CreateOrderCommand.builder()
-                .productId(request.getProductId())
+                .items(items)
                 .address(request.getAddress())
                 .phone(request.getPhone())
                 .remark(request.getRemark())

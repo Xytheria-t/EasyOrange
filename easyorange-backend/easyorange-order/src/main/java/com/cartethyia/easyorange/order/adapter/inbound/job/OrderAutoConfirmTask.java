@@ -23,7 +23,7 @@ public class OrderAutoConfirmTask {
     private final OrderRepository orderRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final OrderTimeoutProperties properties;
-    private final OrderCachePort orderCachePort;
+    private final OrderCachePort<?> orderCachePort;
 
     @Scheduled(cron = "${order.auto-confirm.cron:0 0 2 * * ?}")
     public void autoConfirmReceipt() {

@@ -17,4 +17,12 @@ public record Money(BigDecimal amount) {
     public static Money of(long amount) {
         return new Money(BigDecimal.valueOf(amount));
     }
+
+    public Money multiply(int multiplier) {
+        return new Money(amount.multiply(BigDecimal.valueOf(multiplier)));
+    }
+
+    public Money add(Money other) {
+        return new Money(amount.add(other.amount));
+    }
 }

@@ -8,7 +8,9 @@ import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,7 +31,37 @@ class OrderAggregateTest {
     private static final Long BUYER_ID = 1L;
     private static final Long SELLER_ID = 2L;
     private static final Long PRODUCT_ID = 100L;
+    private static final Long ORDER_ID = 1000L;
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
+
+    private static List<OrderItem> singleItemList() {
+        return List.of(OrderItem.builder()
+                .id(1L)
+                .productId(ProductId.of(PRODUCT_ID))
+                .unitPrice(Money.of(AMOUNT))
+                .quantity(1)
+                .subtotal(Money.of(AMOUNT))
+                .build());
+    }
+
+    private static List<OrderItem> multiItemList() {
+        return List.of(
+                OrderItem.builder()
+                        .id(1L)
+                        .productId(ProductId.of(PRODUCT_ID))
+                        .unitPrice(Money.of(AMOUNT))
+                        .quantity(1)
+                        .subtotal(Money.of(AMOUNT))
+                        .build(),
+                OrderItem.builder()
+                        .id(2L)
+                        .productId(ProductId.of(200L))
+                        .unitPrice(Money.of(new BigDecimal("49.99")))
+                        .quantity(2)
+                        .subtotal(Money.of(new BigDecimal("99.98")))
+                        .build()
+        );
+    }
 
     @Nested
     @DisplayName("createOrder")
@@ -38,25 +71,44 @@ class OrderAggregateTest {
         @DisplayName("正常创建订单")
         void createOrder_validParams_returnsResult() {
             OrderAggregate.OrderCreatedResult result = OrderAggregate.createOrder(
-                    UserId.of(BUYER_ID), UserId.of(SELLER_ID), ProductId.of(PRODUCT_ID),
-                    Money.of(AMOUNT), Address.of("北京市朝阳区"), Phone.of("13800138000"), "尽快发货"
+                    UserId.of(BUYER_ID), UserId.of(SELLER_ID), singleItemList(),
+                    Address.of("北京市朝阳区"), Phone.of("13800138000"), "尽快发货",
+                    ORDER_ID
             );
 
             assertThat(result.event().getBuyerId()).isEqualTo(BUYER_ID);
             assertThat(result.event().getSellerId()).isEqualTo(SELLER_ID);
-            assertThat(result.event().getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(result.event().getAmount()).isEqualByComparingTo(AMOUNT);
+            assertThat(result.event().getItems()).hasSize(1);
+            assertThat(result.event().getItems().get(0).getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(result.event().getTotalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(result.event().getOrderId()).isNotNull();
             assertThat(result.aggregate()).isNotNull();
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
+            assertThat(result.aggregate().items()).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("创建多商品订单")
+        void createOrder_multiItem_returnsResult() {
+            OrderAggregate.OrderCreatedResult result = OrderAggregate.createOrder(
+                    UserId.of(BUYER_ID), UserId.of(SELLER_ID), multiItemList(),
+                    Address.of("北京市朝阳区"), Phone.of("13800138000"), "尽快发货",
+                    ORDER_ID
+            );
+
+            assertThat(result.event().getItems()).hasSize(2);
+            assertThat(result.event().getTotalAmount()).isEqualByComparingTo(new BigDecimal("199.97"));
+            assertThat(result.aggregate().totalAmount().amount()).isEqualByComparingTo(new BigDecimal("199.97"));
+            assertThat(result.aggregate().items()).hasSize(2);
         }
 
         @Test
         @DisplayName("买家不能购买自己的商品")
         void createOrder_buyerEqualsSeller_throws() {
             assertThatThrownBy(() -> OrderAggregate.createOrder(
-                    UserId.of(BUYER_ID), UserId.of(BUYER_ID), ProductId.of(PRODUCT_ID),
-                    Money.of(AMOUNT), Address.of("地址"), Phone.of("13800138000"), "备注"
+                    UserId.of(BUYER_ID), UserId.of(BUYER_ID), singleItemList(),
+                    Address.of("地址"), Phone.of("13800138000"), "备注",
+                    ORDER_ID
             )).isInstanceOf(Exception.class)
               .hasMessageContaining("不能购买自己的商品");
         }
@@ -65,10 +117,11 @@ class OrderAggregateTest {
         @DisplayName("订单金额必须大于0")
         void createOrder_zeroAmount_throws() {
             assertThatThrownBy(() -> OrderAggregate.createOrder(
-                    UserId.of(BUYER_ID), UserId.of(SELLER_ID), ProductId.of(PRODUCT_ID),
-                    Money.of(BigDecimal.ZERO), Address.of("地址"), Phone.of("13800138000"), "备注"
+                    UserId.of(BUYER_ID), UserId.of(SELLER_ID), List.of(),
+                    Address.of("地址"), Phone.of("13800138000"), "备注",
+                    ORDER_ID
             )).isInstanceOf(Exception.class)
-              .hasMessageContaining("金额必须大于0");
+              .hasMessageContaining("订单商品不能为空");
         }
     }
 
@@ -80,7 +133,7 @@ class OrderAggregateTest {
         @DisplayName("fromRaw 正确转换")
         void fromRaw_validParams_returnsAggregate() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
-                    1L, "ORD123", BUYER_ID, SELLER_ID, PRODUCT_ID,
+                    1L, "ORD123", BUYER_ID, SELLER_ID,
                     AMOUNT, 0, 0, "地址", "13800138000", "备注", null, null
             );
 
@@ -88,8 +141,8 @@ class OrderAggregateTest {
             assertThat(aggregate.orderNo().value()).isEqualTo("ORD123");
             assertThat(aggregate.buyerId().value()).isEqualTo(BUYER_ID);
             assertThat(aggregate.sellerId().value()).isEqualTo(SELLER_ID);
-            assertThat(aggregate.productId().value()).isEqualTo(PRODUCT_ID);
-            assertThat(aggregate.amount().amount()).isEqualByComparingTo(AMOUNT);
+            assertThat(aggregate.items()).isEmpty();
+            assertThat(aggregate.totalAmount().amount()).isEqualByComparingTo(AMOUNT);
             assertThat(aggregate.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         }
     }
@@ -106,7 +159,7 @@ class OrderAggregateTest {
 
             assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
             assertThat(result.event().getPaymentStatus()).isEqualTo(1);
-            assertThat(result.aggregate().paymentStatus()).isEqualTo(1);
+            assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.PAID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PAID);
         }
 
@@ -138,7 +191,7 @@ class OrderAggregateTest {
             OrderAggregate.OrderCancelledResult result = aggregate.cancel("不想要了");
 
             assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(result.event().getProductIds()).containsExactly(PRODUCT_ID);
             assertThat(result.event().getReason()).isEqualTo("不想要了");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.aggregate().cancelReason()).isEqualTo("不想要了");
@@ -195,7 +248,7 @@ class OrderAggregateTest {
             OrderAggregate.OrderCompletedResult result = aggregate.confirmReceipt();
 
             assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(result.event().getProductIds()).containsExactly(PRODUCT_ID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.COMPLETED);
         }
 
@@ -219,10 +272,10 @@ class OrderAggregateTest {
             OrderAggregate.OrderRefundedResult result = aggregate.refund("商品有问题");
 
             assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(result.event().getProductIds()).containsExactly(PRODUCT_ID);
             assertThat(result.event().getReason()).isEqualTo("商品有问题");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.REFUNDED);
-            assertThat(result.aggregate().paymentStatus()).isEqualTo(2);
+            assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
         }
 
         @Test
@@ -260,43 +313,58 @@ class OrderAggregateTest {
         }
     }
 
+    private static List<OrderItem> itemForTest() {
+        return List.of(OrderItem.builder()
+                .id(1L)
+                .productId(ProductId.of(PRODUCT_ID))
+                .unitPrice(Money.of(AMOUNT))
+                .quantity(1)
+                .subtotal(Money.of(AMOUNT))
+                .build());
+    }
+
     private OrderAggregate createPendingPaymentAggregate() {
-        return OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                AMOUNT, OrderStatus.PENDING_PAYMENT.getCode(), 0,
-                "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+                OrderId.of(1L), OrderNo.of("ORD1"),
+                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+                Money.of(AMOUNT), OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
+                Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createPaidAggregate() {
-        return OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                AMOUNT, OrderStatus.PAID.getCode(), 1,
-                "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+                OrderId.of(1L), OrderNo.of("ORD1"),
+                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+                Money.of(AMOUNT), OrderStatus.PAID, PaymentStatus.PAID,
+                Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createShippedAggregate() {
-        return OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                AMOUNT, OrderStatus.SHIPPED.getCode(), 1,
-                "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+                OrderId.of(1L), OrderNo.of("ORD1"),
+                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+                Money.of(AMOUNT), OrderStatus.SHIPPED, PaymentStatus.PAID,
+                Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createCompletedAggregate() {
-        return OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                AMOUNT, OrderStatus.COMPLETED.getCode(), 1,
-                "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+                OrderId.of(1L), OrderNo.of("ORD1"),
+                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+                Money.of(AMOUNT), OrderStatus.COMPLETED, PaymentStatus.PAID,
+                Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 
     private OrderAggregate createCancelledAggregate() {
-        return OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID, PRODUCT_ID,
-                AMOUNT, OrderStatus.CANCELLED.getCode(), 0,
-                "地址", "13800138000", "备注", null, null
+        return OrderAggregate.from(
+                OrderId.of(1L), OrderNo.of("ORD1"),
+                UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
+                Money.of(AMOUNT), OrderStatus.CANCELLED, PaymentStatus.UNPAID,
+                Address.of("地址"), Phone.of("13800138000"), "备注", null, null
         );
     }
 }

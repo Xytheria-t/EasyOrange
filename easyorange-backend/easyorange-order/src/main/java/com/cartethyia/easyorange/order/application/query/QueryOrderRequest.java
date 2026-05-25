@@ -18,7 +18,6 @@ public class QueryOrderRequest extends PageRequest {
     private Integer status;
     private Long buyerId;
     private Long sellerId;
-    private Long productId;
 
     @Override
     public QueryOrderRequest normalized() {
@@ -32,7 +31,6 @@ public class QueryOrderRequest extends PageRequest {
                 .status(this.status)
                 .buyerId(this.buyerId)
                 .sellerId(this.sellerId)
-                .productId(this.productId)
                 .build();
     }
 }

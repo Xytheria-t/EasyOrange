@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -58,7 +59,7 @@ class OrderNotificationEventSubscriberTest {
     void setUp() {
         orderReadModel = new OrderReadModel(
                 ORDER_ID, "ORD" + ORDER_ID,
-                BUYER_ID, SELLER_ID, PRODUCT_ID,
+                BUYER_ID, SELLER_ID, List.of(),
                 BigDecimal.valueOf(99.99), 0, "待付款", 0,
                 "地址", "13800138000", "备注",
                 null, null, null, null
@@ -90,7 +91,9 @@ class OrderNotificationEventSubscriberTest {
             mockLockSuccess();
             mockGetUserEmail();
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID, PRODUCT_ID, BigDecimal.valueOf(99.99));
+            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+                    BigDecimal.valueOf(99.99));
 
             subscriber.onOrderCreated(event);
 
@@ -105,7 +108,9 @@ class OrderNotificationEventSubscriberTest {
             mockLockSuccess();
             when(userInfoPort.getUserInfo(BUYER_ID)).thenReturn(Optional.empty());
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID, PRODUCT_ID, BigDecimal.valueOf(99.99));
+            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+                    BigDecimal.valueOf(99.99));
 
             subscriber.onOrderCreated(event);
 
@@ -166,7 +171,7 @@ class OrderNotificationEventSubscriberTest {
             mockFindOrderReadModel();
             mockGetUserEmail();
 
-            OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, PRODUCT_ID);
+            OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
 
             subscriber.onOrderCompleted(event);
 
@@ -187,12 +192,12 @@ class OrderNotificationEventSubscriberTest {
             mockFindOrderReadModel();
             mockGetUserEmail();
 
-            OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, PRODUCT_ID, "取消原因");
+            OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
 
             subscriber.onOrderCancelled(event);
 
-            verify(idempotencyChecker).isDuplicate("OrderCancelled", "cancelled:" + ORDER_ID + ":" + PRODUCT_ID);
-            verify(idempotencyChecker).tryMark("OrderCancelled", "cancelled:" + ORDER_ID + ":" + PRODUCT_ID);
+            verify(idempotencyChecker).isDuplicate("OrderCancelled", "cancelled:" + ORDER_ID);
+            verify(idempotencyChecker).tryMark("OrderCancelled", "cancelled:" + ORDER_ID);
             verify(notificationService).sendEmail(EMAIL, "订单已取消", "您的订单已取消，订单号: " + ORDER_ID);
         }
     }
@@ -208,12 +213,12 @@ class OrderNotificationEventSubscriberTest {
             mockFindOrderReadModel();
             mockGetUserEmail();
 
-            OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, PRODUCT_ID, "退款原因");
+            OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
 
             subscriber.onOrderRefunded(event);
 
-            verify(idempotencyChecker).isDuplicate("OrderRefunded", "refunded:" + ORDER_ID + ":" + PRODUCT_ID);
-            verify(idempotencyChecker).tryMark("OrderRefunded", "refunded:" + ORDER_ID + ":" + PRODUCT_ID);
+            verify(idempotencyChecker).isDuplicate("OrderRefunded", "refunded:" + ORDER_ID);
+            verify(idempotencyChecker).tryMark("OrderRefunded", "refunded:" + ORDER_ID);
             verify(notificationService).sendEmail(EMAIL, "订单已退款", "您的订单已退款，订单号: " + ORDER_ID);
         }
     }
@@ -227,7 +232,9 @@ class OrderNotificationEventSubscriberTest {
         void onEvent_withDuplicateEvent_shouldSkip() {
             when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(true);
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID, PRODUCT_ID, BigDecimal.valueOf(99.99));
+            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+                    BigDecimal.valueOf(99.99));
 
             subscriber.onOrderCreated(event);
 
@@ -241,7 +248,9 @@ class OrderNotificationEventSubscriberTest {
             when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
             when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(false);
 
-            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID, PRODUCT_ID, BigDecimal.valueOf(99.99));
+            OrderCreatedEvent event = new OrderCreatedEvent(ORDER_ID, BUYER_ID, SELLER_ID,
+                    List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
+                    BigDecimal.valueOf(99.99));
 
             subscriber.onOrderCreated(event);
 

@@ -1,42 +1,37 @@
 package com.cartethyia.easyorange.order.application.command;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.List;
 
-/**
- * 创建订单命令
- *
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateOrderCommand {
 
-    /**
-     * 商品ID
-     */
-    private Long productId;
+    @NotEmpty(message = "订单项不能为空")
+    private List<CreateOrderItem> items;
 
-    /**
-     * 收货地址
-     */
     private String address;
-
-    /**
-     * 联系电话
-     */
     private String phone;
-
-    /**
-     * 备注
-     */
     private String remark;
-
-    /**
-     * 支付方式
-     */
     private Integer paymentMethod;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CreateOrderItem {
+        @NotNull(message = "商品 ID 不能为空")
+        private Long productId;
+
+        @Min(value = 1, message = "数量至少为 1")
+        private int quantity = 1;
+    }
 }
