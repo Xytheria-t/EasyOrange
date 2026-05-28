@@ -72,6 +72,44 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 90s
 
+# -------------------------------------------------------------------
+# 限流 + 防重提交配置（Filter 驱动，替代 AOP 切面）
+# -------------------------------------------------------------------
+rate-limit-filter:
+  enabled: true
+  rules:
+    # 商品浏览 — GET 走本地限流，零网络开销
+    - path-pattern: /api/products
+      method: GET
+      strategy: local
+      max-requests: 200
+      window-seconds: 60
+      message: "请求过于频繁，请稍后重试"
+    - path-pattern: /api/products/{id}
+      method: GET
+      strategy: local
+      max-requests: 200
+      window-seconds: 60
+      message: "请求过于频繁，请稍后重试"
+    - path-pattern: /api/products/categories/**
+      method: GET
+      strategy: local
+      max-requests: 200
+      window-seconds: 60
+      message: "请求过于频繁，请稍后重试"
+    # 通用写操作 — Redis 分布式限流
+    - path-pattern: /api/**
+      method: [POST, PUT, DELETE, PATCH]
+      strategy: redis
+      max-requests: 30
+      window-seconds: 60
+      message: "操作过于频繁，请稍后重试"
+  repeat-submit:
+    enabled: true
+    interval-ms: 3000
+    message: "不允许重复提交"
+    methods: [POST, PUT, DELETE, PATCH]
+
 server:
   port: 8080
   shutdown: graceful
@@ -81,10 +119,11 @@ server:
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
-  type-handlers-package: com.cartethyia.easyorange.framework.config.database
+  type-handlers-package: com.cartethyia.easyorange.framework.config.database, com.cartethyia.easyorange.user.adapter.outbound.persistence.typehandler
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    default-statement-timeout: 30
   global-config:
     db-config:
       logic-delete-field: delFlag
@@ -98,8 +137,6 @@ mybatis-plus:
     optimize-join: true
   optimistic-lock:
     enabled: true
-  configuration:
-    default-statement-timeout: 30
 
 logging:
   level:
@@ -179,7 +216,6 @@ easyorange:
         - "Password!1"
         - "Admin@123"
 
-easyorange:
   search:
     elasticsearch:
       enabled: false

@@ -36,6 +36,8 @@ message/
 │       ├── MessageQuery.java
 │       └── UnreadCountQuery.java
 ├── service/                           # [传统] 服务层 (待迁移到 application/service/)
+│   ├── config/
+│   │   └── MessageDomainServiceConfig.java # @Bean 方式注册领域服务（保持 domain 层纯净）
 │   ├── MessageArchiveService.java     # 消息归档定时服务
 │   ├── MessageSubscriptionService.java
 │   ├── MessageTemplateService.java
@@ -66,8 +68,10 @@ message/
 │   │   ├── MessageSubscriptionRepository.java
 │   │   └── MessageTemplateRepository.java
 │   ├── service/
-│   │   ├── MessageRoutingService.java
-│   │   └── OfflineMessageStoreService.java
+│   │   ├── MessageRoutingService.java        # 根据订阅偏好路由消息（在线推送/离线存储）
+│   │   ├── OfflineMessageStoreService.java   # 离线消息存储和重推
+│   │   ├── RateLimiterService.java           # 消息发送频率限制
+│   │   └── SensitiveWordFilterService.java   # 消息内容敏感词过滤
 │   ├── valueobject/
 │   │   ├── MessageContent.java
 │   │   ├── MessageContentFormat.java
@@ -132,7 +136,7 @@ message/
 2. 将 `entity/` 中的实体类拆分：聚合根 → `domain/aggregate/`，数据对象 → `adapter/outbound/persistence/`
 3. ~~将 `controller/` 迁移到 `adapter/inbound/web/controller/`~~ ✅ 已完成
 4. 将 `service/` 迁移到 `application/service/`
-5. 添加 `domain/port/output/` 端口接口
+5. 添加 `domain/port/` 端口接口
 
 ## 常见开发任务
 
