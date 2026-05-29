@@ -148,23 +148,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 - **事件基类**：所有领域事件继承 `common` 中的 `BaseDomainEvent`
 - **事件命名**：使用过去时态（UserRegistered、OrderPaid、PasswordChanged）
 - **事件内容**：仅包含必要 ID 和状态，不传输完整聚合
-- **事件发布** `[现状]`：应用服务通过领域语义的 Port 调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
-
-```java
-// 领域事件定义
-public class UserRegisteredEvent extends BaseDomainEvent {
-    private final Long userId;
-    private final String username;
-}
-
-// 应用服务中发布事件
-@Transactional(rollbackFor = Exception.class)
-public Long register(RegisterRequest request) {
-    // 业务逻辑
-    UserRegisteredEvent event = new UserRegisteredEvent(user.getId(), user.getUsername());
-    userEventPort.publishUserRegistered(event);
-}
-```
+- **事件发布**：应用服务直接调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
 
 `[现状]` 需要 Outbox 可靠投递的模块（如支付）直接使用 Framework 的 `OutboxRepository` 在业务事务内持久化事件，当前框架层不再提供统一的定时扫描发布。事件消费由各模块自行调度。
 
@@ -296,7 +280,7 @@ public class UserInfoAdapter implements UserInfoPort {
 - message 模块的 `domain/repository/` 中包含 MyBatis 实现类（`MybatisMessageRepository` 等）
 - product 模块的 `domain/repository/query/` 中包含 MyBatis 依赖
 - user 模块的 `domain/enums/` 使用了 MyBatis-Plus 的 `@EnumValue`/`IEnum` 注解
-- payment 模块的 `infrastructure/security/` 使用了 Spring 注解
+- payment 模块的 `adapter/outbound/security/` 使用了 Spring 注解
 
 > **演进目标** `[演进]`：逐步消除白名单条目，将所有违规代码迁移到正确的包结构中。优先处理 message 模块的仓储实现迁移。
 
@@ -452,7 +436,7 @@ public class RegistrationService {
 | 全局技术常量 | `common/constant` | CommonConstant |
 | 框架层常量 | `framework/constant` | LoginCacheConstants |
 | 模块业务错误码 | `domain/constant/*ResultCode` | UserResultCode、ProductResultCode |
-| 技术常量（Redis Key 等） | `adapter/outbound/cache/` 或 `infrastructure/cache/` | OrderCacheConstant、ProductCacheConstant |
+| 技术常量（Redis Key 等） | `adapter/outbound/cache/` | OrderCacheConstant、ProductCacheConstant |
 
 **包命名规范：**
 
@@ -527,7 +511,7 @@ throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 
 ### 1. 六边形架构（端口与适配器）
 
-- **输出端口**：定义依赖外部的接口（如仓储、事件发布、缓存），位于 `domain/port/output` 和 `domain/repository`
+- **输出端口**：定义依赖外部的接口（如仓储、事件发布、缓存），位于 `domain/port` 和 `domain/repository`
 - **入站适配器**：将外部请求（REST、MQ、Job）转换为内部调用，位于 `adapter/inbound`
 - **出站适配器**：将内部调用转换为外部实现（数据库、MQ、RPC），位于 `adapter/outbound`
 - **输入端口（可选）**：仅当有多个实现或需要解耦时定义，单实现时直接调用应用服务（YAGNI）
@@ -542,7 +526,7 @@ throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 
 ### 3. 依赖倒置原则（DIP）
 
-- 领域层定义端口接口（`domain/port/output/`、`domain/repository/`）
+- 领域层定义端口接口（`domain/port/`、`domain/repository/`）
 - 适配器层实现端口接口（`adapter/outbound/`）
 - 应用层通过端口接口与外部交互，不直接依赖具体实现
 

@@ -45,8 +45,7 @@ easy-orange/
 │   ├── src/features/auth/       # 认证模块 (TokenRefreshManager)
 │   └── src/hooks/ui/            # UI Hooks (useColumnCount 等)
 ├── doc/                         # 项目文档
-│   ├── 架构/                   # 架构规范文档（已切分为多个子文档）
-│   └── specs/                  # 功能设计规格文档
+│   └── 架构/                   # 架构规范文档（已切分为多个子文档）
 └── .trae/rules/                 # AI 编码规则
 ```
 
@@ -120,7 +119,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
 - **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
 - **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则用户端 Header/导航栏会在管理页面显示
-- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`）。**用户端** TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失。**管理端** (`src/admin/types/admin.ts`) 的 ID 字段使用 `number` 类型，因为管理端直接操作内部 Long 主键，不经过用户侧的序列化层
+- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`）。前端（用户端和管理端）TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失
 - **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
 - **管理员角色判断**: 判断用户是否为管理员必须使用 `ADMIN_USER_TYPE` 常量（位于 `src/constants/app.ts`），禁止硬编码 `'00'`。使用处包括 `AdminMenuEntry`、`useAdminGuard` 等
 - **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能
@@ -142,6 +141,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **前端 ESLint curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`
 - **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect
 - **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
+- **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）
+- **LoginCommand sealed interface**: 登录命令使用 `sealed interface LoginCommand`，新增登录方式必须添加新的 `record` 实现（如 `PasswordLogin(String account, String password)`、`SmsLogin(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式
 
 ---
 

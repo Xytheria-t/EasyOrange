@@ -37,7 +37,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 │  aggregate/: 聚合根                          │
 │  valueobject/: 值对象 (record / Immutables)  │
 │  event/: 领域事件                            │
-│  port/output/: 出站端口接口                  │
+│  port/: 出站端口接口                          │
 │  repository/: 仓储接口                       │
 │  service/: 领域服务                          │
 └─────────────────────────────────────────────┘
@@ -45,7 +45,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 
 **关键约束**：
 - `domain` 层禁止依赖 Spring 框架、MyBatis、Redis 等基础设施
-- `domain` 层通过 `port/output/` 接口与外部交互，由 `adapter/outbound/` 实现
+- `domain` 层通过 `port/` 接口与外部交互，由 `adapter/outbound/` 实现
 - `application` 层编排业务流程，事务边界在此层
 - `adapter/inbound/` 仅做参数校验和 DTO 转换，不含业务逻辑
 - **查询方法只读事务**: `application/service/` 和 `application/query/` 下的纯查询方法（find/get/list/query/count 等）**必须**标注 `@Transactional(readOnly = true)`；写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。这是项目级约定，所有模块（user/product/order/payment/message/favorite/admin）一致遵循
@@ -61,25 +61,14 @@ product、order、payment 模块使用 CQRS：
 
 ## 领域事件机制
 
-业务模块在 domain/port/output/ 下定义带领域语义的事件发布 Port（如 `UserEventPort`），adapter 层实现委派给框架的 `DomainEventPublisher`：
+应用服务直接注入 `DomainEventPublisher` 发布事件，框架层同步转发到 Spring EventBus：
 
 ```java
-// Port 定义（domain 层）
-public interface UserEventPort {
-    void publishUserRegistered(UserRegisteredEvent event);
-}
-
-// Adapter 实现（adapter 层）
-@Component
-public class UserEventPublisher implements UserEventPort {
-    private final DomainEventPublisher domainEventPublisher;
-    public void publishUserRegistered(UserRegisteredEvent event) {
-        domainEventPublisher.publish(event);
-    }
-}
+// 应用服务
+private final DomainEventPublisher eventPublisher;
+eventPublisher.publish(new SomeEvent(...));
 ```
 
-- 应用服务注入 Port 接口发布事件，不直接依赖 `DomainEventPublisher`
 - `DomainEventPublisher`（common/event/）同步发布到 Spring EventBus
 - 监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")`
 - 需要 Outbox 可靠投递的模块（如支付）通过 `framework/outbox/` 在业务事务内持久化事件
@@ -89,16 +78,13 @@ public class UserEventPublisher implements UserEventPort {
 **当前状态 (2026-05-09)**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。
 
 **隔离方式**：
-- 调用方模块定义 `domain/port/output/` 接口（如 `ProductInventoryPort`）
+- 调用方模块定义 `domain/port/` 接口（如 `ProductInventoryPort`）
 - 适配器实现在 `easyorange-application/adapter/outbound/` 包下
 - Maven 依赖标记为 `<optional>true</optional>` 实现编译期隔离
 
 **事件驱动**：
 - 写操作通过领域事件解耦（如 `PaymentInitiationRequestedEvent`、`StockReservationRequestedEvent`）
-- 事件监听器在 `easyorange-application/adapter/event/` 包下
-- 使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式
-- `DomainEventPublisher`（common/event/）同步发布，`DomainEventPublisherImpl` 转发到 Spring EventBus
-- 需要 Outbox 可靠投递的模块（如支付）通过 `framework/outbox/` 存储在业务事务内持久化事件
+- 事件监听器在 `easyorange-application/adapter/event/` 包下（机制与第 3 节"领域事件"一致）
 
 **查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
 
@@ -125,7 +111,7 @@ PageResult.of(records, total, page, size)
 |------|------|------|
 | 聚合根 | 名词 | `User`, `Product`, `OrderAggregate` |
 | 值对象 | 名词 (record) | `ProductId`, `Money`, `StockQuantity` |
-| 领域事件 | `*Event` | `UserRegisteredEvent` |
+| 领域事件 | `*Event` | `OrderCreatedEvent` |
 | 领域服务 | `*Service` | `AuthenticationService` |
 | 应用服务 | `*AppService` / `*CommandHandler` | `RegisterAppService`, `ProfileAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
@@ -174,15 +160,19 @@ public class BaseDO {
 - 开发数据: `db/dev/R__insert_dev_test_data.sql`
 - 禁止修改已执行的迁移脚本
 - 新增字段必须可空或有默认值
+- DDL 迁移中 DROP INDEX / ADD INDEX 使用 MySQL 8.0 原生 DDL（非阻塞 INPLACE 算法），允许生产环境在线执行
 
 ## 安全要点
 
 - JWT 双 Token: Access Token (短期) + Refresh Token (长期)
 - 密码: BCrypt 加密存储
-- 限流: `@RateLimiter` (Redis + Lua 滑动窗口)
-- 防重: `@RepeatSubmit`
+- 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）
+- 防重: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash 防误判，Redis 不可用时放行
+- 操作日志: 约定式自动记录所有写操作 (@Order 3), 无需注解
 - XSS: `XssFilter` + `XssHttpServletRequestWrapper`
 - CORS: 生产环境严格白名单
+
+Filter 执行顺序: RateLimitFilter(0) → JwtAuthenticationFilter → XssFilter → OperLogAspect(AOP @Order 3)
 
 ## 不可变集合约定
 
@@ -285,11 +275,52 @@ public class PasswordEncoderAdapter implements PasswordEncoderPort {
 
 **实际上运行时只有 1 个 bean**（MapStruct 生成的实现类），`@MapperScan(annotationClass = org.apache.ibatis.annotations.Mapper.class)` 不会注册 MapStruct 接口。
 
-**修复方式**：在注入字段上加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`：
+**修复方式**：按注入类型选择对应方式：
 
-```java
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-private final UserEntityMapper entityMapper;
+- **构造器注入（推荐）**：参数上加 `@Qualifier("xxxImpl")`，跨 IntelliJ 版本更可靠
+  ```java
+  public UserRepositoryImpl(UserMapper userMapper,
+                            @Qualifier("userEntityMapperImpl") UserEntityMapper entityMapper) {
+  ```
+- **字段注入**：字段上加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`
+  ```java
+  @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+  private final UserEntityMapper entityMapper;
+  ```
+
+`@Qualifier` 方式对构造器注入有效，IntelliJ 在参数上直接识别 bean 名称，不依赖 inspection ID。
+
+当前已修复（全项目所有 MapStruct Mapper 注入点均已覆盖）：
+- `UserEntityMapper` → UserRepositoryImpl（构造器注入，`@Qualifier`）
+- `UserAssembler` → LoginAppService, ProfileAppService（字段注入，`@SuppressWarnings`）
+- `PaymentDataMapper` → MybatisPaymentRepository（字段注入，`@SuppressWarnings`）
+- `PaymentCommandMapper` → PaymentCommandController（字段注入，`@SuppressWarnings`）
+- `MessageDataMapper` → MybatisMessageRepository, MybatisMessageTemplateRepository, MybatisMessageSubscriptionRepository, MybatisOfflineMessageRepository, MybatisMessageQueryRepository（字段注入，`@SuppressWarnings`）
+- `OutboxMessageMapper` → OutboxRepository（构造器注入，`@SuppressWarnings`）
+
+新增 MapStruct mapper 后按此方式处理即可。
+
+### MyBatis SQL 注入：禁止在 @Select 中使用 ${} 拼接 IN 列表
+
+`CategoryMapper.countProductsByCategoryIds` 曾使用 `IN (${ids})` 拼接逗号分隔字符串，存在 SQL 注入风险且阻止查询计划缓存。
+
+**已修复（2026-05-25）**：改用 `<script>` + `<foreach item='id' collection='categoryIds' ...>#{id}</foreach>` + `List<Long>` 参数类型。
+
+**注意**：新增 Mapper 的 IN 列表查询必须使用 `<foreach>` + `#{}` 参数化方式，禁止 `String` 类型的括号内 JSON/CSV 拼接。
+
+### JDK 25 + Lombok Unsafe 终端弃用警告
+
+启动或编译时出现以下警告，原因是 Lombok 的 `lombok.permit.Permit` 内部使用了 `sun.misc.Unsafe::objectFieldOffset`（JDK 23 起被标记为 terminally deprecated）：
+
+```
+WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Permit
 ```
 
-当前已修复：`UserEntityMapper`（UserRepositoryImpl）、`UserAssembler`（LoginAppService / ProfileAppService）。新增 MapStruct mapper 后按此方式处理即可。
+**根因**：JDK 25 默认开启 `--sun-misc-unsafe-memory-access=warn`（JEP 498），调用已弃用的 Unsafe 方法时打印警告。Lombok 1.18.46（当前最新版）仍使用 Unsafe，尚在迁移中。
+
+**已生效的解决方案**：
+1. 编译阶段：项目根 `.mvn/jvm.config` 已配置 `--sun-misc-unsafe-memory-access=allow`，Maven 构建时自动加载
+2. 运行阶段：启动命令（alias `eobe`、`spring-boot-maven-plugin` 的 `jvmArguments`）均已包含该 flag
+
+**未来**：JDK 26+ 该 flag 默认值将变为 `deny`（抛出异常），届时需升级兼容 JDK 26 的 Lombok 版本。

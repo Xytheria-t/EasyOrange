@@ -15,11 +15,12 @@
 
 ## 表总览
 
-共 26 张业务表，按业务模块划分：
+共 28 张业务表，按业务模块划分：
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
 | 用户 | eo_user | 用户信息 | UserEntity |
+| 用户 | eo_user_credit | 用户信用评分 | UserCreditDO |
 | 商品 | eo_category | 商品分类（两级树） | CategoryDO |
 | 商品 | eo_product | 商品信息 | ProductDO |
 | 商品 | eo_product_detail | 商品详情（1:1） | ProductDetailDO |
@@ -27,10 +28,12 @@
 | 商品 | eo_product_audit_log | 商品审核记录 | — |
 | 商品 | eo_product_review | 商品评价 | ProductReviewDO |
 | 商品 | eo_product_report | 商品举报 | ProductReportDO |
+| 商品 | eo_report_handle_history | 举报处理历史 | ReportHandleHistoryDO |
 | 商品 | eo_favorite | 用户收藏 | FavoriteDO |
 | 搜索 | eo_search_history | 搜索历史 | SearchHistoryDO |
 | 搜索 | eo_hot_keyword | 热门关键词 | HotKeywordDO |
 | 订单 | eo_order | 订单 | OrderDO |
+| 订单 | eo_order_item | 订单行项 | OrderItemDO |
 | 支付 | eo_payment | 支付记录 | PaymentPO |
 | 支付 | eo_payment_config | 支付渠道配置 | PaymentConfigPO |
 | 消息 | eo_message | 消息 | Message |
@@ -98,11 +101,40 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | uk_eo_user_email | UNIQUE | email |
 | uk_eo_user_phone | UNIQUE | phonenumber |
 | uk_eo_user_student_id | UNIQUE | student_id |
-| idx_eo_user_create_time | KEY | create_time |
 | idx_eo_user_status_del | KEY | status, del_flag, create_time DESC |
 | idx_eo_user_type_status | KEY | user_type, status, del_flag |
 
 **CHECK 约束**：status IN (0,1,2), sex IN (0,1,2), user_type IN ('01','02')
+
+---
+
+### eo_user_credit — 用户信用评分表
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | BIGINT | PK | 主键 ID |
+| user_id | BIGINT | NOT NULL, UK | 用户 ID |
+| credit_score | INT | NOT NULL DEFAULT 100 | 信用评分（0-200） |
+| level | VARCHAR(20) | NOT NULL DEFAULT 'NORMAL' | 信用等级（EXCELLENT / GOOD / NORMAL / LOW / BLACKLIST） |
+| total_trades | INT | NOT NULL DEFAULT 0 | 总交易数 |
+| completed_trades | INT | NOT NULL DEFAULT 0 | 已完成交易数 |
+| cancelled_trades | INT | NOT NULL DEFAULT 0 | 已取消交易数 |
+| total_reports | INT | NOT NULL DEFAULT 0 | 总举报数 |
+| confirmed_reports | INT | NOT NULL DEFAULT 0 | 已确认举报数 |
+| review_avg_rating | DECIMAL(3,2) | | 评价平均分 |
+| last_updated | DATETIME | | 最后评分更新时间 |
+| + 公共字段 | | | |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| uk_eo_user_credit_user_id | UNIQUE | user_id |
+| idx_eo_user_credit_score | KEY | credit_score |
+| idx_eo_user_credit_level | KEY | level |
+| idx_eo_user_credit_last_updated | KEY | last_updated |
+
+**CHECK 约束**：credit_score 0-200, total_trades>=0, completed_trades>=0, cancelled_trades>=0, total_reports>=0, confirmed_reports>=0
 
 ---
 
@@ -167,10 +199,11 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 | 名称 | 类型 | 列 |
 |------|------|----|
-| idx_eo_product_user_time | KEY | user_id, del_flag, create_time DESC |
 | idx_eo_product_category_status_time | KEY | category_id, status, del_flag, create_time DESC |
 | idx_eo_product_search | KEY | status, del_flag, category_id, create_time DESC |
 | idx_eo_product_status_del_price | KEY | status, del_flag, price |
+| idx_eo_product_status_del_view | KEY | status, del_flag, view_count DESC |
+| idx_eo_product_status_del_create_time | KEY | status, del_flag, create_time DESC |
 | idx_eo_product_user_status_del | KEY | user_id, status, del_flag, create_time DESC |
 | ft_eo_product_name | FULLTEXT(ngram) | name |
 | ft_eo_product_search_text | FULLTEXT(ngram) | search_text |
@@ -253,9 +286,8 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | 名称 | 类型 | 列 |
 |------|------|----|
 | uk_eo_product_review_user_order | UNIQUE | user_id, order_id |
-| idx_eo_product_review_product_id | KEY | product_id |
 | idx_eo_product_review_order_id | KEY | order_id |
-| idx_eo_product_review_create_time | KEY | create_time DESC |
+| idx_eo_product_review_product_status_del_time | KEY | product_id, status, del_flag, create_time DESC |
 
 **CHECK 约束**：rating 1-5, status IN (0,1,2), likes>=0
 
@@ -282,6 +314,26 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | idx_eo_product_report_product_id | KEY | product_id |
 | idx_eo_product_report_reporter_id | KEY | reporter_id |
 | idx_eo_product_report_status_time | KEY | status, create_time DESC |
+
+---
+
+### eo_report_handle_history — 举报处理历史表
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | BIGINT | PK | 主键 ID |
+| report_id | BIGINT | NOT NULL | 举报 ID |
+| operator_id | BIGINT | NOT NULL | 操作人 ID |
+| action | VARCHAR(30) | NOT NULL | 动作类型（IGNORE / PRODUCT_OFFLINE / WARN_SENDER / BAN_PRODUCT） |
+| remark | VARCHAR(500) | | 备注 |
+| + 公共字段 | | | |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| idx_eo_report_handle_history_report_id | KEY | report_id |
+| idx_eo_report_handle_history_operator_id | KEY | operator_id |
 
 ---
 
@@ -346,7 +398,32 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 10. eo_order — 订单表
+### 10. eo_order_item — 订单行项表
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | BIGINT | PK | 主键 ID |
+| order_id | BIGINT | NOT NULL | 所属订单 ID |
+| product_id | BIGINT | NOT NULL | 商品 ID |
+| product_snapshot | JSON | | 下单时商品快照 |
+| unit_price | DECIMAL(10,2) | NOT NULL | 单价 |
+| quantity | INT | NOT NULL DEFAULT 1 | 数量 |
+| subtotal | DECIMAL(10,2) | NOT NULL | 小计金额 |
+| + 公共字段 | | | |
+
+**索引**：
+
+| 名称 | 类型 | 列 |
+|------|------|----|
+| idx_eo_order_item_order_id | KEY | order_id |
+| idx_eo_order_item_product_id | KEY | product_id |
+| idx_eo_order_item_create_time | KEY | create_time DESC |
+
+**CHECK 约束**：unit_price>=0, quantity>0, subtotal>=0, subtotal=unit_price*quantity
+
+---
+
+### 11. eo_order — 订单表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -354,8 +431,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | order_no | VARCHAR(64) | NOT NULL, UK | 订单号 |
 | buyer_id | BIGINT | NOT NULL | 买家 ID |
 | seller_id | BIGINT | NOT NULL | 卖家 ID |
-| product_id | BIGINT | NOT NULL | 商品 ID |
-| amount | DECIMAL(10,2) | NOT NULL | 订单金额 |
+| total_amount | DECIMAL(10,2) | NOT NULL | 订单总金额（行项总和） |
 | status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 待付款 / 1 待发货 / 2 待收货 / 3 已完成 / 4 已取消 / 5 已退款） |
 | payment_status | TINYINT | NOT NULL DEFAULT 0 | 支付状态（0 未支付 / 1 已支付 / 2 已退款） |
 | address | VARCHAR(500) | | 收货地址 |
@@ -372,12 +448,9 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | uk_eo_order_order_no | UNIQUE | order_no |
 | idx_eo_order_buyer_status_time | KEY | buyer_id, status, del_flag, create_time DESC |
 | idx_eo_order_seller_status_time | KEY | seller_id, status, del_flag, create_time DESC |
-| idx_eo_order_product_id | KEY | product_id |
-| idx_eo_order_product_del | KEY | product_id, del_flag |
-| idx_eo_order_payment_status | KEY | payment_status |
 | idx_eo_order_status_payment | KEY | status, payment_status, create_time DESC |
 
-**CHECK 约束**：amount>=0, status IN (0,1,2,3,4,5), payment_status IN (0,1,2)
+**CHECK 约束**：total_amount>=0, status IN (0,1,2,3,4,5), payment_status IN (0,1,2)
 
 **状态流转**：
 
@@ -414,7 +487,6 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | uk_eo_payment_payment_no | UNIQUE | payment_no |
 | uk_eo_payment_transaction_id | UNIQUE | transaction_id |
 | idx_eo_payment_order_id | KEY | order_id |
-| idx_eo_payment_user_time | KEY | user_id, create_time DESC |
 | idx_eo_payment_status_method | KEY | status, payment_method, create_time DESC |
 | idx_eo_payment_user_status | KEY | user_id, status, create_time DESC |
 
@@ -462,7 +534,7 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | 名称 | 类型 | 列 |
 |------|------|----|
 | idx_eo_message_sender_time | KEY | sender_id, create_time DESC |
-| idx_eo_message_receiver_read_time | KEY | receiver_id, is_read, del_flag, create_time DESC |
+| idx_eo_message_receiver_read_type_del_time | KEY | receiver_id, is_read, del_flag, type, create_time DESC |
 | idx_eo_message_business_id | KEY | business_id |
 | idx_eo_message_conversation_time | KEY | conversation_id, create_time DESC |
 
@@ -490,7 +562,6 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 | 名称 | 类型 | 列 |
 |------|------|----|
 | uk_eo_message_subscription_user_type_channel | UNIQUE | user_id, message_type, push_channel |
-| idx_eo_message_subscription_user | KEY | user_id |
 
 ---
 
@@ -715,13 +786,16 @@ eo_user ──1:N── eo_product (user_id)
               ├──1:1── eo_product_detail (product_id)
               ├──1:N── eo_product_review (product_id)
               ├──1:N── eo_product_report (product_id)
+              │   └──1:N── eo_report_handle_history (report_id)
               └──1:N── eo_favorite (user_id + product_id)
 
 eo_category ──1:N── eo_product (category_id)
     └──自引用── eo_category (parent_id)
 
 eo_user ──1:N── eo_order (buyer_id / seller_id)
-eo_product ──1:1── eo_order (product_id)
+eo_user ──1:1── eo_user_credit (user_id)
+eo_order ──1:N── eo_order_item (order_id)
+eo_product ──1:N── eo_order_item (product_id)
 eo_order ──1:1── eo_payment (order_id)
 eo_order ──1:N── eo_product_review (order_id)
 

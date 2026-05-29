@@ -30,7 +30,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          cpus: '2'
+          memory: 1G
 
   redis:
     image: redis:7.4-alpine
@@ -51,7 +52,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
+          cpus: '1'
+          memory: 512M
 
   elasticsearch:
     build: ./docker/elasticsearch

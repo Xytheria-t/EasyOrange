@@ -3,11 +3,11 @@
 > 让闲置流转，让价值延续 —— 安全、便捷、环保的校园交易体验
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-25-orange.svg)](https://openjdk.java.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue.svg)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-8-purple.svg)](https://vitejs.dev/)
+[![Java](https://img.shields.io/badge/Java-25-ED8B00)](https://openjdk.java.net/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-6DB33F)](https://spring.io/projects/spring-boot)
+[![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-8-646CFF)](https://vitejs.dev/)
 
 ## 项目简介
 
@@ -498,7 +498,7 @@ npm test
 # 监听模式
 npm run test:watch
 
-# 覆盖率报告（当前 ~42%）
+# 覆盖率报告
 npm run test:coverage
 
 # E2E 测试（42 个用例，需先启动 dev server）
