@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.AdminUserQueryRequest;
@@ -17,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 public class AdminUserService {
 
     private final UserMapper userMapper;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public PageResult<AdminUserResponse> listUsers(AdminUserQueryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
@@ -48,10 +47,7 @@ public class AdminUserService {
         }
 
         if (StringUtils.hasText(request.getUserType())) {
-            UserType userType = UserType.fromCode(request.getUserType());
-            if (userType != null) {
-                wrapper.eq(UserEntity::getUserType, userType);
-            }
+            wrapper.eq(UserEntity::getUserType, UserType.fromCode(request.getUserType()));
         }
 
         if (StringUtils.hasText(request.getStatus())) {
@@ -61,7 +57,7 @@ public class AdminUserService {
 
         if (StringUtils.hasText(request.getStartTime())) {
             try {
-                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", DATE_FORMATTER);
+                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", BatchQueryUtil.DATE_FORMATTER);
                 wrapper.ge(UserEntity::getCreateTime, startTime);
             } catch (Exception ignored) {
             }
@@ -69,7 +65,7 @@ public class AdminUserService {
 
         if (StringUtils.hasText(request.getEndTime())) {
             try {
-                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", DATE_FORMATTER);
+                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", BatchQueryUtil.DATE_FORMATTER);
                 wrapper.le(UserEntity::getCreateTime, endTime);
             } catch (Exception ignored) {
             }

@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
 import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
-import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;

@@ -6,14 +6,13 @@ import com.cartethyia.easyorange.admin.dto.request.AdminReviewDeleteRequest;
 import com.cartethyia.easyorange.admin.dto.request.AdminReviewQueryRequest;
 import com.cartethyia.easyorange.admin.dto.response.AdminReviewResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,10 +39,7 @@ class AdminReviewServiceTest {
     private ProductReviewMapper reviewMapper;
 
     @Mock
-    private ProductMapper productMapper;
-
-    @Mock
-    private UserMapper userMapper;
+    private BatchQueryUtil batchQueryUtil;
 
     @InjectMocks
     private AdminReviewService reviewService;
@@ -107,8 +104,8 @@ class AdminReviewServiceTest {
             pageResult.setRecords(List.of(review));
 
             when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(pageResult);
-            when(productMapper.selectBatchIds(anySet())).thenReturn(List.of(createProduct(PRODUCT_ID, "测试商品")));
-            when(userMapper.selectBatchIds(anySet())).thenReturn(List.of(createUser(USER_ID, "testuser", "测试用户")));
+            when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, createProduct(PRODUCT_ID, "测试商品")));
+            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
 
             PageResult<AdminReviewResponse> result = reviewService.listReviews(request);
 
@@ -152,8 +149,8 @@ class AdminReviewServiceTest {
             ProductReviewDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 4, "还不错", 0);
 
             when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
-            when(productMapper.selectBatchIds(anySet())).thenReturn(List.of(createProduct(PRODUCT_ID, "测试商品")));
-            when(userMapper.selectBatchIds(anySet())).thenReturn(List.of(createUser(USER_ID, "testuser", "测试用户")));
+            when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, createProduct(PRODUCT_ID, "测试商品")));
+            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
 
             AdminReviewResponse result = reviewService.getReviewDetail(REVIEW_ID);
 

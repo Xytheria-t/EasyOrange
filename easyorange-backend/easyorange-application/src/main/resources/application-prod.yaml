@@ -100,6 +100,36 @@ server:
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
     min-response-size: 1024
 
+# -------------------------------------------------------------------
+# 限流配置 - 生产环境使用更严格的阈值
+# -------------------------------------------------------------------
+rate-limit-filter:
+  enabled: true
+  rules:
+    - path-pattern: /api/products
+      method: GET
+      strategy: local
+      max-requests: 100
+      window-seconds: 60
+    - path-pattern: /api/products/{id}
+      method: GET
+      strategy: local
+      max-requests: 100
+      window-seconds: 60
+    - path-pattern: /api/products/categories/**
+      method: GET
+      strategy: local
+      max-requests: 100
+      window-seconds: 60
+    - path-pattern: /api/**
+      method: [POST, PUT, DELETE, PATCH]
+      strategy: redis
+      max-requests: 20
+      window-seconds: 60
+  repeat-submit:
+    enabled: true
+    interval-ms: 3000
+
 security:
   ignore-paths:
     - /api/auth/login

@@ -16,7 +16,7 @@ import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,8 +34,8 @@ public class AdminReportService {
 
     private final ProductReportRepository productReportRepository;
     private final ReportHandleHistoryRepository reportHandleHistoryRepository;
-    private final UserMapper userMapper;
     private final ProductMapper productMapper;
+    private final BatchQueryUtil batchQueryUtil;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
@@ -45,8 +45,8 @@ public class AdminReportService {
 
         PageResult<ProductReport> reportPage = productReportRepository.findByStatus(status, page, size);
 
-        Map<Long, UserEntity> userMap = batchGetUsers(reportPage.records());
-        Map<Long, ProductDO> productMap = batchGetProducts(reportPage.records());
+        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
+        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
 
         List<AdminReportResponse> records = reportPage.records().stream()
             .map(r -> toAdminReportResponse(r, userMap, productMap))
@@ -62,8 +62,8 @@ public class AdminReportService {
             throw BusinessException.of("举报记录不存在");
         }
 
-        Map<Long, UserEntity> userMap = batchGetUsers(List.of(report));
-        Map<Long, ProductDO> productMap = batchGetProducts(List.of(report));
+        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
+        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(report.getProductId()));
 
         return toAdminReportResponse(report, userMap, productMap);
     }
@@ -79,7 +79,7 @@ public class AdminReportService {
     public List<ReportHandleHistoryResponse> getReportHistory(Long reportId) {
         List<ReportHandleHistory> histories = reportHandleHistoryRepository.findByReportId(reportId);
 
-        Map<Long, UserEntity> operatorMap = batchGetOperators(histories);
+        Map<Long, UserEntity> operatorMap = batchQueryUtil.batchGetUsers(histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
 
         return histories.stream()
             .map(h -> toHistoryResponse(h, operatorMap))
@@ -204,41 +204,6 @@ public class AdminReportService {
         }
     }
 
-    private Map<Long, UserEntity> batchGetUsers(List<ProductReport> reports) {
-        List<Long> userIds = reports.stream()
-            .map(ProductReport::getReporterId)
-            .distinct()
-            .collect(Collectors.toList());
-        if (userIds.isEmpty()) {
-            return Map.of();
-        }
-        List<UserEntity> users = userMapper.selectBatchIds(userIds);
-        return users.stream().collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
-    }
-
-    private Map<Long, UserEntity> batchGetOperators(List<ReportHandleHistory> histories) {
-        List<Long> operatorIds = histories.stream()
-            .map(ReportHandleHistory::getOperatorId)
-            .distinct()
-            .collect(Collectors.toList());
-        if (operatorIds.isEmpty()) {
-            return Map.of();
-        }
-        List<UserEntity> users = userMapper.selectBatchIds(operatorIds);
-        return users.stream().collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
-    }
-
-    private Map<Long, ProductDO> batchGetProducts(List<ProductReport> reports) {
-        List<Long> productIds = reports.stream()
-            .map(ProductReport::getProductId)
-            .distinct()
-            .collect(Collectors.toList());
-        if (productIds.isEmpty()) {
-            return Map.of();
-        }
-        List<ProductDO> products = productMapper.selectBatchIds(productIds);
-        return products.stream().collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
-    }
 
     private AdminReportResponse toAdminReportResponse(
         ProductReport report,

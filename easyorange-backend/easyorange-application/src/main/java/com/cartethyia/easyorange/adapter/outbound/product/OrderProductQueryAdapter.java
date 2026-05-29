@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
-import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import lombok.RequiredArgsConstructor;

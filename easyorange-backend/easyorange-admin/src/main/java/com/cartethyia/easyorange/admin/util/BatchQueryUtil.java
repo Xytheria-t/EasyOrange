@@ -1,0 +1,35 @@
+package com.cartethyia.easyorange.admin.util;
+
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Component
+@RequiredArgsConstructor
+public class BatchQueryUtil {
+
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private final UserMapper userMapper;
+    private final ProductMapper productMapper;
+
+    public Map<Long, UserEntity> batchGetUsers(List<Long> userIds) {
+        if (userIds.isEmpty()) return Map.of();
+        return userMapper.selectBatchIds(userIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
+    }
+
+    public Map<Long, ProductDO> batchGetProducts(List<Long> productIds) {
+        if (productIds.isEmpty()) return Map.of();
+        return productMapper.selectBatchIds(productIds).stream()
+                .collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
+    }
+}

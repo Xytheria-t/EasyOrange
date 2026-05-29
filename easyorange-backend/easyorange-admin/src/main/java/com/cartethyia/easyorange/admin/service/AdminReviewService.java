@@ -11,10 +11,9 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,7 +22,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,8 +30,7 @@ import java.util.stream.Collectors;
 public class AdminReviewService {
 
     private final ProductReviewMapper reviewMapper;
-    private final ProductMapper productMapper;
-    private final UserMapper userMapper;
+    private final BatchQueryUtil batchQueryUtil;
 
     @Transactional(readOnly = true)
     public PageResult<AdminReviewResponse> listReviews(AdminReviewQueryRequest request) {
@@ -49,8 +46,8 @@ public class AdminReviewService {
             return PageResult.empty(pageNum, pageSize);
         }
 
-        Map<Long, ProductDO> productMap = batchGetProducts(reviewPage.getRecords());
-        Map<Long, UserEntity> userMap = batchGetUsers(reviewPage.getRecords());
+        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(reviewPage.getRecords().stream().map(ProductReviewDO::getProductId).distinct().toList());
+        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(reviewPage.getRecords().stream().map(ProductReviewDO::getUserId).distinct().toList());
 
         List<AdminReviewResponse> records = reviewPage.getRecords().stream()
             .map(r -> toAdminReviewResponse(r, productMap, userMap))
@@ -66,8 +63,8 @@ public class AdminReviewService {
             throw BusinessException.of("评价不存在");
         }
 
-        Map<Long, ProductDO> productMap = batchGetProducts(List.of(review));
-        Map<Long, UserEntity> userMap = batchGetUsers(List.of(review));
+        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(review.getProductId()));
+        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(review.getUserId()));
 
         return toAdminReviewResponse(review, productMap, userMap);
     }
@@ -148,25 +145,4 @@ public class AdminReviewService {
         return user.getNickName() != null ? user.getNickName() : user.getUsername();
     }
 
-    private Map<Long, ProductDO> batchGetProducts(List<ProductReviewDO> reviews) {
-        Set<Long> productIds = reviews.stream()
-            .map(ProductReviewDO::getProductId)
-            .collect(Collectors.toSet());
-        if (productIds.isEmpty()) {
-            return Map.of();
-        }
-        List<ProductDO> products = productMapper.selectBatchIds(productIds);
-        return products.stream().collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
-    }
-
-    private Map<Long, UserEntity> batchGetUsers(List<ProductReviewDO> reviews) {
-        Set<Long> userIds = reviews.stream()
-            .map(ProductReviewDO::getUserId)
-            .collect(Collectors.toSet());
-        if (userIds.isEmpty()) {
-            return Map.of();
-        }
-        List<UserEntity> users = userMapper.selectBatchIds(userIds);
-        return users.stream().collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
-    }
 }

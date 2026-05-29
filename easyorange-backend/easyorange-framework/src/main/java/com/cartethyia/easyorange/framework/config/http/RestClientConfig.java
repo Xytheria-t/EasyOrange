@@ -28,8 +28,10 @@ public class RestClientConfig {
     }
 
     @Bean
-    public JdkClientHttpRequestFactory requestFactory(HttpClient httpClient) {
-        return new JdkClientHttpRequestFactory(httpClient);
+    public JdkClientHttpRequestFactory requestFactory(HttpClient httpClient, HttpClientProperties properties) {
+        var factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(properties.getReadTimeout());
+        return factory;
     }
 
     @Bean

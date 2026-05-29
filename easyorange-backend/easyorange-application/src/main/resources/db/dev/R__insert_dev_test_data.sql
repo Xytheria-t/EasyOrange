@@ -343,33 +343,59 @@ ON DUPLICATE KEY UPDATE
 -- ===================================================================
 
 INSERT INTO `eo_order` (
-    `id`, `order_no`, `buyer_id`, `seller_id`, `product_id`, `amount`,
+    `id`, `order_no`, `buyer_id`, `seller_id`, `total_amount`,
     `status`, `payment_status`, `address`, `phone`, `remark`,
     `create_time`, `update_time`
 ) VALUES
 -- 已完成订单
-(1, 'ORD20260101001', 3, 1, 1,  5999.00, 3, 1, '东校区3号楼302室', '13800138003', '请中午送达', NOW() - INTERVAL 60 DAY, NOW() - INTERVAL 58 DAY),
-(2, 'ORD20260102001', 4, 1, 8,  1299.00, 3, 1, '南校区7号楼518室', '13800138004', '',             NOW() - INTERVAL 55 DAY, NOW() - INTERVAL 53 DAY),
-(3, 'ORD20260105001', 5, 3, 2,  4599.00, 3, 1, '西校区1号楼205室', '13800138005', '周末自取',     NOW() - INTERVAL 50 DAY, NOW() - INTERVAL 48 DAY),
+(1, 'ORD20260101001', 3, 1, 5999.00, 3, 1, '东校区3号楼302室', '13800138003', '请中午送达', NOW() - INTERVAL 60 DAY, NOW() - INTERVAL 58 DAY),
+(2, 'ORD20260102001', 4, 1, 1299.00, 3, 1, '南校区7号楼518室', '13800138004', '',             NOW() - INTERVAL 55 DAY, NOW() - INTERVAL 53 DAY),
+(3, 'ORD20260105001', 5, 3, 4599.00, 3, 1, '西校区1号楼205室', '13800138005', '周末自取',     NOW() - INTERVAL 50 DAY, NOW() - INTERVAL 48 DAY),
 -- 待付款订单
-(4, 'ORD20260201001', 6, 1, 5,  6499.00, 0, 0, '北校区2号楼410室', '13800138006', '',             NOW() - INTERVAL 1 DAY, NOW()),
+(4, 'ORD20260201001', 6, 1, 6499.00, 0, 0, '北校区2号楼410室', '13800138006', '',             NOW() - INTERVAL 1 DAY, NOW()),
 -- 待发货订单
-(5, 'ORD20260202001', 7, 5, 3,  3999.00, 1, 1, '东校区5号楼601室', '13800138007', '尽快发货',     NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 1 DAY),
+(5, 'ORD20260202001', 7, 5, 3999.00, 1, 1, '东校区5号楼601室', '13800138007', '尽快发货',     NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 1 DAY),
 -- 待收货订单
-(6, 'ORD20260203001', 8, 6, 9,  1599.00, 2, 1, '南校区9号楼303室', '13800138008', '',             NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
+(6, 'ORD20260203001', 8, 6, 1599.00, 2, 1, '南校区9号楼303室', '13800138008', '',             NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
 -- 已取消订单
-(7, 'ORD20260110001', 3, 7, 6,  5299.00, 4, 0, '西校区3号楼108室', '13800138003', '',             NOW() - INTERVAL 40 DAY, NOW() - INTERVAL 39 DAY),
+(7, 'ORD20260110001', 3, 7, 5299.00, 4, 0, '西校区3号楼108室', '13800138003', '',             NOW() - INTERVAL 40 DAY, NOW() - INTERVAL 39 DAY),
 -- 已退款订单
-(8, 'ORD20260115001', 4, 3, 18, 35.00,   5, 2, '东校区3号楼302室', '13800138004', '书本有缺页',   NOW() - INTERVAL 35 DAY, NOW() - INTERVAL 33 DAY),
+(8, 'ORD20260115001', 4, 3, 35.00,   5, 2, '东校区3号楼302室', '13800138004', '书本有缺页',   NOW() - INTERVAL 35 DAY, NOW() - INTERVAL 33 DAY),
 -- 更多已完成订单
-(9, 'ORD20260120001', 5, 1, 11, 299.00,  3, 1, '北校区2号楼410室', '13800138005', '',             NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 28 DAY),
-(10,'ORD20260125001', 6, 4, 24, 899.00,  3, 1, '南校区7号楼518室', '13800138006', '试穿后确认',   NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 23 DAY),
-(11,'ORD20260204001', 3, 5, 13, 1599.00, 3, 1, '东校区5号楼601室', '13800138003', '',             NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 8 DAY),
-(12,'ORD20260205001', 8, 7, 38, 289.00,  3, 1, '南校区9号楼303室', '13800138008', '',             NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY)
+(9, 'ORD20260120001', 5, 1, 299.00,  3, 1, '北校区2号楼410室', '13800138005', '',             NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 28 DAY),
+(10,'ORD20260125001', 6, 4, 899.00,  3, 1, '南校区7号楼518室', '13800138006', '试穿后确认',   NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 23 DAY),
+(11,'ORD20260204001', 3, 5, 1599.00, 3, 1, '东校区5号楼601室', '13800138003', '',             NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 8 DAY),
+(12,'ORD20260205001', 8, 7, 289.00,  3, 1, '南校区9号楼303室', '13800138008', '',             NOW() - INTERVAL 7 DAY, NOW() - INTERVAL 5 DAY)
 AS new
 ON DUPLICATE KEY UPDATE
     `status` = new.`status`,
     `payment_status` = new.`payment_status`,
+    `update_time` = new.`update_time`;
+
+-- ===================================================================
+-- 7.5 订单行项数据（与 eo_order 一一对应，关联商品和价格）
+-- ===================================================================
+INSERT INTO `eo_order_item` (
+    `id`, `order_id`, `product_id`, `product_snapshot`, `unit_price`, `quantity`, `subtotal`,
+    `create_time`, `update_time`, `del_flag`, `version`
+) VALUES
+(100, 1,  1,  '{}', 5999.00, 1, 5999.00, NOW() - INTERVAL 60 DAY, NOW() - INTERVAL 58 DAY, 0, 1),
+(200, 2,  8,  '{}', 1299.00, 1, 1299.00, NOW() - INTERVAL 55 DAY, NOW() - INTERVAL 53 DAY, 0, 1),
+(300, 3,  2,  '{}', 4599.00, 1, 4599.00, NOW() - INTERVAL 50 DAY, NOW() - INTERVAL 48 DAY, 0, 1),
+(400, 4,  5,  '{}', 6499.00, 1, 6499.00, NOW() - INTERVAL 1 DAY,  NOW(),                    0, 1),
+(500, 5,  3,  '{}', 3999.00, 1, 3999.00, NOW() - INTERVAL 2 DAY,  NOW() - INTERVAL 1 DAY,  0, 1),
+(600, 6,  9,  '{}', 1599.00, 1, 1599.00, NOW() - INTERVAL 5 DAY,  NOW() - INTERVAL 3 DAY,  0, 1),
+(700, 7,  6,  '{}', 5299.00, 1, 5299.00, NOW() - INTERVAL 40 DAY, NOW() - INTERVAL 39 DAY, 0, 1),
+(800, 8,  18, '{}', 35.00,   1, 35.00,   NOW() - INTERVAL 35 DAY, NOW() - INTERVAL 33 DAY, 0, 1),
+(900, 9,  11, '{}', 299.00,  1, 299.00,  NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 28 DAY, 0, 1),
+(1000,10, 24, '{}', 899.00,  1, 899.00,  NOW() - INTERVAL 25 DAY, NOW() - INTERVAL 23 DAY, 0, 1),
+(1100,11, 13, '{}', 1599.00, 1, 1599.00, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 8 DAY,  0, 1),
+(1200,12, 38, '{}', 289.00,  1, 289.00,  NOW() - INTERVAL 7 DAY,  NOW() - INTERVAL 5 DAY,  0, 1)
+AS new
+ON DUPLICATE KEY UPDATE
+    `product_snapshot` = new.`product_snapshot`,
+    `unit_price` = new.`unit_price`,
+    `subtotal` = new.`subtotal`,
     `update_time` = new.`update_time`;
 
 -- ===================================================================
@@ -801,24 +827,44 @@ ON DUPLICATE KEY UPDATE
 -- ===================================================================
 
 INSERT INTO `eo_order` (
-    `id`, `order_no`, `buyer_id`, `seller_id`, `product_id`, `amount`,
+    `id`, `order_no`, `buyer_id`, `seller_id`, `total_amount`,
     `status`, `payment_status`, `address`, `phone`, `remark`,
     `create_time`, `update_time`
 ) VALUES
-(13, 'ORD20260206001', 14, 11, 46, 5499.00, 3, 1, '西校区5号楼201室', '13800138014', '请周末面交',   NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 10 DAY),
-(14, 'ORD20260207001', 15, 12, 47, 3499.00, 3, 1, '东校区2号楼415室', '13800138015', '',              NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 7 DAY),
-(15, 'ORD20260208001', 16, 13, 48, 7999.00, 1, 1, '北校区8号楼303室', '13800138016', '尽快发货',     NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 2 DAY),
-(16, 'ORD20260209001', 17, 14, 49, 5999.00, 2, 1, '南校区6号楼507室', '13800138017', '',              NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
-(17, 'ORD20260210001', 18, 11, 53, 2999.00, 0, 0, '东校区1号楼102室', '13800138018', '可以面交吗',   NOW() - INTERVAL 1 DAY, NOW()),
-(18, 'ORD20260211001', 11, 15, 50, 1299.00, 3, 1, '西校区5号楼201室', '13800138011', '',              NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY),
-(19, 'ORD20260212001', 12, 16, 51, 299.00,  3, 1, '南校区3号楼608室', '13800138012', '',              NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 13 DAY),
-(20, 'ORD20260213001', 13, 17, 66, 499.00,  4, 0, '东校区4号楼210室', '13800138013', '',              NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY),
-(21, 'ORD20260214001', 14, 12, 54, 3299.00, 5, 2, '西校区5号楼201室', '13800138014', '掌机屏幕有亮点', NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY),
-(22, 'ORD20260215001', 15, 11, 60, 259.00,  3, 1, '北校区2号楼410室', '13800138015', '',              NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 2 DAY)
+(13, 'ORD20260206001', 14, 11, 5499.00, 3, 1, '西校区5号楼201室', '13800138014', '请周末面交',   NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 10 DAY),
+(14, 'ORD20260207001', 15, 12, 3499.00, 3, 1, '东校区2号楼415室', '13800138015', '',              NOW() - INTERVAL 9 DAY, NOW() - INTERVAL 7 DAY),
+(15, 'ORD20260208001', 16, 13, 7999.00, 1, 1, '北校区8号楼303室', '13800138016', '尽快发货',     NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 2 DAY),
+(16, 'ORD20260209001', 17, 14, 5999.00, 2, 1, '南校区6号楼507室', '13800138017', '',              NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
+(17, 'ORD20260210001', 18, 11, 2999.00, 0, 0, '东校区1号楼102室', '13800138018', '可以面交吗',   NOW() - INTERVAL 1 DAY, NOW()),
+(18, 'ORD20260211001', 11, 15, 1299.00, 3, 1, '西校区5号楼201室', '13800138011', '',              NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY),
+(19, 'ORD20260212001', 12, 16, 299.00,  3, 1, '南校区3号楼608室', '13800138012', '',              NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 13 DAY),
+(20, 'ORD20260213001', 13, 17, 499.00,  4, 0, '东校区4号楼210室', '13800138013', '',              NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY),
+(21, 'ORD20260214001', 14, 12, 3299.00, 5, 2, '西校区5号楼201室', '13800138014', '掌机屏幕有亮点', NOW() - INTERVAL 6 DAY, NOW() - INTERVAL 4 DAY),
+(22, 'ORD20260215001', 15, 11, 259.00,  3, 1, '北校区2号楼410室', '13800138015', '',              NOW() - INTERVAL 4 DAY, NOW() - INTERVAL 2 DAY)
 AS new
 ON DUPLICATE KEY UPDATE
     `status` = new.`status`,
     `payment_status` = new.`payment_status`,
+    `update_time` = new.`update_time`;
+INSERT INTO `eo_order_item` (
+    `id`, `order_id`, `product_id`, `product_snapshot`, `unit_price`, `quantity`, `subtotal`,
+    `create_time`, `update_time`, `del_flag`, `version`
+) VALUES
+(1300,13, 46, '{}', 5499.00, 1, 5499.00, NOW() - INTERVAL 12 DAY, NOW() - INTERVAL 10 DAY, 0, 1),
+(1400,14, 47, '{}', 3499.00, 1, 3499.00, NOW() - INTERVAL 9 DAY,  NOW() - INTERVAL 7 DAY,  0, 1),
+(1500,15, 48, '{}', 7999.00, 1, 7999.00, NOW() - INTERVAL 3 DAY,  NOW() - INTERVAL 2 DAY,  0, 1),
+(1600,16, 49, '{}', 5999.00, 1, 5999.00, NOW() - INTERVAL 5 DAY,  NOW() - INTERVAL 3 DAY,  0, 1),
+(1700,17, 53, '{}', 2999.00, 1, 2999.00, NOW() - INTERVAL 1 DAY,  NOW(),                    0, 1),
+(1800,18, 50, '{}', 1299.00, 1, 1299.00, NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY,  0, 1),
+(1900,19, 51, '{}', 299.00,  1, 299.00,  NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 13 DAY,  0, 1),
+(2000,20, 66, '{}', 499.00,  1, 499.00,  NOW() - INTERVAL 8 DAY,  NOW() - INTERVAL 7 DAY,   0, 1),
+(2100,21, 54, '{}', 3299.00, 1, 3299.00, NOW() - INTERVAL 6 DAY,  NOW() - INTERVAL 4 DAY,   0, 1),
+(2200,22, 60, '{}', 259.00,  1, 259.00,  NOW() - INTERVAL 4 DAY,  NOW() - INTERVAL 2 DAY,   0, 1)
+AS new
+ON DUPLICATE KEY UPDATE
+    `product_snapshot` = new.`product_snapshot`,
+    `unit_price` = new.`unit_price`,
+    `subtotal` = new.`subtotal`,
     `update_time` = new.`update_time`;
 
 -- ===================================================================

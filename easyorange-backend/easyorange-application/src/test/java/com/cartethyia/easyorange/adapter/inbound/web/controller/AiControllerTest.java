@@ -1,8 +1,11 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.ai.dto.AiReviewRequest;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.dto.CopyGenerationRequest;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
+import com.cartethyia.easyorange.ai.dto.PricingRequest;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
@@ -75,9 +78,8 @@ class AiControllerTest {
             when(pricingService.suggestPrice(anyString(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
-            Result<PricingSuggestion> result = controller.suggestPrice(
-                    "二手 iPhone 14", "99新", "手机数码", 2, new BigDecimal("6999")
-            );
+            var request = new PricingRequest("二手 iPhone 14", "99新", "手机数码", 2, new BigDecimal("6999"));
+            Result<PricingSuggestion> result = controller.suggestPrice(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data()).isEqualTo(expected);
@@ -89,7 +91,7 @@ class AiControllerTest {
         @Test
         @DisplayName("只有商品名称时也能正常请求")
         void suggestPrice_onlyRequiredParams() {
-            controller.suggestPrice("测试商品", null, null, null, null);
+            controller.suggestPrice(new PricingRequest("测试商品", null, null, null, null));
 
             verify(pricingService).suggestPrice(eq("测试商品"), isNull(),
                     isNull(), isNull(), isNull());
@@ -144,10 +146,9 @@ class AiControllerTest {
             when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
-            Result<AiReviewResult> result = controller.reviewProduct(
-                    "iPhone 14", "99新手机", "手机数码", 2, "¥4500", "张三",
-                    List.of("https://example.com/phone.jpg")
-            );
+            var request = new AiReviewRequest("iPhone 14", "99新手机", "手机数码", 2, "¥4500", "张三",
+                    List.of("https://example.com/phone.jpg"));
+            Result<AiReviewResult> result = controller.reviewProduct(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().suggestedAction()).isTrue();
@@ -163,7 +164,7 @@ class AiControllerTest {
             when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(new AiReviewResult(true, "通过", 50, List.of(), "默认通过"));
 
-            Result<AiReviewResult> result = controller.reviewProduct("测试商品", null, null, null, null, null, null);
+            Result<AiReviewResult> result = controller.reviewProduct(new AiReviewRequest("测试商品", null, null, null, null, null, null));
 
             assertThat(result.isSuccess()).isTrue();
             verify(reviewService).reviewProduct(eq("测试商品"), isNull(),
@@ -235,9 +236,8 @@ class AiControllerTest {
             when(copyGenerationService.generateCopy(anyString(), any(), any(), any(), anyString()))
                     .thenReturn(expected);
 
-            Result<CopyGenerationResult> result = controller.generateCopy(
-                    "iPhone 14", "手机数码", 2, "¥6999", "standard"
-            );
+            var request = new CopyGenerationRequest("iPhone 14", "手机数码", 2, "¥6999", "standard");
+            Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().title()).isEqualTo("超值iPhone 14");
@@ -252,9 +252,8 @@ class AiControllerTest {
             when(copyGenerationService.generateCopy(anyString(), any(), any(), any(), eq("standard")))
                     .thenReturn(new CopyGenerationResult("标题", "描述", "standard"));
 
-            Result<CopyGenerationResult> result = controller.generateCopy(
-                    "测试商品", null, null, null, "standard"
-            );
+            var request = new CopyGenerationRequest("测试商品", null, null, null, "standard");
+            Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
             verify(copyGenerationService).generateCopy(eq("测试商品"), isNull(),
@@ -267,9 +266,8 @@ class AiControllerTest {
             when(copyGenerationService.generateCopy(anyString(), any(), any(), any(), anyString()))
                     .thenReturn(new CopyGenerationResult("标题", "描述", "detailed"));
 
-            Result<CopyGenerationResult> result = controller.generateCopy(
-                    "商品", "分类", 1, "¥100", "detailed"
-            );
+            var request = new CopyGenerationRequest("商品", "分类", 1, "¥100", "detailed");
+            Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
             verify(copyGenerationService).generateCopy(eq("商品"), eq("分类"),

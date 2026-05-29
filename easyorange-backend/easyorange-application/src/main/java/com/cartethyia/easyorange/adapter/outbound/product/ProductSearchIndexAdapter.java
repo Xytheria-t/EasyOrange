@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.product.domain.port.output.ProductSearchIndexPort;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

@@ -1,0 +1,239 @@
+package com.cartethyia.easyorange.framework.filter;
+
+import com.cartethyia.easyorange.common.constant.CommonConstant;
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
+import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
+import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.annotation.Order;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 限流 + 防重提交统一过滤器
+ * <p>
+ * 替代原 {@code RateLimiterAspect} 和 {@code RepeatSubmitAspect}，
+ * 通过配置驱动实现约定式自动防护。
+ * </p>
+ * <ul>
+ *   <li>限流：GET 走本地内存，写操作走 Redis 分布式限流</li>
+ *   <li>防重：写操作自动防重（Redis SETNX），key 包含请求体 hash</li>
+ *   <li>降级：Redis 不可用时放行请求（fail-open）</li>
+ * </ul>
+ */
+@Slf4j
+@Component
+@Order(0)
+@RequiredArgsConstructor
+public class RateLimitFilter extends OncePerRequestFilter {
+
+    private static final HexFormat HEX_FORMAT = HexFormat.of();
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+    private static final Set<String> WRITE_METHODS = Set.of("POST", "PUT", "DELETE", "PATCH");
+
+    private static final String RATE_LIMIT_LUA = """
+            local key = KEYS[1]
+            local count = tonumber(ARGV[1])
+            local time = tonumber(ARGV[2])
+            local current = redis.call('INCR', key)
+            if current > count then
+                return current
+            end
+            if current == 1 then
+                redis.call('EXPIRE', key, time)
+            end
+            return current""";
+
+    private static final DefaultRedisScript<Long> RATE_LIMIT_SCRIPT;
+
+    static {
+        RATE_LIMIT_SCRIPT = new DefaultRedisScript<>();
+        RATE_LIMIT_SCRIPT.setScriptText(RATE_LIMIT_LUA);
+        RATE_LIMIT_SCRIPT.setResultType(Long.class);
+    }
+
+    private final RateLimitFilterProperties properties;
+    private final RedisCache redisCache;
+    private final LocalRateLimiter localRateLimiter;
+    private final ObjectMapper objectMapper;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
+        if (!properties.isEnabled()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String method = request.getMethod().toUpperCase(Locale.ROOT);
+
+        // 写请求需要缓存 body 以便 filter 和 controller 都能读取
+        CachedBodyHttpServletRequestWrapper wrappedRequest = null;
+        if (WRITE_METHODS.contains(method)) {
+            wrappedRequest = new CachedBodyHttpServletRequestWrapper(request);
+        }
+
+        try {
+            HttpServletRequest effectiveRequest = wrappedRequest != null ? wrappedRequest : request;
+
+            Rule matchedRule = findMatchingRule(method, effectiveRequest.getRequestURI());
+            if (matchedRule != null) {
+                checkRateLimit(effectiveRequest, method, matchedRule);
+            }
+
+            if (WRITE_METHODS.contains(method)) {
+                checkRepeatSubmit(effectiveRequest, method, wrappedRequest.getCachedBody());
+            }
+
+            filterChain.doFilter(wrappedRequest != null ? wrappedRequest : request, response);
+        } catch (BusinessException ex) {
+            writeErrorResponse(response, ex);
+        }
+    }
+
+    private Rule findMatchingRule(String method, String uri) {
+        for (Rule rule : properties.getRules()) {
+            if (matchesMethod(rule, method) && PATH_MATCHER.match(rule.getPathPattern(), uri)) {
+                return rule;
+            }
+        }
+        return null;
+    }
+
+    private boolean matchesMethod(Rule rule, String method) {
+        if (rule.getMethods().isEmpty()) {
+            return true;
+        }
+        return rule.getMethods().stream()
+                .anyMatch(m -> m.equalsIgnoreCase(method));
+    }
+
+    // ==================== 限流 ====================
+
+    private void checkRateLimit(HttpServletRequest request, String method, Rule rule) {
+        if ("local".equalsIgnoreCase(rule.getStrategy())) {
+            checkLocalRateLimit(request, method, rule);
+        } else {
+            checkRedisRateLimit(request, method, rule);
+        }
+    }
+
+    private void checkLocalRateLimit(HttpServletRequest request, String method, Rule rule) {
+        long windowMs = TimeUnit.SECONDS.toMillis(rule.getWindowSeconds());
+        if (windowMs <= 0 || rule.getMaxRequests() <= 0) {
+            return;
+        }
+
+        String key = RequestUtil.getClientIp(request) + ":" + method + ":" + request.getRequestURI();
+        if (!localRateLimiter.tryAcquire(key, rule.getMaxRequests(), windowMs)) {
+            log.warn("action=local_rate_limit, key={}, limit={}", key, rule.getMaxRequests());
+            throw BusinessException.of(rule.getMessage());
+        }
+    }
+
+    private void checkRedisRateLimit(HttpServletRequest request, String method, Rule rule) {
+        if (rule.getWindowSeconds() <= 0 || rule.getMaxRequests() <= 0) {
+            return;
+        }
+
+        String identifier = RequestUtil.getClientIp(request);
+        String key = CommonConstant.rateLimitKey(identifier, method + ":" + request.getRequestURI());
+        try {
+            List<String> keys = List.of(key);
+            Long current = redisCache.executeLuaScript(RATE_LIMIT_SCRIPT, keys,
+                    rule.getMaxRequests(), rule.getWindowSeconds());
+
+            if (current != null && current > rule.getMaxRequests()) {
+                log.warn("action=redis_rate_limit, key={}, current={}, limit={}", key, current, rule.getMaxRequests());
+                throw BusinessException.of(rule.getMessage());
+            }
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.warn("action=redis_rate_limit_error, key={}, error={}", key, ex.getMessage());
+            // Redis 不可用时放行（fail-open）
+        }
+    }
+
+    // ==================== 防重提交 ====================
+
+    private void checkRepeatSubmit(HttpServletRequest request, String method, byte[] cachedBody) {
+        RepeatSubmitConfig config = properties.getRepeatSubmit();
+        if (!config.isEnabled()) {
+            return;
+        }
+        if (!config.getMethods().isEmpty()
+                && config.getMethods().stream().noneMatch(m -> m.equalsIgnoreCase(method))) {
+            return;
+        }
+
+        long intervalMs = config.getIntervalMs();
+        if (intervalMs <= 0) {
+            return;
+        }
+
+        // 用 IP 作为用户标识（Filter 在认证之前执行，无法获取 userId）
+        String userIdentifier = RequestUtil.getClientIp(request);
+
+        // key 包含请求体 hash，不同参数的请求不会被误判为重复
+        String bodyHash = md5(cachedBody);
+        String key = CommonConstant.repeatSubmitKey(userIdentifier, request.getRequestURI(), bodyHash);
+
+        try {
+            if (Boolean.FALSE.equals(redisCache.setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
+                throw BusinessException.of(config.getMessage());
+            }
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.warn("action=repeat_submit_check_error, key={}, error={}", key, ex.getMessage());
+            // Redis 不可用时放行（fail-open）
+        }
+    }
+
+    // ==================== 工具方法 ====================
+
+    private void writeErrorResponse(HttpServletResponse response, BusinessException ex) throws IOException {
+        response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+
+        Result<Void> result = Result.error(ex.getCode(), ex.getMessage());
+        response.getWriter().write(objectMapper.writeValueAsString(result));
+    }
+
+    private String md5(byte[] input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(input);
+            return HEX_FORMAT.formatHex(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("MD5 algorithm not available", e);
+        }
+    }
+}

@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin/products")
 @RequiredArgsConstructor
-class AdminProductAuditController {
+public class AdminProductAuditController {
 
     private final AdminProductAuditService adminProductAuditService;
 

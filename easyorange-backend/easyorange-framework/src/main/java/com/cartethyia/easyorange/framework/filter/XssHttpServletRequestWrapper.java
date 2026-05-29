@@ -32,7 +32,6 @@ public class XssHttpServletRequestWrapper extends HttpServletRequestWrapper {
 
     private static final java.util.Set<String> SAFE_HEADERS = java.util.Set.of(
         "Authorization",
-        "Authorization-New",
         "Content-Type",
         "Content-Length",
         "Accept",

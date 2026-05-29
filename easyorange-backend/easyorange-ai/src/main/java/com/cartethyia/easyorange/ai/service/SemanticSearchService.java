@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.ai.port.LlmPort;
-import com.cartethyia.easyorange.product.domain.port.output.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

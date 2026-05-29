@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.config.security;
 
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.filter.JwtAuthenticationFilter;
+import com.cartethyia.easyorange.framework.filter.RateLimitFilter;
 import com.cartethyia.easyorange.framework.filter.XssFilter;
 import com.cartethyia.easyorange.framework.handler.JsonAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
@@ -37,12 +38,12 @@ public class SecurityConfig {
     private static final long CORS_MAX_AGE_SECONDS = 3600L;
     private static final long HSTS_MAX_AGE_SECONDS = 31536000L;
     private static final String[] CORS_ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"};
-    private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Authorization-New", "Content-Disposition", "X-Refresh-Token"};
+    private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Content-Disposition"};
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFilter rateLimitFilter;
     private final XssFilter xssFilter;
     private final JsonAuthenticationEntryPoint authenticationEntryPoint;
-    private final JsonLogoutSuccessHandler logoutSuccessHandler;
     private final SecurityProperties securityProperties;
 
     @Bean
@@ -62,12 +63,9 @@ public class SecurityConfig {
                 .requestMatchers(securityProperties.getStaticPaths().toArray(String[]::new)).permitAll()
                 .anyRequest().authenticated()
             )
-            .logout(logout -> logout
-                .logoutUrl(securityProperties.getLogoutUrl())
-                .logoutSuccessHandler(logoutSuccessHandler)
-            )
             .addFilterBefore(xssFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthenticationFilter, XssFilter.class)
+            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                 .contentTypeOptions(Customizer.withDefaults())

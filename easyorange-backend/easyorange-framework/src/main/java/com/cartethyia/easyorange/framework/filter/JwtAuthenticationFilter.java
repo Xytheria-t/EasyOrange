@@ -3,13 +3,11 @@ package com.cartethyia.easyorange.framework.filter;
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
-import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
-import com.github.benmanes.caffeine.cache.Cache;
+import com.cartethyia.easyorange.framework.util.RequestUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,7 +15,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -47,8 +44,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtProperties jwtProperties;
     private final TokenService tokenService;
     private final SecurityProperties securityProperties;
-    private final StringRedisTemplate stringRedisTemplate;
-    private final Cache<String, Boolean> tokenUuidCache;
     private final ObjectMapper objectMapper;
 
     private static final Set<String> AUTH_REQUIRED_PRODUCT_PATHS = Set.of("/api/products/my");
@@ -99,7 +94,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Optional<Claims> claimsOpt = jwtUtil.parseToken(token);
             if (claimsOpt.isEmpty()) {
-                log.warn("Invalid JWT token received from IP: {}, path: {}",
+                log.warn("JWT 无效 - IP: {}, path: {}",
                     RequestUtil.getClientIp(request), request.getRequestURI());
                 SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
@@ -107,17 +102,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             Claims claims = claimsOpt.get();
-            String uuid = claims.get("uuid", String.class);
+            String jti = claims.get("jti", String.class);
             String tokenType = claims.get("type", String.class);
-            if (uuid == null || !isTokenValid(uuid)) {
-                log.warn("Invalid or revoked JWT token received from IP: {}, path: {}",
+
+            // 校验 jti 未失效（登出黑名单）
+            if (jti == null || tokenService.verifyTokenAndGetUserId(token) == null) {
+                log.warn("JWT 已失效 - IP: {}, path: {}",
                     RequestUtil.getClientIp(request), request.getRequestURI());
                 SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
                 return;
             }
+
+            // 禁止 refresh token 访问 API
             if ("refresh".equals(tokenType)) {
-                log.warn("Refresh token used for API access from IP: {}, path: {}",
+                log.warn("Refresh token 用于 API 访问 - IP: {}, path: {}",
                     RequestUtil.getClientIp(request), request.getRequestURI());
                 SecurityContextHolder.clearContext();
                 filterChain.doFilter(request, response);
@@ -126,13 +125,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 Long userId = Long.parseLong(claims.getSubject());
-                setAuthentication(request, response, token, userId, claims);
+                setAuthentication(request, userId, claims);
             }
 
+            // 管理端路径权限检查
             String path = request.getRequestURI();
             String userType = claims.get("userType", String.class);
             if (path.startsWith(ADMIN_PATH_PREFIX) && !isAdminUserType(userType)) {
-                log.warn("Non-admin access to admin path: {}, userType: {}, IP: {}",
+                log.warn("非管理员访问管理端 - path: {}, userType: {}, IP: {}",
                     path, userType, RequestUtil.getClientIp(request));
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -141,15 +141,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
         } catch (Exception e) {
-            log.error("action=auth_error, error={}", e.getMessage());
+            log.error("认证过滤器异常: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);
     }
 
-    private void setAuthentication(HttpServletRequest request, HttpServletResponse response, String token, Long userId, Claims claims) {
-        List<SimpleGrantedAuthority> authorities = resolveAuthorities(claims);
+    private void setAuthentication(HttpServletRequest request, Long userId, Claims claims) {
+        String userType = claims.get("userType", String.class);
+        List<SimpleGrantedAuthority> authorities = resolveAuthorities(userType);
         Set<String> roles = authorities.stream()
                 .filter(a -> a.getAuthority().startsWith("ROLE_"))
                 .map(a -> a.getAuthority().substring("ROLE_".length()))
@@ -166,14 +167,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        jwtUtil.renewTokenIfNeeded(token).ifPresent(newToken -> {
-            response.setHeader("Authorization-New", jwtProperties.getTokenPrefix() + newToken);
-        });
     }
 
-    private List<SimpleGrantedAuthority> resolveAuthorities(Claims claims) {
-        String userType = claims.get("userType", String.class);
+    private List<SimpleGrantedAuthority> resolveAuthorities(String userType) {
         if (isAdminUserType(userType)) {
             return List.of(
                 new SimpleGrantedAuthority("ROLE_ADMIN"),
@@ -192,24 +188,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return bearerToken.substring(prefix.length());
     }
 
-    private String getTokenKey(String uuid) {
-        return LoginCacheConstants.buildTokenKey(uuid);
-    }
-
     private static boolean isAdminUserType(String userType) {
         return SUPER_ADMIN_USER_TYPE.equals(userType) || MANAGER_USER_TYPE.equals(userType);
-    }
-
-    private boolean isTokenValid(String uuid) {
-        Boolean cached = tokenUuidCache.getIfPresent(uuid);
-        if (Boolean.TRUE.equals(cached)) {
-            return true;
-        }
-
-        boolean exists = Boolean.TRUE.equals(stringRedisTemplate.hasKey(getTokenKey(uuid)));
-        if (exists) {
-            tokenUuidCache.put(uuid, true);
-        }
-        return exists;
     }
 }

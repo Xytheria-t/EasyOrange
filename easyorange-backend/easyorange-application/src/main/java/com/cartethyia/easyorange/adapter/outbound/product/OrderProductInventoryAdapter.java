@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
-import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
 import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
 import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;

@@ -1,6 +1,6 @@
 -- ===================================================================
 -- EasyOrange 校园二手交易平台 - 数据库初始化
--- Version: V1 (合并 V1+V4+V7+V8)
+-- Version: V1
 -- 职责: 创建所有初始表结构、索引、约束（纯 DDL）
 -- Database: MySQL 8.0
 -- Charset: utf8mb4
@@ -40,7 +40,6 @@ CREATE TABLE `eo_user` (
     UNIQUE KEY `uk_eo_user_student_id` (`student_id`),
     KEY `idx_eo_user_status_del` (`status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_user_type_status` (`user_type`, `status`, `del_flag`),
-    KEY `idx_eo_user_create_time` (`create_time`),
     CONSTRAINT `chk_eo_user_status` CHECK (`status` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_user_sex` CHECK (`sex` IS NULL OR `sex` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('01', '02'))
@@ -100,6 +99,7 @@ CREATE TABLE `eo_product` (
     KEY `idx_eo_product_user_status_del` (`user_id`, `status`, `del_flag`, `create_time` DESC),
     FULLTEXT KEY `ft_eo_product_name` (`name`) WITH PARSER ngram,
     FULLTEXT KEY `ft_eo_product_search_text` (`search_text`) WITH PARSER ngram,
+    KEY `idx_eo_product_status_del_create_time` (`status`, `del_flag`, `create_time` DESC) COMMENT '商品状态+删除标志+创建时间',
     CONSTRAINT `chk_eo_product_price` CHECK (`price` >= 0),
     CONSTRAINT `chk_eo_product_original_price` CHECK (`original_price` IS NULL OR `original_price` >= 0),
     CONSTRAINT `chk_eo_product_stock` CHECK (`stock` >= 0),

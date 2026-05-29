@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.user;
 
-import com.cartethyia.easyorange.order.domain.port.output.UserInfoPort;
+import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;

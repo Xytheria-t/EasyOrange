@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
@@ -246,7 +246,8 @@ public class AdminDashboardService {
     @Transactional(readOnly = true)
     public List<TopProductResponse> getTopProducts(int limit) {
         return jdbcTemplate.queryForList(
-            "SELECT p.id, p.name, p.view_count, p.price, p.main_image, p.status " +
+            "SELECT p.id, p.name, p.view_count, p.price, p.status, " +
+            "(SELECT pi.image_url FROM eo_product_image pi WHERE pi.product_id = p.id AND pi.del_flag = 0 ORDER BY pi.is_main DESC, pi.sort_order ASC LIMIT 1) AS main_image " +
             "FROM eo_product p WHERE p.del_flag = 0 AND p.status = 1 " +
             "ORDER BY p.view_count DESC LIMIT " + limit
         ).stream()

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.framework.outbox.repository;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.framework.outbox.converter.OutboxMessageConverter;
 import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
 import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessagePO;
 import com.cartethyia.easyorange.framework.outbox.mapper.OutboxMessageMapper;
@@ -15,12 +14,17 @@ import java.util.UUID;
 @Repository
 public class OutboxRepository extends BaseRepository<OutboxMessageMapper, OutboxMessagePO> {
 
-    public OutboxRepository(OutboxMessageMapper outboxMessageMapper) {
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    private final com.cartethyia.easyorange.framework.outbox.converter.OutboxMessageMapper structMapper;
+
+    public OutboxRepository(OutboxMessageMapper outboxMessageMapper,
+                            com.cartethyia.easyorange.framework.outbox.converter.OutboxMessageMapper structMapper) {
         super(outboxMessageMapper);
+        this.structMapper = structMapper;
     }
 
     public void save(OutboxMessage message) {
-        OutboxMessagePO po = OutboxMessageConverter.toPO(message);
+        OutboxMessagePO po = structMapper.toPO(message);
         mapper.insert(po);
     }
 
@@ -31,7 +35,7 @@ public class OutboxRepository extends BaseRepository<OutboxMessageMapper, Outbox
                 .page(new Page<>(1, limit));
 
         return page.getRecords().stream()
-                .map(OutboxMessageConverter::toDomain)
+                .map(structMapper::toDomain)
                 .toList();
     }
 

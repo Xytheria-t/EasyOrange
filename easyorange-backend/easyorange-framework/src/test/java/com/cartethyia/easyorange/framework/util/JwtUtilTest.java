@@ -298,45 +298,12 @@ class JwtUtilTest {
     }
 
     @Nested
-    @DisplayName("renewTokenIfNeeded")
-    class RenewTokenIfNeededTests {
-
-        @Test
-        @DisplayName("should not renew a non-expiring token")
-        void renewTokenIfNeeded_withFreshToken_shouldReturnEmpty() {
-            String token = jwtUtil.generateToken("user123", Map.of("role", "admin"), 60L);
-
-            Optional<String> renewed = jwtUtil.renewTokenIfNeeded(token);
-
-            assertThat(renewed).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should not renew a refresh token")
-        void renewTokenIfNeeded_withRefreshToken_shouldReturnEmpty() {
-            String token = jwtUtil.generateRefreshToken("user123", Map.of());
-
-            Optional<String> renewed = jwtUtil.renewTokenIfNeeded(token);
-
-            assertThat(renewed).isEmpty();
-        }
-
-        @Test
-        @DisplayName("should return empty for invalid token")
-        void renewTokenIfNeeded_withInvalidToken_shouldReturnEmpty() {
-            Optional<String> renewed = jwtUtil.renewTokenIfNeeded("invalid");
-
-            assertThat(renewed).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("removeBearerPrefix")
-    class RemoveBearerPrefixTests {
+    @DisplayName("parseToken with Bearer prefix")
+    class BearerPrefixTests {
 
         @Test
         @DisplayName("should strip Bearer prefix from token")
-        void removeBearerPrefix_withBearerPrefix_shouldStrip() {
+        void parseToken_withBearerPrefix_shouldStrip() {
             String token = jwtUtil.generateToken("user123", Map.of());
             String bearerToken = "Bearer " + token;
 
@@ -348,7 +315,7 @@ class JwtUtilTest {
 
         @Test
         @DisplayName("should handle token without prefix")
-        void removeBearerPrefix_withoutPrefix_shouldReturnSame() {
+        void parseToken_withoutPrefix_shouldReturnSame() {
             String token = jwtUtil.generateToken("user123", Map.of());
 
             Optional<Claims> result = jwtUtil.parseToken(token);

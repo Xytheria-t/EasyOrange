@@ -22,9 +22,9 @@ class LoginCacheConstantsTest {
         }
 
         @Test
-        @DisplayName("TOKEN_KEY should be 'eo:user:token:'")
-        void tokenKey_shouldBeCorrect() {
-            assertThat(LoginCacheConstants.TOKEN_KEY).isEqualTo("eo:user:token:");
+        @DisplayName("TOKEN_BLACKLIST_KEY should be correct")
+        void tokenBlacklistKey_shouldBeCorrect() {
+            assertThat(LoginCacheConstants.TOKEN_BLACKLIST_KEY).isEqualTo("eo:user:token:blacklist:");
         }
 
         @Test
@@ -34,65 +34,9 @@ class LoginCacheConstantsTest {
         }
 
         @Test
-        @DisplayName("ATTEMPTS_EXPIRE_TIME should be 30")
-        void attemptsExpireTime_shouldBe30() {
-            assertThat(LoginCacheConstants.ATTEMPTS_EXPIRE_TIME).isEqualTo(30L);
-        }
-
-        @Test
-        @DisplayName("MAX_LOGIN_ATTEMPTS should be 5")
-        void maxLoginAttempts_shouldBe5() {
-            assertThat(LoginCacheConstants.MAX_LOGIN_ATTEMPTS).isEqualTo(5);
-        }
-
-        @Test
-        @DisplayName("LOGIN_LOCK_MINUTES should be 30")
-        void loginLockMinutes_shouldBe30() {
-            assertThat(LoginCacheConstants.LOGIN_LOCK_MINUTES).isEqualTo(30);
-        }
-
-        @Test
-        @DisplayName("PASSWORD_REGEX should be correct")
-        void passwordRegex_shouldBeCorrect() {
-            assertThat(LoginCacheConstants.PASSWORD_REGEX)
-                    .isEqualTo("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{6,20}$");
-        }
-
-        @Test
-        @DisplayName("PHONE_PATTERN should match valid phone numbers")
-        void phonePattern_shouldMatchValidPhones() {
-            assertThat(LoginCacheConstants.PHONE_PATTERN.matcher("13800138000").matches()).isTrue();
-            assertThat(LoginCacheConstants.PHONE_PATTERN.matcher("15912345678").matches()).isTrue();
-        }
-
-        @Test
-        @DisplayName("PHONE_PATTERN should reject invalid phone numbers")
-        void phonePattern_shouldRejectInvalidPhones() {
-            assertThat(LoginCacheConstants.PHONE_PATTERN.matcher("12300138000").matches()).isFalse();
-            assertThat(LoginCacheConstants.PHONE_PATTERN.matcher("1380013800").matches()).isFalse();
-            assertThat(LoginCacheConstants.PHONE_PATTERN.matcher("abc").matches()).isFalse();
-        }
-    }
-
-    @Nested
-    @DisplayName("buildTokenKey")
-    class BuildTokenKeyTests {
-
-        @Test
-        @DisplayName("buildTokenKey should return correct key format")
-        void buildTokenKey_withValidToken_shouldReturnCorrectKey() {
-            String token = "abc123";
-            String key = LoginCacheConstants.buildTokenKey(token);
-
-            assertThat(key).isEqualTo("eo:user:token:abc123");
-        }
-
-        @Test
-        @DisplayName("buildTokenKey with null token should throw")
-        void buildTokenKey_withNullToken_shouldThrow() {
-            assertThatThrownBy(() -> LoginCacheConstants.buildTokenKey(null))
-                    .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("token 不能为 null");
+        @DisplayName("FORCE_LOGOUT_KEY should be 'eo:user:token:force-logout:'")
+        void forceLogoutKey_shouldBeCorrect() {
+            assertThat(LoginCacheConstants.FORCE_LOGOUT_KEY).isEqualTo("eo:user:token:force-logout:");
         }
     }
 
@@ -114,7 +58,7 @@ class LoginCacheConstantsTest {
         void buildAttemptsKey_withNullUsername_shouldThrow() {
             assertThatThrownBy(() -> LoginCacheConstants.buildAttemptsKey(null))
                     .isInstanceOf(BusinessException.class)
-                    .hasMessageContaining("username 不能为 null");
+                    .hasMessageContaining("identifier 不能为 null");
         }
     }
 }

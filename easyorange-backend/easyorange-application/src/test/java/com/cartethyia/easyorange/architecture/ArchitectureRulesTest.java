@@ -31,21 +31,13 @@ class ArchitectureRulesTest {
     private static final Set<String> DOMAIN_IMPORT_ALLOWLIST = Set.of(
             "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/query/MessageQueryRepository.java|import com.cartethyia.easyorange.*.dto.request.",
             "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/query/MessageQueryRepository.java|import com.cartethyia.easyorange.*.dto.vo.",
-            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/service/MessageRoutingService.java|import org.springframework.",
-            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/service/OfflineMessageStoreService.java|import org.springframework.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/infrastructure/security/CallbackSignatureVerifier.java|import org.springframework.",
+            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/security/CallbackSignatureVerifier.java|import org.springframework.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisPaymentRepository.java|import com.baomidou.mybatisplus.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisPaymentRepository.java|import org.springframework.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/JdbcDomainEventStore.java|import com.baomidou.mybatisplus.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/JdbcDomainEventStore.java|import org.springframework.",
             "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import com.baomidou.mybatisplus.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import org.springframework.",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/UserStatus.java|import com.baomidou.mybatisplus.",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/LoginMethod.java|import com.baomidou.mybatisplus.",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/UserType.java|import com.baomidou.mybatisplus.",
-            "easyorange-user/src/main/java/com/cartethyia/easyorange/user/domain/enums/Sex.java|import com.baomidou.mybatisplus.",
-            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/service/RateLimiterService.java|import org.springframework.",
-            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/service/SensitiveWordFilterService.java|import org.springframework."
+            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import org.springframework."
     );
 
     private static final Set<String> COMMAND_QUERY_COUPLING_ALLOWLIST = Set.of(
@@ -139,7 +131,7 @@ class ArchitectureRulesTest {
                 continue;
             }
 
-            if (normalized.contains("/adapter/outbound/messaging/") || normalized.contains("/infrastructure/acl/")) {
+            if (normalized.contains("/adapter/outbound/messaging/")) {
                 continue;
             }
 
@@ -151,7 +143,7 @@ class ArchitectureRulesTest {
                     }
                     String forbiddenImport = "import com.cartethyia.easyorange." + otherModule.replace("easyorange-", "") + ".";
                     if (line.startsWith(forbiddenImport)) {
-                        if (!line.contains(".domain.port.output.") && !line.contains(".domain.valueobject.")) {
+                        if (!line.contains(".domain.port.") && !line.contains(".domain.valueobject.")) {
                             violations.add(normalized + " -> " + line.trim());
                         }
                     }
@@ -163,16 +155,13 @@ class ArchitectureRulesTest {
     }
 
     private static final Set<String> PORT_ALLOWLIST = Set.of(
-            "OutboundPort",                // marker interface, not an implementation target
-            "ProductNotificationPort",     // TODO: implement notification adapter
             "SmsRateLimitPort",            // implemented by RedisSmsCodeAdapter (name mismatch)
-            "PaymentQueryRepositoryPort",  // TODO: implement query repository for payment
-            "CallbackSignatureVerifierPort", // implemented in infrastructure/security/ (not adapter/outbound/)
-            "NicknameGeneratorPort"        // implemented in user/infrastructure/util/ (not adapter/outbound/)
+            "PaymentQueryRepositoryPort",  // co-implemented by MybatisPaymentRepository (implements PaymentRepositoryPort + PaymentQueryRepositoryPort)
+            "CallbackSignatureVerifierPort" // implemented in adapter/outbound/security/ (name mismatch)
     );
 
     private static final Set<String> PORT_ADAPTER_SUFFIXES = Set.of(
-            "Adapter", "Repository", "Store", "Verifier", "Publisher", "Storage"
+            "Adapter", "Repository", "Store", "Verifier", "Publisher", "Storage", "Impl"
     );
 
     @Test
@@ -185,7 +174,7 @@ class ArchitectureRulesTest {
         for (Path javaFile : javaFiles(backendRoot)) {
             String normalized = normalize(backendRoot, javaFile);
 
-            if (normalized.contains("/domain/port/output/") && normalized.endsWith("Port.java")) {
+            if (normalized.contains("/domain/port/") && normalized.endsWith("Port.java")) {
                 String portName = javaFile.getFileName().toString().replace(".java", "");
                 portInterfaces.add(portName);
             }
@@ -214,6 +203,24 @@ class ArchitectureRulesTest {
         }
 
         assertTrue(missingAdapters.isEmpty(), () -> "Port interfaces without adapter implementations:\n" + String.join("\n", missingAdapters));
+    }
+
+    @Test
+    @DisplayName("no new infrastructure/ packages — use adapter/outbound/ instead")
+    void noNewInfrastructurePackages() throws IOException {
+        Path backendRoot = backendRoot();
+        List<String> violations = new ArrayList<>();
+
+        for (Path javaFile : javaFiles(backendRoot)) {
+            String normalized = normalize(backendRoot, javaFile);
+            if (normalized.contains("/infrastructure/")) {
+                violations.add(normalized);
+            }
+        }
+
+        assertTrue(violations.isEmpty(), () ->
+                "infrastructure/ 包已废弃，所有实现应放在 adapter/outbound/ 下。发现以下残留文件:\n"
+                        + String.join("\n", violations));
     }
 
     private static Path backendRoot() {

@@ -6,10 +6,10 @@
 
 ```
 framework/
-├── aspectj/                 # AOP 切面
-│   ├── OperLogAspect.java       # 操作日志切面 (@Log)
-│   ├── RateLimiterAspect.java   # 限流切面 (@RateLimiter, Redis+Lua)
-│   └── RepeatSubmitAspect.java  # 防重提交切面 (@RepeatSubmit)
+├── aspectj/                 # AOP 切面 (执行顺序: RateLimiter → RepeatSubmit → OperLog)
+│   ├── OperLogAspect.java       # 操作日志 (约定式拦截所有写操作, 无需注解)
+│   ├── RateLimiterAspect.java   # 限流切面 (约定式拦截所有 RestController, Redis+Lua, @Order 1)
+│   └── RepeatSubmitAspect.java  # 防重提交切面 (约定式拦截所有 POST/PUT/DELETE/PATCH, @Order 2)
 ├── bloom/                  # 布隆过滤器 (Redis Bitmap)
 │   ├── BloomFilter.java         # 过滤器接口
 │   └── RedisBitmapBloomFilter.java # Redis Bitmap 实现 (Lua 原子操作)
@@ -28,22 +28,24 @@ framework/
 │   ├── http/                    # RestClient 配置
 │   │   └── RestClientConfig.java
 │   ├── properties/              # 配置属性类
+│   │   ├── CacheProperties.java
+│   │   ├── FileUploadProperties.java
+│   │   ├── IdGenProperties.java
+│   │   ├── ImageProcessingProperties.java
 │   │   ├── JwtProperties.java
-│   │   ├── SecurityProperties.java
-│   │   ├── RateLimiterProperties.java
 │   │   ├── OperLogProperties.java
+│   │   ├── RateLimitFilterProperties.java
+│   │   ├── SecurityProperties.java
 │   │   ├── ThreadPoolProperties.java
 │   │   └── WebMvcProperties.java
 │   ├── redis/                   # Redis 配置
 │   │   ├── RedisConfig.java
-│   │   └── CacheConfig.java
-│   ├── security/                # Spring Security 配置
-│   │   ├── SecurityConfig.java
-│   │   └── JsonLogoutSuccessHandler.java
-│   └── web/                     # WebMVC 配置
+    │   │   └── CacheConfig.java
+    │   ├── security/                # Spring Security 配置
+    │   │   └── SecurityConfig.java
+    │   └── web/                     # WebMVC 配置
 │       ├── WebMvcConfig.java
-│       ├── ResponseAdvice.java      # 统一响应包装
-│       └── RequestConfig.java
+│       └── ResponseAdvice.java      # 统一响应包装
 ├── entity/
 │   └── BaseDO.java              # 数据对象基类 (id, createTime, updateTime, delFlag, version)
 ├── repository/
@@ -59,7 +61,7 @@ framework/
 │   ├── mapper/
 │   │   └── OutboxMessageMapper.java     # MyBatis Mapper
 │   ├── converter/
-│   │   └── OutboxMessageConverter.java  # PO ↔ Domain 转换
+│   │   └── OutboxMessageMapper.java  # PO ↔ Domain 转换 (MapStruct)
 │   └── repository/
 │       └── OutboxRepository.java        # 仓储实现
 ├── exception/
@@ -105,13 +107,15 @@ framework/
 │   └── impl/RedisCacheImpl.java  # 实现 (含 Lua 原子解锁、SCAN 替代 KEYS 防阻塞)
 ├── service/                 # Token 服务
 │   ├── TokenService.java
+│   ├── TokenRefreshResult.java
 │   └── impl/TokenServiceImpl.java
 └── util/                    # 工具类
     ├── JwtUtil.java              # JWT 工具
     ├── SecurityContextUtil.java  # 安全上下文工具
     ├── OperLogUtil.java          # 操作日志工具
-    ├── RequestUtil.java          # 请求工具
-    └── FileUtils.java            # 文件工具
+    ├── RequestUtil.java          # 请求工具（无状态，自动识别代理头）
+    ├── FileUtils.java            # 文件工具
+    └── LocalRateLimiter.java     # 本地固定窗口限流器（读操作自动限流使用）
 ```
 
 ## 核心机制
@@ -119,9 +123,9 @@ framework/
 ### JWT 认证流程
 
 1. `JwtAuthenticationFilter` 拦截请求，从 Header 提取 Token
-2. `TokenServiceImpl` 验证 Token，加载用户信息到 SecurityContext
-3. Access Token 过期后通过 Refresh Token 刷新
-4. 登出时 Token 加入 Redis 黑名单
+2. `JwtUtil` 解析签名验证，`TokenServiceImpl` 检查 Redis 黑名单（仅登出 token 有 Redis 开销）
+3. Access Token 过期后通过 Refresh Token 刷新（轮换：作旧 + 颁新对）
+4. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
 
 ### 领域事件发布流程
 
@@ -160,7 +164,7 @@ RedisCache.executeLuaScript(script, keys, args)
 Redis 位图实现的布隆过滤器，用于缓存穿透防护：
 
 - 默认配置: 100 万预期插入, 1% 假阳性率 → 约 1.2MB 内存, 7 个哈希函数
-- 哈希策略: MD5 拆两个 long → k 个偏移量 (Less Hashing, Same Performance)
+- 哈希策略: Murmur3 128-bit 拆两个 long → k 个偏移量 (Less Hashing, Same Performance)
 - Lua 脚本保证 SETBIT/GETBIT 原子性 (单次 Redis 调用完成 k 次位操作)
 - 支持自定义预期数据量和假阳性率
 
@@ -224,3 +228,6 @@ RedisNode target = router.route("some-cache-key");
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
 - **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
 - **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量
+- **RedisConfig 复用 JacksonConfig 的 ObjectMapper**：Redis 序列化使用与 HTTP 相同的 Jackson 配置（Long→String 序列化、ParameterNamesModule）。修改 JacksonConfig 时需考虑对 Redis 序列化的影响
+- **配置属性类统一使用 `@ConfigurationProperties` + `@Component` 模式**：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖
+- **`@Component` 多构造器必须标注 `@Autowired`**：`MultiLevelCache` 和 `RedisBitmapBloomFilter` 都有多个构造器（默认参数 + 自定义参数），且无默认无参构造器。`@Component` 扫描时 Spring 无法自动选择构造器，必须在主构造器上加 `@Autowired` 明确指示。新增 `@Component` 类时有多个构造器时遵循此模式

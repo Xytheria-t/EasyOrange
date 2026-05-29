@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.user;
 
-import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;

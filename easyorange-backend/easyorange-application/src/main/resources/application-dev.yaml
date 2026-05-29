@@ -120,8 +120,31 @@ management:
         enabled: true
 
 # -------------------------------------------------------------------
-# 速率限制器配置 - 开发环境启用但使用更高阈值
+# 限流配置 - 开发环境使用更高阈值便于测试
 # -------------------------------------------------------------------
-rate-limiter:
-  enabled: true  # 开发环境启用速率限制，使用更高阈值便于测试
-  default-limit: 1000  # 开发环境使用更高的限制
+rate-limit-filter:
+  enabled: true
+  rules:
+    - path-pattern: /api/products
+      method: GET
+      strategy: local
+      max-requests: 1000
+      window-seconds: 60
+    - path-pattern: /api/products/{id}
+      method: GET
+      strategy: local
+      max-requests: 1000
+      window-seconds: 60
+    - path-pattern: /api/products/categories/**
+      method: GET
+      strategy: local
+      max-requests: 1000
+      window-seconds: 60
+    - path-pattern: /api/**
+      method: [POST, PUT, DELETE, PATCH]
+      strategy: redis
+      max-requests: 1000
+      window-seconds: 60
+  repeat-submit:
+    enabled: true
+    interval-ms: 3000

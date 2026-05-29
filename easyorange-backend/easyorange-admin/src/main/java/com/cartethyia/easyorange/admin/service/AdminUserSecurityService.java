@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.admin.dto.request.ResetPasswordRequest;
 import com.cartethyia.easyorange.admin.dto.request.UserRoleRequest;
 import com.cartethyia.easyorange.admin.dto.request.UserUnlockRequest;
 import com.cartethyia.easyorange.admin.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
@@ -30,6 +31,7 @@ public class AdminUserSecurityService {
 
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
 
     public void unlockUser(Long id, UserUnlockRequest request) {
         UserEntity entity = findUserByIdOrThrow(id);
@@ -54,15 +56,13 @@ public class AdminUserSecurityService {
 
     public void forceLogout(Long id) {
         findUserByIdOrThrow(id);
+        tokenService.invalidateAllUserTokens(id);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void changeUserRole(Long id, UserRoleRequest request) {
         UserEntity entity = findUserByIdOrThrow(id);
         UserType newRole = UserType.fromCode(request.getRole());
-        if (newRole == null) {
-            throw BusinessException.of("无效的角色值");
-        }
         if (newRole == entity.getUserType()) {
             throw BusinessException.of("用户已是该角色");
         }

@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -77,6 +78,8 @@ class AdminUserControllerExtensionTest {
         mockMvc.perform(put("/api/admin/users/1/force-logout"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
+
+        verify(adminUserSecurityService).forceLogout(1L);
     }
 
     @Test

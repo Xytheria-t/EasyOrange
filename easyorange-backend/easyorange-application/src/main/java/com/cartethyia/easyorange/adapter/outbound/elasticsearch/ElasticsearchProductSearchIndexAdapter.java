@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.Pro
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.output.ProductSearchIndexPort;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,6 +19,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -73,18 +76,55 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     ProductDocument buildDocument(ProductDO product) {
         Long productId = product.getId();
 
-        // 查询描述
         ProductDetailDO detail = productDetailMapper.selectById(productId);
 
-        // 查询图片（取主图 URL，取第一张作为主图）
         List<ProductImageDO> imageList = ChainWrappers.lambdaQueryChain(productImageMapper)
                 .eq(ProductImageDO::getProductId, productId)
                 .orderByAsc(ProductImageDO::getSortOrder)
                 .list();
+
+        String categoryName = null;
+        if (product.getCategoryId() != null) {
+            CategoryDO category = categoryMapper.selectById(product.getCategoryId());
+            if (category != null) {
+                categoryName = category.getName();
+            }
+        }
+
+        return buildDocument(product, detail, imageList, categoryName);
+    }
+
+    /** 使用预加载的数据构建文档（批量操作使用，消除 N+1 查询） */
+    private ProductDocument buildDocument(ProductDO product,
+                                          Map<Long, ProductDetailDO> detailMap,
+                                          Map<Long, List<ProductImageDO>> imagesByProduct,
+                                          Map<Long, CategoryDO> categoryMap) {
+        Long productId = product.getId();
+
+        ProductDetailDO detail = detailMap.get(productId);
+        List<ProductImageDO> imageList = imagesByProduct.getOrDefault(productId, List.of());
+
+        String categoryName = null;
+        if (product.getCategoryId() != null) {
+            CategoryDO category = categoryMap.get(product.getCategoryId());
+            if (category != null) {
+                categoryName = category.getName();
+            }
+        }
+
+        return buildDocument(product, detail, imageList, categoryName);
+    }
+
+    /** 核心文档构建逻辑（无数据库查询） */
+    private ProductDocument buildDocument(ProductDO product,
+                                          ProductDetailDO detail,
+                                          List<ProductImageDO> imageList,
+                                          String categoryName) {
+        Long productId = product.getId();
+
         String mainImage = null;
         List<String> imageUrls = List.of();
         if (!imageList.isEmpty()) {
-            // 取 isMain=1 的图片，或第一张
             mainImage = imageList.stream()
                     .filter(img -> img.getIsMain() != null && img.getIsMain() == 1)
                     .findFirst()
@@ -95,16 +135,6 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                     .collect(Collectors.toList());
         }
 
-        // 查询分类名称
-        String categoryName = null;
-        if (product.getCategoryId() != null) {
-            CategoryDO category = categoryMapper.selectById(product.getCategoryId());
-            if (category != null) {
-                categoryName = category.getName();
-            }
-        }
-
-        // 标签转 List
         List<String> tagList = product.getTags() != null && !product.getTags().isBlank()
                 ? Arrays.stream(product.getTags().split(","))
                         .map(String::trim)
@@ -132,5 +162,57 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .createTime(product.getCreateTime())
                 .updateTime(product.getUpdateTime())
                 .build();
+    }
+
+    /**
+     * 批量索引商品到 ES。
+     * 先批量加载所有关联数据到内存 Map，再逐条构建 document 并批量保存，消除 N+1 查询问题。
+     */
+    public void indexProducts(List<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return;
+        }
+        try {
+            List<ProductDocument> docs = loadDocumentsBulk(productIds);
+            if (!docs.isEmpty()) {
+                elasticsearchOperations.save(docs);
+            }
+            log.debug("Batch indexed {} products to ES", docs.size());
+        } catch (Exception e) {
+            log.error("Failed to batch index products to ES", e);
+        }
+    }
+
+    /** 批量加载所有关联数据到内存 Map，再逐条构建 document */
+    private List<ProductDocument> loadDocumentsBulk(List<Long> productIds) {
+        List<ProductDO> products = productMapper.selectBatchIds(productIds);
+        if (products.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, ProductDetailDO> detailMap = productDetailMapper
+                .selectDetailsByProductIds(productIds)
+                .stream()
+                .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, b) -> a));
+
+        Map<Long, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
+                .in(ProductImageDO::getProductId, productIds)
+                .orderByAsc(ProductImageDO::getSortOrder)
+                .list()
+                .stream()
+                .collect(Collectors.groupingBy(ProductImageDO::getProductId));
+
+        Set<Long> categoryIds = products.stream()
+                .map(ProductDO::getCategoryId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, CategoryDO> categoryMap = categoryIds.isEmpty() ? Map.of()
+                : categoryMapper.selectBatchIds(categoryIds)
+                        .stream()
+                        .collect(Collectors.toMap(CategoryDO::getId, c -> c, (a, b) -> a));
+
+        return products.stream()
+                .map(product -> buildDocument(product, detailMap, imagesByProduct, categoryMap))
+                .collect(Collectors.toList());
     }
 }

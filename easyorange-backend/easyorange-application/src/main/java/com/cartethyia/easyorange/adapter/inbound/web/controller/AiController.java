@@ -1,8 +1,11 @@
 package com.cartethyia.easyorange.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.ai.dto.AutoListingResult;
+import com.cartethyia.easyorange.ai.dto.AiReviewRequest;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
+import com.cartethyia.easyorange.ai.dto.AutoListingResult;
+import com.cartethyia.easyorange.ai.dto.CopyGenerationRequest;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
+import com.cartethyia.easyorange.ai.dto.PricingRequest;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
@@ -22,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -38,15 +40,10 @@ public class AiController {
     private final AiCopyGenerationService copyGenerationService;
 
     @PostMapping("/pricing")
-    public Result<PricingSuggestion> suggestPrice(
-            @RequestParam String productName,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String categoryName,
-            @RequestParam(required = false) Integer conditionLevel,
-            @RequestParam(required = false) BigDecimal originalPrice
-    ) {
+    public Result<PricingSuggestion> suggestPrice(@RequestBody PricingRequest request) {
         var suggestion = pricingService.suggestPrice(
-                productName, description, categoryName, conditionLevel, originalPrice);
+                request.productName(), request.description(), request.categoryName(),
+                request.conditionLevel(), request.originalPrice());
         return Result.success(suggestion);
     }
 
@@ -57,18 +54,11 @@ public class AiController {
     }
 
     @PostMapping("/review")
-    public Result<AiReviewResult> reviewProduct(
-            @RequestParam String productName,
-            @RequestParam(required = false) String description,
-            @RequestParam(required = false) String categoryName,
-            @RequestParam(required = false) Integer conditionLevel,
-            @RequestParam(required = false) String price,
-            @RequestParam(required = false) String sellerName,
-            @RequestBody(required = false) List<String> imageUrls
-    ) {
+    public Result<AiReviewResult> reviewProduct(@RequestBody AiReviewRequest request) {
         var result = reviewService.reviewProduct(
-                productName, description, categoryName, conditionLevel,
-                price, sellerName, imageUrls);
+                request.productName(), request.description(), request.categoryName(),
+                request.conditionLevel(), request.price(), request.sellerName(),
+                request.imageUrls());
         return Result.success(result);
     }
 
@@ -89,15 +79,10 @@ public class AiController {
     }
 
     @PostMapping("/generate-copy")
-    public Result<CopyGenerationResult> generateCopy(
-            @RequestParam String productName,
-            @RequestParam(required = false) String categoryName,
-            @RequestParam(required = false) Integer conditionLevel,
-            @RequestParam(required = false) String originalPrice,
-            @RequestParam(defaultValue = "standard") String style
-    ) {
+    public Result<CopyGenerationResult> generateCopy(@RequestBody CopyGenerationRequest request) {
         var result = copyGenerationService.generateCopy(
-                productName, categoryName, conditionLevel, originalPrice, style);
+                request.productName(), request.categoryName(), request.conditionLevel(),
+                request.originalPrice(), request.style() != null ? request.style() : "standard");
         return Result.success(result);
     }
 }

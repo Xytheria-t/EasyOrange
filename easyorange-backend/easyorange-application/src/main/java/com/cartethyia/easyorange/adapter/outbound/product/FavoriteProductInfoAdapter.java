@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
-import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
+import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;

@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.framework.service.impl;
 
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.service.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
 import io.jsonwebtoken.Claims;
@@ -10,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -19,8 +23,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
 
-    private static final String ACCESS_PREFIX = "access:";
-    private static final String REFRESH_PREFIX = "refresh:";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private final StringRedisTemplate stringRedisTemplate;
     private final JwtUtil jwtUtil;
@@ -28,49 +32,44 @@ public class TokenServiceImpl implements TokenService {
 
     @Override
     public String createAccessToken(Long userId, String username, String userType) {
-        String uuid = UUID.randomUUID().toString().replace("-", "");
-
-        String userKey = getTokenKey(ACCESS_PREFIX + uuid);
-        stringRedisTemplate.opsForValue().set(userKey, userId.toString(),
-                jwtProperties.getAccessTokenExpiration(), TimeUnit.MINUTES);
-
-        Map<String, Object> claims = buildClaims(ACCESS_PREFIX + uuid, username, userType);
+        String jti = UUID.randomUUID().toString().replace("-", "");
+        Map<String, Object> claims = buildClaims(jti, username, userType, ACCESS_TOKEN_TYPE);
         return jwtUtil.generateToken(userId.toString(), claims);
     }
 
     @Override
     public String createRefreshToken(Long userId, String username, String userType) {
-        String uuid = UUID.randomUUID().toString().replace("-", "");
-
-        String userKey = getTokenKey(REFRESH_PREFIX + uuid);
-        stringRedisTemplate.opsForValue().set(userKey, userId.toString(),
-                jwtProperties.getRefreshTokenExpiration(), TimeUnit.DAYS);
-
-        Map<String, Object> claims = buildClaims(REFRESH_PREFIX + uuid, username, userType);
+        String jti = UUID.randomUUID().toString().replace("-", "");
+        Map<String, Object> claims = buildClaims(jti, username, userType, REFRESH_TOKEN_TYPE);
         return jwtUtil.generateRefreshToken(userId.toString(), claims);
     }
 
     @Override
-    public void deleteToken(String token) {
+    public void invalidateToken(String token) {
         try {
-            jwtUtil.getClaim(token, "uuid", String.class).ifPresent(uuid -> stringRedisTemplate.delete(getTokenKey(uuid)));
+            jwtUtil.parseToken(token).ifPresent(claims -> {
+                String jti = claims.get("jti", String.class);
+                if (jti != null) {
+                    long ttlSeconds = Duration.between(Instant.now(), claims.getExpiration().toInstant()).getSeconds();
+                    if (ttlSeconds > 0) {
+                        stringRedisTemplate.opsForValue().set(
+                            getBlacklistKey(jti), "1", ttlSeconds, TimeUnit.SECONDS
+                        );
+                    }
+                }
+            });
         } catch (Exception e) {
-            log.error("删除 Token 失败：{}", e.getMessage());
+            log.error("Token 失效失败：{}", e.getMessage());
         }
     }
 
     @Override
-    public void revokeAllTokens(String accessToken, String refreshToken) {
-        try {
-            if (accessToken != null) {
-                deleteToken(accessToken);
-            }
-            if (refreshToken != null) {
-                deleteToken(refreshToken);
-            }
-        } catch (Exception e) {
-            log.error("撤销双令牌失败：{}", e.getMessage());
-        }
+    public void invalidateAllUserTokens(Long userId) {
+        String key = getForceLogoutKey(userId);
+        stringRedisTemplate.opsForValue().set(
+            key, String.valueOf(System.currentTimeMillis()),
+            jwtProperties.getAccessTokenExpiration(), TimeUnit.MINUTES
+        );
     }
 
     @Override
@@ -78,42 +77,67 @@ public class TokenServiceImpl implements TokenService {
         try {
             return jwtUtil.parseToken(token)
                     .filter(claims -> {
-                        String uuid = claims.get("uuid", String.class);
-                        if (uuid == null) {
-                            return false;
-                        }
-                        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(getTokenKey(uuid)));
+                        String jti = claims.get("jti", String.class);
+                        return jti != null && !isTokenRevoked(jti);
+                    })
+                    .filter(claims -> {
+                        String forceLogoutTime = stringRedisTemplate.opsForValue()
+                            .get(getForceLogoutKey(Long.parseLong(claims.getSubject())));
+                        if (forceLogoutTime == null) return true;
+                        Date iat = claims.getIssuedAt();
+                        return iat != null && iat.getTime() >= Long.parseLong(forceLogoutTime);
                     })
                     .map(Claims::getSubject)
                     .map(Long::parseLong)
                     .orElse(null);
         } catch (Exception e) {
-            log.error("验证 Token 并获取用户 ID 失败：{}", e.getMessage());
+            log.error("验证 Token 失败：{}", e.getMessage());
             return null;
         }
     }
 
     @Override
-    public String refreshToken(String refreshToken) {
+    public TokenRefreshResult refreshToken(String refreshToken) {
         Long userId = verifyTokenAndGetUserId(refreshToken);
         if (userId == null) {
             return null;
         }
 
-        deleteToken(refreshToken);
+        // 验证是 refresh token 类型
+        String tokenType = jwtUtil.getClaim(refreshToken, "type", String.class).orElse(null);
+        if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
+            log.warn("尝试使用 access token 刷新，拒绝");
+            return null;
+        }
+
+        // 轮换：作废旧 refresh token，颁发新对
+        invalidateToken(refreshToken);
 
         String username = jwtUtil.getClaim(refreshToken, "username", String.class).orElse(null);
         String userType = jwtUtil.getClaim(refreshToken, "userType", String.class).orElse(null);
-        return createAccessToken(userId, username, userType);
+
+        String newAccessToken = createAccessToken(userId, username, userType);
+        String newRefreshToken = createRefreshToken(userId, username, userType);
+
+        return new TokenRefreshResult(newAccessToken, newRefreshToken);
     }
 
-    private String getTokenKey(String uuid) {
-        return LoginCacheConstants.buildTokenKey(uuid);
+    private boolean isTokenRevoked(String jti) {
+        return Boolean.TRUE.equals(stringRedisTemplate.hasKey(getBlacklistKey(jti)));
     }
 
-    private Map<String, Object> buildClaims(String uuid, String username, String userType) {
+    private String getBlacklistKey(String jti) {
+        return LoginCacheConstants.TOKEN_BLACKLIST_KEY + jti;
+    }
+
+    private String getForceLogoutKey(Long userId) {
+        return LoginCacheConstants.FORCE_LOGOUT_KEY + userId;
+    }
+
+    private Map<String, Object> buildClaims(String jti, String username, String userType, String tokenType) {
         Map<String, Object> claims = new java.util.HashMap<>();
-        claims.put("uuid", uuid);
+        claims.put("jti", jti);
+        claims.put("type", tokenType);
         if (username != null) {
             claims.put("username", username);
         }

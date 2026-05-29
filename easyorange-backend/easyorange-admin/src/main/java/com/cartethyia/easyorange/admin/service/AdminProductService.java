@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.AdminProductQueryRequest;
@@ -20,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +32,6 @@ public class AdminProductService {
     private final ProductMapper productMapper;
     private final ProductDetailMapper productDetailMapper;
     private final ProductImageMapper productImageMapper;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
         int pageNum = request.pageNum() != null ? request.pageNum() : 1;
@@ -59,7 +58,7 @@ public class AdminProductService {
 
         if (StringUtils.hasText(request.startTime())) {
             try {
-                LocalDateTime startTime = LocalDateTime.parse(request.startTime() + " 00:00:00", DATE_FORMATTER);
+                LocalDateTime startTime = LocalDateTime.parse(request.startTime() + " 00:00:00", BatchQueryUtil.DATE_FORMATTER);
                 wrapper.ge(ProductDO::getCreateTime, startTime);
             } catch (Exception ignored) {
             }
@@ -67,7 +66,7 @@ public class AdminProductService {
 
         if (StringUtils.hasText(request.endTime())) {
             try {
-                LocalDateTime endTime = LocalDateTime.parse(request.endTime() + " 23:59:59", DATE_FORMATTER);
+                LocalDateTime endTime = LocalDateTime.parse(request.endTime() + " 23:59:59", BatchQueryUtil.DATE_FORMATTER);
                 wrapper.le(ProductDO::getCreateTime, endTime);
             } catch (Exception ignored) {
             }

@@ -1,13 +1,16 @@
 package com.cartethyia.easyorange.framework.bloom;
 
 import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
+@Component
 public class RedisBitmapBloomFilter implements BloomFilter {
 
     private static final String BLOOM_PUT_SCRIPT = """
@@ -32,6 +35,7 @@ public class RedisBitmapBloomFilter implements BloomFilter {
 
     private static final DefaultRedisScript<Long> PUT_SCRIPT;
     private static final DefaultRedisScript<Long> CHECK_SCRIPT;
+    private static final HashFunction MURMUR3_128 = Hashing.murmur3_128();
 
     static {
         PUT_SCRIPT = new DefaultRedisScript<>();
@@ -47,6 +51,7 @@ public class RedisBitmapBloomFilter implements BloomFilter {
     private final long bitSize;
     private final int numHashFunctions;
 
+    @Autowired
     public RedisBitmapBloomFilter(RedisCache redisCache) {
         this(redisCache, 1_000_000L, 0.01);
     }
@@ -96,30 +101,26 @@ public class RedisBitmapBloomFilter implements BloomFilter {
     }
 
     private long[] hash(String element) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            byte[] digest = md.digest(element.getBytes(StandardCharsets.UTF_8));
+        var hash = MURMUR3_128.hashString(element, StandardCharsets.UTF_8);
+        byte[] bytes = hash.asBytes();
 
-            long h1 = 0;
-            long h2 = 0;
-            for (int i = 0; i < 8; i++) {
-                h1 = (h1 << 8) | (digest[i] & 0xFFL);
-            }
-            for (int i = 8; i < 16; i++) {
-                h2 = (h2 << 8) | (digest[i] & 0xFFL);
-            }
-
-            h1 = h1 & Long.MAX_VALUE;
-            h2 = h2 & Long.MAX_VALUE;
-
-            long[] offsets = new long[numHashFunctions];
-            for (int i = 0; i < numHashFunctions; i++) {
-                offsets[i] = Math.floorMod(h1 + i * h2, bitSize);
-            }
-            return offsets;
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("MD5 algorithm not available", e);
+        long h1 = 0;
+        long h2 = 0;
+        for (int i = 0; i < 8; i++) {
+            h1 = (h1 << 8) | (bytes[i] & 0xFFL);
         }
+        for (int i = 8; i < 16; i++) {
+            h2 = (h2 << 8) | (bytes[i] & 0xFFL);
+        }
+
+        h1 = h1 & Long.MAX_VALUE;
+        h2 = h2 & Long.MAX_VALUE;
+
+        long[] offsets = new long[numHashFunctions];
+        for (int i = 0; i < numHashFunctions; i++) {
+            offsets[i] = Math.floorMod(h1 + i * h2, bitSize);
+        }
+        return offsets;
     }
 
     static long optimalBitSize(long expectedInsertions, double fpp) {

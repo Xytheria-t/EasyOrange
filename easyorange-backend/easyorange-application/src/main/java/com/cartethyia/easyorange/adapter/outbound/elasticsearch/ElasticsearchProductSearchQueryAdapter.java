@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import com.cartethyia.easyorange.product.domain.port.output.FacetBucket;
-import com.cartethyia.easyorange.product.domain.port.output.ProductSearchQueryPort;
-import com.cartethyia.easyorange.product.domain.port.output.SearchResult;
+import com.cartethyia.easyorange.product.domain.port.FacetBucket;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.domain.port.SearchResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;

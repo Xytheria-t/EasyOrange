@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ public class MultiLevelCache {
     private final long l2DefaultTimeout;
     private final TimeUnit l2DefaultUnit;
 
+    @Autowired
     public MultiLevelCache(
             @Qualifier("l1Cache") Cache<String, Object> l1Cache,
             RedisCache redisCache) {

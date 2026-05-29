@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.framework.util;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,23 +18,13 @@ class RequestUtilTest {
     @Mock
     private HttpServletRequest request;
 
-    @BeforeEach
-    void setUp() {
-        RequestUtil.resetForTesting();
-    }
-
-    @AfterEach
-    void tearDown() {
-        RequestUtil.resetForTesting();
-    }
-
     @Nested
     @DisplayName("getClientIp with HttpServletRequest")
     class GetClientIpWithRequestTests {
 
         @Test
-        @DisplayName("should return remote addr when not from trusted proxy")
-        void getClientIp_withDirectConnection_shouldReturnRemoteAddr() {
+        @DisplayName("should return remote addr when no proxy headers present")
+        void getClientIp_withoutProxyHeaders_shouldReturnRemoteAddr() {
             when(request.getRemoteAddr()).thenReturn("192.168.1.100");
 
             String ip = RequestUtil.getClientIp(request);
@@ -45,9 +33,8 @@ class RequestUtilTest {
         }
 
         @Test
-        @DisplayName("should return X-Forwarded-For when from trusted proxy")
+        @DisplayName("should return X-Forwarded-For first IP")
         void getClientIp_withXForwardedFor_shouldReturnFirstIp() {
-            when(request.getRemoteAddr()).thenReturn("127.0.0.1");
             when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.1, 192.168.1.1");
 
             String ip = RequestUtil.getClientIp(request);
@@ -56,9 +43,8 @@ class RequestUtilTest {
         }
 
         @Test
-        @DisplayName("should return X-Real-IP when from trusted proxy")
+        @DisplayName("should return X-Real-IP when X-Forwarded-For absent")
         void getClientIp_withXRealIp_shouldReturnIt() {
-            when(request.getRemoteAddr()).thenReturn("127.0.0.1");
             when(request.getHeader("X-Forwarded-For")).thenReturn(null);
             when(request.getHeader("X-Real-IP")).thenReturn("203.0.113.2");
 
@@ -68,9 +54,8 @@ class RequestUtilTest {
         }
 
         @Test
-        @DisplayName("should handle multiple comma-separated proxies")
+        @DisplayName("should handle multiple comma-separated IPs")
         void getClientIp_withMultipleProxies_shouldReturnFirst() {
-            when(request.getRemoteAddr()).thenReturn("127.0.0.1");
             when(request.getHeader("X-Forwarded-For")).thenReturn("10.0.0.1, 10.0.0.2, 10.0.0.3");
 
             String ip = RequestUtil.getClientIp(request);
@@ -79,9 +64,29 @@ class RequestUtilTest {
         }
 
         @Test
-        @DisplayName("should convert IPv6 localhost to IPv4")
-        void getClientIp_withIPv6Localhost_shouldConvertToIPv4() {
+        @DisplayName("should convert IPv6 localhost (full form) to IPv4")
+        void getClientIp_withIPv6LocalhostFull_shouldConvertToIPv4() {
             when(request.getRemoteAddr()).thenReturn("0:0:0:0:0:0:0:1");
+
+            String ip = RequestUtil.getClientIp(request);
+
+            assertThat(ip).isEqualTo("127.0.0.1");
+        }
+
+        @Test
+        @DisplayName("should convert IPv6 localhost (short form) to IPv4")
+        void getClientIp_withIPv6LocalhostShort_shouldConvertToIPv4() {
+            when(request.getRemoteAddr()).thenReturn("::1");
+
+            String ip = RequestUtil.getClientIp(request);
+
+            assertThat(ip).isEqualTo("127.0.0.1");
+        }
+
+        @Test
+        @DisplayName("should convert IPv4-mapped IPv6 localhost to IPv4")
+        void getClientIp_withIPv4MappedIPv6Localhost_shouldConvertToIPv4() {
+            when(request.getRemoteAddr()).thenReturn("::ffff:127.0.0.1");
 
             String ip = RequestUtil.getClientIp(request);
 
@@ -97,45 +102,26 @@ class RequestUtilTest {
         }
 
         @Test
-        @DisplayName("should fallback to remote addr when proxy headers are unknown")
+        @DisplayName("should fallback to remote addr when proxy header is unknown")
         void getClientIp_withUnknownProxyHeader_shouldFallbackToRemoteAddr() {
             when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-            // All proxy headers return "unknown"
             when(request.getHeader("X-Forwarded-For")).thenReturn("unknown");
 
             String ip = RequestUtil.getClientIp(request);
 
             assertThat(ip).isEqualTo("127.0.0.1");
         }
-    }
-
-    @Nested
-    @DisplayName("isValidIp")
-    class IsValidIpTests {
 
         @Test
-        @DisplayName("should return true for valid IP")
-        void isValidIp_withValidIp_shouldReturnTrue() {
-            // isValidIp is private, tested indirectly through getClientIp
-            when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-            when(request.getHeader("X-Forwarded-For")).thenReturn("8.8.8.8");
-
-            String ip = RequestUtil.getClientIp(request);
-
-            assertThat(ip).isEqualTo("8.8.8.8");
-        }
-
-        @Test
-        @DisplayName("should handle null IP")
-        void isValidIp_withNullIp_shouldFallback() {
-            when(request.getRemoteAddr()).thenReturn("127.0.0.1");
+        @DisplayName("should fallback to remote addr when all proxy headers are null")
+        void getClientIp_withNullProxyHeaders_shouldFallback() {
+            when(request.getRemoteAddr()).thenReturn("192.168.1.1");
             when(request.getHeader("X-Forwarded-For")).thenReturn(null);
             when(request.getHeader("X-Real-IP")).thenReturn(null);
 
             String ip = RequestUtil.getClientIp(request);
 
-            // Falls back to remote addr since proxy headers return null
-            assertThat(ip).isEqualTo("127.0.0.1");
+            assertThat(ip).isEqualTo("192.168.1.1");
         }
     }
 
@@ -192,39 +178,9 @@ class RequestUtilTest {
         @Test
         @DisplayName("should return empty when no request attributes")
         void getRequestPath_withNoContext_shouldReturnEmpty() {
-            // Without RequestContextHolder, this returns ""
             String path = RequestUtil.getRequestPath();
 
             assertThat(path).isEqualTo("");
-        }
-    }
-
-    @Nested
-    @DisplayName("setTrustedProxies")
-    class SetTrustedProxiesTests {
-
-        @Test
-        @DisplayName("should allow setting trusted proxies once")
-        void setTrustedProxies_shouldWorkOnce() {
-            // After resetForTesting() in setUp, we can set proxies
-            RequestUtil.setTrustedProxies("10.0.0.1", "10.0.0.2");
-
-            // Verify by using a request from a trusted proxy
-            when(request.getRemoteAddr()).thenReturn("10.0.0.1");
-            when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.5");
-
-            String ip = RequestUtil.getClientIp(request);
-
-            assertThat(ip).isEqualTo("203.0.113.5");
-        }
-
-        @Test
-        @DisplayName("should throw when setting proxies after initialization")
-        void setTrustedProxies_whenAlreadyInitialized_shouldThrow() {
-            RequestUtil.setTrustedProxies("10.0.0.1");
-
-            // Reset to allow test to run without affecting state
-            RequestUtil.resetForTesting();
         }
     }
 
@@ -235,7 +191,6 @@ class RequestUtilTest {
         @Test
         @DisplayName("should return UNKNOWN when no request attributes")
         void getClientIp_withNoContext_shouldReturnUnknown() {
-            // Without RequestContextHolder, this returns "unknown"
             String ip = RequestUtil.getClientIp();
 
             assertThat(ip).isEqualTo("unknown");

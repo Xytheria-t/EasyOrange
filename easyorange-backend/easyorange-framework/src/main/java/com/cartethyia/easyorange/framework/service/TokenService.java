@@ -6,11 +6,11 @@ public interface TokenService {
 
     String createRefreshToken(Long userId, String username, String userType);
 
-    void deleteToken(String token);
+    void invalidateToken(String token);
 
-    void revokeAllTokens(String accessToken, String refreshToken);
+    void invalidateAllUserTokens(Long userId);
 
     Long verifyTokenAndGetUserId(String token);
 
-    String refreshToken(String refreshToken);
+    TokenRefreshResult refreshToken(String refreshToken);
 }

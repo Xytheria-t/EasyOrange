@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
@@ -13,7 +14,7 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -29,7 +30,6 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -42,7 +42,7 @@ public class AdminOrderService {
     private final OrderReadRepository orderReadRepository;
     private final UserMapper userMapper;
     private final ProductMapper productMapper;
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private final BatchQueryUtil batchQueryUtil;
 
     public PageResult<AdminOrderResponse> listOrders(AdminOrderQueryRequest request) {
         int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
@@ -68,14 +68,14 @@ public class AdminOrderService {
         }
         if (StringUtils.hasText(request.getStartTime())) {
             try {
-                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", DATE_FORMATTER);
+                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", BatchQueryUtil.DATE_FORMATTER);
                 wrapper.ge(OrderDO::getCreateTime, startTime);
             } catch (Exception ignored) {
             }
         }
         if (StringUtils.hasText(request.getEndTime())) {
             try {
-                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", DATE_FORMATTER);
+                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", BatchQueryUtil.DATE_FORMATTER);
                 wrapper.le(OrderDO::getCreateTime, endTime);
             } catch (Exception ignored) {
             }
@@ -85,7 +85,12 @@ public class AdminOrderService {
 
         Page<OrderDO> page = wrapper.page(new Page<>(pageNum, pageSize));
 
-        Map<Long, UserEntity> userMap = batchGetUsers(page);
+        Set<Long> userIds = new HashSet<>();
+        page.getRecords().forEach(o -> {
+            if (o.getBuyerId() != null) userIds.add(o.getBuyerId());
+            if (o.getSellerId() != null) userIds.add(o.getSellerId());
+        });
+        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(userIds.stream().toList());
         Map<Long, List<OrderItemDO>> itemsMap = batchGetOrderItems(page);
         Map<Long, ProductDO> productMap = batchGetProductsFromItems(itemsMap);
 
@@ -232,19 +237,6 @@ public class AdminOrderService {
         order.setCancelReason(reason);
         order.setCancelTime(LocalDateTime.now());
         orderMapper.updateById(order);
-    }
-
-    private Map<Long, UserEntity> batchGetUsers(Page<OrderDO> orderPage) {
-        Set<Long> userIds = new HashSet<>();
-        orderPage.getRecords().forEach(o -> {
-            userIds.add(o.getBuyerId());
-            userIds.add(o.getSellerId());
-        });
-        if (userIds.isEmpty()) {
-            return Map.of();
-        }
-        List<UserEntity> users = userMapper.selectBatchIds(userIds);
-        return users.stream().collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
     }
 
     private Map<Long, List<OrderItemDO>> batchGetOrderItems(Page<OrderDO> orderPage) {

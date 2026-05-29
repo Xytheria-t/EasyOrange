@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
 import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
@@ -13,7 +14,7 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -32,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,6 +59,9 @@ class AdminOrderServiceTest {
 
     @Mock
     private ProductMapper productMapper;
+
+    @Mock
+    private BatchQueryUtil batchQueryUtil;
 
     @InjectMocks
     private AdminOrderService orderService;
@@ -109,7 +114,7 @@ class AdminOrderServiceTest {
                     });
             UserEntity buyer = UserEntity.builder().id(BUYER_ID).nickName("买家").build();
             UserEntity seller = UserEntity.builder().id(SELLER_ID).nickName("卖家").build();
-            when(userMapper.selectBatchIds(anyCollection())).thenReturn(List.of(buyer, seller));
+            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(BUYER_ID, buyer, SELLER_ID, seller));
             OrderItemDO item = OrderItemDO.builder().id(1L).orderId(ORDER_ID).productId(PRODUCT_ID).subtotal(new BigDecimal("99.99")).build();
             when(orderItemMapper.selectList(any())).thenReturn(List.of(item));
             ProductDO orderTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();

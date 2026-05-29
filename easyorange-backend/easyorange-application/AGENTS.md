@@ -11,13 +11,10 @@ application/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
-│       │   │   ├── ForgotPasswordEventListener.java
-│       │   │   ├── PasswordChangedEventListener.java
 │       │   │   ├── PaymentInitiationEventListener.java
 │       │   │   ├── ProductAuditEventListener.java
 │       │   │   ├── ReportProcessedEventListener.java
-│       │   │   ├── StockReservationEventListener.java
-│       │   │   └── UserRegisteredEventListener.java
+│       │   │   └── StockReservationEventListener.java
 │       │   ├── inbound/web/controller/  # Web 控制器
 │       │   │   ├── AiController.java                  # AI 服务端点
 │       │   │   ├── CreditScoreController.java         # 信用分数端点
@@ -51,6 +48,8 @@ application/
 │       └── db/
 │           ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
 │           │   ├── V1__init_schema.sql
+│           │   ├── V2__create_eo_order_item.sql
+│           │   ├── V3__optimize_indexes_and_migrate_orders.sql
 │           │   ├── R__seed_categories.sql
 │           │   ├── R__seed_message_templates.sql
 │           │   └── R__seed_payment_config.sql
@@ -97,8 +96,12 @@ easyorange-application
 
 - `easyorange.jwt.secret` / `easyorange.jwt.access-token-expiration` — JWT 配置
 - `easyorange.security` — 安全相关 (白名单路径等)
-- `easyorange.rate-limiter` — 限流配置
+- `rate-limit-filter` — 限流+防重 Filter 配置（规则列表、防重间隔、方法匹配）
 - `easyorange.thread-pool` — 线程池配置
+- `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
+- `easyorange.idgen.*` — Snowflake 分布式 ID 生成器（`enabled`、`data-center-id`）
+- `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
+- `http-client.*` — HTTP 客户端超时和协议版本
 
 ## Flyway 迁移规范
 
@@ -132,6 +135,7 @@ easyorange-application
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 卖家信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
+| `ProductNotificationAdapter` | `ProductNotificationPort` | product | 商品事件通知（发布、售出、库存预警） |
 | `ProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | MySQL search_text 索引写入 |
 | `ElasticsearchProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | ES 搜索索引写入（条件激活） |
 | `ElasticsearchProductSearchQueryAdapter` | — | — | ES 商品搜索查询（含分面聚合） |
@@ -150,13 +154,10 @@ easyorange-application
 
 | 监听器 | 事件 | 功能 |
 |--------|------|------|
-| `ForgotPasswordEventListener` | `ForgotPasswordEvent` | 找回密码→站内消息通知 |
-| `PasswordChangedEventListener` | `PasswordChangedEvent` | 密码变更→安全提醒站内消息 |
 | `PaymentInitiationEventListener` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
 | `ProductAuditEventListener` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventListener` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
 | `StockReservationEventListener` | `StockReservationRequestedEvent` | 扣减库存 |
-| `UserRegisteredEventListener` | `UserRegisteredEvent` | 用户注册→欢迎消息通知 |
 
 所有事件监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
 

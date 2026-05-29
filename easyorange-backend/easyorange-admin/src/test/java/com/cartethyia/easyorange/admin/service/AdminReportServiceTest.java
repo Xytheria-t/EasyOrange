@@ -16,8 +16,8 @@ import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
+import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,10 +51,10 @@ class AdminReportServiceTest {
     private ReportHandleHistoryRepository reportHandleHistoryRepository;
 
     @Mock
-    private UserMapper userMapper;
+    private ProductMapper productMapper;
 
     @Mock
-    private ProductMapper productMapper;
+    private BatchQueryUtil batchQueryUtil;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -99,10 +99,10 @@ class AdminReportServiceTest {
             ProductReport report = createPendingReport();
             PageResult<ProductReport> pageResult = PageResult.of(List.of(report), 1L, 1, 20);
             when(productReportRepository.findByStatus(0, 1, 20)).thenReturn(pageResult);
-            when(userMapper.selectBatchIds(anyList())).thenReturn(List.of(createUser(REPORTER_ID, "举报人")));
+            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             ProductDO reportTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
             reportTestProduct.setDelFlag(0);
-            when(productMapper.selectBatchIds(anyList())).thenReturn(List.of(reportTestProduct));
+            when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, reportTestProduct));
 
             PageResult<AdminReportResponse> result = reportService.listReports(1, 20, 0);
 
@@ -125,10 +125,10 @@ class AdminReportServiceTest {
         void getReportDetail_success() {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
-            when(userMapper.selectBatchIds(anyList())).thenReturn(List.of(createUser(REPORTER_ID, "举报人")));
+            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             ProductDO testProduct2 = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
             testProduct2.setDelFlag(0);
-            when(productMapper.selectBatchIds(anyList())).thenReturn(List.of(testProduct2));
+            when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, testProduct2));
 
             AdminReportResponse vo = reportService.getReportDetail(REPORT_ID);
 
@@ -344,7 +344,7 @@ class AdminReportServiceTest {
                     "resolve", "已处理", LocalDateTime.now());
 
             when(reportHandleHistoryRepository.findByReportId(REPORT_ID)).thenReturn(List.of(history));
-            when(userMapper.selectBatchIds(anyList())).thenReturn(java.util.List.of(createUser(OPERATOR_ID, "管理员")));
+            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(OPERATOR_ID, createUser(OPERATOR_ID, "管理员")));
 
             List<ReportHandleHistoryResponse> historyList = reportService.getReportHistory(REPORT_ID);
 

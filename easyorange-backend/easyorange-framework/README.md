@@ -74,7 +74,7 @@ public class Application {
 |------|------|
 | `RedisCache` | Redis 缓存抽象接口（支持 String/Hash/List/Set/ZSet/Bitmap/Lua） |
 | `RedisCacheImpl` | Redis 缓存实现 |
-| `LocalCacheConfig` | Caffeine 本地缓存配置（tokenUuidCache / imageProcessCache / l1Cache） |
+| `LocalCacheConfig` | Caffeine 本地缓存配置（imageProcessCache / l1Cache） |
 | `MultiLevelCache` | 多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联，自动回填） |
 
 ### 缓存防护组件
@@ -119,15 +119,15 @@ public class AuthController {
     private final TokenService tokenService;
     
     @PostMapping("/login")
-    public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+    public Result<LoginResult> login(@Valid @RequestBody LoginRequest request) {
         // 验证用户
         User user = userService.authenticate(request);
         
-        // 生成 token
+        // 生成 token（JWT 自包含签名，无需 Redis 预存）
         String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getType());
         String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getType());
         
-        return Result.ok(new LoginResponse(accessToken, refreshToken));
+        return Result.ok(new LoginResult(accessToken, refreshToken, userVO));
     }
 }
 ```
