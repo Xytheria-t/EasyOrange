@@ -8,10 +8,10 @@ import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandl
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
+import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

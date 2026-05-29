@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.application.event;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
-import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
+import com.cartethyia.easyorange.payment.domain.port.DomainEventStorePort;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;

@@ -1,9 +1,10 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
-import com.cartethyia.easyorange.message.entity.MessageTemplate;
 import com.cartethyia.easyorange.message.service.impl.MessageTemplateServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,10 +29,19 @@ class MessageTemplateServiceTest {
     @Mock
     private MessageTemplateRepository messageTemplateRepository;
 
+    @Mock
+    private RedisCache redisCache;
+
     @InjectMocks
     private MessageTemplateServiceImpl templateService;
 
     private static final String TEMPLATE_CODE = "order_created";
+
+    private static MessageTemplateAggregate buildTemplate(Long id, String code, String name,
+                                                           String type, String title, String content,
+                                                           String variables, Integer status) {
+        return MessageTemplateAggregate.fromRaw(id, code, name, type, title, content, variables, status, null);
+    }
 
     @Nested
     @DisplayName("getByCode")
@@ -40,10 +50,10 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("按模板编码获取模板")
         void getByCode_found_returnsTemplate() {
-            MessageTemplate template = MessageTemplate.builder().build();
+            MessageTemplateAggregate template = buildTemplate(1L, TEMPLATE_CODE, "test", "SYSTEM", "t", "c", null, 1);
             when(messageTemplateRepository.findByCode(TEMPLATE_CODE)).thenReturn(template);
 
-            MessageTemplate result = templateService.getByCode(TEMPLATE_CODE);
+            MessageTemplateAggregate result = templateService.getByCode(TEMPLATE_CODE);
 
             assertThat(result).isEqualTo(template);
         }
@@ -53,7 +63,7 @@ class MessageTemplateServiceTest {
         void getByCode_notFound_returnsNull() {
             when(messageTemplateRepository.findByCode(TEMPLATE_CODE)).thenReturn(null);
 
-            MessageTemplate result = templateService.getByCode(TEMPLATE_CODE);
+            MessageTemplateAggregate result = templateService.getByCode(TEMPLATE_CODE);
 
             assertThat(result).isNull();
         }
@@ -66,16 +76,11 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("渲染模板成功")
         void renderTemplate_success_returnsRendered() {
-            MessageTemplate template = MessageTemplate.builder()
-                    .id(1L)
-                    .templateCode(TEMPLATE_CODE)
-                    .templateName("订单创建通知")
-                    .templateType("SYSTEM")
-                    .title("订单 ${orderId} 已创建")
-                    .content("您的订单 ${orderId} 已创建成功，金额 ${amount} 元")
-                    .variables("orderId,amount")
-                    .status(1)
-                    .build();
+            MessageTemplateAggregate template = buildTemplate(
+                    1L, TEMPLATE_CODE, "订单创建通知", "SYSTEM",
+                    "订单 ${orderId} 已创建",
+                    "您的订单 ${orderId} 已创建成功，金额 ${amount} 元",
+                    "orderId,amount", 1);
 
             when(messageTemplateRepository.findByCode(TEMPLATE_CODE)).thenReturn(template);
 
@@ -100,14 +105,11 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("渲染模板时缺失变量保持占位符不变")
         void renderTemplate_missingVariables_keepsPlaceholder() {
-            MessageTemplate template = MessageTemplate.builder()
-                    .id(1L)
-                    .templateCode(TEMPLATE_CODE)
-                    .title("订单 ${orderId}")
-                    .content("金额 ${amount} 元")
-                    .variables("orderId,amount")
-                    .status(1)
-                    .build();
+            MessageTemplateAggregate template = buildTemplate(
+                    1L, TEMPLATE_CODE, null, null,
+                    "订单 ${orderId}",
+                    "金额 ${amount} 元",
+                    "orderId,amount", 1);
 
             when(messageTemplateRepository.findByCode(TEMPLATE_CODE)).thenReturn(template);
 
@@ -186,11 +188,12 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("查询模板列表")
         void selectTemplateList_returnsList() {
-            MessageTemplate condition = MessageTemplate.builder().build();
-            List<MessageTemplate> expected = List.of(MessageTemplate.builder().build());
+            MessageTemplateAggregate condition = buildTemplate(null, "code1", null, null, null, null, null, null);
+            List<MessageTemplateAggregate> expected = List.of(
+                    buildTemplate(1L, "code1", "name1", "SYSTEM", "t", "c", null, 1));
             when(messageTemplateRepository.findByCondition(condition)).thenReturn(expected);
 
-            List<MessageTemplate> result = templateService.selectTemplateList(condition);
+            List<MessageTemplateAggregate> result = templateService.selectTemplateList(condition);
 
             assertThat(result).isEqualTo(expected);
         }
@@ -198,7 +201,8 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("新增模板")
         void insertTemplate_savesAndReturns1() {
-            MessageTemplate template = MessageTemplate.builder().build();
+            MessageTemplateAggregate template = MessageTemplateAggregate.create(
+                    "code1", "name1", "SYSTEM", "t", "c", null, null);
 
             int result = templateService.insertTemplate(template);
 
@@ -209,7 +213,7 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("更新模板")
         void updateTemplate_updatesAndReturns1() {
-            MessageTemplate template = MessageTemplate.builder().build();
+            MessageTemplateAggregate template = buildTemplate(1L, "code1", "name1", "SYSTEM", "t", "c", null, 1);
 
             int result = templateService.updateTemplate(template);
 
@@ -230,10 +234,7 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("校验模板编码唯一性 — 唯一")
         void checkTemplateCodeUnique_unique_returnsTrue() {
-            MessageTemplate template = MessageTemplate.builder()
-                    .templateCode("code1")
-                    .id(1L)
-                    .build();
+            MessageTemplateAggregate template = buildTemplate(1L, "code1", null, null, null, null, null, null);
             when(messageTemplateRepository.existsByCodeExcludingId("code1", 1L)).thenReturn(false);
 
             boolean result = templateService.checkTemplateCodeUnique(template);
@@ -244,10 +245,7 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("校验模板编码唯一性 — 已存在")
         void checkTemplateCodeUnique_notUnique_returnsFalse() {
-            MessageTemplate template = MessageTemplate.builder()
-                    .templateCode("code1")
-                    .id(1L)
-                    .build();
+            MessageTemplateAggregate template = buildTemplate(1L, "code1", null, null, null, null, null, null);
             when(messageTemplateRepository.existsByCodeExcludingId("code1", 1L)).thenReturn(true);
 
             boolean result = templateService.checkTemplateCodeUnique(template);
@@ -263,9 +261,13 @@ class MessageTemplateServiceTest {
         @Test
         @DisplayName("缓存方法不抛出异常")
         void cacheMethods_noThrow() {
+            when(messageTemplateRepository.findByCondition(any())).thenReturn(List.of());
+
             templateService.loadingTemplateCache();
             templateService.clearTemplateCache();
             templateService.resetTemplateCache();
+
+            verify(redisCache, atLeastOnce()).delete(anyString());
         }
     }
 }

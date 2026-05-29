@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.domain.service;
 
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
-import com.cartethyia.easyorange.message.entity.MessageSubscription;
 import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -62,7 +62,7 @@ class MessageRoutingServiceTest {
         @Test
         @DisplayName("用户有订阅偏好时路由决策包含订阅列表")
         void decideRoute_hasSubscriptions_returnsSubscriptions() {
-            MessageSubscription sub = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
+            MessageSubscriptionAggregate sub = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
             when(sessionManager.isUserOnline(USER_ID)).thenReturn(true);
             when(subscriptionRepository.findByUserId(USER_ID)).thenReturn(List.of(sub));
 
@@ -70,7 +70,7 @@ class MessageRoutingServiceTest {
 
             assertThat(decision.isOnline()).isTrue();
             assertThat(decision.subscriptions()).hasSize(1);
-            assertThat(decision.subscriptions().get(0).getMessageType()).isEqualTo("SYSTEM");
+            assertThat(decision.subscriptions().get(0).messageType()).isEqualTo("SYSTEM");
         }
 
         @Test

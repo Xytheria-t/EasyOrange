@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.message.service.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
-import com.cartethyia.easyorange.message.entity.MessageTemplate;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.service.MessageTemplateService;
 import lombok.RequiredArgsConstructor;
@@ -30,27 +30,26 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     private final RedisCache redisCache;
 
     @Override
-    public MessageTemplate getByCode(String templateCode) {
+    public MessageTemplateAggregate getByCode(String templateCode) {
         return messageTemplateRepository.findByCode(templateCode);
     }
 
     @Override
     public MessageTemplateVO renderTemplate(String templateCode, Map<String, String> variables) {
-        MessageTemplate template = messageTemplateRepository.findByCode(templateCode);
+        MessageTemplateAggregate template = messageTemplateRepository.findByCode(templateCode);
         BizRequire.notNull(template, MessageResultCode.TEMPLATE_NOT_FOUND);
-        String renderedContent = renderContent(template.getContent(), variables);
-        String renderedTitle = renderContent(template.getTitle(), variables);
+        String renderedContent = renderContent(template.content(), variables);
+        String renderedTitle = renderContent(template.title(), variables);
 
         return MessageTemplateVO.builder()
-                .id(template.getId())
-                .templateCode(template.getTemplateCode())
-                .templateName(template.getTemplateName())
-                .templateType(template.getTemplateType())
+                .id(template.id())
+                .templateCode(template.templateCode())
+                .templateName(template.templateName())
+                .templateType(template.templateType())
                 .title(renderedTitle)
                 .content(renderedContent)
-                .variables(template.getVariables())
-                .status(template.getStatus())
-                .createTime(template.getCreateTime())
+                .variables(template.variables())
+                .status(template.status())
                 .build();
     }
 
@@ -71,19 +70,19 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     }
 
     @Override
-    public List<MessageTemplate> selectTemplateList(MessageTemplate template) {
-        return messageTemplateRepository.findByCondition(template);
+    public List<MessageTemplateAggregate> selectTemplateList(MessageTemplateAggregate condition) {
+        return messageTemplateRepository.findByCondition(condition);
     }
 
     @Override
-    public int insertTemplate(MessageTemplate template) {
+    public int insertTemplate(MessageTemplateAggregate template) {
         messageTemplateRepository.save(template);
         return 1;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateTemplate(MessageTemplate template) {
+    public int updateTemplate(MessageTemplateAggregate template) {
         messageTemplateRepository.update(template);
         return 1;
     }
@@ -94,17 +93,17 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     }
 
     @Override
-    public boolean checkTemplateCodeUnique(MessageTemplate template) {
-        return !messageTemplateRepository.existsByCodeExcludingId(template.getTemplateCode(), template.getId());
+    public boolean checkTemplateCodeUnique(MessageTemplateAggregate template) {
+        return !messageTemplateRepository.existsByCodeExcludingId(template.templateCode(), template.id());
     }
 
     @Override
     public void loadingTemplateCache() {
         log.info("开始加载消息模板缓存");
-        List<MessageTemplate> templates = messageTemplateRepository.findByCondition(new MessageTemplate());
-        Map<String, MessageTemplate> templateMap = new HashMap<>();
-        for (MessageTemplate template : templates) {
-            templateMap.put(template.getTemplateCode(), template);
+        List<MessageTemplateAggregate> templates = messageTemplateRepository.findByCondition(null);
+        Map<String, MessageTemplateAggregate> templateMap = new HashMap<>();
+        for (MessageTemplateAggregate template : templates) {
+            templateMap.put(template.templateCode(), template);
         }
         if (!templateMap.isEmpty()) {
             redisCache.hashPutAll(TEMPLATE_CACHE_KEY, templateMap);

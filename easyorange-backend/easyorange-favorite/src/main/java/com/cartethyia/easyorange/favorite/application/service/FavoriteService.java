@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
 import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
 import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
-import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
+import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
 import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;

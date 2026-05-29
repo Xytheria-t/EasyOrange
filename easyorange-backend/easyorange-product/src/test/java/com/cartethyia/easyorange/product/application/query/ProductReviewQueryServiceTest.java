@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
 import com.cartethyia.easyorange.product.application.query.dto.ProductReviewVO;
 import com.cartethyia.easyorange.product.application.query.dto.ReviewStatsVO;
-import com.cartethyia.easyorange.product.domain.port.output.SellerInfoPort;
+import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

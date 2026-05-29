@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.service.SearchHistoryService;
-import com.cartethyia.easyorange.product.domain.port.output.ProductSearchQueryPort;
-import com.cartethyia.easyorange.product.domain.port.output.SearchResult;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
+import com.cartethyia.easyorange.product.domain.port.SearchResult;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;

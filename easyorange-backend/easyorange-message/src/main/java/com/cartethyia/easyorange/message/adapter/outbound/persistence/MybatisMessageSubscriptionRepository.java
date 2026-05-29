@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
 import com.cartethyia.easyorange.message.entity.MessageSubscription;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import org.springframework.stereotype.Repository;
@@ -10,35 +11,43 @@ import java.util.List;
 @Repository
 public class MybatisMessageSubscriptionRepository extends BaseRepository<MessageSubscriptionMapper, MessageSubscription> implements MessageSubscriptionRepository {
 
-    public MybatisMessageSubscriptionRepository(MessageSubscriptionMapper mapper) {
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    private final MessageDataMapper messageDataMapper;
+
+    public MybatisMessageSubscriptionRepository(MessageSubscriptionMapper mapper, MessageDataMapper messageDataMapper) {
         super(mapper);
+        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
-    public List<MessageSubscription> findByUserId(Long userId) {
-        return lambdaQuery()
-                .eq(MessageSubscription::getUserId, userId)
-                .list();
+    public List<MessageSubscriptionAggregate> findByUserId(Long userId) {
+        return messageDataMapper.toSubscriptionAggregateList(
+                lambdaQuery()
+                        .eq(MessageSubscription::getUserId, userId)
+                        .list()
+        );
     }
 
     @Override
-    public MessageSubscription findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel) {
-        return lambdaQuery()
+    public MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel) {
+        MessageSubscription entity = lambdaQuery()
                 .eq(MessageSubscription::getUserId, userId)
                 .eq(MessageSubscription::getMessageType, messageType)
                 .eq(MessageSubscription::getPushChannel, pushChannel)
                 .one();
+        return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public MessageSubscription save(MessageSubscription subscription) {
-        mapper.insert(subscription);
-        return subscription;
+    public MessageSubscriptionAggregate save(MessageSubscriptionAggregate subscription) {
+        MessageSubscription entity = messageDataMapper.toEntity(subscription);
+        mapper.insert(entity);
+        return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public void update(MessageSubscription subscription) {
-        mapper.updateById(subscription);
+    public void update(MessageSubscriptionAggregate subscription) {
+        mapper.updateById(messageDataMapper.toEntity(subscription));
     }
 
     @Override

@@ -73,14 +73,13 @@ product/
 │   │   ├── StockDecreasedEvent.java
 │   │   └── StockRestoredEvent.java
 │   ├── port/
+│   │   ├── OutboundPort.java            # 标记接口 (跨模块出站端口)
 │   │   ├── ProductCachePort.java        # 缓存端口 (domain 定义, application 实现)
 │   │   ├── CategoryCachePort.java
 │   │   ├── ProductSnapshotPort.java
-│   │   └── output/                      # 跨模块出站端口
-│   │       ├── OutboundPort.java        # 标记接口
-│   │       ├── SellerInfoPort.java      # 卖家信息查询
-│   │       ├── ProductNotificationPort.java  # 商品事件通知
-│   │       └── ProductSearchIndexPort.java   # 搜索索引
+│   │   ├── SellerInfoPort.java          # 卖家信息查询 (跨模块)
+│   │   ├── ProductNotificationPort.java # 商品事件通知 (跨模块)
+│   │   └── ProductSearchIndexPort.java  # 搜索索引 (跨模块)
 │   ├── repository/
 │   │   ├── ProductRepository.java       # 写仓储
 │   │   ├── ProductReportRepository.java

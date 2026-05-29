@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundExcepti
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,9 +67,7 @@ class ProductQueryServiceTest {
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
-        );
-        testProduct.assignId(1L);
-        testProduct.releaseEvents();
+        ).product().assignId(1L);
 
         testProductVO = ProductVO.builder()
                 .id(1L)

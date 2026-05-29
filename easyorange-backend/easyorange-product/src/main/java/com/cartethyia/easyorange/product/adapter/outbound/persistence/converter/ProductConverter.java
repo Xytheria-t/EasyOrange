@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageUrl;
-import com.cartethyia.easyorange.product.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;

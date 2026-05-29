@@ -3,30 +3,16 @@ package com.cartethyia.easyorange.product.domain.entity;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 
-public class ProductDetail {
-
-    private ProductId productId;
-    private ProductDescription description;
-
-    private ProductDetail() {
-    }
+public record ProductDetail(
+        ProductId productId,
+        ProductDescription description
+) {
 
     public static ProductDetail create(ProductId productId, String description) {
-        ProductDetail detail = new ProductDetail();
-        detail.productId = productId;
-        detail.description = ProductDescription.of(description);
-        return detail;
+        return new ProductDetail(productId, ProductDescription.of(description));
     }
 
-    public ProductId getProductId() {
-        return productId;
-    }
-
-    public ProductDescription getDescription() {
-        return description;
-    }
-
-    public void updateDescription(String description) {
-        this.description = ProductDescription.of(description);
+    public ProductDetail withDescription(String description) {
+        return new ProductDetail(this.productId, ProductDescription.of(description));
     }
 }

@@ -11,8 +11,8 @@ import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
-import com.cartethyia.easyorange.product.domain.port.output.ProductNotificationPort;
-import com.cartethyia.easyorange.product.domain.port.output.ProductSearchIndexPort;
+import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -86,12 +86,12 @@ public class ProductEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onProductMarkedSold(ProductMarkedSoldEvent event) {
         Long productId = event.getProductId();
-        log.info("event=ProductMarkedSold productId={}", productId);
+        log.info("event=ProductMarkedSold productId={} sellerId={}", productId, event.getSellerId());
 
         productCachePort.evictProductCache(productId);
 
         notificationPort.ifPresent(port -> safeCall(
-                () -> port.notifyProductMarkedSold(productId),
+                () -> port.notifyProductMarkedSold(productId, event.getSellerId()),
                 "notifyProductMarkedSold", productId));
 
         searchIndexPort.ifPresent(port -> safeCall(

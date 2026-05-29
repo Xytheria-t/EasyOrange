@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
@@ -13,32 +14,41 @@ import java.util.Optional;
 @Repository
 public class MybatisMessageRepository extends BaseRepository<MessageMapper, Message> implements MessageRepository {
 
-    public MybatisMessageRepository(MessageMapper messageMapper) {
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    private final MessageDataMapper messageDataMapper;
+
+    public MybatisMessageRepository(MessageMapper messageMapper, MessageDataMapper messageDataMapper) {
         super(messageMapper);
+        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
-    public Optional<Message> findById(Long id) {
-        return Optional.ofNullable(mapper.selectById(id));
+    public Optional<MessageAggregate> findById(Long id) {
+        Message entity = mapper.selectById(id);
+        return Optional.ofNullable(messageDataMapper.toAggregate(entity));
     }
 
     @Override
-    public List<Message> findByReceiverId(Long receiverId, int limit) {
-        return lambdaQuery()
-                .eq(Message::getReceiverId, receiverId)
-                .orderByDesc(Message::getCreateTime)
-                .last("LIMIT " + limit)
-                .list();
+    public List<MessageAggregate> findByReceiverId(Long receiverId, int limit) {
+        return messageDataMapper.toAggregateList(
+                lambdaQuery()
+                        .eq(Message::getReceiverId, receiverId)
+                        .orderByDesc(Message::getCreateTime)
+                        .last("LIMIT " + limit)
+                        .list()
+        );
     }
 
     @Override
-    public List<Message> findByReceiverIdAndReadStatus(Long receiverId, ReadStatus readStatus, int limit) {
-        return lambdaQuery()
-                .eq(Message::getReceiverId, receiverId)
-                .eq(Message::getIsRead, readStatus.getCode())
-                .orderByDesc(Message::getCreateTime)
-                .last("LIMIT " + limit)
-                .list();
+    public List<MessageAggregate> findByReceiverIdAndReadStatus(Long receiverId, ReadStatus readStatus, int limit) {
+        return messageDataMapper.toAggregateList(
+                lambdaQuery()
+                        .eq(Message::getReceiverId, receiverId)
+                        .eq(Message::getIsRead, readStatus.getCode())
+                        .orderByDesc(Message::getCreateTime)
+                        .last("LIMIT " + limit)
+                        .list()
+        );
     }
 
     @Override
@@ -50,13 +60,15 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public void save(Message message) {
-        mapper.insert(message);
+    public MessageAggregate save(MessageAggregate message) {
+        Message entity = messageDataMapper.toEntity(message);
+        mapper.insert(entity);
+        return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public void update(Message message) {
-        mapper.updateById(message);
+    public void update(MessageAggregate message) {
+        mapper.updateById(messageDataMapper.toEntity(message));
     }
 
     @Override

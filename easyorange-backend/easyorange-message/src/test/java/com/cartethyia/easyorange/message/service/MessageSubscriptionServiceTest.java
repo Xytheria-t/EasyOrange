@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import com.cartethyia.easyorange.message.dto.request.SubscriptionRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageSubscriptionVO;
-import com.cartethyia.easyorange.message.entity.MessageSubscription;
 import com.cartethyia.easyorange.message.service.impl.MessageSubscriptionServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -40,8 +40,8 @@ class MessageSubscriptionServiceTest {
         @Test
         @DisplayName("获取当前用户的订阅列表")
         void getMySubscriptions_returnsSubscriptions() {
-            MessageSubscription sub1 = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
-            MessageSubscription sub2 = MessageSubscription.create(USER_ID, "MARKETING", "EMAIL", false);
+            MessageSubscriptionAggregate sub1 = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
+            MessageSubscriptionAggregate sub2 = MessageSubscriptionAggregate.create(USER_ID, "MARKETING", "EMAIL", false);
 
             when(messageSubscriptionRepository.findByUserId(USER_ID)).thenReturn(List.of(sub1, sub2));
 
@@ -88,7 +88,7 @@ class MessageSubscriptionServiceTest {
             request.setPushChannel("WEBSOCKET");
             request.setEnabled(true);
 
-            MessageSubscription existing = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", false);
+            MessageSubscriptionAggregate existing = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", false);
 
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(existing);
@@ -97,8 +97,7 @@ class MessageSubscriptionServiceTest {
             try {
                 subscriptionService.updateSubscription(request);
 
-                assertThat(existing.isEnabled()).isTrue();
-                verify(messageSubscriptionRepository).update(existing);
+                verify(messageSubscriptionRepository).update(argThat(updated -> updated.enabled()));
                 verify(messageSubscriptionRepository, never()).save(any());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
@@ -113,7 +112,7 @@ class MessageSubscriptionServiceTest {
             request.setPushChannel("WEBSOCKET");
             request.setEnabled(false);
 
-            MessageSubscription existing = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
+            MessageSubscriptionAggregate existing = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
 
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(existing);
@@ -122,8 +121,7 @@ class MessageSubscriptionServiceTest {
             try {
                 subscriptionService.updateSubscription(request);
 
-                assertThat(existing.isEnabled()).isFalse();
-                verify(messageSubscriptionRepository).update(existing);
+                verify(messageSubscriptionRepository).update(argThat(updated -> !updated.enabled()));
                 verify(messageSubscriptionRepository, never()).save(any());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
@@ -145,15 +143,15 @@ class MessageSubscriptionServiceTest {
             try {
                 subscriptionService.updateSubscription(request);
 
-                ArgumentCaptor<MessageSubscription> captor = ArgumentCaptor.forClass(MessageSubscription.class);
+                ArgumentCaptor<MessageSubscriptionAggregate> captor = ArgumentCaptor.forClass(MessageSubscriptionAggregate.class);
                 verify(messageSubscriptionRepository).save(captor.capture());
                 verify(messageSubscriptionRepository, never()).update(any());
 
-                MessageSubscription saved = captor.getValue();
-                assertThat(saved.getUserId()).isEqualTo(USER_ID);
-                assertThat(saved.getMessageType()).isEqualTo("SYSTEM");
-                assertThat(saved.getPushChannel()).isEqualTo("WEBSOCKET");
-                assertThat(saved.isEnabled()).isTrue();
+                MessageSubscriptionAggregate saved = captor.getValue();
+                assertThat(saved.userId()).isEqualTo(USER_ID);
+                assertThat(saved.messageType()).isEqualTo("SYSTEM");
+                assertThat(saved.pushChannel()).isEqualTo("WEBSOCKET");
+                assertThat(saved.enabled()).isTrue();
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.favorite.repository;
 
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.favorite.domain.port.output.ProductInfoPort;
+import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

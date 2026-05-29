@@ -54,12 +54,8 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
         if (categoryIds == null || categoryIds.isEmpty()) {
             return Map.of();
         }
-        String ids = categoryIds.stream()
-                .map(String::valueOf)
-                .reduce((a, b) -> a + "," + b)
-                .orElse("");
 
-        List<CategoryProductCountDO> counts = mapper.countProductsByCategoryIds(ids);
+        List<CategoryProductCountDO> counts = mapper.countProductsByCategoryIds(categoryIds);
         Map<Long, Long> result = new HashMap<>(counts.size());
         for (CategoryProductCountDO row : counts) {
             if (row.getCategoryId() != null && row.getProductCount() != null) {

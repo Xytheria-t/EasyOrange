@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.application.command.dto.DecrementStockC
 import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;
 import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -52,11 +53,11 @@ class ProductCommandServiceTest {
     void setUp() {
         commandService = new ProductCommandService(productRepository, productCachePort, domainEventPublisher, productAuditLogRepository);
 
-        existingProduct = Product.create(
+        ProductCreatedResult created = Product.create(
                 com.cartethyia.easyorange.product.domain.valueobject.SellerId.of(1L),
                 com.cartethyia.easyorange.product.domain.valueobject.CategoryId.of(2L),
                 com.cartethyia.easyorange.product.domain.valueobject.ProductTitle.of("测试商品"),
-                com.cartethyia.easyorange.product.domain.valueobject.Money.of(new BigDecimal("100")),
+                com.cartethyia.easyorange.common.domain.Money.of(new BigDecimal("100")),
                 null,
                 com.cartethyia.easyorange.product.domain.valueobject.StockQuantity.of(10),
                 ConditionLevel.NEW,
@@ -65,10 +66,8 @@ class ProductCommandServiceTest {
                 com.cartethyia.easyorange.product.domain.valueobject.ProductDescription.of("描述"),
                 com.cartethyia.easyorange.product.domain.valueobject.ImageSet.of(java.util.List.of("http://img/1.jpg"))
         );
-        existingProduct.assignId(1L);
-        existingProduct.releaseEvents();
-        existingProduct.putOnline();
-        existingProduct.releaseEvents();
+        existingProduct = created.product().assignId(1L);
+        existingProduct = existingProduct.putOnline();
     }
 
     @Test
@@ -76,11 +75,10 @@ class ProductCommandServiceTest {
     void createProduct_shouldSaveToRepository() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            doAnswer(invocation -> {
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
                 Product p = invocation.getArgument(0);
-                p.assignId(42L);
-                return null;
-            }).when(productRepository).save(any(Product.class));
+                return p.assignId(42L);
+            });
 
             CreateProductCommand command = CreateProductCommand.builder()
                     .categoryId(2L)

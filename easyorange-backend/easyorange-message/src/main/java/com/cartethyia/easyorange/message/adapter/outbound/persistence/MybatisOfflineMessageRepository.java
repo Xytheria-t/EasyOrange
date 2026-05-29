@@ -2,37 +2,44 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
 import com.cartethyia.easyorange.message.entity.OfflineMessage;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Repository
 public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessageMapper, OfflineMessage> implements OfflineMessageRepository {
 
-    public MybatisOfflineMessageRepository(OfflineMessageMapper mapper) {
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    private final MessageDataMapper messageDataMapper;
+
+    public MybatisOfflineMessageRepository(OfflineMessageMapper mapper, MessageDataMapper messageDataMapper) {
         super(mapper);
+        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
-    public OfflineMessage save(OfflineMessage message) {
-        mapper.insert(message);
-        return message;
+    public OfflineMessageAggregate save(OfflineMessageAggregate message) {
+        OfflineMessage entity = messageDataMapper.toEntity(message);
+        mapper.insert(entity);
+        return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public List<OfflineMessage> findPendingByUserId(Long userId) {
-        return lambdaQuery()
+    public List<OfflineMessageAggregate> findPendingByUserId(Long userId) {
+        return messageDataMapper.toOfflineAggregateList(
+                lambdaQuery()
                         .eq(OfflineMessage::getUserId, userId)
                         .eq(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
                         .orderByAsc(OfflineMessage::getCreateTime)
-                .list()
-                .stream()
-                .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
-                .collect(Collectors.toList());
+                        .list()
+                        .stream()
+                        .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
+                        .toList()
+        );
     }
 
     @Override

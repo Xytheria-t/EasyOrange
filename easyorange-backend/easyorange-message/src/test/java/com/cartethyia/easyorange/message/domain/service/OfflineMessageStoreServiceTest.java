@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.message.domain.service;
 
 import com.cartethyia.easyorange.message.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
-import com.cartethyia.easyorange.message.entity.OfflineMessage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,14 +38,14 @@ class OfflineMessageStoreServiceTest {
         void storeIfOffline_userOffline_savesMessage() {
             offlineMessageStoreService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, false);
 
-            ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
+            ArgumentCaptor<OfflineMessageAggregate> captor = ArgumentCaptor.forClass(OfflineMessageAggregate.class);
             verify(offlineMessageRepository).save(captor.capture());
 
-            OfflineMessage saved = captor.getValue();
-            assertThat(saved.getUserId()).isEqualTo(USER_ID);
-            assertThat(saved.getMessageId()).isEqualTo(MESSAGE_ID);
-            assertThat(saved.getPushChannel()).isEqualTo(PUSH_CHANNEL);
-            assertThat(saved.getPushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PENDING);
+            OfflineMessageAggregate saved = captor.getValue();
+            assertThat(saved.userId()).isEqualTo(USER_ID);
+            assertThat(saved.messageId()).isEqualTo(MESSAGE_ID);
+            assertThat(saved.pushChannel()).isEqualTo(PUSH_CHANNEL);
+            assertThat(saved.pushStatus()).isEqualTo(MessageConstant.PUSH_STATUS_PENDING);
         }
 
         @Test
@@ -61,12 +61,12 @@ class OfflineMessageStoreServiceTest {
         void storeIfOffline_offline_setsDefaultRetryCount() {
             offlineMessageStoreService.storeIfOffline(USER_ID, MESSAGE_ID, PUSH_CHANNEL, false);
 
-            ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
+            ArgumentCaptor<OfflineMessageAggregate> captor = ArgumentCaptor.forClass(OfflineMessageAggregate.class);
             verify(offlineMessageRepository).save(captor.capture());
 
-            OfflineMessage saved = captor.getValue();
-            assertThat(saved.getRetryCount()).isEqualTo(MessageConstant.DEFAULT_RETRY_COUNT);
-            assertThat(saved.getMaxRetryCount()).isEqualTo(MessageConstant.DEFAULT_MAX_RETRY_COUNT);
+            OfflineMessageAggregate saved = captor.getValue();
+            assertThat(saved.retryCount()).isEqualTo(MessageConstant.DEFAULT_RETRY_COUNT);
+            assertThat(saved.maxRetryCount()).isEqualTo(MessageConstant.DEFAULT_MAX_RETRY_COUNT);
         }
 
         @Test
@@ -74,13 +74,13 @@ class OfflineMessageStoreServiceTest {
         void storeIfOffline_offlineWithNullParams() {
             offlineMessageStoreService.storeIfOffline(null, null, null, false);
 
-            ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
+            ArgumentCaptor<OfflineMessageAggregate> captor = ArgumentCaptor.forClass(OfflineMessageAggregate.class);
             verify(offlineMessageRepository).save(captor.capture());
 
-            OfflineMessage saved = captor.getValue();
-            assertThat(saved.getUserId()).isNull();
-            assertThat(saved.getMessageId()).isNull();
-            assertThat(saved.getPushChannel()).isNull();
+            OfflineMessageAggregate saved = captor.getValue();
+            assertThat(saved.userId()).isNull();
+            assertThat(saved.messageId()).isNull();
+            assertThat(saved.pushChannel()).isNull();
         }
     }
 }

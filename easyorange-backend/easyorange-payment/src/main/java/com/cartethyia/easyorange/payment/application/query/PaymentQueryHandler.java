@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import lombok.RequiredArgsConstructor;

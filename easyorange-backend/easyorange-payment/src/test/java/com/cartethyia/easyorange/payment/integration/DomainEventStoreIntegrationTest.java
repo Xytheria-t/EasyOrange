@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.integration;
 
 import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
-import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
+import com.cartethyia.easyorange.payment.domain.port.DomainEventStorePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -49,7 +49,7 @@ class DomainEventStoreIntegrationTest {
     }
 
     @MockitoBean
-    private com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort paymentGatewayPort;
+    private com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort paymentGatewayPort;
 
     @Autowired
     private DomainEventStorePort eventStore;

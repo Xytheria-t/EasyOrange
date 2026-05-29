@@ -1,18 +1,17 @@
 package com.cartethyia.easyorange.payment.application.command;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.util.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentGatewayException;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
-import com.cartethyia.easyorange.payment.domain.factory.PaymentFactory;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
+import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.domain.saga.SagaExecutionException;
 import com.cartethyia.easyorange.payment.domain.saga.SagaOrchestrator;
 import com.cartethyia.easyorange.payment.domain.saga.SagaStepResult;
@@ -37,55 +36,37 @@ public class PaymentCommandHandler {
     public Long handle(CreatePaymentCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        PaymentAggregate aggregate = PaymentFactory.create(
-                command.getOrderId(),
-                userId,
-                command.getAmount(),
-                command.getPaymentMethod(),
-                command.getAttach()
-        );
+        Long paymentId = SnowflakeIdGenerator.getInstance().nextId();
+        PaymentAggregate.PaymentCreatedResult result = PaymentAggregate.create(paymentId, command.getOrderId(), userId, command.getAmount(), command.getPaymentMethod(), command.getAttach());
 
-        paymentRepository.save(aggregate);
-        
-        saveEventsToOutbox(aggregate);
+        paymentRepository.save(result.aggregate());
+        domainEventPublisher.publish(result.event());
 
-        return aggregate.id();
+        return result.aggregate().id();
     }
 
     public void handle(PayCommand command) {
         String lockKey = "payment:pay:" + command.getPaymentNo();
-        
+
         lockWrapper.executeWithLock(lockKey, () -> {
-            Long paymentId = null;
-            
             try {
-                paymentId = preparePayPhase1(command.getPaymentNo());
-                final Long finalPaymentId = paymentId;
-                
+                Long paymentId = preparePayPhase1(command.getPaymentNo());
                 SagaOrchestrator saga = new SagaOrchestrator();
-                
-                saga.addStep("invokePayGateway", 
+
+                saga.addStep("pay",
                     () -> {
-                        PaymentResult result = invokePayGateway(finalPaymentId);
-                        if (!result.isSuccess()) {
-                            return SagaStepResult.failure(result.getErrorMessage());
+                        PaymentResult payResult = invokePayGateway(paymentId);
+                        if (payResult.isSuccess()) {
+                            confirmPayPhase2(paymentId, payResult);
+                            return SagaStepResult.success(payResult);
+                        } else {
+                            rollbackPayStatus(paymentId);
+                            return SagaStepResult.failure(payResult.getErrorMessage());
                         }
-                        return SagaStepResult.success(result);
                     },
-                    () -> rollbackPayStatus(finalPaymentId)
+                    () -> rollbackPayStatus(paymentId)
                 );
-                
-                saga.addStep("confirmPayPhase2",
-                    () -> {
-                        PaymentAggregate aggregate = paymentRepository.findById(finalPaymentId)
-                                .orElseThrow(PaymentNotFoundException::of);
-                        PaymentResult result = paymentGateway.pay(aggregate);
-                        confirmPayPhase2(finalPaymentId, result);
-                        return SagaStepResult.success(null);
-                    },
-                    null
-                );
-                
+
                 saga.execute();
             } catch (SagaExecutionException e) {
                 log.error("支付Saga执行失败 paymentNo={} step={}", command.getPaymentNo(), e.getFailedStep(), e);
@@ -99,10 +80,10 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findByPaymentNo(paymentNo)
                 .orElseThrow(PaymentNotFoundException::of);
 
-        aggregate.preparePay();
-        paymentRepository.update(aggregate);
+        PaymentAggregate.PayPreparedResult result = aggregate.preparePay();
+        paymentRepository.update(result.aggregate());
 
-        return aggregate.id();
+        return result.aggregate().id();
     }
 
     public PaymentResult invokePayGateway(Long paymentId) {
@@ -116,45 +97,37 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
 
-        aggregate.confirmPay(result);
-
-        paymentRepository.update(aggregate);
-        
-        saveEventsToOutbox(aggregate);
+        PaymentAggregate.PayConfirmedResult confirmed = aggregate.confirmPay(result);
+        paymentRepository.update(confirmed.aggregate());
+        domainEventPublisher.publish(confirmed.event());
     }
 
     public void handle(RefundPaymentCommand command) {
         String lockKey = "payment:refund:" + command.getPaymentId();
-        
+
         lockWrapper.executeWithLock(lockKey, () -> {
             BigDecimal refundAmount = command.getRefundAmount();
             Long paymentId = command.getPaymentId();
 
             try {
                 prepareRefundPhase1(paymentId, refundAmount);
-                
+
                 SagaOrchestrator saga = new SagaOrchestrator();
-                
-                saga.addStep("invokeRefundGateway",
+
+                saga.addStep("refund",
                     () -> {
-                        RefundResult result = invokeRefundGateway(paymentId, refundAmount);
-                        if (!result.isSuccess()) {
-                            return SagaStepResult.failure(result.getErrorMessage());
+                        RefundResult refundResult = invokeRefundGateway(paymentId, refundAmount);
+                        if (refundResult.isSuccess()) {
+                            confirmRefundPhase2(paymentId, refundResult, refundAmount);
+                            return SagaStepResult.success(refundResult);
+                        } else {
+                            rollbackRefundStatus(paymentId);
+                            return SagaStepResult.failure(refundResult.getErrorMessage());
                         }
-                        return SagaStepResult.success(result);
                     },
                     () -> rollbackRefundStatus(paymentId)
                 );
-                
-                saga.addStep("confirmRefundPhase2",
-                    () -> {
-                        RefundResult result = invokeRefundGateway(paymentId, refundAmount);
-                        confirmRefundPhase2(paymentId, result, refundAmount);
-                        return SagaStepResult.success(null);
-                    },
-                    null
-                );
-                
+
                 saga.execute();
             } catch (SagaExecutionException e) {
                 log.error("退款Saga执行失败 paymentId={} step={}", paymentId, e.getFailedStep(), e);
@@ -172,8 +145,8 @@ public class PaymentCommandHandler {
             refundAmount = aggregate.amount();
         }
 
-        aggregate.prepareRefund(refundAmount);
-        paymentRepository.update(aggregate);
+        PaymentAggregate.RefundPreparedResult result = aggregate.prepareRefund(refundAmount);
+        paymentRepository.update(result.aggregate());
 
         return paymentId;
     }
@@ -189,11 +162,9 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
 
-        aggregate.confirmRefund(result, refundAmount);
-
-        paymentRepository.update(aggregate);
-        
-        saveEventsToOutbox(aggregate);
+        PaymentAggregate.RefundConfirmedResult confirmed = aggregate.confirmRefund(result, refundAmount);
+        paymentRepository.update(confirmed.aggregate());
+        domainEventPublisher.publish(confirmed.event());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -201,11 +172,9 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findById(command.getPaymentId())
                 .orElseThrow(PaymentNotFoundException::of);
 
-        aggregate.close();
-
-        paymentRepository.update(aggregate);
-        
-        saveEventsToOutbox(aggregate);
+        PaymentAggregate.ClosedResult result = aggregate.close();
+        paymentRepository.update(result.aggregate());
+        domainEventPublisher.publish(result.event());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -213,8 +182,8 @@ public class PaymentCommandHandler {
         try {
             PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                     .orElseThrow(PaymentNotFoundException::of);
-            aggregate.cancelPay();
-            paymentRepository.update(aggregate);
+            PaymentAggregate.CancelPayResult result = aggregate.cancelPay();
+            paymentRepository.update(result.aggregate());
         } catch (Exception e) {
             log.error("支付状态回退失败 paymentId={}", paymentId, e);
         }
@@ -225,21 +194,10 @@ public class PaymentCommandHandler {
         try {
             PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                     .orElseThrow(PaymentNotFoundException::of);
-            aggregate.cancelRefund();
-            paymentRepository.update(aggregate);
+            PaymentAggregate.CancelRefundResult result = aggregate.cancelRefund();
+            paymentRepository.update(result.aggregate());
         } catch (Exception e) {
             log.error("退款状态回退失败 paymentId={}", paymentId, e);
         }
-    }
-    
-    private void saveEventsToOutbox(PaymentAggregate aggregate) {
-        aggregate.domainEvents().forEach(event -> {
-            try {
-                domainEventPublisher.publish(event);
-            } catch (Exception e) {
-                log.error("事件发布失败，已保存到 Outbox eventId={}", event.getEventId(), e);
-            }
-        });
-        aggregate.clearDomainEvents();
     }
 }

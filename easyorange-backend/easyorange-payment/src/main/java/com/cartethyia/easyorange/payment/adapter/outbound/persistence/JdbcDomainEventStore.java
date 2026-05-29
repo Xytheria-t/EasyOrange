@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
 import com.cartethyia.easyorange.framework.outbox.repository.OutboxRepository;
-import com.cartethyia.easyorange.payment.domain.port.output.DomainEventStorePort;
+import com.cartethyia.easyorange.payment.domain.port.DomainEventStorePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;

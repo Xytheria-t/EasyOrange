@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
@@ -25,6 +27,26 @@ public class PaymentQueryController {
         PaymentView view = queryHandler.getPaymentById(id);
         return Result.success(toPaymentResponse(view));
     }
+
+    @GetMapping("/orders/{orderId}")
+    @PreAuthorize("isAuthenticated()")
+    public Result<PaymentResponse> getByOrderId(@PathVariable Long orderId) {
+        PaymentView view = queryHandler.getPaymentByOrderId(orderId);
+        return Result.success(toPaymentResponse(view));
+    }
+
+    @GetMapping("/{id}/status")
+    @PreAuthorize("isAuthenticated()")
+    public Result<PaymentStatusResponse> getStatus(@PathVariable Long id) {
+        PaymentView view = queryHandler.getPaymentById(id);
+        return Result.success(new PaymentStatusResponse(
+                view.getStatusDesc(),
+                view.getPaymentMethodDesc(),
+                view.getUpdateTime()
+        ));
+    }
+
+    public record PaymentStatusResponse(String status, String paymentMethod, LocalDateTime payTime) {}
 
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")

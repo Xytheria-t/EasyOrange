@@ -104,20 +104,22 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public void save(Product product) {
+    public Product save(Product product) {
         ProductDO productDO = converter.toDataObject(product);
         productMapper.insert(productDO);
-        product.assignId(productDO.getId());
+        Product saved = product.assignId(productDO.getId());
 
-        ProductDetailDO detailDO = converter.toDetailDO(product.getId(), product.getDescription());
+        ProductDetailDO detailDO = converter.toDetailDO(saved.getId(), saved.getDescription());
         if (detailDO != null) {
             productDetailMapper.insert(detailDO);
         }
 
-        List<ProductImageDO> imageDOs = converter.toImageDOs(product.getId(), product.getImages());
+        List<ProductImageDO> imageDOs = converter.toImageDOs(saved.getId(), saved.getImages());
         if (!imageDOs.isEmpty()) {
             productImageMapper.batchInsert(imageDOs);
         }
+
+        return saved;
     }
 
     @Override

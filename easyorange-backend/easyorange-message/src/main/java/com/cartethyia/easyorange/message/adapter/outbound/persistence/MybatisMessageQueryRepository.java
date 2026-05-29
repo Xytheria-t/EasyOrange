@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
 import com.cartethyia.easyorange.message.entity.Message;
@@ -19,17 +20,21 @@ import java.util.stream.Collectors;
 @Repository
 public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper, Message> implements MessageQueryRepository {
 
-    public MybatisMessageQueryRepository(MessageMapper messageMapper) {
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    private final MessageDataMapper messageDataMapper;
+
+    public MybatisMessageQueryRepository(MessageMapper messageMapper, MessageDataMapper messageDataMapper) {
         super(messageMapper);
+        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
-    public Message findById(Long id) {
-        return mapper.selectById(id);
+    public MessageAggregate findById(Long id) {
+        return messageDataMapper.toAggregate(mapper.selectById(id));
     }
 
     @Override
-    public PageResult<Message> findByReceiverId(QueryMessageRequest request, Long userId) {
+    public PageResult<MessageAggregate> findByReceiverId(QueryMessageRequest request, Long userId) {
         PageRequest normalized = request.normalized();
         Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
         var wrapper = lambdaQuery();
@@ -45,11 +50,11 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
         wrapper.orderByDesc(Message::getCreateTime);
 
         Page<Message> messagePage = wrapper.page(page);
-        return toPageResult(messagePage);
+        return toAggregatePageResult(messagePage);
     }
 
     @Override
-    public PageResult<Message> findUnreadByReceiverId(QueryMessageRequest request, Long userId) {
+    public PageResult<MessageAggregate> findUnreadByReceiverId(QueryMessageRequest request, Long userId) {
         PageRequest normalized = request.normalized();
         Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
         var wrapper = lambdaQuery();
@@ -63,7 +68,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
         wrapper.orderByDesc(Message::getCreateTime);
 
         Page<Message> messagePage = wrapper.page(page);
-        return toPageResult(messagePage);
+        return toAggregatePageResult(messagePage);
     }
 
     @Override
@@ -88,8 +93,8 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
                 .build();
     }
 
-    private PageResult<Message> toPageResult(Page<Message> messagePage) {
-        List<Message> records = messagePage.getRecords();
+    private PageResult<MessageAggregate> toAggregatePageResult(Page<Message> messagePage) {
+        List<MessageAggregate> records = messageDataMapper.toAggregateList(messagePage.getRecords());
         return PageResult.of(records, messagePage.getTotal(),
                 (int) messagePage.getCurrent(), (int) messagePage.getSize());
     }

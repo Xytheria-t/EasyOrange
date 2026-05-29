@@ -28,7 +28,7 @@ favorite/
 └── domain/                            # 领域层
     ├── aggregate/
     │   └── Favorite.java              # 收藏聚合根 (不可变)
-    ├── port/output/
+    ├── port/
     │   ├── OutboundPort.java
     │   └── ProductInfoPort.java       # 商品信息端口
     ├── repository/

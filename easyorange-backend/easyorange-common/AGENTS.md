@@ -7,7 +7,6 @@
 ```
 common/
 ├── annotation/          # 自定义注解
-│   ├── Log.java             # 操作日志标记
 │   ├── RateLimiter.java     # 限流 (Redis + Lua 滑动窗口)
 │   └── RepeatSubmit.java    # 防重复提交
 ├── constant/
@@ -71,18 +70,14 @@ BizRequire.isTrue(condition, ResultCode.PARAM_VALIDATION_FAILED, "消息");
 
 ### BaseDomainEvent — 领域事件基类
 
-```java
-public class UserRegisteredEvent extends BaseDomainEvent {
-    private final Long userId;
-    private final String username;
-}
-```
-
 ### 自定义注解
 
-- `@Log(title = "操作名称", businessType = BusinessType.INSERT)` — 自动记录操作日志
-- `@RateLimiter(count = 10, time = 60)` — 接口限流
-- `@RepeatSubmit(interval = 3000)` — 防重复提交
+- `@RateLimiter(count = 10, time = 60)` — 覆写默认限流参数（未标注时自动应用默认限流）
+- `@RepeatSubmit(interval = 3000)` — 覆写默认防重参数（未标注时所有 POST/PUT/DELETE/PATCH 自动防重）
+- `@SkipRateLimit` — 跳过当前方法的限流
+- `@SkipRepeatSubmit` — 跳过当前方法的防重提交
+
+> 操作日志为约定式自动记录，无需注解。所有非查询类 RestController 方法自动记录。
 
 ## 注意事项
 

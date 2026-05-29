@@ -71,14 +71,15 @@ payment/
 │   │   ├── PaymentFailedEvent.java
 │   │   ├── PaymentRefundedEvent.java
 │   │   └── PaymentClosedEvent.java
-│   ├── port/output/
-│   │   ├── PaymentRepositoryPort.java       # 支付仓储端口
-│   │   ├── PaymentQueryRepositoryPort.java  # 查询仓储端口
+│   ├── port/
 │   │   ├── PaymentGatewayPort.java          # 支付网关端口
 │   │   ├── DomainEventStorePort.java        # 事件存储端口 (Outbox, 使用 Framework OutboxMessage)
 │   │   ├── IdempotencyKeyRepositoryPort.java # 幂等键仓储端口
 │   │   ├── CallbackSignatureVerifierPort.java # 回调签名验证端口
 │   │   ├── PaymentResult.java, RefundResult.java
+│   ├── repository/
+│   │   ├── PaymentRepositoryPort.java       # 支付仓储端口
+│   │   └── PaymentQueryRepositoryPort.java  # 查询仓储端口
 │   ├── constant/
 │   │   ├── PaymentStatus.java
 │   │   ├── PaymentMethod.java
@@ -91,11 +92,8 @@ payment/
 │       ├── OptimisticLockException.java
 │       ├── RefundNotAllowedException.java
 │       └── CallbackSignInvalidException.java
-├── constant/
-│   └── PaymentConstant.java
-└── infrastructure/
-    └── security/
-        └── CallbackSignatureVerifier.java   # 回调签名验证实现
+└── constant/
+    └── PaymentConstant.java
 ```
 
 ## Outbox 模式
@@ -118,15 +116,24 @@ payment/
 - `DistributedLockWrapper` 封装 Redis 分布式锁
 - 支付创建、退款等关键操作加锁防止并发冲突
 
-## 支付状态机
+## 支付状态机（不可变聚合根）
+
+所有状态转换返回 Result record（新聚合根实例 + 领域事件），不修改自身。
 
 ```
-PENDING → PROCESSING → SUCCEEDED
-  ↓           ↓
-CLOSED     FAILED
-  ↓
-REFUNDED (部分/全额)
+PENDING → PAYING → SUCCESS
+  ↓         ↓        ↓
+CLOSED    FAILED   REFUNDING → REFUNDED
+                      ↓
+                PARTIALLY_REFUNDED
+                      ↓ (compensation)
+                    SUCCESS
 ```
+
+- 两阶段支付：`preparePay()` → `PayPreparedResult` → 网关调用 → `confirmPay(PaymentResult)` → `PayConfirmedResult`
+- 两阶段退款：`prepareRefund()` → `RefundPreparedResult` → 网关调用 → `confirmRefund(RefundResult)` → `RefundConfirmedResult`
+- Saga 补偿：`cancelPay()` / `cancelRefund()` 回退到前一状态
+- Guard 方法：`canPay()` / `canRefund()` / `canClose()` / `canFail()` / `canConfirmPay()` / `canConfirmRefund()`
 
 ## 常见开发任务
 
@@ -142,13 +149,14 @@ REFUNDED (部分/全额)
 ### 添加新支付事件
 
 1. 创建事件类继承 `BaseDomainEvent`
-2. `PaymentAggregate` 中发布事件
-3. `PaymentEventListener` 自动持久化到 Outbox
-4. 测试
+2. 在状态转换方法中，在 Result record 的 `event()` 中返回事件
+3. Handler 通过 `domainEventPublisher.publish(result.event())` 发布
+4. `PaymentEventListener` 自动持久化到 Outbox
+5. 测试
 
 ## 安全要点
 
 - 支付回调必须验签 (`CallbackSignatureVerifierPort`)
 - 金额使用 `PaymentAmount` 值对象，避免浮点精度问题
-- 乐观锁 (`@Version`) 防止并发修改
+- 版本号乐观锁（`PaymentPO` 上的 `@Version` 注解 + 聚合根内手动递增 `int version`）
 - 幂等保护防止重复支付/退款

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.repository;
 
-import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
 
 import java.util.List;
@@ -8,17 +8,17 @@ import java.util.Optional;
 
 public interface MessageRepository {
 
-    Optional<Message> findById(Long id);
+    Optional<MessageAggregate> findById(Long id);
 
-    List<Message> findByReceiverId(Long receiverId, int limit);
+    List<MessageAggregate> findByReceiverId(Long receiverId, int limit);
 
-    List<Message> findByReceiverIdAndReadStatus(Long receiverId, ReadStatus readStatus, int limit);
+    List<MessageAggregate> findByReceiverIdAndReadStatus(Long receiverId, ReadStatus readStatus, int limit);
 
     long countUnreadByReceiverId(Long receiverId);
 
-    void save(Message message);
+    MessageAggregate save(MessageAggregate message);
 
-    void update(Message message);
+    void update(MessageAggregate message);
 
     void delete(Long id);
 

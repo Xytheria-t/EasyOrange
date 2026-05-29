@@ -2,20 +2,10 @@ package com.cartethyia.easyorange.message.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.framework.entity.BaseDO;
-import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
-import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
-import com.cartethyia.easyorange.message.enums.MessageStatus;
-import com.cartethyia.easyorange.message.enums.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.web.util.HtmlUtils;
 
 import java.time.LocalDateTime;
 
@@ -38,87 +28,6 @@ public class Message extends BaseDO {
     private String msgStatus;
     private LocalDateTime recalledAt;
 
-    public static Message create(Long senderId, Long receiverId, Integer type, String title, String content, Long businessId) {
-        Message message = new Message();
-        message.senderId = senderId;
-        message.receiverId = receiverId;
-        message.type = type;
-        message.title = HtmlUtils.htmlEscape(title);
-        message.content = HtmlUtils.htmlEscape(content);
-        message.isRead = MessageStatus.UNREAD.getCode();
-        message.businessId = businessId;
-        message.msgStatus = MessageStatus.SENT.getCode();
-        return message;
-    }
-
-    public static Message createSystem(Long receiverId, String title, String content, Long businessId) {
-        Message message = new Message();
-        message.senderId = null;
-        message.receiverId = receiverId;
-        message.type = MessageType.SYSTEM.getCode();
-        message.title = HtmlUtils.htmlEscape(title);
-        message.content = HtmlUtils.htmlEscape(content);
-        message.isRead = MessageStatus.UNREAD.getCode();
-        message.businessId = businessId;
-        return message;
-    }
-
-    public MessageSentEvent send() {
-        return new MessageSentEvent(this.getId(), this.senderId, this.receiverId, this.type);
-    }
-
-    public MessageReadEvent read(Long userId) {
-        if (!this.receiverId.equals(userId)) {
-            throw new UnauthorizedOperationException("Only receiver can read this message");
-        }
-        if (MessageStatus.READ.getCode().equals(this.isRead)) {
-            return null;
-        }
-        this.isRead = MessageStatus.READ.getCode();
-        this.readTime = LocalDateTime.now();
-        return new MessageReadEvent(this.getId(), userId);
-    }
-
-    public MessageDeletedEvent delete(Long userId) {
-        if (!this.receiverId.equals(userId)) {
-            throw new UnauthorizedOperationException("Not authorized to delete");
-        }
-        return new MessageDeletedEvent(this.getId(), userId);
-    }
-
-    public MessageRecalledEvent recall(Long operatorId, String conversationId) {
-        if (!this.senderId.equals(operatorId)) {
-            throw new UnauthorizedOperationException("不能撤回他人的消息");
-        }
-        if (MessageStatus.RECALLED.getCode().equals(this.msgStatus)) {
-            throw new MessageDomainException("消息已被撤回");
-        }
-        java.time.Duration elapsed = java.time.Duration.between(this.getCreateTime(), java.time.LocalDateTime.now());
-        if (elapsed.toMinutes() >= 2) {
-            throw new MessageDomainException("消息已超过可撤回时间（2分钟）");
-        }
-        this.msgStatus = MessageStatus.RECALLED.getCode();
-        this.recalledAt = java.time.LocalDateTime.now();
-        return new MessageRecalledEvent(this.getId(), conversationId, operatorId, this.recalledAt);
-    }
-
-    public boolean isUnread() {
-        return MessageStatus.UNREAD.getCode().equals(this.isRead);
-    }
-
-    public boolean isOwnedBy(Long userId) {
-        return this.receiverId.equals(userId);
-    }
-
-    public boolean isSender(Long userId) {
-        return this.senderId != null && this.senderId.equals(userId);
-    }
-
-    public void markAsRead() {
-        this.isRead = MessageStatus.READ.getCode();
-        this.readTime = LocalDateTime.now();
-    }
-
     public Long getSenderId() { return senderId; }
     public Long getReceiverId() { return receiverId; }
     public Integer getType() { return type; }
@@ -128,4 +37,6 @@ public class Message extends BaseDO {
     public Long getBusinessId() { return businessId; }
     public Long getConversationId() { return conversationId; }
     public LocalDateTime getReadTime() { return readTime; }
+    public String getMsgStatus() { return msgStatus; }
+    public LocalDateTime getRecalledAt() { return recalledAt; }
 }

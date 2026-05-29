@@ -2,11 +2,12 @@ package com.cartethyia.easyorange.message.application.query;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.dto.vo.ConversationListVO;
 import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +95,7 @@ public class ConversationQueryHandler {
         for (Message msg : messages) {
             Long otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
             latestByUser.putIfAbsent(otherUserId, msg);
-            if (msg.getReceiverId().equals(currentUserId) && msg.isUnread()) {
+            if (msg.getReceiverId().equals(currentUserId) && MessageStatus.UNREAD.getCode().equals(msg.getIsRead())) {
                 unreadCounts.merge(otherUserId, 1, Integer::sum);
             }
         }

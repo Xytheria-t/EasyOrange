@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.entity.MessageTemplate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import org.springframework.stereotype.Repository;
@@ -12,27 +13,33 @@ import java.util.List;
 @Repository
 public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemplateMapper, MessageTemplate> implements MessageTemplateRepository {
 
-    public MybatisMessageTemplateRepository(MessageTemplateMapper mapper) {
+    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+    private final MessageDataMapper messageDataMapper;
+
+    public MybatisMessageTemplateRepository(MessageTemplateMapper mapper, MessageDataMapper messageDataMapper) {
         super(mapper);
+        this.messageDataMapper = messageDataMapper;
     }
 
     @Override
-    public MessageTemplate findByCode(String templateCode) {
-        return lambdaQuery()
+    public MessageTemplateAggregate findByCode(String templateCode) {
+        MessageTemplate entity = lambdaQuery()
                 .eq(MessageTemplate::getTemplateCode, templateCode)
                 .eq(MessageTemplate::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED)
                 .one();
+        return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public MessageTemplate save(MessageTemplate template) {
-        mapper.insert(template);
-        return template;
+    public MessageTemplateAggregate save(MessageTemplateAggregate template) {
+        MessageTemplate entity = messageDataMapper.toEntity(template);
+        mapper.insert(entity);
+        return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public void update(MessageTemplate template) {
-        mapper.updateById(template);
+    public void update(MessageTemplateAggregate template) {
+        mapper.updateById(messageDataMapper.toEntity(template));
     }
 
     @Override
@@ -41,24 +48,24 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
     }
 
     @Override
-    public List<MessageTemplate> findByCondition(MessageTemplate condition) {
+    public List<MessageTemplateAggregate> findByCondition(MessageTemplateAggregate condition) {
         var wrapper = lambdaQuery();
         if (condition != null) {
-            if (condition.getTemplateCode() != null) {
-                wrapper.like(MessageTemplate::getTemplateCode, condition.getTemplateCode());
+            if (condition.templateCode() != null) {
+                wrapper.like(MessageTemplate::getTemplateCode, condition.templateCode());
             }
-            if (condition.getTemplateName() != null) {
-                wrapper.like(MessageTemplate::getTemplateName, condition.getTemplateName());
+            if (condition.templateName() != null) {
+                wrapper.like(MessageTemplate::getTemplateName, condition.templateName());
             }
-            if (condition.getTemplateType() != null) {
-                wrapper.eq(MessageTemplate::getTemplateType, condition.getTemplateType());
+            if (condition.templateType() != null) {
+                wrapper.eq(MessageTemplate::getTemplateType, condition.templateType());
             }
-            if (condition.getStatus() != null) {
-                wrapper.eq(MessageTemplate::getStatus, condition.getStatus());
+            if (condition.status() != null) {
+                wrapper.eq(MessageTemplate::getStatus, condition.status());
             }
         }
         wrapper.orderByDesc(MessageTemplate::getCreateTime);
-        return wrapper.list();
+        return messageDataMapper.toTemplateAggregateList(wrapper.list());
     }
 
     @Override

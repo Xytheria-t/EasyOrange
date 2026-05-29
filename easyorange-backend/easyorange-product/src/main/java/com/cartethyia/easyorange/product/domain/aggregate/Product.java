@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
@@ -14,7 +13,7 @@ import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusEx
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
-import com.cartethyia.easyorange.product.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
@@ -26,47 +25,65 @@ import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 @Getter
+@Builder
 public class Product {
 
-    private ProductId id;
+    private final ProductId id;
     private final SellerId sellerId;
-    private CategoryId categoryId;
-    private ProductTitle title;
-    private Money price;
-    private Money originalPrice;
-    private StockQuantity stock;
-    private Version version;
-    private ProductStatus status;
-    private Integer viewCount;
-    private ConditionLevel conditionLevel;
-    private TradeLocation location;
-    private ContactMethod contactMethod;
-    private ProductDescription description;
-    private ImageSet images;
-    private TagSet tags;
-    private String searchText;
-    private LocalDateTime priceUpdateTime;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
-    private final List<BaseDomainEvent> domainEvents = new ArrayList<>();
+    private final CategoryId categoryId;
+    private final ProductTitle title;
+    private final Money price;
+    private final Money originalPrice;
+    private final StockQuantity stock;
+    private final Version version;
+    private final ProductStatus status;
+    @Builder.Default
+    private final Integer viewCount = 0;
+    private final ConditionLevel conditionLevel;
+    private final TradeLocation location;
+    private final ContactMethod contactMethod;
+    private final ProductDescription description;
+    private final ImageSet images;
+    private final TagSet tags;
+    private final String searchText;
+    private final LocalDateTime priceUpdateTime;
+    private final LocalDateTime createTime;
+    private final LocalDateTime updateTime;
 
-    private Product(SellerId sellerId) {
-        this.sellerId = sellerId;
-        this.createTime = LocalDateTime.now();
-        touch();
+    public ProductBuilder toBuilder() {
+        return Product.builder()
+                .id(id)
+                .sellerId(sellerId)
+                .categoryId(categoryId)
+                .title(title)
+                .price(price)
+                .originalPrice(originalPrice)
+                .stock(stock)
+                .version(version)
+                .status(status)
+                .viewCount(viewCount != null ? viewCount : 0)
+                .conditionLevel(conditionLevel)
+                .location(location)
+                .contactMethod(contactMethod)
+                .description(description)
+                .images(images)
+                .tags(tags)
+                .searchText(searchText)
+                .priceUpdateTime(priceUpdateTime)
+                .createTime(createTime)
+                .updateTime(updateTime);
     }
 
-    public static Product create(
+    public static ProductCreatedResult create(
             SellerId sellerId,
             CategoryId categoryId,
             ProductTitle title,
@@ -84,26 +101,27 @@ public class Product {
         BizRequire.requireTrue(price.isGreaterThan(Money.ZERO), "商品价格必须大于0");
         BizRequire.requireTrue(images != null && !images.isEmpty(), "商品图片不能为空");
 
-        Product p = new Product(sellerId);
-        p.id = ProductId.of(null);
-        p.categoryId = categoryId;
-        p.title = title;
-        p.price = price;
-        p.originalPrice = originalPrice;
-        p.stock = stock != null ? stock : StockQuantity.of(1);
-        p.version = Version.INITIAL;
-        p.status = ProductStatus.DRAFT;
-        p.viewCount = 0;
-        p.conditionLevel = conditionLevel;
-        p.location = location;
-        p.contactMethod = contactMethod;
-        p.description = description;
-        p.images = images;
-        p.tags = TagSet.empty();
-        p.searchText = null;
-        p.priceUpdateTime = LocalDateTime.now();
+        Product p = Product.builder()
+                .sellerId(sellerId)
+                .categoryId(categoryId)
+                .title(title)
+                .price(price)
+                .originalPrice(originalPrice)
+                .stock(stock != null ? stock : StockQuantity.of(1))
+                .version(Version.INITIAL)
+                .status(ProductStatus.DRAFT)
+                .viewCount(0)
+                .conditionLevel(conditionLevel)
+                .location(location)
+                .contactMethod(contactMethod)
+                .description(description)
+                .tags(TagSet.empty())
+                .priceUpdateTime(LocalDateTime.now())
+                .createTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
+                .build();
 
-        p.addDomainEvent(new ProductCreatedEvent(
+        ProductCreatedEvent event = new ProductCreatedEvent(
                 null, sellerId.value(), valueOrNull(categoryId, CategoryId::value),
                 title.value(), price.value(),
                 valueOrNull(originalPrice, Money::value),
@@ -112,8 +130,8 @@ public class Product {
                 valueOrNull(contactMethod, ContactMethod::value),
                 valueOrNull(description, ProductDescription::value),
                 images.imageUrls()
-        ));
-        return p;
+        );
+        return new ProductCreatedResult(p, event);
     }
 
     public static Product reconstitute(
@@ -127,30 +145,31 @@ public class Product {
             LocalDateTime priceUpdateTime,
             LocalDateTime createTime, LocalDateTime updateTime
     ) {
-        Product p = new Product(sellerId);
-        p.id = id;
-        p.categoryId = categoryId;
-        p.title = title;
-        p.price = price;
-        p.originalPrice = originalPrice;
-        p.stock = stock;
-        p.version = version;
-        p.status = status;
-        p.viewCount = viewCount;
-        p.conditionLevel = conditionLevel;
-        p.location = location;
-        p.contactMethod = contactMethod;
-        p.description = description;
-        p.images = images;
-        p.tags = tags;
-        p.searchText = searchText;
-        p.priceUpdateTime = priceUpdateTime;
-        p.createTime = createTime;
-        p.updateTime = updateTime;
-        return p;
+        return Product.builder()
+                .id(id)
+                .sellerId(sellerId)
+                .categoryId(categoryId)
+                .title(title)
+                .price(price)
+                .originalPrice(originalPrice)
+                .stock(stock)
+                .version(version)
+                .status(status)
+                .viewCount(viewCount != null ? viewCount : 0)
+                .conditionLevel(conditionLevel)
+                .location(location)
+                .contactMethod(contactMethod)
+                .description(description)
+                .images(images)
+                .tags(tags)
+                .searchText(searchText)
+                .priceUpdateTime(priceUpdateTime)
+                .createTime(createTime)
+                .updateTime(updateTime)
+                .build();
     }
 
-    public void update(
+    public ProductUpdatedResult update(
             CategoryId categoryId,
             ProductTitle title,
             Money price,
@@ -162,36 +181,38 @@ public class Product {
             ProductDescription description,
             ImageSet images
     ) {
-        updateIfPresent(categoryId, v -> this.categoryId = v);
-        updateIfPresent(title, v -> this.title = v, t -> !t.value().isBlank());
+        ProductBuilder builder = toBuilder();
+        updateIfPresent(categoryId, builder::categoryId);
+        updateIfPresent(title, builder::title, t -> !t.value().isBlank());
         updateIfPresent(price, v -> {
-            this.price = v;
-            this.priceUpdateTime = LocalDateTime.now();
+            builder.price(v);
+            builder.priceUpdateTime(LocalDateTime.now());
         });
-        updateIfPresent(originalPrice, v -> this.originalPrice = v);
-        updateIfPresent(stock, v -> this.stock = v);
-        updateIfPresent(conditionLevel, v -> this.conditionLevel = v);
-        updateIfPresent(location, v -> this.location = v);
-        updateIfPresent(contactMethod, v -> this.contactMethod = v, ContactMethod::isNotBlank);
-        updateIfPresent(description, v -> this.description = v);
-        updateIfPresent(images, v -> this.images = v);
+        updateIfPresent(originalPrice, builder::originalPrice);
+        updateIfPresent(stock, builder::stock);
+        updateIfPresent(conditionLevel, builder::conditionLevel);
+        updateIfPresent(location, builder::location);
+        updateIfPresent(contactMethod, builder::contactMethod, ContactMethod::isNotBlank);
+        updateIfPresent(description, builder::description);
+        updateIfPresent(images, builder::images);
 
-        touch();
-        addDomainEvent(new ProductUpdatedEvent(
+        Product updated = builder.updateTime(LocalDateTime.now()).build();
+        ProductUpdatedEvent event = new ProductUpdatedEvent(
                 id.value(), sellerId.value(),
-                valueOrNull(this.categoryId, CategoryId::value),
-                this.title.value(), this.price.value(),
-                valueOrNull(this.originalPrice, Money::value),
-                this.stock.value(),
-                valueOrNull(this.conditionLevel, ConditionLevel::getCode),
-                valueOrNull(this.location, TradeLocation::value),
-                valueOrNull(this.contactMethod, ContactMethod::value),
-                valueOrNull(this.description, ProductDescription::value),
-                this.images.imageUrls()
-        ));
+                valueOrNull(updated.categoryId, CategoryId::value),
+                updated.title.value(), updated.price.value(),
+                valueOrNull(updated.originalPrice, Money::value),
+                updated.stock.value(),
+                valueOrNull(updated.conditionLevel, ConditionLevel::getCode),
+                valueOrNull(updated.location, TradeLocation::value),
+                valueOrNull(updated.contactMethod, ContactMethod::value),
+                valueOrNull(updated.description, ProductDescription::value),
+                valueOrNull(updated.images, ImageSet::imageUrls)
+        );
+        return new ProductUpdatedResult(updated, event);
     }
 
-    public void putOnline() {
+    public Product putOnline() {
         if (status.isOnline()) {
             throw new InvalidProductStatusException("商品已上架，无需重复操作", id, status);
         }
@@ -201,107 +222,112 @@ public class Product {
         BizRequire.requireTrue(isComplete(), "商品信息不完整，无法上架");
         BizRequire.requireTrue(hasValidPrice(), "商品价格无效，无法上架");
         BizRequire.requireTrue(hasStock(), "商品库存不足，无法上架");
-        this.status = ProductStatus.ONLINE;
-        touch();
+        return toBuilder()
+                .status(ProductStatus.ONLINE)
+                .updateTime(LocalDateTime.now())
+                .build();
     }
 
-    public void takeOffline() {
+    public Product takeOffline() {
         if (!status.isOnline()) {
             throw new InvalidProductStatusException("只有上架中的商品才能下架", id, status);
         }
-        this.status = ProductStatus.OFFLINE;
-        touch();
+        return toBuilder()
+                .status(ProductStatus.OFFLINE)
+                .updateTime(LocalDateTime.now())
+                .build();
     }
 
-    public void markAsSold() {
+    public ProductMarkedSoldResult markAsSold() {
         if (!status.isOnline()) {
             throw new InvalidProductStatusException("只有上架中的商品才能标记为已售", id, status);
         }
-        this.status = ProductStatus.SOLD;
-        touch();
-        addDomainEvent(new ProductMarkedSoldEvent(id.value()));
+        Product updated = toBuilder()
+                .status(ProductStatus.SOLD)
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductMarkedSoldResult(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
     }
 
-    public void delete(Long userId) {
+    public ProductDeletedResult delete(Long userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("无权删除此商品", id, status);
         }
         if (!status.canDelete()) {
             throw new InvalidProductStatusException("已售商品不能删除", id, status);
         }
-        touch();
-        addDomainEvent(new ProductDeletedEvent(id.value(), userId));
+        Product updated = toBuilder()
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductDeletedResult(updated, new ProductDeletedEvent(id.value(), userId));
     }
 
-    /**
-     * 提交审核
-     *
-     * @param userId 操作人（卖家）ID
-     * @return 审核前状态码，供应用层记录审核日志使用
-     */
-    public int submitForReview(Long userId) {
+    public ProductSubmittedForReviewResult submitForReview(Long userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("只能提交自己的商品审核", id, status);
         }
         if (!status.canSubmitForReview()) {
             throw new InvalidProductStatusException("当前状态不支持提交审核", id, status);
         }
-        int beforeStatus = status.getCode();
-        this.status = ProductStatus.PENDING_REVIEW;
-        touch();
-        addDomainEvent(new ProductSubmittedForReviewEvent(
-                id.value(), sellerId.value(), beforeStatus, status.getCode()));
-        return beforeStatus;
+        Product updated = toBuilder()
+                .status(ProductStatus.PENDING_REVIEW)
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductSubmittedForReviewResult(
+                updated, new ProductSubmittedForReviewEvent(
+                id.value(), sellerId.value(), status.getCode(), ProductStatus.PENDING_REVIEW.getCode()));
     }
 
-    public void incrementViewCount() {
-        this.viewCount = this.viewCount != null ? this.viewCount + 1 : 1;
-        touch();
+    public Product incrementViewCount() {
+        return toBuilder()
+                .viewCount(viewCount != null ? viewCount + 1 : 1)
+                .updateTime(LocalDateTime.now())
+                .build();
     }
 
-    public void addViewCount(int count) {
-        if (count > 0) {
-            this.viewCount = this.viewCount != null ? this.viewCount + count : count;
-            touch();
+    public Product addViewCount(int count) {
+        if (count <= 0) {
+            return this;
         }
+        return toBuilder()
+                .viewCount(viewCount != null ? viewCount + count : count)
+                .updateTime(LocalDateTime.now())
+                .build();
     }
 
-    public void decrementStock() {
-        decrementStock(1);
+    public StockDecreasedResult decrementStock() {
+        return decrementStock(1);
     }
 
-    public void decrementStock(int quantity) {
+    public StockDecreasedResult decrementStock(int quantity) {
         if (!hasStock()) {
             throw new InsufficientStockException("商品库存不足", id, stock);
         }
-        this.stock = stock.decrease(quantity);
-        touch();
-        addDomainEvent(new StockDecreasedEvent(id.value()));
+        Product updated = toBuilder()
+                .stock(stock.decrease(quantity))
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new StockDecreasedResult(updated, new StockDecreasedEvent(id.value()));
     }
 
-    public void restoreStock() {
+    public StockRestoredResult restoreStock() {
         if (status.isSold() || status.isOffline()) {
             throw new InvalidProductStatusException("已售或下架商品不能恢复库存", id, status);
         }
-        this.stock = stock.increase();
-        touch();
-        addDomainEvent(new StockRestoredEvent(id.value()));
+        Product updated = toBuilder()
+                .stock(stock.increase())
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new StockRestoredResult(updated, new StockRestoredEvent(id.value()));
     }
 
-    public void assignId(Long id) {
-        if (this.id == null || this.id.value() == null) {
-            this.id = ProductId.of(id);
+    public Product assignId(Long id) {
+        if (this.id != null && this.id.value() != null) {
+            return this;
         }
-    }
-
-    public void addDomainEvent(BaseDomainEvent event) {
-        this.domainEvents.add(event);
-    }
-
-    public List<BaseDomainEvent> releaseEvents() {
-        List<BaseDomainEvent> events = List.copyOf(domainEvents);
-        domainEvents.clear();
-        return events;
+        return toBuilder()
+                .id(ProductId.of(id))
+                .build();
     }
 
     public boolean isComplete() {
@@ -318,23 +344,29 @@ public class Product {
         return stock != null && stock.isAvailable();
     }
 
-    private void touch() {
-        this.updateTime = LocalDateTime.now();
-    }
-
     private static <T, R> R valueOrNull(T obj, Function<T, R> extractor) {
         return obj != null ? extractor.apply(obj) : null;
     }
 
-    private <T> void updateIfPresent(T value, Consumer<T> setter) {
+    private static <T> void updateIfPresent(T value, Consumer<T> setter) {
         if (value != null) {
             setter.accept(value);
         }
     }
 
-    private <T> void updateIfPresent(T value, Consumer<T> setter, Predicate<T> condition) {
+    private static <T> void updateIfPresent(T value, Consumer<T> setter, Predicate<T> condition) {
         if (value != null && condition.test(value)) {
             setter.accept(value);
         }
     }
+
+    // ==================== Result Records ====================
+
+    public record ProductCreatedResult(Product product, ProductCreatedEvent event) {}
+    public record ProductUpdatedResult(Product product, ProductUpdatedEvent event) {}
+    public record ProductMarkedSoldResult(Product product, ProductMarkedSoldEvent event) {}
+    public record ProductDeletedResult(Product product, ProductDeletedEvent event) {}
+    public record ProductSubmittedForReviewResult(Product product, ProductSubmittedForReviewEvent event) {}
+    public record StockDecreasedResult(Product product, StockDecreasedEvent event) {}
+    public record StockRestoredResult(Product product, StockRestoredEvent event) {}
 }

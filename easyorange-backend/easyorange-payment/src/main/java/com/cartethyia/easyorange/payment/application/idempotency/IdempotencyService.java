@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.application.idempotency;
 
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
-import com.cartethyia.easyorange.payment.domain.port.output.IdempotencyKeyRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.IdempotencyKeyRepositoryPort;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,24 +34,24 @@ public class IdempotencyService {
         if (existingKey.isPresent()) {
             IdempotencyKey key = existingKey.get();
             
-            if (!key.getUserId().equals(userId)) {
-                log.warn("幂等性键用户不匹配 key={} expectedUserId={} actualUserId={}", 
-                    idempotencyKey, key.getUserId(), userId);
+            if (!key.userId().equals(userId)) {
+                log.warn("幂等性键用户不匹配 key={} expectedUserId={} actualUserId={}",
+                    idempotencyKey, key.userId(), userId);
                 throw new IllegalStateException("幂等性键不属于当前用户");
             }
-            
-            if (key.getStatus().equals(IdempotencyKey.STATUS_COMPLETED)) {
-                T cachedResponse = deserializeResponse(key.getResponseData(), operation.getResponseType());
+
+            if (key.status().equals(IdempotencyKey.STATUS_COMPLETED)) {
+                T cachedResponse = deserializeResponse(key.responseData(), operation.getResponseType());
                 return Optional.of(cachedResponse);
             }
         } else {
-            IdempotencyKey newKey = IdempotencyKey.builder()
-                    .key(idempotencyKey)
-                    .userId(userId)
-                    .requestHash(requestHash)
-                    .status(IdempotencyKey.STATUS_PENDING)
-                    .expiresAt(LocalDateTime.now().plusHours(EXPIRY_HOURS))
-                    .build();
+            IdempotencyKey newKey = IdempotencyKey.of(
+                    idempotencyKey,
+                    userId,
+                    requestHash,
+                    IdempotencyKey.STATUS_PENDING,
+                    LocalDateTime.now().plusHours(EXPIRY_HOURS)
+            );
             
             repository.save(newKey);
         }

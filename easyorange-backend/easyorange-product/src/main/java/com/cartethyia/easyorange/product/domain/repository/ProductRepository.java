@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface ProductRepository {
 
-    void save(Product product);
+    Product save(Product product);
 
     void update(Product product);
 

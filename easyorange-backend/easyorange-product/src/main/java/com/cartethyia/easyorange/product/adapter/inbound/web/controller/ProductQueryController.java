@@ -1,7 +1,5 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.annotation.RateLimiter;
-import com.cartethyia.easyorange.common.enums.LimitType;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -36,13 +34,11 @@ public class ProductQueryController {
     private final CategoryCachePort<?> categoryCachePort;
 
     @GetMapping
-    @RateLimiter(key = "product_list", count = 30, time = 60, limitType = LimitType.IP)
     public Result<PageResult<ProductVO>> listProducts(@Valid ProductQueryRequest request) {
         return Result.success(queryService.listProducts(request));
     }
 
     @GetMapping("/{id}")
-    @RateLimiter(key = "product_detail", count = 60, time = 60, limitType = LimitType.IP)
     public Result<ProductVO> getProduct(@PathVariable Long id) {
         ProductVO product = queryService.getProductById(id);
         return Result.success(product);
@@ -86,7 +82,6 @@ public class ProductQueryController {
     }
 
     @GetMapping("/categories")
-    @RateLimiter(key = "category_list", count = 30, time = 60, limitType = LimitType.IP)
     public Result<List<CategoryResponse>> getCategories(
             @RequestParam(required = false) Long parentId) {
         return Result.success(categoryQueryService.getCategories(parentId));

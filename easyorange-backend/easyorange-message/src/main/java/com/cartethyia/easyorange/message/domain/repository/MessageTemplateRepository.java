@@ -1,20 +1,20 @@
 package com.cartethyia.easyorange.message.domain.repository;
 
-import com.cartethyia.easyorange.message.entity.MessageTemplate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 
 import java.util.List;
 
 public interface MessageTemplateRepository {
 
-    MessageTemplate findByCode(String templateCode);
+    MessageTemplateAggregate findByCode(String templateCode);
 
-    MessageTemplate save(MessageTemplate template);
+    MessageTemplateAggregate save(MessageTemplateAggregate template);
 
-    void update(MessageTemplate template);
+    void update(MessageTemplateAggregate template);
 
     void deleteByIds(Long[] templateIds);
 
-    List<MessageTemplate> findByCondition(MessageTemplate condition);
+    List<MessageTemplateAggregate> findByCondition(MessageTemplateAggregate condition);
 
     boolean existsByCodeExcludingId(String templateCode, Long excludeId);
 }

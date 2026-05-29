@@ -1,18 +1,18 @@
 package com.cartethyia.easyorange.message.domain.repository;
 
-import com.cartethyia.easyorange.message.entity.MessageSubscription;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
 
 import java.util.List;
 
 public interface MessageSubscriptionRepository {
 
-    List<MessageSubscription> findByUserId(Long userId);
+    List<MessageSubscriptionAggregate> findByUserId(Long userId);
 
-    MessageSubscription findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel);
+    MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel);
 
-    MessageSubscription save(MessageSubscription subscription);
+    MessageSubscriptionAggregate save(MessageSubscriptionAggregate subscription);
 
-    void update(MessageSubscription subscription);
+    void update(MessageSubscriptionAggregate subscription);
 
     boolean existsEnabled(Long userId, String messageType, String pushChannel);
 }

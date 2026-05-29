@@ -3,11 +3,13 @@ package com.cartethyia.easyorange.message.application.command;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageCreateResult;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageReadResult;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
-import com.cartethyia.easyorange.message.application.command.RecallMessageCommand;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
@@ -15,7 +17,6 @@ import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
 import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
 import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
-import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,7 @@ public class MessageCommandHandler {
         String filteredContent = sensitiveWordFilterService.filter(command.getContent());
         String filteredTitle = sensitiveWordFilterService.filter(command.getTitle());
 
-        Message message = Message.create(
+        MessageCreateResult result = MessageAggregate.create(
                 senderId,
                 command.getReceiverId(),
                 command.getType(),
@@ -54,58 +55,58 @@ public class MessageCommandHandler {
                 command.getBusinessId()
         );
 
-        messageRepository.save(message);
+        MessageAggregate saved = messageRepository.save(result.aggregate());
 
-        MessageRoutingService.RouteDecision decision = routingService.decideRoute(message.getReceiverId());
+        MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
-                message.getReceiverId(), message.getId(), "websocket", decision.isOnline());
+                saved.receiverId(), saved.id(), "websocket", decision.isOnline());
 
-        MessageSentEvent event = message.send();
+        MessageSentEvent event = saved.send();
         domainEventPublisher.publish(event);
 
         log.info("action=send_message messageId={} senderId={} receiverId={} type={}",
-                message.getId(), senderId, command.getReceiverId(), command.getType());
+                saved.id(), senderId, command.getReceiverId(), command.getType());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
-        Message message = Message.createSystem(
+        MessageCreateResult result = MessageAggregate.createSystem(
                 command.getReceiverId(),
                 command.getTitle(),
                 command.getContent(),
                 command.getBusinessId()
         );
 
-        messageRepository.save(message);
+        MessageAggregate saved = messageRepository.save(result.aggregate());
 
-        MessageRoutingService.RouteDecision decision = routingService.decideRoute(message.getReceiverId());
+        MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
-                message.getReceiverId(), message.getId(), "websocket", decision.isOnline());
+                saved.receiverId(), saved.id(), "websocket", decision.isOnline());
 
-        MessageSentEvent event = message.send();
+        MessageSentEvent event = saved.send();
         domainEventPublisher.publish(event);
 
         log.info("action=send_system_message messageId={} receiverId={}",
-                message.getId(), command.getReceiverId());
+                saved.id(), command.getReceiverId());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message message = messageRepository.findById(command.getMessageId())
+        MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
         BizRequire.requireTrue(
-                message.isOwnedBy(userId),
+                aggregate.isOwnedBy(userId),
                 MessageResultCode.MESSAGE_NOT_OWNER
         );
 
-        if (message.isUnread()) {
-            MessageReadEvent event = message.read(userId);
-            messageRepository.update(message);
-            if (event != null) {
-                domainEventPublisher.publish(event);
+        if (aggregate.isUnread()) {
+            MessageReadResult readResult = aggregate.read(userId);
+            if (readResult != null) {
+                messageRepository.update(readResult.aggregate());
+                domainEventPublisher.publish(readResult.event());
             }
         }
     }
@@ -119,12 +120,12 @@ public class MessageCommandHandler {
 
         for (Long messageId : command.getMessageIds()) {
             try {
-                Message message = messageRepository.findById(messageId).orElse(null);
-                if (message != null && message.isOwnedBy(userId) && message.isUnread()) {
-                    MessageReadEvent event = message.read(userId);
-                    messageRepository.update(message);
-                    if (event != null) {
-                        domainEventPublisher.publish(event);
+                MessageAggregate aggregate = messageRepository.findById(messageId).orElse(null);
+                if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
+                    MessageReadResult readResult = aggregate.read(userId);
+                    if (readResult != null) {
+                        messageRepository.update(readResult.aggregate());
+                        domainEventPublisher.publish(readResult.event());
                     }
                 }
             } catch (Exception e) {
@@ -153,15 +154,15 @@ public class MessageCommandHandler {
     public void handle(RecallMessageCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message message = messageRepository.findById(command.getMessageId())
+        MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
-        long minId = Math.min(message.getSenderId(), message.getReceiverId());
-        long maxId = Math.max(message.getSenderId(), message.getReceiverId());
+        long minId = Math.min(aggregate.senderId(), aggregate.receiverId());
+        long maxId = Math.max(aggregate.senderId(), aggregate.receiverId());
         String conversationId = "conv_" + minId + "_" + maxId;
-        MessageRecalledEvent event = message.recall(userId, conversationId);
-        messageRepository.update(message);
-        domainEventPublisher.publish(event);
+        MessageRecallResult recallResult = aggregate.recall(userId, conversationId);
+        messageRepository.update(recallResult.aggregate());
+        domainEventPublisher.publish(recallResult.event());
 
         log.info("action=recall_message messageId={} userId={}", command.getMessageId(), userId);
     }
@@ -170,15 +171,15 @@ public class MessageCommandHandler {
     public void handle(DeleteMessageCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message message = messageRepository.findById(command.getMessageId())
+        MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
         BizRequire.requireTrue(
-                message.isOwnedBy(userId),
+                aggregate.isOwnedBy(userId),
                 MessageResultCode.MESSAGE_NOT_OWNER
         );
 
-        MessageDeletedEvent event = message.delete(userId);
+        MessageDeletedEvent event = aggregate.delete(userId);
         messageRepository.delete(command.getMessageId());
         domainEventPublisher.publish(event);
 

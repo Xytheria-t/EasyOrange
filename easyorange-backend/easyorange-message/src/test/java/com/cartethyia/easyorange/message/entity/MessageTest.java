@@ -1,8 +1,10 @@
 package com.cartethyia.easyorange.message.entity;
 
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageCreateResult;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageReadResult;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
@@ -16,7 +18,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DisplayName("Message 实体单元测试")
+@DisplayName("MessageAggregate 聚合根单元测试")
 class MessageTest {
 
     private static final Long SENDER_ID = 1L;
@@ -30,28 +32,27 @@ class MessageTest {
         @Test
         @DisplayName("正常创建普通消息")
         void create_validParams_returnsMessage() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "你好", "hello world", 100L);
+            MessageCreateResult result = MessageAggregate.create(SENDER_ID, RECEIVER_ID, 2, "你好", "hello world", 100L);
 
-            assertThat(message.getSenderId()).isEqualTo(SENDER_ID);
-            assertThat(message.getReceiverId()).isEqualTo(RECEIVER_ID);
-            assertThat(message.getType()).isEqualTo(2);
-            assertThat(message.getTitle()).isEqualTo("你好");
-            assertThat(message.getContent()).isEqualTo("hello world");
-            assertThat(message.getBusinessId()).isEqualTo(100L);
-            assertThat(message.getIsRead()).isEqualTo(MessageStatus.UNREAD.getCode());
-            // msgStatus is set to "SENT" on creation; verify through recall behavior instead
+            assertThat(result.aggregate().senderId()).isEqualTo(SENDER_ID);
+            assertThat(result.aggregate().receiverId()).isEqualTo(RECEIVER_ID);
+            assertThat(result.aggregate().type()).isEqualTo(2);
+            assertThat(result.aggregate().title()).isEqualTo("你好");
+            assertThat(result.aggregate().content()).isEqualTo("hello world");
+            assertThat(result.aggregate().businessId()).isEqualTo(100L);
+            assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.UNREAD.getCode());
         }
 
         @Test
         @DisplayName("创建消息时 XSS 转义标题和内容")
         void create_xssEscape_titleAndContentEscaped() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2,
+            MessageCreateResult result = MessageAggregate.create(SENDER_ID, RECEIVER_ID, 2,
                     "<script>alert('xss')</script>", "<b>bold</b>", null);
 
-            assertThat(message.getTitle()).doesNotContain("<script>");
-            assertThat(message.getTitle()).contains("&lt;");
-            assertThat(message.getContent()).doesNotContain("<b>");
-            assertThat(message.getContent()).contains("&lt;b&gt;");
+            assertThat(result.aggregate().title()).doesNotContain("<script>");
+            assertThat(result.aggregate().title()).contains("&lt;");
+            assertThat(result.aggregate().content()).doesNotContain("<b>");
+            assertThat(result.aggregate().content()).contains("&lt;b&gt;");
         }
     }
 
@@ -62,23 +63,23 @@ class MessageTest {
         @Test
         @DisplayName("正常创建系统消息")
         void createSystem_validParams_returnsSystemMessage() {
-            Message message = Message.createSystem(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
+            MessageCreateResult result = MessageAggregate.createSystem(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
 
-            assertThat(message.getSenderId()).isNull();
-            assertThat(message.getReceiverId()).isEqualTo(RECEIVER_ID);
-            assertThat(message.getType()).isEqualTo(1);
-            assertThat(message.getTitle()).isEqualTo("系统通知");
-            assertThat(message.getContent()).isEqualTo("您的商品已审核通过");
-            assertThat(message.getIsRead()).isEqualTo(MessageStatus.UNREAD.getCode());
+            assertThat(result.aggregate().senderId()).isNull();
+            assertThat(result.aggregate().receiverId()).isEqualTo(RECEIVER_ID);
+            assertThat(result.aggregate().type()).isEqualTo(1);
+            assertThat(result.aggregate().title()).isEqualTo("系统通知");
+            assertThat(result.aggregate().content()).isEqualTo("您的商品已审核通过");
+            assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.UNREAD.getCode());
         }
 
         @Test
         @DisplayName("系统消息 XSS 转义")
         void createSystem_xssEscape_contentEscaped() {
-            Message message = Message.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
+            MessageCreateResult result = MessageAggregate.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
 
-            assertThat(message.getTitle()).doesNotContain("<script>");
-            assertThat(message.getContent()).doesNotContain("<img");
+            assertThat(result.aggregate().title()).doesNotContain("<script>");
+            assertThat(result.aggregate().content()).doesNotContain("<img");
         }
     }
 
@@ -89,9 +90,12 @@ class MessageTest {
         @Test
         @DisplayName("send 返回 MessageSentEvent")
         void send_returnsEvent() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            MessageSentEvent event = message.send();
+            MessageSentEvent event = aggregate.send();
 
             assertThat(event).isNotNull();
             assertThat(event.getSenderId()).isEqualTo(SENDER_ID);
@@ -106,26 +110,29 @@ class MessageTest {
         @Test
         @DisplayName("2分钟内可以撤回消息")
         void recall_within2Minutes_success() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setCreateTime(LocalDateTime.now().minusMinutes(1));
-            message.setId(100L);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
 
-            MessageRecalledEvent event = message.recall(SENDER_ID, "conv_1_2");
+            MessageRecallResult result = aggregate.recall(SENDER_ID, "conv_1_2");
 
-            assertThat(event).isNotNull();
-            assertThat(event.getMessageId()).isEqualTo(100L);
-            assertThat(event.getOperatorId()).isEqualTo(SENDER_ID);
-            assertThat(event.getConversationId()).isEqualTo("conv_1_2");
-            assertThat(event.getRecalledAt()).isNotNull();
+            assertThat(result.event()).isNotNull();
+            assertThat(result.event().getMessageId()).isEqualTo(100L);
+            assertThat(result.event().getOperatorId()).isEqualTo(SENDER_ID);
+            assertThat(result.event().getConversationId()).isEqualTo("conv_1_2");
+            assertThat(result.event().getRecalledAt()).isNotNull();
         }
 
         @Test
         @DisplayName("非发送者不能撤回消息")
         void recall_notSender_throws() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setCreateTime(LocalDateTime.now());
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThatThrownBy(() -> message.recall(OTHER_USER_ID, "conv_1_2"))
+            assertThatThrownBy(() -> aggregate.recall(OTHER_USER_ID, "conv_1_2"))
                     .isInstanceOf(UnauthorizedOperationException.class)
                     .hasMessageContaining("不能撤回他人的消息");
         }
@@ -133,10 +140,12 @@ class MessageTest {
         @Test
         @DisplayName("超过2分钟不能撤回消息")
         void recall_over2Minutes_throws() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setCreateTime(LocalDateTime.now().minusMinutes(3));
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(3));
 
-            assertThatThrownBy(() -> message.recall(SENDER_ID, "conv_1_2"))
+            assertThatThrownBy(() -> aggregate.recall(SENDER_ID, "conv_1_2"))
                     .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("超过可撤回时间");
         }
@@ -144,11 +153,12 @@ class MessageTest {
         @Test
         @DisplayName("已撤回的消息不能再次撤回")
         void recall_alreadyRecalled_throws() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setCreateTime(LocalDateTime.now().minusMinutes(1));
-            message.recall(SENDER_ID, "conv_1_2");
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.RECALLED.getCode(), LocalDateTime.now(), LocalDateTime.now().minusMinutes(1));
 
-            assertThatThrownBy(() -> message.recall(SENDER_ID, "conv_1_2"))
+            assertThatThrownBy(() -> aggregate.recall(SENDER_ID, "conv_1_2"))
                     .isInstanceOf(MessageDomainException.class)
                     .hasMessageContaining("已被撤回");
         }
@@ -156,16 +166,17 @@ class MessageTest {
         @Test
         @DisplayName("撤回后返回的事件包含正确信息")
         void recall_returnsEventWithCorrectInfo() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setId(100L);
-            message.setCreateTime(LocalDateTime.now().minusMinutes(1));
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
 
-            MessageRecalledEvent event = message.recall(SENDER_ID, "conv_1_2");
+            MessageRecallResult result = aggregate.recall(SENDER_ID, "conv_1_2");
 
-            assertThat(event).isNotNull();
-            assertThat(event.getMessageId()).isEqualTo(100L);
-            assertThat(event.getOperatorId()).isEqualTo(SENDER_ID);
-            assertThat(event.getConversationId()).isEqualTo("conv_1_2");
+            assertThat(result.event()).isNotNull();
+            assertThat(result.event().getMessageId()).isEqualTo(100L);
+            assertThat(result.event().getOperatorId()).isEqualTo(SENDER_ID);
+            assertThat(result.event().getConversationId()).isEqualTo("conv_1_2");
         }
     }
 
@@ -176,24 +187,29 @@ class MessageTest {
         @Test
         @DisplayName("接收者可以标记为已读")
         void read_byReceiver_success() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setId(100L);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            MessageReadEvent event = message.read(RECEIVER_ID);
+            MessageReadResult result = aggregate.read(RECEIVER_ID);
 
-            assertThat(event).isNotNull();
-            assertThat(event.getMessageId()).isEqualTo(100L);
-            assertThat(event.getReaderId()).isEqualTo(RECEIVER_ID);
-            assertThat(message.getIsRead()).isEqualTo(MessageStatus.READ.getCode());
-            assertThat(message.getReadTime()).isNotNull();
+            assertThat(result).isNotNull();
+            assertThat(result.event().getMessageId()).isEqualTo(100L);
+            assertThat(result.event().getReaderId()).isEqualTo(RECEIVER_ID);
+            assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.READ.getCode());
+            assertThat(result.aggregate().readTime()).isNotNull();
         }
 
         @Test
         @DisplayName("非接收者不能标记已读")
         void read_notReceiver_throws() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThatThrownBy(() -> message.read(OTHER_USER_ID))
+            assertThatThrownBy(() -> aggregate.read(OTHER_USER_ID))
                     .isInstanceOf(UnauthorizedOperationException.class)
                     .hasMessageContaining("Only receiver can read");
         }
@@ -201,12 +217,14 @@ class MessageTest {
         @Test
         @DisplayName("已读消息再调用 read 返回 null")
         void read_alreadyRead_returnsNull() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.read(RECEIVER_ID);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.READ.getCode(), LocalDateTime.now(), null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            MessageReadEvent event = message.read(RECEIVER_ID);
+            MessageReadResult result = aggregate.read(RECEIVER_ID);
 
-            assertThat(event).isNull();
+            assertThat(result).isNull();
         }
     }
 
@@ -217,10 +235,12 @@ class MessageTest {
         @Test
         @DisplayName("接收者可以删除消息")
         void delete_byReceiver_success() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.setId(100L);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            MessageDeletedEvent event = message.delete(RECEIVER_ID);
+            MessageDeletedEvent event = aggregate.delete(RECEIVER_ID);
 
             assertThat(event).isNotNull();
             assertThat(event.getMessageId()).isEqualTo(100L);
@@ -230,9 +250,12 @@ class MessageTest {
         @Test
         @DisplayName("非接收者不能删除消息")
         void delete_notReceiver_throws() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThatThrownBy(() -> message.delete(SENDER_ID))
+            assertThatThrownBy(() -> aggregate.delete(SENDER_ID))
                     .isInstanceOf(UnauthorizedOperationException.class)
                     .hasMessageContaining("Not authorized to delete");
         }
@@ -245,61 +268,59 @@ class MessageTest {
         @Test
         @DisplayName("新建消息未读")
         void isUnread_newMessage_returnsTrue() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThat(message.isUnread()).isTrue();
+            assertThat(aggregate.isUnread()).isTrue();
         }
 
         @Test
         @DisplayName("已读消息 isUnread 返回 false")
         void isUnread_readMessage_returnsFalse() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-            message.markAsRead();
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.READ.getCode(), LocalDateTime.now(), null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThat(message.isUnread()).isFalse();
+            assertThat(aggregate.isUnread()).isFalse();
         }
 
         @Test
         @DisplayName("isOwnedBy 判断接收者")
         void isOwnedBy_receiver_returnsTrue() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThat(message.isOwnedBy(RECEIVER_ID)).isTrue();
-            assertThat(message.isOwnedBy(OTHER_USER_ID)).isFalse();
+            assertThat(aggregate.isOwnedBy(RECEIVER_ID)).isTrue();
+            assertThat(aggregate.isOwnedBy(OTHER_USER_ID)).isFalse();
         }
 
         @Test
         @DisplayName("isSender 判断发送者")
         void isSender_correctSender_returnsTrue() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
-            assertThat(message.isSender(SENDER_ID)).isTrue();
-            assertThat(message.isSender(RECEIVER_ID)).isFalse();
+            assertThat(aggregate.isSender(SENDER_ID)).isTrue();
+            assertThat(aggregate.isSender(RECEIVER_ID)).isFalse();
         }
 
         @Test
         @DisplayName("系统消息 isSender 返回 false")
         void isSender_systemMessage_returnsFalse() {
-            Message message = Message.createSystem(RECEIVER_ID, "通知", "内容", null);
+            MessageAggregate aggregate = MessageAggregate.fromRaw(
+                    100L, null, RECEIVER_ID, 1, "通知", "内容",
+                    MessageStatus.UNREAD.getCode(), null, null,
+                    null, null, LocalDateTime.now());
 
-            assertThat(message.isSender(SENDER_ID)).isFalse();
-            assertThat(message.isSender(null)).isFalse();
-        }
-    }
-
-    @Nested
-    @DisplayName("markAsRead")
-    class MarkAsReadTests {
-
-        @Test
-        @DisplayName("markAsRead 直接标记已读")
-        void markAsRead_setsReadStatus() {
-            Message message = Message.create(SENDER_ID, RECEIVER_ID, 2, "标题", "内容", null);
-
-            message.markAsRead();
-
-            assertThat(message.getIsRead()).isEqualTo(MessageStatus.READ.getCode());
-            assertThat(message.getReadTime()).isNotNull();
+            assertThat(aggregate.isSender(SENDER_ID)).isFalse();
+            assertThat(aggregate.isSender(null)).isFalse();
         }
     }
 }

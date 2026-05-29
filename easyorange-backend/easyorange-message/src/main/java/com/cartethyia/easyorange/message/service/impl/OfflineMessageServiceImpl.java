@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service.impl;
 
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
-import com.cartethyia.easyorange.message.entity.OfflineMessage;
 import com.cartethyia.easyorange.message.service.OfflineMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -17,12 +17,12 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
 
     @Override
     public void saveOfflineMessage(Long userId, Long messageId, String pushChannel) {
-        OfflineMessage offlineMessage = OfflineMessage.create(userId, messageId, pushChannel);
+        OfflineMessageAggregate offlineMessage = OfflineMessageAggregate.create(userId, messageId, pushChannel);
         offlineMessageRepository.save(offlineMessage);
     }
 
     @Override
-    public List<OfflineMessage> getPendingMessages(Long userId) {
+    public List<OfflineMessageAggregate> getPendingMessages(Long userId) {
         return offlineMessageRepository.findPendingByUserId(userId);
     }
 

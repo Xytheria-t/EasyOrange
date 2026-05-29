@@ -2,11 +2,12 @@ package com.cartethyia.easyorange.message.application.query;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
-import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.dto.vo.ConversationListVO;
 import com.cartethyia.easyorange.message.dto.vo.ConversationVO;
 import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.enums.MessageStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,10 +44,16 @@ class ConversationQueryHandlerTest {
     private static final Long THIRD_USER_ID = 3L;
 
     private Message createMessage(Long senderId, Long receiverId, String content, Long id) {
-        Message msg = Message.create(senderId, receiverId, 2, "", content, null);
-        msg.setId(id);
-        msg.setCreateTime(LocalDateTime.now());
-        return msg;
+        return Message.builder()
+                .id(id)
+                .senderId(senderId)
+                .receiverId(receiverId)
+                .type(2)
+                .title("")
+                .content(content)
+                .isRead(MessageStatus.UNREAD.getCode())
+                .createTime(LocalDateTime.now())
+                .build();
     }
 
     @Nested

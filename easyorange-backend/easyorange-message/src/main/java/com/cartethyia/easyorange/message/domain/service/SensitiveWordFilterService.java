@@ -1,16 +1,14 @@
 package com.cartethyia.easyorange.message.domain.service;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-@Slf4j
-@Service
 public class SensitiveWordFilterService {
+
+    private static final Logger log = LoggerFactory.getLogger(SensitiveWordFilterService.class);
 
     private static final Set<String> SENSITIVE_WORDS = Set.of(
             "敏感词示例"

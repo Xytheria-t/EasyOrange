@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.application.command;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
@@ -12,16 +11,22 @@ import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCo
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductUpdatedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductDeletedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductMarkedSoldResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductSubmittedForReviewResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.StockDecreasedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.StockRestoredResult;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
-import com.cartethyia.easyorange.product.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
-import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
@@ -48,7 +53,7 @@ public class ProductCommandService {
     public Long createProduct(CreateProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Product product = Product.create(
+        ProductCreatedResult result = Product.create(
                 SellerId.of(userId),
                 CategoryId.of(command.getCategoryId()),
                 ProductTitle.of(command.getName()),
@@ -61,10 +66,10 @@ public class ProductCommandService {
                 ProductDescription.of(command.getDescription()),
                 ImageSet.of(command.getImageUrls())
         );
-        productRepository.save(product);
-        publishEvents(product);
+        Product saved = productRepository.save(result.product());
+        domainEventPublisher.publish(result.event());
 
-        return product.getId().value();
+        return saved.getId().value();
     }
 
     public Long updateProduct(UpdateProductCommand command) {
@@ -77,7 +82,7 @@ public class ProductCommandService {
             throw new IllegalStateException("无权操作此商品");
         }
 
-        product.update(
+        ProductUpdatedResult result = product.update(
                 command.getCategoryId() != null ? CategoryId.of(command.getCategoryId()) : null,
                 command.getName() != null ? ProductTitle.of(command.getName()) : null,
                 command.getPrice() != null ? Money.of(command.getPrice()) : null,
@@ -89,11 +94,11 @@ public class ProductCommandService {
                 command.getDescription() != null ? ProductDescription.of(command.getDescription()) : null,
                 command.getImageUrls() != null ? ImageSet.of(command.getImageUrls()) : null
         );
-        productRepository.update(product);
-        publishEvents(product);
-        productCachePort.evictProductCache(product.getId().value());
+        productRepository.update(result.product());
+        domainEventPublisher.publish(result.event());
+        productCachePort.evictProductCache(result.product().getId().value());
 
-        return product.getId().value();
+        return result.product().getId().value();
     }
 
     public void deleteProduct(DeleteProductCommand command) {
@@ -103,9 +108,9 @@ public class ProductCommandService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        product.delete(userId);
+        ProductDeletedResult result = product.delete(userId);
         productRepository.delete(productId);
-        publishEvents(product);
+        domainEventPublisher.publish(result.event());
         productCachePort.evictProductCache(productId.value());
     }
 
@@ -114,11 +119,10 @@ public class ProductCommandService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        int quantity = command.getQuantity() != null ? command.getQuantity() : 1;
-        product.decrementStock(quantity);
-        productRepository.update(product);
-        publishEvents(product);
-        productCachePort.evictProductCache(productId.value());
+        StockDecreasedResult result = product.decrementStock(command.getQuantity() != null ? command.getQuantity() : 1);
+        productRepository.update(result.product());
+        domainEventPublisher.publish(result.event());
+        productCachePort.evictProductCache(result.product().getId().value());
     }
 
     public void restoreStock(RestoreStockCommand command) {
@@ -126,10 +130,10 @@ public class ProductCommandService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        product.restoreStock();
-        productRepository.update(product);
-        publishEvents(product);
-        productCachePort.evictProductCache(productId.value());
+        StockRestoredResult result = product.restoreStock();
+        productRepository.update(result.product());
+        domainEventPublisher.publish(result.event());
+        productCachePort.evictProductCache(result.product().getId().value());
     }
 
     public void putOnline(Long productId) {
@@ -139,9 +143,8 @@ public class ProductCommandService {
         if (!product.getSellerId().equals(SellerId.of(userId))) {
             throw new IllegalStateException("无权操作此商品");
         }
-        product.putOnline();
+        product = product.putOnline();
         productRepository.update(product);
-        publishEvents(product);
         productCachePort.evictProductCache(productId);
     }
 
@@ -152,9 +155,8 @@ public class ProductCommandService {
         if (!product.getSellerId().equals(SellerId.of(userId))) {
             throw new IllegalStateException("无权操作此商品");
         }
-        product.takeOffline();
+        product = product.takeOffline();
         productRepository.update(product);
-        publishEvents(product);
         productCachePort.evictProductCache(productId);
     }
 
@@ -163,10 +165,10 @@ public class ProductCommandService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        product.markAsSold();
-        productRepository.update(product);
-        publishEvents(product);
-        productCachePort.evictProductCache(productId.value());
+        ProductMarkedSoldResult result = product.markAsSold();
+        productRepository.update(result.product());
+        domainEventPublisher.publish(result.event());
+        productCachePort.evictProductCache(result.product().getId().value());
     }
 
     public void submitForReview(Long productId) {
@@ -176,9 +178,10 @@ public class ProductCommandService {
         Product product = productRepository.findById(pid)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
 
-        int beforeStatus = product.submitForReview(userId);
-        productRepository.update(product);
-        publishEvents(product);
+        int beforeStatus = product.getStatus().getCode();
+        ProductSubmittedForReviewResult result = product.submitForReview(userId);
+        productRepository.update(result.product());
+        domainEventPublisher.publish(result.event());
         productCachePort.evictProductCache(productId);
 
         ProductAuditLog auditLog = ProductAuditLog.builder()
@@ -190,11 +193,5 @@ public class ProductCommandService {
                 .afterStatus(ProductStatus.PENDING_REVIEW.getCode())
                 .build();
         productAuditLogRepository.save(auditLog);
-    }
-
-    private void publishEvents(Product product) {
-        for (BaseDomainEvent event : product.releaseEvents()) {
-            domainEventPublisher.publish(event);
-        }
     }
 }

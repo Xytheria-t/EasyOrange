@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.payment.application.command.CreatePaymentComman
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.PayCommand;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -42,7 +42,7 @@ class PaymentSagaIntegrationTest {
         
         PaymentAggregate createdAggregate = paymentRepository.findById(paymentId).orElseThrow();
         assertThat(createdAggregate.status()).isEqualTo(PaymentStatus.PENDING);
-        assertThat(createdAggregate.version()).isEqualTo(0L);
+        assertThat(createdAggregate.version()).isEqualTo(0);
 
         PayCommand payCommand = PayCommand.builder()
                 .paymentNo(createdAggregate.paymentNo())

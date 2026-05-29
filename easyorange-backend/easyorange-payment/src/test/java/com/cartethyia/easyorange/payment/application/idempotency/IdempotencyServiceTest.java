@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.application.idempotency;
 
-import com.cartethyia.easyorange.payment.domain.port.output.IdempotencyKeyRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.IdempotencyKeyRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -60,9 +60,9 @@ class IdempotencyServiceTest {
             assertThat(result).contains("result-data");
             verify(repository).save(keyCaptor.capture());
             IdempotencyKey savedKey = keyCaptor.getValue();
-            assertThat(savedKey.getKey()).isEqualTo(TEST_KEY);
-            assertThat(savedKey.getUserId()).isEqualTo(TEST_USER_ID);
-            assertThat(savedKey.getStatus()).isEqualTo(IdempotencyKey.STATUS_PENDING);
+            assertThat(savedKey.key()).isEqualTo(TEST_KEY);
+            assertThat(savedKey.userId()).isEqualTo(TEST_USER_ID);
+            assertThat(savedKey.status()).isEqualTo(IdempotencyKey.STATUS_PENDING);
             verify(repository).updateResponse(TEST_KEY, "\"result-data\"", IdempotencyKey.STATUS_COMPLETED);
         }
     }
@@ -74,14 +74,11 @@ class IdempotencyServiceTest {
         @Test
         @DisplayName("已完成的幂等键返回缓存结果")
         void process_completedKey_returnsCached() throws Exception {
-            IdempotencyKey existingKey = IdempotencyKey.builder()
-                    .key(TEST_KEY)
-                    .userId(TEST_USER_ID)
-                    .requestHash(TEST_REQUEST_HASH)
-                    .status(IdempotencyKey.STATUS_COMPLETED)
-                    .responseData("\"cached-result\"")
-                    .expiresAt(LocalDateTime.now().plusHours(24))
-                    .build();
+            IdempotencyKey existingKey = new IdempotencyKey(
+                    TEST_KEY, TEST_USER_ID, TEST_REQUEST_HASH,
+                    "\"cached-result\"", IdempotencyKey.STATUS_COMPLETED,
+                    LocalDateTime.now().plusHours(24)
+            );
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
             when(repository.findByKey(TEST_KEY)).thenReturn(Optional.of(existingKey));
             when(objectMapper.readValue("\"cached-result\"", String.class)).thenReturn("cached-result");
@@ -101,12 +98,10 @@ class IdempotencyServiceTest {
         @Test
         @DisplayName("用户不匹配时抛出异常")
         void process_userMismatch_throws() throws Exception {
-            IdempotencyKey existingKey = IdempotencyKey.builder()
-                    .key(TEST_KEY)
-                    .userId(9999L)
-                    .requestHash(TEST_REQUEST_HASH)
-                    .status(IdempotencyKey.STATUS_PENDING)
-                    .build();
+            IdempotencyKey existingKey = IdempotencyKey.of(
+                    TEST_KEY, 9999L, TEST_REQUEST_HASH,
+                    IdempotencyKey.STATUS_PENDING, LocalDateTime.now().plusHours(24)
+            );
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");
             when(repository.findByKey(TEST_KEY)).thenReturn(Optional.of(existingKey));
 
@@ -121,12 +116,10 @@ class IdempotencyServiceTest {
         @Test
         @DisplayName("待处理的幂等键执行操作并更新")
         void process_pendingKey_executesAndUpdates() throws Exception {
-            IdempotencyKey existingKey = IdempotencyKey.builder()
-                    .key(TEST_KEY)
-                    .userId(TEST_USER_ID)
-                    .requestHash(TEST_REQUEST_HASH)
-                    .status(IdempotencyKey.STATUS_PENDING)
-                    .build();
+            IdempotencyKey existingKey = IdempotencyKey.of(
+                    TEST_KEY, TEST_USER_ID, TEST_REQUEST_HASH,
+                    IdempotencyKey.STATUS_PENDING, LocalDateTime.now().plusHours(24)
+            );
             when(objectMapper.writeValueAsString(any()))
                     .thenReturn("{}")
                     .thenReturn("\"result\"");

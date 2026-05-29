@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.message.service.impl;
 
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import com.cartethyia.easyorange.message.dto.request.SubscriptionRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageSubscriptionVO;
-import com.cartethyia.easyorange.message.entity.MessageSubscription;
 import com.cartethyia.easyorange.message.service.MessageSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,10 +25,10 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
         return messageSubscriptionRepository.findByUserId(userId)
                 .stream()
                 .map(sub -> MessageSubscriptionVO.builder()
-                        .id(sub.getId())
-                        .messageType(sub.getMessageType())
-                        .pushChannel(sub.getPushChannel())
-                        .enabled(sub.getEnabled())
+                        .id(sub.id())
+                        .messageType(sub.messageType())
+                        .pushChannel(sub.pushChannel())
+                        .enabled(sub.enabled())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -38,18 +38,16 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
     public void updateSubscription(SubscriptionRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageSubscription existing = messageSubscriptionRepository.findByUserIdAndTypeAndChannel(
+        MessageSubscriptionAggregate existing = messageSubscriptionRepository.findByUserIdAndTypeAndChannel(
                 userId, request.getMessageType(), request.getPushChannel());
 
         if (existing != null) {
-            if (request.getEnabled()) {
-                existing.enable();
-            } else {
-                existing.disable();
-            }
-            messageSubscriptionRepository.update(existing);
+            MessageSubscriptionAggregate updated = request.getEnabled()
+                    ? existing.enable()
+                    : existing.disable();
+            messageSubscriptionRepository.update(updated);
         } else {
-            MessageSubscription subscription = MessageSubscription.create(
+            MessageSubscriptionAggregate subscription = MessageSubscriptionAggregate.create(
                     userId, request.getMessageType(), request.getPushChannel(), request.getEnabled());
             messageSubscriptionRepository.save(subscription);
         }

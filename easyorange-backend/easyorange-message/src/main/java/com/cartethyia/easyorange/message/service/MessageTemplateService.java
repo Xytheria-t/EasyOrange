@@ -1,28 +1,28 @@
 package com.cartethyia.easyorange.message.service;
 
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
-import com.cartethyia.easyorange.message.entity.MessageTemplate;
 
 import java.util.List;
 import java.util.Map;
 
 public interface MessageTemplateService {
 
-    MessageTemplate getByCode(String templateCode);
+    MessageTemplateAggregate getByCode(String templateCode);
 
     MessageTemplateVO renderTemplate(String templateCode, Map<String, String> variables);
 
     String renderContent(String template, Map<String, String> variables);
 
-    List<MessageTemplate> selectTemplateList(MessageTemplate template);
+    List<MessageTemplateAggregate> selectTemplateList(MessageTemplateAggregate condition);
 
-    int insertTemplate(MessageTemplate template);
+    int insertTemplate(MessageTemplateAggregate template);
 
-    int updateTemplate(MessageTemplate template);
+    int updateTemplate(MessageTemplateAggregate template);
 
     void deleteTemplateByIds(Long[] templateIds);
 
-    boolean checkTemplateCodeUnique(MessageTemplate template);
+    boolean checkTemplateCodeUnique(MessageTemplateAggregate template);
 
     void loadingTemplateCache();
 

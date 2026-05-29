@@ -3,14 +3,13 @@ package com.cartethyia.easyorange.message.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
-import com.cartethyia.easyorange.message.domain.port.output.UserInfoPort;
+import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
-import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.dto.vo.MessageVO;
 import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
-import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
@@ -37,27 +36,27 @@ public class MessageQueryHandler {
     public MessageVO getMessageDetail(Long messageId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        Message message = queryRepository.findById(messageId);
-        if (message == null) {
+        MessageAggregate aggregate = queryRepository.findById(messageId);
+        if (aggregate == null) {
             throw new MessageNotFoundException(messageId);
         }
 
-        BizRequire.eq(message.getReceiverId(), userId, MessageResultCode.MESSAGE_NOT_OWNER);
+        BizRequire.eq(aggregate.receiverId(), userId, MessageResultCode.MESSAGE_NOT_OWNER);
 
-        return toMessageVO(message, resolveUsernames(Set.of(message)));
+        return toMessageVO(aggregate, resolveUsernames(Set.of(aggregate)));
     }
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        PageResult<Message> messagePage = queryRepository.findByReceiverId(request, userId);
+        PageResult<MessageAggregate> messagePage = queryRepository.findByReceiverId(request, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        PageResult<Message> messagePage = queryRepository.findUnreadByReceiverId(request, userId);
+        PageResult<MessageAggregate> messagePage = queryRepository.findUnreadByReceiverId(request, userId);
         return toMessageVOPage(messagePage);
     }
 
@@ -67,7 +66,7 @@ public class MessageQueryHandler {
         return queryRepository.countUnreadByReceiverId(userId);
     }
 
-    private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
+    private PageResult<MessageVO> toMessageVOPage(PageResult<MessageAggregate> messagePage) {
         Map<Long, String> usernameMap = resolveUsernames(
                 messagePage.records().stream().collect(Collectors.toSet()));
 
@@ -79,9 +78,9 @@ public class MessageQueryHandler {
                 messagePage.current(), messagePage.size());
     }
 
-    private Map<Long, String> resolveUsernames(Set<Message> messages) {
-        Set<Long> userIds = messages.stream()
-                .flatMap(m -> java.util.stream.Stream.of(m.getSenderId(), m.getReceiverId()))
+    private Map<Long, String> resolveUsernames(Set<MessageAggregate> aggregates) {
+        Set<Long> userIds = aggregates.stream()
+                .flatMap(m -> java.util.stream.Stream.of(m.senderId(), m.receiverId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
@@ -97,29 +96,29 @@ public class MessageQueryHandler {
                 ));
     }
 
-    private MessageVO toMessageVO(Message message, Map<Long, String> usernameMap) {
+    private MessageVO toMessageVO(MessageAggregate aggregate, Map<Long, String> usernameMap) {
         MessageVO.MessageVOBuilder builder = MessageVO.builder()
-                .id(message.getId())
-                .senderId(message.getSenderId())
-                .receiverId(message.getReceiverId())
-                .type(message.getType())
-                .typeDesc(MessageType.getDescByCode(message.getType()))
-                .title(message.getTitle())
-                .content(message.getContent())
-                .isRead(message.getIsRead())
-                .readDesc(MessageStatus.getDescByCode(message.getIsRead()))
-                .businessId(message.getBusinessId())
-                .createTime(message.getCreateTime())
-                .updateTime(message.getUpdateTime());
+                .id(aggregate.id())
+                .senderId(aggregate.senderId())
+                .receiverId(aggregate.receiverId())
+                .type(aggregate.type())
+                .typeDesc(MessageType.getDescByCode(aggregate.type()))
+                .title(aggregate.title())
+                .content(aggregate.content())
+                .isRead(aggregate.isRead())
+                .readDesc(MessageStatus.getDescByCode(aggregate.isRead()))
+                .businessId(aggregate.businessId())
+                .createTime(aggregate.createTime())
+                .updateTime(null);
 
-        if (message.getSenderId() != null) {
-            builder.senderName(usernameMap.getOrDefault(message.getSenderId(), "未知用户"));
+        if (aggregate.senderId() != null) {
+            builder.senderName(usernameMap.getOrDefault(aggregate.senderId(), "未知用户"));
         } else {
             builder.senderName("系统");
         }
 
-        if (message.getReceiverId() != null) {
-            builder.receiverName(usernameMap.getOrDefault(message.getReceiverId(), "未知用户"));
+        if (aggregate.receiverId() != null) {
+            builder.receiverName(usernameMap.getOrDefault(aggregate.receiverId(), "未知用户"));
         }
 
         return builder.build();

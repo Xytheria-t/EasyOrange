@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.gateway;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentResult;
-import com.cartethyia.easyorange.payment.domain.port.output.RefundResult;
+import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
+import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
+import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.constant.PaymentConstant;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;

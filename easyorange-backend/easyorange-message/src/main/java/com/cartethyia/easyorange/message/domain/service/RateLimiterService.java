@@ -1,18 +1,16 @@
 package com.cartethyia.easyorange.message.domain.service;
 
 import com.cartethyia.easyorange.framework.redis.RedisCache;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
 public class RateLimiterService {
+
+    private static final Logger log = LoggerFactory.getLogger(RateLimiterService.class);
 
     private final RedisCache redisCache;
 
@@ -24,6 +22,10 @@ public class RateLimiterService {
     private static final Duration RATE_WINDOW = Duration.ofSeconds(1);
 
     private final AtomicInteger localCounter = new AtomicInteger(0);
+
+    public RateLimiterService(RedisCache redisCache) {
+        this.redisCache = redisCache;
+    }
 
     public boolean allowSendMessage(Long userId) {
         String key = MESSAGE_RATE_KEY.formatted(userId);

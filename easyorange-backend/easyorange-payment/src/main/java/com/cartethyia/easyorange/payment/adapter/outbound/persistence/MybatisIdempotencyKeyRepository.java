@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.IdempotencyKeyMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.IdempotencyKeyPO;
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
-import com.cartethyia.easyorange.payment.domain.port.output.IdempotencyKeyRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.IdempotencyKeyRepositoryPort;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -20,12 +20,12 @@ public class MybatisIdempotencyKeyRepository extends BaseRepository<IdempotencyK
     @Override
     public void save(IdempotencyKey key) {
         IdempotencyKeyPO po = IdempotencyKeyPO.builder()
-                .idempotencyKey(key.getKey())
-                .userId(key.getUserId())
-                .requestHash(key.getRequestHash())
-                .responseData(key.getResponseData())
-                .status(key.getStatus())
-                .expiresAt(key.getExpiresAt())
+                .idempotencyKey(key.key())
+                .userId(key.userId())
+                .requestHash(key.requestHash())
+                .responseData(key.responseData())
+                .status(key.status())
+                .expiresAt(key.expiresAt())
                 .build();
         mapper.insert(po);
     }
@@ -55,13 +55,13 @@ public class MybatisIdempotencyKeyRepository extends BaseRepository<IdempotencyK
     }
 
     private IdempotencyKey toDomain(IdempotencyKeyPO po) {
-        return IdempotencyKey.builder()
-                .key(po.getIdempotencyKey())
-                .userId(po.getUserId())
-                .requestHash(po.getRequestHash())
-                .responseData(po.getResponseData())
-                .status(po.getStatus())
-                .expiresAt(po.getExpiresAt())
-                .build();
+        return new IdempotencyKey(
+                po.getIdempotencyKey(),
+                po.getUserId(),
+                po.getRequestHash(),
+                po.getResponseData(),
+                po.getStatus(),
+                po.getExpiresAt()
+        );
     }
 }

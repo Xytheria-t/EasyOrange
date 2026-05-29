@@ -15,8 +15,19 @@ import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("PaymentCommandAssembler 测试")
+@DisplayName("PaymentCommandMapper 测试")
 class PaymentCommandAssemblerTest {
+
+    private final PaymentCommandMapper mapper = new PaymentCommandMapper() {
+        @Override
+        public PayCommand toPayCommand(PaymentCallback callback) {
+            return PayCommand.builder()
+                    .paymentNo(callback.getPaymentNo())
+                    .transactionId(callback.getTransactionId())
+                    .attach(callback.getAttach())
+                    .build();
+        }
+    };
 
     @Nested
     @DisplayName("toCreateCommand")
@@ -30,10 +41,11 @@ class PaymentCommandAssemblerTest {
             request.setPaymentMethod(1);
             request.setPayPassword("123456");
 
-            CreatePaymentCommand command = PaymentCommandAssembler.toCreateCommand(request, 2001L);
+            CreatePaymentCommand command = mapper.toCreateCommand(request, 2001L);
 
             assertThat(command.getOrderId()).isEqualTo(1001L);
             assertThat(command.getPaymentMethod()).isEqualTo(1);
+            assertThat(command.getAttach()).isNull();
         }
     }
 
@@ -50,7 +62,7 @@ class PaymentCommandAssemblerTest {
                     .attach("test_attach")
                     .build();
 
-            PayCommand command = PaymentCommandAssembler.toPayCommand(callback);
+            PayCommand command = mapper.toPayCommand(callback);
 
             assertThat(command.getPaymentNo()).isEqualTo("PAY123");
             assertThat(command.getTransactionId()).isEqualTo("TXN456");
@@ -70,7 +82,7 @@ class PaymentCommandAssemblerTest {
             request.setRefundAmount(new BigDecimal("50.00"));
             request.setRefundReason("测试退款");
 
-            RefundPaymentCommand command = PaymentCommandAssembler.toRefundCommand(2001L, request);
+            RefundPaymentCommand command = mapper.toRefundCommand(2001L, request);
 
             assertThat(command.getPaymentId()).isEqualTo(2001L);
             assertThat(command.getRefundAmount()).isEqualByComparingTo(new BigDecimal("50.00"));
@@ -85,7 +97,7 @@ class PaymentCommandAssemblerTest {
         @Test
         @DisplayName("正确转换 paymentId 到 ClosePaymentCommand")
         void toCloseCommand_convertsCorrectly() {
-            ClosePaymentCommand command = PaymentCommandAssembler.toCloseCommand(1001L);
+            ClosePaymentCommand command = mapper.toCloseCommand(1001L);
 
             assertThat(command.getPaymentId()).isEqualTo(1001L);
         }

@@ -4,9 +4,9 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPayment
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
-import com.cartethyia.easyorange.payment.domain.factory.PaymentFactory;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentGatewayPort;
-import com.cartethyia.easyorange.payment.domain.port.output.PaymentRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import com.cartethyia.easyorange.common.util.SnowflakeIdGenerator;
+import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import lombok.RequiredArgsConstructor;
@@ -20,23 +20,23 @@ import java.math.BigDecimal;
 public class MockPaymentUseCase {
 
     private final PaymentRepositoryPort paymentRepository;
-    private final PaymentGatewayPort paymentGateway;
 
     public PaymentResponse createMockPayment(Long orderId, Integer paymentMethod, BigDecimal amount) {
-        PaymentAggregate aggregate = PaymentFactory.create(orderId, 0L, amount, paymentMethod, null);
+        Long paymentId = SnowflakeIdGenerator.getInstance().nextId();
+        PaymentAggregate.PaymentCreatedResult created = PaymentAggregate.create(paymentId, orderId, 0L, amount, paymentMethod, null);
 
-        paymentRepository.save(aggregate);
+        paymentRepository.save(created.aggregate());
 
         return PaymentResponse.builder()
-                .id(aggregate.id())
-                .paymentNo(aggregate.paymentNo())
+                .id(created.aggregate().id())
+                .paymentNo(created.aggregate().paymentNo())
                 .orderId(orderId)
                 .amount(amount)
                 .paymentMethod(paymentMethod)
                 .paymentMethodDesc(PaymentMethod.getDescByCode(paymentMethod))
-                .status(aggregate.status().getCode())
-                .statusDesc(PaymentStatus.getDescByCode(aggregate.status().getCode()))
-                .createTime(aggregate.createTime())
+                .status(created.aggregate().status().getCode())
+                .statusDesc(PaymentStatus.getDescByCode(created.aggregate().status().getCode()))
+                .createTime(created.aggregate().createTime())
                 .build();
     }
 
@@ -46,12 +46,17 @@ public class MockPaymentUseCase {
                 .orElseThrow(PaymentNotFoundException::of);
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
-            aggregate.pay(paymentGateway);
+            PaymentAggregate.PayPreparedResult prepared = aggregate.preparePay();
+            PaymentAggregate.PayConfirmedResult confirmed = prepared.aggregate()
+                    .confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
+            paymentRepository.update(confirmed.aggregate());
         } else {
-            aggregate.fail("模拟支付失败");
+            PaymentAggregate.FailedResult failed = aggregate.fail("模拟支付失败");
+            paymentRepository.update(failed.aggregate());
         }
-        paymentRepository.update(aggregate);
 
+        aggregate = paymentRepository.findById(request.getPaymentId())
+                .orElseThrow(PaymentNotFoundException::of);
         return buildPaymentResponse(aggregate);
     }
 
@@ -59,28 +64,32 @@ public class MockPaymentUseCase {
     public PaymentResponse mockPaymentSuccess(Long paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
-        aggregate.pay(paymentGateway);
-        paymentRepository.update(aggregate);
+        PaymentAggregate.PayPreparedResult prepared = aggregate.preparePay();
+        PaymentAggregate.PayConfirmedResult confirmed = prepared.aggregate()
+                .confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
+        paymentRepository.update(confirmed.aggregate());
 
-        return buildPaymentResponse(aggregate);
+        return buildPaymentResponse(paymentRepository.findById(paymentId)
+                .orElseThrow(PaymentNotFoundException::of));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public PaymentResponse mockPaymentFail(Long paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
-        aggregate.fail("模拟支付失败");
-        paymentRepository.update(aggregate);
+        PaymentAggregate.FailedResult failed = aggregate.fail("模拟支付失败");
+        paymentRepository.update(failed.aggregate());
 
-        return buildPaymentResponse(aggregate);
+        return buildPaymentResponse(paymentRepository.findById(paymentId)
+                .orElseThrow(PaymentNotFoundException::of));
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void mockRefund(Long paymentId, String reason) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(PaymentNotFoundException::of);
-        aggregate.directRefund(reason);
-        paymentRepository.update(aggregate);
+        PaymentAggregate.DirectRefundResult result = aggregate.directRefund(reason);
+        paymentRepository.update(result.aggregate());
     }
 
     private PaymentResponse buildPaymentResponse(PaymentAggregate aggregate) {

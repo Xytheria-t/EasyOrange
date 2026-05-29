@@ -26,4 +26,28 @@ public enum ProductReportStatus {
         }
         return null;
     }
+
+    public boolean isPending() {
+        return this == PENDING;
+    }
+
+    public boolean isProcessing() {
+        return this == PROCESSING;
+    }
+
+    public boolean isResolved() {
+        return this == RESOLVED;
+    }
+
+    public boolean canProcess() {
+        return this == PENDING;
+    }
+
+    public boolean canResolve() {
+        return this == PROCESSING;
+    }
+
+    public boolean canDismiss() {
+        return this == PENDING;
+    }
 }

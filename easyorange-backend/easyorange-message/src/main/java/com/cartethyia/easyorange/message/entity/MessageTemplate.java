@@ -2,10 +2,8 @@ package com.cartethyia.easyorange.message.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.framework.entity.BaseDO;
-import com.cartethyia.easyorange.message.constant.MessageConstant;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
@@ -24,18 +22,6 @@ public class MessageTemplate extends BaseDO {
     private String variables;
     private Integer status;
     private String remark;
-
-    public boolean isEnabled() {
-        return this.status != null && this.status == MessageConstant.TEMPLATE_STATUS_ENABLED;
-    }
-
-    public void enable() {
-        this.status = MessageConstant.TEMPLATE_STATUS_ENABLED;
-    }
-
-    public void disable() {
-        this.status = MessageConstant.STATUS_DISABLED;
-    }
 
     public String getTemplateCode() { return templateCode; }
     public String getTemplateName() { return templateName; }
