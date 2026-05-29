@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
+import com.cartethyia.easyorange.common.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
@@ -16,9 +17,9 @@ class OrderItemTest {
         OrderItem item = OrderItem.create(snapshot, 2);
 
         assertThat(item.productId().value()).isEqualTo(100L);
-        assertThat(item.unitPrice().amount()).isEqualByComparingTo(new BigDecimal("3999.00"));
+        assertThat(item.unitPrice().value()).isEqualByComparingTo(new BigDecimal("3999.00"));
         assertThat(item.quantity()).isEqualTo(2);
-        assertThat(item.subtotal().amount()).isEqualByComparingTo(new BigDecimal("7998.00"));
+        assertThat(item.subtotal().value()).isEqualByComparingTo(new BigDecimal("7998.00"));
         assertThat(item.id()).isNotNull();
     }
 

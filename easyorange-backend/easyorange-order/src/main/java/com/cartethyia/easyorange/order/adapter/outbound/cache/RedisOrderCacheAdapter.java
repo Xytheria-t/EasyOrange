@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.adapter.outbound.cache;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

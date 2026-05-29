@@ -8,22 +8,21 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
-import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
-import com.cartethyia.easyorange.order.domain.port.output.PaymentGatewayPort;
-import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
-import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort.ProductSnapshot;
-import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort;
-import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
 import com.cartethyia.easyorange.order.domain.saga.SagaState;
 import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
@@ -64,18 +63,41 @@ public class CreateOrderSaga {
 
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult execute(CreateOrderCommand command) {
-        String lockKey = ORDER_LOCK_PREFIX + command.getItems().getFirst().getProductId();
+        List<Long> productIds = command.getItems().stream()
+                .map(CreateOrderCommand.CreateOrderItem::getProductId)
+                .distinct()
+                .sorted()
+                .toList();
+
+        List<String> lockKeys = productIds.stream()
+                .map(id -> ORDER_LOCK_PREFIX + id)
+                .toList();
+
         String lockValue = UUID.randomUUID().toString();
 
-        Boolean locked = redisCache.tryLock(lockKey, lockValue, 10, TimeUnit.SECONDS);
-        if (!Boolean.TRUE.equals(locked)) {
-            throw new OrderDomainException("商品下单繁忙，请稍后重试");
-        }
-
+        List<String> acquiredKeys = new ArrayList<>();
         try {
+            for (String lockKey : lockKeys) {
+                Boolean locked = redisCache.tryLock(lockKey, lockValue, 10, TimeUnit.SECONDS);
+                if (!Boolean.TRUE.equals(locked)) {
+                    releaseAcquiredLocks(acquiredKeys, lockValue);
+                    throw new OrderDomainException("商品下单繁忙，请稍后重试");
+                }
+                acquiredKeys.add(lockKey);
+            }
             return doExecute(command);
         } finally {
-            redisCache.unlockIfValueMatches(lockKey, lockValue);
+            releaseAcquiredLocks(acquiredKeys, lockValue);
+        }
+    }
+
+    private void releaseAcquiredLocks(List<String> acquiredKeys, String lockValue) {
+        for (int i = acquiredKeys.size() - 1; i >= 0; i--) {
+            try {
+                redisCache.unlockIfValueMatches(acquiredKeys.get(i), lockValue);
+            } catch (Exception e) {
+                log.warn("释放锁失败 key={}", acquiredKeys.get(i), e);
+            }
         }
     }
 

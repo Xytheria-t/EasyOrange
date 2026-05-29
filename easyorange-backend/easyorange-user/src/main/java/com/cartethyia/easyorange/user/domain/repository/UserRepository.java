@@ -20,7 +20,7 @@ public interface UserRepository {
 
     Optional<User> findByStudentId(String studentId);
 
-    Optional<User> findByAccount(String account);
+    Optional<User> findByLoginIdentifier(String identifier);
 
     User save(User user);
 

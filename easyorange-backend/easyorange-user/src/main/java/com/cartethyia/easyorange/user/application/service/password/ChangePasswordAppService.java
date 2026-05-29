@@ -3,12 +3,10 @@ package com.cartethyia.easyorange.user.application.service.password;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ChangePasswordRequest;
+import com.cartethyia.easyorange.user.application.command.ChangePasswordCommand;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
-import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
-import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
+import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,26 +18,23 @@ public class ChangePasswordAppService {
 
     private final UserRepository userRepository;
     private final PasswordEncoderPort passwordEncoder;
-    private final UserEventPort userEventPort;
 
     @Transactional(rollbackFor = Exception.class)
-    public void changePassword(ChangePasswordRequest request) {
+    public void changePassword(ChangePasswordCommand command) {
         User user = getCurrentUserOrThrow();
 
-        BizRequire.ne(request.oldPassword(), request.newPassword(), "新密码不能与旧密码相同");
+        BizRequire.ne(command.getOldPassword(), command.getNewPassword(), "新密码不能与旧密码相同");
 
         BizRequire.requireTrue(
-            passwordEncoder.matches(request.oldPassword(), user.getPassword()),
+            passwordEncoder.matches(command.getOldPassword(), user.getPassword()),
             UserResultCode.PASSWORD_ERROR
         );
 
-        String encodedNewPassword = passwordEncoder.encode(request.newPassword());
+        String encodedNewPassword = passwordEncoder.encode(command.getNewPassword());
         User updatedUser = user.changePassword(encodedNewPassword, user.getId());
         boolean updated = userRepository.update(updatedUser);
 
         BizRequire.requireTrue(updated, "修改密码失败，请稍后重试");
-
-        userEventPort.publishPasswordChanged(new PasswordChangedEvent(user.getId()));
     }
 
     private User getCurrentUserOrThrow() {

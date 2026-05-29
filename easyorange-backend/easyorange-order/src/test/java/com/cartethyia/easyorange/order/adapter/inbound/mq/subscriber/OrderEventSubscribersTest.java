@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.StockReservationRequestedEvent;
-import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

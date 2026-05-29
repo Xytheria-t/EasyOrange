@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
-import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,8 +20,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -54,19 +52,10 @@ class OrderCommandControllerTest {
     class CreateOrderTests {
 
         @Test
-        @DisplayName("成功创建订单应返回 200 和订单详情")
-        void createOrder_withValidRequest_shouldReturnOrderVO() throws Exception {
+        @DisplayName("成功创建订单应返回 200 和订单 ID")
+        void createOrder_withValidRequest_shouldReturnOrderId() throws Exception {
             CreateOrderResult createResult = new CreateOrderResult(ORDER_ID, ORDER_NO);
             when(commandHandler.handle(any(CreateOrderCommand.class))).thenReturn(createResult);
-
-            OrderVO vo = OrderVO.builder()
-                    .id(ORDER_ID)
-                    .orderNo(ORDER_NO)
-                    .totalAmount(new BigDecimal("99.99"))
-                    .status(0)
-                    .statusDesc("待付款")
-                    .build();
-            when(queryHandler.getOrderDetail(ORDER_ID)).thenReturn(vo);
 
             String requestBody = """
                     {
@@ -82,13 +71,9 @@ class OrderCommandControllerTest {
                             .content(requestBody))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"))
-                    .andExpect(jsonPath("$.data.id").value(ORDER_ID))
-                    .andExpect(jsonPath("$.data.orderNo").value(ORDER_NO))
-                    .andExpect(jsonPath("$.data.status").value(0))
-                    .andExpect(jsonPath("$.data.statusDesc").value("待付款"));
+                    .andExpect(jsonPath("$.data").value(ORDER_ID));
 
             verify(commandHandler).handle(any(CreateOrderCommand.class));
-            verify(queryHandler).getOrderDetail(ORDER_ID);
         }
 
         @Test

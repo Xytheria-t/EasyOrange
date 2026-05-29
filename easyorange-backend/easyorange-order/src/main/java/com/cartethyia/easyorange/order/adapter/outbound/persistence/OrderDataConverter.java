@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
-import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
@@ -32,7 +32,7 @@ public class OrderDataConverter {
                 .orderNo(aggregate.orderNo().value())
                 .buyerId(aggregate.buyerId().value())
                 .sellerId(aggregate.sellerId().value())
-                .totalAmount(aggregate.totalAmount().amount())
+                .totalAmount(aggregate.totalAmount().value())
                 .status(aggregate.status().getCode())
                 .paymentStatus(aggregate.paymentStatus().code())
                 .address(aggregate.address().value())
@@ -141,9 +141,9 @@ public class OrderDataConverter {
                 .orderId(orderId)
                 .productId(item.productId().value())
                 .productSnapshot(toJson(item.snapshot()))
-                .unitPrice(item.unitPrice().amount())
+                .unitPrice(item.unitPrice().value())
                 .quantity(item.quantity())
-                .subtotal(item.subtotal().amount())
+                .subtotal(item.subtotal().value())
                 .build();
     }
 

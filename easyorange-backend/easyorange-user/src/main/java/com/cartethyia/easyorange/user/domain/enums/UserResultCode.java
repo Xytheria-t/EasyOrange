@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
 public enum UserResultCode implements IResultCode {
-
     USER_NOT_FOUND("B1001", "用户不存在"),
     USER_DISABLED("B1002", "账户已被禁用"),
     USER_LOCKED("B1003", "账户已被锁定"),
@@ -21,6 +21,7 @@ public enum UserResultCode implements IResultCode {
     SMS_CODE_SEND_TOO_FREQUENT("B1009", "验证码发送过于频繁"),
     SMS_CODE_VERIFY_TOO_FREQUENT("B1010", "验证码验证次数过多，请重新获取");
 
+    @JsonValue
     private final String code;
     private final String message;
 }

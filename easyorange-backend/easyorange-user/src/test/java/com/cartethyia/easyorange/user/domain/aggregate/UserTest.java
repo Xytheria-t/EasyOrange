@@ -24,22 +24,22 @@ class UserTest {
     class CreateTests {
 
         @Test
-        @DisplayName("应创建正常状态的普通用户")
+        @DisplayName("应创建正常状态的普通用户，昵称默认与用户名相同")
         void shouldCreateNormalUser() {
-            User user = User.create("testuser", "encodedPassword", "阳光橙子");
+            User user = User.create("testuser", "encodedPassword");
 
             assertThat(user.getUsername()).isEqualTo("testuser");
             assertThat(user.getPassword()).isEqualTo("encodedPassword");
             assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
             assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
             assertThat(user.getPersonalInfo()).isNotNull();
-            assertThat(user.getPersonalInfo().nickName()).isEqualTo("阳光橙子");
+            assertThat(user.getPersonalInfo().nickName()).isEqualTo("testuser");
         }
 
         @Test
         @DisplayName("用户名为空应抛出异常")
         void shouldThrowWhenUsernameIsNull() {
-            assertThatThrownBy(() -> User.create(null, "password", "nickname"))
+            assertThatThrownBy(() -> User.create(null, "password"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("username");
         }
@@ -47,7 +47,7 @@ class UserTest {
         @Test
         @DisplayName("密码为空应抛出异常")
         void shouldThrowWhenPasswordIsNull() {
-            assertThatThrownBy(() -> User.create("testuser", null, "nickname"))
+            assertThatThrownBy(() -> User.create("testuser", null))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("password");
         }

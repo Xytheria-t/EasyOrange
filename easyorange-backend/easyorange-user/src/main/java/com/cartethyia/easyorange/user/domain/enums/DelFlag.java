@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -9,15 +10,17 @@ public enum DelFlag {
     NORMAL("0", "未删除"),
     DELETED("2", "已删除");
 
+    @JsonValue
     private final String code;
+
     private final String description;
 
     public static DelFlag fromCode(String code) {
-        for (DelFlag flag : values()) {
+        for (var flag : values()) {
             if (flag.code.equals(code)) {
                 return flag;
             }
         }
-        return null;
+        throw new IllegalArgumentException("Unknown DelFlag code: " + code);
     }
 }

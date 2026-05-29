@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
@@ -98,7 +98,7 @@ class OrderAggregateTest {
 
             assertThat(result.event().getItems()).hasSize(2);
             assertThat(result.event().getTotalAmount()).isEqualByComparingTo(new BigDecimal("199.97"));
-            assertThat(result.aggregate().totalAmount().amount()).isEqualByComparingTo(new BigDecimal("199.97"));
+            assertThat(result.aggregate().totalAmount().value()).isEqualByComparingTo(new BigDecimal("199.97"));
             assertThat(result.aggregate().items()).hasSize(2);
         }
 
@@ -142,7 +142,7 @@ class OrderAggregateTest {
             assertThat(aggregate.buyerId().value()).isEqualTo(BUYER_ID);
             assertThat(aggregate.sellerId().value()).isEqualTo(SELLER_ID);
             assertThat(aggregate.items()).isEmpty();
-            assertThat(aggregate.totalAmount().amount()).isEqualByComparingTo(AMOUNT);
+            assertThat(aggregate.totalAmount().value()).isEqualByComparingTo(AMOUNT);
             assertThat(aggregate.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         }
     }

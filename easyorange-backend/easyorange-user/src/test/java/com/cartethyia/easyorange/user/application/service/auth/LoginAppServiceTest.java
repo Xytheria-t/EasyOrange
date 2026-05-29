@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.user.application.service.auth;
 
+import com.cartethyia.easyorange.framework.service.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.service.TokenService;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.LoginRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginCommand;
+import com.cartethyia.easyorange.user.application.command.LoginResult;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -48,79 +49,80 @@ class LoginAppServiceTest {
     void login_password_success() {
         String account = "testuser";
         String password = "Password123";
-        LoginRequest request = new LoginRequest(null, null, account, password);
+        LoginCommand command = new LoginCommand.PasswordLogin(account, password);
 
         User user = User.builder()
             .id(USER_ID)
             .credentials(new Credentials(USERNAME, "encoded"))
             .userType(UserType.NORMAL)
             .build();
-        when(authenticationService.authenticateByPassword(eq(account), eq(password), anyString()))
+        when(authenticationService.authenticate(any(LoginCommand.class), anyString()))
             .thenReturn(user);
         when(tokenService.createAccessToken(USER_ID, USERNAME, "01")).thenReturn("access-token");
         when(tokenService.createRefreshToken(USER_ID, USERNAME, "01")).thenReturn("refresh-token");
 
         UserVO userVO = UserVO.builder().userId(USER_ID).username(USERNAME).build();
-        when(userAssembler.toLoginResponse(user, "access-token", "refresh-token"))
-            .thenReturn(LoginResponse.builder().token("access-token").refreshToken("refresh-token").user(userVO).build());
+        when(userAssembler.toLoginResult(user, "access-token", "refresh-token"))
+            .thenReturn(new LoginResult("access-token", "refresh-token", userVO));
 
-        LoginResponse response = service.login(request);
+        LoginResult result = service.login(command);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getToken()).isEqualTo("access-token");
-        assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
-        assertThat(response.getUser()).isNotNull();
-        assertThat(response.getUser().getUserId()).isEqualTo(USER_ID);
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo("access-token");
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
+        assertThat(result.user()).isNotNull();
+        assertThat(result.user().getUserId()).isEqualTo(USER_ID);
     }
 
     @Test
     @DisplayName("短信登录成功")
     void login_sms_success() {
-        String account = "13812345678";
+        String phone = "13812345678";
         String verifyCode = "123456";
-        LoginRequest request = new LoginRequest(null, "sms", account, verifyCode);
+        LoginCommand command = new LoginCommand.SmsLogin(phone, verifyCode);
 
         User user = User.builder()
             .id(USER_ID)
             .credentials(new Credentials(USERNAME, "encoded"))
             .userType(UserType.NORMAL)
             .build();
-        when(authenticationService.authenticateBySms(eq(account), eq(verifyCode), anyString()))
+        when(authenticationService.authenticate(any(LoginCommand.class), anyString()))
             .thenReturn(user);
         when(tokenService.createAccessToken(USER_ID, USERNAME, "01")).thenReturn("access-token");
         when(tokenService.createRefreshToken(USER_ID, USERNAME, "01")).thenReturn("refresh-token");
 
         UserVO userVO = UserVO.builder().userId(USER_ID).username(USERNAME).build();
-        when(userAssembler.toLoginResponse(user, "access-token", "refresh-token"))
-            .thenReturn(LoginResponse.builder().token("access-token").refreshToken("refresh-token").user(userVO).build());
+        when(userAssembler.toLoginResult(user, "access-token", "refresh-token"))
+            .thenReturn(new LoginResult("access-token", "refresh-token", userVO));
 
-        LoginResponse response = service.login(request);
+        LoginResult result = service.login(command);
 
-        assertThat(response).isNotNull();
-        assertThat(response.getToken()).isEqualTo("access-token");
+        assertThat(result).isNotNull();
+        assertThat(result.token()).isEqualTo("access-token");
     }
 
     @Test
-    @DisplayName("登出成功 — 应撤销Token")
+    @DisplayName("登出成功 — 应撤销Refresh Token")
     void logout_success() {
-        String accessToken = "access-token";
         String refreshToken = "refresh-token";
 
-        service.logout(accessToken, refreshToken);
+        service.logout(refreshToken);
 
-        verify(tokenService).revokeAllTokens(accessToken, refreshToken);
+        verify(tokenService).invalidateToken(refreshToken);
     }
 
     @Test
-    @DisplayName("刷新Token成功")
+    @DisplayName("刷新Token成功 — 应返回新的 access + refresh token")
     void refreshToken_success() {
         String oldRefreshToken = "old-refresh-token";
-        String newAccessToken = "new-access-token";
-        when(tokenService.refreshToken(oldRefreshToken)).thenReturn(newAccessToken);
+        TokenRefreshResult mockResult = new TokenRefreshResult("new-access-token", "new-refresh-token");
+        when(tokenService.refreshToken(oldRefreshToken)).thenReturn(mockResult);
 
-        String result = service.refreshToken(oldRefreshToken);
+        TokenRefreshResult result = service.refreshToken(oldRefreshToken);
 
-        assertThat(result).isEqualTo("new-access-token");
+        assertThat(result).isNotNull();
+        assertThat(result.accessToken()).isEqualTo("new-access-token");
+        assertThat(result.refreshToken()).isEqualTo("new-refresh-token");
         verify(tokenService).refreshToken(oldRefreshToken);
     }
 }

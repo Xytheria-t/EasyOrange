@@ -3,9 +3,12 @@ package com.cartethyia.easyorange.user.domain.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
+import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginCommand;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -15,30 +18,33 @@ public class AuthenticationService {
     private final LoginSecurityService loginSecurityService;
     private final SmsCodeService smsCodeService;
 
-    public User authenticateByPassword(String account, String password, String clientIp) {
-        loginSecurityService.checkLoginAttempts(account);
+    public User authenticate(LoginCommand command, String clientIp) {
+        return switch (command) {
+            case LoginCommand.PasswordLogin cmd ->
+                authenticateByPassword(cmd.identifier(), cmd.password(), clientIp);
+            case LoginCommand.SmsLogin cmd ->
+                authenticateBySms(cmd.phone(), cmd.verifyCode(), clientIp);
+        };
+    }
 
-        User user = userRepository.findByAccount(account).orElse(null);
+    private User authenticateByPassword(String identifier, String password, String clientIp) {
+        loginSecurityService.checkLoginAttempts(identifier);
+
+        User user = userRepository.findByLoginIdentifier(identifier).orElse(null);
 
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            loginSecurityService.recordFailedAttempt(account);
+            loginSecurityService.recordFailedAttempt(identifier);
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
-
         if (!user.isNormal()) {
-            loginSecurityService.recordFailedAttempt(account);
             throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
 
-        loginSecurityService.clearLoginAttempts(account);
-
-        User loggedIn = user.recordLogin(clientIp);
-        userRepository.update(loggedIn);
-
-        return loggedIn;
+        loginSecurityService.clearLoginAttempts(identifier);
+        return finishLogin(user, clientIp);
     }
 
-    public User authenticateBySms(String phone, String verifyCode, String clientIp) {
+    private User authenticateBySms(String phone, String verifyCode, String clientIp) {
         smsCodeService.verifyCode(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone).orElse(null);
@@ -47,25 +53,24 @@ public class AuthenticationService {
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
-        User loggedIn = user.recordLogin(clientIp);
-        userRepository.update(loggedIn);
-
-        return loggedIn;
+        return finishLogin(user, clientIp);
     }
 
-    public User resetPassword(String phone, String verifyCode, String newPassword) {
+    public Optional<User> resetPassword(String phone, String verifyCode, String newPassword) {
         smsCodeService.verifyCode(phone, verifyCode);
 
-        User user = userRepository.findByPhone(phone).orElse(null);
+        return userRepository.findByPhone(phone)
+            .map(user -> {
+                String encoded = passwordEncoder.encode(newPassword);
+                User updated = user.changePassword(encoded, null);
+                userRepository.update(updated);
+                return updated;
+            });
+    }
 
-        if (user == null) {
-            return null;
-        }
-
-        String encodedPassword = passwordEncoder.encode(newPassword);
-        User updated = user.changePassword(encodedPassword, null);
-        userRepository.update(updated);
-
-        return updated;
+    private User finishLogin(User user, String clientIp) {
+        User loggedIn = user.recordLogin(clientIp);
+        userRepository.update(loggedIn);
+        return loggedIn;
     }
 }

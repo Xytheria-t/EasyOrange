@@ -4,14 +4,14 @@ import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateUserRequest;
+import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
+import com.cartethyia.easyorange.user.application.command.UpdateUserCommand;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
-import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,31 +37,31 @@ public class ProfileAppService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public UserVO updateUserInfo(UpdateUserRequest request) {
+    public UserVO updateUserInfo(UpdateUserCommand command) {
         User currentUser = getCurrentUserOrThrow();
 
-        BizRequire.requireTrue(hasAnyUpdate(request), "没有需要更新的字段");
+        BizRequire.requireTrue(hasAnyUpdate(command), "没有需要更新的字段");
 
-        validateUniqueFieldsIfChanged(request, currentUser);
+        validateUniqueFieldsIfChanged(command, currentUser);
 
         User updatedUser = currentUser;
         Long operatorId = currentUser.getId();
 
-        boolean contactChanged = (request.email() != null && !request.email().isBlank())
-            || (request.phone() != null && !request.phone().isBlank());
+        boolean contactChanged = (command.getEmail() != null && !command.getEmail().isBlank())
+            || (command.getPhone() != null && !command.getPhone().isBlank());
         if (contactChanged) {
-            updatedUser = updatedUser.updateContactInfo(request.email(), request.phone(), operatorId);
+            updatedUser = updatedUser.updateContactInfo(command.getEmail(), command.getPhone(), operatorId);
         }
 
-        boolean personalChanged = (request.realName() != null && !request.realName().isBlank())
-            || (request.nickname() != null && !request.nickname().isBlank())
-            || (request.gender() != null)
-            || (request.studentId() != null && !request.studentId().isBlank());
+        boolean personalChanged = (command.getRealName() != null && !command.getRealName().isBlank())
+            || (command.getNickname() != null && !command.getNickname().isBlank())
+            || (command.getGender() != null)
+            || (command.getStudentId() != null && !command.getStudentId().isBlank());
         if (personalChanged) {
             updatedUser = updatedUser.updatePersonalInfo(
-                request.realName(), request.nickname(),
-                request.gender() != null ? Sex.fromCode(request.gender()) : null,
-                request.studentId(), operatorId);
+                command.getRealName(), command.getNickname(),
+                command.getGender() != null ? Sex.fromCode(String.valueOf(command.getGender())) : null,
+                command.getStudentId(), operatorId);
         }
 
         BizRequire.requireTrue(userRepository.update(updatedUser), "更新用户信息失败");
@@ -96,36 +96,39 @@ public class ProfileAppService {
         }
     }
 
-    private boolean hasAnyUpdate(UpdateUserRequest request) {
-        String requestStudentId = request.studentId();
-        return request.nickname() != null && !request.nickname().isBlank()
-            || request.email() != null && !request.email().isBlank()
-            || request.phone() != null && !request.phone().isBlank()
-            || request.gender() != null
-            || request.realName() != null && !request.realName().isBlank()
+    private boolean hasAnyUpdate(UpdateUserCommand command) {
+        String requestStudentId = command.getStudentId();
+        return command.getNickname() != null && !command.getNickname().isBlank()
+            || command.getEmail() != null && !command.getEmail().isBlank()
+            || command.getPhone() != null && !command.getPhone().isBlank()
+            || command.getGender() != null
+            || command.getRealName() != null && !command.getRealName().isBlank()
             || requestStudentId != null && !requestStudentId.isBlank();
     }
 
-    private void validateUniqueFieldsIfChanged(UpdateUserRequest request, User currentUser) {
+    private void validateUniqueFieldsIfChanged(UpdateUserCommand command, User currentUser) {
         var contactInfo = currentUser.getContactInfo();
         String currentEmail = contactInfo != null ? contactInfo.email() : null;
-        if (request.email() != null && !request.email().isBlank() && !request.email().equals(currentEmail)) {
-            userRepository.findByEmail(request.email())
-                .ifPresent(_ -> { throw BusinessException.of(UserResultCode.EMAIL_EXISTS); });
+        if (command.getEmail() != null && !command.getEmail().isBlank() && !command.getEmail().equals(currentEmail)) {
+            if (userRepository.findByEmail(command.getEmail()).isPresent()) {
+                throw BusinessException.of(UserResultCode.EMAIL_EXISTS);
+            }
         }
 
         String currentPhone = contactInfo != null ? contactInfo.phone() : null;
-        if (request.phone() != null && !request.phone().isBlank() && !request.phone().equals(currentPhone)) {
-            userRepository.findByPhone(request.phone())
-                .ifPresent(_ -> { throw BusinessException.of(UserResultCode.PHONE_EXISTS); });
+        if (command.getPhone() != null && !command.getPhone().isBlank() && !command.getPhone().equals(currentPhone)) {
+            if (userRepository.findByPhone(command.getPhone()).isPresent()) {
+                throw BusinessException.of(UserResultCode.PHONE_EXISTS);
+            }
         }
 
         var personalInfo = currentUser.getPersonalInfo();
         String currentStudentId = personalInfo != null ? personalInfo.studentId() : null;
-        String requestStudentId = request.studentId();
+        String requestStudentId = command.getStudentId();
         if (requestStudentId != null && !requestStudentId.isBlank() && !requestStudentId.equals(currentStudentId)) {
-            userRepository.findByStudentId(requestStudentId)
-                .ifPresent(_ -> { throw BusinessException.of(UserResultCode.STUDENT_ID_EXISTS); });
+            if (userRepository.findByStudentId(requestStudentId).isPresent()) {
+                throw BusinessException.of(UserResultCode.STUDENT_ID_EXISTS);
+            }
         }
     }
 

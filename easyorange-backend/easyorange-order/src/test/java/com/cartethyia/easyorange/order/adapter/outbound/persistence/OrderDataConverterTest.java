@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
@@ -142,7 +142,7 @@ class OrderDataConverterTest {
             assertThat(aggregate.buyerId().value()).isEqualTo(BUYER_ID);
             assertThat(aggregate.sellerId().value()).isEqualTo(SELLER_ID);
             assertThat(aggregate.items()).isEmpty();
-            assertThat(aggregate.totalAmount().amount()).isEqualByComparingTo(AMOUNT);
+            assertThat(aggregate.totalAmount().value()).isEqualByComparingTo(AMOUNT);
             assertThat(aggregate.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
             assertThat(aggregate.paymentStatus()).isEqualTo(PaymentStatus.UNPAID);
             assertThat(aggregate.address().value()).isEqualTo(ADDRESS);
@@ -219,9 +219,9 @@ class OrderDataConverterTest {
             assertThat(itemDO.getId()).isEqualTo(item.id());
             assertThat(itemDO.getOrderId()).isEqualTo(ID);
             assertThat(itemDO.getProductId()).isEqualTo(item.productId().value());
-            assertThat(itemDO.getUnitPrice()).isEqualByComparingTo(item.unitPrice().amount());
+            assertThat(itemDO.getUnitPrice()).isEqualByComparingTo(item.unitPrice().value());
             assertThat(itemDO.getQuantity()).isEqualTo(item.quantity());
-            assertThat(itemDO.getSubtotal()).isEqualByComparingTo(item.subtotal().amount());
+            assertThat(itemDO.getSubtotal()).isEqualByComparingTo(item.subtotal().value());
             assertThat(itemDO.getProductSnapshot()).isNotNull();
         }
 
@@ -274,7 +274,7 @@ class OrderDataConverterTest {
             assertThat(restored.buyerId().value()).isEqualTo(original.buyerId().value());
             assertThat(restored.sellerId().value()).isEqualTo(original.sellerId().value());
             assertThat(restored.items()).isEmpty();
-            assertThat(restored.totalAmount().amount()).isEqualByComparingTo(original.totalAmount().amount());
+            assertThat(restored.totalAmount().value()).isEqualByComparingTo(original.totalAmount().value());
             assertThat(restored.status()).isEqualTo(original.status());
             assertThat(restored.paymentStatus()).isEqualTo(original.paymentStatus());
             assertThat(restored.address().value()).isEqualTo(original.address().value());

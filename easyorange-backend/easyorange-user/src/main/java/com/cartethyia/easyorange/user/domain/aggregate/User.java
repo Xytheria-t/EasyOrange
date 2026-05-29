@@ -35,7 +35,7 @@ public class User {
         return credentials != null ? credentials.encodedPassword() : null;
     }
 
-    public static User create(String username, String encodedPassword, String nickName) {
+    public static User create(String username, String encodedPassword) {
         Objects.requireNonNull(username, "username must not be null");
         Objects.requireNonNull(encodedPassword, "password must not be null");
 
@@ -44,7 +44,7 @@ public class User {
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
             .contactInfo(ContactInfo.empty())
-            .personalInfo(ImmutablePersonalInfo.builder().nickName(nickName).build())
+            .personalInfo(ImmutablePersonalInfo.builder().nickName(username).build())
             .loginInfo(LoginInfo.initial())
             .build();
     }
@@ -60,10 +60,10 @@ public class User {
     public User updateContactInfo(String email, String phone, Long operatorId) {
         ContactInfo updated = this.contactInfo;
 
-        if (email != null && !email.isBlank()) {
+        if (isPresent(email)) {
             updated = updated.withEmail(email);
         }
-        if (phone != null && !phone.isBlank()) {
+        if (isPresent(phone)) {
             updated = updated.withPhone(phone);
         }
 
@@ -76,16 +76,16 @@ public class User {
     public User updatePersonalInfo(String realName, String nickName, Sex sex, String studentId, Long operatorId) {
         PersonalInfo updated = this.personalInfo;
 
-        if (realName != null && !realName.isBlank()) {
+        if (isPresent(realName)) {
             updated = updated.withRealName(realName);
         }
-        if (nickName != null && !nickName.isBlank()) {
+        if (isPresent(nickName)) {
             updated = updated.withNickName(nickName);
         }
         if (sex != null) {
             updated = updated.withSex(sex);
         }
-        if (studentId != null && !studentId.isBlank()) {
+        if (isPresent(studentId)) {
             updated = updated.withStudentId(studentId);
         }
 
@@ -129,5 +129,9 @@ public class User {
             return operatorId != null ? AuditInfo.create(operatorId) : null;
         }
         return operatorId != null ? this.auditInfo.update(operatorId) : this.auditInfo;
+    }
+
+    private static boolean isPresent(String value) {
+        return value != null && !value.isBlank();
     }
 }

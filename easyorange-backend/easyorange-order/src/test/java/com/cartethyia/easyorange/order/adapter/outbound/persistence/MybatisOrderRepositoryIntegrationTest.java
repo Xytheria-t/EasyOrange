@@ -3,7 +3,8 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 import com.cartethyia.easyorange.order.OrderIntegrationTestConfig;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -95,7 +96,7 @@ class MybatisOrderRepositoryIntegrationTest {
             assertThat(found.get().status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
             assertThat(found.get().buyerId().value()).isEqualTo(10L);
             assertThat(found.get().sellerId().value()).isEqualTo(20L);
-            assertThat(found.get().totalAmount().amount()).isEqualByComparingTo(BigDecimal.valueOf(99.99));
+            assertThat(found.get().totalAmount().value()).isEqualByComparingTo(BigDecimal.valueOf(99.99));
         }
     }
 

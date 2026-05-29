@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.application.assembler;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.application.command.LoginResult;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -44,12 +44,8 @@ public interface UserAssembler {
     @Mapping(target = "updateTime", ignore = true)
     UserProfileVO toProfileVo(User user, Set<String> roles, Set<String> permissions, Long loginTime);
 
-    default LoginResponse toLoginResponse(User user, String accessToken, String refreshToken) {
-        return LoginResponse.builder()
-            .token(accessToken)
-            .refreshToken(refreshToken)
-            .user(toVo(user))
-            .build();
+    default LoginResult toLoginResult(User user, String accessToken, String refreshToken) {
+        return new LoginResult(accessToken, refreshToken, toVo(user));
     }
 
     @AfterMapping

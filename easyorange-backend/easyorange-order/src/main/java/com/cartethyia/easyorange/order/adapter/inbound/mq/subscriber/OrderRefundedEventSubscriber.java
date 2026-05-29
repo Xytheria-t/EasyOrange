@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq.subscriber;
 
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
-import com.cartethyia.easyorange.order.domain.port.output.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

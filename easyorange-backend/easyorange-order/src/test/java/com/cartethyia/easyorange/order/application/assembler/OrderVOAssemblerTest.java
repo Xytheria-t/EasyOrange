@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.application.assembler;
 
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
-import com.cartethyia.easyorange.order.domain.port.output.ProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import org.junit.jupiter.api.DisplayName;

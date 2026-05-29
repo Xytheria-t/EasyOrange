@@ -84,15 +84,16 @@ order/
 │   ├── readmodel/
 │   │   ├── OrderReadModel.java
 │   │   └── OrderItemReadModel.java
-│   ├── port/output/                        # 出站端口
-│   │   ├── OrderRepository.java            # 写仓储
-│   │   ├── OrderReadRepository.java        # 读仓储
+│   ├── port/                              # 出站端口
 │   │   ├── OrderCachePort.java             # 缓存端口
 │   │   ├── ProductInventoryPort.java       # 库存端口
 │   │   ├── ProductQueryPort.java           # 商品查询端口
 │   │   ├── PaymentGatewayPort.java         # 支付网关端口
 │   │   ├── UserInfoPort.java              # 用户信息端口
 │   │   └── OrderQueryCondition.java
+│   ├── repository/                         # 仓储接口
+│   │   ├── OrderRepository.java            # 写仓储
+│   │   └── OrderReadRepository.java        # 读仓储
 │   ├── constant/
 │   │   ├── OrderConstant.java
 │   │   ├── OrderStatus.java
@@ -103,9 +104,8 @@ order/
 │       ├── OrderStatusException.java
 │       ├── OrderPermissionException.java
 │       └── OrderOperationException.java
-└── infrastructure/
-    ├── cache/OrderCacheConstant.java
-    └── config/OrderTimeoutProperties.java
+└── config/
+    └── OrderTimeoutProperties.java         # 超时配置
 ```
 
 ## Saga 模式
@@ -137,7 +137,7 @@ CreateOrderSaga.execute():
 
 ## 跨模块通信
 
-通过 `port/output/` 接口解耦，`adapter/outbound/messaging/` 实现适配器：
+通过 `port/` 接口解耦，`adapter/outbound/messaging/` 实现适配器：
 
 | 端口 | 适配器 | 目标模块 |
 |------|--------|---------|

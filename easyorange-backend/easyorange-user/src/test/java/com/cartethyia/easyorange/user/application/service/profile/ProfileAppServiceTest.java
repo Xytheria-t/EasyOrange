@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.application.service.profile;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateUserRequest;
+import com.cartethyia.easyorange.user.application.command.UpdateUserCommand;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.application.assembler.UserAssembler;
@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
-import com.cartethyia.easyorange.user.domain.port.output.AvatarFilePort;
+import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
@@ -159,9 +159,9 @@ class ProfileAppServiceTest {
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").build();
             when(userAssembler.toVo(any(User.class))).thenReturn(userVO);
 
-            UpdateUserRequest request = new UpdateUserRequest(null, "new@example.com", "13999999999", 1, null, null);
+            UpdateUserCommand command = new UpdateUserCommand(null, "new@example.com", "13999999999", 1, null, null);
 
-            UserVO result = profileAppService.updateUserInfo(request);
+            UserVO result = profileAppService.updateUserInfo(command);
 
             assertThat(result).isNotNull();
             assertThat(result.getUserId()).isEqualTo(1L);
@@ -175,9 +175,9 @@ class ProfileAppServiceTest {
             User user = buildTestUser();
             when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-            UpdateUserRequest request = new UpdateUserRequest(null, null, null, null, null, null);
+            UpdateUserCommand command = new UpdateUserCommand(null, null, null, null, null, null);
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(request))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(command))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("没有需要更新的字段");
 
@@ -193,9 +193,9 @@ class ProfileAppServiceTest {
             User otherUser = buildTestUser();
             when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(otherUser));
 
-            UpdateUserRequest request = new UpdateUserRequest(null, "taken@example.com", null, null, null, null);
+            UpdateUserCommand command = new UpdateUserCommand(null, "taken@example.com", null, null, null, null);
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(request))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(command))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("邮箱已被注册");
 
@@ -213,9 +213,9 @@ class ProfileAppServiceTest {
             UserVO userVO = UserVO.builder().userId(1L).username("testuser").build();
             when(userAssembler.toVo(any(User.class))).thenReturn(userVO);
 
-            UpdateUserRequest request = new UpdateUserRequest(null, "test@example.com", null, null, null, null);
+            UpdateUserCommand command = new UpdateUserCommand(null, "test@example.com", null, null, null, null);
 
-            UserVO result = profileAppService.updateUserInfo(request);
+            UserVO result = profileAppService.updateUserInfo(command);
 
             assertThat(result).isNotNull();
             verify(userRepository).update(any(User.class));
@@ -230,9 +230,9 @@ class ProfileAppServiceTest {
             User otherUser = buildTestUser();
             when(userRepository.findByPhone("13800000000")).thenReturn(Optional.of(otherUser));
 
-            UpdateUserRequest request = new UpdateUserRequest(null, null, "13800000000", null, null, null);
+            UpdateUserCommand command = new UpdateUserCommand(null, null, "13800000000", null, null, null);
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(request))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(command))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("手机号已被注册");
 
@@ -248,9 +248,9 @@ class ProfileAppServiceTest {
             User otherUser = buildTestUser();
             when(userRepository.findByStudentId("2024001")).thenReturn(Optional.of(otherUser));
 
-            UpdateUserRequest request = new UpdateUserRequest(null, null, null, null, null, "2024001");
+            UpdateUserCommand command = new UpdateUserCommand(null, null, null, null, null, "2024001");
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(request))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(command))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("学号已被注册");
 

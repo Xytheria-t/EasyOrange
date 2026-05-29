@@ -2,14 +2,12 @@ package com.cartethyia.easyorange.user.application.service.password;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ChangePasswordRequest;
+import com.cartethyia.easyorange.user.application.command.ChangePasswordCommand;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
-import com.cartethyia.easyorange.user.domain.event.PasswordChangedEvent;
-import com.cartethyia.easyorange.user.domain.port.output.PasswordEncoderPort;
-import com.cartethyia.easyorange.user.domain.port.output.UserEventPort;
+import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
@@ -21,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -32,7 +29,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,14 +41,11 @@ class ChangePasswordAppServiceTest {
     @Mock
     private PasswordEncoderPort passwordEncoder;
 
-    @Mock
-    private UserEventPort userEventPort;
-
     private ChangePasswordAppService changePasswordAppService;
 
     @BeforeEach
     void setUp() {
-        changePasswordAppService = new ChangePasswordAppService(userRepository, passwordEncoder, userEventPort);
+        changePasswordAppService = new ChangePasswordAppService(userRepository, passwordEncoder);
     }
 
     @AfterEach
@@ -102,18 +95,13 @@ class ChangePasswordAppServiceTest {
         when(passwordEncoder.encode("NewPassword456")).thenReturn("$2a$10$newEncoded");
         when(userRepository.update(any(User.class))).thenReturn(true);
 
-        ChangePasswordRequest request = new ChangePasswordRequest("OldPassword123", "NewPassword456");
+        ChangePasswordCommand command = new ChangePasswordCommand("OldPassword123", "NewPassword456");
 
-        changePasswordAppService.changePassword(request);
+        changePasswordAppService.changePassword(command);
 
         verify(passwordEncoder).matches("OldPassword123", "$2a$10$encoded");
         verify(passwordEncoder).encode("NewPassword456");
         verify(userRepository).update(any(User.class));
-
-        ArgumentCaptor<PasswordChangedEvent> eventCaptor = ArgumentCaptor.forClass(PasswordChangedEvent.class);
-        verify(userEventPort).publishPasswordChanged(eventCaptor.capture());
-        PasswordChangedEvent event = eventCaptor.getValue();
-        assertThat(event.getUserId()).isEqualTo(1L);
     }
 
     @Test
@@ -124,14 +112,13 @@ class ChangePasswordAppServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("WrongOldPassword", "$2a$10$encoded")).thenReturn(false);
 
-        ChangePasswordRequest request = new ChangePasswordRequest("WrongOldPassword", "NewPassword456");
+        ChangePasswordCommand command = new ChangePasswordCommand("WrongOldPassword", "NewPassword456");
 
-        assertThatThrownBy(() -> changePasswordAppService.changePassword(request))
+        assertThatThrownBy(() -> changePasswordAppService.changePassword(command))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("密码错误");
 
         verify(userRepository, never()).update(any());
-        verify(userEventPort, never()).publishPasswordChanged(any());
     }
 
     @Test
@@ -141,9 +128,9 @@ class ChangePasswordAppServiceTest {
         User user = buildTestUser();
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        ChangePasswordRequest request = new ChangePasswordRequest("SamePassword", "SamePassword");
+        ChangePasswordCommand command = new ChangePasswordCommand("SamePassword", "SamePassword");
 
-        assertThatThrownBy(() -> changePasswordAppService.changePassword(request))
+        assertThatThrownBy(() -> changePasswordAppService.changePassword(command))
             .isInstanceOf(BusinessException.class)
             .hasMessageContaining("新密码不能与旧密码相同");
     }

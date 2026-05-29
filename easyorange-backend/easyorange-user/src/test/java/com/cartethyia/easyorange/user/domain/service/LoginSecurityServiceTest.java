@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
-import com.cartethyia.easyorange.user.domain.port.output.LoginAttemptPort;
+import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -65,11 +65,11 @@ class LoginSecurityServiceTest {
         }
 
         @Test
-        @DisplayName("账号为空时抛出异常")
-        void blankAccount() {
+        @DisplayName("登录标识为空时抛出异常")
+        void blankIdentifier() {
             assertThatThrownBy(() -> service.checkLoginAttempts(""))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号不能为空");
+                .hasMessageContaining("登录标识不能为空");
 
             verify(loginAttemptPort, never()).getAttempts(any());
         }
@@ -101,11 +101,11 @@ class LoginSecurityServiceTest {
         }
 
         @Test
-        @DisplayName("账号为空时抛出异常")
-        void blankAccount() {
+        @DisplayName("登录标识为空时抛出异常")
+        void blankIdentifier() {
             assertThatThrownBy(() -> service.recordFailedAttempt(""))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号不能为空");
+                .hasMessageContaining("登录标识不能为空");
 
             verify(loginAttemptPort, never()).incrementAndExpire(any(), anyLong());
         }
@@ -124,11 +124,11 @@ class LoginSecurityServiceTest {
         }
 
         @Test
-        @DisplayName("账号为空时抛出异常")
-        void blankAccount() {
+        @DisplayName("登录标识为空时抛出异常")
+        void blankIdentifier() {
             assertThatThrownBy(() -> service.clearLoginAttempts(""))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号不能为空");
+                .hasMessageContaining("登录标识不能为空");
 
             verify(loginAttemptPort, never()).clearAttempts(any());
         }

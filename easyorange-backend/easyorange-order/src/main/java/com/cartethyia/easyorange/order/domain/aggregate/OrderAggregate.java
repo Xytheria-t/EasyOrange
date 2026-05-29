@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.order.domain.valueobject.Money;
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
@@ -21,7 +21,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 订单聚合根 —— 不可变对象
@@ -153,7 +152,7 @@ public class OrderAggregate {
         BizRequire.notEmpty(items, "订单商品不能为空");
 
         BigDecimal total = items.stream()
-                .map(item -> item.subtotal().amount())
+                .map(item -> item.subtotal().value())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BizRequire.requireTrue(total.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
         Money totalAmount = Money.of(total);
@@ -169,12 +168,12 @@ public class OrderAggregate {
         List<OrderCreatedEvent.OrderItemPayload> itemPayloads = items.stream()
                 .map(item -> new OrderCreatedEvent.OrderItemPayload(
                         item.productId().value(), item.quantity(),
-                        item.unitPrice().amount(), item.subtotal().amount()))
-                .collect(Collectors.toList());
+                        item.unitPrice().value(), item.subtotal().value()))
+                .toList();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
                 orderId, buyerId.value(), sellerId.value(),
-                itemPayloads, totalAmount.amount()
+                itemPayloads, totalAmount.value()
         );
 
         return new OrderCreatedResult(aggregate, event);
@@ -277,12 +276,8 @@ public class OrderAggregate {
      */
     public OrderCancelledResult cancel(String reason) {
         BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
-        OrderAggregate updated = new OrderAggregate(
-                id, orderNo, buyerId, sellerId, items,
-                totalAmount, OrderStatus.CANCELLED, paymentStatus,
-                address, phone, remark, reason, LocalDateTime.now()
-        );
-        List<Long> productIds = items.stream().map(i -> i.productId().value()).toList();
+        OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
+        List<Long> productIds = extractProductIds();
         return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));
     }
 
@@ -301,7 +296,7 @@ public class OrderAggregate {
     public OrderCompletedResult confirmReceipt() {
         BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
         OrderAggregate updated = withStatus(OrderStatus.COMPLETED, paymentStatus);
-        List<Long> productIds = items.stream().map(i -> i.productId().value()).toList();
+        List<Long> productIds = extractProductIds();
         return new OrderCompletedResult(updated, new OrderCompletedEvent(id.value(), productIds));
     }
 
@@ -310,12 +305,8 @@ public class OrderAggregate {
      */
     public OrderRefundedResult refund(String reason) {
         BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
-        OrderAggregate updated = new OrderAggregate(
-                id, orderNo, buyerId, sellerId, items,
-                totalAmount, OrderStatus.REFUNDED, PaymentStatus.REFUNDED,
-                address, phone, remark, reason, LocalDateTime.now()
-        );
-        List<Long> productIds = items.stream().map(i -> i.productId().value()).toList();
+        OrderAggregate updated = withStatusAndReason(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason);
+        List<Long> productIds = extractProductIds();
         return new OrderRefundedResult(updated, new OrderRefundedEvent(id.value(), productIds, reason));
     }
 
@@ -328,6 +319,16 @@ public class OrderAggregate {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, items,
                 totalAmount, newStatus, newPaymentStatus,
                 address, phone, remark, cancelReason, cancelTime);
+    }
+
+    private OrderAggregate withStatusAndReason(OrderStatus newStatus, PaymentStatus newPaymentStatus, String reason) {
+        return new OrderAggregate(id, orderNo, buyerId, sellerId, items,
+                totalAmount, newStatus, newPaymentStatus,
+                address, phone, remark, reason, LocalDateTime.now());
+    }
+
+    private List<Long> extractProductIds() {
+        return items.stream().map(i -> i.productId().value()).toList();
     }
 
     // ==================== Result Records ====================

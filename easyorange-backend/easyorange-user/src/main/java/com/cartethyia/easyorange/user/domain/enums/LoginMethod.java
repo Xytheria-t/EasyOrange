@@ -1,36 +1,29 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
-import com.baomidou.mybatisplus.annotation.EnumValue;
-import com.baomidou.mybatisplus.annotation.IEnum;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum LoginMethod implements IEnum<String> {
-
+public enum LoginMethod {
     PASSWORD("password", "密码登录"),
     SMS("sms", "短信验证码登录");
 
-    @EnumValue
-    private final String value;
+    @JsonValue
+    private final String code;
 
     private final String description;
 
-    @Override
-    public String getValue() {
-        return value;
-    }
-
-    public static LoginMethod fromValue(String value) {
-        if (value == null) {
-            return PASSWORD;
+    public static LoginMethod fromCode(String code) {
+        if (code == null) {
+            throw new IllegalArgumentException("LoginMethod code must not be null");
         }
-        for (LoginMethod method : values()) {
-            if (method.value.equals(value)) {
+        for (var method : values()) {
+            if (method.code.equals(code)) {
                 return method;
             }
         }
-        throw new IllegalArgumentException("不支持的登录方式: " + value);
+        throw new IllegalArgumentException("Unknown LoginMethod code: " + code);
     }
 }

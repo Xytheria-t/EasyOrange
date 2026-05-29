@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +18,8 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
     private final UserEntityMapper entityMapper;
 
-    public UserRepositoryImpl(UserMapper userMapper, UserEntityMapper entityMapper) {
+    public UserRepositoryImpl(UserMapper userMapper,
+                              @Qualifier("userEntityMapperImpl") UserEntityMapper entityMapper) {
         super(userMapper);
         this.entityMapper = entityMapper;
     }
@@ -56,18 +58,18 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     }
 
     @Override
-    public Optional<User> findByAccount(String account) {
-        if (account == null || account.isBlank()) {
+    public Optional<User> findByLoginIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
             return Optional.empty();
         }
-        String trimmedAccount = account.trim();
+        String trimmedIdentifier = identifier.trim();
         return Optional.ofNullable(lambdaQuery()
                 .and(wrapper -> wrapper
-                        .eq(UserEntity::getUsername, trimmedAccount)
+                        .eq(UserEntity::getUsername, trimmedIdentifier)
                         .or()
-                        .eq(UserEntity::getEmail, trimmedAccount)
+                        .eq(UserEntity::getEmail, trimmedIdentifier)
                         .or()
-                        .eq(UserEntity::getPhone, trimmedAccount))
+                        .eq(UserEntity::getPhone, trimmedIdentifier))
                 .one())
                 .map(entityMapper::toDomain);
     }

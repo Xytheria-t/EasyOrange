@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
-import com.cartethyia.easyorange.user.domain.port.output.LoginAttemptPort;
+import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -15,20 +15,20 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     private final RedisCache redisCache;
 
     @Override
-    public Long getAttempts(String account) {
-        return redisCache.get(LoginCacheConstants.buildAttemptsKey(account), Long.class);
+    public Long getAttempts(String identifier) {
+        return redisCache.get(LoginCacheConstants.buildAttemptsKey(identifier), Long.class);
     }
 
     @Override
-    public long incrementAndExpire(String account, long expireMinutes) {
-        String key = LoginCacheConstants.buildAttemptsKey(account);
+    public long incrementAndExpire(String identifier, long expireMinutes) {
+        String key = LoginCacheConstants.buildAttemptsKey(identifier);
         Long count = redisCache.increment(key);
         redisCache.expire(key, expireMinutes, TimeUnit.MINUTES);
         return count != null ? count : 0;
     }
 
     @Override
-    public void clearAttempts(String account) {
-        redisCache.delete(LoginCacheConstants.buildAttemptsKey(account));
+    public void clearAttempts(String identifier) {
+        redisCache.delete(LoginCacheConstants.buildAttemptsKey(identifier));
     }
 }

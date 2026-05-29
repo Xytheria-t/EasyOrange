@@ -1,35 +1,27 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
-import com.baomidou.mybatisplus.annotation.EnumValue;
-import com.baomidou.mybatisplus.annotation.IEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum UserType implements IEnum<String> {
+public enum UserType {
     ADMIN("00", "超级管理员"),
     NORMAL("01", "普通用户"),
     MANAGER("02", "管理员");
 
-    @EnumValue
     @JsonValue
     private final String code;
 
     private final String description;
 
-    @Override
-    public String getValue() {
-        return code;
-    }
-
     public static UserType fromCode(String code) {
-        for (UserType type : values()) {
+        for (var type : values()) {
             if (type.code.equals(code)) {
                 return type;
             }
         }
-        return null;
+        throw new IllegalArgumentException("Unknown UserType code: " + code);
     }
 }

@@ -9,9 +9,7 @@ import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
-import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CreateOrderRequest;
-import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,11 +23,10 @@ import java.util.List;
 public class OrderCommandController {
 
     private final OrderCommandHandler commandHandler;
-    private final OrderQueryHandler queryHandler;
 
     @PostMapping
     @PreAuthorize("isAuthenticated()")
-    public Result<OrderVO> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+    public Result<Long> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         List<CreateOrderCommand.CreateOrderItem> items = request.getItems().stream()
                 .map(i -> CreateOrderCommand.CreateOrderItem.builder()
                         .productId(i.getProductId())
@@ -43,7 +40,7 @@ public class OrderCommandController {
                 .remark(request.getRemark())
                 .build();
         CreateOrderResult result = commandHandler.handle(command);
-        return Result.success(queryHandler.getOrderDetail(result.orderId()));
+        return Result.success(result.orderId());
     }
 
     @PutMapping("/{id}/cancel")

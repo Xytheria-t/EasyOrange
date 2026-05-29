@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.annotation.RateLimiter;
-import com.cartethyia.easyorange.common.annotation.RepeatSubmit;
-import com.cartethyia.easyorange.common.enums.LimitType;
+
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.UpdateUserRequest;
+import com.cartethyia.easyorange.user.application.command.ChangePasswordCommand;
+import com.cartethyia.easyorange.user.application.command.UpdateUserCommand;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.application.service.password.ChangePasswordAppService;
@@ -28,21 +28,24 @@ public class UserController {
         return Result.success(profileAppService.getUserInfo());
     }
 
-    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
     @PutMapping("/me")
     public Result<UserVO> updateUserInfo(@Valid @RequestBody UpdateUserRequest request) {
-        return Result.success(profileAppService.updateUserInfo(request));
+        UpdateUserCommand command = new UpdateUserCommand(
+            request.nickname(), request.email(), request.phone(),
+            request.gender(), request.realName(), request.studentId()
+        );
+        return Result.success(profileAppService.updateUserInfo(command));
     }
 
-    @RateLimiter(key = "user:change_password", count = 5, time = 60, limitType = LimitType.IP)
-    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
     @PutMapping("/me/password")
     public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        changePasswordAppService.changePassword(request);
+        ChangePasswordCommand command = new ChangePasswordCommand(
+            request.oldPassword(), request.newPassword()
+        );
+        changePasswordAppService.changePassword(command);
         return Result.success();
     }
 
-    @RepeatSubmit(interval = 3000, message = "请勿重复提交")
     @PostMapping("/avatar")
     public Result<UserVO> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
         try {

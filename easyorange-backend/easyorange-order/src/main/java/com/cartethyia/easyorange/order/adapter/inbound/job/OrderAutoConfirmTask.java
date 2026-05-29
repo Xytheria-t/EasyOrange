@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
-import com.cartethyia.easyorange.order.infrastructure.config.OrderTimeoutProperties;
+import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
-import com.cartethyia.easyorange.order.domain.port.output.OrderRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
-import com.cartethyia.easyorange.order.domain.port.output.OrderCachePort;
+import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

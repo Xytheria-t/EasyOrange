@@ -22,7 +22,6 @@ user/
 │   │   │   └── profile/                 # 用户资料
 │   │   │       └── UpdateUserRequest.java
 │   │   ├── dto/response/                # 出站 DTO
-│   │   │   ├── LoginResponse.java
 │   │   │   ├── UserResponse.java
 │   │   │   └── UserProfileResponse.java
 │   │   └── validation/                  # 自定义校验（纯格式校验，无 I/O 副作用）
@@ -38,10 +37,8 @@ user/
 │       ├── cache/                       # 缓存适配器
 │       │   ├── RedisLoginAttemptAdapter.java
 │       │   └── RedisSmsCodeAdapter.java
-│       ├── messaging/                   # 消息适配器
-│       │   └── UserEventPublisher.java
-│       ├── security/                    # 安全适配器
-│       │   └── PasswordEncoderAdapter.java
+│   ├── security/                    # 安全适配器
+│   │   └── PasswordEncoderAdapter.java
 │       └── storage/                     # 存储适配器
 │           └── LocalAvatarFileStorage.java
 ├── application/
@@ -70,10 +67,6 @@ user/
 │   │   ├── Credentials.java              # 认证凭据 (username, encodedPassword)
 │   │   ├── LoginInfo.java                # 登录轨迹 (loginIp, loginDate, pwdUpdateDate)
 │   │   └── PersonalInfo.java             # 个人信息+展示 (Immutables @Value.Immutable)
-│   ├── event/
-│   │   ├── UserRegisteredEvent.java
-│   │   ├── PasswordChangedEvent.java
-│   │   └── ForgotPasswordEvent.java
 │   ├── service/                         # 领域服务
 │   │   ├── AuthenticationService.java
 │   │   ├── LoginSecurityService.java
@@ -81,14 +74,13 @@ user/
 │   │   └── RegistrationService.java
 │   ├── repository/
 │   │   └── UserRepository.java
-│   ├── port/output/                     # 出站端口
+│   ├── port/                             # 出站端口
 │   │   ├── AvatarFilePort.java
 │   │   ├── LoginAttemptPort.java
 │   │   ├── NicknameGeneratorPort.java
 │   │   ├── PasswordEncoderPort.java
 │   │   ├── SmsCodePort.java
-│   │   ├── SmsRateLimitPort.java
-│   │   └── UserEventPort.java
+│   │   └── SmsRateLimitPort.java
 │   ├── constant/
 │   │   ├── UserConstant.java
 │   │   └── UserSecurityConstant.java
@@ -98,10 +90,8 @@ user/
 │   │   └── UserResultCode.java
 │   └── exception/
 │       └── UserDomainException.java
-├── config/
-│   └── UserDomainConfig.java            # Port → Bean 绑定（含 NicknameGeneratorPort）
-└── infrastructure/
-    └── util/NicknameGenerator.java
+└── config/
+    └── UserDomainConfig.java            # Port → Bean 绑定（含 NicknameGeneratorPort）
 ```
 
 ## 核心模式
@@ -146,30 +136,43 @@ PersonalInfo empty = PersonalInfo.empty();
 
 ### 登录策略模式
 
-`LoginMethod` 枚举定义登录方式（用户名/手机号），`AuthenticationService` 根据策略分发认证逻辑。
+`LoginMethod` 枚举定义登录方式（密码/短信），`LoginRequest.toCommand()` 根据登录方式将请求 DTO 转换为 `LoginCommand` 密封接口的对应子类型（`PasswordLogin` / `SmsLogin`），`LoginAppService` 通过模式匹配分发到 `AuthenticationService` 的认证方法。Controller 层不感知 Command 构建细节。
 
-### 领域事件发布与消费
+```java
+// LoginRequest - adapter 层负责 DTO → Command 转换
+public LoginCommand toCommand() {
+    return switch (getEffectiveLoginMethod()) {
+        case PASSWORD -> new LoginCommand.PasswordLogin(account, credential);
+        case SMS -> {
+            requirePhoneFormat(account);
+            yield new LoginCommand.SmsLogin(account, credential);
+        }
+    };
+}
 
-应用服务注入 `UserEventPort`（domain port），调用 `publishUserRegistered()` / `publishPasswordChanged()` / `publishForgotPassword()` 发布事件。Adapter 层 `UserEventPublisher` 委派给框架的 `DomainEventPublisher`，同步发布到 Spring EventBus。
+private static void requirePhoneFormat(String phone) {
+    BizRequire.require(
+        UserConstant.PHONE_PATTERN.matcher(phone).matches(),
+        "手机号格式不正确"
+    );
+}
 
-事件消费监听器位于 `easyorange-application/adapter/event/`：
-
-| 监听器 | 消费事件 | 行为 |
-|--------|---------|------|
-| `UserRegisteredEventListener` | `UserRegisteredEvent` | 发送欢迎系统消息 |
-| `PasswordChangedEventListener` | `PasswordChangedEvent` | 发送密码变更安全提醒 |
-| `ForgotPasswordEventListener` | `ForgotPasswordEvent` | 发送找回密码通知 |
-
-所有监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
+// LoginAppService - application 层通过密封类模式匹配分发
+User user = switch (command) {
+    case LoginCommand.PasswordLogin cmd ->
+        authenticationService.authenticateByPassword(cmd.identifier(), cmd.password(), clientIp);
+    case LoginCommand.SmsLogin cmd ->
+        authenticationService.authenticateBySms(cmd.phone(), cmd.verifyCode(), clientIp);
+};
+```
 
 ### 出站端口隔离
 
-domain 层通过 `port/output/` 接口与基础设施解耦：
+domain 层通过 `port/` 接口与基础设施解耦：
 - `PasswordEncoderPort` → `PasswordEncoderAdapter` (BCrypt)
 - `LoginAttemptPort` → `RedisLoginAttemptAdapter` (Redis)
 - `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
 - `NicknameGeneratorPort` → `NicknameGenerator` (随机昵称生成)
-- `UserEventPort` → `UserEventPublisher` (Spring Events)
 
 ### 自定义校验注解 (Jakarta Bean Validation)
 
@@ -209,15 +212,15 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 ### 添加新登录方式
 
 1. `LoginMethod` 枚举新增值
-2. `AuthenticationService` 添加对应认证逻辑
-3. `LoginRequest` 添加字段
-4. 添加测试
+2. `LoginCommand` 密封接口新增 record 子类型（含认证所需参数）
+3. `LoginRequest.toCommand()` 新增 case 分支（DTO → Command 转换 + 参数校验）
+4. `LoginAppService.login()` 的 switch 新增 case 分支（Command → 认证分发）
+5. `AuthenticationService` 添加对应认证逻辑
+6. 添加测试
 
 ### 添加新领域事件
 
 1. 创建事件类继承 `BaseDomainEvent`
-2. 在 `UserEventPort` 接口中添加对应 publish 方法
-3. 在 `UserEventPublisher` 中实现该方法的委派逻辑
-4. 在应用服务中调用 Port 方法发布事件
-5. 添加事件监听器（如需）
-6. 添加测试
+2. 在应用服务中通过 `DomainEventPublisher` 发布事件
+3. 添加事件监听器（如需，放置在 `easyorange-application/adapter/event/`）
+4. 添加测试

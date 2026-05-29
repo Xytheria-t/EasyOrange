@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.user.domain.port.output.SmsCodePort;
-import com.cartethyia.easyorange.user.domain.port.output.SmsRateLimitPort;
+import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
+import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import lombok.RequiredArgsConstructor;
 

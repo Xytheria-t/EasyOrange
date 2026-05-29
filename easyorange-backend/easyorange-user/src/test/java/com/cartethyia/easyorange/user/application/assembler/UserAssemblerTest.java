@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.user.application.assembler;
 
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResponse;
+import com.cartethyia.easyorange.user.application.command.LoginResult;
 import com.cartethyia.easyorange.user.application.dto.UserProfileVO;
 import com.cartethyia.easyorange.user.application.dto.UserVO;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -156,21 +156,21 @@ class UserAssemblerTest {
     }
 
     @Nested
-    @DisplayName("toLoginResponse")
-    class ToLoginResponseTests {
+    @DisplayName("toLoginResult")
+    class ToLoginResultTests {
 
         @Test
         @DisplayName("应正确映射登录响应")
         void shouldMapCorrectly() {
             User user = buildTestUser();
 
-            LoginResponse response = userAssembler.toLoginResponse(user, "access-token", "refresh-token");
+            LoginResult result = userAssembler.toLoginResult(user, "access-token", "refresh-token");
 
-            assertThat(response).isNotNull();
-            assertThat(response.getToken()).isEqualTo("access-token");
-            assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
-            assertThat(response.getUser()).isNotNull();
-            assertThat(response.getUser().getUserId()).isEqualTo(1L);
+            assertThat(result).isNotNull();
+            assertThat(result.token()).isEqualTo("access-token");
+            assertThat(result.refreshToken()).isEqualTo("refresh-token");
+            assertThat(result.user()).isNotNull();
+            assertThat(result.user().getUserId()).isEqualTo(1L);
         }
     }
 }

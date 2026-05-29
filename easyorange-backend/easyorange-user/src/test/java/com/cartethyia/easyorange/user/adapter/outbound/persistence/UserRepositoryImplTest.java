@@ -271,13 +271,13 @@ class UserRepositoryImplTest {
     }
 
     @Nested
-    @DisplayName("findByAccount")
-    class FindByAccountTests {
+    @DisplayName("findByLoginIdentifier")
+    class FindByLoginIdentifierTests {
 
         @Test
         @DisplayName("账号为 null 时应返回 empty")
         void shouldReturnEmptyWhenAccountIsNull() {
-            Optional<User> result = userRepository.findByAccount(null);
+            Optional<User> result = userRepository.findByLoginIdentifier(null);
 
             assertThat(result).isEmpty();
             verify(userMapper, never()).selectOne(any());
@@ -286,7 +286,7 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("账号为空白时应返回 empty")
         void shouldReturnEmptyWhenAccountIsBlank() {
-            Optional<User> result = userRepository.findByAccount("   ");
+            Optional<User> result = userRepository.findByLoginIdentifier("   ");
 
             assertThat(result).isEmpty();
             verify(userMapper, never()).selectOne(any());
@@ -299,7 +299,7 @@ class UserRepositoryImplTest {
             when(userMapper.selectOne(any())).thenReturn(entity);
             when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
-            Optional<User> result = userRepository.findByAccount("test@example.com");
+            Optional<User> result = userRepository.findByLoginIdentifier("test@example.com");
 
             assertThat(result).isPresent();
             assertThat(result.get().getContactInfo().email()).isEqualTo("test@example.com");
@@ -312,7 +312,7 @@ class UserRepositoryImplTest {
             when(userMapper.selectOne(any())).thenReturn(entity);
             when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
 
-            Optional<User> result = userRepository.findByAccount("13812345678");
+            Optional<User> result = userRepository.findByLoginIdentifier("13812345678");
 
             assertThat(result).isPresent();
             assertThat(result.get().getContactInfo().phone()).isEqualTo("13812345678");
