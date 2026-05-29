@@ -56,6 +56,3 @@ export function getConditionNameFromString(condition: string): string {
     return conditionMap[condition] || condition;
 }
 
-export function isHotProduct(viewCount: number): boolean {
-    return viewCount >= 100;
-}

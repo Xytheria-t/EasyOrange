@@ -46,7 +46,7 @@ export default function ProductManagePage() {
     pageSize,
     keyword: keyword || undefined,
     status: statusFilter ? Number(statusFilter) : undefined,
-    categoryId: categoryFilter ? Number(categoryFilter) : undefined,
+    categoryId: categoryFilter || undefined,
   });
 
   const updateStatusMutation = useUpdateProductStatus();
@@ -61,7 +61,7 @@ export default function ProductManagePage() {
   }, [handleSearch]);
 
   const handleViewDetail = useCallback((product: AdminProduct) => {
-    setSelectedProductId(product.productId);
+    setSelectedProductId(Number(product.productId));
     setModalOpen(true);
   }, []);
 
@@ -72,7 +72,7 @@ export default function ProductManagePage() {
   const handleInlineOffline = useCallback(async (product: AdminProduct) => {
     const targetStatus = product.status === 1 ? 3 : 1;
     try {
-      await updateStatusMutation.mutateAsync({ id: product.productId, data: { status: targetStatus } });
+      await updateStatusMutation.mutateAsync({ id: Number(product.productId), data: { status: targetStatus } });
       refetch();
     } catch {
       // error handled by react-query / global handler

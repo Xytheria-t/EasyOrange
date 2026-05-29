@@ -18,7 +18,7 @@ export interface User {
 export interface LoginRequest {
     account: string;
     password: string;
-    loginMethod?: 'password' | 'sms';
+    loginMethod: 'password' | 'sms';
     clientType?: 'WEB';
     isRegister?: boolean;
 }
@@ -26,12 +26,15 @@ export interface LoginRequest {
 export interface RegisterRequest {
     username: string;
     password: string;
-    phone?: string;
-    email?: string;
 }
 
 export interface LoginResponse {
     token: string;
     refreshToken: string;
     user: User;
+}
+
+export interface TokenRefreshResult {
+    accessToken: string;
+    refreshToken: string;
 }

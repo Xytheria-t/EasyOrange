@@ -20,10 +20,10 @@ import './notifications.css';
 const PAGE_SIZE = 20;
 
 function getNotificationIcon(title: string) {
-  if (title.includes('审核通过')) return { icon: CheckCircle2, color: '#22C55E' };
-  if (title.includes('审核未通过')) return { icon: XCircle, color: '#EF4444' };
-  if (title.includes('举报')) return { icon: Flag, color: '#F59E0B' };
-  if (title.includes('系统') || title.includes('通知')) return { icon: Megaphone, color: '#8B5CF6' };
+  if (title.includes('审核通过')) {return { icon: CheckCircle2, color: '#22C55E' };}
+  if (title.includes('审核未通过')) {return { icon: XCircle, color: '#EF4444' };}
+  if (title.includes('举报')) {return { icon: Flag, color: '#F59E0B' };}
+  if (title.includes('系统') || title.includes('通知')) {return { icon: Megaphone, color: '#8B5CF6' };}
   return { icon: Info, color: '#6B7280' };
 }
 
@@ -35,10 +35,10 @@ function formatTime(timeString: string): string {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return '刚刚';
-  if (diffMins < 60) return `${diffMins}分钟前`;
-  if (diffHours < 24) return `${diffHours}小时前`;
-  if (diffDays < 7) return `${diffDays}天前`;
+  if (diffMins < 1) {return '刚刚';}
+  if (diffMins < 60) {return `${diffMins}分钟前`;}
+  if (diffHours < 24) {return `${diffHours}小时前`;}
+  if (diffDays < 7) {return `${diffDays}天前`;}
 
   return date.toLocaleDateString('zh-CN', {
     month: 'numeric',

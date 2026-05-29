@@ -63,7 +63,7 @@ export default function UserManagePage() {
 
   const handleSaveStatus = useCallback(async (status: string) => {
     if (!selectedUser) {return;}
-    await updateStatusMutation.mutateAsync({ id: selectedUser.userId, data: { status: Number(status) } });
+    await updateStatusMutation.mutateAsync({ id: Number(selectedUser.userId), data: { status: Number(status) } });
     setModalOpen(false);
     setSelectedUser(null);
   }, [selectedUser, updateStatusMutation]);

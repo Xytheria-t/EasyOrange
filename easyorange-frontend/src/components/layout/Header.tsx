@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/authStore'
 import { useUIStore } from '@/store/uiStore'
 import { throttle } from '@/utils/functionUtils'
 import { useAdminGuard } from '@/admin/hooks/useAdminGuard'
+import { useLogout } from '@/hooks'
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -14,17 +15,18 @@ export function Header() {
   const mobileMenuRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const navigate = useNavigate()
-  const { token, user, logout } = useAuthStore()
+  const { token, user } = useAuthStore()
   const addToast = useUIStore((s) => s.addToast)
   const isLoggedIn = !!token
   const { isAdmin } = useAdminGuard()
+  const logout = useLogout()
 
   const handleLoginClick = () => {
     navigate('/login')
   }
 
-  const handleLogoutClick = () => {
-    logout()
+  const handleLogoutClick = async () => {
+    await logout()
     setIsUserMenuOpen(false)
     addToast({ type: 'success', message: '已退出登录' })
     navigate('/')

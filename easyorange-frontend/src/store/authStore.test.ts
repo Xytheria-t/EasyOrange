@@ -1,40 +1,36 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAuthStore } from './authStore';
+import type { User } from '@/types';
 
 beforeEach(() => {
   useAuthStore.setState({
     user: null,
     token: null,
     refreshToken: null,
-    isAuthenticated: false,
   });
 });
 
 describe('authStore', () => {
   describe('initial state', () => {
-    it('starts with no user and not authenticated', () => {
+    it('starts with no user and no token', () => {
       const state = useAuthStore.getState();
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
       expect(state.refreshToken).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
     });
   });
 
   describe('setUser', () => {
-    it('updates user and sets isAuthenticated when user is provided', () => {
-      const mockUser = { id: '1', username: 'test', nickname: 'Test' } as any;
+    it('updates user', () => {
+      const mockUser = { id: '1', username: 'test', nickname: 'Test' } as unknown as User;
       useAuthStore.getState().setUser(mockUser);
-      const state = useAuthStore.getState();
-      expect(state.user).toEqual(mockUser);
-      expect(state.isAuthenticated).toBe(true);
+      expect(useAuthStore.getState().user).toEqual(mockUser);
     });
 
-    it('clears user and sets isAuthenticated to false when null', () => {
+    it('clears user when set to null', () => {
+      useAuthStore.getState().setUser({ id: '1' } as unknown as User);
       useAuthStore.getState().setUser(null);
-      const state = useAuthStore.getState();
-      expect(state.user).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
+      expect(useAuthStore.getState().user).toBeNull();
     });
   });
 
@@ -52,26 +48,24 @@ describe('authStore', () => {
   });
 
   describe('login', () => {
-    it('sets user, token, refreshToken and isAuthenticated', () => {
-      const mockUser = { id: '1', username: 'test' } as any;
+    it('sets user, token and refreshToken', () => {
+      const mockUser = { id: '1', username: 'test' } as unknown as User;
       useAuthStore.getState().login(mockUser, 'access-token', 'refresh-token');
       const state = useAuthStore.getState();
       expect(state.user).toEqual(mockUser);
       expect(state.token).toBe('access-token');
       expect(state.refreshToken).toBe('refresh-token');
-      expect(state.isAuthenticated).toBe(true);
     });
   });
 
   describe('logout', () => {
     it('clears all session data', () => {
-      useAuthStore.getState().login({ id: '1' } as any, 'token', 'refresh');
+      useAuthStore.getState().login({ id: '1' } as unknown as User, 'token', 'refresh');
       useAuthStore.getState().logout();
       const state = useAuthStore.getState();
       expect(state.user).toBeNull();
       expect(state.token).toBeNull();
       expect(state.refreshToken).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
     });
   });
 });

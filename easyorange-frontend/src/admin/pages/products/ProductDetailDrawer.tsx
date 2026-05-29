@@ -52,7 +52,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     setAiReviewLoading(true);
     setAiReviewResult(null);
     try {
-      const response = await adminApi.aiReviewProduct(product.productId);
+      const response = await adminApi.aiReviewProduct(Number(product.productId));
       setAiReviewResult(response.data);
     } catch {
       setAiReviewResult(null);
@@ -86,7 +86,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
   const handleApproveWithDimensions = () => {
     if (!product) {return;}
     updateStatus.mutateAsync({
-      id: product.productId,
+      id: Number(product.productId),
       data: { action: 1, dimensions: selectedDimensions, remark: auditRemark || undefined },
     }).then(() => {
       onSuccess();
@@ -98,13 +98,14 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     if (!product || !rejectReason.trim()) {return;}
     try {
       await updateStatus.mutateAsync({
-        id: product.productId,
+        id: Number(product.productId),
         data: { action: 2, reason: rejectReason, dimensions: selectedDimensions, remark: auditRemark || undefined },
       });
       setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }));
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch {
+      // reject failed silently - error handled by parent component
     }
   };
 

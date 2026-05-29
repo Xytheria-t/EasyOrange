@@ -66,7 +66,7 @@ export default function ReviewManagePage() {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deleteReason.trim()) return;
+    if (!deleteReason.trim()) {return;}
     try {
       await deleteReview.mutateAsync({ id: deleteModal.reviewId, data: { reason: deleteReason } });
       setDeleteModal({ open: false, reviewId: '', reviewContent: '' });

@@ -243,7 +243,7 @@ export function ProfileOverview({
                       style={{ padding: '0.375rem 0.75rem', fontSize: '0.875rem', maxWidth: 200 }}
                       value={editValue}
                       onChange={(e) => onEditValueChange(e.target.value)}
-                      // eslint-disable-next-line jsx-a11y/no-autofocus
+                       
                       autoFocus
                       onKeyDown={(e) => { if (e.key === 'Enter') {onSave();} if (e.key === 'Escape') {onCancel()} }}
                     />

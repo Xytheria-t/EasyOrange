@@ -104,6 +104,7 @@ describe('LoginPage', () => {
     expect(mutateAsync).toHaveBeenCalledWith({
       account: 'testuser',
       password: 'Password1',
+      loginMethod: 'password',
     });
     expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
   });

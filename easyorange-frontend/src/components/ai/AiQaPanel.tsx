@@ -43,7 +43,7 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const question = inputValue.trim();
-    if (!question || isLoading) return;
+    if (!question || isLoading) {return;}
 
     const request: QaRequest = {
       productId: Number(product.id),

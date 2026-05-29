@@ -1,5 +1,5 @@
 import { request } from './core/request';
-import type { PaymentMethod } from '@/types';
+import type { PageResult, PaymentMethod } from '@/types';
 
 export interface PaymentInfo {
     id: string;
@@ -44,7 +44,7 @@ export const paymentApi = {
     },
 
     getMyPayments(params?: Record<string, unknown>) {
-        return request<PaymentInfo[]>('/payments/my', {
+        return request<PageResult<PaymentInfo>>('/payments/my', {
             method: 'GET',
             params
         });

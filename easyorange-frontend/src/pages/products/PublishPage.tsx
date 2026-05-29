@@ -254,7 +254,7 @@ function PublishPage() {
       const productId = await createProduct.mutateAsync(payload) as string;
 
       if (!isDraft && productId) {
-        await productApi.putOnline(productId);
+        await productApi.goOnline(productId);
       }
 
       navigate(`/products/${productId}`);

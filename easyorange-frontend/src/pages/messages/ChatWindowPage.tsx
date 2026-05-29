@@ -15,7 +15,7 @@ function ChatWindowPage() {
   const currentUserId = user?.userId ?? '';
 
   const conversationId = useMemo(() => {
-    if (!targetUserId || !currentUserId) return '';
+    if (!targetUserId || !currentUserId) {return '';}
     return `conv_${[currentUserId, targetUserId].sort().join('_')}`;
   }, [targetUserId, currentUserId]);
 
@@ -27,13 +27,13 @@ function ChatWindowPage() {
   const { canRecall, recallMessage } = useMessageRecall(conversationId);
 
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId) {return;}
     subscribe(conversationId);
     return () => unsubscribe(conversationId);
   }, [conversationId, subscribe, unsubscribe]);
 
   useEffect(() => {
-    if (messages.length === 0 || !targetUserId) return;
+    if (messages.length === 0 || !targetUserId) {return;}
 
     const unreadIds = messages
       .filter((m) => m.senderId !== targetUserId && m.status !== 'READ')
@@ -46,7 +46,7 @@ function ChatWindowPage() {
 
   const handleSend = useCallback(
     (content: string) => {
-      if (!targetUserId || !content.trim()) return;
+      if (!targetUserId || !content.trim()) {return;}
       sendMessage({
         receiverId: targetUserId,
         content: content.trim(),

@@ -24,7 +24,7 @@ vi.mock('./OrderDetailModal', () => ({
     orderId: number | null;
     onClose: () => void;
   }) => {
-    if (!open) return null;
+    if (!open) {return null;}
     return (
       <div data-testid="order-detail-modal" data-order-id={orderId}>
         <button onClick={onClose}>关闭</button>

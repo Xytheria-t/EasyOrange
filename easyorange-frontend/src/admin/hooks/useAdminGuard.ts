@@ -33,12 +33,12 @@ function checkIsAdmin(user: User | null): boolean {
 }
 
 export function useAdminGuard(): AdminGuardState {
-  const { user, token, isAuthenticated } = useAuthStore();
-
-  const isAdmin = !!token && checkIsAdmin(user);
+  const { user, token } = useAuthStore();
+  const isAuthenticated = !!token;
+  const isAdmin = isAuthenticated && checkIsAdmin(user);
 
   return {
-    isLoading: !token,
+    isLoading: false,
     isAuthenticated,
     isAdmin,
     user,

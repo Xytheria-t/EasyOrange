@@ -26,6 +26,7 @@ const MyProductsPage = lazy(() => import('@/pages/products/MyProductsPage'));
 const SearchPage = lazy(() => import('@/pages/profile/SearchPage'));
 const EditProductPage = lazy(() => import('@/pages/products/EditProductPage'));
 const NotificationsPage = lazy(() => import('@/pages/notifications/NotificationsPage'));
+const CreditPage = lazy(() => import('@/pages/profile/CreditPage'));
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
@@ -148,6 +149,14 @@ export const router = createBrowserRouter(
           element={
             <ProtectedRoute>
               {withSuspense(NotificationsPage)}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="credit"
+          element={
+            <ProtectedRoute>
+              {withSuspense(CreditPage)}
             </ProtectedRoute>
           }
         />

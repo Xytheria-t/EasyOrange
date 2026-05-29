@@ -122,7 +122,7 @@ describe('useAdminGuard', () => {
 
     expect(result.current.isAdmin).toBe(false);
     expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.isLoading).toBe(true);
+    expect(result.current.isLoading).toBe(false);
     expect(result.current.user).toBeNull();
   });
 

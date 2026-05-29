@@ -34,7 +34,7 @@ describe('useFavoriteCheck', () => {
     it('fetches favorite status when logged in', async () => {
       useAuthStore.setState({
         token: 'test-token',
-        user: { id: '1' } as any,
+        user: { id: '1' } as unknown as import('@/types').User,
         isAuthenticated: true,
       });
 
@@ -74,7 +74,7 @@ describe('useFavoriteCheck', () => {
     it('adds favorite successfully', async () => {
       useAuthStore.setState({
         token: 'test-token',
-        user: { id: '1' } as any,
+        user: { id: '1' } as unknown as import('@/types').User,
         isAuthenticated: true,
       });
 
@@ -103,7 +103,7 @@ describe('useFavoriteCheck', () => {
     it('removes favorite successfully', async () => {
       useAuthStore.setState({
         token: 'test-token',
-        user: { id: '1' } as any,
+        user: { id: '1' } as unknown as import('@/types').User,
         isAuthenticated: true,
       });
 

@@ -20,7 +20,7 @@ export default function TrendChart({ data, isCompact = false, height = 200 }: Tr
   const chartData = useMemo(() => {
     return data.map((item) => ({
       ...item,
-      monthLabel: item.month ? item.month.split('-')[1] + '月' : '',
+      monthLabel: item.month ? `${item.month.split('-')[1]  }月` : '',
     }));
   }, [data]);
 

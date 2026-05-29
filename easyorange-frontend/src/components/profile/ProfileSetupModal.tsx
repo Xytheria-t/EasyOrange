@@ -208,7 +208,7 @@ export function ProfileSetupModal({ isOpen, onClose, username }: ProfileSetupMod
       onKeyDown={(e) => e.key === 'Enter' && handleClose()}
       aria-label="关闭对话框"
     >
-        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        { }
         <div
           className="modal modal-content-large"
           style={{

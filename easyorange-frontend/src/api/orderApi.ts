@@ -3,7 +3,7 @@ import { request } from './core/request';
 
 export const orderApi = {
     createOrder(data: CreateOrderRequest) {
-        return request<OrderDetail>('/orders', {
+        return request<string>('/orders', {
             method: 'POST',
             body: data
         });

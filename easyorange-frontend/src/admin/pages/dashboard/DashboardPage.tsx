@@ -13,20 +13,7 @@ import {
   useUserActivityHeatmap,
   useTopProducts,
 } from '../../hooks/useAdminDashboard';
-
-function formatTimeAgo(dateString: string | null | undefined): string {
-  if (!dateString) {return '未知';}
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffMins < 1) {return '刚刚';}
-  if (diffMins < 60) {return `${diffMins}分钟前`;}
-  if (diffHours < 24) {return `${diffHours}小时前`;}
-  return `${diffDays}天前`;
-}
+import { formatRelativeTime } from '@/utils';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -823,7 +810,7 @@ export default function DashboardPage() {
                         whiteSpace: 'nowrap', flexShrink: 0,
                         fontFamily: "'LXGW WenKai', sans-serif",
                       }}>
-                        {formatTimeAgo(user.createTime)}
+                        {formatRelativeTime(user.createTime ?? '')}
                       </span>
                     </li>
                   ))}
@@ -941,7 +928,7 @@ export default function DashboardPage() {
                         whiteSpace: 'nowrap', flexShrink: 0,
                         fontFamily: "'LXGW WenKai', sans-serif",
                       }}>
-                        {formatTimeAgo(product.createTime)}
+                        {formatRelativeTime(product.createTime ?? '')}
                       </span>
                     </li>
                   ))}

@@ -41,7 +41,7 @@ export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
   const chartHeight = padding.top + 7 * (cellSize + cellGap) + padding.bottom + 18;
 
   const getColor = (count: number) => {
-    if (count === 0) return 'rgba(229,224,219,0.15)';
+    if (count === 0) {return 'rgba(229,224,219,0.15)';}
     const intensity = Math.min(count / maxCount, 1);
     const r = Math.round(249 - (249 - 234) * intensity);
     const g = Math.round(115 + (115 - 88) * (1 - intensity));

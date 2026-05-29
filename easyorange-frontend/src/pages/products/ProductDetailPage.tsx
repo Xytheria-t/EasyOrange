@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useReducer } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { productApi } from '@/api/productApi';
 import { reviewApi } from '@/api/reviewApi';
 import { messageApi } from '@/api/messageApi';
 import { CONDITION_LABEL_MAP, STATUS_LABEL_MAP } from '@/constants';
+import { formatRelativeTime } from '@/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
 import { Image, preloadImages, buildThumbnailUrl } from '@/components/ui/Image';
@@ -34,24 +35,6 @@ interface ChatMessage {
   isMine: boolean;
 }
 
-type ImageAction =
-  | { type: 'SET_INDEX'; index: number }
-  | { type: 'SET_LOADED'; loaded: boolean }
-  | { type: 'RESET' };
-
-function imageReducer(state: { currentImageIndex: number; imageLoaded: boolean }, action: ImageAction) {
-  switch (action.type) {
-    case 'SET_INDEX':
-      return { ...state, currentImageIndex: action.index };
-    case 'SET_LOADED':
-      return { ...state, imageLoaded: action.loaded };
-    case 'RESET':
-      return { currentImageIndex: 0, imageLoaded: false };
-    default:
-      return state;
-  }
-}
-
 function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -74,7 +57,8 @@ function ProductDetailPage() {
   const queryClient = useQueryClient();
   const createOrder = useCreateOrder();
   const { qaHistory: aiQaHistory, isLoading: aiQaLoading, ask: aiAsk } = useAiQa();
-  const [imageState, dispatchImage] = useReducer(imageReducer, { currentImageIndex: 0, imageLoaded: false });
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -121,7 +105,8 @@ function ProductDetailPage() {
   }, [productId]);
 
   useEffect(() => {
-    dispatchImage({ type: 'RESET' });
+    setCurrentImageIndex(0);
+    setImageLoaded(false);
   }, [productId]);
 
   useEffect(() => {
@@ -232,14 +217,14 @@ function ProductDetailPage() {
     : 0;
 
   const handlePrevImage = () => {
-    const prevIndex = (imageState.currentImageIndex - 1 + images.length) % images.length;
-    dispatchImage({ type: 'SET_INDEX', index: prevIndex });
+    const prevIndex = (currentImageIndex - 1 + images.length) % images.length;
+    setCurrentImageIndex(prevIndex);
     preloadAdjacentImages(prevIndex, images);
   };
 
   const handleNextImage = () => {
-    const nextIndex = (imageState.currentImageIndex + 1) % images.length;
-    dispatchImage({ type: 'SET_INDEX', index: nextIndex });
+    const nextIndex = (currentImageIndex + 1) % images.length;
+    setCurrentImageIndex(nextIndex);
     preloadAdjacentImages(nextIndex, images);
   };
 
@@ -364,7 +349,7 @@ function ProductDetailPage() {
       return;
     }
     try {
-      const order = await createOrder.mutateAsync({
+      const orderId = await createOrder.mutateAsync({
         items: [{ productId: product.id, quantity: 1 }],
         phone: orderForm.phone.trim(),
         remark: orderForm.remark.trim() || undefined,
@@ -372,26 +357,10 @@ function ProductDetailPage() {
       setShowOrderModal(false);
       setOrderForm({ phone: '', remark: '' });
       addToast({ type: 'success', message: '订单创建成功' });
-      navigate(`/orders/${order.id}`);
+      navigate(`/orders/${orderId}`);
     } catch {
       addToast({ type: 'error', message: '创建订单失败，请重试' });
     }
-  };
-
-  const formatRelativeTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    if (minutes < 1) {return '刚刚';}
-    if (minutes < 60) {return `${minutes}分钟前`;}
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) {return `${hours}小时前`;}
-    const days = Math.floor(hours / 24);
-    if (days === 1) {return '昨天';}
-    if (days < 7) {return `${days}天前`;}
-    if (days < 30) {return `${Math.floor(days / 7)}周前`;}
-    return `${date.getMonth() + 1}月${date.getDate()}日`;
   };
 
   const quickReplies = [
@@ -432,14 +401,14 @@ function ProductDetailPage() {
         <div className="pdp-hero">
           <div className="pdp-gallery">
             <div className="pdp-gallery-main">
-              <div className={`pdp-gallery-image-wrapper ${imageState.imageLoaded ? 'loaded' : ''}`}>
+              <div className={`pdp-gallery-image-wrapper ${imageLoaded ? 'loaded' : ''}`}>
                 {(() => {
-                  const fileIdMatch = images[imageState.currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
+                  const fileIdMatch = images[currentImageIndex]?.match(/\/api\/file\/([^/]+)/);
                   const fileId = fileIdMatch?.[1];
-                  const thumbSrc = fileId ? buildThumbnailUrl(fileId, 400) : images[imageState.currentImageIndex];
+                  const thumbSrc = fileId ? buildThumbnailUrl(fileId, 400) : images[currentImageIndex];
                   return (
                     <>
-                      {!imageState.imageLoaded && (
+                      {!imageLoaded && (
                         <Image
                           src={thumbSrc}
                           alt={`${product.title} - 缩略预览`}
@@ -451,20 +420,20 @@ function ProductDetailPage() {
                         />
                       )}
                       <Image
-                        src={images[imageState.currentImageIndex]}
-                        alt={`${product.title} - 图片 ${imageState.currentImageIndex + 1}`}
+                        src={images[currentImageIndex]}
+                        alt={`${product.title} - 图片 ${currentImageIndex + 1}`}
                         className="pdp-gallery-image"
                         loading="eager"
                         fetchPriority="high"
-                        placeholder={imageState.imageLoaded ? 'none' : 'none'}
-                        onLoad={() => dispatchImage({ type: 'SET_LOADED', loaded: true })}
+                        placeholder={imageLoaded ? 'none' : 'none'}
+                        onLoad={() => setImageLoaded(true)}
                         style={{
                           width: '100%',
                           height: '100%',
                           objectFit: 'contain',
-                          position: imageState.imageLoaded ? 'relative' : 'absolute',
+                          position: imageLoaded ? 'relative' : 'absolute',
                           inset: 0,
-                          zIndex: imageState.imageLoaded ? 1 : 0,
+                          zIndex: imageLoaded ? 1 : 0,
                         }}
                       />
                     </>
@@ -487,7 +456,7 @@ function ProductDetailPage() {
                     <ChevronRight size={20} />
                   </button>
                   <div className="pdp-gallery-counter">
-                    {imageState.currentImageIndex + 1} / {images.length}
+                    {currentImageIndex + 1} / {images.length}
                   </div>
                 </>
               )}
@@ -511,8 +480,8 @@ function ProductDetailPage() {
                 {images.map((img, idx) => (
                   <button
                     key={idx}
-                    onClick={() => dispatchImage({ type: 'SET_INDEX', index: idx })}
-                    className={`pdp-thumb ${idx === imageState.currentImageIndex ? 'active' : ''}`}
+                    onClick={() => setCurrentImageIndex(idx)}
+                    className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
                   >
                     <Image
                       src={img}
@@ -903,7 +872,7 @@ function ProductDetailPage() {
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowOrderModal(false); } }}
           aria-label="关闭订单确认弹窗"
         >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          { }
           <div className="pdp-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">确认购买</h2>
@@ -1002,7 +971,7 @@ function ProductDetailPage() {
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowShareModal(false); } }}
           aria-label="关闭分享弹窗"
         >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          { }
           <div className="pdp-modal pdp-share-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">分享商品</h2>
@@ -1064,7 +1033,7 @@ function ProductDetailPage() {
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowChatModal(false); } }}
           aria-label="关闭聊天弹窗"
         >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          { }
           <div className="pdp-modal pdp-chat-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">
@@ -1144,7 +1113,7 @@ function ProductDetailPage() {
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowReviewModal(false); } }}
           aria-label="关闭评价弹窗"
         >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+          { }
           <div className="pdp-modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="pdp-modal-header">
               <h2 className="pdp-modal-title">发表评价</h2>

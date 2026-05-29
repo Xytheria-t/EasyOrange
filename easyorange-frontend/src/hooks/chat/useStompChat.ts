@@ -92,7 +92,7 @@ export function useStompChat(): UseStompChatReturn {
   const subscribe = useCallback(
     (conversationId: string) => {
       const client = clientRef.current;
-      if (!client?.connected) return;
+      if (!client?.connected) {return;}
 
       const msgSub = client.subscribe(
         `/queue/chat/${conversationId}`,

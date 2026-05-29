@@ -1,7 +1,7 @@
 export type { Result, PageResult, ApiCode } from './common';
 export { isSuccessCode } from './common';
 
-export type { User, LoginRequest, RegisterRequest, LoginResponse } from './user';
+export type { User, LoginRequest, RegisterRequest, LoginResponse, TokenRefreshResult } from './user';
 
 export type {
     Product,

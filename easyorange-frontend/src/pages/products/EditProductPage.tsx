@@ -108,6 +108,7 @@ function EditProductPage() {
                     updateField('imageUrls', [...form.imageUrls, result.data.url]);
                 }
             } catch {
+                // image upload failed silently - error handled by parent
             } finally {
                 setUploadingIndex(null);
             }
@@ -139,7 +140,7 @@ function EditProductPage() {
             });
             navigate(`/products/${id}`);
         } catch {
-            // update failed
+            // update failed silently - error toast handled by hook
         }
     };
 

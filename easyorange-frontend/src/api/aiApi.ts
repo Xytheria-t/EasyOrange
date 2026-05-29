@@ -78,7 +78,7 @@ export const aiApi = {
     suggestPrice(params: PriceSuggestionParams) {
         return request<PricingSuggestion>('/ai/pricing', {
             method: 'POST',
-            params: params as unknown as Record<string, unknown>
+            body: params
         });
     },
 
@@ -106,7 +106,7 @@ export const aiApi = {
     generateCopy(params: CopyGenerationParams) {
         return request<CopyGenerationResult>('/ai/generate-copy', {
             method: 'POST',
-            params: params as unknown as Record<string, unknown>
+            body: params
         });
     }
 };

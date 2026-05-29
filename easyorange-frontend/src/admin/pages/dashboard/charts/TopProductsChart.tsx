@@ -21,7 +21,7 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
 
   const chartData = [...data]
     .map((item) => ({
-      name: item.name.length > 10 ? item.name.slice(0, 10) + '…' : item.name,
+      name: item.name.length > 10 ? `${item.name.slice(0, 10)  }…` : item.name,
       views: item.viewCount,
       price: item.price,
       fullName: item.name,

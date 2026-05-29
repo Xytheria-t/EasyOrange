@@ -159,8 +159,8 @@ describe('ProfilePage', () => {
   });
 
   it('shows password modal and handles password change', async () => {
-    const logoutMutateAsync = vi.fn().mockResolvedValue(undefined);
-    mockUseLogout.mockReturnValue({ mutateAsync: logoutMutateAsync });
+    const mockLogout = vi.fn().mockResolvedValue(undefined);
+    mockUseLogout.mockReturnValue(mockLogout);
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByText('安全'));
@@ -256,12 +256,12 @@ describe('ProfilePage', () => {
   });
 
   it('handles logout', async () => {
-    const logoutMutateAsync = vi.fn().mockResolvedValue(undefined);
-    mockUseLogout.mockReturnValue({ mutateAsync: logoutMutateAsync });
+    const mockLogout = vi.fn().mockResolvedValue(undefined);
+    mockUseLogout.mockReturnValue(mockLogout);
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByTestId('btn-profile-logout'));
-    expect(logoutMutateAsync).toHaveBeenCalled();
+    expect(mockLogout).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 });

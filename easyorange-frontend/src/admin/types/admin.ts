@@ -3,7 +3,7 @@ export type UserStatus = string;
 export type ProductStatus = number;
 
 export interface AdminUser {
-  userId: number;
+  userId: string;
   username: string;
   nickname: string | null;
   avatar: string | null;
@@ -33,8 +33,8 @@ export interface DashboardStats {
 }
 
 export interface PendingReportItem {
-  id: number;
-  productId: number;
+  id: string;
+  productId: string;
   productName: string | null;
   reason: string | null;
   reporterName: string | null;
@@ -49,7 +49,7 @@ export interface PendingItems {
 }
 
 export interface RecentUser {
-  userId: number;
+  userId: string;
   username: string;
   nickname: string | null;
   avatar: string | null;
@@ -63,13 +63,13 @@ export interface RecentUser {
 }
 
 export interface RecentProduct {
-  productId: number;
+  productId: string;
   name: string;
   price: number | null;
   mainImage: string | null;
   status: number | null;
   statusDesc: string | null;
-  sellerId: number | null;
+  sellerId: string | null;
   sellerName: string | null;
   categoryName: string | null;
   viewCount: number | null;
@@ -77,7 +77,7 @@ export interface RecentProduct {
 }
 
 export interface AdminProduct {
-  productId: number;
+  productId: string;
   name: string;
   description: string | null;
   price: number | null;
@@ -90,9 +90,9 @@ export interface AdminProduct {
   contactMethod: string | null;
   images: string[];
   mainImage: string | null;
-  categoryId: number | null;
+  categoryId: string | null;
   categoryName: string | null;
-  sellerId: number | null;
+  sellerId: string | null;
   sellerName: string | null;
   sellerAvatar: string | null;
   viewCount: number | null;
@@ -114,9 +114,9 @@ export interface AdminProductQuery {
   pageNum: number;
   pageSize: number;
   keyword?: string;
-  categoryId?: number;
+  categoryId?: string;
   status?: number;
-  sellerId?: number;
+  sellerId?: string;
   startTime?: string;
   endTime?: string;
 }
@@ -142,8 +142,8 @@ export interface ActionResponse {
 // ==================== Order Types ====================
 
 export interface AdminOrderItem {
-  itemId: number;
-  productId: number;
+  itemId: string;
+  productId: string;
   productName: string;
   productImage: string;
   unitPrice: number;
@@ -152,11 +152,11 @@ export interface AdminOrderItem {
 }
 
 export interface AdminOrder {
-  orderId: number;
+  orderId: string;
   orderNo: string;
-  buyerId: number;
+  buyerId: string;
   buyerName: string;
-  sellerId: number;
+  sellerId: string;
   sellerName: string;
   items: AdminOrderItem[];
   totalAmount: number;
@@ -169,7 +169,7 @@ export interface AdminOrder {
 }
 
 export interface AdminOrderDetail {
-  orderId: number;
+  orderId: string;
   orderNo: string;
   buyer: OrderParticipant;
   seller: OrderParticipant;
@@ -192,8 +192,8 @@ export interface AdminOrderDetail {
 }
 
 export interface AdminOrderDetailItem {
-  itemId: number;
-  productId: number;
+  itemId: string;
+  productId: string;
   productName: string;
   productImage: string;
   unitPrice: number;
@@ -202,14 +202,14 @@ export interface AdminOrderDetailItem {
 }
 
 export interface OrderParticipant {
-  userId: number;
+  userId: string;
   nickname: string;
   avatar: string | null;
   phone: string | null;
 }
 
 export interface OrderProductInfo {
-  productId: number;
+  productId: string;
   name: string;
   mainImage: string | null;
   price: number;
@@ -225,8 +225,8 @@ export interface AdminOrderQuery {
   pageNum: number;
   pageSize: number;
   orderNo?: string;
-  buyerId?: number;
-  sellerId?: number;
+  buyerId?: string;
+  sellerId?: string;
   status?: number;
   paymentStatus?: number;
   startTime?: string;
@@ -253,11 +253,11 @@ export interface OrderStatsResponse {
 // ==================== Report Types ====================
 
 export interface AdminReport {
-  reportId: number;
-  productId: number;
+  reportId: string;
+  productId: string;
   productName: string | null;
   productImage: string | null;
-  reporterId: number;
+  reporterId: string;
   reporterName: string;
   reason: string;
   status: number;
@@ -293,9 +293,9 @@ export interface ReportStatsResponse {
 // ==================== Category Types ====================
 
 export interface CategoryResponse {
-  categoryId: number;
+  categoryId: string;
   name: string;
-  parentId: number | null;
+  parentId: string | null;
   parentName: string | null;
   level: number;
   sortOrder: number;
@@ -306,7 +306,7 @@ export interface CategoryResponse {
 }
 
 export interface CategoryTreeResponse {
-  categoryId: number;
+  categoryId: string;
   name: string;
   level: number;
   sortOrder: number;
@@ -316,13 +316,13 @@ export interface CategoryTreeResponse {
 
 export interface CategoryCreateRequest {
   name: string;
-  parentId?: number;
+  parentId?: string;
   sortOrder?: number;
 }
 
 export interface CategoryUpdateRequest {
   name?: string;
-  parentId?: number;
+  parentId?: string;
   sortOrder?: number;
   status?: number;
 }
@@ -334,7 +334,7 @@ export type AuditDimension = 'basic' | 'compliance' | 'image' | 'price';
 
 export interface BatchAuditRequest {
   items: {
-    productId: number;
+    productId: string;
     action: 1 | 2;
     reason?: string;
     dimensions?: AuditDimension[];
@@ -362,9 +362,9 @@ export interface ActivityItem {
 }
 
 export interface AuditLogResponse {
-  id: number;
-  productId: number;
-  operatorId: number;
+  id: string;
+  productId: string;
+  operatorId: string;
   operatorName: string;
   action: AuditAction;
   actionDesc: string;
@@ -443,7 +443,7 @@ export interface UserActivityItem {
 }
 
 export interface TopProductItem {
-  productId: number;
+  productId: string;
   name: string;
   viewCount: number;
   price: number;

@@ -58,9 +58,9 @@ function formatPriceLabel(value: string): string {
   const parts = value.split('-');
   if (parts.length === 2) {
     const [min, max] = parts;
-    if (min === '*' && max) return `¥0 - ¥${max}`;
-    if (min && max === '*') return `¥${min}+`;
-    if (min && max) return `¥${min} - ¥${max}`;
+    if (min === '*' && max) {return `¥0 - ¥${max}`;}
+    if (min && max === '*') {return `¥${min}+`;}
+    if (min && max) {return `¥${min} - ¥${max}`;}
   }
   return value;
 }
@@ -99,7 +99,7 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
     return Array.from(map.values());
   }, [facets]);
 
-  if (!facets || facets.length === 0) return null;
+  if (!facets || facets.length === 0) {return null;}
 
   return (
     <div className="w-full"

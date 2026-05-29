@@ -7,7 +7,7 @@ import { createMockProduct } from '@/testUtils/factories';
 
 // Mock Image component to avoid canvas API dependency in jsdom
 vi.mock('@/components/ui/Image', () => ({
-  Image: ({ src, alt, className, style, ...props }: any) => (
+  Image: ({ src, alt, className, style, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) => (
     <img src={src} alt={alt} className={className} style={style} data-mocked="true" {...props} />
   ),
   preloadImage: vi.fn(),

@@ -18,7 +18,7 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
   const { data: baseMessages = EMPTY_MESSAGES, isLoading, error } = useQuery({
     queryKey: ['chat', 'messages', targetUserId],
     queryFn: async () => {
-      if (!targetUserId) return EMPTY_MESSAGES;
+      if (!targetUserId) {return EMPTY_MESSAGES;}
       const response = await messageApi.getConversation(targetUserId);
       const data = (response.data ?? []) as unknown as ChatMessage[];
       return data.slice(-PAGE_SIZE);
@@ -42,7 +42,7 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
   const oldestMessageId = messages[0]?.id;
 
   const loadOlder = useCallback(async () => {
-    if (!targetUserId || !hasMore || !oldestMessageId) return;
+    if (!targetUserId || !hasMore || !oldestMessageId) {return;}
 
     try {
       const response = await messageApi.getConversation(targetUserId);

@@ -11,8 +11,7 @@ import { productApi } from '@/api/productApi';
 import { normalizeProduct } from '@/utils/product';
 import { PRODUCT_KEYS } from '@/hooks/product/useProducts';
 
-import SortDropdown from '@/components/search/SortDropdown';
-import type { SortOption } from '@/components/search/SortDropdown';
+import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
 import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';

@@ -35,7 +35,7 @@ vi.mock('./ProductDetailDrawer', () => ({
   }) => {
     mockDrawerOpen = open;
     mockDrawerProductId = productId;
-    if (!open) return null;
+    if (!open) {return null;}
     return (
       <div data-testid="product-detail-drawer" data-product-id={productId}>
         <button onClick={onClose}>关闭</button>

@@ -14,7 +14,7 @@
 | **构建** | Vite 8 | 极速构建工具 |
 | **样式** | Tailwind CSS 4 | 原子化 CSS |
 | **图标** | Lucide React | 图标库 |
-| **测试** | Vitest + Testing Library | 单元/组件测试（98 文件, 955 测试） |
+| **测试** | Vitest + Testing Library | 单元/组件测试（98 文件, 947 测试） |
 | | Playwright | E2E 测试 |
 | **质量** | ESLint + Prettier + jsx-a11y | 代码规范与可访问性检查 |
 
@@ -64,8 +64,7 @@ easyorange-frontend/
 │   ├── pages/                # 页面组件
 │   │   └── publish/          # 发布商品子模块
 │   ├── routes/               # 路由配置
-│   ├── store/                # Zustand 状态管理（认证、用户状态、AI 状态）
-│   ├── stores/               # Zustand 状态管理（聊天模块独立 store）
+│   ├── store/                # Zustand 状态管理（认证、聊天、UI、Overlay）
 │   ├── styles/               # 样式文件
 │   ├── types/                # 类型定义
 │   ├── utils/                # 工具函数

@@ -81,7 +81,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
   const handleStatusChange = async (targetStatus: number) => {
     if (!product) {return;}
     try {
-      await updateStatus.mutateAsync({ id: product.productId, data: { status: targetStatus } });
+      await updateStatus.mutateAsync({ id: Number(product.productId), data: { status: targetStatus } });
       onSuccess();
       onClose();
     } catch {

@@ -32,7 +32,7 @@ vi.mock('./ProductManageDetailModal', () => ({
   }) => {
     mockModalOpen = open;
     mockModalProductId = productId;
-    if (!open) return null;
+    if (!open) {return null;}
     return (
       <div data-testid="product-detail-modal" data-product-id={productId}>
         <button onClick={onClose}>关闭</button>

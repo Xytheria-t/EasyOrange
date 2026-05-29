@@ -121,7 +121,7 @@ function AIFeatureCard({ feature, index }: { feature: AIFeature; index: number }
           className="ai-feature-demo"
           onClick={() => {
             const route = FEATURE_ROUTES[feature.id]
-            if (route) navigate(route)
+            if (route) {navigate(route)}
           }}
         >
           <span>{feature.demo}</span>
@@ -151,15 +151,16 @@ function AIFeaturesSection() {
       <div className="container">
         <div className="ai-features-header">
           <div className="ai-badge">
+            <span className="ai-badge-dot" />
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
             <span>AI智能助手</span>
           </div>
-          <h2 className="ai-features-title">
-            <span className="gradient-text">智能科技</span>
-            <span>让交易更简单</span>
-          </h2>
+          <div className="ai-features-title-group">
+            <span className="ai-features-label">智能科技</span>
+            <h2 className="ai-features-title">让交易更简单</h2>
+          </div>
           <p className="ai-features-subtitle">
             基于先进AI技术，为您提供智能估价、精准推荐、自动识别等一站式智能服务
           </p>

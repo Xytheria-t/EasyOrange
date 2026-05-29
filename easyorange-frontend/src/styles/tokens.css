@@ -208,13 +208,13 @@
     --radius-4xl: 40px;
     --radius-full: 9999px;
 
-    /* Typography - Ultra Premium & Unique Font System */
-    --font-display: 'Playfair Display', 'Noto Serif SC', 'Source Han Serif CN', 'Songti SC', serif;
-    --font-sans: 'LXGW WenKai', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    /* Typography - Premium & Cohesive Font System */
+    --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'Hiragino Sans GB', sans-serif;
+    --font-display: 'Playfair Display', 'Noto Serif SC', 'LXGW WenKai', 'Source Han Serif CN', 'Songti SC', serif;
     --font-serif: 'Noto Serif SC', 'Playfair Display', 'Source Han Serif CN', 'Songti SC', serif;
     --font-price: 'Cormorant Garamond', 'Playfair Display', 'Noto Serif SC', serif;
-    --font-mono: 'Fira Code', 'Consolas', 'Monaco', monospace;
-    --font-accent: 'LXGW WenKai', 'Noto Serif SC', serif;
+    --font-mono: 'Fira Code', 'Noto Sans Mono', 'Consolas', 'Monaco', monospace;
+    --font-accent: 'LXGW WenKai', 'Noto Serif SC', 'Playfair Display', serif;
 
     /* Typography Scale */
     --text-display-xl: clamp(3.5rem, 8vw, 6rem);

@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
-import { aiApi } from '@/api/aiApi'
-import type { AutoListingResult } from '@/api/aiApi'
+import { aiApi, type AutoListingResult } from '@/api/aiApi'
 import { useUIStore } from '@/store/uiStore'
 
 function checkImageAccessibility(urls: string[]): boolean {

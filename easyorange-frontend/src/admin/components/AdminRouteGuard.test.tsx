@@ -39,7 +39,7 @@ describe('AdminRouteGuard', () => {
     useAuthStore.setState({
       token: 'admin-token',
       isAuthenticated: true,
-      user: { id: '1', userType: '00', username: 'admin' } as any,
+      user: { id: '1', userType: '00' as const, username: 'admin' } as unknown as import('@/types/user').User,
     });
 
     renderWithProviders(<AdminRouteGuard />);

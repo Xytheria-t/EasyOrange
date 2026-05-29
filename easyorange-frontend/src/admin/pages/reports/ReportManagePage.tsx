@@ -142,7 +142,7 @@ export default function ReportManagePage() {
           {record.status === 0 && (
             <>
               <button
-                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: record.reportId, action: 'resolve' }); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: Number(record.reportId), action: 'resolve' }); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                   padding: '0.35rem 0.7rem', borderRadius: 10,
@@ -157,7 +157,7 @@ export default function ReportManagePage() {
                 处理
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: record.reportId, action: 'dismiss' }); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: Number(record.reportId), action: 'dismiss' }); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                   padding: '0.35rem 0.7rem', borderRadius: 10,

@@ -14,7 +14,7 @@ function CreditPage() {
     setIsLoading(true);
     try {
       const { data } = await creditApi.getMyCredit();
-      if (data) setCredit(data);
+      if (data) {setCredit(data);}
     } finally {
       setIsLoading(false);
     }

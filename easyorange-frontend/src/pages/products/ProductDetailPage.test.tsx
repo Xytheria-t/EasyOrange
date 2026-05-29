@@ -28,7 +28,7 @@ function createMockUser(overrides: Partial<User> = {}): User {
 const mockUseProduct = vi.hoisted(() => vi.fn());
 const mockUseSimilarProducts = vi.hoisted(() => vi.fn());
 const mockUseCreateOrder = vi.hoisted(() =>
-  vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue({ id: 'order1' }), isPending: false })),
+  vi.fn(() => ({ mutateAsync: vi.fn().mockResolvedValue('order1'), isPending: false })),
 );
 const mockUseAuthStore = vi.hoisted(() =>
   vi.fn(() => ({
@@ -150,7 +150,7 @@ beforeEach(() => {
   });
   mockUseSimilarProducts.mockReturnValue({ data: [], isLoading: false });
   mockUseCreateOrder.mockReturnValue({
-    mutateAsync: vi.fn().mockResolvedValue({ id: 'order1' }),
+    mutateAsync: vi.fn().mockResolvedValue('order1'),
     isPending: false,
   });
   mockUseAuthStore.mockImplementation(() => ({

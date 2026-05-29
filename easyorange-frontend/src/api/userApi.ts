@@ -5,7 +5,6 @@ import type {
     LoginResponse,
     User
 } from '@/types';
-import { useAuthStore } from '@/store';
 
 export const userApi = {
     login(data: LoginRequest) {
@@ -21,18 +20,6 @@ export const userApi = {
             method: 'POST',
             body: data,
             skipAuth: true
-        });
-    },
-
-    logout() {
-        const refreshToken = useAuthStore.getState().refreshToken;
-        const headers: Record<string, string> = {};
-        if (refreshToken) {
-            headers['X-Refresh-Token'] = `Bearer ${refreshToken}`;
-        }
-        return request<void>('/auth/logout', {
-            method: 'POST',
-            headers
         });
     },
 

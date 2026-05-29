@@ -123,7 +123,7 @@ export default function CategoryManagePage() {
       sortOrder: createSortOrder,
     };
     if (createParentId !== undefined) {
-      data.parentId = createParentId;
+      data.parentId = String(createParentId);
     }
     await createMutation.mutateAsync(data);
     setCreateOpen(false);
@@ -141,9 +141,9 @@ export default function CategoryManagePage() {
       status: editStatus,
     };
     if (editParentId !== undefined) {
-      data.parentId = editParentId;
+      data.parentId = String(editParentId);
     } else {
-      data.parentId = null as unknown as undefined;
+      data.parentId = undefined;
     }
     await updateMutation.mutateAsync({ id: editId, data });
     setEditOpen(false);
@@ -158,13 +158,13 @@ export default function CategoryManagePage() {
   // Delete handler
   const handleDelete = useCallback(async () => {
     if (!deleteTarget) {return;}
-    await deleteMutation.mutateAsync(deleteTarget.categoryId);
+    await deleteMutation.mutateAsync(Number(deleteTarget.categoryId));
     setDeleteTarget(null);
   }, [deleteTarget, deleteMutation]);
 
   // Open edit modal
   const openEdit = useCallback((node: CategoryTreeResponse) => {
-    setEditId(node.categoryId);
+    setEditId(Number(node.categoryId));
     setEditName(node.name);
     setEditSortOrder(node.sortOrder);
     setEditStatus(node.status);
@@ -180,7 +180,7 @@ export default function CategoryManagePage() {
   // Render tree node recursively
   function renderTreeNode(node: CategoryTreeResponse, depth: number) {
     const hasChildren = node.children && node.children.length > 0;
-    const isExpanded = expandedIds.has(node.categoryId);
+    const isExpanded = expandedIds.has(Number(node.categoryId));
     const isEnabled = node.status === 1;
     const paddingLeft = 16 + depth * 28;
 
@@ -202,7 +202,7 @@ export default function CategoryManagePage() {
           {/* Expand/collapse */}
           <button
             type="button"
-            onClick={() => toggleExpand(node.categoryId)}
+            onClick={() => toggleExpand(Number(node.categoryId))}
             style={{
               width: 20, height: 20, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -273,7 +273,7 @@ export default function CategoryManagePage() {
             <button
               type="button"
               title={isEnabled ? '禁用' : '启用'}
-              onClick={() => handleToggleStatus(node.categoryId, node.status)}
+              onClick={() => handleToggleStatus(Number(node.categoryId), node.status)}
               disabled={updateStatusMutation.isPending}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',

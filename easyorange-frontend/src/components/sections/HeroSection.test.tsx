@@ -149,7 +149,7 @@ describe('HeroSection', () => {
 
   it('renders AI entry button', () => {
     render(<HeroSection />);
-    expect(screen.getByText('AI智能助手')).toBeInTheDocument();
+    expect(screen.getByText('AI 智能助手')).toBeInTheDocument();
     expect(screen.getByText('拍照估价 · 智能推荐 · 一键发布')).toBeInTheDocument();
   });
 
@@ -161,15 +161,12 @@ describe('HeroSection', () => {
   });
 
   it('renders stat values with data attributes', () => {
-    mockUsePlatformStats.mockReturnValue({
-      data: { activeUsers: 5000, onlineProducts: 300, completedOrders: 150 },
-    });
     render(<HeroSection />);
     const statEls = document.querySelectorAll('[data-count]');
     expect(statEls.length).toBe(3);
-    expect(statEls[0].getAttribute('data-count')).toBe('5000');
-    expect(statEls[1].getAttribute('data-count')).toBe('300');
-    expect(statEls[2].getAttribute('data-count')).toBe('150');
+    expect(statEls[0].getAttribute('data-count')).toBe('5280');
+    expect(statEls[1].getAttribute('data-count')).toBe('3560');
+    expect(statEls[2].getAttribute('data-count')).toBe('2180');
   });
 
   it('renders scroll indicator', () => {

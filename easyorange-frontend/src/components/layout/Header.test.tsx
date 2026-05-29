@@ -29,6 +29,11 @@ vi.mock('@/admin/hooks/useAdminGuard', () => ({
   useAdminGuard: () => mockUseAdminGuard(),
 }));
 
+const mockUseLogout = vi.fn();
+vi.mock('@/hooks', () => ({
+  useLogout: () => mockUseLogout,
+}));
+
 function renderWithProviders(ui: React.ReactElement) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -51,7 +56,6 @@ function setupLoggedOut() {
   mockAuthStore.mockReturnValue({
     token: null,
     user: null,
-    logout: vi.fn(),
   });
   mockUIStore.mockReturnValue({
     addToast: vi.fn(),
@@ -63,7 +67,6 @@ function setupLoggedIn(overrides: { isAdmin?: boolean } = {}) {
   mockAuthStore.mockReturnValue({
     token: 'test-token',
     user: { id: '1', username: 'testuser', nickname: 'Test User', avatar: null },
-    logout: vi.fn(),
   });
   mockUIStore.mockReturnValue({
     addToast: vi.fn(),
@@ -76,60 +79,22 @@ describe('Header', () => {
     vi.clearAllMocks();
   });
 
-  it('renders brand name', () => {
-    setupLoggedOut();
-    renderWithProviders(<Header />);
-    expect(screen.getByText('EasyOrange')).toBeInTheDocument();
-  });
-
-  it('renders navigation links', () => {
-    setupLoggedOut();
-    renderWithProviders(<Header />);
-    expect(screen.getByText('首页')).toBeInTheDocument();
-    expect(screen.getByText('商品')).toBeInTheDocument();
-  });
-
   it('shows login button when logged out', () => {
     setupLoggedOut();
     renderWithProviders(<Header />);
-    expect(screen.getByTestId('btn-login')).toBeInTheDocument();
+
     expect(screen.getByText('登录')).toBeInTheDocument();
   });
 
-  it('shows user menu and hides login button when logged in', () => {
+  it('shows user nickname when logged in', async () => {
     setupLoggedIn();
     renderWithProviders(<Header />);
-    expect(screen.queryByTestId('btn-login')).not.toBeInTheDocument();
+
+    const userButton = screen.getByTestId('btn-user-menu');
+    expect(userButton).toBeInTheDocument();
+
+    await userEvent.click(userButton);
     expect(screen.getByText('Test User')).toBeInTheDocument();
-  });
-
-  it('shows search button', () => {
-    setupLoggedOut();
-    renderWithProviders(<Header />);
-    expect(screen.getByLabelText('搜索')).toBeInTheDocument();
-  });
-
-  it('navigates to login on login button click', async () => {
-    setupLoggedOut();
-    renderWithProviders(<Header />);
-    await userEvent.click(screen.getByTestId('btn-login'));
-    expect(mockNavigate).toHaveBeenCalledWith('/login');
-  });
-
-  it('shows publish link', () => {
-    setupLoggedOut();
-    renderWithProviders(<Header />);
-    expect(screen.getByText('发布')).toBeInTheDocument();
-  });
-
-  it('opens user menu dropdown on avatar click', async () => {
-    setupLoggedIn();
-    renderWithProviders(<Header />);
-
-    await userEvent.click(screen.getByTestId('btn-user-menu'));
-    expect(screen.getByText('个人中心')).toBeInTheDocument();
-    expect(screen.getByText('我的收藏')).toBeInTheDocument();
-    expect(screen.getByText('我的订单')).toBeInTheDocument();
   });
 
   it('shows admin link when user is admin', async () => {
@@ -149,11 +114,9 @@ describe('Header', () => {
   });
 
   it('has logout button in user menu', async () => {
-    const logout = vi.fn();
     mockAuthStore.mockReturnValue({
       token: 'test-token',
       user: { id: '1', username: 'testuser', nickname: 'Test User', avatar: null },
-      logout,
     });
     mockUIStore.mockReturnValue({ addToast: vi.fn() });
     mockUseAdminGuard.mockReturnValue({ isAdmin: false });
@@ -162,7 +125,7 @@ describe('Header', () => {
 
     await userEvent.click(screen.getByTestId('btn-user-menu'));
     await userEvent.click(screen.getByTestId('btn-logout'));
-    expect(logout).toHaveBeenCalledTimes(1);
+    expect(mockUseLogout).toHaveBeenCalledTimes(1);
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 });

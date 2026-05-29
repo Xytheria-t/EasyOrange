@@ -24,7 +24,6 @@ afterEach(() => {
     user: null,
     token: null,
     refreshToken: null,
-    isAuthenticated: false,
   });
 });
 
@@ -90,7 +89,7 @@ describe('useLogin', () => {
     expect(state.token).toBe(mockToken);
     expect(state.refreshToken).toBe(mockRefreshToken);
     expect(state.user).toEqual(mockUser);
-    expect(state.isAuthenticated).toBe(true);
+    expect(!!state.token).toBe(true);
   });
 });
 
@@ -126,8 +125,7 @@ describe('useLogout', () => {
   it('logs out successfully and clears auth', async () => {
     useAuthStore.setState({
       token: 'test-token',
-      user: { id: '1' } as any,
-      isAuthenticated: true,
+      user: { id: '1' } as unknown as import('@/types').User,
     });
 
     server.use(
@@ -145,13 +143,11 @@ describe('useLogout', () => {
       wrapper: Wrapper,
     });
 
-    result.current.mutate();
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const logout = result.current;
+    await logout();
 
     const state = useAuthStore.getState();
     expect(state.token).toBeNull();
     expect(state.user).toBeNull();
-    expect(state.isAuthenticated).toBe(false);
   });
 });

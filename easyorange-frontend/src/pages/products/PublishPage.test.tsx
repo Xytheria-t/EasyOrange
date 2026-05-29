@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { fireEvent } from '@testing-library/react';
 import PublishPage from './PublishPage';
 
 const mockUseCreateProduct = vi.hoisted(() => vi.fn());
@@ -11,7 +10,7 @@ const mockNavigate = vi.hoisted(() => vi.fn());
 const mockAddToast = vi.hoisted(() => vi.fn());
 const mockUploadFile = vi.hoisted(() => vi.fn());
 const mockCompressImage = vi.hoisted(() => vi.fn());
-const mockPutOnline = vi.hoisted(() => vi.fn());
+const mockGoOnline = vi.hoisted(() => vi.fn());
 
 vi.mock('@/hooks', () => ({
   useCreateProduct: mockUseCreateProduct,
@@ -40,7 +39,7 @@ vi.mock('@/utils/imageCompress', () => ({
 
 vi.mock('@/api/productApi', () => ({
   productApi: {
-    putOnline: mockPutOnline,
+    goOnline: mockGoOnline,
   },
 }));
 
@@ -84,7 +83,7 @@ beforeEach(() => {
     data: { url: 'https://example.com/uploaded.jpg' },
   });
   mockCompressImage.mockResolvedValue(new File([''], 'compressed.jpg', { type: 'image/jpeg' }));
-  mockPutOnline.mockResolvedValue({});
+  mockGoOnline.mockResolvedValue({});
 });
 
 describe('PublishPage', () => {
@@ -249,7 +248,7 @@ describe('PublishPage', () => {
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalled();
-      expect(mockPutOnline).toHaveBeenCalledWith('product-123');
+      expect(mockGoOnline).toHaveBeenCalledWith('product-123');
       expect(mockNavigate).toHaveBeenCalledWith('/products/product-123');
     });
   });

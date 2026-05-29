@@ -38,13 +38,13 @@ export const productApi = {
         });
     },
 
-    putOnline(id: string) {
+    goOnline(id: string) {
         return request<void>(`/products/${id}/online`, {
             method: 'PUT'
         });
     },
 
-    takeOffline(id: string) {
+    goOffline(id: string) {
         return request<void>(`/products/${id}/offline`, {
             method: 'PUT'
         });
@@ -58,8 +58,8 @@ export const productApi = {
         });
     },
 
-    getProductsByCategory(category: string | number) {
-        return request<PageResult<Product>>(`/products/category/${category}`, { skipAuth: true });
+    getProductsByCategory(categoryId: string | number) {
+        return request<PageResult<Product>>(`/products/category/${categoryId}`, { skipAuth: true });
     },
 
     searchProducts(params: ProductSearchParams = {}) {

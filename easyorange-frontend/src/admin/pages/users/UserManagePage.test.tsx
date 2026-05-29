@@ -29,7 +29,7 @@ vi.mock('./UserDetailModal', () => ({
     onSave: (status: string) => Promise<void>;
     loading: boolean;
   }) => {
-    if (!open || !user) return null;
+    if (!open || !user) {return null;}
     return (
       <div data-testid="user-detail-modal" data-user-id={user.userId}>
         <span>{user.username}</span>

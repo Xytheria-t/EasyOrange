@@ -27,7 +27,7 @@ export { debounce, throttle } from './functionUtils';
 export type { DebounceOptions } from './functionUtils';
 
 // 商品工具
-export { calculateDiscount, getConditionNameFromString, isHotProduct, normalizeProduct } from './product';
+export { calculateDiscount, getConditionNameFromString, normalizeProduct } from './product';
 
 // 错误处理
 export { errorHandler } from './errorHandler';

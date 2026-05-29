@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Camera, LogOut, Package, Sparkles, ShoppingBag, List, Activity, Shield, Settings } from 'lucide-react'
+import { Camera, LogOut, Package, Sparkles, ShoppingBag, List, Activity, Shield, Settings, Award } from 'lucide-react'
 import type { User } from '@/types'
 import { useUIStore } from '@/store/uiStore'
 import { userApi } from '@/api/userApi'
@@ -167,6 +167,11 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
               <span className="ps-btn-secondary-text">购买记录</span>
             </button>
           </div>
+
+          <button className="ps-btn-secondary" onClick={() => navigate('/credit')} style={{ width: '100%' }}>
+            <Award size={18} />
+            <span className="ps-btn-secondary-text">我的信用</span>
+          </button>
 
           <button className="ps-btn-logout" onClick={onLogout} data-testid="btn-profile-logout">
             <LogOut size={16} />

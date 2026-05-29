@@ -22,7 +22,7 @@ type TabType = 'overview' | 'activity' | 'security' | 'preferences'
 
 function ProfilePage() {
   const { data: user, isLoading } = useCurrentUser()
-  const logoutMutation = useLogout()
+  const logout = useLogout()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const addToast = useUIStore((s) => s.addToast)
@@ -94,7 +94,7 @@ function ProfilePage() {
       setShowPasswordModal(false)
       setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
       addToast({ type: 'success', message: '密码修改成功，请重新登录' })
-      logoutMutation.mutateAsync()
+      logout()
       navigate('/login')
     } catch (err) {
       const msg = errorHandler.handle(err as Error)
@@ -102,18 +102,13 @@ function ProfilePage() {
     } finally {
       setIsChangingPassword(false)
     }
-  }, [passwordForm, addToast, logoutMutation, navigate])
+  }, [passwordForm, addToast, logout, navigate])
 
   const handleLogout = useCallback(async () => {
-    try {
-      await logoutMutation.mutateAsync()
-      addToast({ type: 'success', message: '已退出登录' })
-      navigate('/')
-    } catch {
-      addToast({ type: 'success', message: '已退出登录' })
-      navigate('/')
-    }
-  }, [logoutMutation, navigate, addToast])
+    await logout()
+    addToast({ type: 'success', message: '已退出登录' })
+    navigate('/')
+  }, [logout, navigate, addToast])
 
   if (isLoading) {
     return (

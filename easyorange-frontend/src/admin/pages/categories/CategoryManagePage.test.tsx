@@ -60,7 +60,7 @@ vi.mock('../../components/ConfirmModal', () => ({
     onCancel: () => void;
   }) => {
     mockConfirmModalFn(props);
-    if (!props.isOpen) return null;
+    if (!props.isOpen) {return null;}
     return (
       <div data-testid="confirm-modal">
         <div>{props.title}</div>

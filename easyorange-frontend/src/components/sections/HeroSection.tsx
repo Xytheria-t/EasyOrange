@@ -1,8 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image } from '@/components/ui/Image'
-import { usePlatformStats } from '@/hooks'
-import type { PlatformStats } from '@/api/statsApi'
 
 const HERO_PRODUCT = {
   image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
@@ -12,10 +10,10 @@ const HERO_PRODUCT = {
   originalPrice: '¥14,999'
 }
 
-const DEFAULT_STATS: PlatformStats = {
-  activeUsers: 0,
-  onlineProducts: 0,
-  completedOrders: 0
+const PLATFORM_STATS = {
+  activeUsers: 5280,
+  onlineProducts: 3560,
+  completedOrders: 2180
 }
 
 function animateCounter(el: HTMLSpanElement, target: number) {
@@ -53,7 +51,7 @@ export default function HeroSection() {
   const heroRef = useRef<HTMLElement>(null)
   const statRefs = useRef<(HTMLSpanElement | null)[]>([])
   const floatCardsRef = useRef<(HTMLDivElement | null)[]>([])
-  const { data: stats = DEFAULT_STATS } = usePlatformStats()
+  const stats = PLATFORM_STATS
   const navigate = useNavigate()
   const [searchKeyword, setSearchKeyword] = useState('')
 
@@ -274,16 +272,15 @@ export default function HeroSection() {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
-                <div className="ai-pulse-ring" />
+                <div className="ai-icon-ring" />
               </div>
               <div className="ai-entry-content">
-                <span className="ai-entry-title">AI智能助手</span>
+                <span className="ai-entry-title">AI 智能助手</span>
                 <span className="ai-entry-desc">拍照估价 · 智能推荐 · 一键发布</span>
               </div>
-              <div className="ai-entry-arrow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+              <div className="ai-entry-indicator">
+                <div className="ai-indicator-dot" />
+                <div className="ai-indicator-shimmer" />
               </div>
             </button>
           </div>

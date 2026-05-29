@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeProduct, calculateDiscount, getConditionNameFromString, isHotProduct } from './product';
+import { normalizeProduct, calculateDiscount, getConditionNameFromString } from './product';
 
 describe('normalizeProduct', () => {
   it('normalizes a raw product record', () => {
@@ -60,14 +60,3 @@ describe('getConditionNameFromString', () => {
   });
 });
 
-describe('isHotProduct', () => {
-  it('returns true when viewCount >= 100', () => {
-    expect(isHotProduct(100)).toBe(true);
-    expect(isHotProduct(200)).toBe(true);
-  });
-
-  it('returns false when viewCount < 100', () => {
-    expect(isHotProduct(99)).toBe(false);
-    expect(isHotProduct(0)).toBe(false);
-  });
-});

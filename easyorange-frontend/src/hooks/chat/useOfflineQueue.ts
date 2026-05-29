@@ -37,10 +37,10 @@ export function useOfflineQueue() {
   const isSendingRef = useRef(false)
 
   const flushQueue = useCallback(() => {
-    if (isSendingRef.current || connectionStatus !== 'connected') return
+    if (isSendingRef.current || connectionStatus !== 'connected') {return}
 
     const queue = loadQueue()
-    if (queue.length === 0) return
+    if (queue.length === 0) {return}
 
     isSendingRef.current = true
 

@@ -49,7 +49,7 @@ export default function ProductReviewPage() {
     pageSize,
     keyword: keyword || undefined,
     status: statusFilter || undefined,
-    categoryId: categoryFilter ? Number(categoryFilter) : undefined,
+    categoryId: categoryFilter || undefined,
   });
 
   const products = data?.records ?? [];
@@ -65,7 +65,7 @@ export default function ProductReviewPage() {
   };
 
   const handleViewDetail = (product: AdminProduct) => {
-    setSelectedProductId(product.productId ?? null);
+    setSelectedProductId(Number(product.productId) || null);
     setDrawerOpen(true);
   };
 

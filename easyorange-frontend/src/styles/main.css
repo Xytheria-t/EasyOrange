@@ -3021,6 +3021,31 @@
     gap: 1.75rem;
 }
 
+/* Mini Stats (subtle inline) */
+.footer-mini-stats {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+}
+
+.mini-stat {
+    font-family: var(--font-accent);
+    font-size: 0.8125rem;
+    color: var(--text-tertiary);
+    letter-spacing: 0.02em;
+}
+
+.mini-stat strong {
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.mini-stat-sep {
+    color: var(--text-quaternary);
+    font-size: 0.75rem;
+}
+
 /* Stats Row */
 .footer-stats-row {
     display: flex;

@@ -145,7 +145,7 @@ describe('useCreateOrder', () => {
         return HttpResponse.json({
           code: 'A0000',
           message: 'success',
-          data: { id: 'new-order-id' },
+          data: 'new-order-id',
           timestamp: Date.now(),
         });
       }),
@@ -156,13 +156,12 @@ describe('useCreateOrder', () => {
     });
 
     result.current.mutate({
-      productId: '1',
-      quantity: 1,
-      addressId: 'addr-1',
-    } as any);
+      items: [{ productId: '1', quantity: 1 }],
+      address: 'addr-1',
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.id).toBe('new-order-id');
+    expect(result.current.data).toBe('new-order-id');
   });
 });
 

@@ -1,74 +1,54 @@
-import { storage } from '@/utils';
 import { request } from '@/api/core/request';
 import { useAuthStore } from '@/store/authStore';
+import type { TokenRefreshResult } from '@/types';
 
-const TOKEN_STORAGE_KEY = 'token';
-const TOKEN_EXPIRES_KEY = 'token_expires';
-const USER_STORAGE_KEY = 'user';
+import type { UserType } from '@/types/user';
 
-const TOKEN_EXPIRES_IN_MINUTES = 30;
-const TOKEN_REFRESH_BEFORE_MINUTES = 5;
 const LOGIN_GRACE_PERIOD_MS = 5000;
 
-export const AUTH_SESSION_CHANGE_EVENT = 'auth-session-change';
+const EMPTY_USER_FALLBACK: import('@/types').User = {
+    userId: '',
+    username: '',
+    nickname: '',
+    email: '',
+    phone: null,
+    studentId: null,
+    realName: null,
+    avatar: null,
+    status: 0,
+    userType: '01' as UserType,
+    createTime: '',
+    updateTime: '',
+};
 
-export interface AuthSessionUser {
-    username?: string;
-    nickname?: string;
-    [key: string]: unknown;
-}
+export const AUTH_SESSION_CHANGE_EVENT = 'auth-session-change';
 
 export type AuthSessionClearReason = 'logout' | 'unauthorized' | 'manual';
 
 export interface AuthSessionDetail {
     isAuthenticated: boolean;
     token: string | null;
-    user: AuthSessionUser | null;
     reason?: AuthSessionClearReason;
 }
 
-class TokenRefreshManager {
-    private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+// ==================== Token Refresh 管理 ====================
+
+class RefreshCoordinator {
     private isRefreshing = false;
-    private refreshSubscribers: Array<(token: string) => void> = [];
+    private pendingCallbacks: Array<(token: string) => void> = [];
     private lastLoginTimestamp = 0;
     private unauthorizedRedirectInFlight = false;
 
-    subscribe(callback: (token: string) => void): () => void {
-        this.refreshSubscribers.push(callback);
-        return () => {
-            this.refreshSubscribers = this.refreshSubscribers.filter(subscriber => subscriber !== callback);
-        };
+    /** 等待正在进行的刷新完成 */
+    waitForRefresh(): Promise<string | null> {
+        return new Promise((resolve) => {
+            this.pendingCallbacks.push(resolve);
+        });
     }
 
-    notifySubscribers(token: string): void {
-        this.refreshSubscribers.forEach(subscriber => subscriber(token));
-        this.refreshSubscribers = [];
-    }
-
-    schedule(expiresAt: number, onRefresh: () => void): void {
-        if (this.refreshTimer) {
-            clearTimeout(this.refreshTimer);
-            this.refreshTimer = null;
-        }
-
-        const now = Date.now();
-        const refreshTime = expiresAt - TOKEN_REFRESH_BEFORE_MINUTES * 60 * 1000;
-        const delay = refreshTime - now;
-
-        if (delay <= 0) {
-            onRefresh();
-            return;
-        }
-
-        this.refreshTimer = setTimeout(onRefresh, delay);
-    }
-
-    cancel(): void {
-        if (this.refreshTimer) {
-            clearTimeout(this.refreshTimer);
-            this.refreshTimer = null;
-        }
+    notifyPending(token: string): void {
+        this.pendingCallbacks.forEach((cb) => cb(token));
+        this.pendingCallbacks = [];
     }
 
     getIsRefreshing(): boolean {
@@ -79,12 +59,16 @@ class TokenRefreshManager {
         this.isRefreshing = value;
     }
 
-    getLastLoginTimestamp(): number {
-        return this.lastLoginTimestamp;
+    markLogin(): void {
+        this.lastLoginTimestamp = Date.now();
+        this.unauthorizedRedirectInFlight = false;
     }
 
-    setLastLoginTimestamp(timestamp: number): void {
-        this.lastLoginTimestamp = timestamp;
+    isWithinGracePeriod(): boolean {
+        return (
+            this.lastLoginTimestamp > 0 &&
+            Date.now() - this.lastLoginTimestamp < LOGIN_GRACE_PERIOD_MS
+        );
     }
 
     isUnauthorizedRedirectInFlight(): boolean {
@@ -94,181 +78,148 @@ class TokenRefreshManager {
     setUnauthorizedRedirectInFlight(value: boolean): void {
         this.unauthorizedRedirectInFlight = value;
     }
-
-    isWithinLoginGracePeriod(): boolean {
-        const timeSinceLogin = Date.now() - this.lastLoginTimestamp;
-        return this.lastLoginTimestamp > 0 && timeSinceLogin < LOGIN_GRACE_PERIOD_MS;
-    }
 }
 
-const tokenRefreshManager = new TokenRefreshManager();
+const refreshCoordinator = new RefreshCoordinator();
 
-function emitAuthSessionChange(reason?: AuthSessionClearReason): void {
-    const detail: AuthSessionDetail = {
-        isAuthenticated: Boolean(getStoredToken() && getStoredUser()),
-        token: getStoredToken(),
-        user: getStoredUser(),
-        reason
-    };
+// ==================== 事件 ====================
 
-    window.dispatchEvent(new CustomEvent<AuthSessionDetail>(AUTH_SESSION_CHANGE_EVENT, { detail }));
+function emitSessionChange(reason?: AuthSessionClearReason): void {
+    const store = useAuthStore.getState();
+    window.dispatchEvent(
+        new CustomEvent<AuthSessionDetail>(AUTH_SESSION_CHANGE_EVENT, {
+            detail: {
+                isAuthenticated: !!store.token,
+                token: store.token,
+                reason,
+            },
+        }),
+    );
 }
+
+// ==================== 导出函数 ====================
 
 export function getStoredToken(): string | null {
-    const zustandToken = useAuthStore.getState().token;
-    if (zustandToken) { return zustandToken; }
-    return storage.get<string | null>(TOKEN_STORAGE_KEY, null);
+    return useAuthStore.getState().token;
 }
 
-export function getStoredUser(): AuthSessionUser | null {
-    const zustandUser = useAuthStore.getState().user;
-    if (zustandUser) { return zustandUser as unknown as AuthSessionUser; }
-    return storage.get<AuthSessionUser | null>(USER_STORAGE_KEY, null);
-}
-
-export function getStoredTokenExpires(): number | null {
-    return storage.get<number | null>(TOKEN_EXPIRES_KEY, null);
-}
-
-function syncAllStores(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
-    storage.set(TOKEN_STORAGE_KEY, token);
-    storage.set(USER_STORAGE_KEY, user);
-
-    const finalRefreshToken = refreshToken ?? useAuthStore.getState().refreshToken ?? '';
-    useAuthStore.getState().login(
-        user as unknown as import('../../types/index.js').User,
-        token,
-        finalRefreshToken
-    );
-
-    if (expiresAt) {
-        storage.set(TOKEN_EXPIRES_KEY, expiresAt);
-        tokenRefreshManager.schedule(expiresAt, refreshAccessToken);
-    } else {
-        storage.remove(TOKEN_EXPIRES_KEY);
-        tokenRefreshManager.cancel();
-    }
-}
-
-function clearAllStores(reason: AuthSessionClearReason = 'manual'): void {
-    storage.remove(TOKEN_STORAGE_KEY);
-    storage.remove(TOKEN_EXPIRES_KEY);
-    storage.remove(USER_STORAGE_KEY);
-    tokenRefreshManager.cancel();
-    emitAuthSessionChange(reason);
+export function getStoredUser() {
+    return useAuthStore.getState().user;
 }
 
 export async function refreshAccessToken(): Promise<string | null> {
-    const token = getStoredToken();
-    if (!token) {
+    const currentRefreshToken = useAuthStore.getState().refreshToken;
+    if (!currentRefreshToken) {
         return null;
     }
 
-    if (tokenRefreshManager.getIsRefreshing()) {
-        return new Promise(resolve => {
-            tokenRefreshManager.subscribe(resolve);
-        });
+    // 并发请求复用：正在刷新时等待结果
+    if (refreshCoordinator.getIsRefreshing()) {
+        return refreshCoordinator.waitForRefresh();
     }
 
-    tokenRefreshManager.setIsRefreshing(true);
+    refreshCoordinator.setIsRefreshing(true);
 
     try {
-        const refreshToken = useAuthStore.getState().refreshToken;
-        const response = await request<string>('/auth/refresh', {
+        const response = await request<TokenRefreshResult>('/auth/refresh', {
             method: 'POST',
-            body: { refreshToken },
+            body: { refreshToken: currentRefreshToken },
             skipAuth: true,
             timeout: 8000,
             retries: 0,
-            dedupe: false
+            dedupe: false,
         });
 
         if (!response.data) {
             throw new Error('Refresh response invalid');
         }
 
-        const expiresAt = Date.now() + TOKEN_EXPIRES_IN_MINUTES * 60 * 1000;
-        const user = getStoredUser();
-        if (user) {
-            syncAllStores(response.data, user, expiresAt);
-        } else {
-            syncAllStores(response.data, { username: '', nickname: '' }, expiresAt);
-        }
-        tokenRefreshManager.notifySubscribers(response.data);
+        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        const user = useAuthStore.getState().user;
 
-        return response.data;
+        // 更新 store（Zustand 是唯一数据源）
+        useAuthStore.getState().login(
+            user ?? EMPTY_USER_FALLBACK,
+            accessToken,
+            newRefreshToken,
+        );
+
+        refreshCoordinator.notifyPending(accessToken);
+        emitSessionChange();
+        return accessToken;
     } catch {
-        clearAllStores('unauthorized');
-        useAuthStore.setState({
-            user: null,
-            token: null,
-            refreshToken: null,
-            isAuthenticated: false,
-        });
+        clearSession('unauthorized');
         return null;
     } finally {
-        tokenRefreshManager.setIsRefreshing(false);
+        refreshCoordinator.setIsRefreshing(false);
     }
 }
 
-export function setSession(token: string, user: AuthSessionUser, expiresAt?: number, refreshToken?: string): void {
-    syncAllStores(token, user, expiresAt, refreshToken);
-    tokenRefreshManager.setLastLoginTimestamp(Date.now());
-    tokenRefreshManager.setUnauthorizedRedirectInFlight(false);
-    emitAuthSessionChange();
+export function setSession(
+    token: string,
+    user: import('@/types').User,
+    refreshToken: string,
+): void {
+    useAuthStore.getState().login(user, token, refreshToken);
+    refreshCoordinator.markLogin();
+    emitSessionChange();
 }
 
 export function clearSession(reason: AuthSessionClearReason = 'manual'): void {
-    clearAllStores(reason);
+    useAuthStore.getState().logout();
+    emitSessionChange(reason);
 }
 
 export async function logout(): Promise<void> {
-    const token = getStoredToken();
-
-    if (token) {
-        try {
-            await request('/auth/logout', {
-                method: 'POST'
-            });
-        } catch {
-            // Ignore API errors - ensure local session is cleared regardless
-        }
+    const refreshToken = useAuthStore.getState().refreshToken;
+    try {
+        await request('/auth/logout', {
+            method: 'POST',
+            body: { refreshToken },
+        });
+    } catch {
+        // 忽略 API 错误，确保本地状态清除
     }
 
-    useAuthStore.getState().logout();
     clearSession('logout');
 }
 
 export function handleUnauthorized(): void {
-    if (tokenRefreshManager.isUnauthorizedRedirectInFlight()) {
+    if (refreshCoordinator.isUnauthorizedRedirectInFlight()) {
+        return;
+    }
+    if (refreshCoordinator.isWithinGracePeriod()) {
         return;
     }
 
-    if (tokenRefreshManager.isWithinLoginGracePeriod()) {
-        return;
-    }
-
-    tokenRefreshManager.setUnauthorizedRedirectInFlight(true);
-    useAuthStore.getState().logout();
+    refreshCoordinator.setUnauthorizedRedirectInFlight(true);
     clearSession('unauthorized');
 
     const currentPath = `${window.location.pathname}${window.location.search}`;
-    const redirectQuery = currentPath && currentPath !== '/' ? { redirect: currentPath } : undefined;
+    const redirectQuery =
+        currentPath && currentPath !== '/'
+            ? { redirect: currentPath }
+            : undefined;
     const loginPath = redirectQuery
         ? `/login?redirect=${encodeURIComponent(redirectQuery.redirect)}`
         : '/login';
     window.location.href = loginPath;
 }
 
-export function initTokenRefresh(): void {
-    const expiresAt = getStoredTokenExpires();
-    if (expiresAt && expiresAt > Date.now()) {
-        tokenRefreshManager.schedule(expiresAt, refreshAccessToken);
+function isTokenExpired(token: string): boolean {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp * 1000 < Date.now();
+    } catch {
+        return true;
     }
 }
 
-export function syncTokenToStore(token: string): void {
-    useAuthStore.getState().setToken(token);
+/** 启动时调用，清除可能残留的过期或不完整状态 */
+export function initAuth(): void {
+    const store = useAuthStore.getState();
+    if (!store.token) {return;}
+    if (!store.refreshToken || isTokenExpired(store.token)) {
+        store.logout();
+    }
 }
-
-export { tokenRefreshManager };

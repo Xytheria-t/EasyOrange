@@ -66,8 +66,8 @@ function SearchPage() {
         }
         if (filters.price) {
             const [min, max] = filters.price.split('_');
-            if (min) params.minPrice = Number(min);
-            if (max) params.maxPrice = Number(max);
+            if (min) {params.minPrice = Number(min);}
+            if (max) {params.maxPrice = Number(max);}
         }
         return params;
     }, [submittedKeyword, pageNum, filters]);
