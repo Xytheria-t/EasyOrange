@@ -36,7 +36,7 @@ class PasswordAnnotationTest {
     @DisplayName("@Password has correct default message")
     void passwordHasCorrectDefaultMessage() throws NoSuchMethodException {
         assertThat(Password.class.getMethod("message").getDefaultValue())
-            .isEqualTo("密码必须包含大小写字母和数字，长度6-20位");
+            .isEqualTo("密码必须包含大小写字母、数字和特殊字符，长度8-128位");
     }
 
     @Test

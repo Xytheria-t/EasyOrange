@@ -12,6 +12,7 @@ public final class UserConstant {
     public static final int USERNAME_MAX_LENGTH = 50;
     public static final int PASSWORD_MIN_LENGTH = 8;
     public static final int PASSWORD_MAX_LENGTH = 128;
+    public static final String USERNAME_REGEX = "^[a-zA-Z0-9_]+$";
     public static final String PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,128}$";
     public static final String PHONE_REGEX = "^1[3-9]\\d{9}$";
     public static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";

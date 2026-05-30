@@ -458,9 +458,9 @@ public class RegistrationService {
 
 **应用服务拆分原则：**
 
-- **禁止"上帝类"**：单个应用服务不应处理超过 3 个不相关的用例
-- **按完整用户场景拆分**：注册、登录、密码重置、验证码发送应各自独立
-- **命名规范**：`{场景}AppService`，如 `RegisterAppService`、`LoginAppService`、`ProfileAppService`
+- **避免"上帝类"**：单个应用服务不应处理不相关的用例；但共享相同依赖和事务边界的用例可以聚合（如 `AuthAppService` 处理注册/登录/登出/刷新/忘记密码/修改密码——均依赖 `AuthenticationService` + `TokenService`）
+- **按职责边界拆分**：当多个用例共享相同依赖集且事务边界一致时可合并；当用例差异大或独立演进时再拆分
+- **命名规范**：`{领域}AppService`，如 `AuthAppService`、`ProfileAppService`
 - **事务边界**：每个应用服务方法就是一个完整的事务边界
 
 **领域服务设计原则：**
@@ -472,7 +472,7 @@ public class RegistrationService {
 
 ### 8. CQRS 渐进式引入
 
-- **早期/简单场景**：使用传统应用服务（如 `ProfileAppService`、`RegisterAppService`），同时处理读写
+- **早期/简单场景**：使用传统应用服务（如 `AuthAppService`、`ProfileAppService`），同时处理读写
 - **读写模型差异大时**：拆分为 `command/handler` 和 `query/handler`
 - **复杂查询场景**：Query 侧可使用物化视图、读库副本、ES 等
 - **不推荐一刀切**：简单 CRUD 场景强制 CQRS 会增加大量样板代码
@@ -481,7 +481,7 @@ public class RegistrationService {
 
 | 模块 | 模式 | 说明 |
 |------|------|------|
-| user | 传统应用服务 | 读写差异不大，按用例拆分应用服务 |
+| user | 传统应用服务 | 读写差异不大，两个服务聚合认证+密码所有用例 |
 | product | CQRS | 读写模型差异大，独立 command/query 处理 |
 | order | CQRS | 命令侧 + 查询侧分离 |
 | payment | CQRS | 命令侧 + 查询侧分离 |

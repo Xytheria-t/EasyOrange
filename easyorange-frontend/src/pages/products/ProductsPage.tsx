@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useQueryClient } from '@tanstack/react-query';
-import { X, Sparkles } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 import { useProducts, useCategories, useFavoriteCheck, useColumnCount, useSemanticSearch } from '@/hooks';
 import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { ProductCard } from '@/components/product/ProductCard';
@@ -28,6 +28,7 @@ function ProductsPage() {
   const initialKeyword = searchParams.get('keyword');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<ToolsPlazaFilter>('all');
+  const [searchQuery, setSearchQuery] = useState(initialKeyword || '');
 
   const [params, setParams] = useState<ProductQueryParams>({
     pageNum: 1,
@@ -36,6 +37,10 @@ function ProductsPage() {
     categoryId: initialCategoryId ?? undefined,
     sort: 'newest',
   });
+
+  useEffect(() => {
+    setSearchQuery(params.keyword || '');
+  }, [params.keyword]);
 
   const { data, isLoading } = useProducts(params);
   const {
@@ -199,7 +204,6 @@ function ProductsPage() {
       priceMin: filters.priceMin,
       priceMax: filters.priceMax,
       conditions: filters.conditions.length > 0 ? filters.conditions : undefined,
-      sort: filters.sort as ProductQueryParams['sort'],
       pageNum: 1,
     }));
     setIsFilterOpen(false);
@@ -219,6 +223,28 @@ function ProductsPage() {
     resetAllProducts();
     setActiveFilter('all');
     setParams(prev => ({ ...prev, categoryId: undefined, pageNum: 1 }));
+  }, [resetAllProducts]);
+
+  const handleSearchSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = searchQuery.trim();
+    if (trimmed === params.keyword) {return;}
+    resetAllProducts();
+    setParams(prev => ({
+      ...prev,
+      keyword: trimmed || undefined,
+      pageNum: 1,
+    }));
+  }, [searchQuery, params.keyword, resetAllProducts]);
+
+  const handleSearchClear = useCallback(() => {
+    setSearchQuery('');
+    resetAllProducts();
+    setParams(prev => ({
+      ...prev,
+      keyword: undefined,
+      pageNum: 1,
+    }));
   }, [resetAllProducts]);
 
   const handleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
@@ -281,7 +307,23 @@ function ProductsPage() {
             <span className="results-text"> 件商品</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <form className="search-bar" onSubmit={handleSearchSubmit}>
+            <Search size={16} className="search-bar-icon" />
+            <input
+              type="text"
+              className="search-bar-input"
+              placeholder="搜索闲置物品..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button type="button" className="search-bar-clear" onClick={handleSearchClear} aria-label="清除搜索">
+                <X size={14} />
+              </button>
+            )}
+          </form>
+
+          <div className="toolbar-actions">
             <SemanticSearchToggle
               isActive={isSemanticMode}
               onToggle={toggleSemanticMode}
@@ -307,21 +349,6 @@ function ProductsPage() {
             />
           </div>
         </div>
-
-        {isSemanticMode && params.keyword && !semanticError && (
-          <div className="semantic-search-banner">
-            <div className="semantic-banner-icon">
-              <Sparkles size={16} />
-            </div>
-            <div className="semantic-banner-content">
-              <span className="semantic-banner-title">AI 语义搜索</span>
-              <span className="semantic-banner-query">"{params.keyword}"</span>
-            </div>
-            <span className="semantic-banner-badge">
-              找到 {total} 件商品
-            </span>
-          </div>
-        )}
 
         <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {

@@ -1,15 +1,27 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 
+import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class PasswordValidatorTest {
 
+    @Mock
+    private ConstraintValidatorContext context;
+    @Mock
+    private ConstraintValidatorContext.ConstraintViolationBuilder violationBuilder;
+
     private final PasswordValidator validator = new PasswordValidator(Set.of());
+    private final PasswordValidator validatorWithWeakPasswords = new PasswordValidator(Set.of("Password123!", "Qwerty123!"));
 
     @Test
     @DisplayName("valid password - lowercase, uppercase, digit, special char, length 8")
@@ -101,5 +113,18 @@ class PasswordValidatorTest {
     @DisplayName("unicode characters with special char - valid")
     void isValid_unicodeChars_returnsTrue() {
         assertThat(validator.isValid("密码123Ab!", null)).isTrue();
+    }
+
+    @Test
+    @DisplayName("weak password rejected")
+    void isValid_weakPassword_returnsFalse() {
+        when(context.buildConstraintViolationWithTemplate("密码过于简单，请使用更强的密码")).thenReturn(violationBuilder);
+        assertThat(validatorWithWeakPasswords.isValid("Password123!", context)).isFalse();
+    }
+
+    @Test
+    @DisplayName("non-weak password matching regex - not in weak list, should pass")
+    void isValid_nonWeakPassword_returnsTrue() {
+        assertThat(validatorWithWeakPasswords.isValid("StrongPass123!", context)).isTrue();
     }
 }

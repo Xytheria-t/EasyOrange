@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.password;
+package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth;
 
 import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Password;
 import jakarta.validation.constraints.NotBlank;

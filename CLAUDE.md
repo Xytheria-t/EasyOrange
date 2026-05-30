@@ -142,7 +142,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect
 - **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
 - **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）
-- **LoginCommand sealed interface**: 登录命令使用 `sealed interface LoginCommand`，新增登录方式必须添加新的 `record` 实现（如 `PasswordLogin(String account, String password)`、`SmsLogin(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式
+- **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
 
 ---
 

@@ -14,7 +14,6 @@ export interface FilterState {
   priceMin?: number;
   priceMax?: number;
   conditions: number[];
-  sort: string;
 }
 
 export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters, initialFilters }: FilterSidebarProps) {
@@ -25,8 +24,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
     max: initialFilters?.priceMax?.toString() ?? '',
   });
   const [selectedConditions, setSelectedConditions] = useState<number[]>(initialFilters?.conditions ?? []);
-  const [sortType, setSortType] = useState(initialFilters?.sort ?? 'newest');
-
   const handleCategoryToggle = (categoryId: string) => {
     setSelectedCategories(prev =>
       prev.includes(categoryId)
@@ -49,7 +46,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
       priceMin: priceRange.min ? Number(priceRange.min) : undefined,
       priceMax: priceRange.max ? Number(priceRange.max) : undefined,
       conditions: selectedConditions,
-      sort: sortType,
     });
     onClose();
   };
@@ -58,7 +54,6 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
     setSelectedCategories([]);
     setPriceRange({ min: '', max: '' });
     setSelectedConditions([]);
-    setSortType('newest');
     onResetFilters?.();
   };
 
@@ -212,41 +207,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
             </div>
           </div>
 
-          <div className="filter-section">
-            <h4 className="filter-title">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="4" y1="21" x2="4" y2="14" />
-                <line x1="4" y1="10" x2="4" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12" y2="3" />
-                <line x1="20" y1="21" x2="20" y2="16" />
-                <line x1="20" y1="12" x2="20" y2="3" />
-              </svg>
-              排序方式
-            </h4>
-            <div className="sort-options">
-              <label className={`filter-radio ${sortType === 'newest' ? 'is-checked' : ''}`}>
-                <input type="radio" name="sort" value="newest" checked={sortType === 'newest'} onChange={() => setSortType('newest')} />
-                <span className="radio-custom" />
-                <span className="radio-label">最新发布</span>
-              </label>
-              <label className={`filter-radio ${sortType === 'price_asc' ? 'is-checked' : ''}`}>
-                <input type="radio" name="sort" value="price_asc" checked={sortType === 'price_asc'} onChange={() => setSortType('price_asc')} />
-                <span className="radio-custom" />
-                <span className="radio-label">价格从低到高</span>
-              </label>
-              <label className={`filter-radio ${sortType === 'price_desc' ? 'is-checked' : ''}`}>
-                <input type="radio" name="sort" value="price_desc" checked={sortType === 'price_desc'} onChange={() => setSortType('price_desc')} />
-                <span className="radio-custom" />
-                <span className="radio-label">价格从高到低</span>
-              </label>
-              <label className={`filter-radio ${sortType === 'popular' ? 'is-checked' : ''}`}>
-                <input type="radio" name="sort" value="popular" checked={sortType === 'popular'} onChange={() => setSortType('popular')} />
-                <span className="radio-custom" />
-                <span className="radio-label">热门优先</span>
-              </label>
-            </div>
-          </div>
+
         </div>
 
         <div className="filter-footer">

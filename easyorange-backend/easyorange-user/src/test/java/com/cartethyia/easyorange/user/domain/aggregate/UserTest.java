@@ -41,7 +41,7 @@ class UserTest {
         void shouldThrowWhenUsernameIsNull() {
             assertThatThrownBy(() -> User.create(null, "password"))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("username");
+                .hasMessageContaining("用户名");
         }
 
         @Test
@@ -49,7 +49,7 @@ class UserTest {
         void shouldThrowWhenPasswordIsNull() {
             assertThatThrownBy(() -> User.create("testuser", null))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("password");
+                .hasMessageContaining("密码");
         }
     }
 
@@ -99,7 +99,7 @@ class UserTest {
 
             assertThatThrownBy(() -> user.changePassword(null, 1L))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("password");
+                .hasMessageContaining("新密码");
         }
     }
 
@@ -213,7 +213,7 @@ class UserTest {
 
             assertThatThrownBy(() -> user.changeAvatar(null, 1L))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("avatarUrl");
+                .hasMessageContaining("头像地址");
         }
     }
 
@@ -310,7 +310,7 @@ class UserTest {
 
             assertThatThrownBy(() -> user.assignId(null))
                 .isInstanceOf(NullPointerException.class)
-                .hasMessageContaining("id");
+                .hasMessageContaining("用户ID");
         }
     }
 

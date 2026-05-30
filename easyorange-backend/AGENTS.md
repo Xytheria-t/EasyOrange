@@ -113,12 +113,12 @@ PageResult.of(records, total, page, size)
 | 值对象 | 名词 (record) | `ProductId`, `Money`, `StockQuantity` |
 | 领域事件 | `*Event` | `OrderCreatedEvent` |
 | 领域服务 | `*Service` | `AuthenticationService` |
-| 应用服务 | `*AppService` / `*CommandHandler` | `RegisterAppService`, `ProfileAppService` |
+| 应用服务 | `*AppService` / `*CommandHandler` | `AuthAppService`, `ProfileAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
 | 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity>` |
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
 | 控制器 | `*Controller` | `AuthController` |
-| 请求 DTO | `*Request` / `*Command` | `LoginRequest` |
+| 请求 DTO | `*Request` | `PasswordLoginRequest`, `RegisterRequest` |
 | 响应 DTO | `*Response` / `*Response` | `UserResponse` |
 | 数据对象 | `*DO` / `*PO` | `UserEntity`, `PaymentPO` |
 
@@ -292,7 +292,7 @@ public class PasswordEncoderAdapter implements PasswordEncoderPort {
 
 当前已修复（全项目所有 MapStruct Mapper 注入点均已覆盖）：
 - `UserEntityMapper` → UserRepositoryImpl（构造器注入，`@Qualifier`）
-- `UserAssembler` → LoginAppService, ProfileAppService（字段注入，`@SuppressWarnings`）
+- `UserAssembler`（adapter/inbound/web/assembler/）→ AuthController, UserController（字段注入，`@SuppressWarnings`）
 - `PaymentDataMapper` → MybatisPaymentRepository（字段注入，`@SuppressWarnings`）
 - `PaymentCommandMapper` → PaymentCommandController（字段注入，`@SuppressWarnings`）
 - `MessageDataMapper` → MybatisMessageRepository, MybatisMessageTemplateRepository, MybatisMessageSubscriptionRepository, MybatisOfflineMessageRepository, MybatisMessageQueryRepository（字段注入，`@SuppressWarnings`）

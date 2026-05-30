@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.application.dto;
+package com.cartethyia.easyorange.user.adapter.inbound.web.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -13,7 +13,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileVO {
+public class UserProfileResponse implements CommonUserFields {
 
     private Long id;
 

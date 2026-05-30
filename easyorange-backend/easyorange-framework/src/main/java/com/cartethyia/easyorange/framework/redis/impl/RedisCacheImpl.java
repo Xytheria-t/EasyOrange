@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
@@ -25,28 +26,27 @@ import java.util.stream.IntStream;
 @ConditionalOnClass(RedisTemplate.class)
 public class RedisCacheImpl implements RedisCache {
 
-    private static final String KEY_PREFIX = "${redis.key-prefix:}";
-
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @org.springframework.beans.factory.annotation.Value(KEY_PREFIX)
+    @Value("${redis.key-prefix:}")
     private String keyPrefix;
-
-    private static final String UNLOCK_SCRIPT = """
-            if redis.call("get", KEYS[1]) == ARGV[1] then
-                return redis.call("del", KEYS[1])
-            else
-                return 0
-            end
-            """;
 
     private static final DefaultRedisScript<Long> UNLOCK_SCRIPT_INSTANCE;
 
     static {
-        UNLOCK_SCRIPT_INSTANCE = new DefaultRedisScript<>();
-        UNLOCK_SCRIPT_INSTANCE.setScriptText(UNLOCK_SCRIPT);
-        UNLOCK_SCRIPT_INSTANCE.setResultType(Long.class);
+        var script = new DefaultRedisScript<Long>();
+        script.setScriptText("""
+                if redis.call("get", KEYS[1]) == ARGV[1] then
+                    return redis.call("del", KEYS[1])
+                else
+                    return 0
+                end
+                """);
+        script.setResultType(Long.class);
+        UNLOCK_SCRIPT_INSTANCE = script;
     }
+
+    // ==================== Internal Helpers ====================
 
     private String generateKey(String key) {
         BizRequire.notBlank(key, "Key must not be null or empty");
@@ -61,17 +61,15 @@ public class RedisCacheImpl implements RedisCache {
         if (type.isInstance(value)) {
             return type.cast(value);
         }
-        if (value instanceof Number n && type != Number.class) {
-            return switch (type) {
-                case Class<?> t when t == Long.class -> (T) Long.valueOf(n.longValue());
-                case Class<?> t when t == Integer.class -> (T) Integer.valueOf(n.intValue());
-                case Class<?> t when t == Double.class -> (T) Double.valueOf(n.doubleValue());
-                case Class<?> t when t == Float.class -> (T) Float.valueOf(n.floatValue());
-                case Class<?> t when t == Short.class -> (T) Short.valueOf(n.shortValue());
-                case Class<?> t when t == Byte.class -> (T) Byte.valueOf(n.byteValue());
-                default -> throw new CacheTypeMismatchException(key, type, value.getClass());
-            };
+        if (!(value instanceof Number n)) {
+            throw new CacheTypeMismatchException(key, type, value.getClass());
         }
+        if (type == Long.class) return (T) Long.valueOf(n.longValue());
+        if (type == Integer.class) return (T) Integer.valueOf(n.intValue());
+        if (type == Double.class) return (T) Double.valueOf(n.doubleValue());
+        if (type == Float.class) return (T) Float.valueOf(n.floatValue());
+        if (type == Short.class) return (T) Short.valueOf(n.shortValue());
+        if (type == Byte.class) return (T) Byte.valueOf(n.byteValue());
         throw new CacheTypeMismatchException(key, type, value.getClass());
     }
 
@@ -106,6 +104,47 @@ public class RedisCacheImpl implements RedisCache {
         return result;
     }
 
+    private String stripPrefix(String key) {
+        if (keyPrefix.isEmpty()) {
+            return key;
+        }
+        String prefixWithColon = keyPrefix + ":";
+        return key.startsWith(prefixWithColon) ? key.substring(prefixWithColon.length()) : key;
+    }
+
+    // ==================== Basic KV Operations ====================
+
+    @Override
+    public <T> void set(String key, T value) {
+        set(key, value, -1, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public <T> void set(String key, T value, long timeout, TimeUnit timeUnit) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value must not be null");
+        }
+        String prefixedKey = generateKey(key);
+        if (timeout > 0) {
+            redisTemplate.opsForValue().set(prefixedKey, value, timeout, timeUnit);
+        } else {
+            redisTemplate.opsForValue().set(prefixedKey, value);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T get(String key) {
+        return (T) redisTemplate.opsForValue().get(generateKey(key));
+    }
+
+    @Override
+    public <T> T get(String key, Class<T> type) {
+        return castValue(redisTemplate.opsForValue().get(generateKey(key)), type, key);
+    }
+
+    // ==================== Key Lifecycle ====================
+
     @Override
     public Boolean expire(String key, long timeout, TimeUnit timeUnit) {
         if (timeout <= 0) {
@@ -137,34 +176,7 @@ public class RedisCacheImpl implements RedisCache {
         return redisTemplate.delete(keys.stream().map(this::generateKey).toList());
     }
 
-    @Override
-    public <T> void set(String key, T value) {
-        set(key, value, -1, TimeUnit.SECONDS);
-    }
-
-    @Override
-    public <T> void set(String key, T value, long timeout, TimeUnit timeUnit) {
-        if (value == null) {
-            throw new IllegalArgumentException("Value must not be null");
-        }
-        String prefixedKey = generateKey(key);
-        if (timeout > 0) {
-            redisTemplate.opsForValue().set(prefixedKey, value, timeout, timeUnit);
-        } else {
-            redisTemplate.opsForValue().set(prefixedKey, value);
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T get(String key) {
-        return (T) redisTemplate.opsForValue().get(generateKey(key));
-    }
-
-    @Override
-    public <T> T get(String key, Class<T> type) {
-        return castValue(redisTemplate.opsForValue().get(generateKey(key)), type, key);
-    }
+    // ==================== Atomic Operations ====================
 
     @Override
     public <T> Boolean setIfAbsent(String key, T value) {
@@ -196,7 +208,7 @@ public class RedisCacheImpl implements RedisCache {
         return redisTemplate.opsForValue().decrement(generateKey(key), delta);
     }
 
-    // ==================== Bitmap 操作 ====================
+    // ==================== Bitmap Operations ====================
 
     @Override
     public Boolean setBit(String key, long offset, boolean value) {
@@ -211,26 +223,10 @@ public class RedisCacheImpl implements RedisCache {
     @Override
     public Long bitCount(String key) {
         return redisTemplate.execute((RedisCallback<Long>) connection ->
-                connection.bitCount(generateKey(key).getBytes(StandardCharsets.UTF_8)));
+                connection.stringCommands().bitCount(generateKey(key).getBytes(StandardCharsets.UTF_8)));
     }
 
-    @Override
-    public <T> Map<String, T> multiGet(Collection<String> keys) {
-        return multiGetInternal(keys, null);
-    }
-
-    @Override
-    public <T> Map<String, T> multiGet(Collection<String> keys, Class<T> type) {
-        return multiGetInternal(keys, type);
-    }
-
-    @Override
-    public <T> void multiSet(Map<String, T> map) {
-        BizRequire.notEmpty(map, "批量缓存数据不能为空");
-        Map<String, Object> prefixedMap = new HashMap<>(map.size());
-        map.forEach((k, v) -> prefixedMap.put(generateKey(k), v));
-        redisTemplate.opsForValue().multiSet(prefixedMap);
-    }
+    // ==================== Distributed Lock ====================
 
     @Override
     public Boolean tryLock(String key, String value, long timeout, TimeUnit timeUnit) {
@@ -255,6 +251,28 @@ public class RedisCacheImpl implements RedisCache {
     public Boolean unlockIfValueMatches(String key, String expectedValue) {
         return unlock(key, expectedValue);
     }
+
+    // ==================== Batch Operations ====================
+
+    @Override
+    public <T> Map<String, T> multiGet(Collection<String> keys) {
+        return multiGetInternal(keys, null);
+    }
+
+    @Override
+    public <T> Map<String, T> multiGet(Collection<String> keys, Class<T> type) {
+        return multiGetInternal(keys, type);
+    }
+
+    @Override
+    public <T> void multiSet(Map<String, T> map) {
+        BizRequire.notEmpty(map, "批量缓存数据不能为空");
+        Map<String, Object> prefixedMap = new HashMap<>(map.size());
+        map.forEach((k, v) -> prefixedMap.put(generateKey(k), v));
+        redisTemplate.opsForValue().multiSet(prefixedMap);
+    }
+
+    // ==================== Hash Operations ====================
 
     @Override
     public <T> void hashPut(String key, String hashKey, T value) {
@@ -307,6 +325,8 @@ public class RedisCacheImpl implements RedisCache {
         return redisTemplate.opsForHash().increment(generateKey(key), hashKey, delta);
     }
 
+    // ==================== List Operations ====================
+
     @Override
     public <T> Long listPush(String key, T value) {
         return redisTemplate.opsForList().rightPush(generateKey(key), value);
@@ -338,6 +358,8 @@ public class RedisCacheImpl implements RedisCache {
         return redisTemplate.opsForList().size(generateKey(key));
     }
 
+    // ==================== Set Operations ====================
+
     @Override
     @SafeVarargs
     public final <T> Boolean setAdd(String key, T... values) {
@@ -365,6 +387,8 @@ public class RedisCacheImpl implements RedisCache {
     public Long setSize(String key) {
         return redisTemplate.opsForSet().size(generateKey(key));
     }
+
+    // ==================== ZSet (Sorted Set) Operations ====================
 
     @Override
     public <T> Boolean zsetAdd(String key, double score, T value) {
@@ -398,6 +422,8 @@ public class RedisCacheImpl implements RedisCache {
         return redisTemplate.opsForZSet().size(generateKey(key));
     }
 
+    // ==================== Lua Script & Scan ====================
+
     @Override
     public Long executeLuaScript(DefaultRedisScript<Long> script, List<String> keys, Object... args) {
         return redisTemplate.execute(script, keys, args);
@@ -407,7 +433,7 @@ public class RedisCacheImpl implements RedisCache {
     public Set<String> keys(String pattern) {
         Set<String> rawKeys = redisTemplate.execute((RedisCallback<Set<String>>) connection -> {
             Set<String> keysTmp = new HashSet<>();
-            try (Cursor<byte[]> cursor = connection.scan(ScanOptions.scanOptions()
+            try (Cursor<byte[]> cursor = connection.keyCommands().scan(ScanOptions.scanOptions()
                     .match(pattern).count(1000).build())) {
                 while (cursor.hasNext()) {
                     keysTmp.add(new String(cursor.next(), StandardCharsets.UTF_8));
@@ -424,13 +450,5 @@ public class RedisCacheImpl implements RedisCache {
         return rawKeys.stream()
                 .map(this::stripPrefix)
                 .collect(Collectors.toSet());
-    }
-
-    private String stripPrefix(String key) {
-        if (keyPrefix.isEmpty()) {
-            return key;
-        }
-        String prefixWithColon = keyPrefix + ":";
-        return key.startsWith(prefixWithColon) ? key.substring(prefixWithColon.length()) : key;
     }
 }

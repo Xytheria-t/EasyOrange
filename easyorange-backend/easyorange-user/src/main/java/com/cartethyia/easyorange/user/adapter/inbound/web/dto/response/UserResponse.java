@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.user.application.dto;
+package com.cartethyia.easyorange.user.adapter.inbound.web.dto.response;
 
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserVO {
+public class UserResponse implements CommonUserFields {
 
     private Long userId;
 

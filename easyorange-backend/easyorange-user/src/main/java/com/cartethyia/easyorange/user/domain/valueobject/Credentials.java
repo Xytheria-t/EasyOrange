@@ -4,8 +4,8 @@ import java.util.Objects;
 
 public record Credentials(String username, String encodedPassword) {
     public Credentials {
-        Objects.requireNonNull(username, "username must not be null");
-        Objects.requireNonNull(encodedPassword, "password must not be null");
+        Objects.requireNonNull(username, "用户名不能为空");
+        Objects.requireNonNull(encodedPassword, "密码不能为空");
     }
 
     public Credentials changePassword(String newEncodedPassword) {

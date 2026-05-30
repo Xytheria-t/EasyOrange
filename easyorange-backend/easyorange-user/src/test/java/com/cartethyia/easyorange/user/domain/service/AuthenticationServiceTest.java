@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
-import com.cartethyia.easyorange.user.domain.valueobject.LoginCommand;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -76,7 +76,7 @@ class AuthenticationServiceTest {
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
             when(userRepository.update(any(User.class))).thenReturn(true);
 
-            User result = service.authenticate(new LoginCommand.PasswordLogin(ACCOUNT, PASSWORD), CLIENT_IP);
+            User result = service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
@@ -91,7 +91,7 @@ class AuthenticationServiceTest {
             doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCommand.PasswordLogin(ACCOUNT, PASSWORD), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
@@ -108,7 +108,7 @@ class AuthenticationServiceTest {
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(false);
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCommand.PasswordLogin(ACCOUNT, PASSWORD), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
@@ -130,7 +130,7 @@ class AuthenticationServiceTest {
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCommand.PasswordLogin(ACCOUNT, PASSWORD), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账户已被禁用");
 
@@ -154,7 +154,7 @@ class AuthenticationServiceTest {
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
             when(userRepository.update(any(User.class))).thenReturn(true);
 
-            User result = service.authenticate(new LoginCommand.SmsLogin(phone, verifyCode), CLIENT_IP);
+            User result = service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
@@ -170,7 +170,7 @@ class AuthenticationServiceTest {
             doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCommand.SmsLogin(phone, verifyCode), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
@@ -191,7 +191,7 @@ class AuthenticationServiceTest {
             doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCommand.SmsLogin(phone, verifyCode), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 

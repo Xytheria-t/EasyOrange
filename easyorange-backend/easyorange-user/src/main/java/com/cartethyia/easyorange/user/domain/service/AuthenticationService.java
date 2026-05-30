@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import com.cartethyia.easyorange.user.domain.valueobject.LoginCommand;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
@@ -18,12 +18,12 @@ public class AuthenticationService {
     private final LoginSecurityService loginSecurityService;
     private final SmsCodeService smsCodeService;
 
-    public User authenticate(LoginCommand command, String clientIp) {
-        return switch (command) {
-            case LoginCommand.PasswordLogin cmd ->
-                authenticateByPassword(cmd.identifier(), cmd.password(), clientIp);
-            case LoginCommand.SmsLogin cmd ->
-                authenticateBySms(cmd.phone(), cmd.verifyCode(), clientIp);
+    public User authenticate(LoginCredential credential, String clientIp) {
+        return switch (credential) {
+            case LoginCredential.Password(String identifier, String password) ->
+                authenticateByPassword(identifier, password, clientIp);
+            case LoginCredential.Sms(String phone, String verifyCode) ->
+                authenticateBySms(phone, verifyCode, clientIp);
         };
     }
 

@@ -36,8 +36,8 @@ public class User {
     }
 
     public static User create(String username, String encodedPassword) {
-        Objects.requireNonNull(username, "username must not be null");
-        Objects.requireNonNull(encodedPassword, "password must not be null");
+        Objects.requireNonNull(username, "用户名不能为空");
+        Objects.requireNonNull(encodedPassword, "密码不能为空");
 
         return User.builder()
             .credentials(new Credentials(username, encodedPassword))
@@ -50,7 +50,7 @@ public class User {
     }
 
     public User assignId(Long id) {
-        Objects.requireNonNull(id, "id must not be null");
+        Objects.requireNonNull(id, "用户ID不能为空");
 
         return this.toBuilder()
             .id(id)
@@ -96,7 +96,7 @@ public class User {
     }
 
     public User changeAvatar(String avatarUrl, Long operatorId) {
-        Objects.requireNonNull(avatarUrl, "avatarUrl must not be null");
+        Objects.requireNonNull(avatarUrl, "头像地址不能为空");
 
         return this.toBuilder()
             .personalInfo(this.personalInfo.withAvatar(avatarUrl))
@@ -105,7 +105,7 @@ public class User {
     }
 
     public User changePassword(String encodedNewPassword, Long operatorId) {
-        Objects.requireNonNull(encodedNewPassword, "password must not be null");
+        Objects.requireNonNull(encodedNewPassword, "新密码不能为空");
 
         return this.toBuilder()
             .credentials(this.credentials.changePassword(encodedNewPassword))

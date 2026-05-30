@@ -132,7 +132,6 @@ admin → framework, common, user (optional), product (optional), order (optiona
 
 ## 已知问题
 
-- **AdminDashboardService.getDescription()**: `ProductStatus` 枚举无 `getDescription()` 方法，已修复为 `getDesc()`
 - **framework 集成测试**: `RedisCacheImplIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
 
 ## 错误码规范
@@ -181,7 +180,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - 数据库变更必须通过 Flyway 迁移脚本
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，在 `PageResult` 基础上增加 `facets` 分面桶列表）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
-- **测试统计**：后端 11 模块合计 1,292 测试用例，全部通过；前端 98 测试文件/947 测试用例
+- **测试统计**：后端 11 模块合计 2,546 测试用例，全部通过；前端 98 测试文件/947 测试用例
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/`
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效

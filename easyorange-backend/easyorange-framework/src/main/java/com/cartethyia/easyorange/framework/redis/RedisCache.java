@@ -10,6 +10,8 @@ import java.util.concurrent.TimeUnit;
 
 public interface RedisCache {
 
+    // ==================== Basic KV Operations ====================
+
     <T> void set(String key, T value);
 
     <T> void set(String key, T value, long timeout, TimeUnit timeUnit);
@@ -18,15 +20,7 @@ public interface RedisCache {
 
     <T> T get(String key, Class<T> type);
 
-    // ==================== Bitmap 操作 ====================
-
-    Boolean setBit(String key, long offset, boolean value);
-
-    Boolean getBit(String key, long offset);
-
-    Long bitCount(String key);
-
-    // ==================== Key 生命周期 ====================
+    // ==================== Key Lifecycle ====================
 
     Boolean expire(String key, long timeout, TimeUnit timeUnit);
 
@@ -37,6 +31,8 @@ public interface RedisCache {
     boolean delete(String key);
 
     Long delete(Collection<String> keys);
+
+    // ==================== Atomic Operations ====================
 
     <T> Boolean setIfAbsent(String key, T value);
 
@@ -50,17 +46,31 @@ public interface RedisCache {
 
     Long decrement(String key, long delta);
 
-    <T> Map<String, T> multiGet(Collection<String> keys);
+    // ==================== Bitmap Operations ====================
 
-    <T> Map<String, T> multiGet(Collection<String> keys, Class<T> type);
+    Boolean setBit(String key, long offset, boolean value);
 
-    <T> void multiSet(Map<String, T> map);
+    Boolean getBit(String key, long offset);
+
+    Long bitCount(String key);
+
+    // ==================== Distributed Lock ====================
 
     Boolean tryLock(String key, String value, long timeout, TimeUnit timeUnit);
 
     Boolean unlock(String key, Object value);
 
     Boolean unlockIfValueMatches(String key, String expectedValue);
+
+    // ==================== Batch Operations ====================
+
+    <T> Map<String, T> multiGet(Collection<String> keys);
+
+    <T> Map<String, T> multiGet(Collection<String> keys, Class<T> type);
+
+    <T> void multiSet(Map<String, T> map);
+
+    // ==================== Hash Operations ====================
 
     <T> void hashPut(String key, String hashKey, T value);
 
@@ -80,6 +90,8 @@ public interface RedisCache {
 
     Long hashIncrement(String key, String hashKey, long delta);
 
+    // ==================== List Operations ====================
+
     <T> Long listPush(String key, T value);
 
     <T> Long listPushLeft(String key, T value);
@@ -92,6 +104,8 @@ public interface RedisCache {
 
     Long listSize(String key);
 
+    // ==================== Set Operations ====================
+
     <T> Boolean setAdd(String key, T... values);
 
     <T> Set<T> setMembers(String key, Class<T> type);
@@ -101,6 +115,8 @@ public interface RedisCache {
     Long setRemove(String key, Object... values);
 
     Long setSize(String key);
+
+    // ==================== ZSet (Sorted Set) Operations ====================
 
     <T> Boolean zsetAdd(String key, double score, T value);
 
@@ -113,6 +129,8 @@ public interface RedisCache {
     Long zsetRemove(String key, Object... values);
 
     Long zsetSize(String key);
+
+    // ==================== Lua Script & Scan ====================
 
     Long executeLuaScript(DefaultRedisScript<Long> script, List<String> keys, Object... args);
 

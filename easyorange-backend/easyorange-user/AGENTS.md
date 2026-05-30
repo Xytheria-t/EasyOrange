@@ -8,22 +8,25 @@
 user/
 ├── adapter/
 │   ├── inbound/web/
+│   │   ├── assembler/
+│   │   │   └── UserAssembler.java       # Domain ↔ Response DTO 转换（含脱敏、枚举转码）
 │   │   ├── controller/
 │   │   │   ├── AuthController.java          # 认证端点 (登录/注册/刷新/登出)
-│   │   │   ├── UserController.java          # 用户信息端点
-│   │   ├── dto/request/                 # 入站 DTO
-│   │   │   ├── auth/                    # 认证相关
-│   │   │   │   ├── LoginRequest.java
+│   │   │   └── UserController.java          # 用户信息端点
+│   │   ├── dto/request/                 # 入站 DTO（Jakarta Bean Validation）
+│   │   │   ├── auth/                    # 认证 + 密码管理
+│   │   │   │   ├── PasswordLoginRequest.java
+│   │   │   │   ├── SmsLoginRequest.java
 │   │   │   │   ├── RegisterRequest.java
-│   │   │   │   └── RefreshTokenRequest.java
-│   │   │   ├── password/                # 密码管理
+│   │   │   │   ├── RefreshTokenRequest.java
 │   │   │   │   ├── ForgotPasswordRequest.java
 │   │   │   │   └── ChangePasswordRequest.java
 │   │   │   └── profile/                 # 用户资料
 │   │   │       └── UpdateUserRequest.java
 │   │   ├── dto/response/                # 出站 DTO
 │   │   │   ├── UserResponse.java
-│   │   │   └── UserProfileResponse.java
+│   │   │   ├── UserProfileResponse.java
+│   │   │   └── LoginResult.java
 │   │   └── validation/                  # 自定义校验（纯格式校验，无 I/O 副作用）
 │   │       ├── Password.java + PasswordValidator.java
 │   │       ├── Phone.java + PhoneValidator.java
@@ -42,22 +45,9 @@ user/
 │       └── storage/                     # 存储适配器
 │           └── LocalAvatarFileStorage.java
 ├── application/
-│   ├── dto/                             # 应用层 DTO（assembler/service/controller 共用）
-│   │   ├── UserResponse.java
-│   │   └── UserProfileResponse.java
-│   ├── service/                         # 应用服务
-│   │   ├── auth/
-│   │   │   ├── RegisterAppService.java
-│   │   │   ├── LoginAppService.java
-│   │   │   └── ForgotPasswordAppService.java
-│   │   ├── profile/
-│   │   │   └── ProfileAppService.java
-│   │   ├── password/
-│   │   │   └── ChangePasswordAppService.java
-│   │   └── verification/
-│   │       └── SmsCodeAppService.java
-│   └── assembler/
-│       └── UserAssembler.java           # DTO 组装
+│   └── service/                         # 应用服务（薄编排，不碰响应格式）
+│       ├── AuthAppService.java          # 认证+密码管理（注册/登录/登出/刷新/忘记密码/修改密码）
+│       └── ProfileAppService.java       # 用户资料（信息/更新/头像）
 ├── domain/
 │   ├── aggregate/
 │   │   └── User.java                    # 用户聚合根
@@ -130,40 +120,28 @@ PersonalInfo empty = PersonalInfo.empty();
 | Mapper | 方向 | 位置 | 说明 |
 |--------|------|------|------|
 | `UserEntityMapper` | Entity ↔ Domain | `adapter/outbound/persistence/` | 扁平字段 ↔ 嵌套值对象（record 构造） |
-| `UserAssembler` | Domain ↔ Response | `application/assembler/` | 聚合根 ↔ 应用层 DTO（含脱敏、枚举转码） |
+| `UserAssembler` | Domain ↔ Response | `adapter/inbound/web/assembler/` | 聚合根 ↔ 响应 DTO（含脱敏、枚举转码） |
 
 `UserEntity` 是纯数据库实体，不含任何 `toDomain()` / `from()` 方法。所有持久化映射逻辑集中在 `UserEntityMapper`。
 
 ### 登录策略模式
 
-`LoginMethod` 枚举定义登录方式（密码/短信），`LoginRequest.toCommand()` 根据登录方式将请求 DTO 转换为 `LoginCommand` 密封接口的对应子类型（`PasswordLogin` / `SmsLogin`），`LoginAppService` 通过模式匹配分发到 `AuthenticationService` 的认证方法。Controller 层不感知 Command 构建细节。
+每种登录方式使用独立的请求 DTO 和 REST 端点，DTO 各自封装自己的 `toCredential()` 方法转换为 `LoginCredential` 密封接口的对应子类型（`Password` / `Sms`）。`AuthAppService` 委托 `AuthenticationService` 进行认证，Controller 层负责调用 `UserAssembler` + `TokenService` 组装响应。
 
 ```java
-// LoginRequest - adapter 层负责 DTO → Command 转换
-public LoginCommand toCommand() {
-    return switch (getEffectiveLoginMethod()) {
-        case PASSWORD -> new LoginCommand.PasswordLogin(account, credential);
-        case SMS -> {
-            requirePhoneFormat(account);
-            yield new LoginCommand.SmsLogin(account, credential);
-        }
-    };
+// AuthController - 编排 + 组装
+@PostMapping("/login")
+public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request) {
+    User user = authAppService.login(request.toCredential());
+    String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), ...);
+    String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), ...);
+    return Result.success(userAssembler.toLoginResult(user, accessToken, refreshToken));
 }
 
-private static void requirePhoneFormat(String phone) {
-    BizRequire.require(
-        UserConstant.PHONE_PATTERN.matcher(phone).matches(),
-        "手机号格式不正确"
-    );
+// AuthAppService - 只编排，不格式化
+public User login(LoginCredential credential) {
+    return authenticationService.authenticate(credential, RequestUtil.getClientIp());
 }
-
-// LoginAppService - application 层通过密封类模式匹配分发
-User user = switch (command) {
-    case LoginCommand.PasswordLogin cmd ->
-        authenticationService.authenticateByPassword(cmd.identifier(), cmd.password(), clientIp);
-    case LoginCommand.SmsLogin cmd ->
-        authenticationService.authenticateBySms(cmd.phone(), cmd.verifyCode(), clientIp);
-};
 ```
 
 ### 出站端口隔离
@@ -204,19 +182,20 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 3. 创建 Flyway 迁移脚本
 4. 更新 `UserEntity`（新增字段）
 5. 更新 `UserEntityMapper`（toDomain 使用 `ImmutableXxx.builder()` / from 使用 getter）
-6. 更新 `application/dto/UserResponse` / `UpdateUserRequest`
-7. 更新 `UserAssembler`（如需 MapStruct 显式映射）
+6. 更新 `adapter/inbound/web/dto/response/UserResponse` / `UpdateUserRequest`
+7. 更新 `adapter/inbound/web/assembler/UserAssembler`（如需 MapStruct 显式映射）
 8. 更新 `User` 聚合根的相关修改方法
 9. 添加测试
 
 ### 添加新登录方式
 
 1. `LoginMethod` 枚举新增值
-2. `LoginCommand` 密封接口新增 record 子类型（含认证所需参数）
-3. `LoginRequest.toCommand()` 新增 case 分支（DTO → Command 转换 + 参数校验）
-4. `LoginAppService.login()` 的 switch 新增 case 分支（Command → 认证分发）
-5. `AuthenticationService` 添加对应认证逻辑
-6. 添加测试
+2. `LoginCredential` 密封接口新增 record 子类型（含认证所需参数）
+3. 新建 `XxxLoginRequest` DTO（独立端点 + `toCredential()`，如 `PasswordLoginRequest`、`SmsLoginRequest`）
+4. `AuthController` 添加 `POST /api/auth/xxx-login` 端点（调 authAppService + 组装响应）
+5. `AuthAppService.login()` 委托 `AuthenticationService`（无需额外分发逻辑）
+6. `AuthenticationService` 添加对应认证逻辑
+7. 添加测试
 
 ### 添加新领域事件
 

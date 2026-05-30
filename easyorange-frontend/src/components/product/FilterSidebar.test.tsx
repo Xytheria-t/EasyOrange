@@ -120,7 +120,6 @@ describe('FilterSidebar', () => {
       conditions: [],
       priceMin: undefined,
       priceMax: undefined,
-      sort: 'newest',
     });
     expect(onClose).toHaveBeenCalled();
   });
