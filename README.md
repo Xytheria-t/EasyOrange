@@ -572,8 +572,9 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 - 升级 Vite 8 构建工具
 - 添加 Playwright E2E 测试
 
-### v0.0.1 (2024-03)
-- 初始版本发布
+### v0.0.1 (2025-11)
+- 项目初始化
+- 基础架构搭建（Spring Boot 4 + React 19）
 - 用户注册/登录功能
 - 商品发布和浏览
 - 订单管理系统
