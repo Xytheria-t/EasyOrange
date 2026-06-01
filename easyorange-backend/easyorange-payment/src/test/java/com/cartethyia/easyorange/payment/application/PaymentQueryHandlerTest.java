@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
-import com.cartethyia.easyorange.payment.application.query.PaymentView;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
@@ -49,11 +48,11 @@ class PaymentQueryHandlerTest {
             PaymentAggregate aggregate = createTestAggregate(1001L, "PAY123", PaymentStatus.SUCCESS);
             when(paymentQueryRepository.findAggregateById(1001L)).thenReturn(Optional.of(aggregate));
 
-            PaymentView view = queryHandler.getPaymentById(1001L);
+            PaymentAggregate result = queryHandler.getPaymentById(1001L);
 
-            assertThat(view.getId()).isEqualTo(1001L);
-            assertThat(view.getPaymentNo()).isEqualTo("PAY123");
-            assertThat(view.getStatus()).isEqualTo(PaymentStatus.SUCCESS.getCode());
+            assertThat(result.id()).isEqualTo(1001L);
+            assertThat(result.paymentNo()).isEqualTo("PAY123");
+            assertThat(result.status()).isEqualTo(PaymentStatus.SUCCESS);
         }
 
         @Test
@@ -76,9 +75,9 @@ class PaymentQueryHandlerTest {
             PaymentAggregate aggregate = createTestAggregate(1001L, "PAY123", PaymentStatus.PENDING);
             when(paymentQueryRepository.findAggregateByOrderId(2001L)).thenReturn(Optional.of(aggregate));
 
-            PaymentView view = queryHandler.getPaymentByOrderId(2001L);
+            PaymentAggregate result = queryHandler.getPaymentByOrderId(2001L);
 
-            assertThat(view.getOrderId()).isEqualTo(2001L);
+            assertThat(result.orderId()).isEqualTo(2001L);
         }
     }
 }

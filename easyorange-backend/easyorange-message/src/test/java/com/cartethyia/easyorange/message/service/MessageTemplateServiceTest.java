@@ -200,24 +200,22 @@ class MessageTemplateServiceTest {
 
         @Test
         @DisplayName("新增模板")
-        void insertTemplate_savesAndReturns1() {
+        void insertTemplate_saves() {
             MessageTemplateAggregate template = MessageTemplateAggregate.create(
                     "code1", "name1", "SYSTEM", "t", "c", null, null);
 
-            int result = templateService.insertTemplate(template);
+            templateService.insertTemplate(template);
 
-            assertThat(result).isEqualTo(1);
             verify(messageTemplateRepository).save(template);
         }
 
         @Test
         @DisplayName("更新模板")
-        void updateTemplate_updatesAndReturns1() {
+        void updateTemplate_updates() {
             MessageTemplateAggregate template = buildTemplate(1L, "code1", "name1", "SYSTEM", "t", "c", null, 1);
 
-            int result = templateService.updateTemplate(template);
+            templateService.updateTemplate(template);
 
-            assertThat(result).isEqualTo(1);
             verify(messageTemplateRepository).update(template);
         }
 

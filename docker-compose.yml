@@ -2,6 +2,7 @@ services:
   mysql:
     image: mysql:8.4
     container_name: easyorange-mysql
+    hostname: easyorange-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123456}
@@ -36,8 +37,14 @@ services:
   redis:
     image: redis:7.4-alpine
     container_name: easyorange-redis
+    hostname: easyorange-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD:-easyorange123}
     ports:
       - "6379:6379"
     volumes:
@@ -45,46 +52,48 @@ services:
     networks:
       - easyorange-net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-easyorange123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     deploy:
       resources:
         limits:
           cpus: '1'
           memory: 512M
 
-  elasticsearch:
-    build: ./docker/elasticsearch
-    container_name: easyorange-es
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: easyorange-rabbitmq
+    hostname: easyorange-rabbitmq
     restart: unless-stopped
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - TZ=Asia/Shanghai
+      RABBITMQ_DEFAULT_USER: easyorange
+      RABBITMQ_DEFAULT_PASS: easyorange123
     ports:
-      - "9200:9200"
+      - "5672:5672"
+      - "15672:15672"
     volumes:
-      - es-data:/usr/share/elasticsearch/data
-    networks:
-      - easyorange-net
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\\|\"status\":\"yellow\"'"]
-      interval: 30s
-      timeout: 10s
-      start_period: 60s
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
       retries: 5
+      start_period: 15s
     deploy:
       resources:
         limits:
-          memory: 1G
+          cpus: '1'
+          memory: 512M
+    networks:
+      - easyorange-net
 
 volumes:
   mysql-data:
   redis-data:
-  es-data:
+  rabbitmq-data:
 
 networks:
   easyorange-net:

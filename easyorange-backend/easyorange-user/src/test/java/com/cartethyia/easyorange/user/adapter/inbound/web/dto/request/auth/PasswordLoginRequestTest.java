@@ -21,9 +21,9 @@ class PasswordLoginRequestTest {
     }
 
     @Test
-    @DisplayName("account should be @NotBlank")
-    void accountNotBlank() {
-        var violations = validator.validateValue(PasswordLoginRequest.class, "account", "");
+    @DisplayName("identifier should be @NotBlank")
+    void identifierNotBlank() {
+        var violations = validator.validateValue(PasswordLoginRequest.class, "identifier", "");
         assertThat(violations).isNotEmpty();
         assertThat(violations.iterator().next().getMessage()).isEqualTo("账号不能为空");
     }

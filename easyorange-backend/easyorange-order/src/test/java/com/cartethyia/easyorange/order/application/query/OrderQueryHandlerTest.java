@@ -112,10 +112,7 @@ class OrderQueryHandlerTest {
         when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(pageResult);
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail));
 
-        QueryOrderRequest request = new QueryOrderRequest();
-        request.setPageNum(1);
-        request.setPageSize(10);
-        PageResult<OrderVO> result = handler.handle(request);
+        PageResult<OrderVO> result = handler.handle(null, null, null, null, 1, 10);
 
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
@@ -128,10 +125,7 @@ class OrderQueryHandlerTest {
         PageResult<OrderReadModel> emptyPage = PageResult.of(List.of(), 0L, 1, 10);
         when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(emptyPage);
 
-        QueryOrderRequest request = new QueryOrderRequest();
-        request.setPageNum(1);
-        request.setPageSize(10);
-        PageResult<OrderVO> result = handler.handle(request);
+        PageResult<OrderVO> result = handler.handle(null, null, null, null, 1, 10);
 
         assertThat(result).isNotNull();
         assertThat(result.records()).isEmpty();

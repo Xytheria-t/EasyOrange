@@ -1,15 +1,13 @@
 package com.cartethyia.easyorange.favorite.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.assembler.FavoriteAssembler;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.controller.FavoriteController;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchCheckRequest;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchRemoveRequest;
-import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.response.FavoriteResponse;
 import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
-import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
+import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,12 +15,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,27 +30,25 @@ class FavoriteControllerTest {
     @Mock
     private FavoriteService favoriteService;
 
+    @Mock
+    private FavoriteAssembler favoriteAssembler;
+
     @InjectMocks
     private FavoriteController favoriteController;
 
     @Test
     @DisplayName("获取收藏列表成功")
     void testGetFavorites() {
-        FavoriteVO favoriteVO = FavoriteVO.builder()
-                .id(1L)
-                .productId(2001L)
-                .product(ProductDetailInfo.builder()
-                        .id(2001L)
-                        .title("测试商品")
-                        .price(new BigDecimal("99.99"))
-                        .build())
-                .build();
+        Favorite favorite = Favorite.reconstitute(1L, 1001L, 2001L, null);
+        PageResult<Favorite> pageResult = PageResult.of(List.of(favorite), 1L, 1, 10);
 
-        PageResult<FavoriteVO> pageResult = PageResult.of(
-                List.of(favoriteVO), 1L, 1, 10
-        );
+        FavoriteResponse favoriteResponse = FavoriteResponse.builder()
+                .id(1L).productId(2001L).build();
+        PageResult<FavoriteResponse> responsePageResult = PageResult.of(
+                List.of(favoriteResponse), 1L, 1, 10);
 
-        when(favoriteService.queryFavorites(any(FavoritePageQuery.class))).thenReturn(pageResult);
+        when(favoriteService.queryFavorites(1, 10)).thenReturn(pageResult);
+        when(favoriteAssembler.toPageResult(pageResult, 1, 10)).thenReturn(responsePageResult);
 
         var result = favoriteController.getFavorites(1, 10);
 
@@ -61,32 +57,31 @@ class FavoriteControllerTest {
         assertThat(result.data().total()).isEqualTo(1L);
         assertThat(result.data().records().get(0).getId()).isEqualTo(1L);
         assertThat(result.data().records().get(0).getProductId()).isEqualTo(2001L);
-        assertThat(result.data().records().get(0).getProduct().title()).isEqualTo("测试商品");
-        verify(favoriteService).queryFavorites(any(FavoritePageQuery.class));
+        verify(favoriteService).queryFavorites(1, 10);
     }
 
     @Test
     @DisplayName("添加收藏成功")
     void testAddFavorite() {
-        doNothing().when(favoriteService).addFavorite(any(AddFavoriteDTO.class));
+        doNothing().when(favoriteService).addFavorite(anyLong());
 
         var result = favoriteController.addFavorite(2001L);
 
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isTrue();
-        verify(favoriteService).addFavorite(any(AddFavoriteDTO.class));
+        verify(favoriteService).addFavorite(2001L);
     }
 
     @Test
     @DisplayName("移除收藏成功")
     void testRemoveFavorite() {
-        doNothing().when(favoriteService).removeFavorite(any(RemoveFavoriteDTO.class));
+        doNothing().when(favoriteService).removeFavorite(anyLong());
 
         var result = favoriteController.removeFavorite(2001L);
 
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isTrue();
-        verify(favoriteService).removeFavorite(any(RemoveFavoriteDTO.class));
+        verify(favoriteService).removeFavorite(2001L);
     }
 
     @Test

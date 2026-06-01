@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("OrderStatus 枚举单元测试")
 class OrderStatusTest {
@@ -29,10 +30,13 @@ class OrderStatusTest {
     }
 
     @Test
-    void fromCode_withInvalidCode_shouldReturnNull() {
-        assertThat(OrderStatus.fromCode(-1)).isNull();
-        assertThat(OrderStatus.fromCode(99)).isNull();
-        assertThat(OrderStatus.fromCode(null)).isNull();
+    void fromCode_withInvalidCode_shouldThrow() {
+        assertThatThrownBy(() -> OrderStatus.fromCode(-1))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> OrderStatus.fromCode(99))
+            .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> OrderStatus.fromCode(null))
+            .isInstanceOf(IllegalArgumentException.class);
     }
 
     @ParameterizedTest

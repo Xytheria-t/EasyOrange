@@ -63,7 +63,7 @@ class UserTest {
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "oldEncodedPassword"))
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
 
             User updatedUser = user.changePassword("newEncodedPassword", 1L);
@@ -79,7 +79,7 @@ class UserTest {
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "firstPassword"))
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
 
             User secondUser = user.changePassword("secondPassword", 1L);
@@ -94,7 +94,7 @@ class UserTest {
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "oldPassword"))
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
 
             assertThatThrownBy(() -> user.changePassword(null, 1L))
@@ -113,7 +113,7 @@ class UserTest {
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "password"))
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
 
             User updatedUser = user.recordLogin("192.168.1.1");
@@ -129,7 +129,7 @@ class UserTest {
             User user = User.builder()
                 .id(1L)
                 .credentials(new Credentials("testuser", "password"))
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
 
             User firstLogin = user.recordLogin("10.0.0.1");
@@ -218,8 +218,8 @@ class UserTest {
     }
 
     @Nested
-    @DisplayName("isNormal")
-    class IsNormalTests {
+    @DisplayName("isEnabled")
+    class IsEnabledTests {
 
         @Test
         @DisplayName("正常状态用户应返回 true")
@@ -228,7 +228,7 @@ class UserTest {
                 .status(UserStatus.NORMAL)
                 .build();
 
-            assertThat(user.isNormal()).isTrue();
+            assertThat(user.isEnabled()).isTrue();
         }
 
         @Test
@@ -238,7 +238,7 @@ class UserTest {
                 .status(UserStatus.DISABLED)
                 .build();
 
-            assertThat(user.isNormal()).isFalse();
+            assertThat(user.isEnabled()).isFalse();
         }
     }
 

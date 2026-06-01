@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.application.service.SearchHistoryService;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
@@ -35,16 +34,12 @@ class ProductSearchHandlerTest {
     @Mock
     private ProductQueryRepository productQueryRepository;
 
-    @Mock
-    private SearchHistoryService searchHistoryService;
-
     private ProductSearchHandler searchHandler;
-
     private ProductReadModel testProduct;
 
     @BeforeEach
     void setUp() {
-        searchHandler = new ProductSearchHandler(productQueryRepository, searchHistoryService, Optional.empty());
+        searchHandler = new ProductSearchHandler(productQueryRepository, Optional.empty());
 
         testProduct = new ProductReadModel(
                 1L, 10L, "卖家", null, 2L, "分类",
@@ -128,26 +123,26 @@ class ProductSearchHandlerTest {
     }
 
     @Test
-    @DisplayName("清除搜索历史应委托给 service")
-    void clearMySearchHistory_shouldDelegateToService() {
+    @DisplayName("清除搜索历史应委托给 ProductQueryRepository")
+    void clearMySearchHistory_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             searchHandler.clearMySearchHistory();
 
-            verify(searchHistoryService).clearSearchHistory(1L);
+            verify(productQueryRepository).clearSearchHistory(1L);
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
-    @DisplayName("删除单条搜索历史应委托给 service")
-    void deleteSearchHistory_shouldDelegateToService() {
+    @DisplayName("删除单条搜索历史应委托给 ProductQueryRepository")
+    void deleteSearchHistory_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             searchHandler.deleteSearchHistory(100L);
 
-            verify(searchHistoryService).deleteSearchHistoryById(100L, 1L);
+            verify(productQueryRepository).deleteSearchHistoryById(100L, 1L);
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -181,13 +176,13 @@ class ProductSearchHandlerTest {
     }
 
     @Test
-    @DisplayName("记录搜索应委托给 service")
-    void recordSearch_shouldDelegateToService() {
+    @DisplayName("记录搜索应委托给 ProductQueryRepository")
+    void recordSearch_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             searchHandler.recordSearch("手机");
 
-            verify(searchHistoryService).saveSearchHistory(1L, "手机");
+            verify(productQueryRepository).saveSearchHistory(1L, "手机");
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }

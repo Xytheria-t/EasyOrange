@@ -59,7 +59,7 @@ class AuthenticationServiceTest {
             .credentials(new Credentials(ACCOUNT, ENCODED_PW))
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
-            .loginInfo(LoginInfo.initial())
+            .loginInfo(LoginInfo.empty())
             .build();
     }
 
@@ -124,7 +124,7 @@ class AuthenticationServiceTest {
                 .id(USER_ID)
                 .credentials(new Credentials(ACCOUNT, ENCODED_PW))
                 .status(UserStatus.DISABLED)
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
             doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
@@ -186,7 +186,7 @@ class AuthenticationServiceTest {
                 .id(USER_ID)
                 .credentials(new Credentials(ACCOUNT, ENCODED_PW))
                 .status(UserStatus.DISABLED)
-                .loginInfo(LoginInfo.initial())
+                .loginInfo(LoginInfo.empty())
                 .build();
             doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
@@ -195,49 +195,6 @@ class AuthenticationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
-            verify(userRepository, never()).update(any());
-        }
-    }
-
-    @Nested
-    @DisplayName("resetPassword")
-    class ResetPasswordTests {
-
-        @Test
-        @DisplayName("重置密码成功")
-        void success() {
-            String phone = "13812345678";
-            String verifyCode = "123456";
-            String newPassword = "NewPass123";
-            User user = createNormalUser();
-
-            doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
-            when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
-            when(passwordEncoder.encode(newPassword)).thenReturn("$2a$10$newEncoded");
-            when(userRepository.update(any(User.class))).thenReturn(true);
-
-            Optional<User> result = service.resetPassword(phone, verifyCode, newPassword);
-
-            assertThat(result).isPresent();
-            assertThat(result.get().getPassword()).isEqualTo("$2a$10$newEncoded");
-            verify(smsCodeService).verifyCode(phone, verifyCode);
-            verify(passwordEncoder).encode(newPassword);
-            verify(userRepository).update(any(User.class));
-        }
-
-        @Test
-        @DisplayName("用户不存在时返回empty")
-        void userNotFound() {
-            String phone = "13812345678";
-            String verifyCode = "123456";
-            String newPassword = "NewPass123";
-
-            doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
-            when(userRepository.findByPhone(phone)).thenReturn(Optional.empty());
-
-            Optional<User> result = service.resetPassword(phone, verifyCode, newPassword);
-
-            assertThat(result).isEmpty();
             verify(userRepository, never()).update(any());
         }
     }

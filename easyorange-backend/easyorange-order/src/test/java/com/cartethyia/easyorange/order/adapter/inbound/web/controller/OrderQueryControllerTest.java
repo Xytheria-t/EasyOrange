@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
-import com.cartethyia.easyorange.order.application.query.QueryOrderRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -112,7 +111,7 @@ class OrderQueryControllerTest {
                     createOrderVO(101L, "ORD101", 1, "已付款")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 2L, 1, 10);
-            when(queryHandler.getMyOrders(any(QueryOrderRequest.class))).thenReturn(pageResult);
+            when(queryHandler.getMyOrders(any(), any(), any())).thenReturn(pageResult);
 
             mockMvc.perform(get("/api/orders/my")
                             .param("pageNum", "1")
@@ -131,7 +130,7 @@ class OrderQueryControllerTest {
         @DisplayName("无订单时应返回空分页")
         void getMyOrders_withNoData_shouldReturnEmptyPage() throws Exception {
             PageResult<OrderVO> emptyResult = PageResult.empty(1, 10);
-            when(queryHandler.getMyOrders(any(QueryOrderRequest.class))).thenReturn(emptyResult);
+            when(queryHandler.getMyOrders(any(), any(), any())).thenReturn(emptyResult);
 
             mockMvc.perform(get("/api/orders/my"))
                     .andExpect(status().isOk())
@@ -153,7 +152,7 @@ class OrderQueryControllerTest {
                     createOrderVO(100L, "ORD100", 2, "已发货")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
-            when(queryHandler.getSoldOrders(any(QueryOrderRequest.class))).thenReturn(pageResult);
+            when(queryHandler.getSoldOrders(any(), any(), any())).thenReturn(pageResult);
 
             mockMvc.perform(get("/api/orders/sold"))
                     .andExpect(status().isOk())
@@ -166,7 +165,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("无售出订单应返回空分页")
         void getSoldOrders_withNoData_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.getSoldOrders(any(QueryOrderRequest.class)))
+            when(queryHandler.getSoldOrders(any(), any(), any()))
                     .thenReturn(PageResult.empty(1, 10));
 
             mockMvc.perform(get("/api/orders/sold"))
@@ -187,7 +186,7 @@ class OrderQueryControllerTest {
                     createOrderVO(100L, "ORD100", 0, "待付款")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
-            when(queryHandler.handle(any(QueryOrderRequest.class))).thenReturn(pageResult);
+            when(queryHandler.handle(any(), any(), any(), any(), any(), any())).thenReturn(pageResult);
 
             mockMvc.perform(get("/api/orders/list")
                             .param("status", "0")
@@ -202,7 +201,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("无结果时应返回空分页")
         void queryOrders_withNoResults_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.handle(any(QueryOrderRequest.class)))
+            when(queryHandler.handle(any(), any(), any(), any(), any(), any()))
                     .thenReturn(PageResult.empty(1, 10));
 
             mockMvc.perform(get("/api/orders/list"))

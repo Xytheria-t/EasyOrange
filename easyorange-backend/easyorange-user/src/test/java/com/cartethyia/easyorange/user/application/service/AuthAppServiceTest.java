@@ -5,19 +5,17 @@ import com.cartethyia.easyorange.framework.service.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
-import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
+import com.cartethyia.easyorange.user.domain.service.PasswordManagementService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,11 +42,11 @@ class AuthAppServiceTest {
     @Mock
     private RegistrationService registrationService;
     @Mock
+    private PasswordManagementService passwordManagementService;
+    @Mock
     private TokenService tokenService;
     @Mock
     private UserRepository userRepository;
-    @Mock
-    private PasswordEncoderPort passwordEncoder;
 
     private AuthAppService service;
 
@@ -57,8 +55,8 @@ class AuthAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AuthAppService(authenticationService, registrationService, tokenService,
-            userRepository, passwordEncoder);
+        service = new AuthAppService(authenticationService, registrationService,
+            passwordManagementService, tokenService, userRepository);
     }
 
     @AfterEach
@@ -153,8 +151,8 @@ class AuthAppServiceTest {
         }
 
         @Test
-        @DisplayName("刷新Token成功 — 应返回新的 access + refresh token")
-        void refreshToken_success() {
+        @DisplayName("刷新Token — 应委托 tokenService 并返回结果")
+        void refreshToken() {
             String oldRefreshToken = "old-refresh-token";
             TokenRefreshResult mockResult = new TokenRefreshResult("new-access-token", "new-refresh-token");
             when(tokenService.refreshToken(oldRefreshToken)).thenReturn(mockResult);
@@ -169,109 +167,62 @@ class AuthAppServiceTest {
     }
 
     @Nested
-    @DisplayName("忘记密码")
-    class ForgotPassword {
+    @DisplayName("重置密码（忘记密码）")
+    class ResetPassword {
 
         @Test
-        @DisplayName("用户存在时重置密码成功")
-        void userExists() {
+        @DisplayName("应委托 PasswordManagementService 重置")
+        void shouldDelegate() {
             String phone = "13812345678";
             String verifyCode = "123456";
             String newPassword = "NewPass123";
 
-            User user = User.builder()
-                .id(1L)
-                .credentials(new Credentials("testuser", "encodedPassword"))
-                .build();
-            when(authenticationService.resetPassword(phone, verifyCode, newPassword))
-                .thenReturn(Optional.of(user));
+            service.resetPassword(phone, verifyCode, newPassword);
 
-            service.forgotPassword(phone, verifyCode, newPassword);
-
-            verify(authenticationService).resetPassword(phone, verifyCode, newPassword);
-        }
-
-        @Test
-        @DisplayName("用户不存在时不抛异常")
-        void userNotFound() {
-            String phone = "13812345678";
-            String verifyCode = "123456";
-            String newPassword = "NewPass123";
-
-            when(authenticationService.resetPassword(phone, verifyCode, newPassword))
-                .thenReturn(Optional.empty());
-
-            service.forgotPassword(phone, verifyCode, newPassword);
-
-            verify(authenticationService).resetPassword(phone, verifyCode, newPassword);
+            verify(passwordManagementService).resetPassword(phone, verifyCode, newPassword);
         }
     }
 
     @Nested
-    @DisplayName("修改密码")
+    @DisplayName("修改密码（已登录）")
     class ChangePassword {
 
         private User buildTestUser() {
             ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = ImmutablePersonalInfo.builder()
-                .realName("张三")
-                .sex(Sex.MALE)
-                .avatar("/avatar/old.png")
-                .build();
-
             return User.builder()
                 .id(USER_ID)
                 .credentials(new Credentials("testuser", "$2a$10$encoded"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
                 .contactInfo(contactInfo)
-                .personalInfo(personalInfo)
-                .loginInfo(LoginInfo.initial())
+                .personalInfo(ImmutablePersonalInfo.builder().nickName("testuser").build())
+                .loginInfo(LoginInfo.empty())
                 .build();
         }
 
         @Test
-        @DisplayName("应验证并更新密码")
-        void shouldValidateAndUpdatePassword() {
+        @DisplayName("应读取当前用户手机号并委托 PasswordManagementService")
+        void shouldDelegateWithPhoneFromCurrentUser() {
             TestSecurityUtil.setSecurityContext(USER_ID);
             User user = buildTestUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(passwordEncoder.matches("OldPassword123", "$2a$10$encoded")).thenReturn(true);
-            when(passwordEncoder.encode("NewPassword456")).thenReturn("$2a$10$newEncoded");
-            when(userRepository.update(any(User.class))).thenReturn(true);
 
-            service.changePassword("OldPassword123", "NewPassword456");
+            service.changePassword("123456", "NewPass123");
 
-            verify(passwordEncoder).matches("OldPassword123", "$2a$10$encoded");
-            verify(passwordEncoder).encode("NewPassword456");
-            verify(userRepository).update(any(User.class));
+            verify(passwordManagementService).resetPassword("13812345678", "123456", "NewPass123");
         }
 
         @Test
-        @DisplayName("旧密码错误时应抛出异常")
-        void shouldThrowWhenOldPasswordWrong() {
+        @DisplayName("用户不存在时应抛出异常")
+        void shouldThrowWhenUserNotFound() {
             TestSecurityUtil.setSecurityContext(USER_ID);
-            User user = buildTestUser();
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(passwordEncoder.matches("WrongOldPassword", "$2a$10$encoded")).thenReturn(false);
+            when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.changePassword("WrongOldPassword", "NewPassword456"))
+            assertThatThrownBy(() -> service.changePassword("123456", "NewPass123"))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("密码错误");
+                .hasMessageContaining("用户不存在");
 
-            verify(userRepository, never()).update(any());
-        }
-
-        @Test
-        @DisplayName("新旧密码相同时应抛出异常")
-        void shouldThrowWhenPasswordsAreSame() {
-            TestSecurityUtil.setSecurityContext(USER_ID);
-            User user = buildTestUser();
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-
-            assertThatThrownBy(() -> service.changePassword("SamePassword", "SamePassword"))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("新密码不能与旧密码相同");
+            verify(passwordManagementService, never()).resetPassword(any(), any(), any());
         }
     }
 }

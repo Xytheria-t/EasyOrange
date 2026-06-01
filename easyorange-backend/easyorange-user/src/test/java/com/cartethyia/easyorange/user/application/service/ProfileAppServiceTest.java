@@ -76,22 +76,22 @@ class ProfileAppServiceTest {
             .status(UserStatus.NORMAL)
             .contactInfo(contactInfo)
             .personalInfo(personalInfo)
-            .loginInfo(LoginInfo.initial())
+            .loginInfo(LoginInfo.empty())
             .build();
     }
 
     @Nested
-    @DisplayName("getUserInfo")
-    class GetUserInfo {
+    @DisplayName("getCurrentUser")
+    class GetCurrentUser {
 
         @Test
-        @DisplayName("成功获取用户信息")
+        @DisplayName("成功获取当前用户信息")
         void success() {
             setSecurityContext();
             User user = buildTestUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            User result = profileAppService.getUserInfo();
+            User result = profileAppService.getCurrentUser();
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
@@ -103,7 +103,7 @@ class ProfileAppServiceTest {
             setSecurityContext();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> profileAppService.getUserInfo())
+            assertThatThrownBy(() -> profileAppService.getCurrentUser())
                 .isInstanceOf(BusinessException.class);
         }
     }
@@ -120,9 +120,7 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.update(any(User.class))).thenReturn(true);
 
-            User result = profileAppService.updateUserInfo(null, "new@example.com", null, null, null, null);
-
-            assertThat(result).isNotNull();
+            profileAppService.updateUserInfo(null, "new@example.com", null, null, null, null);
         }
 
         @Test
@@ -206,9 +204,8 @@ class ProfileAppServiceTest {
                 .thenReturn("/avatar/new.png");
             when(userRepository.update(any(User.class))).thenReturn(true);
 
-            User result = profileAppService.uploadAvatar(content, "image/png", "avatar.png");
+            profileAppService.uploadAvatar(content, "image/png", "avatar.png");
 
-            assertThat(result).isNotNull();
             verify(avatarFilePort).deleteIfExists("/avatar/old.png");
         }
 

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.user.domain.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
+import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +29,9 @@ class SmsCodeServiceTest {
     @Mock
     private SmsRateLimitPort rateLimitPort;
 
+    @Mock
+    private SmsSenderPort smsSenderPort;
+
     private SmsCodeService service;
 
     private static final String PHONE = "13812345678";
@@ -35,7 +39,7 @@ class SmsCodeServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SmsCodeService(smsCodePort, rateLimitPort);
+        service = new SmsCodeService(smsCodePort, rateLimitPort, smsSenderPort);
     }
 
     @Nested
@@ -54,6 +58,7 @@ class SmsCodeServiceTest {
             verify(rateLimitPort).incrementDailyCount(PHONE);
             verify(smsCodePort).save(eq(PHONE), anyString(), eq(Duration.ofMinutes(5)));
             verify(rateLimitPort).setSendInterval(PHONE, Duration.ofSeconds(60));
+            verify(smsSenderPort).send(eq(PHONE), anyString());
         }
 
         @Test
@@ -67,6 +72,7 @@ class SmsCodeServiceTest {
 
             verify(rateLimitPort, never()).incrementDailyCount(any());
             verify(smsCodePort, never()).save(any(), any(), any());
+            verify(smsSenderPort, never()).send(any(), any());
         }
 
         @Test
@@ -80,6 +86,7 @@ class SmsCodeServiceTest {
                 .hasMessageContaining("验证码发送过于频繁");
 
             verify(smsCodePort, never()).save(any(), any(), any());
+            verify(smsSenderPort, never()).send(any(), any());
         }
 
         @Test
@@ -92,6 +99,7 @@ class SmsCodeServiceTest {
             service.sendCode(PHONE);
 
             verify(smsCodePort).save(eq(PHONE), codeCaptor.capture(), eq(Duration.ofMinutes(5)));
+            verify(smsSenderPort).send(eq(PHONE), codeCaptor.capture());
             String generatedCode = codeCaptor.getValue();
             assertThat(generatedCode).hasSize(6);
             assertThat(generatedCode).containsOnlyDigits();

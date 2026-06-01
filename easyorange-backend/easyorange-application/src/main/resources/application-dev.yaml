@@ -37,11 +37,33 @@ spring:
   # -------------------------------------------------------------------
   data:
     redis:
+      host: localhost
+      port: 6379
+      password: ${REDIS_PASSWORD:-easyorange123}
       lettuce:
         pool:
           min-idle: 3                   # 开发环境最小空闲连接数
           max-idle: 10                  # 开发环境最大空闲连接数
           max-active: 10                # 开发环境最大活跃连接数
+
+  # -------------------------------------------------------------------
+  # RabbitMQ 消息队列配置 - 开发环境
+  # -------------------------------------------------------------------
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: easyorange
+    password: easyorange123
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    listener:
+      type: simple
+      simple:
+        acknowledge-mode: auto
+        prefetch: 10
+        concurrent-consumers: 1
+        max-concurrent-consumers: 5
+        default-requeue-rejected: false
 
 # -------------------------------------------------------------------
 # 日志配置 - 开发环境
@@ -88,6 +110,28 @@ easyorange:
         enabled: true
         default-aspect-ratio: 1:1
         min-entropy-threshold: 0.5
+
+  # -------------------------------------------------------------------
+  # RabbitMQ 消息队列配置 - 自定义业务配置
+  # -------------------------------------------------------------------
+  rabbitmq:
+    enabled: true
+    exchange: eo.domain.events
+    routing-key-prefix: ""
+    publisher:
+      confirms: true
+      returns: true
+      retry:
+        enabled: true
+        max-attempts: 3
+        initial-interval: 1s
+        multiplier: 2
+    consumer:
+      prefetch: 10
+      default-requeue-rejected: false
+      concurrency:
+        min: 1
+        max: 5
 
 # -------------------------------------------------------------------
 # JWT Token 配置
@@ -148,3 +192,4 @@ rate-limit-filter:
   repeat-submit:
     enabled: true
     interval-ms: 3000
+

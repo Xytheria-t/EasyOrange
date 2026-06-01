@@ -540,30 +540,6 @@ CREATE TABLE `eo_oper_log` (
     CONSTRAINT `chk_eo_oper_log_status` CHECK (`status` IN (0, 1))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志表';
 
-CREATE TABLE `eo_oper_log_archive` (
-    `oper_id` BIGINT NOT NULL COMMENT '归档日志主键',
-    `title` VARCHAR(50) DEFAULT NULL COMMENT '模块标题',
-    `business_type` TINYINT NOT NULL DEFAULT 0 COMMENT '业务类型',
-    `method` VARCHAR(100) DEFAULT NULL COMMENT '方法名称',
-    `request_method` VARCHAR(10) DEFAULT NULL COMMENT '请求方式',
-    `operator_type` TINYINT NOT NULL DEFAULT 0 COMMENT '操作类别',
-    `oper_name` VARCHAR(50) DEFAULT NULL COMMENT '操作人员',
-    `oper_url` VARCHAR(255) DEFAULT NULL COMMENT '请求 URL',
-    `oper_ip` VARCHAR(128) DEFAULT NULL COMMENT '主机地址',
-    `oper_location` VARCHAR(255) DEFAULT NULL COMMENT '操作地点',
-    `oper_param` TEXT DEFAULT NULL COMMENT '请求参数',
-    `json_result` TEXT DEFAULT NULL COMMENT '返回参数',
-    `status` TINYINT NOT NULL DEFAULT 0 COMMENT '操作状态（0 正常 1 异常）',
-    `error_msg` VARCHAR(2000) DEFAULT NULL COMMENT '错误消息',
-    `oper_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '操作时间',
-    `cost_time` INT NOT NULL DEFAULT 0 COMMENT '消耗时间（毫秒）',
-    `archived_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '归档时间',
-    PRIMARY KEY (`oper_id`),
-    KEY `idx_eo_oper_log_archive_time` (`oper_time`),
-    KEY `idx_eo_oper_log_archive_name` (`oper_name`),
-    KEY `idx_eo_oper_log_archive_archived_at` (`archived_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='操作日志归档表';
-
 -- ===================================================================
 -- 9. AI 功能模块
 -- ===================================================================
