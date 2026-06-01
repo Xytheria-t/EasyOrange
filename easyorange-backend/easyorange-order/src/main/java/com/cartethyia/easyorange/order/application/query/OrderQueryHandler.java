@@ -58,8 +58,12 @@ public class OrderQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> handle(QueryOrderRequest request) {
-        OrderQueryCondition condition = toCondition(request);
+    public PageResult<OrderVO> handle(String orderNo, Integer status, Long buyerId, Long sellerId,
+                                       Integer pageNum, Integer pageSize) {
+        int effectivePageNum = pageNum != null ? pageNum : 1;
+        int effectivePageSize = pageSize != null ? pageSize : 20;
+        OrderQueryCondition condition = new OrderQueryCondition(orderNo, status, buyerId, sellerId,
+                effectivePageNum, effectivePageSize);
         PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
         List<OrderVO> voList = assembleOrderVOs(orderPage.records());
         return PageResult.of(voList, orderPage.total(),
@@ -67,43 +71,38 @@ public class OrderQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getMyOrders(QueryOrderRequest request) {
+    public PageResult<OrderVO> getMyOrders(Integer status, Integer pageNum, Integer pageSize) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryOrdersWithCache(request, userId, null);
+        return queryOrdersWithCache(userId, null, status, pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getSoldOrders(QueryOrderRequest request) {
+    public PageResult<OrderVO> getSoldOrders(Integer status, Integer pageNum, Integer pageSize) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryOrdersWithCache(request, null, userId);
+        return queryOrdersWithCache(null, userId, status, pageNum, pageSize);
     }
 
-    private PageResult<OrderVO> queryOrdersWithCache(QueryOrderRequest request, Long buyerId, Long sellerId) {
+    private PageResult<OrderVO> queryOrdersWithCache(Long buyerId, Long sellerId, Integer status,
+                                                      Integer pageNum, Integer pageSize) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        String cacheKey = orderCachePort.buildOrderListKey(userId, request.getStatus());
+        String cacheKey = orderCachePort.buildOrderListKey(userId, status);
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
         if (cachedResult.isPresent()) {
             return cachedResult.get();
         }
 
-        PageResult<OrderVO> result = queryOrdersByRole(request, buyerId, sellerId);
+        PageResult<OrderVO> result = queryOrdersByRole(status, buyerId, sellerId, pageNum, pageSize);
         orderCachePort.putOrderList(cacheKey, result);
         return result;
     }
 
-    private PageResult<OrderVO> queryOrdersByRole(QueryOrderRequest request,
-                                                  Long buyerId,
-                                                  Long sellerId) {
-        QueryOrderRequest normalized = request.normalized();
-        OrderQueryCondition condition = new OrderQueryCondition(
-                request.getOrderNo(),
-                request.getStatus(),
-                buyerId,
-                sellerId,
-                normalized.getPageNum(),
-                normalized.getPageSize()
-        );
+    private PageResult<OrderVO> queryOrdersByRole(Integer status, Long buyerId, Long sellerId,
+                                                    Integer pageNum, Integer pageSize) {
+        int effectivePageNum = pageNum != null ? pageNum : 1;
+        int effectivePageSize = pageSize != null ? pageSize : 20;
+        OrderQueryCondition condition = new OrderQueryCondition(null, status, buyerId, sellerId,
+                effectivePageNum, effectivePageSize);
 
         PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
         List<OrderVO> voList = assembleOrderVOs(orderPage.records());
@@ -141,17 +140,5 @@ public class OrderQueryHandler {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         return loadProducts(productIds);
-    }
-
-    private OrderQueryCondition toCondition(QueryOrderRequest request) {
-        QueryOrderRequest normalized = request.normalized();
-        return new OrderQueryCondition(
-                request.getOrderNo(),
-                request.getStatus(),
-                request.getBuyerId(),
-                request.getSellerId(),
-                normalized.getPageNum(),
-                normalized.getPageSize()
-        );
     }
 }

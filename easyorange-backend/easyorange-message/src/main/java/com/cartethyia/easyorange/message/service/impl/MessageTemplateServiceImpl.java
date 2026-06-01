@@ -75,16 +75,14 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     }
 
     @Override
-    public int insertTemplate(MessageTemplateAggregate template) {
+    public void insertTemplate(MessageTemplateAggregate template) {
         messageTemplateRepository.save(template);
-        return 1;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public int updateTemplate(MessageTemplateAggregate template) {
+    public void updateTemplate(MessageTemplateAggregate template) {
         messageTemplateRepository.update(template);
-        return 1;
     }
 
     @Override

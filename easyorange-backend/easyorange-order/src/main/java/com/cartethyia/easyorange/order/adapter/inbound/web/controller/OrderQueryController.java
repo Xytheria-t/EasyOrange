@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
-import com.cartethyia.easyorange.order.application.query.QueryOrderRequest;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,21 +27,29 @@ public class OrderQueryController {
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")
     public Result<PageResult<OrderVO>> getMyOrders(@Valid QueryOrderRequest request) {
-        PageResult<OrderVO> orders = queryHandler.getMyOrders(request);
+        var normalized = request.normalized();
+        PageResult<OrderVO> orders = queryHandler.getMyOrders(normalized.getStatus(),
+                normalized.getPageNum(), normalized.getPageSize());
         return Result.success(orders);
     }
 
     @GetMapping("/sold")
     @PreAuthorize("isAuthenticated()")
     public Result<PageResult<OrderVO>> getSoldOrders(@Valid QueryOrderRequest request) {
-        PageResult<OrderVO> orders = queryHandler.getSoldOrders(request);
+        var normalized = request.normalized();
+        PageResult<OrderVO> orders = queryHandler.getSoldOrders(normalized.getStatus(),
+                normalized.getPageNum(), normalized.getPageSize());
         return Result.success(orders);
     }
 
     @GetMapping("/list")
     @PreAuthorize("isAuthenticated()")
     public Result<PageResult<OrderVO>> queryOrders(@Valid QueryOrderRequest request) {
-        PageResult<OrderVO> orders = queryHandler.handle(request);
+        var normalized = request.normalized();
+        PageResult<OrderVO> orders = queryHandler.handle(
+                normalized.getOrderNo(),
+                normalized.getStatus(), normalized.getBuyerId(), normalized.getSellerId(),
+                normalized.getPageNum(), normalized.getPageSize());
         return Result.success(orders);
     }
 }

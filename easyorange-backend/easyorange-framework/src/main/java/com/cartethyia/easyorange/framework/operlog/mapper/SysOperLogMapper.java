@@ -12,8 +12,4 @@ import java.util.List;
 public interface SysOperLogMapper extends BaseMapper<SysOperLog> {
 
     int deleteExpiredLogs(LocalDateTime expireDate);
-
-    List<SysOperLog> selectLogsBefore(LocalDateTime targetDate);
-
-    int batchInsertArchive(List<SysOperLog> logs);
 }

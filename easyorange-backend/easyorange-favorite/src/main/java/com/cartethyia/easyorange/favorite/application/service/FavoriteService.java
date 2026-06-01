@@ -3,21 +3,17 @@ package com.cartethyia.easyorange.favorite.application.service;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.favorite.domain.valueobject.ProductDetailInfo;
-import com.cartethyia.easyorange.favorite.domain.valueobject.ProductInfo;
-import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,9 +29,8 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void addFavorite(AddFavoriteDTO dto) {
+    public void addFavorite(Long productId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        Long productId = dto.getProductId();
 
         BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
         BizRequire.requireFalse(productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
@@ -49,9 +44,8 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void removeFavorite(RemoveFavoriteDTO dto) {
+    public void removeFavorite(Long productId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        Long productId = dto.getProductId();
 
         Favorite favorite = favoriteRepository.findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
@@ -75,62 +69,14 @@ public class FavoriteService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<FavoriteVO> queryFavorites(FavoritePageQuery query) {
+    public PageResult<Favorite> queryFavorites(int pageNum, int pageSize) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        int pageNum = query.getPageNum() != null ? query.getPageNum() : 1;
-        int pageSize = query.getPageSize() != null ? query.getPageSize() : 10;
         long offset = (pageNum - 1L) * pageSize;
-
         long total = favoriteRepository.countByUserId(userId);
         List<Favorite> favorites = favoriteRepository.findByUserId(userId, offset, pageSize);
 
-        if (favorites.isEmpty()) {
-            return PageResult.empty(pageNum, pageSize);
-        }
-
-        List<Long> productIds = favorites.stream()
-                .map(Favorite::getProductId)
-                .collect(Collectors.toList());
-
-        List<ProductInfo> products = productInfoPort.findProductsByIds(productIds);
-        if (products.isEmpty()) {
-            return PageResult.empty(pageNum, pageSize);
-        }
-
-        Set<Long> sellerIds = products.stream()
-                .map(ProductInfo::sellerId)
-                .filter(id -> id != null)
-                .collect(Collectors.toSet());
-
-        Map<Long, SellerInfo> sellerMap = productInfoPort.findSellersByIds(sellerIds);
-
-        List<ProductDetailInfo> productDetailInfos = productInfoPort.assembleProductDetails(products, sellerMap);
-
-        Map<Long, ProductDetailInfo> productDetailMap = productDetailInfos.stream()
-                .collect(Collectors.toMap(ProductDetailInfo::id, p -> p, (a, b) -> a));
-
-        Map<Long, Favorite> favoriteByProductId = favorites.stream()
-                .collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
-
-        List<FavoriteVO> voList = productIds.stream()
-                .map(productId -> {
-                    Favorite fav = favoriteByProductId.get(productId);
-                    ProductDetailInfo productDetail = productDetailMap.get(productId);
-                    if (fav == null || productDetail == null) {
-                        return null;
-                    }
-                    return FavoriteVO.builder()
-                            .id(fav.getId())
-                            .productId(fav.getProductId())
-                            .product(productDetail)
-                            .createTime(fav.getCreateTime())
-                            .build();
-                })
-                .filter(vo -> vo != null)
-                .collect(Collectors.toList());
-
-        return PageResult.of(voList, total, pageNum, pageSize);
+        return PageResult.of(favorites, total, pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)

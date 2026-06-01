@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.dto.request.ReportHandleRequest;
 import com.cartethyia.easyorange.admin.dto.request.BatchHandleRequest;
 import com.cartethyia.easyorange.admin.dto.response.AdminReportResponse;
@@ -58,9 +59,7 @@ public class AdminReportService {
     @Transactional(readOnly = true)
     public AdminReportResponse getReportDetail(Long id) {
         ProductReport report = productReportRepository.findById(id);
-        if (report == null) {
-            throw BusinessException.of("举报记录不存在");
-        }
+        BizRequire.notNull(report, "举报记录不存在");
 
         Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
         Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(report.getProductId()));
@@ -88,9 +87,7 @@ public class AdminReportService {
 
     @Transactional(rollbackFor = Exception.class)
     public void batchHandleReports(BatchHandleRequest request) {
-        if (request.getReportIds() == null || request.getReportIds().isEmpty()) {
-            throw BusinessException.of("举报ID列表不能为空");
-        }
+        BizRequire.notEmpty(request.getReportIds(), "举报ID列表不能为空");
         if (request.getReportIds().size() > 50) {
             throw BusinessException.of("批量处理数量不能超过50条");
         }
@@ -121,9 +118,7 @@ public class AdminReportService {
 
     private void processSingleReport(Long reportId, String action, String remark, Long operatorId) {
         ProductReport report = productReportRepository.findById(reportId);
-        if (report == null) {
-            throw BusinessException.of("举报记录不存在");
-        }
+        BizRequire.notNull(report, "举报记录不存在");
         if (!report.isPending()) {
             throw BusinessException.of("该举报已被处理");
         }

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.order.domain.constant;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -14,58 +14,34 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum OrderStatus {
 
-    /**
-     * 待付款
-     */
     PENDING_PAYMENT(0, "待付款"),
-
-    /**
-     * 已付款
-     */
     PAID(1, "已付款"),
-
-    /**
-     * 已发货
-     */
     SHIPPED(2, "已发货"),
-
-    /**
-     * 已完成
-     */
     COMPLETED(3, "已完成"),
-
-    /**
-     * 已取消
-     */
     CANCELLED(4, "已取消"),
-
-    /**
-     * 已退款
-     */
     REFUNDED(5, "已退款");
 
-    /**
-     * 状态值
-     */
+    @JsonValue
     private final Integer code;
-
-    /**
-     * 状态描述
-     */
     private final String desc;
 
-    /**
-     * 根据状态值获取枚举
-     */
     public static OrderStatus fromCode(Integer code) {
-        return Arrays.stream(values()).filter(v -> v.code.equals(code)).findFirst().orElse(null);
+        if (code == null) {
+            throw new IllegalArgumentException("OrderStatus code must not be null");
+        }
+        for (var status : values()) {
+            if (status.code.equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown OrderStatus code: " + code);
     }
 
-    /**
-     * 根据状态值获取描述
-     */
     public static String getDescByCode(Integer code) {
-        OrderStatus status = fromCode(code);
-        return status != null ? status.getDesc() : "未知状态";
+        try {
+            return fromCode(code).getDesc();
+        } catch (IllegalArgumentException e) {
+            return "未知状态";
+        }
     }
 }

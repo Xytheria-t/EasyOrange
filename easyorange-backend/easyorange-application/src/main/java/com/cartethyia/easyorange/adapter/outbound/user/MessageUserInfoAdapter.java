@@ -32,7 +32,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
         if (userIds == null || userIds.isEmpty()) {
             return Map.of();
         }
-        return userRepository.findAllById(userIds).stream()
+        return userRepository.findAllByIds(userIds).stream()
                 .collect(Collectors.toMap(
                         User::getId,
                         this::toUserInfo,

@@ -40,6 +40,12 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
+        <!-- Spring Boot AMQP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- 参数校验 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -132,6 +138,8 @@
             <version>0.2.0</version>
             <scope>provided</scope>
         </dependency>
+
+
     </dependencies>
 
     <build>

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.dto.response.AdminProductResponse;
@@ -135,9 +136,7 @@ public class AdminProductService {
         }
 
         ProductStatus newStatus = ProductStatus.fromCode(request.getStatus());
-        if (newStatus == null) {
-            throw BusinessException.of("无效的商品状态");
-        }
+        BizRequire.notNull(newStatus, "无效的商品状态");
 
         product.setStatus(newStatus.getCode());
         productMapper.updateById(product);

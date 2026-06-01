@@ -16,9 +16,9 @@ public interface MessageTemplateService {
 
     List<MessageTemplateAggregate> selectTemplateList(MessageTemplateAggregate condition);
 
-    int insertTemplate(MessageTemplateAggregate template);
+    void insertTemplate(MessageTemplateAggregate template);
 
-    int updateTemplate(MessageTemplateAggregate template);
+    void updateTemplate(MessageTemplateAggregate template);
 
     void deleteTemplateByIds(Long[] templateIds);
 

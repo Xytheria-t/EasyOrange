@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.admin.service;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
 import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
 import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
@@ -65,9 +66,7 @@ public class AdminProductAuditService {
         if (action == 1) {
             product.setStatus(ProductStatus.ONLINE.getCode());
         } else if (action == 2) {
-            if (request.reason() == null || request.reason().isBlank()) {
-                throw BusinessException.of("拒绝时必须填写原因");
-            }
+            BizRequire.notBlank(request.reason(), "拒绝时必须填写原因");
             product.setStatus(ProductStatus.REJECTED.getCode());
         } else {
             throw BusinessException.of("无效的审核动作");

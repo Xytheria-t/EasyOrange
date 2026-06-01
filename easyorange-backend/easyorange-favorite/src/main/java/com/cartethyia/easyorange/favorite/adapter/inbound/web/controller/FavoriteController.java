@@ -2,17 +2,16 @@ package com.cartethyia.easyorange.favorite.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.assembler.FavoriteAssembler;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchCheckRequest;
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchRemoveRequest;
-import com.cartethyia.easyorange.favorite.application.dto.AddFavoriteDTO;
-import com.cartethyia.easyorange.favorite.application.dto.FavoritePageQuery;
-import com.cartethyia.easyorange.favorite.application.dto.FavoriteVO;
-import com.cartethyia.easyorange.favorite.application.dto.RemoveFavoriteDTO;
+import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.response.FavoriteResponse;
 import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
+import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,40 +21,37 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/favorites")
 @RequiredArgsConstructor
-@Validated
 public class FavoriteController {
 
     private final FavoriteService favoriteService;
+    private final FavoriteAssembler favoriteAssembler;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public Result<PageResult<FavoriteVO>> getFavorites(
+    public Result<PageResult<FavoriteResponse>> getFavorites(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
-        FavoritePageQuery query = FavoritePageQuery.builder()
-                .pageNum(pageNum)
-                .pageSize(pageSize)
-                .build();
-        return Result.success(favoriteService.queryFavorites(query));
+        PageResult<Favorite> page = favoriteService.queryFavorites(pageNum, pageSize);
+        return Result.success(favoriteAssembler.toPageResult(page, pageNum, pageSize));
     }
 
     @PostMapping("/{productId}")
     @PreAuthorize("isAuthenticated()")
     public Result<Void> addFavorite(@PathVariable Long productId) {
-        favoriteService.addFavorite(AddFavoriteDTO.builder().productId(productId).build());
+        favoriteService.addFavorite(productId);
         return Result.success();
     }
 
     @DeleteMapping("/{productId}")
     @PreAuthorize("isAuthenticated()")
     public Result<Void> removeFavorite(@PathVariable Long productId) {
-        favoriteService.removeFavorite(RemoveFavoriteDTO.builder().productId(productId).build());
+        favoriteService.removeFavorite(productId);
         return Result.success();
     }
 
     @DeleteMapping("/batch")
     @PreAuthorize("isAuthenticated()")
-    public Result<Void> removeManyFavorites(@RequestBody @Validated BatchRemoveRequest request) {
+    public Result<Void> removeManyFavorites(@Valid @RequestBody BatchRemoveRequest request) {
         favoriteService.removeManyFavorites(request.getIds());
         return Result.success();
     }
@@ -74,7 +70,7 @@ public class FavoriteController {
 
     @PostMapping("/batch-check")
     @PreAuthorize("isAuthenticated()")
-    public Result<Map<Long, Boolean>> batchCheckFavorited(@RequestBody @Validated BatchCheckRequest request) {
+    public Result<Map<Long, Boolean>> batchCheckFavorited(@Valid @RequestBody BatchCheckRequest request) {
         return Result.success(favoriteService.batchCheckFavorited(request.getProductIds()));
     }
 }

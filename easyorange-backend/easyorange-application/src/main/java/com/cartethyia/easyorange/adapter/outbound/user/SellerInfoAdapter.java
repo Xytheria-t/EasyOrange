@@ -33,7 +33,7 @@ public class SellerInfoAdapter implements SellerInfoPort {
         if (sellerIds == null || sellerIds.isEmpty()) {
             return Map.of();
         }
-        return userRepository.findAllById(sellerIds).stream()
+        return userRepository.findAllByIds(sellerIds).stream()
                 .collect(Collectors.toMap(
                         User::getId,
                         this::toSellerInfo,
