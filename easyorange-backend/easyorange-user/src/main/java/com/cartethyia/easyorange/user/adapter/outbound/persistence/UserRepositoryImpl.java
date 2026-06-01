@@ -31,7 +31,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     }
 
     @Override
-    public List<User> findAllById(Collection<Long> ids) {
+    public List<User> findAllByIds(Collection<Long> ids) {
         return findIn(UserEntity::getId, ids).stream()
             .map(entityMapper::toDomain)
             .toList();

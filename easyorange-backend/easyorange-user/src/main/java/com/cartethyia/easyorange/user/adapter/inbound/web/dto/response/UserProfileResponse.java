@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.response;
 
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,7 +16,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class UserProfileResponse implements CommonUserFields {
 
-    private Long id;
+    private Long userId;
 
     private String username;
 
@@ -35,7 +36,7 @@ public class UserProfileResponse implements CommonUserFields {
 
     private Integer gender;
 
-    private String userType;
+    private UserType userType;
 
     private String avatar;
 

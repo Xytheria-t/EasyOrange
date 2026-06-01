@@ -45,7 +45,7 @@ public class User {
             .status(UserStatus.NORMAL)
             .contactInfo(ContactInfo.empty())
             .personalInfo(ImmutablePersonalInfo.builder().nickName(username).build())
-            .loginInfo(LoginInfo.initial())
+            .loginInfo(LoginInfo.empty())
             .build();
     }
 
@@ -120,7 +120,7 @@ public class User {
             .build();
     }
 
-    public boolean isNormal() {
+    public boolean isEnabled() {
         return this.status == UserStatus.NORMAL;
     }
 

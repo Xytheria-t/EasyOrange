@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.constant;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -17,15 +17,27 @@ public enum PaymentStatus {
     PAYING(6, "支付中"),
     REFUNDING(7, "退款中");
 
+    @JsonValue
     private final Integer code;
     private final String desc;
 
     public static PaymentStatus fromCode(Integer code) {
-        return Arrays.stream(values()).filter(v -> v.code.equals(code)).findFirst().orElse(null);
+        if (code == null) {
+            throw new IllegalArgumentException("PaymentStatus code must not be null");
+        }
+        for (var status : values()) {
+            if (status.code.equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown PaymentStatus code: " + code);
     }
 
     public static String getDescByCode(Integer code) {
-        PaymentStatus status = fromCode(code);
-        return status != null ? status.getDesc() : "未知状态";
+        try {
+            return fromCode(code).getDesc();
+        } catch (IllegalArgumentException e) {
+            return "未知状态";
+        }
     }
 }

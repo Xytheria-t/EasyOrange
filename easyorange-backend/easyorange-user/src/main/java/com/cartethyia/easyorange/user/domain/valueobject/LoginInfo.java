@@ -13,7 +13,7 @@ public record LoginInfo(
         }
     }
 
-    public static LoginInfo initial() {
+    public static LoginInfo empty() {
         return new LoginInfo(null, null, null);
     }
 

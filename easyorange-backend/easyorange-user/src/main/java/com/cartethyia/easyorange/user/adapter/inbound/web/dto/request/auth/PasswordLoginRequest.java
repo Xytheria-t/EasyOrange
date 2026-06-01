@@ -5,11 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 
 public record PasswordLoginRequest(
         @NotBlank(message = "账号不能为空")
-        String account,
+        String identifier,
         @NotBlank(message = "密码不能为空")
         String password
 ) {
     public LoginCredential toCredential() {
-        return new LoginCredential.Password(account, password);
+        return new LoginCredential.Password(identifier, password);
     }
 }

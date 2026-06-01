@@ -6,15 +6,16 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.service.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.PasswordLoginRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.PasswordResetRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.RefreshTokenRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsLoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.RegisterRequest;
-import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.ForgotPasswordRequest;
+import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsLoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResult;
+import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Phone;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Phone;
 import com.cartethyia.easyorange.user.domain.service.SmsCodeService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -56,10 +57,7 @@ public class AuthController {
     @PostMapping("/refresh")
     public Result<TokenRefreshResult> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
         TokenRefreshResult result = authAppService.refreshToken(request.refreshToken());
-        if (result == null) {
-            return Result.error(ResultCode.UNAUTHORIZED, "刷新令牌已失效，请重新登录");
-        }
-        return Result.success(result);
+        return result != null ? Result.success(result) : Result.error(ResultCode.UNAUTHORIZED, "刷新令牌已失效，请重新登录");
     }
 
     @PostMapping("/sms-code")
@@ -69,16 +67,21 @@ public class AuthController {
         return Result.success();
     }
 
-    @PostMapping("/password-reset")
-    public Result<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        authAppService.forgotPassword(request.phone(), request.verifyCode(), request.newPassword());
+    @PostMapping("/password/reset")
+    public Result<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        authAppService.resetPassword(request.phone(), request.verifyCode(), request.newPassword());
+        return Result.success();
+    }
+
+    @PutMapping("/password/change")
+    public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        authAppService.changePassword(request.verifyCode(), request.newPassword());
         return Result.success();
     }
 
     private LoginResult buildLoginResult(User user) {
-        String userTypeCode = user.getUserType() != null ? user.getUserType().getCode() : null;
-        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), userTypeCode);
-        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), userTypeCode);
+        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getCode());
+        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getUserType().getCode());
         return userAssembler.toLoginResult(user, accessToken, refreshToken);
     }
 }

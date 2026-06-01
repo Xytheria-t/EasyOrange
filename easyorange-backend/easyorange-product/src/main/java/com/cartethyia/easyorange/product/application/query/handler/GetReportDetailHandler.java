@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.query.handler;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
@@ -24,9 +25,7 @@ public class GetReportDetailHandler {
     @Transactional(readOnly = true)
     public ProductReportDetailResponse handle(Long reportId, Long currentUserId) {
         ProductReport report = productReportRepository.findById(reportId);
-        if (report == null) {
-            throw BusinessException.of("举报记录不存在");
-        }
+        BizRequire.notNull(report, "举报记录不存在");
 
         if (!report.getReporterId().equals(currentUserId)) {
             throw BusinessException.of("无权查看此举报记录");

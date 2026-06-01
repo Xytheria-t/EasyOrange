@@ -7,7 +7,6 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.Search
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.application.service.SearchHistoryService;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.domain.port.SearchResult;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
@@ -31,7 +30,6 @@ import java.util.stream.Collectors;
 public class ProductSearchHandler {
 
     private final ProductQueryRepository productQueryRepository;
-    private final SearchHistoryService searchHistoryService;
     private final Optional<ProductSearchQueryPort> searchQueryPort;
 
     @Transactional(readOnly = true)
@@ -89,12 +87,12 @@ public class ProductSearchHandler {
 
     public void clearMySearchHistory() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        searchHistoryService.clearSearchHistory(userId);
+        productQueryRepository.clearSearchHistory(userId);
     }
 
     public void deleteSearchHistory(Long historyId) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        searchHistoryService.deleteSearchHistoryById(historyId, userId);
+        productQueryRepository.deleteSearchHistoryById(historyId, userId);
     }
 
     @Transactional(readOnly = true)
@@ -117,7 +115,7 @@ public class ProductSearchHandler {
 
     public void recordSearch(String keyword) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        searchHistoryService.saveSearchHistory(userId, keyword);
+        productQueryRepository.saveSearchHistory(userId, keyword);
     }
 
     private ProductResponse toProductResponse(ProductReadModel model) {

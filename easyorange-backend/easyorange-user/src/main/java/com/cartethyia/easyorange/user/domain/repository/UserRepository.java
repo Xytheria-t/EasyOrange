@@ -10,7 +10,7 @@ public interface UserRepository {
 
     Optional<User> findById(Long id);
 
-    List<User> findAllById(Collection<Long> ids);
+    List<User> findAllByIds(Collection<Long> ids);
 
     Optional<User> findByUsername(String username);
 

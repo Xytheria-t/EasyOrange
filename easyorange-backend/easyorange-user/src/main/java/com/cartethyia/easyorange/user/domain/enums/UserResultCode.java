@@ -19,7 +19,8 @@ public enum UserResultCode implements IResultCode {
     INVALID_CREDENTIALS("B1011", "账号或密码错误"),
     SMS_CODE_INVALID("B1008", "验证码无效或已过期"),
     SMS_CODE_SEND_TOO_FREQUENT("B1009", "验证码发送过于频繁"),
-    SMS_CODE_VERIFY_TOO_FREQUENT("B1010", "验证码验证次数过多，请重新获取");
+    SMS_CODE_VERIFY_TOO_FREQUENT("B1010", "验证码验证次数过多，请重新获取"),
+    PASSWORD_SAME_AS_OLD("B1013", "新密码不能与旧密码相同");
 
     @JsonValue
     private final String code;

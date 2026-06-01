@@ -22,18 +22,18 @@ public class ProfileAppService {
     private final AvatarFilePort avatarFilePort;
 
     @Transactional(readOnly = true)
-    public User getUserInfo() {
+    public User getCurrentUser() {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public User updateUserInfo(String nickname, String email, String phone,
+    public void updateUserInfo(String nickname, String email, String phone,
                                 Integer gender, String realName, String studentId) {
         User currentUser = getCurrentUserOrThrow();
 
-        BizRequire.requireTrue(hasAnyUpdate(nickname, email, phone, gender, realName, studentId), "没有需要更新的字段");
+        BizRequire.requireTrue(hasAnyChanges(nickname, email, phone, gender, realName, studentId), "没有需要更新的字段");
 
         validateUniqueFieldsIfChanged(email, phone, studentId, currentUser);
 
@@ -58,11 +58,10 @@ public class ProfileAppService {
         }
 
         BizRequire.requireTrue(userRepository.update(updatedUser), "更新用户信息失败");
-        return updatedUser;
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public User uploadAvatar(byte[] content, String contentType, String filename) {
+    public void uploadAvatar(byte[] content, String contentType, String filename) {
         BizRequire.notNull(content, "头像不能为空");
         BizRequire.requireTrue(content.length > 0, "头像不能为空");
 
@@ -80,15 +79,13 @@ public class ProfileAppService {
 
             User updatedUser = currentUser.changeAvatar(avatarUrl, currentUser.getId());
             BizRequire.requireTrue(userRepository.update(updatedUser), "更新头像失败");
-
-            return updatedUser;
         } catch (Exception e) {
             throw BusinessException.of("头像上传失败", e);
         }
     }
 
-    private static boolean hasAnyUpdate(String nickname, String email, String phone,
-                                        Integer gender, String realName, String studentId) {
+    private static boolean hasAnyChanges(String nickname, String email, String phone,
+                                          Integer gender, String realName, String studentId) {
         return nickname != null && !nickname.isBlank()
             || email != null && !email.isBlank()
             || phone != null && !phone.isBlank()

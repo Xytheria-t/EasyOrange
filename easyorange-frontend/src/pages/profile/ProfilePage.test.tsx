@@ -8,6 +8,7 @@ import type { User } from '@/types';
 const mockUseCurrentUser = vi.hoisted(() => vi.fn());
 const mockUseLogout = vi.hoisted(() => vi.fn());
 const mockUserApiUpdateProfile = vi.hoisted(() => vi.fn());
+const mockUserApiSendSmsCode = vi.hoisted(() => vi.fn());
 const mockUserApiChangePassword = vi.hoisted(() => vi.fn());
 const mockUserApiUploadAvatar = vi.hoisted(() => vi.fn());
 const mockFavoriteApiGetCount = vi.hoisted(() => vi.fn());
@@ -38,6 +39,7 @@ vi.mock('react-router-dom', async () => {
 vi.mock('@/api/userApi', () => ({
   userApi: {
     updateProfile: mockUserApiUpdateProfile,
+    sendSmsCode: mockUserApiSendSmsCode,
     changePassword: mockUserApiChangePassword,
     uploadAvatar: mockUserApiUploadAvatar,
   },
@@ -75,6 +77,7 @@ beforeEach(() => {
   mockUseCurrentUser.mockReturnValue({ data: mockUser, isLoading: false });
   mockUseLogout.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined) });
   mockUserApiUpdateProfile.mockResolvedValue({ data: mockUser });
+  mockUserApiSendSmsCode.mockResolvedValue(undefined);
   mockUserApiChangePassword.mockResolvedValue(undefined);
   mockUserApiUploadAvatar.mockResolvedValue({ data: mockUser });
   mockFavoriteApiGetCount.mockResolvedValue({ data: 42 });
@@ -169,19 +172,19 @@ describe('ProfilePage', () => {
     expect(changePwdBtns.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(changePwdBtns[0]);
 
-    await screen.findByPlaceholderText('请输入旧密码');
-    const oldPwdInput = document.getElementById('old-password')!;
+    await screen.findByPlaceholderText('请输入6位验证码');
+    const verifyCodeInput = document.getElementById('change-verify-code')!;
     const newPwdInput = document.getElementById('new-password')!;
     const confirmPwdInput = document.getElementById('confirm-password')!;
 
-    fireEvent.change(oldPwdInput, { target: { value: 'OldPass1' } });
+    fireEvent.change(verifyCodeInput, { target: { value: '123456' } });
     fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
     fireEvent.change(confirmPwdInput, { target: { value: 'NewPass1' } });
 
     fireEvent.click(screen.getByText('确认修改'));
 
     await waitFor(() => {
-      expect(mockUserApiChangePassword).toHaveBeenCalledWith({ oldPassword: 'OldPass1', newPassword: 'NewPass1' });
+      expect(mockUserApiChangePassword).toHaveBeenCalledWith({ verifyCode: '123456', newPassword: 'NewPass1' });
     });
     expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '密码修改成功，请重新登录' });
     expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -189,7 +192,7 @@ describe('ProfilePage', () => {
 
   it('shows error when password change API fails', async () => {
     mockUserApiChangePassword.mockRejectedValue(new Error('修改失败'));
-    mockErrorHandlerHandle.mockReturnValue('旧密码不正确');
+    mockErrorHandlerHandle.mockReturnValue('验证码错误');
     renderPage();
     const user = userEvent.setup();
     await user.click(screen.getByText('安全'));
@@ -197,19 +200,19 @@ describe('ProfilePage', () => {
     expect(changePwdBtns.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(changePwdBtns[0]);
 
-    await screen.findByPlaceholderText('请输入旧密码');
-    const oldPwdInput = document.getElementById('old-password')!;
+    await screen.findByPlaceholderText('请输入6位验证码');
+    const verifyCodeInput = document.getElementById('change-verify-code')!;
     const newPwdInput = document.getElementById('new-password')!;
     const confirmPwdInput = document.getElementById('confirm-password')!;
 
-    fireEvent.change(oldPwdInput, { target: { value: 'OldPass1' } });
+    fireEvent.change(verifyCodeInput, { target: { value: '000000' } });
     fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
     fireEvent.change(confirmPwdInput, { target: { value: 'NewPass1' } });
 
     fireEvent.click(screen.getByText('确认修改'));
 
     await waitFor(() => {
-      expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '旧密码不正确' });
+      expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '验证码错误' });
     });
   });
 
@@ -221,12 +224,12 @@ describe('ProfilePage', () => {
     expect(changePwdBtns.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(changePwdBtns[0]);
 
-    await screen.findByPlaceholderText('请输入旧密码');
-    const oldPwdInput = document.getElementById('old-password')!;
+    await screen.findByPlaceholderText('请输入6位验证码');
+    const verifyCodeInput = document.getElementById('change-verify-code')!;
     const newPwdInput = document.getElementById('new-password')!;
     const confirmPwdInput = document.getElementById('confirm-password')!;
 
-    fireEvent.change(oldPwdInput, { target: { value: 'OldPass1' } });
+    fireEvent.change(verifyCodeInput, { target: { value: '123456' } });
     fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
     fireEvent.change(confirmPwdInput, { target: { value: 'NewPass2' } });
 

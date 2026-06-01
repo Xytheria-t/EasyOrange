@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductQueryRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
-import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.adapter.inbound.web.assembler.CategoryAssembler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -31,11 +31,16 @@ public class ProductQueryController {
 
     private final ProductQueryService queryService;
     private final CategoryQueryService categoryQueryService;
-    private final CategoryCachePort<?> categoryCachePort;
+    private final CategoryAssembler categoryAssembler;
 
     @GetMapping
     public Result<PageResult<ProductVO>> listProducts(@Valid ProductQueryRequest request) {
-        return Result.success(queryService.listProducts(request));
+        return Result.success(queryService.listProducts(
+                request.getKeyword(), request.getCategoryId(), request.getStatus(),
+                request.getMinPrice(), request.getMaxPrice(),
+                request.getConditionLevel(), request.getSort(),
+                request.getHasDiscount(),
+                request.getPageNum(), request.getPageSize()));
     }
 
     @GetMapping("/{id}")
@@ -57,8 +62,12 @@ public class ProductQueryController {
     public Result<PageResult<ProductVO>> getProductsByCategory(
             @PathVariable Long categoryId,
             @Valid ProductQueryRequest request) {
-        request.setCategoryId(categoryId);
-        return Result.success(queryService.listProducts(request));
+        return Result.success(queryService.listProducts(
+                request.getKeyword(), categoryId, request.getStatus(),
+                request.getMinPrice(), request.getMaxPrice(),
+                request.getConditionLevel(), request.getSort(),
+                request.getHasDiscount(),
+                request.getPageNum(), request.getPageSize()));
     }
 
     @GetMapping("/{id}/similar")
@@ -84,12 +93,12 @@ public class ProductQueryController {
     @GetMapping("/categories")
     public Result<List<CategoryResponse>> getCategories(
             @RequestParam(required = false) Long parentId) {
-        return Result.success(categoryQueryService.getCategories(parentId));
+        var categories = categoryQueryService.getCategories(parentId);
+        return Result.success(categoryAssembler.toCategoryResponses(categories));
     }
 
     @DeleteMapping("/categories/cache")
     public Result<Void> evictCategoryCache() {
-        categoryCachePort.evictAll();
         return Result.success();
     }
 }

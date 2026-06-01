@@ -8,8 +8,6 @@ import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import lombok.RequiredArgsConstructor;
 
-import java.util.Optional;
-
 @RequiredArgsConstructor
 public class AuthenticationService {
 
@@ -25,7 +23,7 @@ public class AuthenticationService {
             case LoginCredential.Sms(String phone, String verifyCode) ->
                 authenticateBySms(phone, verifyCode, clientIp);
         };
-    }
+        }
 
     private User authenticateByPassword(String identifier, String password, String clientIp) {
         loginSecurityService.checkLoginAttempts(identifier);
@@ -36,7 +34,7 @@ public class AuthenticationService {
             loginSecurityService.recordFailedAttempt(identifier);
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
-        if (!user.isNormal()) {
+        if (!user.isEnabled()) {
             throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
 
@@ -49,23 +47,11 @@ public class AuthenticationService {
 
         User user = userRepository.findByPhone(phone).orElse(null);
 
-        if (user == null || !user.isNormal()) {
+        if (user == null || !user.isEnabled()) {
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
         return finishLogin(user, clientIp);
-    }
-
-    public Optional<User> resetPassword(String phone, String verifyCode, String newPassword) {
-        smsCodeService.verifyCode(phone, verifyCode);
-
-        return userRepository.findByPhone(phone)
-            .map(user -> {
-                String encoded = passwordEncoder.encode(newPassword);
-                User updated = user.changePassword(encoded, null);
-                userRepository.update(updated);
-                return updated;
-            });
     }
 
     private User finishLogin(User user, String clientIp) {

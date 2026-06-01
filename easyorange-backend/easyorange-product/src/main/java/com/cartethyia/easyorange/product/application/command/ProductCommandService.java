@@ -72,7 +72,7 @@ public class ProductCommandService {
         return saved.getId().value();
     }
 
-    public Long updateProduct(UpdateProductCommand command) {
+    public void updateProduct(UpdateProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         ProductId productId = ProductId.of(command.getId());
 
@@ -97,8 +97,6 @@ public class ProductCommandService {
         productRepository.update(result.product());
         domainEventPublisher.publish(result.event());
         productCachePort.evictProductCache(result.product().getId().value());
-
-        return result.product().getId().value();
     }
 
     public void deleteProduct(DeleteProductCommand command) {

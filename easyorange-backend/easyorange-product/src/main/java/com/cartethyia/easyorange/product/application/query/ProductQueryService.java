@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductQueryRequest;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
@@ -19,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,21 +36,25 @@ public class ProductQueryService {
     private final ProductViewCountService viewCountService;
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> listProducts(ProductQueryRequest request) {
-        int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
-        int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
+    public PageResult<ProductVO> listProducts(String keyword, Long categoryId, Integer status,
+                                               BigDecimal minPrice, BigDecimal maxPrice,
+                                               Integer conditionLevel, String sort,
+                                               Boolean hasDiscount,
+                                               Integer pageNum, Integer pageSize) {
+        int effectivePageNum = pageNum != null ? pageNum : 1;
+        int effectivePageSize = pageSize != null ? pageSize : 20;
 
         PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
-                request.getKeyword(),
-                request.getCategoryId(),
-                request.getStatus(),
-                request.getMinPrice(),
-                request.getMaxPrice(),
-                request.getConditionLevel(),
-                request.getSort(),
-                request.getHasDiscount(),
-                pageNum,
-                pageSize
+                keyword,
+                categoryId,
+                status,
+                minPrice,
+                maxPrice,
+                conditionLevel,
+                sort,
+                hasDiscount,
+                effectivePageNum,
+                effectivePageSize
         );
 
         List<Long> productIds = page.records().stream()
@@ -73,7 +77,7 @@ public class ProductQueryService {
                 .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
 
-        return PageResult.of(vos, page.total(), pageNum, pageSize);
+        return PageResult.of(vos, page.total(), effectivePageNum, effectivePageSize);
     }
 
     @Transactional(readOnly = true)

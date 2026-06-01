@@ -1,9 +1,10 @@
 package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
-import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import lombok.RequiredArgsConstructor;
 
 import java.time.Duration;
@@ -12,7 +13,6 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class SmsCodeService {
 
-    private static final int CODE_LENGTH = 6;
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
     private static final Duration SEND_INTERVAL = Duration.ofSeconds(60);
     private static final int MAX_DAILY_SEND_COUNT = 10;
@@ -20,6 +20,7 @@ public class SmsCodeService {
 
     private final SmsCodePort smsCodePort;
     private final SmsRateLimitPort rateLimitPort;
+    private final SmsSenderPort smsSenderPort;
 
     public void sendCode(String phone) {
         if (rateLimitPort.isSendLimited(phone)) {
@@ -34,6 +35,10 @@ public class SmsCodeService {
         String code = generateCode();
         smsCodePort.save(phone, code, CODE_TTL);
         rateLimitPort.setSendInterval(phone, SEND_INTERVAL);
+
+        // 通过 SmsSenderPort 将验证码投递到用户手机
+        // 当前使用 MockSmsSenderAdapter（日志输出），生产环境替换为真实短信服务商实现
+        smsSenderPort.send(phone, code);
     }
 
     public void verifyCode(String phone, String code) {
@@ -57,11 +62,6 @@ public class SmsCodeService {
     }
 
     private String generateCode() {
-        ThreadLocalRandom random = ThreadLocalRandom.current();
-        StringBuilder sb = new StringBuilder(CODE_LENGTH);
-        for (int i = 0; i < CODE_LENGTH; i++) {
-            sb.append(random.nextInt(10));
-        }
-        return sb.toString();
+        return String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
     }
 }

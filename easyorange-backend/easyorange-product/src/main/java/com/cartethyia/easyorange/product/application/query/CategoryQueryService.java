@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.application.query;
 
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
@@ -22,7 +21,7 @@ public class CategoryQueryService {
     private final CategoryQueryRepository categoryQueryRepository;
 
     @Transactional(readOnly = true)
-    public List<CategoryResponse> getCategories(Long parentId) {
+    public List<CategoryReadModel> getCategories(Long parentId) {
         List<CategoryReadModel> categories;
         if (parentId != null) {
             categories = categoryCachePort.getCategoriesByParentId(parentId);
@@ -41,17 +40,16 @@ public class CategoryQueryService {
         Map<Long, Long> productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
 
         return categories.stream()
-                .map(cat -> CategoryResponse.builder()
-                        .id(cat.id())
-                        .name(cat.name())
-                        .parentId(cat.parentId())
-                        .level(cat.level())
-                        .icon(cat.icon())
-                        .sortOrder(cat.sortOrder())
-                        .status(cat.status())
-                        .createTime(cat.createTime())
-                        .productCount(productCountMap.getOrDefault(cat.id(), 0L).intValue())
-                        .build())
+                .map(cat -> new CategoryReadModel(
+                        cat.id(),
+                        cat.name(),
+                        cat.parentId(),
+                        cat.level(),
+                        cat.icon(),
+                        cat.sortOrder(),
+                        cat.status(),
+                        cat.createTime(),
+                        productCountMap.getOrDefault(cat.id(), 0L).intValue()))
                 .collect(Collectors.toList());
     }
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCurrentUser, useLogout } from '@/hooks'
 import { userApi } from '@/api/userApi'
@@ -32,10 +32,12 @@ function ProfilePage() {
   const [editValue, setEditValue] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' })
+  const [passwordForm, setPasswordForm] = useState({ verifyCode: '', newPassword: '', confirmPassword: '' })
   const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [countdown, setCountdown] = useState(0)
   const [animateIn, setAnimateIn] = useState(false)
   const [favoriteCount, setFavoriteCount] = useState(0)
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimateIn(true), 100)
@@ -46,6 +48,30 @@ function ProfilePage() {
     favoriteApi.getCount()
       .then((res) => setFavoriteCount(res.data ?? 0))
       .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
+      }
+    }
+  }, [])
+
+  const startCountdown = useCallback(() => {
+    setCountdown(60)
+    countdownRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          if (countdownRef.current) {
+            clearInterval(countdownRef.current)
+            countdownRef.current = null
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
   }, [])
 
   const handleEdit = useCallback((field: EditableField, currentValue: string) => {
@@ -76,8 +102,24 @@ function ProfilePage() {
     setEditValue('')
   }, [])
 
+  const handleSendCode = useCallback(async () => {
+    const phone = user?.phone
+    if (!phone) {
+      addToast({ type: 'warning', message: '未绑定手机号，无法修改密码' })
+      return
+    }
+    try {
+      await userApi.sendSmsCode(phone)
+      startCountdown()
+      addToast({ type: 'success', message: '验证码已发送' })
+    } catch (err) {
+      const msg = errorHandler.handle(err as Error)
+      addToast({ type: 'error', message: msg })
+    }
+  }, [user, addToast, startCountdown])
+
   const handleChangePassword = useCallback(async () => {
-    if (!passwordForm.oldPassword || !passwordForm.newPassword) {
+    if (!passwordForm.verifyCode || !passwordForm.newPassword) {
       addToast({ type: 'warning', message: '请填写完整信息' })
       return
     }
@@ -88,11 +130,11 @@ function ProfilePage() {
     setIsChangingPassword(true)
     try {
       await userApi.changePassword({
-        oldPassword: passwordForm.oldPassword,
+        verifyCode: passwordForm.verifyCode,
         newPassword: passwordForm.newPassword
       })
       setShowPasswordModal(false)
-      setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
+      setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' })
       addToast({ type: 'success', message: '密码修改成功，请重新登录' })
       logout()
       navigate('/login')
@@ -173,12 +215,18 @@ function ProfilePage() {
         show={showPasswordModal}
         form={passwordForm}
         isLoading={isChangingPassword}
+        countdown={countdown}
+        phone={user?.phone ?? ''}
         onFormChange={setPasswordForm}
-        onClose={() => setShowPasswordModal(false)}
+        onClose={() => {
+          setShowPasswordModal(false)
+          setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' })
+        }}
         onSubmit={handleChangePassword}
+        onSendCode={handleSendCode}
       />
     </div>
   )
 }
 
-export default ProfilePage;
+export default ProfilePage

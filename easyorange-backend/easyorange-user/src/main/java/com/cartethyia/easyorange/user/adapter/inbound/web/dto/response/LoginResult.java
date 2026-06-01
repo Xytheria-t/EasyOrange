@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.response;
 
 public record LoginResult(
-    String token,
+    String accessToken,
     String refreshToken,
     UserResponse user
 ) {}

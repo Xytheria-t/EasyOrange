@@ -38,9 +38,9 @@ public class ProductCommandController {
     }
 
     @PutMapping("/{id}")
-    public Result<Long> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {
-        Long productId = commandService.updateProduct(UpdateProductCommand.from(id, request));
-        return Result.success(productId);
+    public Result<Void> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {
+        commandService.updateProduct(UpdateProductCommand.from(id, request));
+        return Result.success();
     }
 
     @DeleteMapping("/{id}")

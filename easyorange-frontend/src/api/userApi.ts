@@ -38,7 +38,7 @@ export const userApi = {
     },
 
     forgotPassword(data: { phone: string; verifyCode: string; newPassword: string }) {
-        return request<void>('/auth/password-reset', {
+        return request<void>('/auth/password/reset', {
             method: 'POST',
             body: data
         });
@@ -55,8 +55,8 @@ export const userApi = {
         });
     },
 
-    changePassword(data: { oldPassword: string; newPassword: string }) {
-        return request<void>('/users/me/password', {
+    changePassword(data: { verifyCode: string; newPassword: string }) {
+        return request<void>('/auth/password/change', {
             method: 'PUT',
             body: data
         });

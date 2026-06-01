@@ -1,15 +1,18 @@
-import { X } from 'lucide-react'
+import { X, Smartphone, ShieldCheck } from 'lucide-react'
 
 interface PasswordModalProps {
   show: boolean
-  form: { oldPassword: string; newPassword: string; confirmPassword: string }
+  form: { verifyCode: string; newPassword: string; confirmPassword: string }
   isLoading: boolean
-  onFormChange: (form: { oldPassword: string; newPassword: string; confirmPassword: string }) => void
+  countdown: number
+  phone: string
+  onFormChange: (form: { verifyCode: string; newPassword: string; confirmPassword: string }) => void
   onClose: () => void
   onSubmit: () => void
+  onSendCode: () => void
 }
 
-export function PasswordModal({ show, form, isLoading, onFormChange, onClose, onSubmit }: PasswordModalProps) {
+export function PasswordModal({ show, form, isLoading, countdown, phone, onFormChange, onClose, onSubmit, onSendCode }: PasswordModalProps) {
   if (!show) {return null}
 
   return (
@@ -35,15 +38,40 @@ export function PasswordModal({ show, form, isLoading, onFormChange, onClose, on
         </div>
         <div className="modal-body">
           <div className="form-group">
-            <label className="form-label" htmlFor="old-password">旧密码</label>
-            <input
-              id="old-password"
-              className="form-input"
-              type="password"
-              value={form.oldPassword}
-              onChange={(e) => onFormChange({ ...form, oldPassword: e.target.value })}
-              placeholder="请输入旧密码"
-            />
+            <label className="form-label">手机号</label>
+            <div className="input-wrapper">
+              <Smartphone size={18} className="input-icon" />
+              <input
+                className="form-input"
+                type="tel"
+                value={phone}
+                disabled
+                placeholder="手机号"
+              />
+              <button
+                className="resend-btn"
+                onClick={onSendCode}
+                disabled={countdown > 0}
+                type="button"
+              >
+                {countdown > 0 ? `${countdown}s` : '发送验证码'}
+              </button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label className="form-label" htmlFor="change-verify-code">验证码</label>
+            <div className="input-wrapper">
+              <ShieldCheck size={18} className="input-icon" />
+              <input
+                id="change-verify-code"
+                className="form-input"
+                type="text"
+                value={form.verifyCode}
+                onChange={(e) => onFormChange({ ...form, verifyCode: e.target.value })}
+                placeholder="请输入6位验证码"
+                maxLength={6}
+              />
+            </div>
           </div>
           <div className="form-group">
             <label className="form-label" htmlFor="new-password">新密码</label>
