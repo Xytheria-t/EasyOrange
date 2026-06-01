@@ -5,7 +5,7 @@ tags:
 
 # EasyOrange 项目指南
 
-**EasyOrange** 是一个基于 Spring Boot + React 的全栈电商平台项目。
+**EasyOrange** 是一个基于 Spring Boot + React 的全栈电商平台项目，**2025 年 11 月启动开发**。
 
 ## 项目结构
 

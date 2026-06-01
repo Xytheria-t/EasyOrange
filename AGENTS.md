@@ -1,6 +1,6 @@
 # EasyOrange 项目指南
 
-EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
+EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台，**2025 年 11 月启动开发**。
 
 ## 技术栈
 
