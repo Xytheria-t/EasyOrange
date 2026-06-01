@@ -72,7 +72,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | 智能问答 | `POST /api/ai/qa` | 基于商品上下文回答买家问题 |
 | 智能文案 | `POST /api/ai/generate-copy` | 基于商品信息自动生成商品描述和标题（4种风格: standard/detailed/concise/emotional） |
 | 我的信用 | `GET /api/credit/my` | 查看当前用户信用评分 |
-| 信用详情 | `GET /api/credit/detail/{userId}` | 查看指定用户信用分+最近变更记录 |
+| 信用详情 | `GET /api/credit/detail/{userId}` | 查看指定用户信用分+变更记录 |
 | 重新计算 | `POST /api/credit/recalculate` | 触发当前用户信用分重新计算 |
 | AI 审核(admin) | `GET /api/admin/products/{id}/ai-review` | 管理端获取 AI 审核建议 |
 
@@ -83,7 +83,11 @@ easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理, **RabbitMQ 消息队列**)
-│   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理)
+│   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
+│   │   ├── domain/service/      # PasswordManagementService (BCrypt), AuthenticationService, RegistrationService, SmsCodeService, LoginSecurityService
+│   │   ├── domain/port/         # SmsSenderPort, PasswordEncoderPort, LoginAttemptPort, SmsRateLimitPort, SmsCodePort, AvatarFilePort
+│   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试隔离)
+│   │   └── adapter/inbound/web/dto/request/ # PasswordResetRequest, UpdateProfileRequest (新增)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
@@ -110,9 +114,10 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键格式 `{module}.{aggregate}.{event}`，通过 `@ConditionalOnProperty` 支持双模式切换（RabbitMQ / 原有 EventBus）
-6. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
-7. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
+5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键格式 `{module}.{aggregate}.{event}`，通过 `@ConditionalOnProperty` 支持双模式切换（RabbitMQ / 原有 EventBus）。**已实现 8 个事件消费者**: PaymentInitiationEventListener, ProductAuditEventListener, ReportProcessedEventListener, StockReservationEventListener, OrderCreatedEventConsumer, PaymentEventConsumer, ProductEventConsumer, WebSocketEventConsumer
+6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
+7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
+8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
 
 ## 模块依赖关系
 
@@ -186,6 +191,8 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/`
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
+- **零配置启动**: 项目支持零配置开发环境启动（MySQL localhost:3306, Redis localhost:6379）。新开发者只需 `./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application` 即可运行。敏感配置通过 `.env.example` 模板管理，本地创建 `.env.local` 自定义
+- **.gitignore 规范**: 使用精简版 .gitignore (78行)，已忽略 AI 生成文件 (**/codemap.md, 298个)、AI 工具目录 (.slim/, .superpowers/)、前端 .env.production/.env.development、测试产物 (test-results/)
 
 ## 常用命令
 

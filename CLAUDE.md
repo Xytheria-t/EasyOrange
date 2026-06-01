@@ -14,12 +14,18 @@ easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, Bloom 过滤器, AOP, 事件, 文件, 分布式 ID, 一致性哈希, **RabbitMQ 消息队列**)
-│   ├── easyorange-user/         # 用户模块 (DDD)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
+│   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
+│   │   ├── domain/service/      # PasswordManagementService, AuthenticationService, RegistrationService, SmsCodeService, LoginSecurityService
+│   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
+│   │   └── domain/port/         # SmsSenderPort, PasswordEncoderPort (端口接口)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
+│   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
+│   │   └── adapter/inbound/web/assembler/ # PaymentViewAssembler (DTO 转换)
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
+│   │   └── adapter/inbound/web/assembler/ # FavoriteAssembler (DTO 转换)
 │   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision)
 │   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
@@ -147,6 +153,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **RabbitMQ 双模式切换**: 所有 RabbitMQ 相关组件（发布器、消费者）使用 `@ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled")` 条件化启用。设置 `easyorange.rabbitmq.enabled=false` 可回退到原有 Spring EventBus + @Async 模式
 - **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)
+- **Assembler 模式 (DTO 转换)**: adapter/inbound/web/assembler/ 目录下的 Assembler 类负责 domain → DTO 转换（使用 MapStruct 或手动实现）。**禁止**在 Controller/Service 中直接构造 Response DTO，必须通过 Assembler。已废弃的旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest 等）已删除，新代码统一使用 assembler 模式
+- **.gitignore 最佳实践**: 项目使用精简版 .gitignore (78行)，已忽略 AI 生成文件 (**/codemap.md)、AI 工具目录 (.slim/, .superpowers/)、测试产物 (test-results/)。前端 .env.production 和 .env.development 不提交（可能包含敏感配置），开发者应基于 .env.example 创建本地配置
 
 ---
 
