@@ -65,12 +65,22 @@ logs/
 *.sqlite
 coverage/
 
-# ---------- AI 工具（隐私） ----------
+# ---------- AI 工具与生成文件（隐私） ----------
 .claude/
 .cursor/
 .opencode/
 .trae/
 .agents/
+.slim/
+.superpowers/
+
+# AI 生成的代码地图
+**/codemap.md
+
+# 测试产物
+test-results/
+playwright-report/
+blob-report/
 
 # ---------- 文档（可选） ----------
 docs/
