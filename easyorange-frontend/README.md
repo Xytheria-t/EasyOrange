@@ -1,6 +1,6 @@
 # 易橙坊前端 - EasyOrange Frontend
 
-> 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用
+> 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用（**2025 年 11 月启动**）
 
 ## 技术栈
 
