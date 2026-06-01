@@ -13,7 +13,7 @@ tags:
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, Bloom 过滤器, AOP, 事件, 文件, 分布式 ID, 一致性哈希)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, Bloom 过滤器, AOP, 事件, 文件, 分布式 ID, 一致性哈希, **RabbitMQ 消息队列**)
 │   ├── easyorange-user/         # 用户模块 (DDD)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
@@ -143,6 +143,10 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
 - **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）
 - **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
+- **RabbitMQ 路由键规范**: 新增领域事件必须在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 中注册路由键，格式为 `{module}.{aggregate}.{event}`（如 `order.aggregate.created`）。使用字符串映射 `event.eventType()` 作为 key（非 Class 引用），避免 Maven 循环依赖
+- **RabbitMQ 双模式切换**: 所有 RabbitMQ 相关组件（发布器、消费者）使用 `@ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled")` 条件化启用。设置 `easyorange.rabbitmq.enabled=false` 可回退到原有 Spring EventBus + @Async 模式
+- **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
+- **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)
 
 ---
 

@@ -10,19 +10,22 @@ favorite/
 │   ├── inbound/web/                   # 入站适配器
 │   │   ├── controller/
 │   │   │   └── FavoriteController.java
-│   │   └── dto/request/
-│   │       ├── BatchCheckRequest.java
-│   │       └── BatchRemoveRequest.java
+│   │   ├── assembler/
+│   │   │   └── FavoriteAssembler.java
+│   │   └── dto/
+│   │       ├── request/
+│   │       │   ├── AddFavoriteRequest.java
+│   │       │   ├── FavoritePageRequest.java
+│   │       │   ├── BatchCheckRequest.java
+│   │       │   └── BatchRemoveRequest.java
+│   │       └── response/
+│   │           ├── FavoriteResponse.java
+│   │           └── FavoriteDetailResponse.java
 │   └── outbound/persistence/          # 出站适配器
 │       ├── FavoriteDO.java
 │       ├── FavoriteMapper.java
 │       └── MybatisFavoriteRepository.java
 ├── application/                       # 应用层
-│   ├── dto/
-│   │   ├── AddFavoriteDTO.java
-│   │   ├── FavoritePageQuery.java
-│   │   ├── FavoriteResponse.java
-│   │   └── RemoveFavoriteDTO.java
 │   └── service/
 │       └── FavoriteService.java
 └── domain/                            # 领域层
@@ -75,6 +78,8 @@ public class Favorite {
 ### 添加收藏新功能
 
 1. `FavoriteController` 添加端点
-2. `FavoriteService` 添加业务方法
-3. 如需新 DTO → `application/dto/`
-4. 添加测试
+2. `FavoriteAssembler` 添加转换（adapter/inbound/web/assembler/）
+3. Request DTO 放在 `adapter/inbound/web/dto/request/`
+4. Response DTO 放在 `adapter/inbound/web/dto/response/`
+5. `FavoriteService` 添加业务方法（接受原始参数）
+6. 添加测试

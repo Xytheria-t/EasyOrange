@@ -100,8 +100,7 @@ framework/
 │   ├── mapper/SysOperLogMapper.java
 │   ├── service/SysOperLogService.java
 │   ├── service/impl/SysOperLogServiceImpl.java
-│   ├── OperLogArchiveService.java
-│   └── dto/LogStorageStats.java
+
 ├── redis/                   # Redis 缓存抽象
 │   ├── RedisCache.java           # 缓存接口 (String/Hash/List/Set/ZSet + Lua + 分布式锁 + SCAN)
 │   └── impl/RedisCacheImpl.java  # 实现 (含 Lua 原子解锁、SCAN 替代 KEYS 防阻塞)

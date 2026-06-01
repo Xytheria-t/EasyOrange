@@ -43,7 +43,6 @@
 | 消息 | eo_offline_message | 离线消息 | OfflineMessage |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFile |
 | 日志 | eo_oper_log | 操作日志 | SysOperLog |
-| 日志 | eo_oper_log_archive | 操作日志归档 | — |
 | 事件 | eo_domain_event | 领域事件（Outbox） | OutboxMessagePO |
 | 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
 | 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyPO |
@@ -63,9 +62,9 @@
 
 基础设施表（eo_domain_event / eo_saga_status / eo_idempotency_key）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
 
-归档表（eo_message_archive / eo_oper_log_archive）无 del_flag / version，使用 archived_at 记录归档时间。
+归档表（eo_message_archive）无 del_flag / version，使用 archived_at 记录归档时间。
 
-eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by，使用独立主键 oper_id 和操作时间 oper_time。
+eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 oper_id 和操作时间 oper_time。
 
 ---
 
@@ -667,12 +666,6 @@ eo_oper_log / eo_oper_log_archive 无 del_flag / version / create_by / update_by
 
 ---
 
-### 20. eo_oper_log_archive — 操作日志归档表
-
-结构与 eo_oper_log 相同，主键为 oper_id，额外增加 archived_at DATETIME 字段。无 del_flag / version。
-
----
-
 ### 22. eo_domain_event — 领域事件表（Outbox 模式）
 
 | 字段 | 类型 | 约束 | 说明 |
@@ -805,5 +798,5 @@ eo_user ──1:N── eo_search_history (user_id)
 eo_user ──1:N── eo_offline_message (user_id)
 
 eo_message ──1:1── eo_message_archive (id)
-eo_oper_log ──1:1── eo_oper_log_archive (oper_id)
+
 ```

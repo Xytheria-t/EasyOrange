@@ -9,6 +9,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 | **后端** | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16 |
 | **前端** | TypeScript, React |
 | **数据库** | MySQL 8.4, Redis 7.4 |
+| **消息队列** | RabbitMQ 3.13 (Spring AMQP 4.0.x) |
 | **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
 | **认证** | JWT (Access + Refresh Token) |
 | **迁移** | Flyway 11.14.1 |
@@ -81,11 +82,11 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台。
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理, **RabbitMQ 消息队列**)
 │   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
-│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
+│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket + 聊天)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   ├── easyorange-ai/           # AI 模块 (Port/Adapter: LLM + Embedding + Vision)
@@ -109,7 +110,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: 应用服务直接调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
+5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键格式 `{module}.{aggregate}.{event}`，通过 `@ConditionalOnProperty` 支持双模式切换（RabbitMQ / 原有 EventBus）
 6. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 7. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
 
@@ -132,7 +133,8 @@ admin → framework, common, user (optional), product (optional), order (optiona
 
 ## 已知问题
 
-- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`OutboxRepositoryIntegrationTest` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
+- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`OutboxRepositoryIntegrationTest`、`RabbitMQDomainEventPublisherIT` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
+- **Redis 密码**: 开发环境 Redis 连接偶发 `WRONGPASS` 错误（定时任务），检查是否设置 `REDIS_PASSWORD=` 空环境变量覆盖了 application-dev.yaml 的默认值 `easyorange123`
 
 ## 错误码规范
 

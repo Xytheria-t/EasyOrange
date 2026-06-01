@@ -35,9 +35,7 @@ payment/
 │   │   ├── RefundPaymentCommand.java
 │   │   └── ClosePaymentCommand.java
 │   ├── query/                               # 查询 (CQRS Read)
-│   │   ├── PaymentQueryHandler.java
-│   │   ├── PaymentQuery.java
-│   │   └── PaymentView.java
+│   │   └── PaymentQueryHandler.java
 │   ├── event/
 │   │   └── PaymentEventListener.java        # 领域事件持久化到 Outbox
 │   ├── idempotency/
@@ -64,7 +62,7 @@ payment/
 │   │   ├── PaymentId.java, PaymentNo.java
 │   │   ├── PaymentAmount.java
 │   │   ├── IdempotencyKey.java
-│   │   └── PaymentMethodResponse.java
+│   │   └── PaymentMethodInfo.java
 │   ├── event/
 │   │   ├── PaymentCreatedEvent.java
 │   │   ├── PaymentSucceededEvent.java

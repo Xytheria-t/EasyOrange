@@ -122,6 +122,18 @@ PageResult.of(records, total, page, size)
 | 响应 DTO | `*Response` / `*Response` | `UserResponse` |
 | 数据对象 | `*DO` / `*PO` | `UserEntity`, `PaymentPO` |
 
+## 服务层方法返回值约定
+
+应用服务（`application/service/`、`application/command/`）的 public 方法遵循以下约定：
+
+| 操作类型 | 返回值 | 说明 | 示例 |
+|---------|--------|------|------|
+| **创建** (create/register/add) | `Long` (ID) | 客户端需要获取新资源标识；服务端生成 Snowflake ID | `createProduct()`, `register()`, `createReview()` |
+| **命令/更新/删除** (update/delete/remove/handle/put/take/mark/submit/cancel/process) | `void` | 命令不返回值；前端通过 React Query 的 `invalidateQueries` 重新拉取最新数据 | `updateProduct()`, `deleteProduct()`, `addFavorite()`, `handleReport()`, `putOnline()` |
+| **批量操作** 可能返回结果 DTO（如 `BatchAuditResultResponse`），因需要聚合成功率/失败信息
+
+**背景**：这个约定是务实混合——不是严格 CQRS（create 返回 ID 给前端），也不是 RESTful 完整资源返回（React Query 不需要）。它在当前项目上下文（Spring Boot + React + TanStack Query）下是最佳平衡。
+
 ## 数据对象基类
 
 ```java

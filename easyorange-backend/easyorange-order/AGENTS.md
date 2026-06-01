@@ -13,7 +13,8 @@ order/
 │   │   │   │   ├── OrderCommandController.java  # 写端点
 │   │   │   │   └── OrderQueryController.java    # 读端点
 │   │   │   ├── dto/request/
-│   │   │   │   └── CreateOrderRequest.java
+│   │   │   │   ├── CreateOrderRequest.java
+│   │   │   │   └── QueryOrderRequest.java
 │   │   ├── job/                             # 定时任务
 │   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
 │   │   │   └── OrderAutoConfirmTask.java    # 自动确认收货
@@ -53,12 +54,11 @@ order/
 │   │   └── RefundOrderCommand.java
 │   ├── query/                               # 查询 (CQRS Read)
 │   │   ├── OrderQueryHandler.java
-│   │   ├── OrderQuery.java
-│   │   └── QueryOrderRequest.java
+│   │   └── OrderQuery.java
 │   ├── assembler/
 │   │   └── OrderVOAssembler.java
 │   └── dto/
-│       └── OrderResponse.java                  # 响应 Response（被 assembler/controller/outbound 共用）
+│       └── OrderVO.java                      # 响应 VO（与缓存系统耦合，暂留 application）
 ├── domain/
 │   ├── aggregate/
 │   │   └── OrderAggregate.java             # 订单聚合根 (不可变)
@@ -176,8 +176,10 @@ CANCELLED CANCELLED REFUNDED
 
 ### 添加新查询维度
 
-1. `OrderQuery` / `QueryOrderRequest` 添加字段
-2. `OrderReadRepository` 修改查询
-3. `OrderReadModel` 添加字段
-4. `OrderVOAssembler` 更新
-5. 测试
+1. `OrderQuery` 添加字段
+2. 请求 DTO `adapter/inbound/web/dto/request/` 添加字段
+3. Controller 提取参数传递原始类型给 `OrderQueryHandler`
+4. `OrderReadRepository` 修改查询
+5. `OrderReadModel` 添加字段
+6. `OrderVOAssembler` 更新
+7. 测试

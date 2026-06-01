@@ -19,10 +19,10 @@ user/
 │   │   │   │   ├── SmsLoginRequest.java
 │   │   │   │   ├── RegisterRequest.java
 │   │   │   │   ├── RefreshTokenRequest.java
-│   │   │   │   ├── ForgotPasswordRequest.java
+│   │   │   │   ├── PasswordResetRequest.java
 │   │   │   │   └── ChangePasswordRequest.java
 │   │   │   └── profile/                 # 用户资料
-│   │   │       └── UpdateUserRequest.java
+│   │   │       └── UpdateProfileRequest.java
 │   │   ├── dto/response/                # 出站 DTO
 │   │   │   ├── UserResponse.java
 │   │   │   ├── UserProfileResponse.java
@@ -40,13 +40,16 @@ user/
 │       ├── cache/                       # 缓存适配器
 │       │   ├── RedisLoginAttemptAdapter.java
 │       │   └── RedisSmsCodeAdapter.java
-│   ├── security/                    # 安全适配器
-│   │   └── PasswordEncoderAdapter.java
+│       ├── mock/                        # 开发环境模拟适配器
+│       │   ├── MockSmsCodeAdapter.java  # 内存验证码存储+限流（无Redis依赖）
+│       │   └── MockSmsSenderAdapter.java # 控制台日志发送（不真实发短信）
+│       ├── security/                    # 安全适配器
+│       │   └── PasswordEncoderAdapter.java
 │       └── storage/                     # 存储适配器
 │           └── LocalAvatarFileStorage.java
 ├── application/
 │   └── service/                         # 应用服务（薄编排，不碰响应格式）
-│       ├── AuthAppService.java          # 认证+密码管理（注册/登录/登出/刷新/忘记密码/修改密码）
+│       ├── AuthAppService.java          # 认证+密码管理（注册/登录/登出/刷新/重置密码/修改密码）
 │       └── ProfileAppService.java       # 用户资料（信息/更新/头像）
 ├── domain/
 │   ├── aggregate/
@@ -60,6 +63,7 @@ user/
 │   ├── service/                         # 领域服务
 │   │   ├── AuthenticationService.java
 │   │   ├── LoginSecurityService.java
+│   │   ├── PasswordManagementService.java  # 短信验证→设置新密码（统一处理忘记密码+修改密码）
 │   │   ├── SmsCodeService.java
 │   │   └── RegistrationService.java
 │   ├── repository/
@@ -67,10 +71,10 @@ user/
 │   ├── port/                             # 出站端口
 │   │   ├── AvatarFilePort.java
 │   │   ├── LoginAttemptPort.java
-│   │   ├── NicknameGeneratorPort.java
 │   │   ├── PasswordEncoderPort.java
 │   │   ├── SmsCodePort.java
-│   │   └── SmsRateLimitPort.java
+│   │   ├── SmsRateLimitPort.java
+│   │   └── SmsSenderPort.java
 │   ├── constant/
 │   │   ├── UserConstant.java
 │   │   └── UserSecurityConstant.java
@@ -81,7 +85,7 @@ user/
 │   └── exception/
 │       └── UserDomainException.java
 └── config/
-    └── UserDomainConfig.java            # Port → Bean 绑定（含 NicknameGeneratorPort）
+    └── UserDomainConfig.java            # Port → Bean 绑定
 ```
 
 ## 核心模式
@@ -150,7 +154,10 @@ domain 层通过 `port/` 接口与基础设施解耦：
 - `PasswordEncoderPort` → `PasswordEncoderAdapter` (BCrypt)
 - `LoginAttemptPort` → `RedisLoginAttemptAdapter` (Redis)
 - `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
-- `NicknameGeneratorPort` → `NicknameGenerator` (随机昵称生成)
+- 短信验证码三端口：
+  - `SmsCodePort` → `MockSmsCodeAdapter` (内存) / `RedisSmsCodeAdapter` (Redis，生产)
+  - `SmsRateLimitPort` → `MockSmsCodeAdapter` (内存) / `RedisSmsCodeAdapter` (Redis，生产)
+  - `SmsSenderPort` → `MockSmsSenderAdapter` (日志，开发) / 第三方短信商（生产）
 
 ### 自定义校验注解 (Jakarta Bean Validation)
 
@@ -164,10 +171,38 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 - 注册唯一性 → `RegistrationService.validateUsernameNotExists()` + `validateUniqueContactInfo()`
 - 更新唯一性 → `ProfileAppService.validateUniqueFieldsIfChanged()`
 
+## 密码管理
+
+密码操作统一通过 `PasswordManagementService`（domain 层）处理，不校验旧密码，一律使用 **手机号 + 短信验证码** 验证身份：
+
+| 操作 | 路由 | 身份 | 参数 |
+|------|------|------|------|
+| 发送验证码 | `POST /api/auth/sms-code` | 匿名 | `phone` |
+| 重置密码（忘记密码） | `POST /api/auth/password/reset` | 匿名 | `phone` + `verifyCode` + `newPassword` |
+| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `verifyCode` + `newPassword`（手机号自动填充） |
+
+- `PasswordManagementService.resetPassword(phone, verifyCode, newPassword)` 为统一入口
+- 仅 admin 端 `PUT /api/admin/users/{id}/reset-password` 保持管理员强制重置（不走短信验证）
+
+## 短信验证码（开发环境）
+
+开发环境使用内存 Mock，**不依赖 Redis**，**不发送真实短信**。启动后调用发送验证码接口会在控制台打印：
+
+```
+[MOCK SMS] 验证码发送
+  手机号: 138xxxxxxx
+  验证码: 482617
+  提示:   当前为模拟模式，不会真实发送短信
+```
+
+- `MockSmsCodeAdapter` — 基于 `ConcurrentHashMap` 的验证码存储和限流，重启即重置
+- `MockSmsSenderAdapter` — 日志输出，不调用第三方 API
+- `MockSmsCodeAdapter` 使用 `@Component` + `@ConditionalOnMissingBean`（组件扫描自动注册）；`MockSmsSenderAdapter` 通过 `UserDomainConfig.smsSenderPort()` 显式声明为 `@Bean`（DevTools 类加载器下组件扫描可能遗漏 JAR 中的 `@Component`）
+
 ## 安全要点
 
 - 密码: BCrypt 加密，禁止明文存储和日志输出
-- 登录限流: `@RateLimiter` + Redis 滑动窗口
+- 登录限流: `@RateLimiter` + Redis 滑动窗口（生产） ; 开发环境限流走内存 Mock
 - 防重提交: `@RepeatSubmit` 防止重复注册
 - Token: Access Token 短期 + Refresh Token 长期，登出加入黑名单
 
@@ -182,7 +217,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 3. 创建 Flyway 迁移脚本
 4. 更新 `UserEntity`（新增字段）
 5. 更新 `UserEntityMapper`（toDomain 使用 `ImmutableXxx.builder()` / from 使用 getter）
-6. 更新 `adapter/inbound/web/dto/response/UserResponse` / `UpdateUserRequest`
+6. 更新 `adapter/inbound/web/dto/response/UserResponse` / `UpdateProfileRequest`
 7. 更新 `adapter/inbound/web/assembler/UserAssembler`（如需 MapStruct 显式映射）
 8. 更新 `User` 聚合根的相关修改方法
 9. 添加测试
@@ -196,6 +231,12 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 5. `AuthAppService.login()` 委托 `AuthenticationService`（无需额外分发逻辑）
 6. `AuthenticationService` 添加对应认证逻辑
 7. 添加测试
+
+### 添加新 SMS 发送实现（生产环境）
+
+1. 创建类实现 `SmsSenderPort`（如 `AliyunSmsSenderAdapter`），放在 `adapter/outbound/` 下
+2. 修改 `UserDomainConfig.smsSenderPort()` 的返回值为新的实现类，或标注 `@Primary` + `@Component`
+3. 如需切换验证码存储到 Redis，确保 `RedisSmsCodeAdapter` 的 `@Component` 被扫描到（`MockSmsCodeAdapter` 的 `@ConditionalOnMissingBean(name = "redisSmsCodeAdapter")` 会自动跳过内存实现）
 
 ### 添加新领域事件
 

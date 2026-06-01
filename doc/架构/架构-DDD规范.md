@@ -301,18 +301,18 @@ public class UserInfoAdapter implements UserInfoPort {
 class UserTest {
 
     @Test
-    @DisplayName("register: 正常创建用户")
-    void register_validInput_success() {
-        var user = User.register("testuser", "encodedPassword", "TestNick");
+    @DisplayName("create: 正常创建用户")
+    void create_validInput_success() {
+        var user = User.create("testuser", "encodedPassword");
 
         assertThat(user.getUsername()).isEqualTo("testuser");
         assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
     }
 
     @Test
-    @DisplayName("register: 用户名为空时抛出异常")
-    void register_nullUsername_throws() {
-        assertThatThrownBy(() -> User.register(null, "encodedPassword", "TestNick"))
+    @DisplayName("create: 用户名为空时抛出异常")
+    void create_nullUsername_throws() {
+        assertThatThrownBy(() -> User.create(null, "encodedPassword"))
             .isInstanceOf(NullPointerException.class)
             .hasMessageContaining("username");
     }
@@ -320,11 +320,11 @@ class UserTest {
     @Test
     @DisplayName("changePassword: 返回新实例，原实例不变")
     void changePassword_returnsNewInstance() {
-        var user = User.register("testuser", "oldPassword", "TestNick");
-        var updated = user.changePassword("newPassword", 1L);
+        var user = User.create("testuser", "encodedPassword");
+        var updated = user.changePassword("newEncodedPassword", 1L);
 
-        assertThat(updated.getPassword()).isEqualTo("newPassword");
-        assertThat(user.getPassword()).isEqualTo("oldPassword");
+        assertThat(updated.getPassword()).isEqualTo("newEncodedPassword");
+        assertThat(user.getPassword()).isEqualTo("encodedPassword");
     }
 }
 ```

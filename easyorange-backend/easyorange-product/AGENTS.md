@@ -47,9 +47,9 @@ product/
 │   │   └── handler/                     # 查询处理器
 │   ├── event/
 │   │   └── ProductEventListener.java
-│   └── service/
+│       └── service/
 │       ├── ProductViewCountService.java
-│       └── SearchHistoryService.java
+│       └── SearchHistoryBufferService.java
 ├── domain/
 │   ├── aggregate/
 │   │   └── Product.java                 # 商品聚合根
