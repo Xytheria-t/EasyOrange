@@ -125,6 +125,7 @@ mybatis-plus:
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
     default-statement-timeout: 30
   global-config:
+    banner: false
     db-config:
       logic-delete-field: delFlag
       logic-delete-value: 2

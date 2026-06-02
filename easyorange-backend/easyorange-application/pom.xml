@@ -132,13 +132,18 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                         </exclude>
+                        <!-- devtools 严禁打入生产 fat jar: 它会启动 LiveReload 服务器并拖慢启动 -->
+                        <exclude>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-devtools</artifactId>
+                        </exclude>
                     </excludes>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.flywaydb</groupId>
                 <artifactId>flyway-maven-plugin</artifactId>
-                <version>11.14.1</version>
+                <version>${flyway.version}</version>
                 <configuration>
                     <url>jdbc:mysql://localhost:3306/easyorange?useUnicode=true&amp;characterEncoding=UTF-8&amp;useSSL=false&amp;serverTimezone=Asia/Shanghai&amp;allowPublicKeyRetrieval=true</url>
                     <user>${env.FLYWAY_USER}</user>
