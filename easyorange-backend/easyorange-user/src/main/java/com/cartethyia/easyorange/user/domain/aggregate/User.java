@@ -27,14 +27,6 @@ public class User {
     private final LoginInfo loginInfo;
     private final AuditInfo auditInfo;
 
-    public String getUsername() {
-        return credentials != null ? credentials.username() : null;
-    }
-
-    public String getPassword() {
-        return credentials != null ? credentials.encodedPassword() : null;
-    }
-
     public static User create(String username, String encodedPassword) {
         Objects.requireNonNull(username, "用户名不能为空");
         Objects.requireNonNull(encodedPassword, "密码不能为空");
@@ -118,6 +110,14 @@ public class User {
         return this.toBuilder()
             .loginInfo(this.loginInfo.recordLogin(loginIp))
             .build();
+    }
+
+    public String getUsername() {
+        return credentials != null ? credentials.username() : null;
+    }
+
+    public String getPassword() {
+        return credentials != null ? credentials.encodedPassword() : null;
     }
 
     public boolean isEnabled() {

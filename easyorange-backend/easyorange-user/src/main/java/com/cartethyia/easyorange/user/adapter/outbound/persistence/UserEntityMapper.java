@@ -15,23 +15,44 @@ import java.util.function.Function;
 
 @Mapper(
     componentModel = "spring",
-    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL,
-    imports = {
-        Credentials.class,
-        ContactInfo.class,
-        ImmutablePersonalInfo.class,
-        LoginInfo.class,
-        AuditInfo.class
-    }
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL
 )
 public interface UserEntityMapper {
 
-    @Mapping(target = "credentials", expression = "java(new Credentials(entity.getUsername(), entity.getPassword()))")
-    @Mapping(target = "contactInfo", expression = "java(new ContactInfo(entity.getEmail(), entity.getPhone()))")
-    @Mapping(target = "personalInfo", expression = "java(ImmutablePersonalInfo.builder().realName(entity.getRealName()).nickName(entity.getNickName()).sex(entity.getSex()).studentId(entity.getStudentId()).avatar(entity.getAvatar()).build())")
-    @Mapping(target = "loginInfo", expression = "java(new LoginInfo(entity.getLoginIp(), entity.getLoginDate(), entity.getPwdUpdateDate()))")
-    @Mapping(target = "auditInfo", expression = "java(new AuditInfo(entity.getCreateTime(), entity.getUpdateTime(), entity.getCreateBy(), entity.getUpdateBy(), entity.getDelFlag(), entity.getVersion()))")
+    @Mapping(target = "credentials", expression = "java(toCredentials(entity))")
+    @Mapping(target = "contactInfo", expression = "java(toContactInfo(entity))")
+    @Mapping(target = "personalInfo", expression = "java(toPersonalInfo(entity))")
+    @Mapping(target = "loginInfo", expression = "java(toLoginInfo(entity))")
+    @Mapping(target = "auditInfo", expression = "java(toAuditInfo(entity))")
     User toDomain(UserEntity entity);
+
+    default Credentials toCredentials(UserEntity entity) {
+        return new Credentials(entity.getUsername(), entity.getPassword());
+    }
+
+    default ContactInfo toContactInfo(UserEntity entity) {
+        return new ContactInfo(entity.getEmail(), entity.getPhone());
+    }
+
+    default PersonalInfo toPersonalInfo(UserEntity entity) {
+        return ImmutablePersonalInfo.builder()
+            .realName(entity.getRealName())
+            .nickName(entity.getNickName())
+            .sex(entity.getSex())
+            .studentId(entity.getStudentId())
+            .avatar(entity.getAvatar())
+            .build();
+    }
+
+    default LoginInfo toLoginInfo(UserEntity entity) {
+        return new LoginInfo(entity.getLoginIp(), entity.getLoginDate(), entity.getPwdUpdateDate());
+    }
+
+    default AuditInfo toAuditInfo(UserEntity entity) {
+        return new AuditInfo(entity.getCreateTime(), entity.getUpdateTime(),
+            entity.getCreateBy(), entity.getUpdateBy(),
+            entity.getDelFlag(), entity.getVersion());
+    }
 
     default UserEntity from(User user) {
         if (user == null) {
