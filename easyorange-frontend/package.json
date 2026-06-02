@@ -7,7 +7,7 @@
     "dev": "node dev.mjs",
     "build": "tsc && vite build",
     "build:js": "vite build",
-    "build:analyze": "vite build --mode analyze",
+    "build:analyze": "cross-env NODE_ENV=production ANALYZE=true vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint src/ --fix",
     "lint:check": "eslint src/",

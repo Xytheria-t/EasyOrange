@@ -113,6 +113,7 @@ npm run preview
 |------|------|
 | `npm run dev` | 启动开发服务器 (:5173) |
 | `npm run build` | 生产构建 |
+| `npm run build:analyze` | 生产构建 + Bundle 分析（rollup-plugin-visualizer 输出 `dist/stats.html`） |
 | `npm run preview` | 预览构建结果 |
 | `npm run lint` | 代码检查并自动修复 |
 | `npm run typecheck` | TypeScript 类型检查 |
@@ -223,6 +224,8 @@ chore: 构建/工具链相关
 ## 性能优化
 
 - 代码分割（React.lazy 按路由懒加载）
+- 重依赖独立 chunk（`vite.config.ts` `manualChunks` 中为 recharts 等大库分配 `vendor-*` 块，组件用 `React.lazy` 包装；非相关路由不下载）
+- Bundle 分析（`npm run build:analyze` 输出 `dist/stats.html`，treemap 可视化定位大块）
 - 图片懒加载与压缩
 - 骨架屏加载动画
 - TanStack Query 数据缓存

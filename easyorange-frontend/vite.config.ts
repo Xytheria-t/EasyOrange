@@ -7,15 +7,19 @@ import { visualizer } from 'rollup-plugin-visualizer';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const isAnalyze = process.env.ANALYZE === 'true' || process.env.NODE_ENV === 'analyze';
+const shouldVisualize = process.env.NODE_ENV === 'production' || isAnalyze;
+
 export default defineConfig({
     plugins: [
         react(),
-        ...(process.env.NODE_ENV === 'production' ? [
+        ...(shouldVisualize ? [
             visualizer({
                 open: false,
                 gzipSize: true,
                 brotliSize: true,
-                filename: 'dist/stats.html'
+                filename: 'dist/stats.html',
+                template: 'treemap'
             })
         ] : [])
     ],
@@ -51,6 +55,9 @@ export default defineConfig({
             output: {
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
+                        if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor')) {
+                            return 'vendor-recharts';
+                        }
                         if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
                             return 'vendor-react';
                         }

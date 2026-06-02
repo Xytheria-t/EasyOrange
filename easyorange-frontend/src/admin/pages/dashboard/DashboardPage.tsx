@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StatCard } from './StatCard';
-import TrendChart from './charts/TrendChart';
+import { LazyTrendChart, LazyTopProductsChart } from './charts/lazyCharts';
 import ActivityHeatmap from './charts/ActivityHeatmap';
-import TopProductsChart from './charts/TopProductsChart';
 import {
   useDashboardStats,
   usePendingItems,
@@ -986,7 +985,7 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div style={{ padding: '0.75rem 0.5rem' }}>
-              <TrendChart data={trend} isCompact height={180} />
+              <LazyTrendChart data={trend} isCompact height={180} />
             </div>
           </section>
 
@@ -1031,7 +1030,7 @@ export default function DashboardPage() {
               </h2>
             </div>
             <div style={{ padding: '0.5rem 0.75rem' }}>
-              <TopProductsChart data={topProducts} />
+              <LazyTopProductsChart data={topProducts} />
             </div>
           </section>
         </div>

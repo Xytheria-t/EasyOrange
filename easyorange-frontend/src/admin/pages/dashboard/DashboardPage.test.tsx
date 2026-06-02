@@ -28,9 +28,11 @@ vi.mock('./StatCard', () => ({
   ),
 }));
 
-vi.mock('./charts/TrendChart', () => ({ default: () => <div data-testid="trend-chart" /> }));
 vi.mock('./charts/ActivityHeatmap', () => ({ default: () => <div data-testid="activity-heatmap" /> }));
-vi.mock('./charts/TopProductsChart', () => ({ default: () => <div data-testid="top-products-chart" /> }));
+vi.mock('./charts/lazyCharts', () => ({
+  LazyTrendChart: () => <div data-testid="trend-chart" />,
+  LazyTopProductsChart: () => <div data-testid="top-products-chart" />,
+}));
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();

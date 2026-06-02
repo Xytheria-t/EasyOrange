@@ -19,20 +19,13 @@ vi.mock('../../hooks', () => ({
   useRecentActivity: (...args: unknown[]) => mockUseRecentActivity(...args),
 }));
 
-// Mock TrendChart
-vi.mock('../dashboard/charts/TrendChart', () => ({
-  default: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
-    <div data-testid="trend-chart" data-compact={isCompact} data-height={height}>
-      TrendChart
-    </div>
-  ),
-  TrendChart: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
+vi.mock('../dashboard/charts/lazyCharts', () => ({
+  LazyTrendChart: ({ data: _data, isCompact, height }: { data: TrendItem[]; isCompact: boolean; height: number }) => (
     <div data-testid="trend-chart" data-compact={isCompact} data-height={height}>
       TrendChart
     </div>
   ),
 }));
-
 // ─── Sample data ───
 const sampleStats: DashboardStats = {
   totalUsers: 1000,

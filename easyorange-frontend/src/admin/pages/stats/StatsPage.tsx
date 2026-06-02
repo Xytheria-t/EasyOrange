@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useDashboardStats, useAdminCategories, useAdminOrderStats, useTrend, useRecentActivity } from '../../hooks';
-import TrendChart from '../dashboard/charts/TrendChart';
+import { LazyTrendChart } from '../dashboard/charts/lazyCharts';
 
 const CATEGORY_COLORS = ['#F97316', '#FB7185', '#C39BD3', '#FBBF24', '#10B981', '#8B857E'];
 
@@ -170,7 +170,7 @@ export default function StatsPage() {
               </svg>
               月度趋势
             </h3>
-            <TrendChart data={trend} isCompact={false} height={280} />
+            <LazyTrendChart data={trend} isCompact={false} height={280} />
           </div>
 
           {/* Category distribution — powered by useAdminCategories() */}
