@@ -32,7 +32,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:easyorange123}
       database: 0
       timeout: 10000ms
 
@@ -244,3 +244,12 @@ easyorange:
       base-url: https://dashscope.aliyuncs.com/api/v1
       model: qwen-vl-max
       timeout: 60000
+    cache:
+      enabled: true
+      l1-max-size: 10000
+      l1-expire-minutes: 5
+      stale-max-size: 5000
+      stale-expire-hours: 24
+    rate-limit:
+      enabled: true
+      fail-open: true
