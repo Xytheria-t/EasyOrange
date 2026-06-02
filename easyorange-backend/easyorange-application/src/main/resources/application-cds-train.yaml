@@ -1,0 +1,70 @@
+# ===================================================================
+# CDS 训练专用 Profile
+# ===================================================================
+# 用途: Docker 多阶段构建的 trainer 阶段使用
+#       让 Spring 完整加载一次 ApplicationContext,把解析过的类
+#       元数据 dump 到 AppCDS archive,生产环境启动时 mmap 复用。
+# 激活: -Dspring.profiles.active=cds-train
+# 设计原则:
+#   - 关掉 Flyway, 避免训练时执行 DB 迁移
+#   - 把数据源/Redis/ES 的连接超时压到 100ms, 即便不可达也不阻塞训练
+#   - Hikari 关闭 init 校验 (initialization-fail-timeout=-1), 启动不建连
+#   - 关掉 actuator 的 db/redis/elasticsearch/rabbit 健康指示器
+#   - 关掉 JMX、banner、日志冗余, 减少训练自身开销
+# ===================================================================
+
+spring:
+  main:
+    banner-mode: off
+
+  jmx:
+    enabled: false
+
+  flyway:
+    enabled: false
+
+  datasource:
+    hikari:
+      # 训练时不校验连接,避免因 DB 不可达导致训练失败
+      initialization-fail-timeout: -1
+      connection-timeout: 100
+      validation-timeout: 50
+
+  data:
+    redis:
+      timeout: 100ms
+      connect-timeout: 100ms
+      lettuce:
+        shutdown-timeout: 0
+
+  elasticsearch:
+    connection-timeout: 100ms
+    socket-timeout: 100ms
+
+  rabbitmq:
+    connection-timeout: 100ms
+
+server:
+  port: 0
+  shutdown: immediate
+
+management:
+  health:
+    db:
+      enabled: false
+    redis:
+      enabled: false
+    elasticsearch:
+      enabled: false
+    rabbit:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.cartethyia.easyorange: WARN
+    com.baomidou.mybatisplus: ERROR
+    org.springframework: WARN
+    org.apache: ERROR
+    org.elasticsearch: ERROR
+    io.lettuce: ERROR

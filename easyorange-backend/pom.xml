@@ -47,6 +47,9 @@
         <jetbrains.annotations.version>26.0.2</jetbrains.annotations.version>
         <testcontainers.version>1.21.0</testcontainers.version>
         <immutables.version>2.10.0</immutables.version>
+
+        <!-- Flyway 数据库迁移（覆盖 Spring Boot 管理的版本，支持 MySQL 8.4） -->
+        <flyway.version>11.15.0</flyway.version>
     </properties>
 
     <dependencyManagement>

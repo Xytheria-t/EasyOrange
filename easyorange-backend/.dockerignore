@@ -1,0 +1,49 @@
+# ===================================================================
+# Docker 构建上下文过滤 - 加速 COPY, 减小上下文
+# ===================================================================
+
+# Maven 构建产物 (本阶段自己 build, 不用复制)
+**/target/
+**/build/
+
+# IDE 配置
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# 测试产物 / 覆盖率报告
+**/test-output/
+**/surefire-reports/
+**/jacoco.exec
+**/dependency-check-report.html
+**/dependency-check-report.xml
+**/dependency-check-junit.xml
+
+# OS 文件
+.DS_Store
+Thumbs.db
+
+# 日志
+**/*.log
+
+# 文档 (与构建无关)
+**/README.md
+**/AGENTS.md
+**/CLAUDE.md
+**/CHANGELOG.md
+**/docs/
+**/doc/
+
+# Docker 自身
+Dockerfile
+.dockerignore
