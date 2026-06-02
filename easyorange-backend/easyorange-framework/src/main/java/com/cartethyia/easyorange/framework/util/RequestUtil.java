@@ -23,8 +23,13 @@ public final class RequestUtil {
     private RequestUtil() {
     }
 
+    public static HttpServletRequest getRequest() {
+        var attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        return attrs != null ? attrs.getRequest() : null;
+    }
+
     public static String getClientIp() {
-        HttpServletRequest req = getRequest();
+        var req = getRequest();
         return req != null ? getClientIp(req) : UNKNOWN;
     }
 
@@ -32,9 +37,9 @@ public final class RequestUtil {
         if (request == null) {
             return UNKNOWN;
         }
-        String ip = tryHeader(request, HEADER_X_FORWARDED_FOR);
+        var ip = extractFirstIpFromHeader(request, HEADER_X_FORWARDED_FOR);
         if (ip == null) {
-            ip = tryHeader(request, HEADER_X_REAL_IP);
+            ip = extractFirstIpFromHeader(request, HEADER_X_REAL_IP);
         }
         if (ip == null) {
             ip = request.getRemoteAddr();
@@ -43,7 +48,7 @@ public final class RequestUtil {
     }
 
     public static String getRequestPath() {
-        HttpServletRequest req = getRequest();
+        var req = getRequest();
         return req != null ? req.getRequestURI() : "";
     }
 
@@ -51,22 +56,17 @@ public final class RequestUtil {
         if (request == null) {
             return "";
         }
-        String url = request.getRequestURL().toString();
-        String query = request.getQueryString();
+        var url = request.getRequestURL().toString();
+        var query = request.getQueryString();
         return query != null && !query.isEmpty() ? url + "?" + query : url;
     }
 
-    public static HttpServletRequest getRequest() {
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        return attrs != null ? attrs.getRequest() : null;
-    }
-
-    private static String tryHeader(HttpServletRequest request, String header) {
-        String value = request.getHeader(header);
+    private static String extractFirstIpFromHeader(HttpServletRequest request, String header) {
+        var value = request.getHeader(header);
         if (value == null || value.isBlank() || UNKNOWN.equalsIgnoreCase(value)) {
             return null;
         }
-        int comma = value.indexOf(',');
+        var comma = value.indexOf(',');
         return comma >= 0 ? value.substring(0, comma).trim() : value.trim();
     }
 }

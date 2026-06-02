@@ -10,31 +10,6 @@ public class BizRequire {
 
     private BizRequire() {}
 
-    public static void require(boolean condition, String message) {
-        if (!condition) {
-            throw BusinessException.of(message);
-        }
-    }
-
-    public static void require(boolean condition, IResultCode resultCode) {
-        if (!condition) {
-            throw BusinessException.of(resultCode);
-        }
-    }
-
-    public static void require(boolean condition, Runnable exceptionSupplier) {
-        if (!condition) {
-            throw BusinessException.of("业务规则不满足");
-        }
-    }
-
-    public static <T> T requireNonNull(T obj, String message) {
-        if (obj == null) {
-            throw BusinessException.of(message);
-        }
-        return obj;
-    }
-
     public static <T> void notNull(T obj, String message) {
         if (obj == null) {
             throw BusinessException.of(message);
@@ -71,7 +46,7 @@ public class BizRequire {
         }
     }
 
-    public static <T> void notEmpty(T[] array, String message) {
+    public static void notEmpty(Object[] array, String message) {
         if (array == null || array.length == 0) {
             throw BusinessException.of(message);
         }
@@ -97,6 +72,12 @@ public class BizRequire {
 
     public static void requireFalse(boolean condition, String message) {
         if (condition) {
+            throw BusinessException.of(message);
+        }
+    }
+
+    public static void between(int value, int min, int max, String message) {
+        if (value < min || value > max) {
             throw BusinessException.of(message);
         }
     }
@@ -134,12 +115,6 @@ public class BizRequire {
         }
         if (notExpected != null && notExpected.equals(actual)) {
             throw BusinessException.of(resultCode);
-        }
-    }
-
-    public static void between(int value, int min, int max, String message) {
-        if (value < min || value > max) {
-            throw BusinessException.of(message);
         }
     }
 

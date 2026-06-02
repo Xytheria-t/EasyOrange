@@ -155,6 +155,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)
 - **Assembler 模式 (DTO 转换)**: adapter/inbound/web/assembler/ 目录下的 Assembler 类负责 domain → DTO 转换（使用 MapStruct 或手动实现）。**禁止**在 Controller/Service 中直接构造 Response DTO，必须通过 Assembler。已废弃的旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest 等）已删除，新代码统一使用 assembler 模式
 - **.gitignore 最佳实践**: 项目使用精简版 .gitignore (78行)，已忽略 AI 生成文件 (**/codemap.md)、AI 工具目录 (.slim/, .superpowers/)、测试产物 (test-results/)。前端 .env.production 和 .env.development 不提交（可能包含敏感配置），开发者应基于 .env.example 创建本地配置
+- **Java `var` 使用规范**: 推荐用 var 的场景——同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder 等。**不推荐**——接口→实现赋值（`List<X> x = new ArrayList<>()`，保留 `List<X>`，var 丢失接口抽象）
 
 ---
 

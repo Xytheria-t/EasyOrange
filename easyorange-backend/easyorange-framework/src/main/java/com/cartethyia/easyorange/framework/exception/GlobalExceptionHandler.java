@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
     }
 
     private String extractAllErrors(org.springframework.validation.BindingResult bindingResult) {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         
         List<org.springframework.validation.FieldError> fieldErrors = bindingResult.getFieldErrors();
         if (!fieldErrors.isEmpty()) {

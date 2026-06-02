@@ -35,12 +35,12 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
 
     @Override
     public Optional<Favorite> findByUserIdAndProductId(Long userId, Long productId) {
-        FavoriteDO dataObject = lambdaQuery()
-                .eq(FavoriteDO::getUserId, userId)
-                .eq(FavoriteDO::getProductId, productId)
-                .eq(FavoriteDO::getDelFlag, 0)
-                .one();
-        return Optional.ofNullable(toDomain(dataObject));
+        return Optional.ofNullable(lambdaQuery()
+                        .eq(FavoriteDO::getUserId, userId)
+                        .eq(FavoriteDO::getProductId, productId)
+                        .eq(FavoriteDO::getDelFlag, 0)
+                        .one())
+                .map(this::toDomain);
     }
 
     @Override
@@ -111,12 +111,10 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     private Favorite toDomain(FavoriteDO dataObject) {
-        if (dataObject == null) return null;
         return Favorite.reconstitute(dataObject.getId(), dataObject.getUserId(), dataObject.getProductId(), dataObject.getCreateTime());
     }
 
     private FavoriteDO toDataObject(Favorite favorite) {
-        if (favorite == null) return null;
         FavoriteDO dataObject = new FavoriteDO();
         dataObject.setId(favorite.getId());
         dataObject.setUserId(favorite.getUserId());

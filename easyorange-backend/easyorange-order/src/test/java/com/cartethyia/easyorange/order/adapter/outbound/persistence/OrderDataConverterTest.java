@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("OrderDataConverter 单元测试")
 class OrderDataConverterTest {
@@ -119,9 +120,10 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("null 输入应返回 null")
-        void toDataObject_withNull_shouldReturnNull() {
-            assertThat(converter.toDataObject(null)).isNull();
+        @DisplayName("null 输入应快速失败")
+        void toDataObject_withNull_shouldThrow() {
+            assertThatThrownBy(() -> converter.toDataObject(null))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -153,9 +155,10 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("null 输入应返回 null")
-        void toAggregate_withNull_shouldReturnNull() {
-            assertThat(converter.toAggregate(null)).isNull();
+        @DisplayName("null 输入应快速失败")
+        void toAggregate_withNull_shouldThrow() {
+            assertThatThrownBy(() -> converter.toAggregate(null))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 
@@ -188,9 +191,10 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("null 输入应返回 null")
-        void toReadModel_withNull_shouldReturnNull() {
-            assertThat(converter.toReadModel(null)).isNull();
+        @DisplayName("null 输入应快速失败")
+        void toReadModel_withNull_shouldThrow() {
+            assertThatThrownBy(() -> converter.toReadModel(null))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -226,9 +230,10 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("toItemDO null 输入应返回 null")
-        void toItemDO_withNull_shouldReturnNull() {
-            assertThat(converter.toItemDO(ID, null)).isNull();
+        @DisplayName("toItemDO null 输入应快速失败")
+        void toItemDO_withNull_shouldThrow() {
+            assertThatThrownBy(() -> converter.toItemDO(ID, null))
+                    .isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -251,9 +256,10 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("toItemReadModel null 输入应返回 null")
-        void toItemReadModel_withNull_shouldReturnNull() {
-            assertThat(converter.toItemReadModel(null)).isNull();
+        @DisplayName("toItemReadModel null 输入应快速失败")
+        void toItemReadModel_withNull_shouldThrow() {
+            assertThatThrownBy(() -> converter.toItemReadModel(null))
+                    .isInstanceOf(NullPointerException.class);
         }
     }
 

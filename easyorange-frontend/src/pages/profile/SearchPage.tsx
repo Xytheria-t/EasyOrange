@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories } from '@/hooks';
 import { ProductCard } from '@/components/product/ProductCard';
+import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
 import { debounce } from '@/utils';
 import type { ProductSearchParams } from '@/types/product';
@@ -51,6 +52,7 @@ function SearchPage() {
     const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword);
     const [filters, setFilters] = useState<Record<string, string>>({});
     const [pageNum, setPageNum] = useState(1);
+    const [aiEnabled, setAiEnabled] = useState(false);
 
     const searchQueryParams: ProductSearchParams = useMemo(() => {
         const params: ProductSearchParams = {
@@ -69,17 +71,16 @@ function SearchPage() {
             if (min) {params.minPrice = Number(min);}
             if (max) {params.maxPrice = Number(max);}
         }
+        if (aiEnabled) {
+            params.aiEnhanced = true;
+        }
         return params;
-    }, [submittedKeyword, pageNum, filters]);
+    }, [submittedKeyword, pageNum, filters, aiEnabled]);
 
-    const { data: searchResult, isLoading: isSearching } = useProductSearch(searchQueryParams);
+    const { products, total, facets, aiEnhancement, isLoading: isSearching } = useProductSearch(searchQueryParams);
     const { data: suggestions } = useSearchSuggestions(debouncedKeyword);
     const { data: hotKeywords } = useHotKeywords(10);
     const { data: categories } = useCategories();
-
-    const products = searchResult?.records ?? [];
-    const total = searchResult?.total ?? 0;
-    const facets = searchResult?.facets ?? [];
 
     const handleFilterChange = useCallback((key: string, value: string | null) => {
         setFilters(prev => {
@@ -127,7 +128,7 @@ function SearchPage() {
         localStorage.removeItem('eo_search_history');
     }, []);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         const trimmed = keyword.trim();
         if (trimmed) {
@@ -135,7 +136,19 @@ function SearchPage() {
             setShowSuggestions(false);
             addToHistory(trimmed);
         }
-    };
+    }, [keyword, addToHistory]);
+
+    const handleAiToggle = useCallback(() => {
+        setAiEnabled(prev => !prev);
+    }, []);
+
+    const handleAiQuestionClick = useCallback((question: string) => {
+        setKeyword(question);
+        setDebouncedKeyword(question);
+        setSubmittedKeyword(question);
+        addToHistory(question);
+        inputRef.current?.focus();
+    }, [addToHistory]);
 
     const handleSuggestionClick = (suggestion: string) => {
         setKeyword(suggestion);
@@ -225,7 +238,11 @@ function SearchPage() {
                                     <X size={12} />
                                 </button>
                             )}
-                            <button type="button" className="search-ai-btn" title="AI智能搜索">
+                            <button type="button"
+                                className={`search-ai-btn ${aiEnabled ? 'ai-enabled' : ''}`}
+                                title={aiEnabled ? '关闭AI智能搜索' : '开启AI智能搜索'}
+                                onClick={handleAiToggle}
+                            >
                                 <Sparkles size={14} />
                             </button>
                             <button type="submit" className="search-submit-btn">
@@ -475,6 +492,13 @@ function SearchPage() {
                             </div>
                         )}
 
+                        {aiEnhancement && (
+                            <AiSearchPanel
+                                enhancement={aiEnhancement}
+                                onQuestionClick={handleAiQuestionClick}
+                            />
+                        )}
+
                         {isSearching && (
                             <div className="search-loading">
                                 <div className="search-loading-spinner"></div>
@@ -503,10 +527,11 @@ function SearchPage() {
                                                 padding: '0 0 1.1rem 0',
                                             }}
                                         >
-                                            {rowProducts.map(product => (
+                                            {rowProducts.map((product: import('@/types/product').Product) => (
                                                 <ProductCard
                                                     key={product.id}
                                                     product={product}
+                                                    aiTags={aiEnhancement?.productTags[product.id]}
                                                 />
                                             ))}
                                         </div>

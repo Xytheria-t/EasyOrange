@@ -203,7 +203,7 @@ public class ImageProcessingServiceImpl implements ImageProcessingService {
         float entropy = 0;
         for (int i = 0; i < 256; i++) {
             if (histogram[i] > 0) {
-                float p = (float) histogram[i] / total;
+                var p = (float) histogram[i] / total;
                 entropy -= p * (float) (Math.log(p) / Math.log(2));
             }
         }

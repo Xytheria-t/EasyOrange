@@ -59,7 +59,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
             return template;
         }
         Matcher matcher = VARIABLE_PATTERN.matcher(template);
-        StringBuffer result = new StringBuffer();
+        var result = new StringBuffer();
         while (matcher.find()) {
             String varName = matcher.group(1);
             String value = variables.getOrDefault(varName, matcher.group(0));

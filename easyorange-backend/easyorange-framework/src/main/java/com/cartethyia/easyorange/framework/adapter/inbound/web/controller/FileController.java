@@ -280,7 +280,7 @@ public class FileController {
     private String computeETag(File file) throws IOException {
         try {
             byte[] digest = MessageDigest.getInstance("MD5").digest(Files.readAllBytes(file.toPath()));
-            StringBuilder sb = new StringBuilder("\"");
+            var sb = new StringBuilder("\"");
             for (byte b : digest) {
                 sb.append(String.format("%02x", b));
             }

@@ -184,7 +184,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
             return null;
         }
 
-        StringBuilder keyBuilder = new StringBuilder(ORDER_LIST_CACHE_KEY_PREFIX);
+        var keyBuilder = new StringBuilder(ORDER_LIST_CACHE_KEY_PREFIX);
         keyBuilder.append(userId);
 
         if (status != null) {

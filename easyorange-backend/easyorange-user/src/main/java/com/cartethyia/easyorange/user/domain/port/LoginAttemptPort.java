@@ -19,4 +19,11 @@ public interface LoginAttemptPort {
     long incrementAndExpire(String identifier, long expireMinutes);
 
     void clearAttempts(String identifier);
+
+    /**
+     * 查询登录锁定剩余时间（秒）
+     * @param identifier 登录标识（用户名/手机号）
+     * @return 剩余秒数，未锁定时返回 0 或负数
+     */
+    long getRemainingLockSeconds(String identifier);
 }

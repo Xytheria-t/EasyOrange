@@ -201,6 +201,10 @@ Filter 执行顺序: RateLimitFilter(0) → JwtAuthenticationFilter → XssFilte
 
 此约定已通过全局 grep 清理完毕，新代码须直接使用工厂方法。
 
+## Java `var` 使用规范
+
+局部变量推荐使用 `var` 的场景：同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder/ByteArrayOutputStream 等无泛型构造器。**不推荐**的场景：接口类型到实现类型的赋值（`List<X> x = new ArrayList<>()` → 保持 `List<X>`，使用 `var` 会丢失接口抽象）
+
 ## 踩坑警示
 
 ### MyBatis-Plus UUID TypeHandler

@@ -88,7 +88,7 @@ public class AdminUserSecurityService {
     }
 
     private String generateRandomPassword(int length) {
-        StringBuilder sb = new StringBuilder(length);
+        var sb = new StringBuilder(length);
         sb.append(CHAR_LOWER.charAt(RANDOM.nextInt(CHAR_LOWER.length())));
         sb.append(CHAR_UPPER.charAt(RANDOM.nextInt(CHAR_UPPER.length())));
         sb.append(CHAR_DIGIT.charAt(RANDOM.nextInt(CHAR_DIGIT.length())));

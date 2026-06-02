@@ -72,7 +72,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
             return;
         }
 
-        Long startTime = (Long) request.getAttribute(START_TIME);
+        var startTime = (Long) request.getAttribute(START_TIME);
         long costTime = System.currentTimeMillis() - startTime;
 
         int status = response.getStatus();

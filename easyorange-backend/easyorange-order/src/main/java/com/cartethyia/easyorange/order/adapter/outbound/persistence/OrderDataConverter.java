@@ -24,9 +24,6 @@ public class OrderDataConverter {
     }
 
     public OrderDO toDataObject(OrderAggregate aggregate) {
-        if (aggregate == null) {
-            return null;
-        }
         return OrderDO.builder()
                 .id(aggregate.id().value())
                 .orderNo(aggregate.orderNo().value())
@@ -44,9 +41,6 @@ public class OrderDataConverter {
     }
 
     public OrderAggregate toAggregate(OrderDO orderDO) {
-        if (orderDO == null) {
-            return null;
-        }
         return OrderAggregate.fromRaw(
                 orderDO.getId(),
                 orderDO.getOrderNo(),
@@ -64,9 +58,6 @@ public class OrderDataConverter {
     }
 
     public OrderAggregate toAggregate(OrderDO orderDO, List<OrderItem> items) {
-        if (orderDO == null) {
-            return null;
-        }
         return OrderAggregate.fromRaw(
                 orderDO.getId(),
                 orderDO.getOrderNo(),
@@ -85,9 +76,6 @@ public class OrderDataConverter {
     }
 
     public OrderReadModel toReadModel(OrderDO orderDO) {
-        if (orderDO == null) {
-            return null;
-        }
         return new OrderReadModel(
                 orderDO.getId(),
                 orderDO.getOrderNo(),
@@ -109,9 +97,6 @@ public class OrderDataConverter {
     }
 
     public OrderReadModel toReadModel(OrderDO orderDO, List<OrderItemReadModel> items) {
-        if (orderDO == null) {
-            return null;
-        }
         return new OrderReadModel(
                 orderDO.getId(),
                 orderDO.getOrderNo(),
@@ -133,9 +118,6 @@ public class OrderDataConverter {
     }
 
     public OrderItemDO toItemDO(Long orderId, OrderItem item) {
-        if (item == null) {
-            return null;
-        }
         return OrderItemDO.builder()
                 .id(item.id())
                 .orderId(orderId)
@@ -148,9 +130,6 @@ public class OrderDataConverter {
     }
 
     public OrderItemReadModel toItemReadModel(OrderItemDO itemDO) {
-        if (itemDO == null) {
-            return null;
-        }
         return new OrderItemReadModel(
                 itemDO.getId(),
                 itemDO.getProductId(),
@@ -162,9 +141,6 @@ public class OrderDataConverter {
     }
 
     public OrderItem toOrderItem(OrderItemDO itemDO) {
-        if (itemDO == null) {
-            return null;
-        }
         return OrderItem.builder()
                 .id(itemDO.getId())
                 .productId(ProductId.of(itemDO.getProductId()))

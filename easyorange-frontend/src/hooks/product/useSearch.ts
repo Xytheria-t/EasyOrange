@@ -1,9 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
-import type { ProductSearchParams, ProductSearchResult } from '@/types';
+import type { ProductSearchParams, ProductSearchResult, AiEnhancement, Product } from '@/types/product';
 
-export function useProductSearch(params: ProductSearchParams = {}) {
-    return useQuery<ProductSearchResult>({
+export interface UseProductSearchResult {
+    products: Product[];
+    total: number;
+    facets: import('@/types/product').FacetBucket[];
+    aiEnhancement?: AiEnhancement;
+    isLoading: boolean;
+    error: Error | null;
+}
+
+export function useProductSearch(params: ProductSearchParams = {}): UseProductSearchResult {
+    const query = useQuery<ProductSearchResult>({
         queryKey: ['productSearch', params],
         queryFn: async () => {
             const response = await productApi.searchProducts(params);
@@ -12,6 +21,15 @@ export function useProductSearch(params: ProductSearchParams = {}) {
         enabled: (params.keyword?.trim().length ?? 0) > 0,
         staleTime: 30 * 1000,
     });
+
+    return {
+        products: query.data?.records ?? [],
+        total: query.data?.total ?? 0,
+        facets: query.data?.facets ?? [],
+        aiEnhancement: query.data?.aiEnhancement,
+        isLoading: query.isLoading,
+        error: query.error,
+    };
 }
 
 export function useSearchSuggestions(keyword: string) {

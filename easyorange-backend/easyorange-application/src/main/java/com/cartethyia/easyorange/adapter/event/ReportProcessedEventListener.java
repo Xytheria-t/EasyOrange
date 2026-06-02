@@ -41,7 +41,7 @@ public class ReportProcessedEventListener {
     }
 
     private String buildNotificationContent(ReportProcessedEvent event) {
-        StringBuilder content = new StringBuilder();
+        var content = new StringBuilder();
         content.append("您对商品 ID: ").append(event.productId()).append(" 的举报已处理完成。\n\n");
 
         if (event.approved()) {

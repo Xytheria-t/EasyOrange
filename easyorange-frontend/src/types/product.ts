@@ -126,6 +126,15 @@ export interface ProductSearchResult {
     pageNum: number;
     pageSize: number;
     facets: FacetBucket[];
+    aiEnhancement?: AiEnhancement;
+}
+
+/** AI 智能导购增强数据 */
+export interface AiEnhancement {
+    intentExplanation: string;
+    productTags: Record<string, string[]>;
+    marketAnalysis: string;
+    suggestedQuestions: string[];
 }
 
 /** Product search query parameters for ES search */
@@ -139,4 +148,5 @@ export interface ProductSearchParams {
     sort?: 'default' | 'price_asc' | 'price_desc' | 'newest';
     pageNum?: number;
     pageSize?: number;
+    aiEnhanced?: boolean;
 }

@@ -23,7 +23,7 @@ public class AuthenticationService {
             case LoginCredential.Sms(String phone, String verifyCode) ->
                 authenticateBySms(phone, verifyCode, clientIp);
         };
-        }
+    }
 
     private User authenticateByPassword(String identifier, String password, String clientIp) {
         loginSecurityService.checkLoginAttempts(identifier);

@@ -48,6 +48,7 @@ class LoginSecurityServiceTest {
         @DisplayName("超过最大尝试次数时抛出异常")
         void exceededMaxAttempts() {
             when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
+            when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(600L);
 
             assertThatThrownBy(() -> service.checkLoginAttempts(ACCOUNT))
                 .isInstanceOf(BusinessException.class)
@@ -94,6 +95,7 @@ class LoginSecurityServiceTest {
         void reachedMax() {
             when(loginAttemptPort.incrementAndExpire(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME))
                 .thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
+            when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(1800L);
 
             assertThatThrownBy(() -> service.recordFailedAttempt(ACCOUNT))
                 .isInstanceOf(BusinessException.class)

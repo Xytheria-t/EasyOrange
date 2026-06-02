@@ -65,7 +65,7 @@ public class OperLogAspect {
         }
 
         try {
-            MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+            var signature = (MethodSignature) joinPoint.getSignature();
             Method method = signature.getMethod();
 
             if (!shouldLogByConvention(method)) {
@@ -137,7 +137,7 @@ public class OperLogAspect {
 
         operLog.setOperTime(LocalDateTime.now());
 
-        Long startTime = (Long) request.getAttribute("requestStartTime");
+        var startTime = (Long) request.getAttribute("requestStartTime");
         operLog.setCostTime((int)(System.currentTimeMillis() - (startTime != null ? startTime : System.currentTimeMillis())));
 
         return operLog;
@@ -173,7 +173,7 @@ public class OperLogAspect {
             return "";
         }
 
-        StringBuilder params = new StringBuilder();
+        var params = new StringBuilder();
         for (Object value : paramsArray) {
             if (value == null) {
                 continue;
@@ -223,7 +223,7 @@ public class OperLogAspect {
 
     private void maskNode(JsonNode node) {
         if (node.isObject()) {
-            ObjectNode objectNode = (ObjectNode) node;
+            var objectNode = (ObjectNode) node;
             node.propertyNames().forEach(fieldName -> {
                 JsonNode value = node.get(fieldName);
 

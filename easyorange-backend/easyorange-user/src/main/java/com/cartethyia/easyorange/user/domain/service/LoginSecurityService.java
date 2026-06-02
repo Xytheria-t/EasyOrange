@@ -15,7 +15,7 @@ public class LoginSecurityService {
         BizRequire.notBlank(identifier, "登录标识不能为空");
         Long attempts = loginAttemptPort.getAttempts(identifier);
         if (attempts != null && attempts >= UserSecurityConstant.MAX_LOGIN_ATTEMPTS) {
-            throw BusinessException.of(lockedMessage());
+            throw BusinessException.of(lockedMessage(identifier));
         }
     }
 
@@ -23,7 +23,7 @@ public class LoginSecurityService {
         BizRequire.notBlank(identifier, "登录标识不能为空");
         long count = loginAttemptPort.incrementAndExpire(identifier, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME);
         if (count >= UserSecurityConstant.MAX_LOGIN_ATTEMPTS) {
-            throw BusinessException.of(lockedMessage());
+            throw BusinessException.of(lockedMessage(identifier));
         }
     }
 
@@ -32,7 +32,8 @@ public class LoginSecurityService {
         loginAttemptPort.clearAttempts(identifier);
     }
 
-    private static String lockedMessage() {
-        return "登录失败次数过多，账户已锁定" + UserSecurityConstant.LOGIN_LOCK_MINUTES + "分钟";
+    private String lockedMessage(String identifier) {
+        long seconds = loginAttemptPort.getRemainingLockSeconds(identifier);
+        return "登录失败次数过多，账户已锁定，" + Math.max(1, (seconds + 59) / 60) + "分钟后可重试";
     }
 }

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.query.handler;
 
+import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
@@ -9,6 +10,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.domain.port.SearchResult;
+import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
@@ -31,9 +33,11 @@ public class ProductSearchHandler {
 
     private final ProductQueryRepository productQueryRepository;
     private final Optional<ProductSearchQueryPort> searchQueryPort;
+    private final Optional<AiSearchEnhancerPort> aiSearchEnhancer;
 
     @Transactional(readOnly = true)
     public SearchPageResponse<ProductResponse> handleSearch(ProductSearchRequest request) {
+        SearchPageResponse<ProductResponse> result;
         if (searchQueryPort.isPresent()) {
             ProductSearchQueryPort.ProductSearchQuery query = new ProductSearchQueryPort.ProductSearchQuery(
                     request.getKeyword(),
@@ -53,23 +57,62 @@ public class ProductSearchHandler {
                     .map(this::toProductResponse)
                     .collect(Collectors.toList());
             List<FacetBucketResponse> facets = mergeFacets(searchResult);
-            return SearchPageResponse.of(responses, searchResult.total(), searchResult.pageNum(),
+            result = SearchPageResponse.of(responses, searchResult.total(), searchResult.pageNum(),
                     searchResult.pageSize(), facets);
+        } else {
+            PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
+                    request.getKeyword(),
+                    request.getCategoryId(),
+                    request.getStatus(),
+                    request.getPageNum() != null ? request.getPageNum() : 1,
+                    request.getPageSize() != null ? request.getPageSize() : 20
+            );
+
+            List<ProductResponse> responses = page.records().stream()
+                    .map(this::toProductResponse)
+                    .collect(Collectors.toList());
+
+            result = SearchPageResponse.of(responses, page.total(), page.current(), page.size());
         }
 
-        PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
-                request.getKeyword(),
-                request.getCategoryId(),
-                request.getStatus(),
-                request.getPageNum() != null ? request.getPageNum() : 1,
-                request.getPageSize() != null ? request.getPageSize() : 20
-        );
+        if (request.isAiEnhanced()
+                && aiSearchEnhancer.isPresent()
+                && !result.records().isEmpty()) {
 
-        List<ProductResponse> responses = page.records().stream()
-                .map(this::toProductResponse)
-                .collect(Collectors.toList());
+            List<ProductReadModel> topProducts = result.records().stream()
+                    .limit(5)
+                    .<ProductReadModel>map(r -> new ProductReadModel(
+                            r.getId() != null ? Long.valueOf(r.getId()) : null,
+                            r.getSellerId(),
+                            r.getUsername(),
+                            r.getUserAvatar(),
+                            r.getCategoryId(),
+                            r.getCategoryName(),
+                            r.getTitle(),
+                            r.getDescription(),
+                            r.getPrice(),
+                            r.getOriginalPrice(),
+                            r.getStock(),
+                            r.getStatus(),
+                            r.getStatusDesc(),
+                            r.getViews(),
+                            r.getCondition(),
+                            r.getConditionDesc(),
+                            r.getLocation(),
+                            r.getContactMethod(),
+                            r.getImages(),
+                            r.getMainImageUrl(),
+                            r.getCreateTime(),
+                            r.getUpdateTime()
+                    ))
+                    .toList();
 
-        return SearchPageResponse.of(responses, page.total(), page.current(), page.size());
+            aiSearchEnhancer.get()
+                    .tryEnhance(request.getKeyword(), topProducts)
+                    .ifPresent(result::withAiEnhancement);
+        }
+
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +178,7 @@ public class ProductSearchHandler {
     }
 
     private List<FacetBucketResponse> mergeFacets(SearchResult result) {
-        var list = new ArrayList<FacetBucketResponse>();
+        List<FacetBucketResponse> list = new ArrayList<>();
         result.categoryFacets().forEach(fb ->
                 list.add(new FacetBucketResponse("category_" + fb.key(), fb.count())));
         result.conditionFacets().forEach(fb ->

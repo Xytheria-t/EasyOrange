@@ -111,7 +111,7 @@ public class QwenVlVisionAdapter implements VisionPort {
             }
 
             // Read all bytes
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            var buffer = new ByteArrayOutputStream();
             byte[] chunk = new byte[8192];
             int bytesRead;
             try (InputStream body = response.body()) {

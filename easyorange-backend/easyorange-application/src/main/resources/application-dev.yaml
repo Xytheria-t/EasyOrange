@@ -39,7 +39,7 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: ${REDIS_PASSWORD:-easyorange123}
+      password: ${REDIS_PASSWORD:easyorange123}
       lettuce:
         pool:
           min-idle: 3                   # 开发环境最小空闲连接数

@@ -31,4 +31,10 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     public void clearAttempts(String identifier) {
         redisCache.delete(LoginCacheConstants.buildAttemptsKey(identifier));
     }
+
+    @Override
+    public long getRemainingLockSeconds(String identifier) {
+        String key = LoginCacheConstants.buildAttemptsKey(identifier);
+        return Math.max(0, redisCache.getExpire(key, TimeUnit.SECONDS));
+    }
 }

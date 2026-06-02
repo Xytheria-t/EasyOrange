@@ -39,7 +39,7 @@ class ProductSearchHandlerTest {
 
     @BeforeEach
     void setUp() {
-        searchHandler = new ProductSearchHandler(productQueryRepository, Optional.empty());
+        searchHandler = new ProductSearchHandler(productQueryRepository, Optional.empty(), Optional.empty());
 
         testProduct = new ProductReadModel(
                 1L, 10L, "卖家", null, 2L, "分类",

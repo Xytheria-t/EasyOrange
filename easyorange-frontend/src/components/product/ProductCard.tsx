@@ -5,6 +5,7 @@ import type { Product } from '@/types'
 import { CONDITION_LABEL_MAP } from '@/constants'
 import { formatPrice, formatRelativeTime } from '@/utils'
 import { Image } from '@/components/ui/Image'
+import { AiTag } from './AiTag'
 import placeholderImage from '@/assets/placeholder.png'
 import '../../pages/products/products-premium.css'
 
@@ -14,6 +15,7 @@ interface ProductCardProps {
   isFavorited?: boolean
   style?: React.CSSProperties
   index?: number
+  aiTags?: string[]
 }
 
 export const ProductCard = memo(({
@@ -22,6 +24,7 @@ export const ProductCard = memo(({
   isFavorited = false,
   style,
   index = 0,
+  aiTags,
 }: ProductCardProps) => {
   const navigate = useNavigate()
   const cardRef = useRef<HTMLDivElement>(null)
@@ -180,6 +183,9 @@ export const ProductCard = memo(({
               热门
             </span>
           )}
+          {aiTags?.map(tag => (
+            <AiTag key={tag} tag={tag} />
+          ))}
         </div>
 
         {/* Quick meta pills */}

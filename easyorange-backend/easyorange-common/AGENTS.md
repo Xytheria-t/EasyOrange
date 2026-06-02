@@ -65,7 +65,8 @@ PageResult.of(records, total, page, size)
 
 ```java
 BizRequire.notNull(user, UserResultCode.USER_NOT_FOUND);
-BizRequire.isTrue(condition, ResultCode.PARAM_VALIDATION_FAILED, "消息");
+BizRequire.requireTrue(condition, ResultCode.PARAM_VALIDATION_FAILED);
+BizRequire.requireTrue(condition, "条件不满足");
 ```
 
 ### BaseDomainEvent — 领域事件基类

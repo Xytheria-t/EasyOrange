@@ -202,7 +202,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:easyorange123}
       database: 0
       timeout: 5000ms
       
@@ -296,7 +296,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:easyorange123}
       database: 0
 
 redis:
@@ -312,7 +312,7 @@ redis:
 | `JWT_SECRET_KEY` | JWT 签名密钥 | - |
 | `REDIS_HOST` | Redis 主机 | localhost |
 | `REDIS_PORT` | Redis 端口 | 6379 |
-| `REDIS_PASSWORD` | Redis 密码 | - |
+| `REDIS_PASSWORD` | Redis 密码 | easyorange123 |
 
 ---
 

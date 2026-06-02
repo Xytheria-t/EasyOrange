@@ -66,7 +66,7 @@ public class ProductSearchIndexAdapter implements ProductSearchIndexPort {
      * 此字段由 MySQL ngram FULLTEXT 索引分词，使商品搜索支持名称、描述、位置、标签等多维度匹配。
      */
     static String buildSearchText(ProductDO product, ProductDetailDO detail) {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
 
         if (product.getName() != null) {
             sb.append(product.getName()).append(' ');

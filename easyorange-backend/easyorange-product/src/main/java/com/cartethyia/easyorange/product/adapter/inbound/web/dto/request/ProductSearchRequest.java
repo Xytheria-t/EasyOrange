@@ -27,4 +27,6 @@ public class ProductSearchRequest extends PageRequest {
     private BigDecimal maxPrice;
 
     private String location;
+
+    private boolean aiEnhanced;
 }
