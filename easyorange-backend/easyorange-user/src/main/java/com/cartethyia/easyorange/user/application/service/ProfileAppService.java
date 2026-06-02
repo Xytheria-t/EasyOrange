@@ -57,7 +57,7 @@ public class ProfileAppService {
                 studentId, operatorId);
         }
 
-        BizRequire.requireTrue(userRepository.update(updatedUser), "更新用户信息失败");
+        userRepository.update(updatedUser);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -78,7 +78,7 @@ public class ProfileAppService {
             String avatarUrl = avatarFilePort.upload(content, contentType, filename, currentUser.getId());
 
             User updatedUser = currentUser.changeAvatar(avatarUrl, currentUser.getId());
-            BizRequire.requireTrue(userRepository.update(updatedUser), "更新头像失败");
+            userRepository.update(updatedUser);
         } catch (Exception e) {
             throw BusinessException.of("头像上传失败", e);
         }

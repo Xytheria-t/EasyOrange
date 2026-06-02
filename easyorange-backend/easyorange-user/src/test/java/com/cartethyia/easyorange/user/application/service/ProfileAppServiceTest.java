@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
@@ -118,7 +117,6 @@ class ProfileAppServiceTest {
             setSecurityContext();
             User user = buildTestUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-            when(userRepository.update(any(User.class))).thenReturn(true);
 
             profileAppService.updateUserInfo(null, "new@example.com", null, null, null, null);
         }
@@ -170,18 +168,6 @@ class ProfileAppServiceTest {
                 .isInstanceOf(BusinessException.class);
         }
 
-        @Test
-        @DisplayName("更新失败时抛出异常")
-        void updateFails() {
-            setSecurityContext();
-            User user = buildTestUser();
-            when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
-
-            when(userRepository.update(any(User.class))).thenReturn(false);
-
-            assertThatThrownBy(() -> profileAppService.updateUserInfo("新昵称", null, null, null, null, null))
-                .isInstanceOf(BusinessException.class);
-        }
     }
 
     @Nested
@@ -202,8 +188,6 @@ class ProfileAppServiceTest {
             byte[] content = "image-data".getBytes();
             when(avatarFilePort.upload(content, "image/png", "avatar.png", USER_ID))
                 .thenReturn("/avatar/new.png");
-            when(userRepository.update(any(User.class))).thenReturn(true);
-
             profileAppService.uploadAvatar(content, "image/png", "avatar.png");
 
             verify(avatarFilePort).deleteIfExists("/avatar/old.png");

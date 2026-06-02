@@ -46,8 +46,7 @@ public class SagaRepositoryImpl extends BaseRepository<SagaMapper, SagaDO> imple
 
     @Override
     public void update(SagaStatus sagaStatus) {
-        SagaDO sagaDO = toDataObject(sagaStatus);
-        mapper.updateById(sagaDO);
+        updateById(toDataObject(sagaStatus));
     }
 
     private SagaDO toDataObject(SagaStatus sagaStatus) {

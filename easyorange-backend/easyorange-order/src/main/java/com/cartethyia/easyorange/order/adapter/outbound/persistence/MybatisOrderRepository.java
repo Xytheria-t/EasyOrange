@@ -35,7 +35,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
 
     @Override
     public void update(OrderAggregate aggregate) {
-        mapper.updateById(converter.toDataObject(aggregate));
+        updateById(converter.toDataObject(aggregate));
     }
 
     @Override

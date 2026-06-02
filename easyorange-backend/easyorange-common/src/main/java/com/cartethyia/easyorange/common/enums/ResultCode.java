@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.common.enums;
 public enum ResultCode implements IResultCode {
     SUCCESS("A0000", "成功"),
     FAIL("B0001", "操作失败"),
-    VALIDATE_FAILED("B0003", "参数校验失败"),
     BUSINESS_ERROR("B0002", "业务异常"),
+    VALIDATE_FAILED("B0003", "参数校验失败"),
     PARAM_ERROR("B0004", "参数错误"),
     UNAUTHORIZED("A0401", "未登录"),
     FORBIDDEN("A0403", "禁止访问"),
@@ -14,7 +14,8 @@ public enum ResultCode implements IResultCode {
     METHOD_NOT_ALLOWED("A0405", "请求方法不允许"),
     FILE_TOO_LARGE("B5005", "文件大小超过限制"),
     INVALID_FILE_TYPE("B5004", "无效的文件类型"),
-    FILE_UPLOAD_FAILED("B5001", "文件上传失败");
+    FILE_UPLOAD_FAILED("B5001", "文件上传失败"),
+    CONCURRENT_UPDATE("B0006", "并发更新冲突");
 
     private final String code;
     private final String message;

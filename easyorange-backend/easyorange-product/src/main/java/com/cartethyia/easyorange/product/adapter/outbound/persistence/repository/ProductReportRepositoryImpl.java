@@ -94,7 +94,7 @@ public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMap
     @Override
     public void update(ProductReport report) {
         ProductReportDO reportDO = convertToDO(report);
-        mapper.updateById(reportDO);
+        updateById(reportDO);
     }
 
     @Override

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.cartethyia.easyorange.framework.exception.ConcurrentUpdateException;
 
 import java.util.Collection;
 import java.util.List;
@@ -16,6 +17,21 @@ public abstract class BaseRepository<M extends BaseMapper<T>, T> {
 
     protected BaseRepository(M mapper) {
         this.mapper = mapper;
+    }
+
+    /**
+     * 执行 updateById，更新 0 行时抛出 {@link ConcurrentUpdateException}。
+     * <p>
+     * 所有 Repository 实现类应使用此方法替代直接调用 {@code mapper.updateById(entity)}，
+     * 避免在每个模块重复写 {@code if (rows == 0) throw ...} 检查。
+     * </p>
+     */
+    protected int updateById(T entity) {
+        int rows = mapper.updateById(entity);
+        if (rows == 0) {
+            throw new ConcurrentUpdateException("更新失败，数据已被修改或不存在");
+        }
+        return rows;
     }
 
     protected LambdaQueryChainWrapper<T> lambdaQuery() {

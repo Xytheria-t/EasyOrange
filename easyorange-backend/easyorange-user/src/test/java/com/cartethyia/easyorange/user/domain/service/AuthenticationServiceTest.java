@@ -74,7 +74,6 @@ class AuthenticationServiceTest {
             doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
-            when(userRepository.update(any(User.class))).thenReturn(true);
 
             User result = service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP);
 
@@ -152,7 +151,6 @@ class AuthenticationServiceTest {
             User user = createNormalUser();
             doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
-            when(userRepository.update(any(User.class))).thenReturn(true);
 
             User result = service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP);
 

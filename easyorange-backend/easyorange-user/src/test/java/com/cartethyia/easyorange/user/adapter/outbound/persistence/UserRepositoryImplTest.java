@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
+import com.cartethyia.easyorange.framework.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
@@ -27,6 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -215,9 +217,8 @@ class UserRepositoryImplTest {
                 .build());
             when(userMapper.updateById(any(UserEntity.class))).thenReturn(1);
 
-            boolean result = userRepository.update(domainUser);
+            userRepository.update(domainUser);
 
-            assertThat(result).isTrue();
             verify(userMapper).updateById(any(UserEntity.class));
         }
 
@@ -235,9 +236,8 @@ class UserRepositoryImplTest {
                 .build());
             when(userMapper.updateById(any(UserEntity.class))).thenReturn(0);
 
-            boolean result = userRepository.update(domainUser);
-
-            assertThat(result).isFalse();
+            assertThatThrownBy(() -> userRepository.update(domainUser))
+                .isInstanceOf(ConcurrentUpdateException.class);
         }
     }
 
@@ -250,9 +250,8 @@ class UserRepositoryImplTest {
         void shouldUpdateLoginInfoWithWrapper() {
             when(userMapper.update(isNull(), any())).thenReturn(1);
 
-            boolean result = userRepository.updateLoginInfo(1L, "192.168.1.1");
+            userRepository.updateLoginInfo(1L, "192.168.1.1");
 
-            assertThat(result).isTrue();
             verify(userMapper).update(isNull(), any());
         }
     }

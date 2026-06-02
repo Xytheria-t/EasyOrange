@@ -24,9 +24,9 @@ public interface UserRepository {
 
     User save(User user);
 
-    boolean update(User user);
+    void update(User user);
 
-    boolean updateLoginInfo(Long userId, String loginIp);
+    void updateLoginInfo(Long userId, String loginIp);
 
     void deleteById(Long id);
 

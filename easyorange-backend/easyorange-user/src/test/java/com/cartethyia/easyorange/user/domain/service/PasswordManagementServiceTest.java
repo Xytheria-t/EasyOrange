@@ -72,7 +72,6 @@ class PasswordManagementServiceTest {
             when(userRepository.findByPhone(PHONE)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(NEW_PASSWORD, ENCODED_PW)).thenReturn(false);
             when(passwordEncoder.encode(NEW_PASSWORD)).thenReturn(NEW_ENCODED);
-            when(userRepository.update(any(User.class))).thenReturn(true);
 
             User result = service.resetPassword(PHONE, VERIFY_CODE, NEW_PASSWORD);
 

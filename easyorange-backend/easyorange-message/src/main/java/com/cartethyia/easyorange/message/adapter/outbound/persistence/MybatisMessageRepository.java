@@ -68,7 +68,7 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
 
     @Override
     public void update(MessageAggregate message) {
-        mapper.updateById(messageDataMapper.toEntity(message));
+        updateById(messageDataMapper.toEntity(message));
     }
 
     @Override

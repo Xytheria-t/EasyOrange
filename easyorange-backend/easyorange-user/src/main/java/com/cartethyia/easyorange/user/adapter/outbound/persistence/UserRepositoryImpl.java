@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
+import com.cartethyia.easyorange.framework.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.framework.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
@@ -85,9 +86,9 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     }
 
     @Override
-    public boolean update(User user) {
+    public void update(User user) {
         UserEntity entity = entityMapper.from(user);
-        return mapper.updateById(entity) > 0;
+        updateById(entity);
     }
 
     /**
@@ -96,12 +97,15 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public boolean updateLoginInfo(Long userId, String loginIp) {
-        return lambdaUpdate()
+    public void updateLoginInfo(Long userId, String loginIp) {
+        boolean updated = lambdaUpdate()
             .eq(UserEntity::getId, userId)
             .set(UserEntity::getLoginDate, LocalDateTime.now())
             .set(UserEntity::getLoginIp, loginIp)
             .update();
+        if (!updated) {
+            throw new ConcurrentUpdateException("更新登录信息失败，用户可能已被删除");
+        }
     }
 
     @Override

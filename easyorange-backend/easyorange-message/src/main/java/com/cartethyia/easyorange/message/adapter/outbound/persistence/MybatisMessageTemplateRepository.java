@@ -39,7 +39,7 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
 
     @Override
     public void update(MessageTemplateAggregate template) {
-        mapper.updateById(messageDataMapper.toEntity(template));
+        updateById(messageDataMapper.toEntity(template));
     }
 
     @Override

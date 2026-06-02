@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.repository;
 
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.framework.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
@@ -124,7 +126,9 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public void update(Product product) {
-        productMapper.updateById(converter.toDataObject(product));
+        if (productMapper.updateById(converter.toDataObject(product)) == 0) {
+            throw new ConcurrentUpdateException("商品更新冲突: id=" + product.getId().value());
+        }
         updateProductDetail(product);
         updateImagesDifferentially(product);
     }
@@ -195,9 +199,12 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public void updateStatus(ProductId id, ProductStatus status) {
         ProductDO productDO = productMapper.selectById(id.value());
-        if (productDO != null) {
-            productDO.setStatus(status.getCode());
-            productMapper.updateById(productDO);
+        if (productDO == null) {
+            throw new ProductNotFoundException(id);
+        }
+        productDO.setStatus(status.getCode());
+        if (productMapper.updateById(productDO) == 0) {
+            throw new ConcurrentUpdateException("商品状态更新冲突: id=" + id.value());
         }
     }
 }
