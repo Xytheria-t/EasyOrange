@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

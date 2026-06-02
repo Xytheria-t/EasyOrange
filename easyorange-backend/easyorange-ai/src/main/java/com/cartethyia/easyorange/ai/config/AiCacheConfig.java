@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.config;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.interceptor.AiRateLimitInterceptor;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;

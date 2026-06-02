@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.service;
 import com.cartethyia.easyorange.ai.adapter.outbound.AiSearchEnhancerAdapter;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

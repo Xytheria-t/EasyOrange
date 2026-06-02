@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.framework.config.security;
 
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
-import com.cartethyia.easyorange.framework.filter.JwtAuthenticationFilter;
-import com.cartethyia.easyorange.framework.filter.RateLimitFilter;
-import com.cartethyia.easyorange.framework.filter.XssFilter;
-import com.cartethyia.easyorange.framework.handler.JsonAuthenticationEntryPoint;
+import com.cartethyia.easyorange.framework.web.filter.JwtAuthenticationFilter;
+import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
+import com.cartethyia.easyorange.framework.web.filter.XssFilter;
+import com.cartethyia.easyorange.framework.web.handler.JsonAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

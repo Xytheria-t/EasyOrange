@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.ai.service.ProductTagger;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import jakarta.annotation.PreDestroy;

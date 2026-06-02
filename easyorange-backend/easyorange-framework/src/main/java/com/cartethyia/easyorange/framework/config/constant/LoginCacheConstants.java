@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.constant;
+package com.cartethyia.easyorange.framework.config.constant;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import lombok.AccessLevel;

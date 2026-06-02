@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.filter;
+package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;

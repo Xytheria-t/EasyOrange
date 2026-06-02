@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.filter;
+package com.cartethyia.easyorange.framework.web.filter;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;

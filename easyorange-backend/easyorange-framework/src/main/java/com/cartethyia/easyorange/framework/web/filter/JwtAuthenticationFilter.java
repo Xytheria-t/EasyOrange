@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.filter;
+package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.ResultCode;

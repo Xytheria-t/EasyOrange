@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.ai.interceptor;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;

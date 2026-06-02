@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.framework.config.web;
 
 import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;
-import com.cartethyia.easyorange.framework.handler.LoggingInterceptor;
+import com.cartethyia.easyorange.framework.web.handler.LoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;

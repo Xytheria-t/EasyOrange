@@ -6,28 +6,32 @@
 
 ```
 framework/
-├── aspectj/                 # AOP 切面 (执行顺序: RateLimiter → RepeatSubmit → OperLog)
-│   ├── OperLogAspect.java       # 操作日志 (约定式拦截所有写操作, 无需注解)
-│   ├── RateLimiterAspect.java   # 限流切面 (约定式拦截所有 RestController, Redis+Lua, @Order 1)
-│   └── RepeatSubmitAspect.java  # 防重提交切面 (约定式拦截所有 POST/PUT/DELETE/PATCH, @Order 2)
-├── bloom/                  # 布隆过滤器 (Redis Bitmap)
-│   ├── BloomFilter.java         # 过滤器接口
+├── async/                   # 异步任务管理
+│   └── AsyncManager.java         # 异步任务管理器
+├── bloom/                   # 布隆过滤器 (Redis Bitmap)
+│   ├── BloomFilter.java          # 过滤器接口
 │   └── RedisBitmapBloomFilter.java # Redis Bitmap 实现 (Lua 原子操作)
-├── cache/                  # 多级缓存门面
-│   ├── CacheLoader.java         # 回源加载器函数式接口
-│   └── MultiLevelCache.java     # L1 Caffeine → L2 Redis → DB 三级串联
-├── config/                 # 框架配置
-│   ├── async/                   # 线程池 + Jackson
+├── cache/                   # 缓存抽象 (多级缓存门面 + Redis 缓存实现)
+│   ├── CacheLoader.java          # 回源加载器函数式接口
+│   ├── MultiLevelCache.java      # L1 Caffeine → L2 Redis → DB 三级串联
+│   ├── RedisCache.java           # Redis 缓存接口 (String/Hash/List/Set/ZSet + Lua + 分布式锁 + SCAN)
+│   └── impl/
+│       └── RedisCacheImpl.java   # Redis 缓存实现 (含 Lua 原子解锁、SCAN 替代 KEYS 防阻塞)
+├── config/                  # 框架配置
+│   ├── async/                    # 线程池 + Jackson
 │   │   ├── ThreadPoolConfig.java
 │   │   ├── JacksonConfig.java
 │   │   └── LoggingRejectedExecutionHandler.java
-│   ├── cache/                   # 本地缓存 (Caffeine)
+│   ├── cache/                    # 本地缓存 (Caffeine)
 │   │   └── LocalCacheConfig.java
-│   ├── database/                # MyBatis-Plus 配置
-│   │   └── MybatisPlusConfig.java
-│   ├── http/                    # RestClient 配置
+│   ├── constant/                 # 配置常量 (缓存 key 约定等)
+│   │   └── LoginCacheConstants.java
+│   ├── database/                 # MyBatis-Plus 配置
+│   │   ├── MybatisPlusConfig.java
+│   │   └── UuidTypeHandler.java
+│   ├── http/                     # RestClient 配置
 │   │   └── RestClientConfig.java
-│   ├── properties/              # 配置属性类
+│   ├── properties/               # 配置属性类
 │   │   ├── CacheProperties.java
 │   │   ├── FileUploadProperties.java
 │   │   ├── IdGenProperties.java
@@ -38,83 +42,106 @@ framework/
 │   │   ├── SecurityProperties.java
 │   │   ├── ThreadPoolProperties.java
 │   │   └── WebMvcProperties.java
-│   ├── redis/                   # Redis 配置
+│   ├── redis/                    # Redis 配置
 │   │   ├── RedisConfig.java
-    │   │   └── CacheConfig.java
-    │   ├── security/                # Spring Security 配置
-    │   │   └── SecurityConfig.java
-    │   └── web/                     # WebMVC 配置
+│   │   └── CacheConfig.java
+│   ├── security/                 # Spring Security 配置
+│   │   └── SecurityConfig.java
+│   └── web/                      # WebMVC 配置
 │       ├── WebMvcConfig.java
-│       └── ResponseAdvice.java      # 统一响应包装
+│       └── ResponseAdvice.java       # 统一响应包装
 ├── entity/
-│   └── BaseDO.java              # 数据对象基类 (id, createTime, updateTime, delFlag, version)
-├── repository/
-│   ├── BaseRepository.java      # 仓储基类，封装 lambdaQuery()/lambdaUpdate() + findOne/findList/findIn 等常见查询模式
-├── event/                   # 领域事件基础设施
-│   └── DomainEventPublisherImpl.java    # 事件发布实现 (同步到 Spring EventBus)
-├── outbox/                  # Outbox 模式 (事件可靠投递，支付模块使用)
-│   ├── util/
-│   │   └── OutboxEventUtils.java        # 共享工具 (截断+反序列化)
-│   ├── entity/
-│   │   ├── OutboxMessage.java           # 领域模型
-│   │   └── OutboxMessagePO.java         # 持久化实体 (唯一 PO 映射 eo_domain_event)
-│   ├── mapper/
-│   │   └── OutboxMessageMapper.java     # MyBatis Mapper
-│   ├── converter/
-│   │   └── OutboxMessageMapper.java  # PO ↔ Domain 转换 (MapStruct)
-│   └── repository/
-│       └── OutboxRepository.java        # 仓储实现
+│   └── BaseDO.java               # 数据对象基类 (id, createTime, updateTime, delFlag, version)
+├── event/                    # 领域事件基础设施
+│   ├── DomainEventPublisherImpl.java   # 事件发布实现
+│   └── idempotency/
+│       └── EventIdempotencyChecker.java # 事件幂等性检查
 ├── exception/
-│   ├── GlobalExceptionHandler.java  # 全局异常处理
+│   ├── GlobalExceptionHandler.java   # 全局异常处理
 │   └── CacheTypeMismatchException.java
-├── file/                    # 文件上传下载
+├── file/                     # 文件上传下载
 │   ├── adapter/inbound/web/controller/FileController.java
-│   ├── service/FileService.java
-│   ├── service/impl/FileServiceImpl.java
-│   ├── service/ImageProcessingService.java
-│   ├── service/impl/ImageProcessingServiceImpl.java
-│   ├── dto/UploadFileResponse.java
+│   ├── dto/UploadFileVO.java
 │   ├── entity/UploadFile.java
-│   └── mapper/UploadFileMapper.java
-├── filter/                  # Servlet 过滤器
-│   ├── JwtAuthenticationFilter.java   # JWT 认证过滤器
-│   ├── XssFilter.java                 # XSS 过滤
-│   └── XssHttpServletRequestWrapper.java
-├── handler/                 # 处理器
-│   ├── CustomMetaObjectHandler.java   # MyBatis-Plus 自动填充
-│   ├── JsonAuthenticationEntryPoint.java # 未认证响应
-│   └── LoggingInterceptor.java        # 请求日志拦截
-├── hash/                    # 一致性哈希
-│   ├── Node.java                    # 节点接口
-│   └── ConsistentHashRouter.java    # 虚拟节点 TreeMap 路由 (MD5 哈希)
+│   ├── mapper/UploadFileMapper.java
+│   ├── service/
+│   │   ├── FileService.java
+│   │   ├── ImageProcessingService.java
+│   │   └── impl/
+│   │       ├── FileServiceImpl.java
+│   │       └── ImageProcessingServiceImpl.java
+│   └── storage/
+│       ├── FileStorage.java
+│       └── LocalFileStorage.java
+├── hash/                    # 一致性哈希 (分布式路由)
+│   ├── Node.java                 # 节点接口
+│   └── ConsistentHashRouter.java # 虚拟节点 TreeMap 路由 (MD5 哈希)
 ├── idgen/                   # 分布式 ID 生成器
-│   ├── WorkerIdProvider.java        # 工作节点接口
-│   ├── RedisWorkerIdProvider.java   # Redis 自动注册 + 心跳续期
-│   └── SnowflakeIdGenerator.java    # 增强版 Snowflake (时钟回拨容忍 + Redis WorkerId)
-├── manager/
-│   └── AsyncManager.java         # 异步任务管理器
+│   ├── SnowflakeIdGenerator.java     # 增强版 Snowflake (时钟回拨容忍 + Redis WorkerId)
+│   ├── WorkerIdProvider.java         # 工作节点接口
+│   └── RedisWorkerIdProvider.java    # Redis 自动注册 + 心跳续期
+├── messaging/               # RabbitMQ 消息队列
+│   ├── config/                    # RabbitMQ 配置
+│   │   ├── RabbitMQConfig.java
+│   │   └── RabbitMQProperties.java
+│   ├── core/                      # 核心消息发布
+│   │   ├── RabbitMQDomainEventPublisher.java
+│   │   └── RoutingKeyResolver.java
+│   └── reliability/               # 可靠投递 (Confirm/Return)
+│       ├── ConfirmCallback.java
+│       └── ReturnCallback.java
+├── metrics/                 # 业务指标埋点
+│   ├── BusinessMetricsService.java
+│   └── MetricsConfig.java
 ├── notification/
 │   └── DefaultNotificationServiceImpl.java # 通知默认实现
-├── operlog/                 # 操作日志
+├── operlog/                 # 操作日志 (含 AOP 切面)
+│   ├── aspect/
+│   │   └── OperLogAspect.java        # 操作日志切面 (约定式拦截所有写操作, 无需注解)
 │   ├── entity/SysOperLog.java
 │   ├── mapper/SysOperLogMapper.java
-│   ├── service/SysOperLogService.java
-│   ├── service/impl/SysOperLogServiceImpl.java
-
-├── redis/                   # Redis 缓存抽象
-│   ├── RedisCache.java           # 缓存接口 (String/Hash/List/Set/ZSet + Lua + 分布式锁 + SCAN)
-│   └── impl/RedisCacheImpl.java  # 实现 (含 Lua 原子解锁、SCAN 替代 KEYS 防阻塞)
+│   └── service/
+│       ├── SysOperLogService.java
+│       └── impl/SysOperLogServiceImpl.java
+├── outbox/                  # Outbox 模式 (事件可靠投递)
+│   ├── util/
+│   │   └── OutboxEventUtils.java
+│   ├── entity/
+│   │   ├── OutboxMessage.java
+│   │   └── OutboxMessagePO.java
+│   ├── mapper/
+│   │   └── OutboxMessageMapper.java
+│   ├── converter/
+│   │   └── OutboxMessageMapper.java
+│   ├── publisher/
+│   │   └── OutboxPublisher.java
+│   └── repository/
+│       └── OutboxRepository.java
+├── repository/
+│   └── BaseRepository.java       # 仓储基类 (lambdaQuery/lambdaUpdate + 常见查询模式)
 ├── service/                 # Token 服务
 │   ├── TokenService.java
 │   ├── TokenRefreshResult.java
 │   └── impl/TokenServiceImpl.java
-└── util/                    # 工具类
-    ├── JwtUtil.java              # JWT 工具
-    ├── SecurityContextUtil.java  # 安全上下文工具
-    ├── OperLogUtil.java          # 操作日志工具
-    ├── RequestUtil.java          # 请求工具（无状态，自动识别代理头）
-    ├── FileUtils.java            # 文件工具
-    └── LocalRateLimiter.java     # 本地固定窗口限流器（读操作自动限流使用）
+├── util/                    # 纯工具函数
+│   ├── FileUtils.java            # 文件工具
+│   ├── JwtUtil.java              # JWT 工具
+│   ├── LocalRateLimiter.java     # 本地固定窗口限流器
+│   ├── OperLogUtil.java          # 操作日志工具
+│   ├── RequestUtil.java          # 请求工具 (自动识别代理头)
+│   ├── SecurityContextUtil.java  # 安全上下文工具
+│   └── TestSecurityUtil.java     # 测试安全上下文工具
+└── web/                     # Web 层 (过滤器 + 处理器)
+    ├── filter/                    # Servlet 过滤器
+    │   ├── CachedBodyHttpServletRequestWrapper.java
+    │   ├── JwtAuthenticationFilter.java    # JWT 认证过滤器
+    │   ├── RateLimitFilter.java            # 限流过滤器
+    │   ├── XssFilter.java                  # XSS 过滤
+    │   └── XssHttpServletRequestWrapper.java
+    └── handler/                    # 处理器
+        ├── CustomMetaObjectHandler.java    # MyBatis-Plus 自动填充
+        ├── JsonAuthenticationEntryPoint.java # 未认证响应
+        └── LoggingInterceptor.java         # 请求日志拦截
 ```
 
 ## 核心机制

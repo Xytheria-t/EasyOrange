@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.filter;
+package com.cartethyia.easyorange.framework.web.filter;
 
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import jakarta.servlet.Filter;

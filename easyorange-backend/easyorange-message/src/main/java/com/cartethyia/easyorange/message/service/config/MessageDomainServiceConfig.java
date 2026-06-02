@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.service.config;
 
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;

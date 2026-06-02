@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.framework.config.properties.IdGenProperties;
 import com.cartethyia.easyorange.framework.idgen.RedisWorkerIdProvider;
 import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.framework.idgen.WorkerIdProvider;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;

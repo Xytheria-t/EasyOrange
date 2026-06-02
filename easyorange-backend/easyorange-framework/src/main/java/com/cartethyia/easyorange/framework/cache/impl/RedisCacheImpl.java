@@ -1,8 +1,8 @@
-package com.cartethyia.easyorange.framework.redis.impl;
+package com.cartethyia.easyorange.framework.cache.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

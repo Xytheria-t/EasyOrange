@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.handler;
+package com.cartethyia.easyorange.framework.web.handler;
 
 import tools.jackson.databind.ObjectMapper;
 import com.cartethyia.easyorange.common.enums.ResultCode;

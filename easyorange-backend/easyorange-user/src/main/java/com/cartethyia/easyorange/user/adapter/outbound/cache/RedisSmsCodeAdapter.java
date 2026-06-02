@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
 import java.time.Duration;

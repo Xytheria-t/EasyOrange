@@ -1,7 +1,7 @@
-package com.cartethyia.easyorange.framework.redis;
+package com.cartethyia.easyorange.framework.cache;
 
 import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
-import com.cartethyia.easyorange.framework.redis.impl.RedisCacheImpl;
+import com.cartethyia.easyorange.framework.cache.impl.RedisCacheImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

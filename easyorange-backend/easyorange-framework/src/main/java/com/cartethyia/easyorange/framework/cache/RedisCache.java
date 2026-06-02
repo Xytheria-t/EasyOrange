@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.redis;
+package com.cartethyia.easyorange.framework.cache;
 
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 

@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.aspectj;
+package com.cartethyia.easyorange.framework.operlog.aspect;
 
 import com.cartethyia.easyorange.common.dto.AuthUser;
 import com.cartethyia.easyorange.common.enums.BusinessType;

@@ -434,7 +434,7 @@ public class RegistrationService {
 | 业务常量（非枚举） | `domain/constant` | UserConstant、ProductConstant |
 | 全局共享业务枚举 | `common/enums` | ResultCode、BusinessType |
 | 全局技术常量 | `common/constant` | CommonConstant |
-| 框架层常量 | `framework/constant` | LoginCacheConstants |
+| 框架层常量 | `framework/config/constant` | LoginCacheConstants |
 | 模块业务错误码 | `domain/constant/*ResultCode` | UserResultCode、ProductResultCode |
 | 技术常量（Redis Key 等） | `adapter/outbound/cache/` | OrderCacheConstant、ProductCacheConstant |
 

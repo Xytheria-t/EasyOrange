@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.event.idempotency;
 
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

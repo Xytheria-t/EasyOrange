@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.handler;
+package com.cartethyia.easyorange.framework.web.handler;
 
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;

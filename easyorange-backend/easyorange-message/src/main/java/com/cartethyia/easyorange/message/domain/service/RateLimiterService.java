@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.service;
 
-import com.cartethyia.easyorange.framework.redis.RedisCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

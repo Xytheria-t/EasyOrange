@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.service.impl;
 
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
-import com.cartethyia.easyorange.framework.constant.LoginCacheConstants;
+import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.service.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.service.TokenService;
 import com.cartethyia.easyorange.framework.util.JwtUtil;
