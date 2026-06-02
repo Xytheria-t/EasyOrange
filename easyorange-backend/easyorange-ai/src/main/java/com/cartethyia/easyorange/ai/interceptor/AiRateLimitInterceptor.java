@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -22,15 +21,23 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class AiRateLimitInterceptor implements HandlerInterceptor {
 
     private final RedisCache redisCache;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
-
-    @Qualifier("aiStaleCache")
     private final Cache<String, Object> staleCache;
+
+    public AiRateLimitInterceptor(
+            RedisCache redisCache,
+            AiProperties aiProperties,
+            ObjectMapper objectMapper,
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+        this.redisCache = redisCache;
+        this.aiProperties = aiProperties;
+        this.objectMapper = objectMapper;
+        this.staleCache = staleCache;
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response,

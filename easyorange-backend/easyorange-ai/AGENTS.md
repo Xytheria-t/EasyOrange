@@ -14,6 +14,8 @@ ai/
 │   ├── QwenVlVisionAdapter.java    # 通义千问 VL 视觉模型实现
 │   ├── CachingLlmAdapter.java      # @Primary 装饰器，L1+L2 缓存
 │   ├── CachingVisionAdapter.java   # @Primary 装饰器，L1+L2 缓存
+│   ├── outbound/
+│   │   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行)
 │   └── dto/                        # 适配器 DTO
 ├── interceptor/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
@@ -24,7 +26,6 @@ ai/
 │   ├── ProductTagger.java             # 商品标签引擎 (折扣/图片/信用分)
 │   ├── CreditScoreFetcher.java        # 信用分获取接口
 │   ├── JdbcCreditScoreFetcher.java    # 信用分获取实现 (批量 JDBC + 降级)
-│   ├── AiSearchEnhancer.java          # AI 导购搜索增强管道 (4 路并行)
 │   ├── AiPricingService.java          # 智能定价
 │   ├── AiReviewService.java           # AI 审核
 │   ├── AiQaService.java               # 智能问答
@@ -67,7 +68,7 @@ ai/
 1. 在 `port/` 定义接口（如果 consumer 也在本模块）或在 consumer 模块 `domain/port/` 定义接口
 2. 在 `service/` 实现业务逻辑
 3. 如果涉及 LLM 调用，通过 `LlmPort` 或 `VisionPort` 进行
-4. 在 `AiSearchEnhancer` 中添加新步骤（如果是搜索增强管道的一部分）
+4. 在 `AiSearchEnhancerAdapter` 中添加新步骤（如果是搜索增强管道的一部分）
 5. 在 `AiCallScope` 枚举中新增条目，配置 TTL 和限流阈值
 
 ## 搜索增强管道 (AiSearchEnhancer)

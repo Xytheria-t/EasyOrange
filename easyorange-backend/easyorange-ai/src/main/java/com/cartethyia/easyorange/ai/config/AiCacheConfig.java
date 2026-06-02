@@ -52,14 +52,7 @@ public class AiCacheConfig implements WebMvcConfigurer {
         return map;
     }
 
-    @Bean("aiStaleCache")
-    public Cache<String, Object> aiStaleCache() {
-        var props = aiProperties.getCache();
-        return Caffeine.newBuilder()
-                .maximumSize(props.getStaleMaxSize())
-                .expireAfterWrite(props.getStaleExpireHours(), TimeUnit.HOURS)
-                .build();
-    }
+
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {

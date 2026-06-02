@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.port.VisionPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -22,17 +21,23 @@ import java.util.Map;
 @Slf4j
 @Primary
 @Component
-@RequiredArgsConstructor
 public class CachingVisionAdapter implements VisionPort {
 
     private final QwenVlVisionAdapter delegate;
     private final AiProperties aiProperties;
-
-    @Qualifier("aiCaches")
     private final Map<AiCallScope, MultiLevelCache> aiCaches;
-
-    @Qualifier("aiStaleCache")
     private final Cache<String, Object> staleCache;
+
+    public CachingVisionAdapter(
+            QwenVlVisionAdapter delegate,
+            AiProperties aiProperties,
+            @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+        this.delegate = delegate;
+        this.aiProperties = aiProperties;
+        this.aiCaches = aiCaches;
+        this.staleCache = staleCache;
+    }
 
     @Override
     public String analyzeImage(String imageUrl, String prompt) {

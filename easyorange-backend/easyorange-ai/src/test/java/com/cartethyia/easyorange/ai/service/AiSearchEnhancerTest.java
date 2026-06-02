@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.service;
 
+import com.cartethyia.easyorange.ai.adapter.outbound.AiSearchEnhancerAdapter;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
@@ -23,7 +24,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AiSearchEnhancer -> 测试")
+@DisplayName("AiSearchEnhancerAdapter -> 测试")
 class AiSearchEnhancerTest {
 
     @Mock
@@ -41,12 +42,12 @@ class AiSearchEnhancerTest {
     @Mock
     private ObjectProvider<RedisCache> redisCacheProvider;
 
-    private AiSearchEnhancer enhancer;
+    private AiSearchEnhancerAdapter enhancer;
 
     @BeforeEach
     void setUp() {
         lenient().when(redisCacheProvider.getIfAvailable()).thenReturn(redisCache);
-        enhancer = new AiSearchEnhancer(nlDetector, llmPort, productTagger, redisCacheProvider);
+        enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisCacheProvider);
     }
 
     private ProductReadModel product(Long id, String title, BigDecimal price) {
@@ -120,7 +121,7 @@ class AiSearchEnhancerTest {
         @DisplayName("Redis 缓存未配置 -> 正常走增强流程")
         void tryEnhance_noRedisConfigured() {
             when(redisCacheProvider.getIfAvailable()).thenReturn(null);
-            enhancer = new AiSearchEnhancer(nlDetector, llmPort, productTagger, redisCacheProvider);
+            enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisCacheProvider);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of(1L, List.of()));
             when(llmPort.generateText(anyString(), anyString())).thenReturn("想找电脑");

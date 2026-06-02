@@ -5,7 +5,6 @@ import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -20,17 +19,23 @@ import java.util.Map;
 @Slf4j
 @Primary
 @Component
-@RequiredArgsConstructor
 public class CachingLlmAdapter implements LlmPort {
 
     private final DeepSeekLlmAdapter delegate;
     private final AiProperties aiProperties;
-
-    @Qualifier("aiCaches")
     private final Map<AiCallScope, MultiLevelCache> aiCaches;
-
-    @Qualifier("aiStaleCache")
     private final Cache<String, Object> staleCache;
+
+    public CachingLlmAdapter(
+            DeepSeekLlmAdapter delegate,
+            AiProperties aiProperties,
+            @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+        this.delegate = delegate;
+        this.aiProperties = aiProperties;
+        this.aiCaches = aiCaches;
+        this.staleCache = staleCache;
+    }
 
     @Override
     public String generateText(String systemPrompt, String userMessage) {

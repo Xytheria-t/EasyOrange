@@ -1,6 +1,8 @@
-package com.cartethyia.easyorange.ai.service;
+package com.cartethyia.easyorange.ai.adapter.outbound;
 
 import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
+import com.cartethyia.easyorange.ai.service.ProductTagger;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.framework.redis.RedisCache;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -8,7 +10,7 @@ import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,8 +19,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 @Slf4j
-@Service
-public class AiSearchEnhancer implements AiSearchEnhancerPort {
+@Component
+public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     private final NaturalLanguageDetector nlDetector;
     private final LlmPort llmPort;
@@ -55,7 +57,7 @@ public class AiSearchEnhancer implements AiSearchEnhancerPort {
         return t;
     });
 
-    public AiSearchEnhancer(
+    public AiSearchEnhancerAdapter(
             NaturalLanguageDetector nlDetector,
             LlmPort llmPort,
             ProductTagger productTagger,
