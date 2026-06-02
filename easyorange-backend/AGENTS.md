@@ -11,7 +11,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | MyBatis-Plus | 3.5.16 |
 | MapStruct | 1.6.3 |
 | Immutables | 2.10.0 |
-| Flyway | 11.14.1 |
+| Flyway | 11.15.0 |
 | JJWT | 0.13.0 |
 | ArchUnit | 1.4.1 |
 | Spring Data Elasticsearch | 6.0.3 |
@@ -162,9 +162,9 @@ public class BaseDO {
 | 覆盖率报告 | JaCoCo 0.8.12 | `prepare-package` 阶段生成报告 (`jacoco:report`)，门禁移到了 CI 层 |
 | 依赖安全 | OWASP Dependency Check 12.1.0 | `verify` 阶段检查，CVSS ≥ 8 阻断构建 |
 
-架构守卫测试位于 `easyorange-application/src/test/.../ArchitectureRulesTest.java`。
+架构守卫测试位于 `easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java`。
 
-**TestSecurityUtil 模式**：测试中设置 `SecurityContextHolder` 统一使用 `TestSecurityUtil.setSecurityContext(userId)`（位于 `easyorange-framework` 的 main 源码），替代 `mockStatic(SecurityContextUtil.class)`。`clearSecurityContext()` 必须在 `finally` 块中调用保证测试间隔离。
+**TestSecurityUtil 模式**：测试中设置 `SecurityContextHolder` 统一使用 `TestSecurityUtil.setSecurityContext(userId)`（位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`），替代 `mockStatic(SecurityContextUtil.class)`。`clearSecurityContext()` 必须在 `finally` 块中调用保证测试间隔离。
 
 ## Flyway 迁移规范
 

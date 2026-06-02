@@ -4,6 +4,14 @@
 
 ## [unreleased]
 
+### 2026-06-02 — 启动日志清理与配置修复
+
+- **fix**: JWT 开发密钥不再触发弱密钥警告（`dev-secret` → `dev-key`）
+- **fix**: Flyway 升级至 11.15.0，消除 MySQL 8.4 版本警告
+- **fix**: 关闭 dev 环境的 out-of-order 模式（个人开发无需多分支合并）
+- **chore**: 关闭 MyBatis-Plus ASCII banner
+- **chore**: 降低 Spring Boot devtools/actuator/web-context 等内部日志级别，精简启动输出
+
 ### 2026-06-01 — 文档与配置整理
 
 - **docs**: 精简 README (604→121 行)，创建独立 CHANGELOG

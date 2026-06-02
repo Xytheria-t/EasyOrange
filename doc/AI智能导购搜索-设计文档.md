@@ -219,20 +219,21 @@ public class ProductTagger {
 }
 ```
 
-### 3.5 新增: `AiSearchEnhancer`
+### 3.5 新增: `AiSearchEnhancerAdapter`（实现 `AiSearchEnhancerPort`）
 
-**位置**: `easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/service/AiSearchEnhancer.java`
+> **注**：以下代码为初始设计草图，实际实现已迁移至 `easyorange-ai/.../adapter/outbound/AiSearchEnhancerAdapter.java`，使用显式构造器 + `@Qualifier` 注入。核心逻辑（4路并行、缓存、降级）不变。
+
+**位置**: `easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java`
 
 ```java
-package com.cartethyia.easyorange.ai.service;
+package com.cartethyia.easyorange.ai.adapter.outbound;
 
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.dto.ProductReadModel;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -241,14 +242,12 @@ import java.util.concurrent.*;
  * 并行执行四个子步骤，任意子步骤超时/失败不影响其他步骤。
  */
 @Slf4j
-@Service
-@RequiredArgsConstructor
-public class AiSearchEnhancer implements AiSearchEnhancerPort {
+@Component
+public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     private final NaturalLanguageDetector nlDetector;
     private final LlmPort llmPort;
     private final ProductTagger productTagger;
-    private final AiPricingService pricingService;  // 假设存在
 
     private static final int TIMEOUT_SECONDS = 5;
     private static final String INTENT_SYSTEM_PROMPT = """
@@ -623,7 +622,7 @@ export function useProductSearch(params: ProductSearchParams = {}): UseProductSe
 | 1.2 | `AiSearchEnhancerPort.java` | 新增, ~15 行 |
 | 1.3 | `NaturalLanguageDetector.java` | 新增, ~35 行 |
 | 1.4 | `ProductTagger.java` | 新增, ~80 行 |
-| 1.5 | `AiSearchEnhancer.java` | 新增, ~120 行 |
+| 1.5 | `AiSearchEnhancerAdapter.java` | 新增, ~120 行 |
 | 1.6 | `ProductSearchRequest.java` | +3 行 |
 | 1.7 | `SearchPageResponse` (或 Equiv) | +3 行 |
 | 1.8 | `ProductSearchHandler.java` | +15 行 |

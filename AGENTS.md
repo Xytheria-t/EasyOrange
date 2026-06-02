@@ -12,7 +12,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台，**2025 
 | **消息队列** | RabbitMQ 3.13 (Spring AMQP 4.0.x) |
 | **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
 | **认证** | JWT (Access + Refresh Token) |
-| **迁移** | Flyway 11.14.1 |
+| **迁移** | Flyway 11.15.0 |
 | **部署** | Docker, docker-compose |
 
 ## 数据库表清单
@@ -188,7 +188,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，在 `PageResult` 基础上增加 `facets` 分面桶列表）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **测试统计**：后端 11 模块合计 2,546 测试用例，全部通过；前端 98 测试文件/947 测试用例
-- **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/`
+- **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 - **零配置启动**: 项目支持零配置开发环境启动（MySQL localhost:3306, Redis localhost:6379）。新开发者只需 `./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application` 即可运行。敏感配置通过 `.env.example` 模板管理，本地创建 `.env.local` 自定义
@@ -245,6 +245,10 @@ npm run test:coverage
 
 # E2E 测试（需先启动 dev server）
 npm run test:e2e
+
+# 生产构建 + Bundle 分析（rollup-plugin-visualizer 输出 dist/stats.html，treemap 可视化）
+npm run build:analyze
+```
 
 # CI/CD 流水线（GitHub Actions）
 # 配置文件: .github/workflows/ci.yml
