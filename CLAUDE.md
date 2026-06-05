@@ -15,9 +15,9 @@ easy-orange/
 │   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
 │   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 多级缓存, Bloom 过滤器, AOP, 事件, 文件, 分布式 ID, 一致性哈希, **RabbitMQ 消息队列**)
 │   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
-│   │   ├── domain/service/      # PasswordManagementService, AuthenticationService, RegistrationService, SmsCodeService, LoginSecurityService
+│   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
-│   │   └── domain/port/         # SmsSenderPort, PasswordEncoderPort (端口接口)
+│   │   └── domain/port/         # SmsCodePort, PasswordEncoderPort, LoginAttemptPort, AvatarFilePort (端口接口)
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
 │   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
@@ -89,7 +89,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 ### 3. 始终激活（always-on）
 
 所有任务都会加载的基础规则：
-- `.trae/rules/karpathy-guidelines.md` - 行为准则
+- 本文件《行为准则》章节 - 行为准则（内联在 CLAUDE.md）
 - `.trae/rules/common/coding-style.md` - 核心编码原则
 
 ### 4. 区域规则
@@ -141,7 +141,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **Zustand selector 稳定引用**: selector 中使用 `?? []` 或 `?? {}` 时**必须用模块级常量**（如 `const EMPTY_MESSAGES: ChatMessage[] = []`），禁止内联 `?? []`。原因：内联写法每次调用都创建新引用 → Zustand 用 `Object.is` 比较发现变化 → 触发重渲染 → selector 再执行 → 无限循环。配合 React 19 + StrictMode 的 `useSyncExternalStore` 双快照机制，循环会被放大到 50 层嵌套
 - **聊天 conversationId 格式**: 前后端统一使用排序双 ID 格式 `conv_{minId}_{maxId}`（如 `conv_123_456`），确保 A→B 和 B→A 的会话 ID 一致。前端：`conv_${[currentUserId, targetUserId].sort().join('_')}`；后端：`"conv_" + Math.min(sender, receiver) + "_" + Math.max(sender, receiver)`
 - **Mockito Java 25 兼容**: Java 25 下 Mockito inline mock maker 使用 ByteBuddy attach 机制会失败（WSL2 环境尤为明显）。已配置 `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker` 使用 `mock-maker-subclass` 模式。**新测试不要尝试改回 inline 模式**
-- **`product-paths` 白名单陷阱**: `security.product-paths` 配置的路径会跳过 JWT 认证（`JwtAuthenticationFilter.shouldNotFilter` 中 `"GET".equals(method) && matchesAnyPattern(path, productPaths)`）。配置项如 `/api/products` 会匹配 `/api/products/my`，导致需要认证的接口被公开访问。如果新增需要认证的商品相关接口，必须在 `JwtAuthenticationFilter.AUTH_REQUIRED_PRODUCT_PATHS` 中显式排除，或改用更精确的 `ignore-paths` 配置
+- **`product-paths` 白名单陷阱**: `security.product-paths` 配置的路径会跳过 JWT 认证（`SecurityConfig` 的 `.requestMatchers(GET, ...)` 路径匹配）。配置项如 `/api/products` 会匹配 `/api/products/my`，导致需要认证的接口被公开访问。如果新增需要认证的商品相关接口，必须在 `SecurityConfig` 中添加更精确的 `.requestMatchers(GET, "/api/products/my/**").authenticated()`，或改用更精确的 `ignore-paths` 配置
+- **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（SubclassByteBuddyMockMaker 不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId)` + `} finally { TestSecurityUtil.clearSecurityContext(); }` 模式。工具类位于 `easyorange-framework/src/main/java/.../util/TestSecurityUtil.java`，所有模块测试通用。`clearSecurityContext()` 必须在 `finally` 块中调用，确保测试间隔离
 - **不可变集合**: 全项目统一使用 Java 9+ 不可变集合工厂方法，**禁止使用 `Collections` 工具类创建空/单元素/不可包装集合**。具体规则见 `.trae/rules/java/coding-style.md` §Immutability
 - **前端 ESLint jsx-a11y**: 所有非交互元素（div/span/article）上的点击事件必须改为语义化的 `button` 元素，或添加 `role="button"` + `tabIndex={0}` + `onKeyDown`。`label` 元素必须通过 `htmlFor` 关联表单控件或使用嵌套结构
@@ -184,6 +185,7 @@ Before implementing:
 - No abstractions for single-use code.
 - No "flexibility" or "configurability" that wasn't requested.
 - No error handling for impossible scenarios.
+- **Prefer standard APIs over custom code**: Before writing a utility/filter/abstraction, check if the framework already provides it. Example: Spring Security `oauth2ResourceServer()` + `JwtDecoder`/`JwtEncoder` > custom `JwtAuthenticationFilter` + JJWT.
 - If you write 200 lines and it could be 50, rewrite it.
 
 Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.

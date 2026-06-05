@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.message.dto.request.WsMessage;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.MessageMapping;

@@ -4,10 +4,11 @@ import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 public interface SellerInfoPort {
 
-    SellerInfo getSellerInfo(Long sellerId);
+    Optional<SellerInfo> getSellerInfo(Long sellerId);
 
     Map<Long, SellerInfo> getSellerInfos(Collection<Long> sellerIds);
 }

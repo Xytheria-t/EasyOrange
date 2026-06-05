@@ -120,7 +120,7 @@ class CreateOrderSagaCompensationTest {
         verify(paymentGatewayPort).createPayment(any());
         verify(orderRepository).save(any(OrderAggregate.class));
         verify(eventPublisher).publish(any());
-        verify(redisCache).unlockIfValueMatches(anyString(), anyString());
+        verify(redisCache).unlock(anyString(), anyString());
     }
 
     @Test

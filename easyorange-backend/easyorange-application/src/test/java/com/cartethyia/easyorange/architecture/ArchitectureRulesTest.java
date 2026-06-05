@@ -155,7 +155,6 @@ class ArchitectureRulesTest {
     }
 
     private static final Set<String> PORT_ALLOWLIST = Set.of(
-            "SmsRateLimitPort",            // implemented by RedisSmsCodeAdapter (name mismatch)
             "PaymentQueryRepositoryPort",  // co-implemented by MybatisPaymentRepository (implements PaymentRepositoryPort + PaymentQueryRepositoryPort)
             "CallbackSignatureVerifierPort" // implemented in adapter/outbound/security/ (name mismatch)
     );

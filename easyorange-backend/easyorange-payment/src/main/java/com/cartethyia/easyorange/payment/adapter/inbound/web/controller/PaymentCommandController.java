@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandl
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -24,7 +23,6 @@ public class PaymentCommandController {
     private final PaymentCommandMapper paymentCommandMapper;
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
     public Result<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
         Long paymentId = commandHandler.handle(paymentCommandMapper.toCreateCommand(request, null));
         PaymentResponse response = PaymentResponse.builder().id(paymentId).build();
@@ -39,14 +37,12 @@ public class PaymentCommandController {
     }
 
     @PostMapping("/{id}/refund")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> refund(@PathVariable Long id, @Valid @RequestBody RefundRequest request) {
         commandHandler.handle(paymentCommandMapper.toRefundCommand(id, request));
         return Result.success();
     }
 
     @PostMapping("/{id}/close")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> close(@PathVariable Long id) {
         commandHandler.handle(paymentCommandMapper.toCloseCommand(id));
         return Result.success();

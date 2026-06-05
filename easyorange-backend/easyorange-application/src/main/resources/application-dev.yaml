@@ -51,8 +51,8 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
-    username: easyorange
-    password: easyorange123
+    username: ${RABBITMQ_USER:easyorange}
+    password: ${RABBITMQ_PASSWORD:easyorange123}
     publisher-confirm-type: correlated
     publisher-returns: true
     listener:

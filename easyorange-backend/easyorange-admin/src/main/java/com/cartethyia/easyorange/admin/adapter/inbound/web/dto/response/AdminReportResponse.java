@@ -1,0 +1,24 @@
+package com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response;
+
+import lombok.Builder;
+
+import java.time.LocalDateTime;
+
+@Builder
+public record AdminReportResponse(
+    Long reportId,
+    Long productId,
+    String productName,
+    String productImage,
+    Long reporterId,
+    String reporterName,
+    Integer reasonType,
+    String reasonTypeDesc,
+    String reason,
+    Integer status,
+    String statusDesc,
+    String handleResult,
+    String handleRemark,
+    LocalDateTime createTime,
+    LocalDateTime handleTime
+) {}

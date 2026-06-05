@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.admin.dto.request.ReportHandleRequest;
-import com.cartethyia.easyorange.admin.dto.request.BatchHandleRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminReportResponse;
-import com.cartethyia.easyorange.admin.dto.response.ReportStatsResponse;
-import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminReportService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

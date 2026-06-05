@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,31 +110,31 @@ class PageRequestTest {
     class ValidateSortFieldTests {
 
         @Test
-        @DisplayName("validateSortField with null sortField should return null")
-        void validateSortField_nullSortField_returnsNull() {
+        @DisplayName("validateSortField with null sortField should return empty")
+        void validateSortField_nullSortField_returnsEmpty() {
             // Arrange
             PageRequest pageRequest = new PageRequest(1, 10, null, null);
             Set<String> allowedFields = Set.of("id", "createTime");
 
             // Act
-            String result = pageRequest.validateSortField(allowedFields);
+            Optional<String> result = pageRequest.validateSortField(allowedFields);
 
             // Assert
-            assertThat(result).isNull();
+            assertThat(result).isEmpty();
         }
 
         @Test
-        @DisplayName("validateSortField with blank sortField should return null")
-        void validateSortField_blankSortField_returnsNull() {
+        @DisplayName("validateSortField with blank sortField should return empty")
+        void validateSortField_blankSortField_returnsEmpty() {
             // Arrange
             PageRequest pageRequest = new PageRequest(1, 10, "   ", null);
             Set<String> allowedFields = Set.of("id", "createTime");
 
             // Act
-            String result = pageRequest.validateSortField(allowedFields);
+            Optional<String> result = pageRequest.validateSortField(allowedFields);
 
             // Assert
-            assertThat(result).isNull();
+            assertThat(result).isEmpty();
         }
 
         @Test
@@ -144,38 +145,38 @@ class PageRequestTest {
             Set<String> allowedFields = Set.of("id", "createTime", "updateTime");
 
             // Act
-            String result = pageRequest.validateSortField(allowedFields);
+            Optional<String> result = pageRequest.validateSortField(allowedFields);
 
             // Assert
-            assertThat(result).isEqualTo("createTime");
+            assertThat(result).contains("createTime");
         }
 
         @Test
-        @DisplayName("validateSortField with disallowed field should return null")
-        void validateSortField_disallowedField_returnsNull() {
+        @DisplayName("validateSortField with disallowed field should return empty")
+        void validateSortField_disallowedField_returnsEmpty() {
             // Arrange
             PageRequest pageRequest = new PageRequest(1, 10, "price", null);
             Set<String> allowedFields = Set.of("id", "createTime");
 
             // Act
-            String result = pageRequest.validateSortField(allowedFields);
+            Optional<String> result = pageRequest.validateSortField(allowedFields);
 
             // Assert
-            assertThat(result).isNull();
+            assertThat(result).isEmpty();
         }
 
         @Test
-        @DisplayName("validateSortField with empty allowedFields should return null")
-        void validateSortField_emptyAllowedFields_returnsNull() {
+        @DisplayName("validateSortField with empty allowedFields should return empty")
+        void validateSortField_emptyAllowedFields_returnsEmpty() {
             // Arrange
             PageRequest pageRequest = new PageRequest(1, 10, "id", null);
             Set<String> allowedFields = Set.of();
 
             // Act
-            String result = pageRequest.validateSortField(allowedFields);
+            Optional<String> result = pageRequest.validateSortField(allowedFields);
 
             // Assert
-            assertThat(result).isNull();
+            assertThat(result).isEmpty();
         }
     }
 

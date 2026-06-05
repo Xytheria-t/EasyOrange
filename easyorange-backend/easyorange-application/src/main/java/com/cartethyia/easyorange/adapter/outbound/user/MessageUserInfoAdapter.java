@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -18,13 +19,12 @@ public class MessageUserInfoAdapter implements UserInfoPort {
     private final UserRepository userRepository;
 
     @Override
-    public UserInfo getUserInfo(Long userId) {
+    public Optional<UserInfo> getUserInfo(Long userId) {
         if (userId == null) {
-            return null;
+            return Optional.empty();
         }
         return userRepository.findById(userId)
-                .map(this::toUserInfo)
-                .orElse(null);
+                .map(this::toUserInfo);
     }
 
     @Override

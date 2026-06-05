@@ -40,7 +40,7 @@ public class ProductAuditEventListener {
             log.info("action=audit_notification_sent productId={} action={} sellerId={}",
                     event.productId(), event.action(), event.sellerId());
         } catch (Exception e) {
-            log.error("action=audit_notify_failed productId={} error={}", event.productId(), e.getMessage(), e);
+            log.error("action=audit_notify_failed productId={}", event.productId(), e);
         }
     }
 }

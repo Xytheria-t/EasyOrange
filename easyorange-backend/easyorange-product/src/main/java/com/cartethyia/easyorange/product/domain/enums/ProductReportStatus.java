@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -15,6 +16,13 @@ public enum ProductReportStatus {
     private final Integer code;
     private final String desc;
 
+    /**
+     * Resolves the enum value from its integer code.
+     *
+     * @param code the integer code (may be {@code null})
+     * @return the matching enum value, or {@code null} if code is null or not recognized
+     */
+    @Nullable
     public static ProductReportStatus fromCode(Integer code) {
         if (code == null) {
             return null;

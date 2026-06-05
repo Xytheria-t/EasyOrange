@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductReviewVO;
 import com.cartethyia.easyorange.product.application.query.dto.ReviewStatsVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +43,6 @@ public class ProductReviewController {
     }
 
     @PostMapping("/{productId}/reviews")
-    @PreAuthorize("isAuthenticated()")
     public Result<Long> createReview(
             @PathVariable Long productId,
             @Valid @RequestBody CreateReviewRequest request) {
@@ -53,12 +51,10 @@ public class ProductReviewController {
                 .rating(request.getRating())
                 .content(request.getContent())
                 .build();
-        Long reviewId = reviewCommandService.createReview(command);
-        return Result.success(reviewId);
+        return Result.success(reviewCommandService.createReview(command));
     }
 
     @DeleteMapping("/{productId}/reviews/{reviewId}")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> deleteReview(@PathVariable Long productId, @PathVariable Long reviewId) {
         reviewCommandService.deleteReview(reviewId);
         return Result.success();

@@ -12,7 +12,6 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.assembler.CategoryA
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,8 +44,7 @@ public class ProductQueryController {
 
     @GetMapping("/{id}")
     public Result<ProductVO> getProduct(@PathVariable Long id) {
-        ProductVO product = queryService.getProductById(id);
-        return Result.success(product);
+        return Result.success(queryService.getProductById(id));
     }
 
     @GetMapping("/my")
@@ -74,20 +72,12 @@ public class ProductQueryController {
     public Result<List<ProductVO>> getSimilarProducts(
             @PathVariable Long id,
             @RequestParam(defaultValue = "10") Integer limit) {
-        List<ProductVO> products = queryService.getSimilarProducts(id, limit);
-        return Result.success(products);
+        return Result.success(queryService.getSimilarProducts(id, limit));
     }
 
     @PostMapping("/batch")
     public Result<List<ProductVO>> getProductsByIds(@RequestBody List<Long> ids) {
-        List<ProductVO> products = queryService.getProductsByIds(ids);
-        return Result.success(products);
-    }
-
-    @PostMapping("/{id}/view")
-    public Result<Void> incrementView(@PathVariable Long id) {
-        queryService.incrementViewCount(id);
-        return Result.success();
+        return Result.success(queryService.getProductsByIds(ids));
     }
 
     @GetMapping("/categories")
@@ -97,8 +87,4 @@ public class ProductQueryController {
         return Result.success(categoryAssembler.toCategoryResponses(categories));
     }
 
-    @DeleteMapping("/categories/cache")
-    public Result<Void> evictCategoryCache() {
-        return Result.success();
-    }
 }

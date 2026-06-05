@@ -14,9 +14,7 @@ framework/
 ├── cache/                   # 缓存抽象 (多级缓存门面 + Redis 缓存实现)
 │   ├── CacheLoader.java          # 回源加载器函数式接口
 │   ├── MultiLevelCache.java      # L1 Caffeine → L2 Redis → DB 三级串联
-│   ├── RedisCache.java           # Redis 缓存接口 (String/Hash/List/Set/ZSet + Lua + 分布式锁 + SCAN)
-│   └── impl/
-│       └── RedisCacheImpl.java   # Redis 缓存实现 (含 Lua 原子解锁、SCAN 替代 KEYS 防阻塞)
+│   └── RedisCache.java           # Redis 缓存 (KV/Hash/Lock/Lua/SCAN, 含 key prefix 与类型转换)
 ├── config/                  # 框架配置
 │   ├── async/                    # 线程池 + Jackson
 │   │   ├── ThreadPoolConfig.java
@@ -45,7 +43,7 @@ framework/
 │   ├── redis/                    # Redis 配置
 │   │   ├── RedisConfig.java
 │   │   └── CacheConfig.java
-│   ├── security/                 # Spring Security 配置
+│   ├── security/                 # Spring Security 配置 (含 JwtDecoder + JwtEncoder + JwtAuthenticationConverter)
 │   │   └── SecurityConfig.java
 │   └── web/                      # WebMVC 配置
 │       ├── WebMvcConfig.java
@@ -119,13 +117,12 @@ framework/
 │       └── OutboxRepository.java
 ├── repository/
 │   └── BaseRepository.java       # 仓储基类 (lambdaQuery/lambdaUpdate + 常见查询模式)
-├── service/                 # Token 服务
-│   ├── TokenService.java
-│   ├── TokenRefreshResult.java
-│   └── impl/TokenServiceImpl.java
+├── auth/                    # Token 认证服务
+│   ├── TokenService.java         # Token 服务接口
+│   ├── TokenRefreshResult.java   # 刷新结果记录
+│   └── impl/TokenServiceImpl.java # Token 服务实现 (使用 JwtEncoder/JwtDecoder)
 ├── util/                    # 纯工具函数
 │   ├── FileUtils.java            # 文件工具
-│   ├── JwtUtil.java              # JWT 工具
 │   ├── LocalRateLimiter.java     # 本地固定窗口限流器
 │   ├── OperLogUtil.java          # 操作日志工具
 │   ├── RequestUtil.java          # 请求工具 (自动识别代理头)
@@ -134,24 +131,26 @@ framework/
 └── web/                     # Web 层 (过滤器 + 处理器)
     ├── filter/                    # Servlet 过滤器
     │   ├── CachedBodyHttpServletRequestWrapper.java
-    │   ├── JwtAuthenticationFilter.java    # JWT 认证过滤器
     │   ├── RateLimitFilter.java            # 限流过滤器
     │   ├── XssFilter.java                  # XSS 过滤
     │   └── XssHttpServletRequestWrapper.java
     └── handler/                    # 处理器
         ├── CustomMetaObjectHandler.java    # MyBatis-Plus 自动填充
-        ├── JsonAuthenticationEntryPoint.java # 未认证响应
         └── LoggingInterceptor.java         # 请求日志拦截
 ```
 
 ## 核心机制
 
-### JWT 认证流程
+### JWT 认证流程（Spring Security OAuth2 Resource Server）
 
-1. `JwtAuthenticationFilter` 拦截请求，从 Header 提取 Token
-2. `JwtUtil` 解析签名验证，`TokenServiceImpl` 检查 Redis 黑名单（仅登出 token 有 Redis 开销）
-3. Access Token 过期后通过 Refresh Token 刷新（轮换：作旧 + 颁新对）
-4. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
+JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthenticationFilter` 处理，无需自定义 Servlet Filter：
+
+1. `BearerTokenAuthenticationFilter` (Spring Security 内置) 从 `Authorization: Bearer xxx` 提取 Token
+2. 自定义 `JwtDecoder` (SecurityConfig bean) 验证签名 (Nimbus) + 黑名单检查 (Redis) + 强制登出检查 (Redis)
+3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，构造 `AuthUser` 并设置 `SecurityContext`
+4. `TokenService.createAccessToken()` / `createRefreshToken()` 使用 `JwtEncoder` (NimbusJwtEncoder) 签发
+5. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
+6. `WebSocketAuthInterceptor` 复用 `JwtDecoder` bean 做连接握手认证
 
 ### 领域事件发布流程
 
@@ -160,30 +159,39 @@ framework/
 ### Redis 缓存抽象
 
 ```java
-// 基础操作
+// KV 操作
+RedisCache.set(key, value)
 RedisCache.set(key, value, timeout, unit)
-RedisCache.get(key, clazz)
+RedisCache.get(key)            // 返回 Object, 调用方自行判断类型
+RedisCache.get(key, clazz)     // 带类型转换 (支持 Number 跨类型转换)
 RedisCache.delete(key)
+RedisCache.delete(keys)
 
-// 位图操作 (Bloom Filter 使用)
-RedisCache.setBit(key, offset, value)
-RedisCache.getBit(key, offset)
-RedisCache.bitCount(key)
+// 键生命周期
+RedisCache.hasKey(key)
+RedisCache.expire(key, timeout, unit)
+RedisCache.getExpire(key, unit)
 
-// 分布式锁 (Lua 脚本原子释放, UUID 防误删)
+// 原子操作
+RedisCache.increment(key)            // +1
+RedisCache.increment(key, delta)
+
+// 分布式锁 (NX + Lua 原子解锁)
+RedisCache.setIfAbsent(key, value, timeout, unit)
 RedisCache.tryLock(key, value, timeout, unit)
 RedisCache.unlock(key, value)
 
-// 键扫描 (SCAN 替代 KEYS, 不阻塞 Redis)
-RedisCache.keys(pattern)
+// Hash 批量写入
+RedisCache.hashPutAll(key, map)
 
 // Lua 脚本执行
 RedisCache.executeLuaScript(script, keys, args)
 
-// 批量操作、Hash/List/Set/ZSet 等完整 API 见 RedisCache.java 接口
+// 键扫描 (SCAN 替代 KEYS, 不阻塞 Redis)
+RedisCache.keys(pattern)
 ```
 
-> **重要实现细节**: `keys()` 使用 `SCAN` 命令（cursor 迭代, count=1000），避免生产环境 `KEYS *` 阻塞 Redis。`unlock()` 和 `unlockIfValueMatches()` 使用 Lua 脚本原子 compare-and-delete。新增 `setBit`/`getBit`/`bitCount` 位图操作用于支持布隆过滤器。
+> **重要实现细节**: `keys()` 使用 `SCAN` 命令（cursor 迭代, count=1000），避免生产环境 `KEYS *` 阻塞 Redis。`unlock()` 使用 Lua 脚本原子 compare-and-delete。`get(key, clazz)` 的 `castValue` 支持 Number 跨类型转换（如 Long ↔ Integer）。无生产调用的 List/Set/ZSet/Hash 单键操作已移除；需要时直接注入 `RedisTemplate<String, Object>`。
 
 ### 布隆过滤器 (bloom/)
 

@@ -25,6 +25,8 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
         this.entityMapper = entityMapper;
     }
 
+    // ========== Query methods ==========
+
     @Override
     public Optional<User> findById(Long id) {
         return Optional.ofNullable(mapper.selectById(id))
@@ -33,29 +35,29 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
     @Override
     public List<User> findAllByIds(Collection<Long> ids) {
-        return findIn(UserEntity::getId, ids).stream()
+        return findAllByIn(UserEntity::getId, ids).stream()
             .map(entityMapper::toDomain)
             .toList();
     }
 
     @Override
-    public Optional<User> findByUsername(String username) {
-        return findOne(UserEntity::getUsername, username).map(entityMapper::toDomain);
+    public Optional<User> findByEmail(String email) {
+        return findBy(UserEntity::getEmail, email).map(entityMapper::toDomain);
     }
 
     @Override
     public Optional<User> findByPhone(String phone) {
-        return findOne(UserEntity::getPhone, phone).map(entityMapper::toDomain);
-    }
-
-    @Override
-    public Optional<User> findByEmail(String email) {
-        return findOne(UserEntity::getEmail, email).map(entityMapper::toDomain);
+        return findBy(UserEntity::getPhone, phone).map(entityMapper::toDomain);
     }
 
     @Override
     public Optional<User> findByStudentId(String studentId) {
-        return findOne(UserEntity::getStudentId, studentId).map(entityMapper::toDomain);
+        return findBy(UserEntity::getStudentId, studentId).map(entityMapper::toDomain);
+    }
+
+    @Override
+    public Optional<User> findByUsername(String username) {
+        return findBy(UserEntity::getUsername, username).map(entityMapper::toDomain);
     }
 
     @Override
@@ -74,6 +76,8 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
                 .one())
                 .map(entityMapper::toDomain);
     }
+
+    // ========== Write methods ==========
 
     @Override
     public User save(User user) {
@@ -113,8 +117,10 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
         mapper.deleteById(id);
     }
 
+    // ========== Aggregate methods ==========
+
     @Override
     public long count() {
-        return mapper.selectCount(null);
+        return super.count();
     }
 }

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;

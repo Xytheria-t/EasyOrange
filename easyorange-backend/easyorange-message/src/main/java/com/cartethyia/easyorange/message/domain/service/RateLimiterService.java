@@ -23,10 +23,23 @@ public class RateLimiterService {
 
     private final AtomicInteger localCounter = new AtomicInteger(0);
 
+    /**
+     * Constructs a rate limiter service backed by Redis with a local fallback.
+     *
+     * @param redisCache Redis cache for distributed rate limiting
+     */
     public RateLimiterService(RedisCache redisCache) {
         this.redisCache = redisCache;
     }
 
+    /**
+     * Checks whether the user is allowed to send a message, respecting the
+     * per-user message rate limit. Falls back to a local counter if Redis is
+     * unavailable.
+     *
+     * @param userId the ID of the user attempting to send a message
+     * @return true if the message is allowed, false if the rate limit is exceeded
+     */
     public boolean allowSendMessage(Long userId) {
         String key = MESSAGE_RATE_KEY.formatted(userId);
 
@@ -45,7 +58,7 @@ public class RateLimiterService {
             redisCache.increment(key, 1L);
             return true;
         } catch (Exception e) {
-            log.warn("action=rate_limit_fallback userId={} error={}", userId, e.getMessage());
+            log.warn("action=rate_limit_fallback userId={}", userId, e);
             int current = localCounter.getAndIncrement();
             if (current >= MAX_MESSAGES_PER_SECOND) {
                 localCounter.set(0);
@@ -55,6 +68,13 @@ public class RateLimiterService {
         }
     }
 
+    /**
+     * Checks whether the user is allowed to send a typing indicator,
+     * limited to one per 2 seconds per user.
+     *
+     * @param userId the ID of the user sending the typing indicator
+     * @return true if the typing indicator is allowed, false if throttled
+     */
     public boolean allowTyping(Long userId) {
         String key = TYPING_RATE_KEY.formatted(userId);
 

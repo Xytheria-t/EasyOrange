@@ -42,22 +42,26 @@ public abstract class BaseRepository<M extends BaseMapper<T>, T> {
         return ChainWrappers.lambdaUpdateChain(mapper);
     }
 
-    protected <R> List<T> findList(SFunction<T, R> column, R value) {
-        return lambdaQuery().eq(value != null, column, value).list();
+    protected <R> List<T> findAllBy(SFunction<T, R> column, R value) {
+        if (value == null) return List.of();
+        return lambdaQuery().eq(column, value).list();
     }
 
-    protected <R> Optional<T> findOne(SFunction<T, R> column, R value) {
+    protected <R> Optional<T> findBy(SFunction<T, R> column, R value) {
+        if (value == null) return Optional.empty();
         return Optional.ofNullable(lambdaQuery().eq(column, value).one());
     }
 
-    protected <R> List<T> findIn(SFunction<T, R> column, Collection<R> values) {
-        if (values == null || values.isEmpty()) {
-            return List.of();
-        }
+    protected <R> List<T> findAllByIn(SFunction<T, R> column, Collection<R> values) {
+        if (values == null || values.isEmpty()) return List.of();
         return lambdaQuery().in(column, values).list();
     }
 
+    protected <R> boolean exists(SFunction<T, R> column, R value) {
+        return value != null && lambdaQuery().eq(column, value).exists();
+    }
+
     protected long count() {
-        return mapper.selectCount(null);
+        return lambdaQuery().count();
     }
 }

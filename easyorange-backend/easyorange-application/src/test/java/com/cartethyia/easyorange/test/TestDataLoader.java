@@ -88,7 +88,7 @@ public class TestDataLoader {
                 }
             }
         } catch (Exception e) {
-            log.warn("获取测试数据脚本列表失败，使用默认顺序: {}", e.getMessage());
+            log.warn("获取测试数据脚本列表失败，使用默认顺序", e);
             scripts = getDefaultScriptOrder();
         }
         return scripts;

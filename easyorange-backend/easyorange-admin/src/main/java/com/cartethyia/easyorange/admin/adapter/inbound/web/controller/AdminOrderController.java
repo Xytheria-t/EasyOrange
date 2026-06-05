@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
-import com.cartethyia.easyorange.admin.dto.request.OrderInterventionRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrderQueryRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.OrderInterventionRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

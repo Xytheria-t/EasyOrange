@@ -30,7 +30,7 @@ public class ProductViewCountService {
         try {
             redisTemplate.opsForHash().increment(VIEW_COUNT_KEY, String.valueOf(productId), 1);
         } catch (Exception e) {
-            log.warn("记录浏览量失败: productId={}, error={}", productId, e.getMessage());
+            log.warn("记录浏览量失败: productId={}", productId, e);
         }
     }
 
@@ -66,7 +66,7 @@ public class ProductViewCountService {
                 log.debug("批量更新浏览量完成: processed={}", viewCountMap.size());
             }
         } catch (Exception e) {
-            log.error("批量更新浏览量失败: error={}", e.getMessage(), e);
+            log.error("批量更新浏览量失败", e);
         } finally {
             if (Boolean.TRUE.equals(locked)) {
                 redisTemplate.delete(VIEW_COUNT_LOCK);

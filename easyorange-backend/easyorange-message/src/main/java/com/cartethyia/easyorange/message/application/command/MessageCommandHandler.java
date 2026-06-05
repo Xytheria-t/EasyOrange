@@ -129,7 +129,7 @@ public class MessageCommandHandler {
                     }
                 }
             } catch (Exception e) {
-                log.warn("action=mark_read_batch_fail messageId={} error={}", messageId, e.getMessage());
+                log.warn("action=mark_read_batch_fail messageId={}", messageId, e);
             }
         }
 

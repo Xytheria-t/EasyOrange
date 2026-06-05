@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.admin.dto.request.AdminReviewDeleteRequest;
-import com.cartethyia.easyorange.admin.dto.request.AdminReviewQueryRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminReviewResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminReviewDeleteRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminReviewQueryRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReviewResponse;
 import com.cartethyia.easyorange.admin.service.AdminReviewService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;

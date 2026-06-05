@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
@@ -19,13 +19,12 @@ public class SellerInfoAdapter implements SellerInfoPort {
     private final UserRepository userRepository;
 
     @Override
-    public SellerInfo getSellerInfo(Long sellerId) {
+    public Optional<SellerInfo> getSellerInfo(Long sellerId) {
         if (sellerId == null) {
-            return null;
+            return Optional.empty();
         }
         return userRepository.findById(sellerId)
-                .map(this::toSellerInfo)
-                .orElse(SellerInfo.empty(sellerId));
+                .map(this::toSellerInfo);
     }
 
     @Override

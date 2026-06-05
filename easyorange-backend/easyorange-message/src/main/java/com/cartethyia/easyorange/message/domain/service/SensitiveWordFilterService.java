@@ -16,6 +16,13 @@ public class SensitiveWordFilterService {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
+    /**
+     * Replaces all occurrences of sensitive words in the given content with "***".
+     * Trims and normalizes whitespace before filtering.
+     *
+     * @param content the text to filter; may be null or blank
+     * @return the filtered text with sensitive words replaced, or the original content if null/blank
+     */
     public String filter(String content) {
         if (content == null || content.isBlank()) {
             return content;
@@ -37,6 +44,12 @@ public class SensitiveWordFilterService {
         return result;
     }
 
+    /**
+     * Checks whether the given content contains any sensitive words.
+     *
+     * @param content the text to inspect; may be null or blank
+     * @return true if at least one sensitive word is found, false otherwise
+     */
     public boolean containsSensitive(String content) {
         if (content == null || content.isBlank()) {
             return false;

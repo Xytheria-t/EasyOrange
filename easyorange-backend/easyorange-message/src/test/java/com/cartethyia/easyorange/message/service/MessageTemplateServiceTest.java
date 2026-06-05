@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
-import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
+import com.cartethyia.easyorange.message.application.query.dto.MessageTemplateVO;
 import com.cartethyia.easyorange.message.service.impl.MessageTemplateServiceImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

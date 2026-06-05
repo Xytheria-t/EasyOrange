@@ -48,7 +48,7 @@ public class JdbcCreditScoreFetcher implements CreditScoreFetcher {
                     result.put(sellerId, creditResult.creditScore());
                 }
             } catch (Exception e) {
-                log.debug("Fallback credit lookup failed for sellerId={}: {}", sellerId, e.getMessage());
+                log.debug("Fallback credit lookup failed for sellerId={}", sellerId, e);
             }
         }
         return result;

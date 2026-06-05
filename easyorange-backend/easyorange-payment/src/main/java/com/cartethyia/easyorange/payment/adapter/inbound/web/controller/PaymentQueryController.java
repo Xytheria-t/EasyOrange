@@ -23,21 +23,18 @@ public class PaymentQueryController {
     private final PaymentViewAssembler paymentViewAssembler;
 
     @GetMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public Result<PaymentResponse> getById(@PathVariable Long id) {
         PaymentAggregate aggregate = queryHandler.getPaymentById(id);
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/orders/{orderId}")
-    @PreAuthorize("isAuthenticated()")
     public Result<PaymentResponse> getByOrderId(@PathVariable Long orderId) {
         PaymentAggregate aggregate = queryHandler.getPaymentByOrderId(orderId);
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/{id}/status")
-    @PreAuthorize("isAuthenticated()")
     public Result<PaymentStatusResponse> getStatus(@PathVariable Long id) {
         PaymentAggregate aggregate = queryHandler.getPaymentById(id);
         return Result.success(new PaymentStatusResponse(
@@ -50,7 +47,6 @@ public class PaymentQueryController {
     public record PaymentStatusResponse(String status, String paymentMethod, LocalDateTime payTime) {}
 
     @GetMapping("/my")
-    @PreAuthorize("isAuthenticated()")
     public Result<PageResult<PaymentResponse>> getMyPayments(@Valid QueryPaymentRequest request) {
         PageResult<PaymentAggregate> result = queryHandler.getMyPayments(
                 request.getStatus(), request.getPageNum(), request.getPageSize());

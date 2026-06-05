@@ -15,7 +15,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,7 +43,6 @@ public class FileController {
     private static final int[] PRESET_WIDTHS = {150, 300, 600, 1200};
 
     @PostMapping("/upload")
-    @PreAuthorize("isAuthenticated()")
     public Result<UploadFileVO> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "businessType", required = false) String businessType,
@@ -59,22 +57,18 @@ public class FileController {
     }
 
     @PostMapping("/uploads")
-    @PreAuthorize("isAuthenticated()")
     public Result<List<UploadFileVO>> uploadFiles(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam(value = "businessType", required = false) String businessType) {
-        List<UploadFileVO> results = fileService.uploadFiles(files, businessType);
-        return Result.success(results);
+        return Result.success(fileService.uploadFiles(files, businessType));
     }
 
     @GetMapping("/{id}")
     public Result<UploadFileVO> getFileInfo(@PathVariable Long id) {
-        UploadFileVO file = fileService.getFileInfo(id);
-        return Result.success(file);
+        return Result.success(fileService.getFileInfo(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> deleteFile(@PathVariable Long id) {
         fileService.deleteFile(id);
         evictImageCache(id);
@@ -85,12 +79,10 @@ public class FileController {
     public Result<List<UploadFileVO>> getFilesByBusiness(
             @PathVariable String businessType,
             @PathVariable Long businessId) {
-        List<UploadFileVO> files = fileService.getFilesByBusiness(businessType, businessId);
-        return Result.success(files);
+        return Result.success(fileService.getFilesByBusiness(businessType, businessId));
     }
 
     @PutMapping("/{id}/bind")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> bindBusiness(
             @PathVariable Long id,
             @RequestParam String businessType,
@@ -100,7 +92,6 @@ public class FileController {
     }
 
     @GetMapping("/{id}/download")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
         Resource resource = fileService.downloadFile(id);
 

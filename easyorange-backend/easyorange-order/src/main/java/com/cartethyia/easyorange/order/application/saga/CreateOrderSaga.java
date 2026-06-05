@@ -94,7 +94,7 @@ public class CreateOrderSaga {
     private void releaseAcquiredLocks(List<String> acquiredKeys, String lockValue) {
         for (int i = acquiredKeys.size() - 1; i >= 0; i--) {
             try {
-                redisCache.unlockIfValueMatches(acquiredKeys.get(i), lockValue);
+                redisCache.unlock(acquiredKeys.get(i), lockValue);
             } catch (Exception e) {
                 log.warn("释放锁失败 key={}", acquiredKeys.get(i), e);
             }

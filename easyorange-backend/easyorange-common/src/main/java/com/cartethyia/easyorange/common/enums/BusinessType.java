@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.common.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -53,8 +54,12 @@ public enum BusinessType {
     }
 
     /**
-     * 从 code 值查找枚举
+     * Resolves the enum value from its integer code.
+     *
+     * @param code the integer code
+     * @return the matching enum value, or {@code null} if code is not recognized
      */
+    @Nullable
     public static BusinessType fromCode(int code) {
         for (BusinessType value : values()) {
             if (value.code == code) {

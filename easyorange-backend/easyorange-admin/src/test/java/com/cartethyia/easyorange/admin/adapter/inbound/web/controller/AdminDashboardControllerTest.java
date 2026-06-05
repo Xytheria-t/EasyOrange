@@ -1,13 +1,13 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.ActivityResponse;
-import com.cartethyia.easyorange.admin.dto.response.DashboardStatsResponse;
-import com.cartethyia.easyorange.admin.dto.response.PendingItemsResponse;
-import com.cartethyia.easyorange.admin.dto.response.RecentProductResponse;
-import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
-import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
-import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
-import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.PendingItemsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentProductResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUserResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

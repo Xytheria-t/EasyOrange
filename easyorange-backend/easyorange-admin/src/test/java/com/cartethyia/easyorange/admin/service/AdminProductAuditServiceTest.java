@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
-import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
-import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;

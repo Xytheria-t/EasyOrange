@@ -59,7 +59,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
                 return redisCached;
             }
         } catch (Exception e) {
-            log.debug("读取分类Redis缓存失败(降级查询DB): level={}, error={}", level, e.getMessage());
+            log.debug("读取分类Redis缓存失败(降级查询DB): level={}", level, e);
         }
 
         List<CategoryDO> categories = categoryQueryRepository.findByLevel(level);
@@ -72,7 +72,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         try {
             redisCache.set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
-            log.warn("设置分类Redis缓存失败: level={}, error={}", level, e.getMessage());
+            log.warn("设置分类Redis缓存失败: level={}", level, e);
         }
 
         return models;
@@ -96,7 +96,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
                 return redisCached;
             }
         } catch (Exception e) {
-            log.debug("读取分类Redis缓存失败(降级查询DB): parentId={}, error={}", parentId, e.getMessage());
+            log.debug("读取分类Redis缓存失败(降级查询DB): parentId={}", parentId, e);
         }
 
         List<CategoryDO> categories = categoryQueryRepository.findByParentId(parentId);
@@ -109,7 +109,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         try {
             redisCache.set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
         } catch (Exception e) {
-            log.warn("设置分类Redis缓存失败: parentId={}, error={}", parentId, e.getMessage());
+            log.warn("设置分类Redis缓存失败: parentId={}", parentId, e);
         }
 
         return models;
@@ -129,7 +129,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
                 return Optional.of(readModel);
             }
         } catch (Exception e) {
-            log.debug("读取分类Redis缓存失败(降级查询DB): id={}, error={}", id, e.getMessage());
+            log.debug("读取分类Redis缓存失败(降级查询DB): id={}", id, e);
         }
 
         List<CategoryDO> allCategories = categoryQueryRepository.findByIds(List.of(id));
@@ -138,7 +138,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
             try {
                 redisCache.set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
             } catch (Exception e) {
-                log.warn("设置分类Redis缓存失败: id={}, error={}", id, e.getMessage());
+                log.warn("设置分类Redis缓存失败: id={}", id, e);
             }
             return Optional.of(model);
         }
@@ -155,7 +155,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
                 redisCache.delete(keys);
             }
         } catch (Exception e) {
-            log.warn("清除分类Redis缓存失败: error={}", e.getMessage());
+            log.warn("清除分类Redis缓存失败", e);
         }
     }
 
@@ -166,7 +166,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         try {
             redisCache.delete(cacheKey);
         } catch (Exception e) {
-            log.warn("清除分类Redis缓存失败: level={}, error={}", level, e.getMessage());
+            log.warn("清除分类Redis缓存失败: level={}", level, e);
         }
     }
 
@@ -177,7 +177,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         try {
             redisCache.delete(cacheKey);
         } catch (Exception e) {
-            log.warn("清除分类Redis缓存失败: parentId={}, error={}", parentId, e.getMessage());
+            log.warn("清除分类Redis缓存失败: parentId={}", parentId, e);
         }
     }
 

@@ -1,11 +1,13 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.framework.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -17,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class WebSocketAuthInterceptor implements HandshakeInterceptor {
 
-    private final JwtUtil jwtUtil;
+    private final JwtDecoder jwtDecoder;
 
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
@@ -30,17 +32,13 @@ public class WebSocketAuthInterceptor implements HandshakeInterceptor {
             }
 
             try {
-                if (jwtUtil.validateToken(token)) {
-                    String subject = jwtUtil.getSubject(token).orElse(null);
-                    if (subject != null) {
-                        Long userId = Long.parseLong(subject);
-                        attributes.put("userId", userId);
-                        attributes.put("username", subject);
-                        return true;
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("WebSocket握手失败: token验证失败, error={}", e.getMessage());
+                Jwt jwt = jwtDecoder.decode(token);
+                Long userId = Long.valueOf(jwt.getSubject());
+                attributes.put("userId", userId);
+                attributes.put("username", jwt.getSubject());
+                return true;
+            } catch (JwtException e) {
+                log.warn("WebSocket握手失败: token验证失败", e);
             }
         }
         return false;

@@ -11,7 +11,6 @@ import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,7 +26,6 @@ public class FavoriteController {
     private final FavoriteAssembler favoriteAssembler;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
     public Result<PageResult<FavoriteResponse>> getFavorites(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -36,40 +34,34 @@ public class FavoriteController {
     }
 
     @PostMapping("/{productId}")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> addFavorite(@PathVariable Long productId) {
         favoriteService.addFavorite(productId);
         return Result.success();
     }
 
     @DeleteMapping("/{productId}")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> removeFavorite(@PathVariable Long productId) {
         favoriteService.removeFavorite(productId);
         return Result.success();
     }
 
     @DeleteMapping("/batch")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> removeManyFavorites(@Valid @RequestBody BatchRemoveRequest request) {
         favoriteService.removeManyFavorites(request.getIds());
         return Result.success();
     }
 
     @GetMapping("/check/{productId}")
-    @PreAuthorize("isAuthenticated()")
     public Result<Boolean> checkIsFavorited(@PathVariable Long productId) {
         return Result.success(favoriteService.isFavorited(productId));
     }
 
     @GetMapping("/count")
-    @PreAuthorize("isAuthenticated()")
     public Result<Long> getFavoriteCount() {
         return Result.success(favoriteService.getFavoriteCount());
     }
 
     @PostMapping("/batch-check")
-    @PreAuthorize("isAuthenticated()")
     public Result<Map<Long, Boolean>> batchCheckFavorited(@Valid @RequestBody BatchCheckRequest request) {
         return Result.success(favoriteService.batchCheckFavorited(request.getProductIds()));
     }

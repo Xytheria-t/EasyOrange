@@ -18,7 +18,6 @@ public class AdminSearchReindexController {
 
     @PostMapping("/reindex")
     public Result<Integer> reindex() {
-        int count = reindexService.reindexAll();
-        return Result.success(count);
+        return Result.success(reindexService.reindexAll());
     }
 }

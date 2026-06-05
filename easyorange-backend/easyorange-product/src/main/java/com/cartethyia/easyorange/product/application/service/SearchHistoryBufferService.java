@@ -53,7 +53,7 @@ public class SearchHistoryBufferService {
                 searchHistoryMapper.batchInsert(batch);
                 log.debug("Flushed {} search history records to database", batch.size());
             } catch (Exception e) {
-                log.error("Failed to flush search history buffer: {}", e.getMessage());
+                log.error("Failed to flush search history buffer", e);
                 for (SearchHistoryDO history : batch) {
                     buffer.offer(history);
                 }

@@ -41,25 +41,22 @@ public class AiController {
 
     @PostMapping("/pricing")
     public Result<PricingSuggestion> suggestPrice(@RequestBody PricingRequest request) {
-        var suggestion = pricingService.suggestPrice(
+        return Result.success(pricingService.suggestPrice(
                 request.productName(), request.description(), request.categoryName(),
-                request.conditionLevel(), request.originalPrice());
-        return Result.success(suggestion);
+                request.conditionLevel(), request.originalPrice()));
     }
 
     @PostMapping("/auto-listing")
     public Result<AutoListingResult> autoListing(@RequestBody List<String> imageUrls) {
-        var result = autoListingService.analyzeImages(imageUrls);
-        return Result.success(result);
+        return Result.success(autoListingService.analyzeImages(imageUrls));
     }
 
     @PostMapping("/review")
     public Result<AiReviewResult> reviewProduct(@RequestBody AiReviewRequest request) {
-        var result = reviewService.reviewProduct(
+        return Result.success(reviewService.reviewProduct(
                 request.productName(), request.description(), request.categoryName(),
                 request.conditionLevel(), request.price(), request.sellerName(),
-                request.imageUrls());
-        return Result.success(result);
+                request.imageUrls()));
     }
 
     @GetMapping("/semantic-search")
@@ -68,21 +65,18 @@ public class AiController {
             @RequestParam(defaultValue = "1") int pageNum,
             @RequestParam(defaultValue = "20") int pageSize
     ) {
-        var result = semanticSearchService.search(keyword, pageNum, pageSize);
-        return Result.success(result);
+        return Result.success(semanticSearchService.search(keyword, pageNum, pageSize));
     }
 
     @PostMapping("/qa")
     public Result<QaResponse> answerQuestion(@RequestBody QaRequest request) {
-        var response = qaService.answerQuestion(request);
-        return Result.success(response);
+        return Result.success(qaService.answerQuestion(request));
     }
 
     @PostMapping("/generate-copy")
     public Result<CopyGenerationResult> generateCopy(@RequestBody CopyGenerationRequest request) {
-        var result = copyGenerationService.generateCopy(
+        return Result.success(copyGenerationService.generateCopy(
                 request.productName(), request.categoryName(), request.conditionLevel(),
-                request.originalPrice(), request.style() != null ? request.style() : "standard");
-        return Result.success(result);
+                request.originalPrice(), request.style() != null ? request.style() : "standard"));
     }
 }

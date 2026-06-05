@@ -81,7 +81,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
         try {
             redisTemplate.delete(cacheKey);
         } catch (Exception e) {
-            log.error("删除订单列表缓存失败：key={}, error={}", cacheKey, e.getMessage());
+            log.warn("删除订单列表缓存失败: key={}", cacheKey, e);
         }
     }
 
@@ -146,7 +146,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
         try {
             redisTemplate.delete(cacheKey);
         } catch (Exception e) {
-            log.error("删除订单详情缓存失败：key={}, error={}", cacheKey, e.getMessage());
+            log.warn("删除订单详情缓存失败: key={}", cacheKey, e);
         }
     }
 
@@ -214,7 +214,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
                 redisTemplate.delete(keys);
             }
         } catch (Exception e) {
-            log.error("清除用户订单缓存失败：roleId={}, error={}", roleId, e.getMessage());
+            log.warn("清除用户订单缓存失败: roleId={}", roleId, e);
             for (OrderStatus status : OrderStatus.values()) {
                 String cacheKey = buildOrderListKey(roleId, status.getCode(), 1, 10);
                 evictOrderList(cacheKey);

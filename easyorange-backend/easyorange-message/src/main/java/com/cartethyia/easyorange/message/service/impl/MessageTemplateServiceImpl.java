@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
-import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
+import com.cartethyia.easyorange.message.application.query.dto.MessageTemplateVO;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.service.MessageTemplateService;
 import lombok.RequiredArgsConstructor;

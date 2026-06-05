@@ -4,6 +4,12 @@
 
 ## [unreleased]
 
+### 2026-06-04 — 全局权限注解清理
+
+- **refactor**: 移除 46 个冗余 `@PreAuthorize("isAuthenticated()")` 注解（9 个 Controller）
+- **chore**: 清理 8 个未使用的 `PreAuthorize` 导入
+- **docs**: 补充全局认证约定到 AGENTS.md / CLAUDE.md
+
 ### 2026-06-02 — 启动日志清理与配置修复
 
 - **fix**: JWT 开发密钥不再触发弱密钥警告（`dev-secret` → `dev-key`）

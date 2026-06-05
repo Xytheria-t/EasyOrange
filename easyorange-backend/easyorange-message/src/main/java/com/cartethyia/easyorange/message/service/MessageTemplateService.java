@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
-import com.cartethyia.easyorange.message.dto.vo.MessageTemplateVO;
+import com.cartethyia.easyorange.message.application.query.dto.MessageTemplateVO;
 
 import java.util.List;
 import java.util.Map;

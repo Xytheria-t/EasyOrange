@@ -3,8 +3,7 @@ package com.cartethyia.easyorange.user.domain.port;
 /**
  * 短信发送端口 - 验证码的实际投递。
  * <p>
- * {@link com.cartethyia.easyorange.user.domain.service.SmsCodeService} 生成验证码后，
- * 通过此端口将验证码投递到用户手机。
+ * {@link SmsCodePort} 的适配器实现内部调用此端口将验证码投递到用户手机。
  * <p>
  * 职责：
  * <ul>

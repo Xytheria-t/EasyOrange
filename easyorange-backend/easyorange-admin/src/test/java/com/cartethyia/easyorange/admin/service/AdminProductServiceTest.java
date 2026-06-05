@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.admin.dto.request.AdminProductQueryRequest;
-import com.cartethyia.easyorange.admin.dto.request.UpdateStatusRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminProductResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;

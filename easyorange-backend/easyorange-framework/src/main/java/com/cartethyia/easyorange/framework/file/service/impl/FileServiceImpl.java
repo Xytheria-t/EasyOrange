@@ -84,7 +84,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
             log.info("action=file_upload, filename={}, size={}", file.getOriginalFilename(), FileUtils.formatFileSize(file.getSize()));
             return convertToVO(uploadFile);
         } catch (IOException e) {
-            log.error("文件上传失败：{}", e.getMessage());
+            log.error("文件上传失败", e);
             throw new FileException("文件上传失败：" + e.getMessage(), e);
         }
     }

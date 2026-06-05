@@ -3,83 +3,80 @@ package com.cartethyia.easyorange.user.adapter.outbound.cache;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
-import com.cartethyia.easyorange.user.domain.port.SmsRateLimitPort;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * Redis 实现的短信验证码和限流适配器
- * <p>
- * 同时实现两个端口接口：
- * <ul>
- *   <li>{@link SmsCodePort} - 验证码存储</li>
- *   <li>{@link SmsRateLimitPort} - 发送限流</li>
- * </ul>
- */
-@Component
-@RequiredArgsConstructor
-public class RedisSmsCodeAdapter implements SmsCodePort, SmsRateLimitPort {
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
-    private static final String SMS_CODE_PREFIX = CommonConstant.APP_PREFIX + "sms:code:";
-    private static final String SMS_LIMIT_PREFIX = CommonConstant.APP_PREFIX + "sms:limit:";
-    private static final String DAILY_COUNT_PREFIX = CommonConstant.APP_PREFIX + "sms:daily:";
-    private static final String VERIFY_COUNT_PREFIX = CommonConstant.APP_PREFIX + "sms:verify:";
+/**
+ * Redis 实现的短信验证码适配器。
+ */
+@Component("redisSmsCodeAdapter")
+@RequiredArgsConstructor
+public class RedisSmsCodeAdapter implements SmsCodePort {
+
+    private static final String SMS_BASE = CommonConstant.APP_PREFIX + "sms:";
+    private static final String CODE_KEY = SMS_BASE + "code:";
+    private static final String LIMIT_KEY = SMS_BASE + "limit:";
+    private static final String DAILY_KEY = SMS_BASE + "daily:";
+    private static final String VERIFY_KEY = SMS_BASE + "verify:";
+
+    private static final Duration CODE_TTL = Duration.ofMinutes(5);
+    private static final Duration SEND_INTERVAL = Duration.ofSeconds(60);
+    private static final long MAX_DAILY = 10;
+    private static final long MAX_VERIFY_ATTEMPTS = 5;
 
     private final RedisCache redisCache;
-
-    // ========== SmsCodePort 实现 ==========
-
-    @Override
-    public void save(String phone, String code, Duration ttl) {
-        redisCache.set(SMS_CODE_PREFIX + phone, code, ttl.toMinutes(), TimeUnit.MINUTES);
-    }
+    private final SmsSenderPort smsSenderPort;
 
     @Override
-    public String get(String phone) {
-        return redisCache.get(SMS_CODE_PREFIX + phone, String.class);
-    }
-
-    @Override
-    public void delete(String phone) {
-        redisCache.delete(SMS_CODE_PREFIX + phone);
-        clearVerifyCount(phone);
-    }
-
-    // ========== SmsRateLimitPort 实现 ==========
-
-    @Override
-    public boolean isSendLimited(String phone) {
-        return Boolean.TRUE.equals(redisCache.hasKey(SMS_LIMIT_PREFIX + phone));
-    }
-
-    @Override
-    public void setSendInterval(String phone, Duration interval) {
-        redisCache.set(SMS_LIMIT_PREFIX + phone, "1", interval.getSeconds(), TimeUnit.SECONDS);
-    }
-
-    @Override
-    public long incrementDailyCount(String phone) {
-        return incrementWithExpire(DAILY_COUNT_PREFIX, phone, 1, TimeUnit.DAYS);
-    }
-
-    @Override
-    public long incrementVerifyCount(String phone) {
-        return incrementWithExpire(VERIFY_COUNT_PREFIX, phone, 10, TimeUnit.MINUTES);
-    }
-
-    @Override
-    public void clearVerifyCount(String phone) {
-        redisCache.delete(VERIFY_COUNT_PREFIX + phone);
-    }
-
-    private long incrementWithExpire(String prefix, String phone, long expireTime, TimeUnit expireUnit) {
-        String key = prefix + phone;
-        Long count = redisCache.increment(key);
-        if (count != null && count == 1) {
-            redisCache.expire(key, expireTime, expireUnit);
+    public boolean send(String phone) {
+        if (Boolean.TRUE.equals(redisCache.hasKey(LIMIT_KEY + phone))) {
+            return false;
         }
-        return count != null ? count : 0;
+
+        Long daily = redisCache.increment(DAILY_KEY + phone);
+        if (daily != null && daily == 1) {
+            redisCache.expire(DAILY_KEY + phone, 1, TimeUnit.DAYS);
+        }
+        if (daily != null && daily > MAX_DAILY) {
+            return false;
+        }
+
+        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+        redisCache.set(CODE_KEY + phone, code, CODE_TTL.getSeconds(), TimeUnit.SECONDS);
+        redisCache.set(LIMIT_KEY + phone, "1", SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
+
+        smsSenderPort.send(phone, code);
+        return true;
+    }
+
+    @Override
+    public VerifyResult verify(String phone, String code) {
+        if (code == null || code.isBlank()) {
+            return VerifyResult.NOT_FOUND;
+        }
+
+        Long attempts = redisCache.increment(VERIFY_KEY + phone);
+        if (attempts != null && attempts == 1) {
+            redisCache.expire(VERIFY_KEY + phone, 10, TimeUnit.MINUTES);
+        }
+        if (attempts != null && attempts > MAX_VERIFY_ATTEMPTS) {
+            redisCache.delete(CODE_KEY + phone);
+            redisCache.delete(VERIFY_KEY + phone);
+            return VerifyResult.TOO_MANY_ATTEMPTS;
+        }
+
+        String stored = redisCache.get(CODE_KEY + phone, String.class);
+        if (stored == null || !stored.equals(code)) {
+            return VerifyResult.NOT_FOUND;
+        }
+
+        redisCache.delete(CODE_KEY + phone);
+        redisCache.delete(VERIFY_KEY + phone);
+        return VerifyResult.OK;
     }
 }

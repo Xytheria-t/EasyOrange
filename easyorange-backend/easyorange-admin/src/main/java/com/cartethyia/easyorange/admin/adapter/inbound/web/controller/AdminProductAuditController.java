@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.admin.dto.request.BatchAuditRequest;
-import com.cartethyia.easyorange.admin.dto.request.ProductAuditRequest;
-import com.cartethyia.easyorange.admin.dto.response.AuditLogResponse;
-import com.cartethyia.easyorange.admin.dto.response.BatchAuditResultResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAuditRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

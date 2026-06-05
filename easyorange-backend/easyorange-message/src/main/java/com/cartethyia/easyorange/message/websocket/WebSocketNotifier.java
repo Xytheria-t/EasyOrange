@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.message.dto.request.WsMessage;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -23,7 +23,7 @@ public class WebSocketNotifier {
                     message
             );
         } catch (Exception e) {
-            log.error("action=send_websocket_message_failed userId={} error={}", userId, e.getMessage());
+            log.warn("action=send_websocket_message_failed userId={}", userId, e);
         }
     }
 
@@ -35,7 +35,7 @@ public class WebSocketNotifier {
                     notification
             );
         } catch (Exception e) {
-            log.error("action=send_websocket_notification_failed userId={} error={}", userId, e.getMessage());
+            log.warn("action=send_websocket_notification_failed userId={}", userId, e);
         }
     }
 
@@ -43,7 +43,7 @@ public class WebSocketNotifier {
         try {
             messagingTemplate.convertAndSend(destination, message);
         } catch (Exception e) {
-            log.error("action=broadcast_websocket_message_failed destination={} error={}", destination, e.getMessage());
+            log.warn("action=broadcast_websocket_message_failed destination={}", destination, e);
         }
     }
 

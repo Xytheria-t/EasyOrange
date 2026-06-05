@@ -175,7 +175,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.warn("action=redis_rate_limit_error, key={}, error={}", key, ex.getMessage());
+            log.warn("action=redis_rate_limit_error, key={}", key, ex);
             // Redis 不可用时放行（fail-open）
         }
     }
@@ -211,7 +211,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         } catch (BusinessException ex) {
             throw ex;
         } catch (Exception ex) {
-            log.warn("action=repeat_submit_check_error, key={}, error={}", key, ex.getMessage());
+            log.warn("action=repeat_submit_check_error, key={}", key, ex);
             // Redis 不可用时放行（fail-open）
         }
     }

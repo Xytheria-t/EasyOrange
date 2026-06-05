@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import jakarta.annotation.Nullable;
 import java.util.Arrays;
 
 public enum ProductStatus {
@@ -27,6 +28,13 @@ public enum ProductStatus {
         return desc;
     }
 
+    /**
+     * Resolves the enum value from its integer code.
+     *
+     * @param code the integer code (may be {@code null})
+     * @return the matching enum value, or {@code null} if code is null or not recognized
+     */
+    @Nullable
     public static ProductStatus fromCode(Integer code) {
         if (code == null) {
             return null;

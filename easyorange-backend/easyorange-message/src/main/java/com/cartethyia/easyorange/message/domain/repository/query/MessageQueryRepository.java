@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.message.domain.repository.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
-import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
-import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
+import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 
 public interface MessageQueryRepository {
 

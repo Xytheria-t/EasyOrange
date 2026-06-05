@@ -24,7 +24,7 @@ security:
   # 产品路径列表（公开访问）
   # ⚠️ 警告：配置项会跳过 JWT 认证，且支持前缀匹配
   # 例如 /api/products 会匹配 /api/products/my，导致需要认证的接口被公开访问
-  # 如果新增需要认证的商品接口，需在 JwtAuthenticationFilter.AUTH_REQUIRED_PRODUCT_PATHS 中排除
+  # 如果新增需要认证的商品接口，需在 SecurityConfig 中添加 .requestMatchers(GET, "/api/products/my/**").authenticated()
   product-paths:
     - /api/products/**
     - /api/categories/**
@@ -349,7 +349,7 @@ redis:
 **改进**：
 
 - 统一领域事件发布逻辑
-- 优化 JwtAuthenticationFilter 性能
+- 替换 JwtAuthenticationFilter 为 Spring Security OAuth2 Resource Server
 - 改进 Redis 缓存类型转换异常处理
 
 **依赖更新**：

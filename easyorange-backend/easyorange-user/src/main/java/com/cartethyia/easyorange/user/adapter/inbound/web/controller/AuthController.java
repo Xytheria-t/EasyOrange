@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 
-import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.framework.service.TokenRefreshResult;
-import com.cartethyia.easyorange.framework.service.TokenService;
+import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
+import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.PasswordLoginRequest;
@@ -16,7 +16,8 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResu
 import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Phone;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.service.SmsCodeService;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -28,14 +29,13 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthAppService authAppService;
-    private final SmsCodeService smsCodeService;
+    private final SmsCodePort smsCodePort;
     private final TokenService tokenService;
     private final UserAssembler userAssembler;
 
     @PostMapping("/register")
     public Result<Long> register(@Valid @RequestBody RegisterRequest request) {
-        Long userId = authAppService.register(request.username(), request.password());
-        return Result.success(userId);
+        return Result.success(authAppService.register(request.username(), request.password()));
     }
 
     @PostMapping("/login")
@@ -56,16 +56,21 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public Result<TokenRefreshResult> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
-        TokenRefreshResult result = authAppService.refreshToken(request.refreshToken());
-        return result != null ? Result.success(result) : Result.error(ResultCode.UNAUTHORIZED, "刷新令牌已失效，请重新登录");
+        return Result.success(authAppService.refreshToken(request.refreshToken()));
     }
+
+    // ==== SMS Code ====
 
     @PostMapping("/sms-code")
     public Result<Void> sendSmsCode(
             @NotBlank(message = "手机号不能为空") @Phone @RequestParam String phone) {
-        smsCodeService.sendCode(phone);
+        if (!smsCodePort.send(phone)) {
+            throw BusinessException.of(UserResultCode.SMS_CODE_SEND_TOO_FREQUENT);
+        }
         return Result.success();
     }
+
+    // ==== Password Management ====
 
     @PostMapping("/password/reset")
     public Result<Void> resetPassword(@Valid @RequestBody PasswordResetRequest request) {

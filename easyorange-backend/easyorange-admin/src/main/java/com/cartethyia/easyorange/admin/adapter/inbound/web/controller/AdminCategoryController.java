@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
-import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.dto.response.CategoryTreeResponse;
-import com.cartethyia.easyorange.admin.dto.response.CategoryResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

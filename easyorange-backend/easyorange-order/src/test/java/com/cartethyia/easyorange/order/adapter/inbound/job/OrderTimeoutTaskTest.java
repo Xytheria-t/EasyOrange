@@ -83,7 +83,7 @@ class OrderTimeoutTaskTest {
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
             when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class)))
                     .thenReturn(true);
-            when(redisCache.unlockIfValueMatches(anyString(), anyString())).thenReturn(true);
+            when(redisCache.unlock(anyString(), anyString())).thenReturn(true);
 
             orderTimeoutTask.cancelExpiredOrders();
 
@@ -102,7 +102,7 @@ class OrderTimeoutTaskTest {
                     .thenReturn(false);
             when(redisCache.tryLock(contains(String.valueOf(ORDER_ID_2)), anyString(), anyLong(), any(TimeUnit.class)))
                     .thenReturn(true);
-            when(redisCache.unlockIfValueMatches(anyString(), anyString())).thenReturn(true);
+            when(redisCache.unlock(anyString(), anyString())).thenReturn(true);
 
             orderTimeoutTask.cancelExpiredOrders();
 
@@ -132,7 +132,7 @@ class OrderTimeoutTaskTest {
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
             when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class)))
                     .thenReturn(true);
-            when(redisCache.unlockIfValueMatches(anyString(), anyString())).thenReturn(true);
+            when(redisCache.unlock(anyString(), anyString())).thenReturn(true);
             // First order update throws exception
             doThrow(new RuntimeException("更新失败"))
                     .doNothing()

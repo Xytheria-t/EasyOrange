@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -25,10 +24,7 @@ public class ProductReportController {
 
     @PostMapping("/product/{productId}")
     public Result<Void> reportProduct(@PathVariable Long productId,
-                                      @Valid @RequestBody ReportRequest request) {
-        if (!request.isValidReasonType()) {
-            throw BusinessException.of("无效的举报类型");
-        }
+                                       @Valid @RequestBody ReportRequest request) {
         Long reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
         createProductReportHandler.handleReport(productId, reporterId, request.getReason(), request.getReasonType());
         return Result.success();

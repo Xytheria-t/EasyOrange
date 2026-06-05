@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.admin.dto.request.ResetPasswordRequest;
-import com.cartethyia.easyorange.admin.dto.request.UserRoleRequest;
-import com.cartethyia.easyorange.admin.dto.request.UserUnlockRequest;
-import com.cartethyia.easyorange.admin.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ResetPasswordRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserSecurityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +17,8 @@ public class AdminUserControllerExtension {
     private final AdminUserSecurityService adminUserSecurityService;
 
     @PutMapping("/{id}/unlock")
-    public Result<Void> unlockUser(
-        @PathVariable Long id,
-        @Valid @RequestBody UserUnlockRequest request
-    ) {
-        adminUserSecurityService.unlockUser(id, request);
+    public Result<Void> unlockUser(@PathVariable Long id) {
+        adminUserSecurityService.unlockUser(id);
         return Result.success();
     }
 
@@ -31,7 +27,7 @@ public class AdminUserControllerExtension {
         @PathVariable Long id,
         @Valid @RequestBody ResetPasswordRequest request
     ) {
-        return Result.success(adminUserSecurityService.resetPassword(id, request));
+        return Result.success(adminUserSecurityService.resetPassword(id));
     }
 
     @PutMapping("/{id}/force-logout")

@@ -103,6 +103,13 @@ easyorange-application
 - `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
 - `http-client.*` — HTTP 客户端超时和协议版本
 
+### 日志配置 (logback-spring.xml)
+
+- `LOG_PATH` — 日志目录，默认 `./logs`，生产环境建议设置为绝对路径
+- 输出：CONSOLE + FILE (app.log) + ERROR_FILE (error.log)
+- 滚动策略：按天 + 大小（100MB/文件，30 天保留，总量 3GB）
+- MDC：`traceId` 贯穿全链路，在 `LoggingInterceptor` 中注入
+
 ## Flyway 迁移规范
 
 - 版本号格式: `V{N}__description.sql` (N 为递增整数)

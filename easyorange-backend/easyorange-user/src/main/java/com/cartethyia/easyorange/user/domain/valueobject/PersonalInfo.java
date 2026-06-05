@@ -43,19 +43,17 @@ public abstract class PersonalInfo {
 
     @Value.Check
     protected PersonalInfo validate() {
-        if (realName() != null && realName().isBlank()) {
-            throw new IllegalArgumentException("realName must not be blank");
-        }
-        if (nickName() != null && nickName().isBlank()) {
-            throw new IllegalArgumentException("nickName must not be blank");
-        }
-        if (studentId() != null && studentId().isBlank()) {
-            throw new IllegalArgumentException("studentId must not be blank");
-        }
-        if (avatar() != null && avatar().isBlank()) {
-            throw new IllegalArgumentException("avatar must not be blank");
-        }
+        requireNonBlank(realName(), "realName");
+        requireNonBlank(nickName(), "nickName");
+        requireNonBlank(studentId(), "studentId");
+        requireNonBlank(avatar(), "avatar");
         return this;
+    }
+
+    private static void requireNonBlank(@Nullable String value, String fieldName) {
+        if (value != null && value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
     }
 
     public static PersonalInfo empty() {

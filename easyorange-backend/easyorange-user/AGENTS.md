@@ -61,10 +61,8 @@ user/
 │   │   ├── LoginInfo.java                # 登录轨迹 (loginIp, loginDate, pwdUpdateDate)
 │   │   └── PersonalInfo.java             # 个人信息+展示 (Immutables @Value.Immutable)
 │   ├── service/                         # 领域服务
-│   │   ├── AuthenticationService.java
+│   │   ├── AuthenticationService.java   # 认证 + 密码管理（完整用例，含内部持久化）
 │   │   ├── LoginSecurityService.java
-│   │   ├── PasswordManagementService.java  # 短信验证→设置新密码（统一处理忘记密码+修改密码）
-│   │   ├── SmsCodeService.java
 │   │   └── RegistrationService.java
 │   ├── repository/
 │   │   └── UserRepository.java
@@ -73,7 +71,6 @@ user/
 │   │   ├── LoginAttemptPort.java
 │   │   ├── PasswordEncoderPort.java
 │   │   ├── SmsCodePort.java
-│   │   ├── SmsRateLimitPort.java
 │   │   └── SmsSenderPort.java
 │   ├── constant/
 │   │   ├── UserConstant.java
@@ -154,10 +151,9 @@ domain 层通过 `port/` 接口与基础设施解耦：
 - `PasswordEncoderPort` → `PasswordEncoderAdapter` (BCrypt)
 - `LoginAttemptPort` → `RedisLoginAttemptAdapter` (Redis)
 - `AvatarFilePort` → `LocalAvatarFileStorage` (本地文件)
-- 短信验证码三端口：
-  - `SmsCodePort` → `MockSmsCodeAdapter` (内存) / `RedisSmsCodeAdapter` (Redis，生产)
-  - `SmsRateLimitPort` → `MockSmsCodeAdapter` (内存) / `RedisSmsCodeAdapter` (Redis，生产)
-  - `SmsSenderPort` → `MockSmsSenderAdapter` (日志，开发) / 第三方短信商（生产）
+- 短信验证码端口：
+  - `SmsCodePort`（验证码生成/存储/限流/发送）→ `MockSmsCodeAdapter` (内存) / `RedisSmsCodeAdapter` (Redis，生产)
+  - `SmsSenderPort`（实际投递）→ `MockSmsSenderAdapter` (日志，开发) / 第三方短信商（生产）
 
 ### 自定义校验注解 (Jakarta Bean Validation)
 
@@ -173,15 +169,16 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 ## 密码管理
 
-密码操作统一通过 `PasswordManagementService`（domain 层）处理，不校验旧密码，一律使用 **手机号 + 短信验证码** 验证身份：
+密码操作统一通过 `AuthenticationService`（domain 层）处理，不校验旧密码，一律使用 **手机号 + 短信验证码** 验证身份：
 
-| 操作 | 路由 | 身份 | 参数 |
-|------|------|------|------|
-| 发送验证码 | `POST /api/auth/sms-code` | 匿名 | `phone` |
-| 重置密码（忘记密码） | `POST /api/auth/password/reset` | 匿名 | `phone` + `verifyCode` + `newPassword` |
-| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `verifyCode` + `newPassword`（手机号自动填充） |
+| 操作 | 路由 | 身份 | 领域方法 |
+|------|------|------|---------|
+| 发送验证码 | `POST /api/auth/sms-code` | 匿名 | `SmsCodePort.send(phone)` |
+| 重置密码（忘记密码） | `POST /api/auth/password/reset` | 匿名 | `AuthenticationService.resetPassword(phone, verifyCode, newPassword)` |
+| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `AuthenticationService.resetPassword(userId, verifyCode, newPassword)` |
 
-- `PasswordManagementService.resetPassword(phone, verifyCode, newPassword)` 为统一入口
+- 两个重载均走 `doChangePassword` 内部流程（编码 + 持久化自包含）
+- `AuthAppService` 纯委托，不持有 `UserRepository`
 - 仅 admin 端 `PUT /api/admin/users/{id}/reset-password` 保持管理员强制重置（不走短信验证）
 
 ## 短信验证码（开发环境）

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.AdminReviewResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReviewResponse;
 import com.cartethyia.easyorange.admin.service.AdminReviewService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;

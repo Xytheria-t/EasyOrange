@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.admin.dto.request.AdminOrderQueryRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderDetailResponse;
-import com.cartethyia.easyorange.admin.dto.response.AdminOrderResponse;
-import com.cartethyia.easyorange.admin.dto.response.OrderStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrderQueryRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;

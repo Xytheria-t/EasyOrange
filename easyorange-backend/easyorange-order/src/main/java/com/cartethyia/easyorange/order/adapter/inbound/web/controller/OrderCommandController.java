@@ -12,7 +12,6 @@ import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CreateOrderRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,7 +24,6 @@ public class OrderCommandController {
     private final OrderCommandHandler commandHandler;
 
     @PostMapping
-    @PreAuthorize("isAuthenticated()")
     public Result<Long> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         List<CreateOrderCommand.CreateOrderItem> items = request.getItems().stream()
                 .map(i -> CreateOrderCommand.CreateOrderItem.builder()
@@ -44,7 +42,6 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/cancel")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> cancelOrder(@PathVariable Long id, @RequestParam(required = false) String reason) {
         CancelOrderCommand command = CancelOrderCommand.builder()
                 .orderId(id)
@@ -55,7 +52,6 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/pay")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> payOrder(@PathVariable Long id) {
         PayOrderCommand command = PayOrderCommand.builder()
                 .orderId(id)
@@ -65,7 +61,6 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/ship")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> shipOrder(@PathVariable Long id) {
         ShipOrderCommand command = ShipOrderCommand.builder()
                 .orderId(id)
@@ -75,7 +70,6 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/receive")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> confirmReceipt(@PathVariable Long id) {
         ConfirmReceiptCommand command = ConfirmReceiptCommand.builder()
                 .orderId(id)
@@ -85,7 +79,6 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/refund")
-    @PreAuthorize("isAuthenticated()")
     public Result<Void> refundOrder(@PathVariable Long id, @RequestParam(required = false) String reason) {
         RefundOrderCommand command = RefundOrderCommand.builder()
                 .orderId(id)

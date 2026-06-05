@@ -12,7 +12,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | MapStruct | 1.6.3 |
 | Immutables | 2.10.0 |
 | Flyway | 11.15.0 |
-| JJWT | 0.13.0 |
+| Spring Security OAuth2 Resource Server | — |
 | ArchUnit | 1.4.1 |
 | Spring Data Elasticsearch | 6.0.3 |
 | Elasticsearch | 8.17.3 |
@@ -75,7 +75,7 @@ eventPublisher.publish(new SomeEvent(...));
 
 ## 跨模块通信
 
-**当前状态 (2026-05-09)**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。
+**当前状态**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。
 
 **隔离方式**：
 - 调用方模块定义 `domain/port/` 接口（如 `ProductInventoryPort`）
@@ -132,7 +132,7 @@ PageResult.of(records, total, page, size)
 | **命令/更新/删除** (update/delete/remove/handle/put/take/mark/submit/cancel/process) | `void` | 命令不返回值；前端通过 React Query 的 `invalidateQueries` 重新拉取最新数据 | `updateProduct()`, `deleteProduct()`, `addFavorite()`, `handleReport()`, `putOnline()` |
 | **批量操作** 可能返回结果 DTO（如 `BatchAuditResultResponse`），因需要聚合成功率/失败信息
 
-**背景**：这个约定是务实混合——不是严格 CQRS（create 返回 ID 给前端），也不是 RESTful 完整资源返回（React Query 不需要）。它在当前项目上下文（Spring Boot + React + TanStack Query）下是最佳平衡。
+> 背景：务实混合约定——不是严格 CQRS，也不是 RESTful 完整资源返回。Spring Boot + TanStack Query 上下文下的最佳平衡。
 
 ## 数据对象基类
 
@@ -176,6 +176,8 @@ public class BaseDO {
 
 ## 安全要点
 
+> **标准 API 优先（STP）**: 认证/授权相关功能优先使用 Spring Security 标准机制。有 `oauth2ResourceServer()` 就不要手写 Filter；有 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。参考：JwtAuthenticationFilter + JJWT → Spring Security OAuth2 Resource Server 迁移。
+
 - JWT 双 Token: Access Token (短期) + Refresh Token (长期)
 - 密码: BCrypt 加密存储
 - 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）
@@ -183,8 +185,11 @@ public class BaseDO {
 - 操作日志: 约定式自动记录所有写操作 (@Order 3), 无需注解
 - XSS: `XssFilter` + `XssHttpServletRequestWrapper`
 - CORS: 生产环境严格白名单
+- 全局认证: `SecurityConfig` 的 `.anyRequest().authenticated()` 已拦截所有未认证请求，Controller 上无需 `@PreAuthorize("isAuthenticated()")`
 
-Filter 执行顺序: RateLimitFilter(0) → JwtAuthenticationFilter → XssFilter → OperLogAspect(AOP @Order 3)
+Filter 执行顺序: RateLimitFilter(0) → SecurityConfig.oauth2ResourceServer() (Spring Security Filter Chain) → XssFilter → OperLogAspect(AOP @Order 3)
+
+JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`BearerTokenAuthenticationFilter` (Spring Security 内置) → `JwtDecoder` 验证签名 + 黑名单/强制登出检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。
 
 ## 不可变集合约定
 
@@ -204,6 +209,25 @@ Filter 执行顺序: RateLimitFilter(0) → JwtAuthenticationFilter → XssFilte
 ## Java `var` 使用规范
 
 局部变量推荐使用 `var` 的场景：同一类型构造器（`Foo x = new Foo()` → `var x = new Foo()`）、显式 cast（`Type x = (Type) expr` → `var x = (Type) expr`）、StringBuilder/ByteArrayOutputStream 等无泛型构造器。**不推荐**的场景：接口类型到实现类型的赋值（`List<X> x = new ArrayList<>()` → 保持 `List<X>`，使用 `var` 会丢失接口抽象）
+
+## Controller 响应内联约定
+
+Controller 方法中，当服务调用结果直接传递给 `Result.success()` 且无任何转换/条件逻辑时，**内联为单表达式**，不引入中间变量：
+
+```java
+// ✅ 推荐
+return Result.success(authAppService.register(request.username(), request.password()));
+return Result.success(queryService.getProductById(id));
+
+// ❌ 避免
+Long userId = authAppService.register(request.username(), request.password());
+return Result.success(userId);
+```
+
+命名变量仅在以下场景保留：
+- 调用与返回之间有**条件分支**或**后处理**
+- 对返回值有**多步骤转换**（如 `builder().id(x).build()` 再 wrap）
+- 变量名承载了**非显而易见的语义**（如已规范化的请求对象 `var normalized = request.normalized()` 在后续多个参数中使用）
 
 ## 踩坑警示
 
@@ -240,81 +264,42 @@ InvalidDefinitionException: Cannot construct instance of XxxEvent (no Creators, 
 
 ### Spring Boot 4 @WebMvcTest 路径变化
 
-Spring Boot 4.0 将 `@WebMvcTest` 和 `@AutoConfigureMockMvc` 从 `org.springframework.boot.test.autoconfigure.web.servlet` 迁移到 `org.springframework.boot.webmvc.test.autoconfigure.web.servlet` 包。
+Spring Boot 4.0 将 `@WebMvcTest` / `@AutoConfigureMockMvc` 迁移到 `org.springframework.boot.webmvc.test.autoconfigure.web.servlet` 包。
 
-**Controller 测试必须使用新路径**：
-```java
-import org.springframework.boot.webmvc.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.webmvc.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-```
+**三条规则**：
+1. 使用新 import 路径（`...webmvc.test...`）
+2. 无 `@SpringBootConfiguration` 的模块在 test 下创建 `@SpringBootApplication` 空类
+3. `@ComponentScan` 限制扫描范围为 web controller 包，否则拉入 persistence 类导致 web 切片失败
 
-**`@WebMvcTest` 需要 `@SpringBootConfiguration`**：如果模块没有默认的配置类（如 `easyorange-admin`），需在 test 源码下创建 `TestAdminApplication.java`：
-```java
-@SpringBootApplication
-public class TestAdminApplication {}
-```
-
-**`@WebMvcTest` 的 component-scan 陷阱**：`@ComponentScan` 范围过大会拉入 persistence 类（依赖 MyBatis/DataSource），在 web 切片中不可用。解决办法：限制 scan 范围为 web controller 包。
-- 已修复：`easyorange-order` 的 `OrderTestApplication` 已将 `@ComponentScan` 从扫描整个包改为仅扫描 `adapter.inbound.web`
+已修复示例：`easyorange-order` 的 `OrderTestApplication` 已限制为 `adapter.inbound.web`
 
 ### framework 模块集成测试
 
-`easyorange-framework` 的集成测试（Redis Cache/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""`：
-
-```bash
-./mvnw test -pl easyorange-framework -DexcludedGroups=""
-```
+`easyorange-framework` 的集成测试（Redis Cache/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` （`./mvnw test -pl easyorange-framework -DexcludedGroups=""`）
 
 ### Port/Adapter IntelliJ 误报
 
-IntelliJ Spring 插件静态分析可能错误地将 domain port 接口文件（如 `PasswordEncoderPort.java`）识别为 Spring Bean，加上 `@Component` 标注的 Adapter 实现类，误报 "存在多个 XxxPort 类型的 Bean"。
+IntelliJ Spring 插件将 domain port 接口文件也识别为 Spring Bean，与 `@Component` Adapter 冲突，误报 "存在多个 XxxPort 类型的 Bean"。
 
-**实际上运行时只有 1 个 bean**（Adapter 实现类）。接口上无任何 Spring 注解，IntelliJ 误将接口本身也计为 bean。
-
-**修复方式**：在 Adapter 实现类上加 `@Primary`：
+**修复**：Adapter 实现类上加 `@Primary`：
 
 ```java
 @Primary
 @Component
-public class PasswordEncoderAdapter implements PasswordEncoderPort {
-    ...
-}
+public class PasswordEncoderAdapter implements PasswordEncoderPort { ... }
 ```
 
-`@Primary` 语义上也正确 —— Adapter 是 port 接口的默认/唯一实现。
-
-当前已修复：`PasswordEncoderAdapter`。新增 Port/Adapter 后按此方式处理即可。
+`@Primary` 语义正确（Adapter 是 port 的默认实现）。新增 Port/Adapter 后按此方式处理。
 
 ### MapStruct + IntelliJ 误报
 
-`@Mapper(componentModel = "spring")` 会在生成类上加 `@Component`，但 IntelliJ 的 Spring 插件静态分析会同时将接口上的 `@Mapper(componentModel = "spring")` 和生成类上的 `@Component` 都计为 bean，导致误报 "存在多个 XxxMapper 类型的 Bean"。
+`@Mapper(componentModel = "spring")` 的接口和生成类都被 IntelliJ 计为 bean，误报 "存在多个 XxxMapper 类型的 Bean"。运行时只有 1 个 bean（`MapperScan` 只扫描 MyBatis 注解）。
 
-**实际上运行时只有 1 个 bean**（MapStruct 生成的实现类），`@MapperScan(annotationClass = org.apache.ibatis.annotations.Mapper.class)` 不会注册 MapStruct 接口。
+**修复**：
+- **构造器注入**（推荐）：参数加 `@Qualifier("xxxImpl")`
+- **字段注入**：加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`
 
-**修复方式**：按注入类型选择对应方式：
-
-- **构造器注入（推荐）**：参数上加 `@Qualifier("xxxImpl")`，跨 IntelliJ 版本更可靠
-  ```java
-  public UserRepositoryImpl(UserMapper userMapper,
-                            @Qualifier("userEntityMapperImpl") UserEntityMapper entityMapper) {
-  ```
-- **字段注入**：字段上加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`
-  ```java
-  @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-  private final UserEntityMapper entityMapper;
-  ```
-
-`@Qualifier` 方式对构造器注入有效，IntelliJ 在参数上直接识别 bean 名称，不依赖 inspection ID。
-
-当前已修复（全项目所有 MapStruct Mapper 注入点均已覆盖）：
-- `UserEntityMapper` → UserRepositoryImpl（构造器注入，`@Qualifier`）
-- `UserAssembler`（adapter/inbound/web/assembler/）→ AuthController, UserController（字段注入，`@SuppressWarnings`）
-- `PaymentDataMapper` → MybatisPaymentRepository（字段注入，`@SuppressWarnings`）
-- `PaymentCommandMapper` → PaymentCommandController（字段注入，`@SuppressWarnings`）
-- `MessageDataMapper` → MybatisMessageRepository, MybatisMessageTemplateRepository, MybatisMessageSubscriptionRepository, MybatisOfflineMessageRepository, MybatisMessageQueryRepository（字段注入，`@SuppressWarnings`）
-- `OutboxMessageMapper` → OutboxRepository（构造器注入，`@SuppressWarnings`）
-
-新增 MapStruct mapper 后按此方式处理即可。
+新增 MapStruct mapper 后按此方式处理。
 
 ### MyBatis SQL 注入：禁止在 @Select 中使用 ${} 拼接 IN 列表
 

@@ -5,7 +5,9 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
+import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
@@ -19,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 
+import static com.cartethyia.easyorange.user.domain.port.SmsCodePort.VerifyResult;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,7 +41,7 @@ class AuthenticationServiceTest {
     private LoginSecurityService loginSecurityService;
 
     @Mock
-    private SmsCodeService smsCodeService;
+    private SmsCodePort smsCodePort;
 
     private AuthenticationService service;
 
@@ -47,10 +50,12 @@ class AuthenticationServiceTest {
     private static final String CLIENT_IP = "192.168.1.1";
     private static final String ENCODED_PW = "$2a$10$encoded";
     private static final Long USER_ID = 1L;
+    private static final String PHONE = "13812345678";
+    private static final String VERIFY_CODE = "123456";
 
     @BeforeEach
     void setUp() {
-        service = new AuthenticationService(userRepository, passwordEncoder, loginSecurityService, smsCodeService);
+        service = new AuthenticationService(userRepository, passwordEncoder, loginSecurityService, smsCodePort);
     }
 
     private User createNormalUser() {
@@ -149,14 +154,14 @@ class AuthenticationServiceTest {
             String phone = "13812345678";
             String verifyCode = "123456";
             User user = createNormalUser();
-            doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
+            when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
             User result = service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
-            verify(smsCodeService).verifyCode(phone, verifyCode);
+            verify(smsCodePort).verify(phone, verifyCode);
             verify(userRepository).update(any(User.class));
         }
 
@@ -165,7 +170,7 @@ class AuthenticationServiceTest {
         void userNotFound() {
             String phone = "13812345678";
             String verifyCode = "123456";
-            doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
+            when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP))
@@ -186,7 +191,7 @@ class AuthenticationServiceTest {
                 .status(UserStatus.DISABLED)
                 .loginInfo(LoginInfo.empty())
                 .build();
-            doNothing().when(smsCodeService).verifyCode(phone, verifyCode);
+            when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP))

@@ -47,3 +47,19 @@ Thumbs.db
 # Docker 自身
 Dockerfile
 .dockerignore
+
+# 环境变量 (防止凭据泄露到镜像)
+**/.env*
+!**/.env.example
+
+# 证书/密钥
+**/*.p12
+**/*.jks
+**/*.pem
+**/*.keystore
+**/*.truststore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+Jenkinsfile

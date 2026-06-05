@@ -136,7 +136,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return findOne(UserEntity::getUsername, username).map(this::toDomain);
+        return findBy(UserEntity::getUsername, username).map(this::toDomain);
     }
 }
 ```
@@ -458,7 +458,7 @@ public class RegistrationService {
 
 **应用服务拆分原则：**
 
-- **避免"上帝类"**：单个应用服务不应处理不相关的用例；但共享相同依赖和事务边界的用例可以聚合（如 `AuthAppService` 处理注册/登录/登出/刷新/忘记密码/修改密码——均依赖 `AuthenticationService` + `TokenService`）
+- **避免"上帝类"**：单个应用服务不应处理不相关的用例；但共享相同依赖和事务边界的用例可以聚合（如 `AuthAppService` 处理注册/登录/登出/刷新/忘记密码/修改密码——依赖 `AuthenticationService` + `RegistrationService` + `TokenService`）
 - **按职责边界拆分**：当多个用例共享相同依赖集且事务边界一致时可合并；当用例差异大或独立演进时再拆分
 - **命名规范**：`{领域}AppService`，如 `AuthAppService`、`ProfileAppService`
 - **事务边界**：每个应用服务方法就是一个完整的事务边界

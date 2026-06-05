@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.dto.response.ActivityResponse;
-import com.cartethyia.easyorange.admin.dto.response.DashboardStatsResponse;
-import com.cartethyia.easyorange.admin.dto.response.PendingItemsResponse;
-import com.cartethyia.easyorange.admin.dto.response.RecentProductResponse;
-import com.cartethyia.easyorange.admin.dto.response.RecentUserResponse;
-import com.cartethyia.easyorange.admin.dto.response.TopProductResponse;
-import com.cartethyia.easyorange.admin.dto.response.TrendResponse;
-import com.cartethyia.easyorange.admin.dto.response.UserActivityHeatmapResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ActivityResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.DashboardStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.PendingItemsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentProductResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUserResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;

@@ -38,7 +38,7 @@ public class RedisWorkerIdProvider implements WorkerIdProvider, InitializingBean
             startHeartbeat();
         } catch (Exception e) {
             workerId = 0;
-            log.warn("action=worker_id_fallback_redis_unavailable workerId=0 error={}", e.getMessage());
+            log.warn("action=worker_id_fallback_redis_unavailable workerId=0", e);
         }
     }
 

@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -61,13 +62,13 @@ public class PageRequest {
      * 校验排序字段是否在白名单内（调用方应传入允许的字段列表）
      *
      * @param allowedFields 允许的排序字段白名单
-     * @return 合法的排序字段名，若不合法则返回 null
+     * @return 合法的排序字段名 Optional
      */
-    public String validateSortField(Set<String> allowedFields) {
+    public Optional<String> validateSortField(Set<String> allowedFields) {
         if (sortField == null || sortField.isBlank()) {
-            return null;
+            return Optional.empty();
         }
-        return allowedFields.contains(sortField) ? sortField : null;
+        return allowedFields.contains(sortField) ? Optional.of(sortField) : Optional.empty();
     }
 
     public boolean isAsc() {

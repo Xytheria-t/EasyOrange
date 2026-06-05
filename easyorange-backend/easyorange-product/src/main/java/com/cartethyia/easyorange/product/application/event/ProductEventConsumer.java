@@ -114,7 +114,7 @@ public class ProductEventConsumer {
                 notificationPort.ifPresent(port -> safeCall(() -> port.notifyLowStock(productId, readModel.stock()), "notifyLowStock", productId));
             }
         } catch (Exception e) {
-            log.error("event=checkLowStockFailed productId={} error={}", productId, e.getMessage(), e);
+            log.error("event=checkLowStockFailed productId={}", productId, e);
         }
     }
 
@@ -128,7 +128,7 @@ public class ProductEventConsumer {
             action.run();
             log.debug("action={} success productId={}", actionName, productId);
         } catch (Exception e) {
-            log.error("action={} failed productId={} error={}", actionName, productId, e.getMessage(), e);
+            log.error("action={} failed productId={}", actionName, productId, e);
         }
     }
 }

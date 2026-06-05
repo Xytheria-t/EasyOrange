@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
-import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
@@ -43,9 +42,6 @@ class ProductQueryServiceTest {
     @Mock
     private ProductCachePort productCachePort;
 
-    @Mock
-    private ProductViewCountService viewCountService;
-
     private ProductQueryService queryService;
 
     private Product testProduct;
@@ -53,7 +49,7 @@ class ProductQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        queryService = new ProductQueryService(productRepository, productQueryRepository, readModelAssembler, productCachePort, viewCountService);
+        queryService = new ProductQueryService(productRepository, productQueryRepository, readModelAssembler, productCachePort);
 
         testProduct = Product.create(
                 SellerId.of(1L),

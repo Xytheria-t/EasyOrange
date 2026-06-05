@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.admin.dto.response.ResetPasswordResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserSecurityService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,28 +31,18 @@ class AdminUserControllerExtensionTest {
 
     @Test
     void unlockUser_shouldSucceed() throws Exception {
-        doNothing().when(adminUserSecurityService).unlockUser(eq(1L), any());
+        doNothing().when(adminUserSecurityService).unlockUser(1L);
 
-        mockMvc.perform(put("/api/admin/users/1/unlock")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"reason\": \"解锁用户账号\"}"))
+        mockMvc.perform(put("/api/admin/users/1/unlock"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
-    }
-
-    @Test
-    void unlockUser_withoutReason_shouldReturn400() throws Exception {
-        mockMvc.perform(put("/api/admin/users/1/unlock")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{}"))
-            .andExpect(status().isBadRequest());
     }
 
     @Test
     void resetPassword_shouldReturnNewPassword() throws Exception {
         var resetResponse = ResetPasswordResponse.builder()
             .newPassword("newPass123!").message("密码已重置").build();
-        when(adminUserSecurityService.resetPassword(eq(1L), any())).thenReturn(resetResponse);
+        when(adminUserSecurityService.resetPassword(eq(1L))).thenReturn(resetResponse);
 
         mockMvc.perform(put("/api/admin/users/1/reset-password")
                 .contentType(MediaType.APPLICATION_JSON)

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.payment.application.lock;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,10 +42,22 @@ public class DistributedLockWrapper {
     }
 
     public void executeWithLock(String lockKey, Runnable operation) {
-        executeWithLock(lockKey, () -> {
+        String lockValue = UUID.randomUUID().toString();
+        String fullKey = LOCK_PREFIX + lockKey;
+
+        boolean locked = false;
+        try {
+            locked = acquireLock(fullKey, lockValue);
+            if (!locked) {
+                log.warn("获取分布式锁失败: key={}", fullKey);
+                throw BusinessException.of("failed to acquire lock");
+            }
             operation.run();
-            return null;
-        });
+        } finally {
+            if (locked) {
+                releaseLock(fullKey, lockValue);
+            }
+        }
     }
 
     public <T> T executeWithLock(String lockKey, long timeout, TimeUnit timeUnit, Supplier<T> operation) {

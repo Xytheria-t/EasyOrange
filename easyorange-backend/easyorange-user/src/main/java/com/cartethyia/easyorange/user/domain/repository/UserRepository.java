@@ -8,19 +8,23 @@ import java.util.Optional;
 
 public interface UserRepository {
 
+    // ========== Query methods ==========
+
     Optional<User> findById(Long id);
 
     List<User> findAllByIds(Collection<Long> ids);
 
-    Optional<User> findByUsername(String username);
+    Optional<User> findByEmail(String email);
 
     Optional<User> findByPhone(String phone);
 
-    Optional<User> findByEmail(String email);
-
     Optional<User> findByStudentId(String studentId);
 
+    Optional<User> findByUsername(String username);
+
     Optional<User> findByLoginIdentifier(String identifier);
+
+    // ========== Write methods ==========
 
     User save(User user);
 
@@ -29,6 +33,8 @@ public interface UserRepository {
     void updateLoginInfo(Long userId, String loginIp);
 
     void deleteById(Long id);
+
+    // ========== Aggregate methods ==========
 
     long count();
 }

@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.cartethyia.easyorange.admin.dto.request.BatchHandleRequest;
-import com.cartethyia.easyorange.admin.dto.request.ReportHandleRequest;
-import com.cartethyia.easyorange.admin.dto.response.AdminReportResponse;
-import com.cartethyia.easyorange.admin.dto.response.ReportHandleHistoryResponse;
-import com.cartethyia.easyorange.admin.dto.response.ReportStatsResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHandleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ReportHandleRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;

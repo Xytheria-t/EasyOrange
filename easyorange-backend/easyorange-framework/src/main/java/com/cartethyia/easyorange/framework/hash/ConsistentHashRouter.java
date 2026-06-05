@@ -55,7 +55,7 @@ public class ConsistentHashRouter<T extends Node> {
 
     public T route(String key) {
         if (ring.isEmpty()) {
-            return null;
+            throw new IllegalStateException("no available node for routing");
         }
         long hash = hashFunction.apply(key);
         Map.Entry<Long, T> entry = ring.ceilingEntry(hash);

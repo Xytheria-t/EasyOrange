@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +32,6 @@ public class ProductQueryService {
     private final ProductQueryRepository productQueryRepository;
     private final ProductReadModelAssembler readModelAssembler;
     private final ProductCachePort<ProductVO> productCachePort;
-    private final ProductViewCountService viewCountService;
 
     @Transactional(readOnly = true)
     public PageResult<ProductVO> listProducts(String keyword, Long categoryId, Integer status,
@@ -185,10 +183,6 @@ public class ProductQueryService {
                 .limit(effectiveLimit)
                 .map(m -> voFromReadModel(m, imagesByProduct, sellerMap))
                 .collect(Collectors.toList());
-    }
-
-    public void incrementViewCount(Long id) {
-        viewCountService.incrementViewCount(id);
     }
 
     private ProductVO assembleProductVO(Product product) {

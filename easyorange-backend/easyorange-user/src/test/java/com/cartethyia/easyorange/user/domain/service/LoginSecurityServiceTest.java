@@ -37,17 +37,17 @@ class LoginSecurityServiceTest {
         @Test
         @DisplayName("未超过尝试次数时不抛出异常")
         void belowMaxAttempts() {
-            when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn(3L);
+            when(loginAttemptPort.countAttempts(ACCOUNT)).thenReturn(3L);
 
             service.checkLoginAttempts(ACCOUNT);
 
-            verify(loginAttemptPort).getAttempts(ACCOUNT);
+            verify(loginAttemptPort).countAttempts(ACCOUNT);
         }
 
         @Test
         @DisplayName("超过最大尝试次数时抛出异常")
         void exceededMaxAttempts() {
-            when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
+            when(loginAttemptPort.countAttempts(ACCOUNT)).thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
             when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(600L);
 
             assertThatThrownBy(() -> service.checkLoginAttempts(ACCOUNT))
@@ -58,11 +58,11 @@ class LoginSecurityServiceTest {
         @Test
         @DisplayName("没有尝试记录时不抛出异常")
         void noAttempts() {
-            when(loginAttemptPort.getAttempts(ACCOUNT)).thenReturn(null);
+            when(loginAttemptPort.countAttempts(ACCOUNT)).thenReturn(null);
 
             service.checkLoginAttempts(ACCOUNT);
 
-            verify(loginAttemptPort).getAttempts(ACCOUNT);
+            verify(loginAttemptPort).countAttempts(ACCOUNT);
         }
 
         @Test
@@ -72,7 +72,7 @@ class LoginSecurityServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("登录标识不能为空");
 
-            verify(loginAttemptPort, never()).getAttempts(any());
+            verify(loginAttemptPort, never()).countAttempts(any());
         }
     }
 
@@ -83,17 +83,17 @@ class LoginSecurityServiceTest {
         @Test
         @DisplayName("记录失败尝试未达上限时不抛出异常")
         void belowMax() {
-            when(loginAttemptPort.incrementAndExpire(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME)).thenReturn(3L);
+            when(loginAttemptPort.incrementAttempts(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME)).thenReturn(3L);
 
             service.recordFailedAttempt(ACCOUNT);
 
-            verify(loginAttemptPort).incrementAndExpire(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME);
+            verify(loginAttemptPort).incrementAttempts(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME);
         }
 
         @Test
         @DisplayName("达到上限时抛出锁定异常")
         void reachedMax() {
-            when(loginAttemptPort.incrementAndExpire(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME))
+            when(loginAttemptPort.incrementAttempts(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME))
                 .thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
             when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(1800L);
 
@@ -109,7 +109,7 @@ class LoginSecurityServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("登录标识不能为空");
 
-            verify(loginAttemptPort, never()).incrementAndExpire(any(), anyLong());
+            verify(loginAttemptPort, never()).incrementAttempts(any(), anyLong());
         }
     }
 

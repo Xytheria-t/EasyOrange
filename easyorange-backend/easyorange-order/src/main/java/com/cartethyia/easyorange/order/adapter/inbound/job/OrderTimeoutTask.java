@@ -58,7 +58,7 @@ public class OrderTimeoutTask {
             } catch (Exception e) {
                 log.error("取消超时订单失败: orderId={}", aggregate.id().value(), e);
             } finally {
-                redisCache.unlockIfValueMatches(lockKey, lockValue);
+                redisCache.unlock(lockKey, lockValue);
             }
         }
 

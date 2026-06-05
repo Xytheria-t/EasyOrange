@@ -14,9 +14,9 @@ package com.cartethyia.easyorange.user.domain.port;
  */
 public interface LoginAttemptPort {
 
-    Long getAttempts(String identifier);
+    Long countAttempts(String identifier);
 
-    long incrementAndExpire(String identifier, long expireMinutes);
+    long incrementAttempts(String identifier, long expireMinutes);
 
     void clearAttempts(String identifier);
 

@@ -15,12 +15,12 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     private final RedisCache redisCache;
 
     @Override
-    public Long getAttempts(String identifier) {
+    public Long countAttempts(String identifier) {
         return redisCache.get(LoginCacheConstants.buildAttemptsKey(identifier), Long.class);
     }
 
     @Override
-    public long incrementAndExpire(String identifier, long expireMinutes) {
+    public long incrementAttempts(String identifier, long expireMinutes) {
         String key = LoginCacheConstants.buildAttemptsKey(identifier);
         Long count = redisCache.increment(key);
         redisCache.expire(key, expireMinutes, TimeUnit.MINUTES);

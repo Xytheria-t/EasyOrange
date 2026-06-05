@@ -31,7 +31,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
         try {
             return multiLevelCache.get(ProductCacheConstant.infoKey(productId), ProductVO.class, () -> null);
         } catch (Exception e) {
-            log.error("获取商品缓存失败：productId={}, error={}", productId, e.getMessage());
+            log.warn("获取商品缓存失败: productId={}", productId, e);
             return null;
         }
     }
@@ -45,7 +45,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
             addToBloomFilter(productId);
             multiLevelCache.put(ProductCacheConstant.infoKey(productId), productVO);
         } catch (Exception e) {
-            log.error("设置商品缓存失败：productId={}, error={}", productId, e.getMessage());
+            log.warn("设置商品缓存失败: productId={}", productId, e);
         }
     }
 
@@ -57,7 +57,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
         try {
             multiLevelCache.evict(ProductCacheConstant.infoKey(productId));
         } catch (Exception e) {
-            log.error("删除商品缓存失败：productId={}, error={}", productId, e.getMessage());
+            log.warn("删除商品缓存失败: productId={}", productId, e);
         }
     }
 
@@ -69,7 +69,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
         try {
             multiLevelCache.evictL2(ProductCacheConstant.listKey(categoryId));
         } catch (Exception e) {
-            log.error("删除商品列表缓存失败：categoryId={}, error={}", categoryId, e.getMessage());
+            log.warn("删除商品列表缓存失败: categoryId={}", categoryId, e);
         }
     }
 

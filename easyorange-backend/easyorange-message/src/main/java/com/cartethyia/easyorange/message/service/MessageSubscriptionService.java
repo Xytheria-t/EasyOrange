@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.cartethyia.easyorange.message.dto.request.SubscriptionRequest;
-import com.cartethyia.easyorange.message.dto.vo.MessageSubscriptionVO;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.SubscriptionRequest;
+import com.cartethyia.easyorange.message.application.query.dto.MessageSubscriptionVO;
 
 import java.util.List;
 

@@ -24,7 +24,7 @@
 - Spring Boot 4.0.3
 - Spring Security
 - Spring Data Redis
-- JWT (jjwt 0.13.0)
+- JWT (Spring Security OAuth2 Resource Server + Nimbus JOSE)
 - MyBatis-Plus 3.5.16
 - Caffeine Cache 3.x
 - AspectJ
@@ -63,10 +63,8 @@ public class Application {
 
 | 组件 | 说明 |
 |------|------|
-| `SecurityConfig` | Spring Security 配置 |
-| `JwtAuthenticationFilter` | JWT 认证过滤器 |
-| `TokenService` | Token 管理服务 |
-| `JwtUtil` | JWT 工具类 |
+| `SecurityConfig` | Spring Security 配置（含 JwtDecoder + JwtEncoder + JwtAuthenticationConverter） |
+| `TokenService` | Token 管理服务（签发/刷新/吊销，使用 JwtEncoder + JwtDecoder） |
 
 ### 缓存组件
 
@@ -264,7 +262,7 @@ public class OrderController {
 **改进**：
 
 - 统一领域事件发布逻辑
-- 优化 JwtAuthenticationFilter 性能
+- 替换 JwtAuthenticationFilter 为 Spring Security OAuth2 Resource Server
 - 改进 Redis 缓存类型转换异常处理
 
 ## 相关链接

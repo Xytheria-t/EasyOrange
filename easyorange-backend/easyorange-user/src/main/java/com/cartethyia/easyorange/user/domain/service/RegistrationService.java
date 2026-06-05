@@ -13,6 +13,14 @@ public class RegistrationService {
     private final UserRepository userRepository;
     private final PasswordEncoderPort passwordEncoder;
 
+    /**
+     * Registers a new user with the given username and password.
+     *
+     * @param username the desired username (must be unique)
+     * @param password the raw plain-text password (will be encoded before storage)
+     * @return the newly created user aggregate
+     * @throws BusinessException if the username already exists
+     */
     public User registerNewUser(String username, String password) {
         validateUsernameNotExists(username);
 

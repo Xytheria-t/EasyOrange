@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.admin.dto.request.CategoryCreateRequest;
-import com.cartethyia.easyorange.admin.dto.request.CategoryUpdateRequest;
-import com.cartethyia.easyorange.admin.dto.response.CategoryTreeResponse;
-import com.cartethyia.easyorange.admin.dto.response.CategoryResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryCreateRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryUpdateRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;

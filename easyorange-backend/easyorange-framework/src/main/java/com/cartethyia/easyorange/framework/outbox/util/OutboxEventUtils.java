@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.framework.outbox.util;
 
 import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.framework.outbox.entity.OutboxMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +27,7 @@ public final class OutboxEventUtils {
         } catch (Exception e) {
             log.error("事件反序列化失败: eventType={} eventId={}", message.getEventType(), message.getEventId(), e);
         }
-        return null;
+        throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "failed to deserialize event, eventType=" + message.getEventType());
     }
 
     public static String truncate(String msg) {

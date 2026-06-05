@@ -11,11 +11,23 @@ public class MessageRoutingService {
     private final MessageSubscriptionRepository subscriptionRepository;
     private final WebSocketNotifier sessionManager;
 
+    /**
+     * Constructs a message routing service with the required dependencies.
+     *
+     * @param subscriptionRepository repository for looking up message subscriptions
+     * @param sessionManager         WebSocket notifier for checking online status
+     */
     public MessageRoutingService(MessageSubscriptionRepository subscriptionRepository, WebSocketNotifier sessionManager) {
         this.subscriptionRepository = subscriptionRepository;
         this.sessionManager = sessionManager;
     }
 
+    /**
+     * Determines how a message should be routed to the given receiver.
+     *
+     * @param receiverId the ID of the target user
+     * @return a RouteDecision containing whether the user is online and their active subscriptions
+     */
     public RouteDecision decideRoute(Long receiverId) {
         boolean isOnline = sessionManager.isUserOnline(receiverId);
         List<MessageSubscriptionAggregate> subscriptions = subscriptionRepository.findByUserId(receiverId);

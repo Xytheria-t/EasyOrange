@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.product.application.command.dto.CreateProductCo
 import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
 import com.cartethyia.easyorange.product.application.command.dto.DeleteProductCommand;
 import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;
+import com.cartethyia.easyorange.product.application.service.ProductViewCountService;
 import com.cartethyia.easyorange.product.application.command.dto.RestoreStockCommand;
 import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCommand;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductCreateRequest;
@@ -30,11 +31,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProductCommandController {
 
     private final ProductCommandService commandService;
+    private final ProductViewCountService viewCountService;
 
     @PostMapping
     public Result<Long> createProduct(@Valid @RequestBody ProductCreateRequest request) {
-        Long productId = commandService.createProduct(CreateProductCommand.from(request));
-        return Result.success(productId);
+        return Result.success(commandService.createProduct(CreateProductCommand.from(request)));
     }
 
     @PutMapping("/{id}")
@@ -45,10 +46,13 @@ public class ProductCommandController {
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteProduct(@PathVariable Long id) {
-        DeleteProductCommand command = DeleteProductCommand.builder()
-                .id(id)
-                .build();
-        commandService.deleteProduct(command);
+        commandService.deleteProduct(DeleteProductCommand.from(id));
+        return Result.success();
+    }
+
+    @PostMapping("/{id}/view")
+    public Result<Void> incrementView(@PathVariable Long id) {
+        viewCountService.incrementViewCount(id);
         return Result.success();
     }
 

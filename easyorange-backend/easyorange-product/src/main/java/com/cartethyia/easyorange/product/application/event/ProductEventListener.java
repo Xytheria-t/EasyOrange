@@ -141,7 +141,7 @@ public class ProductEventListener {
                         "notifyLowStock", productId));
             }
         } catch (Exception e) {
-            log.error("event=checkLowStockFailed productId={} error={}", productId, e.getMessage(), e);
+            log.error("event=checkLowStockFailed productId={}", productId, e);
         }
     }
 
@@ -155,7 +155,7 @@ public class ProductEventListener {
             action.run();
             log.debug("action={} success productId={}", actionName, productId);
         } catch (Exception e) {
-            log.error("action={} failed productId={} error={}", actionName, productId, e.getMessage(), e);
+            log.error("action={} failed productId={}", actionName, productId, e);
         }
     }
 }

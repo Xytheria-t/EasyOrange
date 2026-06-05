@@ -8,9 +8,9 @@ import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundExcepti
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
-import com.cartethyia.easyorange.message.dto.request.QueryMessageRequest;
-import com.cartethyia.easyorange.message.dto.vo.MessageVO;
-import com.cartethyia.easyorange.message.dto.vo.UnreadCountVO;
+import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
+import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
+import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
