@@ -10,7 +10,7 @@ export const userApi = {
     login(data: LoginRequest) {
         return request<LoginResponse>('/auth/login', {
             method: 'POST',
-            body: { ...data, clientType: 'web' },
+            body: { identifier: data.account, password: data.password, clientType: 'web' },
             skipAuth: true
         });
     },

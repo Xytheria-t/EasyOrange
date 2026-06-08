@@ -1,9 +1,10 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile;
 
-import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Phone;
+import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateProfileRequest(
@@ -13,7 +14,7 @@ public record UpdateProfileRequest(
     @Email(message = "邮箱格式不正确")
     String email,
 
-    @Phone
+    @Pattern(regexp = UserConstant.PHONE_REGEX, message = "手机号格式不正确")
     String phone,
 
     @Min(value = 0, message = "性别值无效")

@@ -1,10 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
-
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
-import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.ChangePasswordRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.PasswordLoginRequest;
@@ -13,13 +10,11 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.Refre
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.RegisterRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsLoginRequest;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResult;
-import com.cartethyia.easyorange.user.adapter.inbound.web.validation.Phone;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
-import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
-import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
+import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthAppService authAppService;
-    private final SmsCodePort smsCodePort;
-    private final TokenService tokenService;
     private final UserAssembler userAssembler;
 
     @PostMapping("/register")
@@ -40,12 +33,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request) {
-        return Result.success(buildLoginResult(authAppService.login(request.toCredential())));
+        var ctx = authAppService.login(request.toCredential());
+        return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken(), ctx.refreshToken()));
     }
 
     @PostMapping("/sms-login")
     public Result<LoginResult> smsLogin(@Valid @RequestBody SmsLoginRequest request) {
-        return Result.success(buildLoginResult(authAppService.login(request.toCredential())));
+        var ctx = authAppService.login(request.toCredential());
+        return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken(), ctx.refreshToken()));
     }
 
     @PostMapping("/logout")
@@ -63,10 +58,8 @@ public class AuthController {
 
     @PostMapping("/sms-code")
     public Result<Void> sendSmsCode(
-            @NotBlank(message = "手机号不能为空") @Phone @RequestParam String phone) {
-        if (!smsCodePort.send(phone)) {
-            throw BusinessException.of(UserResultCode.SMS_CODE_SEND_TOO_FREQUENT);
-        }
+            @NotBlank(message = "手机号不能为空") @Pattern(regexp = UserConstant.PHONE_REGEX, message = "手机号格式不正确") @RequestParam String phone) {
+        authAppService.sendSmsCode(phone);
         return Result.success();
     }
 
@@ -82,11 +75,5 @@ public class AuthController {
     public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         authAppService.changePassword(request.verifyCode(), request.newPassword());
         return Result.success();
-    }
-
-    private LoginResult buildLoginResult(User user) {
-        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getCode());
-        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getUserType().getCode());
-        return userAssembler.toLoginResult(user, accessToken, refreshToken);
     }
 }

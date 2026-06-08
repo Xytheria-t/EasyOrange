@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
-import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -22,7 +21,6 @@ public enum UserResultCode implements IResultCode {
     SMS_CODE_VERIFY_TOO_FREQUENT("B1010", "验证码验证次数过多，请重新获取"),
     PASSWORD_SAME_AS_OLD("B1013", "新密码不能与旧密码相同");
 
-    @JsonValue
     private final String code;
     private final String message;
 }

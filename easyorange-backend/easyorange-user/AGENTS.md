@@ -29,7 +29,6 @@ user/
 │   │   │   └── LoginResult.java
 │   │   └── validation/                  # 自定义校验（纯格式校验，无 I/O 副作用）
 │   │       ├── Password.java + PasswordValidator.java
-│   │       ├── Phone.java + PhoneValidator.java
 │   │       └── Username.java + UsernameValidator.java
 │   └── outbound/
 │       ├── persistence/                 # 持久化适配器
@@ -127,21 +126,22 @@ PersonalInfo empty = PersonalInfo.empty();
 
 ### 登录策略模式
 
-每种登录方式使用独立的请求 DTO 和 REST 端点，DTO 各自封装自己的 `toCredential()` 方法转换为 `LoginCredential` 密封接口的对应子类型（`Password` / `Sms`）。`AuthAppService` 委托 `AuthenticationService` 进行认证，Controller 层负责调用 `UserAssembler` + `TokenService` 组装响应。
+每种登录方式使用独立的请求 DTO 和 REST 端点，DTO 各自封装自己的 `toCredential()` 方法转换为 `LoginCredential` 密封接口的对应子类型（`Password` / `Sms`）。`AuthAppService.login()` 完成认证 + Token 创建，返回 `LoginContext` (User + Tokens)；Controller 层仅负责调用 `UserAssembler` 组装响应 DTO。
 
 ```java
-// AuthController - 编排 + 组装
+// AuthController - 仅组装 DTO，无应用逻辑
 @PostMapping("/login")
 public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest request) {
-    User user = authAppService.login(request.toCredential());
-    String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), ...);
-    String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), ...);
-    return Result.success(userAssembler.toLoginResult(user, accessToken, refreshToken));
+    var ctx = authAppService.login(request.toCredential());
+    return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken(), ctx.refreshToken()));
 }
 
-// AuthAppService - 只编排，不格式化
-public User login(LoginCredential credential) {
-    return authenticationService.authenticate(credential, RequestUtil.getClientIp());
+// AuthAppService - 认证 + Token 创建（完整的应用层编排）
+public LoginContext login(LoginCredential credential) {
+    User user = authenticationService.authenticate(credential, RequestUtil.getClientIp());
+    String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getCode());
+    String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getUserType().getCode());
+    return new LoginContext(user, accessToken, refreshToken);
 }
 ```
 
@@ -160,7 +160,6 @@ domain 层通过 `port/` 接口与基础设施解耦：
 validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分层原则：
 
 - **`@Password`** — 密码强度校验（字段级）。规则来自 `UserConstant.PASSWORD_REGEX`（8-128位，含大小写+数字+特殊字符）；弱密码黑名单通过 `application.yaml` 的 `easy-orange.validation.password.weak-list` 配置注入。使用示例: `@Password String password`
-- **`@Phone`** — 手机号格式校验（字段级）。正则来自 `UserConstant.PHONE_REGEX`，支持自定义 `regexp` 参数。使用示例: `@Phone String phone`
 - **`@Username`** — 用户名格式校验（字段级）。校验长度（3-50位）和字符集（字母、数字、下划线）。使用示例: `@Username String username`
 
 业务规则校验（如唯一性）在 application / domain 层处理，不在 adapter 层做：
@@ -174,11 +173,11 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 | 操作 | 路由 | 身份 | 领域方法 |
 |------|------|------|---------|
 | 发送验证码 | `POST /api/auth/sms-code` | 匿名 | `SmsCodePort.send(phone)` |
-| 重置密码（忘记密码） | `POST /api/auth/password/reset` | 匿名 | `AuthenticationService.resetPassword(phone, verifyCode, newPassword)` |
-| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `AuthenticationService.resetPassword(userId, verifyCode, newPassword)` |
+| 重置密码（忘记密码） | `POST /api/auth/password/reset` | 匿名 | `resetPassword(phone, verifyCode, newPassword)` |
+| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `resetPassword(phone, verifyCode, newPassword)`（`AuthAppService` 解析 userId → phone 后委托） |
 
-- 两个重载均走 `doChangePassword` 内部流程（编码 + 持久化自包含）
-- `AuthAppService` 纯委托，不持有 `UserRepository`
+- 两种路由共享同一个 `AuthenticationService.resetPassword(phone, ...)` — 无重复领域逻辑
+- `AuthAppService` 负责身份解析：重置密码直接委托，修改密码先通过 `UserRepository` 查询手机号再委托
 - 仅 admin 端 `PUT /api/admin/users/{id}/reset-password` 保持管理员强制重置（不走短信验证）
 
 ## 短信验证码（开发环境）
@@ -199,7 +198,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 ## 安全要点
 
 - 密码: BCrypt 加密，禁止明文存储和日志输出
-- 登录限流: `@RateLimiter` + Redis 滑动窗口（生产） ; 开发环境限流走内存 Mock
+- 登录限流: `@RateLimiter` + Redis 固定窗口（生产） ; 开发环境限流走内存 Mock
 - 防重提交: `@RepeatSubmit` 防止重复注册
 - Token: Access Token 短期 + Refresh Token 长期，登出加入黑名单
 

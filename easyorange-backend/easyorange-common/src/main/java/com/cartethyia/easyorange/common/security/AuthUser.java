@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.common.dto;
+package com.cartethyia.easyorange.common.security;
 
 import lombok.Builder;
 import java.util.Set;

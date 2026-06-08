@@ -7,8 +7,6 @@ import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -24,11 +22,6 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
     private static final String DAILY_KEY = SMS_BASE + "daily:";
     private static final String VERIFY_KEY = SMS_BASE + "verify:";
 
-    private static final Duration CODE_TTL = Duration.ofMinutes(5);
-    private static final Duration SEND_INTERVAL = Duration.ofSeconds(60);
-    private static final long MAX_DAILY = 10;
-    private static final long MAX_VERIFY_ATTEMPTS = 5;
-
     private final RedisCache redisCache;
     private final SmsSenderPort smsSenderPort;
 
@@ -39,14 +32,16 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
         }
 
         Long daily = redisCache.increment(DAILY_KEY + phone);
-        if (daily != null && daily == 1) {
-            redisCache.expire(DAILY_KEY + phone, 1, TimeUnit.DAYS);
-        }
-        if (daily != null && daily > MAX_DAILY) {
-            return false;
+        if (daily != null) {
+            if (daily == 1) {
+                redisCache.expire(DAILY_KEY + phone, 1, TimeUnit.DAYS);
+            }
+            if (daily > MAX_DAILY) {
+                return false;
+            }
         }
 
-        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
+        String code = SmsCodePort.generateCode();
         redisCache.set(CODE_KEY + phone, code, CODE_TTL.getSeconds(), TimeUnit.SECONDS);
         redisCache.set(LIMIT_KEY + phone, "1", SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
 
@@ -61,13 +56,15 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
         }
 
         Long attempts = redisCache.increment(VERIFY_KEY + phone);
-        if (attempts != null && attempts == 1) {
-            redisCache.expire(VERIFY_KEY + phone, 10, TimeUnit.MINUTES);
-        }
-        if (attempts != null && attempts > MAX_VERIFY_ATTEMPTS) {
-            redisCache.delete(CODE_KEY + phone);
-            redisCache.delete(VERIFY_KEY + phone);
-            return VerifyResult.TOO_MANY_ATTEMPTS;
+        if (attempts != null) {
+            if (attempts == 1) {
+                redisCache.expire(VERIFY_KEY + phone, 10, TimeUnit.MINUTES);
+            }
+            if (attempts > MAX_VERIFY_ATTEMPTS) {
+                redisCache.delete(CODE_KEY + phone);
+                redisCache.delete(VERIFY_KEY + phone);
+                return VerifyResult.TOO_MANY_ATTEMPTS;
+            }
         }
 
         String stored = redisCache.get(CODE_KEY + phone, String.class);

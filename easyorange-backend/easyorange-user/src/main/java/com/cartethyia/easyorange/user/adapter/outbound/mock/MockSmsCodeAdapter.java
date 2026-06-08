@@ -8,10 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 内存实现的短信验证码适配器（开发/测试环境）。
@@ -25,11 +23,6 @@ import java.util.concurrent.ThreadLocalRandom;
 public class MockSmsCodeAdapter implements SmsCodePort {
 
     private static final Logger log = LoggerFactory.getLogger(MockSmsCodeAdapter.class);
-
-    private static final Duration CODE_TTL = Duration.ofMinutes(5);
-    private static final Duration SEND_INTERVAL = Duration.ofSeconds(60);
-    private static final long MAX_DAILY = 10;
-    private static final long MAX_VERIFY_ATTEMPTS = 5;
 
     private final ConcurrentHashMap<String, CodeEntry> codes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Instant> sendLimits = new ConcurrentHashMap<>();
@@ -53,8 +46,8 @@ public class MockSmsCodeAdapter implements SmsCodePort {
         }
 
         // 生成并存储验证码
-        String code = String.format("%06d", ThreadLocalRandom.current().nextInt(1_000_000));
-        codes.put(phone, new CodeEntry(code, Instant.now(), CODE_TTL));
+        String code = SmsCodePort.generateCode();
+        codes.put(phone, new CodeEntry(code, Instant.now()));
         sendLimits.put(phone, Instant.now().plus(SEND_INTERVAL));
 
         smsSenderPort.send(phone, code);
@@ -75,7 +68,7 @@ public class MockSmsCodeAdapter implements SmsCodePort {
         }
 
         CodeEntry entry = codes.get(phone);
-        if (entry == null || Instant.now().isAfter(entry.createdAt.plus(entry.ttl))) {
+        if (entry == null || Instant.now().isAfter(entry.createdAt.plus(CODE_TTL))) {
             return VerifyResult.NOT_FOUND;
         }
         if (!entry.code.equals(code)) {
@@ -87,5 +80,5 @@ public class MockSmsCodeAdapter implements SmsCodePort {
         return VerifyResult.OK;
     }
 
-    private record CodeEntry(String code, Instant createdAt, Duration ttl) {}
+    private record CodeEntry(String code, Instant createdAt) {}
 }

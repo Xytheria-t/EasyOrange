@@ -21,7 +21,7 @@ class SmsLoginRequestTest {
     }
 
     @Test
-    @DisplayName("phone should be @Phone (invalid format)")
+    @DisplayName("phone should be @Pattern(UserConstant.PHONE_REGEX) (invalid format)")
     void phoneInvalid() {
         var violations = validator.validateValue(SmsLoginRequest.class, "phone", "not-a-phone");
         assertThat(violations).isNotEmpty();

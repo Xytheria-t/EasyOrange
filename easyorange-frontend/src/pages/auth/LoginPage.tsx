@@ -103,9 +103,8 @@ function LoginPage() {
 
     if (activeTab === 'login') {
       if (loginMethod === 'password') {
-        const usernameError = validator.getErrorMessage('username', formData.account)
-        if (usernameError) {
-          addToast({ type: 'error', message: usernameError })
+        if (!formData.account.trim()) {
+          addToast({ type: 'error', message: '请输入账号' })
           return
         }
 

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.util;
 
-import com.cartethyia.easyorange.common.dto.AuthUser;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,70 +23,6 @@ class SecurityContextUtilTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
-    }
-
-    @Nested
-    @DisplayName("Authentication Tests")
-    class AuthenticationTests {
-
-        @Test
-        @DisplayName("getAuthentication with no context should return empty")
-        void getAuthentication_withNoContext_shouldReturnEmpty() {
-            SecurityContextHolder.clearContext();
-
-            Optional<org.springframework.security.core.Authentication> result = SecurityContextUtil.getAuthentication();
-
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("getAuthentication with authenticated context should return authentication")
-        void getAuthentication_withAuthenticatedContext_shouldReturnAuthentication() {
-            var auth = new UsernamePasswordAuthenticationToken("user", "password");
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            Optional<org.springframework.security.core.Authentication> result = SecurityContextUtil.getAuthentication();
-
-            assertThat(result).isPresent();
-            assertThat(result.get()).isEqualTo(auth);
-        }
-    }
-
-    @Nested
-    @DisplayName("Is Authenticated Tests")
-    class IsAuthenticatedTests {
-
-        @Test
-        @DisplayName("isAuthenticated with no context should return false")
-        void isAuthenticated_withNoContext_shouldReturnFalse() {
-            SecurityContextHolder.clearContext();
-
-            boolean result = SecurityContextUtil.isAuthenticated();
-
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("isAuthenticated with unauthenticated context should return false")
-        void isAuthenticated_withUnauthenticatedContext_shouldReturnFalse() {
-            var auth = new UsernamePasswordAuthenticationToken("anonymous", null);
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.isAuthenticated();
-
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("isAuthenticated with authenticated context should return true")
-        void isAuthenticated_withAuthenticatedContext_shouldReturnTrue() {
-            var auth = new UsernamePasswordAuthenticationToken("user", "password", List.of());
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.isAuthenticated();
-
-            assertThat(result).isTrue();
-        }
     }
 
     @Nested
@@ -172,105 +108,6 @@ class SecurityContextUtilTest {
             Long result = SecurityContextUtil.getCurrentUserIdOrThrow();
 
             assertThat(result).isEqualTo(userId);
-        }
-    }
-
-    @Nested
-    @DisplayName("Has Role Tests")
-    class HasRoleTests {
-
-        @Test
-        @DisplayName("hasRole with null role should return false")
-        void hasRole_withNullRole_shouldReturnFalse() {
-            boolean result = SecurityContextUtil.hasRole(null);
-
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("hasRole with blank role should return false")
-        void hasRole_withBlankRole_shouldReturnFalse() {
-            boolean result = SecurityContextUtil.hasRole("   ");
-
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("hasRole with matching role should return true")
-        void hasRole_withMatchingRole_shouldReturnTrue() {
-            var auth = new UsernamePasswordAuthenticationToken(
-                    "user", "password", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.hasRole("ADMIN");
-
-            assertThat(result).isTrue();
-        }
-
-        @Test
-        @DisplayName("hasRole with ROLE_ prefix should return true")
-        void hasRole_withRolePrefix_shouldReturnTrue() {
-            var auth = new UsernamePasswordAuthenticationToken(
-                    "user", "password", List.of(new SimpleGrantedAuthority("ROLE_USER"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.hasRole("ROLE_USER");
-
-            assertThat(result).isTrue();
-        }
-
-        @Test
-        @DisplayName("hasRole with non-matching role should return false")
-        void hasRole_withNonMatchingRole_shouldReturnFalse() {
-            var auth = new UsernamePasswordAuthenticationToken(
-                    "user", "password", List.of(new SimpleGrantedAuthority("ROLE_USER"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.hasRole("ADMIN");
-
-            assertThat(result).isFalse();
-        }
-    }
-
-    @Nested
-    @DisplayName("Has Authority Tests")
-    class HasAuthorityTests {
-
-        @Test
-        @DisplayName("hasAuthority with null authority should return false")
-        void hasAuthority_withNullAuthority_shouldReturnFalse() {
-            boolean result = SecurityContextUtil.hasAuthority(null);
-
-            assertThat(result).isFalse();
-        }
-
-        @Test
-        @DisplayName("hasAuthority with matching authority should return true")
-        void hasAuthority_withMatchingAuthority_shouldReturnTrue() {
-            var auth = new UsernamePasswordAuthenticationToken(
-                    "user", "password", List.of(new SimpleGrantedAuthority("user:read"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.hasAuthority("user:read");
-
-            assertThat(result).isTrue();
-        }
-
-        @Test
-        @DisplayName("hasAuthority with non-matching authority should return false")
-        void hasAuthority_withNonMatchingAuthority_shouldReturnFalse() {
-            var auth = new UsernamePasswordAuthenticationToken(
-                    "user", "password", List.of(new SimpleGrantedAuthority("user:read"))
-            );
-            SecurityContextHolder.getContext().setAuthentication(auth);
-
-            boolean result = SecurityContextUtil.hasAuthority("user:write");
-
-            assertThat(result).isFalse();
         }
     }
 

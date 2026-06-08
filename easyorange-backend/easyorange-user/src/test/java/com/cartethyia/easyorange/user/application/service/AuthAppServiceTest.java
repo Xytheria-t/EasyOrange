@@ -6,8 +6,11 @@ import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
+import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
+import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
+import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import org.junit.jupiter.api.AfterEach;
@@ -34,15 +37,20 @@ class AuthAppServiceTest {
     private RegistrationService registrationService;
     @Mock
     private TokenService tokenService;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private SmsCodePort smsCodePort;
 
     private AuthAppService service;
 
     private static final Long USER_ID = 1L;
     private static final String USERNAME = "testuser";
+    private static final String PHONE = "13812345678";
 
     @BeforeEach
     void setUp() {
-        service = new AuthAppService(authenticationService, registrationService, tokenService);
+        service = new AuthAppService(authenticationService, registrationService, tokenService, userRepository, smsCodePort);
     }
 
     @AfterEach
@@ -80,7 +88,7 @@ class AuthAppServiceTest {
     class Login {
 
         @Test
-        @DisplayName("密码登录成功 — 应委托认证服务并返回领域用户")
+        @DisplayName("密码登录成功 — 应委托认证服务并创建Token返回LoginContext")
         void password_success() {
             String account = "testuser";
             String password = "Password123";
@@ -93,15 +101,23 @@ class AuthAppServiceTest {
                 .build();
             when(authenticationService.authenticate(any(LoginCredential.class), anyString()))
                 .thenReturn(user);
+            when(tokenService.createAccessToken(USER_ID, USERNAME, "01"))
+                .thenReturn("access-token");
+            when(tokenService.createRefreshToken(USER_ID, USERNAME, "01"))
+                .thenReturn("refresh-token");
 
-            User result = service.login(credential);
+            var result = service.login(credential);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(USER_ID);
+            assertThat(result.user().getId()).isEqualTo(USER_ID);
+            assertThat(result.accessToken()).isEqualTo("access-token");
+            assertThat(result.refreshToken()).isEqualTo("refresh-token");
+            verify(tokenService).createAccessToken(USER_ID, USERNAME, "01");
+            verify(tokenService).createRefreshToken(USER_ID, USERNAME, "01");
         }
 
         @Test
-        @DisplayName("短信登录成功")
+        @DisplayName("短信登录成功 — 应委托认证服务并创建Token返回LoginContext")
         void sms_success() {
             String phone = "13812345678";
             String verifyCode = "123456";
@@ -114,11 +130,19 @@ class AuthAppServiceTest {
                 .build();
             when(authenticationService.authenticate(any(LoginCredential.class), anyString()))
                 .thenReturn(user);
+            when(tokenService.createAccessToken(USER_ID, USERNAME, "01"))
+                .thenReturn("access-token");
+            when(tokenService.createRefreshToken(USER_ID, USERNAME, "01"))
+                .thenReturn("refresh-token");
 
-            User result = service.login(credential);
+            var result = service.login(credential);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(USER_ID);
+            assertThat(result.user().getId()).isEqualTo(USER_ID);
+            assertThat(result.accessToken()).isEqualTo("access-token");
+            assertThat(result.refreshToken()).isEqualTo("refresh-token");
+            verify(tokenService).createAccessToken(USER_ID, USERNAME, "01");
+            verify(tokenService).createRefreshToken(USER_ID, USERNAME, "01");
         }
     }
 
@@ -153,6 +177,30 @@ class AuthAppServiceTest {
     }
 
     @Nested
+    @DisplayName("发送短信验证码")
+    class SendSmsCode {
+
+        @Test
+        @DisplayName("发送成功 — 应委托 SmsCodePort")
+        void success() {
+            when(smsCodePort.send(PHONE)).thenReturn(true);
+
+            service.sendSmsCode(PHONE);
+
+            verify(smsCodePort).send(PHONE);
+        }
+
+        @Test
+        @DisplayName("频率限制 — 应抛出业务异常")
+        void tooFrequent() {
+            when(smsCodePort.send(PHONE)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.sendSmsCode(PHONE))
+                .isInstanceOf(BusinessException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("重置密码（忘记密码）")
     class ResetPassword {
 
@@ -174,13 +222,18 @@ class AuthAppServiceTest {
     class ChangePassword {
 
         @Test
-        @DisplayName("应提取userId并委托 AuthenticationService")
-        void shouldDelegateWithUserId() {
+        @DisplayName("应解析手机号后委托 AuthenticationService.resetPassword")
+        void shouldResolvePhoneAndDelegate() {
             TestSecurityUtil.setSecurityContext(USER_ID);
+            var user = User.builder()
+                .id(USER_ID)
+                .contactInfo(new ContactInfo(null, PHONE))
+                .build();
+            when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
 
             service.changePassword("123456", "NewPass123");
 
-            verify(authenticationService).resetPassword(USER_ID, "123456", "NewPass123");
+            verify(authenticationService).resetPassword(PHONE, "123456", "NewPass123");
         }
 
         @Test

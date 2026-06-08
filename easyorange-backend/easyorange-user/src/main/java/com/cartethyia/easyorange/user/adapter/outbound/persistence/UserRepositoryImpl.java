@@ -65,6 +65,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
         if (identifier == null || identifier.isBlank()) {
             return Optional.empty();
         }
+
         String trimmedIdentifier = identifier.trim();
         return Optional.ofNullable(lambdaQuery()
                 .and(wrapper -> wrapper

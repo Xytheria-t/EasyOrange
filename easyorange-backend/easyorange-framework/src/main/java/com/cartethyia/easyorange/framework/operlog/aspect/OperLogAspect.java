@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.operlog.aspect;
 
-import com.cartethyia.easyorange.common.dto.AuthUser;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.common.enums.BusinessType;
 import com.cartethyia.easyorange.framework.config.properties.OperLogProperties;
 import com.cartethyia.easyorange.framework.operlog.entity.SysOperLog;

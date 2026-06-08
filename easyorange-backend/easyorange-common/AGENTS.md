@@ -7,13 +7,14 @@
 ```
 common/
 ├── annotation/          # 自定义注解
-│   ├── RateLimiter.java     # 限流 (Redis + Lua 滑动窗口)
+│   ├── RateLimiter.java     # 限流 (Redis + Lua 固定窗口)
 │   └── RepeatSubmit.java    # 防重复提交
 ├── constant/
 │   └── CommonConstant.java  # 全局常量
 ├── dto/
-│   ├── AuthUser.java        # 认证用户信息
 │   └── PageRequest.java     # 分页请求基类
+├── security/
+│   └── AuthUser.java        # 认证用户信息 (Security Principal)
 ├── enums/
 │   ├── IResultCode.java     # 结果码接口
 │   ├── ResultCode.java      # 通用结果码枚举

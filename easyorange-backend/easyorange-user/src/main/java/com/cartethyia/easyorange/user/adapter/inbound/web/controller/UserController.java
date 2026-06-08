@@ -1,7 +1,8 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 
-import com.cartethyia.easyorange.common.dto.AuthUser;
+import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
@@ -9,11 +10,12 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.Up
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileResponse;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserResponse;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService;
-import com.cartethyia.easyorange.user.domain.aggregate.User;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/users")
@@ -26,10 +28,9 @@ public class UserController {
     @GetMapping("/me")
     public Result<UserProfileResponse> getCurrentUser() {
         AuthUser authUser = SecurityContextUtil.getUserContextOrThrow();
-        User user = profileAppService.getCurrentUser();
-        UserProfileResponse response = userAssembler.toProfileResponse(
-            user, authUser.roles(), authUser.permissions(), authUser.loginTime());
-        return Result.success(response);
+        return Result.success(userAssembler.toProfileResponse(
+                profileAppService.getCurrentUser(),
+                authUser.roles(), authUser.permissions(), authUser.loginTime()));
     }
 
     @PutMapping("/me")
@@ -43,13 +44,11 @@ public class UserController {
     @PostMapping("/avatar")
     public Result<UserResponse> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
         try {
-            byte[] content = avatar.getBytes();
-            String contentType = avatar.getContentType();
-            String originalFilename = avatar.getOriginalFilename();
-            profileAppService.uploadAvatar(content, contentType, originalFilename);
+            profileAppService.uploadAvatar(
+                avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
             return Result.success(userAssembler.toResponse(profileAppService.getCurrentUser()));
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("头像读取失败", e);
+        } catch (IOException e) {
+            throw BusinessException.of("头像读取失败", e);
         }
     }
 }

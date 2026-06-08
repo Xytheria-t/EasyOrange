@@ -81,7 +81,7 @@ describe('useLogin', () => {
       wrapper: Wrapper,
     });
 
-    result.current.mutate({ username: 'testuser', password: 'password123', rememberMe: false });
+    result.current.mutate({ account: 'testuser', password: 'password123', loginMethod: 'password' });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.validation;
 
+import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.Constraint;
 import jakarta.validation.Payload;
 
@@ -11,7 +12,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Password {
 
-    String message() default "密码必须包含大小写字母、数字和特殊字符，长度8-128位";
+    String message() default "密码必须包含大小写字母、数字和特殊字符，长度" + UserConstant.PASSWORD_MIN_LENGTH + "-" + UserConstant.PASSWORD_MAX_LENGTH + "位";
 
     Class<?>[] groups() default {};
 

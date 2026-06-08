@@ -23,7 +23,10 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     public long incrementAttempts(String identifier, long expireMinutes) {
         String key = LoginCacheConstants.buildAttemptsKey(identifier);
         Long count = redisCache.increment(key);
-        redisCache.expire(key, expireMinutes, TimeUnit.MINUTES);
+        // Only set TTL on first increment — implements fixed window, not sliding
+        if (count != null && count == 1) {
+            redisCache.expire(key, expireMinutes, TimeUnit.MINUTES);
+        }
         return count != null ? count : 0;
     }
 

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.config.security;
 
-import com.cartethyia.easyorange.common.dto.AuthUser;
+import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
@@ -26,8 +26,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -52,8 +51,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -110,7 +107,6 @@ public class SecurityConfig {
                     .maxAgeInSeconds(HSTS_MAX_AGE_SECONDS)
                 )
             )
-            .userDetailsService(userDetailsService())
             .build();
     }
 
@@ -196,10 +192,10 @@ public class SecurityConfig {
         config.setAllowedOriginPatterns(allowAllOrigins ? List.of("*") : null);
         config.setAllowedOrigins(allowAllOrigins ? null : origins);
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowedMethods(Stream.of(CORS_ALLOWED_METHODS).toList());
+        config.setAllowedMethods(List.of(CORS_ALLOWED_METHODS));
         config.setAllowCredentials(true);
         config.setMaxAge(CORS_MAX_AGE_SECONDS);
-        config.setExposedHeaders(Stream.of(CORS_EXPOSED_HEADERS).toList());
+        config.setExposedHeaders(List.of(CORS_EXPOSED_HEADERS));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
@@ -211,10 +207,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder(securityProperties.getPasswordEncoderStrength());
     }
 
-    @Bean
-    public UserDetailsService userDetailsService() {
-        return username -> {
-            throw new UsernameNotFoundException("User details not available. Use JWT authentication instead.");
-        };
-    }
 }

@@ -42,11 +42,6 @@ public abstract class BaseRepository<M extends BaseMapper<T>, T> {
         return ChainWrappers.lambdaUpdateChain(mapper);
     }
 
-    protected <R> List<T> findAllBy(SFunction<T, R> column, R value) {
-        if (value == null) return List.of();
-        return lambdaQuery().eq(column, value).list();
-    }
-
     protected <R> Optional<T> findBy(SFunction<T, R> column, R value) {
         if (value == null) return Optional.empty();
         return Optional.ofNullable(lambdaQuery().eq(column, value).one());

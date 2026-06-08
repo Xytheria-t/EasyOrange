@@ -19,14 +19,6 @@ public class AuthenticationService {
 
     // ========== 登录认证 ==========
 
-    /**
-     * Authenticates a user using the provided login credential (password or SMS).
-     *
-     * @param credential the login credential, either password-based or SMS-based
-     * @param clientIp   the client IP address for login tracking
-     * @return the authenticated and logged-in user aggregate
-     * @throws BusinessException if credentials are invalid or the user is disabled
-     */
     public User authenticate(LoginCredential credential, String clientIp) {
         return switch (credential) {
             case LoginCredential.Password(String identifier, String password) ->
@@ -45,6 +37,7 @@ public class AuthenticationService {
             loginSecurityService.recordFailedAttempt(identifier);
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
+
         if (!user.isEnabled()) {
             throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
@@ -61,6 +54,7 @@ public class AuthenticationService {
 
         User user = userRepository.findByPhone(phone)
             .orElseThrow(() -> BusinessException.of(UserResultCode.INVALID_CREDENTIALS));
+
         if (!user.isEnabled()) {
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
@@ -72,21 +66,13 @@ public class AuthenticationService {
 
     // ========== 密码管理 ==========
 
-    public User resetPassword(String phone, String verifyCode, String newPassword) {
+    public void resetPassword(String phone, String verifyCode, String newPassword) {
         verifyCodeOrThrow(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
 
-        return doChangePassword(user, newPassword);
-    }
-
-    public User resetPassword(Long userId, String verifyCode, String newPassword) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
-
-        verifyCodeOrThrow(user.getContactInfo().phone(), verifyCode);
-        return doChangePassword(user, newPassword);
+        doChangePassword(user, newPassword);
     }
 
     private void verifyCodeOrThrow(String phone, String verifyCode) {
@@ -97,13 +83,12 @@ public class AuthenticationService {
         }
     }
 
-    private User doChangePassword(User user, String newPassword) {
+    private void doChangePassword(User user, String newPassword) {
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
             throw BusinessException.of(UserResultCode.PASSWORD_SAME_AS_OLD);
         }
 
         User updated = user.changePassword(passwordEncoder.encode(newPassword), user.getId());
         userRepository.update(updated);
-        return updated;
     }
 }
