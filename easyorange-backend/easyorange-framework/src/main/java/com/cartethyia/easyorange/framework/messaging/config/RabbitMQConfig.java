@@ -62,14 +62,6 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Queue notificationEventQueue() {
-        return QueueBuilder
-            .durable("eo.notification.events")
-            .quorum()
-            .build();
-    }
-
-    @Bean
     public Binding productOrderEventBinding(Queue productEventQueue, TopicExchange exchange) {
         return BindingBuilder
             .bind(productEventQueue)
@@ -134,19 +126,11 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding notificationCompletedBinding(Queue notificationEventQueue, TopicExchange exchange) {
+    public Binding messageMessageEventBinding(Queue messageEventQueue, TopicExchange exchange) {
         return BindingBuilder
-            .bind(notificationEventQueue)
+            .bind(messageEventQueue)
             .to(exchange)
-            .with("*.completed");
-    }
-
-    @Bean
-    public Binding notificationCancelledBinding(Queue notificationEventQueue, TopicExchange exchange) {
-        return BindingBuilder
-            .bind(notificationEventQueue)
-            .to(exchange)
-            .with("*.cancelled");
+            .with("message.#");
     }
 
     @Bean

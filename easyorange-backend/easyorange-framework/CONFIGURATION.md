@@ -229,12 +229,7 @@ CacheTypeMismatchException: 缓存类型不匹配 - Key: user:123, 期望类型:
 
 ## 领域事件配置
 
-### 异步事件发布
-
-**改进内容**：
-
-- 统一事件发布入口，仅保留同步发布
-- 确保事件监听器能接收到事件
+### 事件发布（RabbitMQ）
 
 **使用示例**：
 
@@ -242,11 +237,12 @@ CacheTypeMismatchException: 缓存类型不匹配 - Key: user:123, 期望类型:
 domainEventPublisher.publish(new UserCreatedEvent(userId));
 ```
 
+事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange，各模块 `@RabbitListener` 消费者异步处理。
+
 **注意事项**：
 
-- 事件监听器需要标注 `@EventListener`
 - 确保事件类继承 `BaseDomainEvent`
-- 需要 Outbox 可靠投递的模块通过 `OutboxRepository` 在业务事务内持久化事件
+- 新增事件需在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 注册路由键
 
 ---
 

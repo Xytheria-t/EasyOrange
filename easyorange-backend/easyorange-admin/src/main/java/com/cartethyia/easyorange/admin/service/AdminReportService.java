@@ -20,7 +20,7 @@ import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +37,7 @@ public class AdminReportService {
     private final ReportHandleHistoryRepository reportHandleHistoryRepository;
     private final ProductMapper productMapper;
     private final BatchQueryUtil batchQueryUtil;
-    private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(readOnly = true)
     public PageResult<AdminReportResponse> listReports(Integer pageNum, Integer pageSize, Integer status) {
@@ -175,7 +175,7 @@ public class AdminReportService {
                 report.getRemark(),
                 LocalDateTime.now()
         );
-        eventPublisher.publishEvent(event);
+        domainEventPublisher.publish(event);
     }
 
     private void saveHandleHistory(Long reportId, Long operatorId, String action, String remark) {

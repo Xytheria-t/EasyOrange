@@ -21,7 +21,7 @@ easy-orange/
 │   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
 │   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
-│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS + Outbox)
+│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
 │   │   └── adapter/inbound/web/assembler/ # PaymentViewAssembler (DTO 转换)
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
@@ -152,7 +152,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）
 - **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
 - **RabbitMQ 路由键规范**: 新增领域事件必须在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 中注册路由键，格式为 `{module}.{aggregate}.{event}`（如 `order.aggregate.created`）。使用字符串映射 `event.eventType()` 作为 key（非 Class 引用），避免 Maven 循环依赖
-- **RabbitMQ 双模式切换**: 所有 RabbitMQ 相关组件（发布器、消费者）使用 `@ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled")` 条件化启用。设置 `easyorange.rabbitmq.enabled=false` 可回退到原有 Spring EventBus + @Async 模式
+- **RabbitMQ-only 模式**: 领域事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange。所有消费者的 `@ConditionalOnProperty(matchIfMissing=true)` 仅用于确保无 RabbitMQ 环境（开发/测试）下启动不报错，EventBus 回退模式已移除
 - **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)
 - **Assembler 模式 (DTO 转换)**: adapter/inbound/web/assembler/ 目录下的 Assembler 类负责 domain → DTO 转换（使用 MapStruct 或手动实现）。**禁止**在 Controller/Service 中直接构造 Response DTO，必须通过 Assembler。已废弃的旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest 等）已删除，新代码统一使用 assembler 模式

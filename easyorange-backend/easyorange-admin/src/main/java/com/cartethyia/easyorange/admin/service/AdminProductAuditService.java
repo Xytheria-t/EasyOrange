@@ -23,7 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,7 +40,7 @@ public class AdminProductAuditService {
 
     private final ProductMapper productMapper;
     private final ProductAuditLogRepository productAuditLogRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final DomainEventPublisher domainEventPublisher;
     private final ObjectMapper objectMapper;
     private final AiReviewService aiReviewService;
 
@@ -96,7 +96,7 @@ public class AdminProductAuditService {
                 request.reason(),
                 LocalDateTime.now()
         );
-        eventPublisher.publishEvent(event);
+        domainEventPublisher.publish(event);
 
         log.info("action=audit_product productId={} action={} operatorId={} beforeStatus={} afterStatus={}",
                 id, action, operatorId, beforeStatus, afterStatus);
@@ -164,7 +164,7 @@ public class AdminProductAuditService {
                         item.reason(),
                         LocalDateTime.now()
                 );
-                eventPublisher.publishEvent(event);
+                domainEventPublisher.publish(event);
 
                 successCount++;
             } catch (BusinessException e) {

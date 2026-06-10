@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.notification.NotificationService;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
@@ -15,29 +14,29 @@ import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderNotificationEventSubscriber {
+public class OrderNotificationEventConsumer {
 
     private final EventIdempotencyChecker idempotencyChecker;
     private final NotificationService notificationService;
     private final OrderReadRepository orderReadRepository;
     private final UserInfoPort userInfoPort;
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderCreated(OrderCreatedEvent event) {
         String eventId = "created:" + event.getOrderId();
         if (!tryAcquireLock("OrderCreated", eventId)) {
             return;
         }
-        
+
         try {
             String email = getUserEmail(event.getBuyerId());
             if (email != null) {
@@ -46,17 +45,20 @@ public class OrderNotificationEventSubscriber {
             log.info("订单创建通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单创建通知发送失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderPaid(OrderPaidEvent event) {
         String eventId = "paid:" + event.getOrderId();
         if (!tryAcquireLock("OrderPaid", eventId)) {
             return;
         }
-        
+
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
@@ -65,17 +67,20 @@ public class OrderNotificationEventSubscriber {
             log.info("订单支付通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单支付通知发送失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderShipped(OrderShippedEvent event) {
         String eventId = "shipped:" + event.getOrderId();
         if (!tryAcquireLock("OrderShipped", eventId)) {
             return;
         }
-        
+
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
@@ -84,17 +89,20 @@ public class OrderNotificationEventSubscriber {
             log.info("订单发货通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单发货通知发送失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderCompleted(OrderCompletedEvent event) {
         String eventId = "completed:" + event.getOrderId();
         if (!tryAcquireLock("OrderCompleted", eventId)) {
             return;
         }
-        
+
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
@@ -103,17 +111,20 @@ public class OrderNotificationEventSubscriber {
             log.info("订单完成通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单完成通知发送失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderCancelled(OrderCancelledEvent event) {
         String eventId = "cancelled:" + event.getOrderId();
         if (!tryAcquireLock("OrderCancelled", eventId)) {
             return;
         }
-        
+
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
@@ -122,17 +133,20 @@ public class OrderNotificationEventSubscriber {
             log.info("订单取消通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单取消通知发送失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderRefunded(OrderRefundedEvent event) {
         String eventId = "refunded:" + event.getOrderId();
         if (!tryAcquireLock("OrderRefunded", eventId)) {
             return;
         }
-        
+
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
@@ -141,6 +155,7 @@ public class OrderNotificationEventSubscriber {
             log.info("订单退款通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单退款通知发送失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 

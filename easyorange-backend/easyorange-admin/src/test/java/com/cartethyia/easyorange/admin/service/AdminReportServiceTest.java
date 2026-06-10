@@ -28,7 +28,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,7 +58,7 @@ class AdminReportServiceTest {
     private BatchQueryUtil batchQueryUtil;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private DomainEventPublisher domainEventPublisher;
 
     @InjectMocks
     private AdminReportService reportService;
@@ -168,7 +169,7 @@ class AdminReportServiceTest {
 
                 verify(productReportRepository).update(report);
                 verify(reportHandleHistoryRepository).save(any(ReportHandleHistory.class));
-                verify(eventPublisher).publishEvent(any(Object.class));
+                verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

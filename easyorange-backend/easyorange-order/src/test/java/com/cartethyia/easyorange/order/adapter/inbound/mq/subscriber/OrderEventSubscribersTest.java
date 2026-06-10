@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrderEventSubscribers 单元测试")
+@DisplayName("OrderEventConsumers 单元测试")
 class OrderEventSubscribersTest {
 
     private static final Long ORDER_ID = 100L;
@@ -34,20 +34,20 @@ class OrderEventSubscribersTest {
     private static final Long SELLER_ID = 2L;
 
     @Nested
-    @DisplayName("OrderCreatedEventSubscriber")
-    class OrderCreatedEventSubscriberTests {
+    @DisplayName("OrderCreatedEventConsumer")
+    class OrderCreatedEventConsumerTests {
 
         @Mock
         private DomainEventPublisher domainEventPublisher;
 
-        private OrderCreatedEventSubscriber subscriber;
+        private OrderCreatedEventConsumer consumer;
 
         @Captor
         private ArgumentCaptor<StockReservationRequestedEvent> stockEventCaptor;
 
         @BeforeEach
         void setUp() {
-            subscriber = new OrderCreatedEventSubscriber(domainEventPublisher);
+            consumer = new OrderCreatedEventConsumer(domainEventPublisher);
         }
 
         @Test
@@ -57,7 +57,7 @@ class OrderEventSubscribersTest {
                     List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
-            subscriber.onOrderCreated(event);
+            consumer.onOrderCreated(event);
 
             verify(domainEventPublisher).publish(stockEventCaptor.capture());
             StockReservationRequestedEvent captured = stockEventCaptor.getValue();
@@ -68,17 +68,17 @@ class OrderEventSubscribersTest {
     }
 
     @Nested
-    @DisplayName("OrderCancelledEventSubscriber")
-    class OrderCancelledEventSubscriberTests {
+    @DisplayName("OrderCancelledEventConsumer")
+    class OrderCancelledEventConsumerTests {
 
         @Mock
         private ProductInventoryPort productInventoryPort;
 
-        private OrderCancelledEventSubscriber subscriber;
+        private OrderCancelledEventConsumer consumer;
 
         @BeforeEach
         void setUp() {
-            subscriber = new OrderCancelledEventSubscriber(productInventoryPort);
+            consumer = new OrderCancelledEventConsumer(productInventoryPort);
         }
 
         @Test
@@ -86,24 +86,24 @@ class OrderEventSubscribersTest {
         void onOrderCancelled_shouldRestoreStock() {
             OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
 
-            subscriber.onOrderCancelled(event);
+            consumer.onOrderCancelled(event);
 
             verify(productInventoryPort).restoreStock(PRODUCT_ID);
         }
     }
 
     @Nested
-    @DisplayName("OrderCompletedEventSubscriber")
-    class OrderCompletedEventSubscriberTests {
+    @DisplayName("OrderCompletedEventConsumer")
+    class OrderCompletedEventConsumerTests {
 
         @Mock
         private ProductInventoryPort productInventoryPort;
 
-        private OrderCompletedEventSubscriber subscriber;
+        private OrderCompletedEventConsumer consumer;
 
         @BeforeEach
         void setUp() {
-            subscriber = new OrderCompletedEventSubscriber(productInventoryPort);
+            consumer = new OrderCompletedEventConsumer(productInventoryPort);
         }
 
         @Test
@@ -111,24 +111,24 @@ class OrderEventSubscribersTest {
         void onOrderCompleted_shouldMarkAsSold() {
             OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
 
-            subscriber.onOrderCompleted(event);
+            consumer.onOrderCompleted(event);
 
             verify(productInventoryPort).markAsSold(PRODUCT_ID);
         }
     }
 
     @Nested
-    @DisplayName("OrderRefundedEventSubscriber")
-    class OrderRefundedEventSubscriberTests {
+    @DisplayName("OrderRefundedEventConsumer")
+    class OrderRefundedEventConsumerTests {
 
         @Mock
         private ProductInventoryPort productInventoryPort;
 
-        private OrderRefundedEventSubscriber subscriber;
+        private OrderRefundedEventConsumer consumer;
 
         @BeforeEach
         void setUp() {
-            subscriber = new OrderRefundedEventSubscriber(productInventoryPort);
+            consumer = new OrderRefundedEventConsumer(productInventoryPort);
         }
 
         @Test
@@ -136,7 +136,7 @@ class OrderEventSubscribersTest {
         void onOrderRefunded_shouldRestoreStock() {
             OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
 
-            subscriber.onOrderRefunded(event);
+            consumer.onOrderRefunded(event);
 
             verify(productInventoryPort).restoreStock(PRODUCT_ID);
         }

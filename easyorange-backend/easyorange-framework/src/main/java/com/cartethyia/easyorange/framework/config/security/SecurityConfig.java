@@ -1,19 +1,27 @@
 package com.cartethyia.easyorange.framework.config.security;
 
-import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.result.Result;
+import com.cartethyia.easyorange.common.security.AuthUser;
+import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
 import com.cartethyia.easyorange.framework.web.filter.XssFilter;
+
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -26,12 +34,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -44,6 +47,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import tools.jackson.databind.ObjectMapper;
 
 import javax.crypto.spec.SecretKeySpec;
@@ -70,14 +74,14 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) {
         return http
             .csrf(AbstractHttpConfigurer::disable)
             .formLogin(AbstractHttpConfigurer::disable)
             .httpBasic(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
             .exceptionHandling(exception -> exception
-                .authenticationEntryPoint((request, response, authException) -> {
+                .authenticationEntryPoint((_, response, _) -> {
                     response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     response.setContentType(MediaType.APPLICATION_JSON_VALUE);
                     response.setCharacterEncoding("UTF-8");
@@ -111,11 +115,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(JwtProperties properties,
-                                 org.springframework.data.redis.core.StringRedisTemplate redis) {
-        var key = new SecretKeySpec(
-                properties.getSecretKey().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        NimbusJwtDecoder nimbus = NimbusJwtDecoder.withSecretKey(key).build();
+    public JwtDecoder jwtDecoder(JwtProperties properties, StringRedisTemplate redis) {
+        var nimbus = NimbusJwtDecoder.withSecretKey(secretKey(properties)).build();
         nimbus.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
 
         return token -> {
@@ -144,43 +145,9 @@ public class SecurityConfig {
 
     @Bean
     public JwtEncoder jwtEncoder(JwtProperties properties) {
-        var key = new SecretKeySpec(
-                properties.getSecretKey().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-        var jwk = new OctetSequenceKey.Builder(key).algorithm(JWSAlgorithm.HS256).build();
+        var jwk = new OctetSequenceKey.Builder(secretKey(properties))
+                .algorithm(JWSAlgorithm.HS256).build();
         return new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(jwk)));
-    }
-
-    private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
-        return jwt -> {
-            // Reject refresh tokens for API access
-            if ("refresh".equals(jwt.getClaimAsString("type"))) {
-                throw new BadJwtException("Refresh token not allowed for API access");
-            }
-
-            String userType = jwt.getClaimAsString("userType");
-            List<SimpleGrantedAuthority> authorities;
-            Set<String> roles;
-            if ("00".equals(userType) || "02".equals(userType)) {
-                authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_ADMIN"),
-                        new SimpleGrantedAuthority("ROLE_USER")
-                );
-                roles = Set.of("ADMIN", "USER");
-            } else {
-                authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
-                roles = Set.of("USER");
-            }
-
-            var user = AuthUser.builder()
-                    .userId(Long.valueOf(jwt.getSubject()))
-                    .username(jwt.getClaimAsString("username"))
-                    .roles(roles)
-                    .build();
-
-            var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
-            authentication.setDetails(jwt);
-            return authentication;
-        };
     }
 
     @Bean
@@ -205,6 +172,38 @@ public class SecurityConfig {
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(securityProperties.getPasswordEncoderStrength());
+    }
+
+    private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
+        return jwt -> {
+            // Reject refresh tokens for API access
+            if ("refresh".equals(jwt.getClaimAsString("type"))) {
+                throw new BadJwtException("Refresh token not allowed for API access");
+            }
+
+            String userType = jwt.getClaimAsString("userType");
+            boolean isAdmin = "00".equals(userType) || "02".equals(userType);
+
+            List<SimpleGrantedAuthority> authorities = isAdmin
+                    ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"))
+                    : List.of(new SimpleGrantedAuthority("ROLE_USER"));
+            Set<String> roles = isAdmin ? Set.of("ADMIN", "USER") : Set.of("USER");
+
+            var user = AuthUser.builder()
+                    .userId(Long.valueOf(jwt.getSubject()))
+                    .username(jwt.getClaimAsString("username"))
+                    .roles(roles)
+                    .build();
+
+            var authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
+            authentication.setDetails(jwt);
+            return authentication;
+        };
+    }
+
+    private static SecretKeySpec secretKey(JwtProperties properties) {
+        return new SecretKeySpec(
+                properties.getSecretKey().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
 }

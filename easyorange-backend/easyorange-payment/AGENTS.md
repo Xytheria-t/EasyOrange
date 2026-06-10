@@ -1,6 +1,6 @@
 # easyorange-payment 模块指南
 
-支付处理模块，DDD + CQRS + Outbox 架构，处理支付全流程、退款、幂等、分布式锁。
+支付处理模块，DDD + CQRS 架构，处理支付全流程、退款、幂等、分布式锁。
 
 ## 目录结构
 
@@ -18,10 +18,9 @@ payment/
 │   └── outbound/
 │       ├── gateway/
 │       │   └── PaymentGatewayAdapter.java   # 支付网关适配器 (实现 PaymentGatewayPort)
-│       └── persistence/
+│               └── persistence/
 │           ├── MybatisPaymentRepository.java
 │           ├── MybatisIdempotencyKeyRepository.java
-│           ├── JdbcDomainEventStore.java    # Outbox 事件存储 (委托 Framework OutboxRepository)
 │           ├── PaymentConfigRepository.java
 │           ├── converter/
 │           │   └── PaymentConverter.java
@@ -36,8 +35,7 @@ payment/
 │   │   └── ClosePaymentCommand.java
 │   ├── query/                               # 查询 (CQRS Read)
 │   │   └── PaymentQueryHandler.java
-│   ├── event/
-│   │   └── PaymentEventListener.java        # 领域事件持久化到 Outbox
+│   ├── event/                    # [空] 事件处理已迁移到 RabbitMQ 消费者
 │   ├── idempotency/
 │   │   └── IdempotencyService.java          # 幂等服务 (SHA-256 请求哈希)
 │   ├── lock/
@@ -71,7 +69,6 @@ payment/
 │   │   └── PaymentClosedEvent.java
 │   ├── port/
 │   │   ├── PaymentGatewayPort.java          # 支付网关端口
-│   │   ├── DomainEventStorePort.java        # 事件存储端口 (Outbox, 使用 Framework OutboxMessage)
 │   │   ├── IdempotencyKeyRepositoryPort.java # 幂等键仓储端口
 │   │   ├── CallbackSignatureVerifierPort.java # 回调签名验证端口
 │   │   ├── PaymentResult.java, RefundResult.java
@@ -94,14 +91,9 @@ payment/
     └── PaymentConstant.java
 ```
 
-## Outbox 模式
+## 领域事件
 
-保证领域事件可靠投递：
-
-1. 业务操作与事件存储在同一事务中 (`DomainEventStorePort`)
-2. 事件存储在 `eo_domain_event` 表，状态: PENDING → PUBLISHED → FAILED
-3. 事件实体统一使用 Framework 模块的 `OutboxMessage`
-4. 当前事件的消费由下游模块自行调度（需扫描 `eo_domain_event` 表处理 PENDING 事件）
+领域事件通过 `DomainEventPublisher` 发布到 RabbitMQ Topic Exchange（`eo.domain.events`），由各模块 `@RabbitListener` 消费者异步处理。
 
 ## 幂等保护
 
@@ -149,8 +141,9 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 1. 创建事件类继承 `BaseDomainEvent`
 2. 在状态转换方法中，在 Result record 的 `event()` 中返回事件
 3. Handler 通过 `domainEventPublisher.publish(result.event())` 发布
-4. `PaymentEventListener` 自动持久化到 Outbox
-5. 测试
+4. 在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 注册路由键（`payment.{aggregate}.{event}`）
+5. 创建 `@RabbitListener` 消费者处理事件
+6. 测试
 
 ## 安全要点
 

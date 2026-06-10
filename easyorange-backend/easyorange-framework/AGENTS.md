@@ -51,7 +51,6 @@ framework/
 ├── entity/
 │   └── BaseDO.java               # 数据对象基类 (id, createTime, updateTime, delFlag, version)
 ├── event/                    # 领域事件基础设施
-│   ├── DomainEventPublisherImpl.java   # 事件发布实现
 │   └── idempotency/
 │       └── EventIdempotencyChecker.java # 事件幂等性检查
 ├── exception/
@@ -101,20 +100,7 @@ framework/
 │   └── service/
 │       ├── SysOperLogService.java
 │       └── impl/SysOperLogServiceImpl.java
-├── outbox/                  # Outbox 模式 (事件可靠投递)
-│   ├── util/
-│   │   └── OutboxEventUtils.java
-│   ├── entity/
-│   │   ├── OutboxMessage.java
-│   │   └── OutboxMessagePO.java
-│   ├── mapper/
-│   │   └── OutboxMessageMapper.java
-│   ├── converter/
-│   │   └── OutboxMessageMapper.java
-│   ├── publisher/
-│   │   └── OutboxPublisher.java
-│   └── repository/
-│       └── OutboxRepository.java
+├── outbox/                  # [已删除] Outbox 模式 — 已完成 RabbitMQ 迁移，所有事件走 Topic Exchange
 ├── repository/
 │   └── BaseRepository.java       # 仓储基类 (lambdaQuery/lambdaUpdate + 常见查询模式)
 ├── auth/                    # Token 认证服务
@@ -154,7 +140,7 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 ### 领域事件发布流程
 
-`DomainEventPublisherImpl` 将事件同步发布到 Spring ApplicationEventBus。业务模块可直接注入 `DomainEventPublisher` 调用 `publish()`。需要 Outbox 可靠投递的模块（如支付）通过 `OutboxRepository` 在业务事务内持久化事件，由各模块自行调度发布。
+业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `RabbitMQDomainEventPublisher`（`@Primary`）发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。传递时通过 `@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
 
 ### Redis 缓存抽象
 

@@ -24,7 +24,6 @@ common/
 ├── event/
 │   ├── BaseDomainEvent.java     # 领域事件基类
 │   ├── DomainEventPublisher.java # 领域事件发布接口
-│   └── DomainEventSubscriber.java # 领域事件订阅接口
 ├── exception/
 │   ├── BaseBusinessException.java       # 业务异常基类
 │   ├── BusinessException.java           # 通用业务异常

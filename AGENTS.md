@@ -114,7 +114,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键格式 `{module}.{aggregate}.{event}`，通过 `@ConditionalOnProperty` 支持双模式切换（RabbitMQ / 原有 EventBus）。**已实现 8 个事件消费者**: PaymentInitiationEventListener, ProductAuditEventListener, ReportProcessedEventListener, StockReservationEventListener, OrderCreatedEventConsumer, PaymentEventConsumer, ProductEventConsumer, WebSocketEventConsumer
+5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键格式 `{module}.{aggregate}.{event}`，采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 11 个事件消费者**: PaymentInitiationEventListener, ProductAuditEventListener, ReportProcessedEventListener, StockReservationEventListener, OrderCreatedEventConsumer, OrderCancelledEventConsumer, OrderCompletedEventConsumer, OrderRefundedEventConsumer, OrderNotificationEventConsumer, ProductEventConsumer, WebSocketEventConsumer
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
@@ -138,7 +138,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 
 ## 已知问题
 
-- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`OutboxRepositoryIntegrationTest`、`RabbitMQDomainEventPublisherIT` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
+- **framework 集成测试**: `RedisCacheImplIntegrationTest`、`RabbitMQDomainEventPublisherIT` 需要 Testcontainers Docker。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` 或 `-Dgroups=integration`
 - **Redis 连接**: `application.yaml` 的 base 配置和 `.env.example` 模板已统一默认 `REDIS_PASSWORD=easyorange123`，与 Docker Compose 一致。若仍遇到 `Unable to connect to Redis` 错误，检查：① 是否已执行 `docker compose up -d` 启动 Redis；② 环境变量 `REDIS_PASSWORD` 是否被设置为空值覆盖了默认值；③ **YAML 占位符必须用 `${VAR:default}`（单冒号），不要用 bash 风格的 `${VAR:-default}`**（多一个 `-`）—— Spring 会把 `-default` 当字面量默认值，导致 Lettuce 实际发出去的密码比预期多一个前导连字符，触发 `WRONGPASS invalid username-password pair`。**注意**：`docker-compose.yml` 和 `mvnw` 用 `:-` 是正确的（bash/Docker Compose 语法），但所有 `application*.yaml` 必须用单冒号。新增/修改 Spring Boot 配置占位符时，复制粘贴前先确认语法
 
 ## 错误码规范

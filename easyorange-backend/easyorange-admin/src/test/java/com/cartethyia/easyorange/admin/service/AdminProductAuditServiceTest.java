@@ -19,7 +19,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
+import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -41,7 +42,7 @@ class AdminProductAuditServiceTest {
 
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private DomainEventPublisher domainEventPublisher;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -88,7 +89,7 @@ class AdminProductAuditServiceTest {
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
-            verify(eventPublisher).publishEvent(any(Object.class));
+            verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
         }
 
         @Test
@@ -111,7 +112,7 @@ class AdminProductAuditServiceTest {
                 TestSecurityUtil.clearSecurityContext();
             }
             // eventPublisher verification must be outside TestSecurityUtil context to avoid scope issues
-            verify(eventPublisher).publishEvent(any(Object.class));
+            verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
         }
 
         @Test

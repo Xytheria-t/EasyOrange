@@ -34,6 +34,8 @@ class RoutingKeyResolverTest {
         "ProductDeleted, product.aggregate.deleted",
         "ProductMarkedSold, product.aggregate.marked-sold",
         "ProductSubmittedForReview, product.aggregate.submitted-for-review",
+        "ProductAudited, product.audit.completed",
+        "ReportProcessed, product.report.processed",
         "StockDecreased, product.stock.decreased",
         "StockRestored, product.stock.restored",
         "PaymentCreated, payment.transaction.created",
@@ -77,15 +79,16 @@ class RoutingKeyResolverTest {
     }
 
     @Test
-    @DisplayName("getRegisteredEventTypes returns all 24 event types")
+    @DisplayName("getRegisteredEventTypes returns all 26 event types")
     void getRegisteredEventTypes_returnsAllEventTypes() {
         var eventTypes = resolver.getRegisteredEventTypes();
-        assertThat(eventTypes).hasSize(24);
+        assertThat(eventTypes).hasSize(26);
         assertThat(eventTypes).containsExactlyInAnyOrder(
             "OrderCreated", "OrderCancelled", "OrderPaid", "OrderCompleted",
             "OrderRefunded", "OrderShipped", "StockReservationRequested",
             "PaymentInitiationRequested", "ProductCreated", "ProductUpdated",
             "ProductDeleted", "ProductMarkedSold", "ProductSubmittedForReview",
+            "ProductAudited", "ReportProcessed",
             "StockDecreased", "StockRestored", "PaymentCreated", "PaymentSucceeded",
             "PaymentFailed", "PaymentRefunded", "PaymentClosed", "MessageSent",
             "MessageRead", "MessageDeleted", "MessageRecalled"

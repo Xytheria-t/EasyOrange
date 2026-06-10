@@ -29,6 +29,12 @@ public class RoutingKeyResolver {
         Map.entry("ProductMarkedSold", "product.aggregate.marked-sold"),
         Map.entry("ProductSubmittedForReview", "product.aggregate.submitted-for-review"),
 
+        // Product audit events
+        Map.entry("ProductAudited", "product.audit.completed"),
+
+        // Product report events
+        Map.entry("ReportProcessed", "product.report.processed"),
+
         // Product stock events
         Map.entry("StockDecreased", "product.stock.decreased"),
         Map.entry("StockRestored", "product.stock.restored"),

@@ -43,7 +43,7 @@
 | 消息 | eo_offline_message | 离线消息 | OfflineMessage |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFile |
 | 日志 | eo_oper_log | 操作日志 | SysOperLog |
-| 事件 | eo_domain_event | 领域事件（Outbox） | OutboxMessagePO |
+| 事件 | eo_domain_event | 领域事件（Outbox，已废弃） | — |
 | 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
 | 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyPO |
 
@@ -666,7 +666,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 ---
 
-### 22. eo_domain_event — 领域事件表（Outbox 模式）
+### 22. eo_domain_event — 领域事件表（已废弃）
+
+> **注意**：此表在 V1 初始化时创建，用于 Outbox 模式。当前已迁移到 RabbitMQ-only 模式，此表不再写入或读取。计划在后续迁移脚本中清理。
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|

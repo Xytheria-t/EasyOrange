@@ -6,19 +6,17 @@ import com.cartethyia.easyorange.order.domain.event.StockReservationRequestedEve
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class OrderCreatedEventConsumer {
 
     private final DomainEventPublisher domainEventPublisher;
 
     @RabbitListener(
-        queues = "eo.order.events",
+        queues = "eo.product.events",
         containerFactory = "domainEventContainerFactory"
     )
     public void onOrderCreated(OrderCreatedEvent event) {

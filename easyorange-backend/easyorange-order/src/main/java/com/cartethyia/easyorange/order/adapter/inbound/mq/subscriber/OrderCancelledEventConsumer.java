@@ -4,30 +4,32 @@ import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderCancelledEventSubscriber {
+public class OrderCancelledEventConsumer {
 
     private final ProductInventoryPort productInventoryPort;
 
-    @Async("domainEventExecutor")
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @RabbitListener(
+        queues = "eo.product.events",
+        containerFactory = "domainEventContainerFactory"
+    )
     public void onOrderCancelled(OrderCancelledEvent event) {
         log.info("收到订单取消事件: orderId={}, productCount={}", event.getOrderId(), event.getProductIds().size());
 
-        for (Long productId : event.getProductIds()) {
-            try {
+        try {
+            for (Long productId : event.getProductIds()) {
                 productInventoryPort.restoreStock(productId);
                 log.info("库存恢复成功: productId={}", productId);
-            } catch (Exception e) {
-                log.error("库存恢复失败: orderId={}, productId={}", event.getOrderId(), productId, e);
             }
+            log.info("订单取消事件处理完成: orderId={}", event.getOrderId());
+        } catch (Exception e) {
+            log.error("订单取消事件处理失败: orderId={}", event.getOrderId(), e);
+            throw e;
         }
     }
 }

@@ -148,9 +148,9 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 - **事件基类**：所有领域事件继承 `common` 中的 `BaseDomainEvent`
 - **事件命名**：使用过去时态（UserRegistered、OrderPaid、PasswordChanged）
 - **事件内容**：仅包含必要 ID 和状态，不传输完整聚合
-- **事件发布**：应用服务直接调用 `DomainEventPublisher` 同步发布，框架层转发到 Spring EventBus
+- **事件发布**：应用服务调用 `DomainEventPublisher` 发布，框架层通过 RabbitMQ Topic Exchange 路由到各模块 `@RabbitListener` 消费者
 
-`[现状]` 需要 Outbox 可靠投递的模块（如支付）直接使用 Framework 的 `OutboxRepository` 在业务事务内持久化事件，当前框架层不再提供统一的定时扫描发布。事件消费由各模块自行调度。
+`[现状]` 已从 Spring EventBus + Outbox 迁移到 RabbitMQ 单点发布模式。`RabbitMQDomainEventPublisher` 为唯一实现，通过 Topic Exchange（`eo.domain.events`）+ Quorum Queue 确保可靠投递。`@ConditionalOnProperty(matchIfMissing=true)` 保留以支持无 RabbitMQ 环境启动。
 
 ---
 

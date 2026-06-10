@@ -61,7 +61,7 @@ product、order、payment 模块使用 CQRS：
 
 ## 领域事件机制
 
-应用服务直接注入 `DomainEventPublisher` 发布事件，框架层同步转发到 Spring EventBus：
+应用服务注入 `DomainEventPublisher` 发布事件，框架层通过 RabbitMQ Topic Exchange 分发：
 
 ```java
 // 应用服务
@@ -69,9 +69,9 @@ private final DomainEventPublisher eventPublisher;
 eventPublisher.publish(new SomeEvent(...));
 ```
 
-- `DomainEventPublisher`（common/event/）同步发布到 Spring EventBus
-- 监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")`
-- 需要 Outbox 可靠投递的模块（如支付）通过 `framework/outbox/` 在业务事务内持久化事件
+- `RabbitMQDomainEventPublisher`（`@Primary`）将事件发布到 `eo.domain.events` Topic Exchange
+- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（11 个消费者，见根目录 AGENTS.md）
+- `@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
 
 ## 跨模块通信
 
@@ -233,7 +233,7 @@ return Result.success(userId);
 
 ### MyBatis-Plus UUID TypeHandler
 
-MyBatis-Plus **没有内置** `java.util.UUID` 的 TypeHandler。如果 PO 类中有 `UUID` 字段（如 `OutboxMessagePO.eventId`），直接 insert/update 会报：
+MyBatis-Plus **没有内置** `java.util.UUID` 的 TypeHandler。如果 PO 类中有 `UUID` 字段，直接 insert/update 会报：
 
 ```
 Type handler was null on parameter mapping for property 'eventId'. javaType=UUID
@@ -250,7 +250,7 @@ Type handler was null on parameter mapping for property 'eventId'. javaType=UUID
 
 所有领域事件类（如 `PaymentCreatedEvent`、`OrderCreatedEvent`）只有参数化构造器，无 `@JsonCreator` / `@JsonProperty` 注解。反序列化依赖 **ParameterNamesModule** 通过构造器参数名推断属性映射。
 
-如果移除 `JacksonConfig` 中的 `ParameterNamesModule` 或遗漏 `jackson-module-parameter-names` 依赖，Outbox 补偿器和发布器反序列化事件时会报：
+如果移除 `JacksonConfig` 中的 `ParameterNamesModule` 或遗漏 `jackson-module-parameter-names` 依赖，RabbitMQ 消费者反序列化事件时会报：
 
 ```
 InvalidDefinitionException: Cannot construct instance of XxxEvent (no Creators, like default constructor, exist)
@@ -275,7 +275,7 @@ Spring Boot 4.0 将 `@WebMvcTest` / `@AutoConfigureMockMvc` 迁移到 `org.sprin
 
 ### framework 模块集成测试
 
-`easyorange-framework` 的集成测试（Redis Cache/OutboxRepository）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` （`./mvnw test -pl easyorange-framework -DexcludedGroups=""`）
+`easyorange-framework` 的集成测试（`RedisCacheImplIntegrationTest`、`RabbitMQDomainEventPublisherIT`）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` （`./mvnw test -pl easyorange-framework -DexcludedGroups=""`）
 
 ### Port/Adapter IntelliJ 误报
 

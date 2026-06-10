@@ -95,7 +95,7 @@ public class Application {
 | 组件 | 说明 |
 |------|------|
 | `DomainEventPublisher` | 领域事件发布接口 |
-| `DomainEventPublisherImpl` | 领域事件发布实现（同步到 Spring EventBus） |
+| `RabbitMQDomainEventPublisher` | 领域事件发布实现（RabbitMQ Topic Exchange） |
 
 ### AOP 组件
 
