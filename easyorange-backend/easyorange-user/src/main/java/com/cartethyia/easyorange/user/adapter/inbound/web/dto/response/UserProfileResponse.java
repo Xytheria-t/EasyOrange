@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.adapter.inbound.web.dto.response;
 
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
@@ -40,10 +41,10 @@ public class UserProfileResponse implements CommonUserFields {
 
     private String avatar;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @JsonFormat(pattern = CommonConstant.DATETIME_FORMAT, timezone = "GMT+8")
     private LocalDateTime createTime;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    @JsonFormat(pattern = CommonConstant.DATETIME_FORMAT, timezone = "GMT+8")
     private LocalDateTime updateTime;
 
     private Set<String> roles;

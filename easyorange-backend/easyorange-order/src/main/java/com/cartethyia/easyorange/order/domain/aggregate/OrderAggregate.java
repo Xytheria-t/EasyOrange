@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
+import com.cartethyia.easyorange.order.domain.exception.OrderStatusException;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -148,7 +149,7 @@ public class OrderAggregate {
                                                   List<OrderItem> items,
                                                   Address address, Phone phone, String remark,
                                                   Long orderId) {
-        BizRequire.ne(buyerId.value(), sellerId.value(), "不能购买自己的商品");
+        BizRequire.requireTrue(!java.util.Objects.equals(buyerId.value(), sellerId.value()), "不能购买自己的商品");
         BizRequire.notEmpty(items, "订单商品不能为空");
 
         BigDecimal total = items.stream()
@@ -276,6 +277,20 @@ public class OrderAggregate {
      */
     public OrderCancelledResult cancel(String reason) {
         BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
+        OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
+        List<Long> productIds = extractProductIds();
+        return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));
+    }
+
+    /**
+     * 管理端强制取消订单 — 允许取消已付款的订单。
+     * <p>
+     * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
+     */
+    public OrderCancelledResult forceCancel(String reason) {
+        if (status != OrderStatus.PENDING_PAYMENT && status != OrderStatus.PAID) {
+            throw new OrderStatusException(id.value(), "强制取消", status);
+        }
         OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
         List<Long> productIds = extractProductIds();
         return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));

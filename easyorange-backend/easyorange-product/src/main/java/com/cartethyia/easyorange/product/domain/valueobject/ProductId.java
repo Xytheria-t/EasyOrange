@@ -1,14 +1,16 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-public record ProductId(Long value) {
+public record ProductId(@JsonValue Long value) {
 
     public static final ProductId EMPTY = new ProductId(null);
 
     public ProductId {
         if (value != null) {
-            BizRequire.positive(value, "商品ID必须为正数");
+            BizRequire.requireTrue(value > 0, "商品ID必须为正数");
         }
     }
 
@@ -16,6 +18,7 @@ public record ProductId(Long value) {
         return value != null;
     }
 
+    @JsonCreator
     public static ProductId of(Long value) {
         if (value == null) {
             return EMPTY;

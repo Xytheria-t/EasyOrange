@@ -57,8 +57,8 @@ public class ProductSearchHandler {
                     .map(this::toProductResponse)
                     .collect(Collectors.toList());
             List<FacetBucketResponse> facets = mergeFacets(searchResult);
-            result = SearchPageResponse.of(responses, searchResult.total(), searchResult.pageNum(),
-                    searchResult.pageSize(), facets);
+            result = SearchPageResponse.of(responses, searchResult.total(), searchResult.current(),
+                    searchResult.size(), facets);
         } else {
             PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
                     request.getKeyword(),
@@ -72,7 +72,7 @@ public class ProductSearchHandler {
                     .map(this::toProductResponse)
                     .collect(Collectors.toList());
 
-            result = SearchPageResponse.of(responses, page.total(), page.current(), page.size());
+            result = SearchPageResponse.of(page, responses);
         }
 
         if (request.isAiEnhanced()
@@ -107,9 +107,11 @@ public class ProductSearchHandler {
                     ))
                     .toList();
 
-            aiSearchEnhancer.get()
-                    .tryEnhance(request.getKeyword(), topProducts)
-                    .ifPresent(result::withAiEnhancement);
+            var enhancement = aiSearchEnhancer.get()
+                    .tryEnhance(request.getKeyword(), topProducts);
+            if (enhancement.isPresent()) {
+                result = result.withAiEnhancement(enhancement.get());
+            }
         }
 
         return result;

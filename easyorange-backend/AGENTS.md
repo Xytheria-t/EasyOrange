@@ -180,8 +180,8 @@ public class BaseDO {
 
 - JWT 双 Token: Access Token (短期) + Refresh Token (长期)
 - 密码: BCrypt 加密存储
-- 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）
-- 防重: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash 防误判，Redis 不可用时放行
+- 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）。支持 `@SkipRateLimit` 按 Controller 方法/类跳过
+- 防重: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash 防误判，Redis 不可用时放行。支持 `@SkipRepeatSubmit` 按 Controller 方法/类跳过
 - 操作日志: 约定式自动记录所有写操作 (@Order 3), 无需注解
 - XSS: `XssFilter` + `XssHttpServletRequestWrapper`
 - CORS: 生产环境严格白名单

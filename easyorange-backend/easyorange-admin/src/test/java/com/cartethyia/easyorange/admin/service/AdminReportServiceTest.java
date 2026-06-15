@@ -9,8 +9,19 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
+import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
+import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
+import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
+import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
+import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
@@ -35,6 +46,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,7 +64,10 @@ class AdminReportServiceTest {
     private ReportHandleHistoryRepository reportHandleHistoryRepository;
 
     @Mock
-    private ProductMapper productMapper;
+    private ProductRepository productRepository;
+
+    @Mock
+    private ProductCachePort<?> productCachePort;
 
     @Mock
     private BatchQueryUtil batchQueryUtil;
@@ -240,9 +255,16 @@ class AdminReportServiceTest {
         void handleReport_productOffline_takesProductOffline() {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
-            ProductDO product = ProductDO.builder().id(PRODUCT_ID).name("测试").status(1).build();
-            product.setDelFlag(0);
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
+
+            Product product = Product.reconstitute(
+                    ProductId.of(PRODUCT_ID), SellerId.of(1L), CategoryId.of(1L),
+                    ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
+                    StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
+                    0, null, null, null, null, null, TagSet.empty(), null,
+                    LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now()
+            );
+            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
+                    .thenReturn(Optional.of(product));
 
             ReportHandleRequest request = new ReportHandleRequest();
             request.setAction("PRODUCT_OFFLINE");
@@ -252,8 +274,8 @@ class AdminReportServiceTest {
 
                 reportService.handleReport(REPORT_ID, request);
 
-                assertThat(product.getStatus()).isEqualTo(2);
-                verify(productMapper).updateById(product);
+                verify(productRepository).update(argThat(p -> p.getStatus() == ProductStatus.OFFLINE));
+                verify(productCachePort).evictProductCache(PRODUCT_ID);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

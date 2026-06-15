@@ -251,3 +251,4 @@ RedisNode target = router.route("some-cache-key");
 - **RedisConfig 复用 JacksonConfig 的 ObjectMapper**：Redis 序列化使用与 HTTP 相同的 Jackson 配置（Long→String 序列化、ParameterNamesModule）。修改 JacksonConfig 时需考虑对 Redis 序列化的影响
 - **配置属性类统一使用 `@ConfigurationProperties` + `@Component` 模式**：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖
 - **`@Component` 多构造器必须标注 `@Autowired`**：`MultiLevelCache` 和 `RedisBitmapBloomFilter` 都有多个构造器（默认参数 + 自定义参数），且无默认无参构造器。`@Component` 扫描时 Spring 无法自动选择构造器，必须在主构造器上加 `@Autowired` 明确指示。新增 `@Component` 类时有多个构造器时遵循此模式
+- **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则

@@ -13,8 +13,10 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -39,6 +41,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +56,9 @@ class AdminOrderServiceTest {
 
     @Mock
     private OrderReadRepository orderReadRepository;
+
+    @Mock
+    private OrderRepository orderRepository;
 
     @Mock
     private UserMapper userMapper;
@@ -186,21 +192,23 @@ class AdminOrderServiceTest {
         }
 
         @Test
-        @DisplayName("取消订单成功")
+        @DisplayName("取消待付款订单成功")
         void cancelOrder_success() {
-            OrderDO order = createOrderDO(0);
-            when(orderMapper.selectById(ORDER_ID)).thenReturn(order);
+            OrderAggregate aggregate = OrderAggregate.fromRaw(
+                    ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
+                    new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
+                    "地址", "13800138000", "备注", null, null);
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             orderService.cancelOrder(ORDER_ID, "买家申请取消");
 
-            verify(orderMapper).updateById(order);
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED.getCode());
+            verify(orderRepository).update(argThat(a -> a.status() == OrderStatus.CANCELLED));
         }
 
         @Test
         @DisplayName("取消不存在的订单抛出异常")
         void cancelOrder_notFound_throws() {
-            when(orderMapper.selectById(ORDER_ID)).thenReturn(null);
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> orderService.cancelOrder(ORDER_ID, "取消"))
                     .isInstanceOf(BusinessException.class)
@@ -210,30 +218,39 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("强制完成订单成功")
         void forceComplete_success() {
-            OrderDO order = createOrderDO(2);
-            when(orderMapper.selectById(ORDER_ID)).thenReturn(order);
+            OrderAggregate aggregate = OrderAggregate.fromRaw(
+                    ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
+                    new BigDecimal("99.99"), OrderStatus.SHIPPED.getCode(), 1,
+                    "地址", "13800138000", "备注", null, null);
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             orderService.forceComplete(ORDER_ID, "强制完成");
 
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.COMPLETED.getCode());
+            verify(orderRepository).update(argThat(a -> a.status() == OrderStatus.COMPLETED));
         }
 
         @Test
-        @DisplayName("退款订单成功")
+        @DisplayName("退款已付款订单成功")
         void refundOrder_success() {
-            OrderDO order = createOrderDO(1);
-            when(orderMapper.selectById(ORDER_ID)).thenReturn(order);
+            OrderAggregate aggregate = OrderAggregate.fromRaw(
+                    ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
+                    new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 1,
+                    "地址", "13800138000", "备注", null, null);
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             orderService.refundOrder(ORDER_ID, "商品问题退款");
 
-            assertThat(order.getStatus()).isEqualTo(OrderStatus.REFUNDED.getCode());
+            verify(orderRepository).update(argThat(a -> a.status() == OrderStatus.REFUNDED));
         }
 
         @Test
         @DisplayName("已取消订单无法退款")
         void refundOrder_cancelled_throws() {
-            OrderDO order = createOrderDO(4);
-            when(orderMapper.selectById(ORDER_ID)).thenReturn(order);
+            OrderAggregate aggregate = OrderAggregate.fromRaw(
+                    ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
+                    new BigDecimal("99.99"), OrderStatus.CANCELLED.getCode(), 0,
+                    "地址", "13800138000", "备注", "已取消", LocalDateTime.now());
+            when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             assertThatThrownBy(() -> orderService.refundOrder(ORDER_ID, "退款"))
                     .isInstanceOf(BusinessException.class)

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.framework.operlog.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,7 +48,7 @@ public class SysOperLog {
 
     private String errorMsg;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = CommonConstant.DATETIME_FORMAT)
     private LocalDateTime operTime;
 
     private Integer costTime;

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
 import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
@@ -50,6 +51,7 @@ public class ProductCommandController {
         return Result.success();
     }
 
+    @SkipRepeatSubmit
     @PostMapping("/{id}/view")
     public Result<Void> incrementView(@PathVariable Long id) {
         viewCountService.incrementViewCount(id);

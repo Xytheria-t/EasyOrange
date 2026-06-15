@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
@@ -22,6 +23,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
+import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 
@@ -278,6 +280,48 @@ public class Product {
                 id.value(), sellerId.value(), status.getCode(), ProductStatus.PENDING_REVIEW.getCode()));
     }
 
+    /**
+     * 审核通过 — 将商品状态变更为 ONLINE（上架）。
+     * <p>
+     * 只有处于 PENDING_REVIEW（待审核）状态的商品可以通过审核。
+     * 返回 {@link ProductApprovedResult}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
+     */
+    public ProductApprovedResult approve(String reason) {
+        if (!status.canApprove()) {
+            throw new InvalidProductStatusException("当前状态不允许审核通过", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.ONLINE)
+                .updateTime(LocalDateTime.now())
+                .build();
+        ProductAuditedEvent event = new ProductAuditedEvent(
+                id.value(), title.value(), sellerId.value(),
+                AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()
+        );
+        return new ProductApprovedResult(updated, event);
+    }
+
+    /**
+     * 审核拒绝 — 将商品状态变更为 REJECTED（已驳回）。
+     * <p>
+     * 只有处于 PENDING_REVIEW（待审核）状态的商品可以被拒绝。
+     * 返回 {@link ProductRejectedResult}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
+     */
+    public ProductRejectedResult reject(String reason) {
+        if (!status.canReject()) {
+            throw new InvalidProductStatusException("当前状态不允许审核拒绝", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.REJECTED)
+                .updateTime(LocalDateTime.now())
+                .build();
+        ProductAuditedEvent event = new ProductAuditedEvent(
+                id.value(), title.value(), sellerId.value(),
+                AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()
+        );
+        return new ProductRejectedResult(updated, event);
+    }
+
     public Product incrementViewCount() {
         return toBuilder()
                 .viewCount(viewCount != null ? viewCount + 1 : 1)
@@ -367,6 +411,8 @@ public class Product {
     public record ProductMarkedSoldResult(Product product, ProductMarkedSoldEvent event) {}
     public record ProductDeletedResult(Product product, ProductDeletedEvent event) {}
     public record ProductSubmittedForReviewResult(Product product, ProductSubmittedForReviewEvent event) {}
+    public record ProductApprovedResult(Product product, ProductAuditedEvent event) {}
+    public record ProductRejectedResult(Product product, ProductAuditedEvent event) {}
     public record StockDecreasedResult(Product product, StockDecreasedEvent event) {}
     public record StockRestoredResult(Product product, StockRestoredEvent event) {}
 }

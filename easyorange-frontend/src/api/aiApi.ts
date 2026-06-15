@@ -31,8 +31,8 @@ export interface AiReviewResult {
 export interface SemanticSearchResult {
     records: unknown[];
     total: number;
-    pageNum: number;
-    pageSize: number;
+    current: number;
+    size: number;
 }
 
 export interface QaRequest {

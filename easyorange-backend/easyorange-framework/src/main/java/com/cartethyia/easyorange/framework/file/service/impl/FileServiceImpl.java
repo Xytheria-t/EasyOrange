@@ -93,7 +93,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     @Transactional(rollbackFor = Exception.class)
     public List<UploadFileVO> uploadFiles(List<MultipartFile> files, String businessType) {
         BizRequire.notEmpty(files, "上传的文件列表不能为空");
-        BizRequire.noNullElements(files, "文件列表不能包含空元素");
+        BizRequire.requireTrue(files != null && !files.contains(null), "文件列表不能包含空元素");
         BizRequire.notBlank(businessType, "业务类型不能为空");
 
         return files.stream()
@@ -118,7 +118,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
         Long userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
 
-        BizRequire.eq(file.getUploaderId(), userId, "无权限删除该文件");
+        BizRequire.requireTrue(java.util.Objects.equals(file.getUploaderId(), userId), "无权限删除该文件");
 
         // Delete from storage (use storageKey if available, fallback to filePath)
         try {

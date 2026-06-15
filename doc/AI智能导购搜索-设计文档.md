@@ -401,8 +401,9 @@ export interface AiEnhancement {
 export interface ProductSearchResult {
     records: Product[];
     total: number;
-    pageNum: number;
-    pageSize: number;
+    current: number;
+    size: number;
+    pages: number;
     facets: FacetBucket[];
     aiEnhancement?: AiEnhancement;  // 新增
 }

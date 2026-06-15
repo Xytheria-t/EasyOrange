@@ -51,23 +51,6 @@ class BizRequireTest {
     }
 
     @Nested
-    @DisplayName("requireFalse")
-    class RequireFalseTests {
-
-        @Test
-        @DisplayName("条件为 true 时抛出异常")
-        void requireFalse_trueCondition_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.requireFalse(true, "条件应为 false"));
-        }
-
-        @Test
-        @DisplayName("条件为 false 时不抛出")
-        void requireFalse_falseCondition_noException() {
-            assertDoesNotThrow(() -> BizRequire.requireFalse(false, "条件应为 false"));
-        }
-    }
-
-    @Nested
     @DisplayName("notBlank")
     class NotBlankTests {
 
@@ -128,35 +111,6 @@ class BizRequireTest {
         @DisplayName("非空集合不抛出")
         void notEmpty_nonEmptyCollection_noException() {
             assertDoesNotThrow(() -> BizRequire.notEmpty(List.of("a"), "不能为空"));
-        }
-    }
-
-    @Nested
-    @DisplayName("positive / nonNegative")
-    class NumberTests {
-
-        @Test
-        @DisplayName("正数不抛出")
-        void positive_positiveNumber_noException() {
-            assertDoesNotThrow(() -> BizRequire.positive(1, "必须为正数"));
-        }
-
-        @Test
-        @DisplayName("零抛出异常")
-        void positive_zero_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.positive(0, "必须为正数"));
-        }
-
-        @Test
-        @DisplayName("非负数不抛出")
-        void nonNegative_zero_noException() {
-            assertDoesNotThrow(() -> BizRequire.nonNegative(0, "不能为负"));
-        }
-
-        @Test
-        @DisplayName("负数抛出异常")
-        void nonNegative_negative_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.nonNegative(-1, "不能为负"));
         }
     }
 }

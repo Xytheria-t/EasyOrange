@@ -499,7 +499,7 @@ public class RegistrationService {
 ```java
 // BAD — 所有抛出点共享同一堆栈跟踪，调试困难
 public static final BusinessException USER_NOT_FOUND =
-    BusinessException.of("USER_NOT_FOUND", "用户不存在");
+    new BusinessException("用户不存在");
 
 // GOOD — 每次创建新实例，堆栈跟踪准确
 throw BusinessException.of(UserResultCode.USER_NOT_FOUND);

@@ -9,8 +9,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRep
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
@@ -35,7 +38,8 @@ public class AdminReportService {
 
     private final ProductReportRepository productReportRepository;
     private final ReportHandleHistoryRepository reportHandleHistoryRepository;
-    private final ProductMapper productMapper;
+    private final ProductRepository productRepository;
+    private final ProductCachePort<?> productCachePort;
     private final BatchQueryUtil batchQueryUtil;
     private final DomainEventPublisher domainEventPublisher;
 
@@ -184,19 +188,21 @@ public class AdminReportService {
     }
 
     private void handleProductOffline(ProductReport report, String remark) {
-        ProductDO product = productMapper.selectById(report.getProductId());
-        if (product != null && product.getDelFlag() == 0) {
-            product.setStatus(2);
-            productMapper.updateById(product);
-        }
+        productRepository.findById(ProductId.of(report.getProductId()))
+                .ifPresent(product -> {
+                    Product updated = product.takeOffline();
+                    productRepository.update(updated);
+                    productCachePort.evictProductCache(report.getProductId());
+                });
     }
 
     private void handleBanProduct(ProductReport report, String remark) {
-        ProductDO product = productMapper.selectById(report.getProductId());
-        if (product != null && product.getDelFlag() == 0) {
-            product.setStatus(-1);
-            productMapper.updateById(product);
-        }
+        productRepository.findById(ProductId.of(report.getProductId()))
+                .ifPresent(product -> {
+                    Product updated = product.reject("举报封禁: " + remark).product();
+                    productRepository.update(updated);
+                    productCachePort.evictProductCache(report.getProductId());
+                });
     }
 
 

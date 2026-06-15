@@ -88,7 +88,7 @@ public class OrderCommandHandler {
         OrderAggregate aggregate = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.eq(aggregate.buyerId().value(), userId, OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.requireTrue(java.util.Objects.equals(aggregate.buyerId().value(), userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }
 
@@ -96,7 +96,7 @@ public class OrderCommandHandler {
         OrderAggregate aggregate = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.eq(aggregate.sellerId().value(), userId, OrderResultCode.ORDER_NOT_OWNER);
+        BizRequire.requireTrue(java.util.Objects.equals(aggregate.sellerId().value(), userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }
 }

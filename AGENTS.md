@@ -117,7 +117,7 @@ easy-orange/
 5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键格式 `{module}.{aggregate}.{event}`，采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 11 个事件消费者**: PaymentInitiationEventListener, ProductAuditEventListener, ReportProcessedEventListener, StockReservationEventListener, OrderCreatedEventConsumer, OrderCancelledEventConsumer, OrderCompletedEventConsumer, OrderRefundedEventConsumer, OrderNotificationEventConsumer, ProductEventConsumer, WebSocketEventConsumer
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
-8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回 400 + 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
+8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回动态 HTTP 状态码（按错误码前缀自动映射：A0401→401/A0403→403/B→400/C→500/D→502）+ 业务错误码；**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底
 
 ## 模块依赖关系
 
@@ -185,7 +185,7 @@ admin → framework, common, user (optional), product (optional), order (optiona
 - 编码规则见 `.trae/rules/` 目录
 - 架构守卫测试: `ArchitectureRulesTest.java` (ArchUnit)
 - 数据库变更必须通过 Flyway 迁移脚本
-- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，在 `PageResult` 基础上增加 `facets` 分面桶列表）
+- 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
 - **测试统计**：后端 11 模块合计 2,546 测试用例，全部通过；前端 98 测试文件/947 测试用例

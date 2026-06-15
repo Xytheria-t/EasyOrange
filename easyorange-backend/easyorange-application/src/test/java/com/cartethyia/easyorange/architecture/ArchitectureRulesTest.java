@@ -110,14 +110,20 @@ class ArchitectureRulesTest {
 
         assertTrue(violations.isEmpty(), () -> "Query handlers importing command handlers:\n" + String.join("\n", violations));
     }
-
     @Test
     @DisplayName("business modules do not directly import other business modules domain classes")
     void businessModules_doNotDirectlyImportOtherDomainClasses() throws IOException {
         Path backendRoot = backendRoot();
         List<String> violations = new ArrayList<>();
 
-        Set<String> businessModules = Set.of("easyorange-order", "easyorange-product", "easyorange-message", "easyorange-favorite");
+        // NOTE: easyorange-admin is intentionally excluded from this check.
+        // The admin module is a flat back-office service layer that operates
+        // directly on persistence DOs/Mappers for operational efficiency.
+        // This is a documented design choice (see easyorange-admin/AGENTS.md)
+        // — admin is NOT a DDD "business module" and its cross-module persistence
+        // imports are by design, not by accident.
+        Set<String> businessModules = Set.of("easyorange-order", "easyorange-product",
+                "easyorange-message", "easyorange-favorite");
 
         for (Path javaFile : javaFiles(backendRoot)) {
             String normalized = normalize(backendRoot, javaFile);

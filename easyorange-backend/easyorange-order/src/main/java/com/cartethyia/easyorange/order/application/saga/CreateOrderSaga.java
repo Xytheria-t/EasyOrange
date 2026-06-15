@@ -200,7 +200,7 @@ public class CreateOrderSaga {
                 .toList();
 
         Long sellerId = preps.getFirst().snapshot().sellerId();
-        BizRequire.ne(sellerId, buyerId, "不能购买自己的商品");
+        BizRequire.requireTrue(!java.util.Objects.equals(sellerId, buyerId), "不能购买自己的商品");
 
         String resolvedAddress = command.getAddress();
         if (resolvedAddress == null || resolvedAddress.isBlank()) {

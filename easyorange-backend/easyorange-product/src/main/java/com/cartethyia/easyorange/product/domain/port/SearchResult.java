@@ -6,8 +6,8 @@ import java.util.List;
 public record SearchResult(
     List<ProductReadModel> records,
     long total,
-    int pageNum,
-    int pageSize,
+    int current,
+    int size,
     List<FacetBucket> categoryFacets,
     List<FacetBucket> conditionFacets,
     List<FacetBucket> priceRangeFacets

@@ -2,16 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Product, ProductSearchResult } from '@/types';
+import type { Product } from '@/types';
 import SearchPage from './SearchPage';
 
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseProductSearch = vi.hoisted(() =>
   vi.fn(() => ({
-    data: undefined as ProductSearchResult | undefined,
+    products: [] as Product[],
+    total: 0 as number,
+    facets: [] as Array<{ code: string; count: number }>,
+    aiEnhancement: undefined,
     isLoading: false as boolean,
-    isError: false as boolean,
-    error: null,
+    error: null as Error | null,
   })),
 );
 const mockUseSearchSuggestions = vi.hoisted(() => vi.fn(() => ({ data: [] })));
@@ -98,9 +100,10 @@ describe('SearchPage', () => {
       { id: 'p1', title: '测试手机', price: 1999, images: [], status: 'ONLINE', condition: 1, createTime: '2026-05-10T10:00:00Z', views: 100, categoryName: '电子数码', location: '北京', sellerName: '卖家', description: 'desc', originalPrice: null, categoryId: 1, conditionLevel: 1, favorites: 0, sellerId: 's1', sellerAvatar: null, sellerRating: 0, updateTime: '2026-05-10T10:00:00Z' },
     ];
     mockUseProductSearch.mockReturnValue({
-      data: { records: mockProducts, total: 1, pageNum: 1, pageSize: 20, facets: [] },
+      products: mockProducts,
+      total: 1,
+      facets: [],
       isLoading: false,
-      isError: false,
       error: null,
     });
 
@@ -119,9 +122,10 @@ describe('SearchPage', () => {
 
   it('shows loading state during search', async () => {
     mockUseProductSearch.mockReturnValue({
-      data: undefined,
+      products: [],
+      total: 0,
+      facets: [],
       isLoading: true,
-      isError: false,
       error: null,
     });
 
@@ -136,9 +140,10 @@ describe('SearchPage', () => {
 
   it('shows no results state', async () => {
     mockUseProductSearch.mockReturnValue({
-      data: { records: [], total: 0, pageNum: 1, pageSize: 20, facets: [] },
+      products: [],
+      total: 0,
+      facets: [],
       isLoading: false,
-      isError: false,
       error: null,
     });
 

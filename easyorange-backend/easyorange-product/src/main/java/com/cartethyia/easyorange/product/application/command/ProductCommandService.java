@@ -25,6 +25,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
+import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
@@ -186,7 +187,7 @@ public class ProductCommandService {
                 .productId(productId)
                 .operatorId(userId)
                 .operatorName(SecurityContextUtil.getUserContextOrThrow().username())
-                .action(3)
+                .action(AuditAction.RESUBMIT.getCode())
                 .beforeStatus(beforeStatus)
                 .afterStatus(ProductStatus.PENDING_REVIEW.getCode())
                 .build();

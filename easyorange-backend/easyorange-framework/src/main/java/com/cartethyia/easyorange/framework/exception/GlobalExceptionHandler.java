@@ -18,7 +18,6 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -47,17 +46,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public Result<Void> handleAccessDeniedException(AccessDeniedException e) {
+    public ResponseEntity<Result<Void>> handleAccessDeniedException(AccessDeniedException e) {
         log.warn("权限不足[path={}]: {}", RequestUtil.getRequestPath(), e.getMessage());
-        return Result.error(ResultCode.FORBIDDEN);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error(ResultCode.FORBIDDEN));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
-    public Result<Void> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+    public ResponseEntity<Result<Void>> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException e) {
         log.warn("请求方法不支持[method={}]: {}", e.getMethod(), e.getMessage());
-        return Result.error(ResultCode.METHOD_NOT_ALLOWED);
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Result.error(ResultCode.METHOD_NOT_ALLOWED));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -130,17 +127,15 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Result<Void> handleNoHandlerFoundException(NoHandlerFoundException e) {
+    public ResponseEntity<Result<Void>> handleNoHandlerFoundException(NoHandlerFoundException e) {
         log.warn("请求地址不存在: {}", e.getRequestURL());
-        return Result.error(ResultCode.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error(ResultCode.NOT_FOUND));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Result<Void> handleNoResourceFoundException(NoResourceFoundException e) {
+    public ResponseEntity<Result<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
         log.debug("静态资源不存在: {}", e.getResourcePath());
-        return Result.error(ResultCode.NOT_FOUND);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error(ResultCode.NOT_FOUND));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -179,9 +174,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Result<Void> handleException(Exception e) {
+    public ResponseEntity<Result<Void>> handleException(Exception e) {
         log.error("action=system_error, path={}", RequestUtil.getRequestPath(), e);
-        return Result.error(ResultCode.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(ResultCode.INTERNAL_SERVER_ERROR));
     }
 }

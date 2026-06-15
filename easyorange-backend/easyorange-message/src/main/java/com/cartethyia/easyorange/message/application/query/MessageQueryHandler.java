@@ -41,7 +41,7 @@ public class MessageQueryHandler {
             throw new MessageNotFoundException(messageId);
         }
 
-        BizRequire.eq(aggregate.receiverId(), userId, MessageResultCode.MESSAGE_NOT_OWNER);
+        BizRequire.requireTrue(java.util.Objects.equals(aggregate.receiverId(), userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
         return toMessageVO(aggregate, resolveUsernames(Set.of(aggregate)));
     }

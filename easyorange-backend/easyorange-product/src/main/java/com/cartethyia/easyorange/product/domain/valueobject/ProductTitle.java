@@ -1,8 +1,10 @@
 package com.cartethyia.easyorange.product.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-public record ProductTitle(String value) {
+public record ProductTitle(@JsonValue String value) {
 
     public static final int MAX_LENGTH = 200;
 
@@ -15,6 +17,7 @@ public record ProductTitle(String value) {
         );
     }
 
+    @JsonCreator
     public static ProductTitle of(String value) {
         return new ProductTitle(value);
     }

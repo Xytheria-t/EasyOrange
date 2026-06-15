@@ -44,11 +44,7 @@ public abstract class BaseBusinessException extends RuntimeException {
         return ResultCode.BUSINESS_ERROR.getCode();
     }
 
-    protected HttpStatus defaultHttpStatus() {
-        return HttpStatus.BAD_REQUEST;
-    }
-
     public HttpStatus httpStatus() {
-        return defaultHttpStatus();
+        return HttpStatus.valueOf(IResultCode.mapToHttpStatus(code));
     }
 }

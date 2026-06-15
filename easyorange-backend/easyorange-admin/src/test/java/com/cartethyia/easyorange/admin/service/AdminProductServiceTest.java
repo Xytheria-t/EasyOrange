@@ -14,6 +14,18 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.Pro
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
+import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
+import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
+import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
+import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
+import com.cartethyia.easyorange.product.domain.valueobject.Version;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,6 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,6 +57,12 @@ class AdminProductServiceTest {
 
     @Mock
     private ProductImageMapper productImageMapper;
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @Mock
+    private ProductCachePort<?> productCachePort;
 
     @InjectMocks
     private AdminProductService productService;
@@ -155,24 +174,32 @@ class AdminProductServiceTest {
     class UpdateProductStatusTests {
 
         @Test
-        @DisplayName("更新商品状态成功")
+        @DisplayName("更新商品状态成功 — ONLINE -> OFFLINE")
         void updateProductStatus_success() {
-            ProductDO product = createProduct(1);
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
+            Product product = Product.reconstitute(
+                    ProductId.of(PRODUCT_ID), SellerId.of(1L), CategoryId.of(1L),
+                    ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
+                    StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
+                    0, null, null, null, null, null, TagSet.empty(), null,
+                    LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now()
+            );
+            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
+                    .thenReturn(Optional.of(product));
 
             UpdateStatusRequest request = new UpdateStatusRequest();
             request.setStatus(3);
 
             productService.updateProductStatus(PRODUCT_ID, request);
 
-            assertThat(product.getStatus()).isEqualTo(3);
-            verify(productMapper).updateById(product);
+            verify(productRepository).update(argThat(p -> p.getStatus() == ProductStatus.OFFLINE));
+            verify(productCachePort).evictProductCache(PRODUCT_ID);
         }
 
         @Test
         @DisplayName("不存在的商品更新状态抛出异常")
         void updateProductStatus_notFound_throws() {
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(null);
+            when(productRepository.findById(ProductId.of(PRODUCT_ID)))
+                    .thenReturn(Optional.empty());
 
             UpdateStatusRequest request = new UpdateStatusRequest();
             request.setStatus(3);
@@ -185,9 +212,6 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("无效状态编码抛出异常")
         void updateProductStatus_invalidStatus_throws() {
-            ProductDO product = createProduct(1);
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
-
             UpdateStatusRequest request = new UpdateStatusRequest();
             request.setStatus(999);
 

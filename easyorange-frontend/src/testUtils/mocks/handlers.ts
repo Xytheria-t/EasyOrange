@@ -9,8 +9,8 @@ export const handlers = [
       data: {
         records: [],
         total: 0,
-        pageNum: 1,
-        pageSize: 20,
+        current: 1,
+        size: 20,
         pages: 0,
       },
       timestamp: Date.now(),
@@ -25,8 +25,8 @@ export const handlers = [
       data: {
         records: [],
         total: 0,
-        pageNum: 1,
-        pageSize: 20,
+        current: 1,
+        size: 20,
         pages: 0,
       },
       timestamp: Date.now(),

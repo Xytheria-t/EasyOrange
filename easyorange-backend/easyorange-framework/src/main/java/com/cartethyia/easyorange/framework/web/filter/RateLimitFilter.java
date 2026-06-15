@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.web.filter;
 
-import com.cartethyia.easyorange.common.constant.CommonConstant;
+import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
+import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
@@ -22,9 +23,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExecutionChain;
+import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -81,6 +86,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RedisCache redisCache;
     private final LocalRateLimiter localRateLimiter;
     private final ObjectMapper objectMapper;
+    private final List<HandlerMapping> handlerMappings;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -101,12 +107,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
         try {
             HttpServletRequest effectiveRequest = wrappedRequest != null ? wrappedRequest : request;
 
+            // 限流 — 只在命中规则且方法没有 @SkipRateLimit 时检查
             Rule matchedRule = findMatchingRule(method, effectiveRequest.getRequestURI());
-            if (matchedRule != null) {
+            if (matchedRule != null && !hasSkipAnnotation(effectiveRequest, SkipRateLimit.class)) {
                 checkRateLimit(effectiveRequest, method, matchedRule);
             }
 
-            if (WRITE_METHODS.contains(method)) {
+            // 防重 — 写方法且没有 @SkipRepeatSubmit 时检查
+            if (WRITE_METHODS.contains(method) && !hasSkipAnnotation(effectiveRequest, SkipRepeatSubmit.class)) {
                 checkRepeatSubmit(effectiveRequest, method, wrappedRequest.getCachedBody());
             }
 
@@ -162,7 +170,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
 
         String identifier = RequestUtil.getClientIp(request);
-        String key = CommonConstant.rateLimitKey(identifier, method + ":" + request.getRequestURI());
+        String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
             List<String> keys = List.of(key);
             Long current = redisCache.executeLuaScript(RATE_LIMIT_SCRIPT, keys,
@@ -202,7 +210,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         // key 包含请求体 hash，不同参数的请求不会被误判为重复
         String bodyHash = md5(cachedBody);
-        String key = CommonConstant.repeatSubmitKey(userIdentifier, request.getRequestURI(), bodyHash);
+        String key = "eo:repeat:" + userIdentifier + ":" + request.getRequestURI() + ":" + bodyHash;
 
         try {
             if (Boolean.FALSE.equals(redisCache.setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
@@ -214,6 +222,29 @@ public class RateLimitFilter extends OncePerRequestFilter {
             log.warn("action=repeat_submit_check_error, key={}", key, ex);
             // Redis 不可用时放行（fail-open）
         }
+    }
+
+    // ==================== Skip 注解检查 ====================
+
+    /**
+     * 检查目标 Controller 方法/类是否有 Skip 注解。
+     * 无法解析 handler 时返回 false（放行默认规则），
+     * Spring {@link AbstractHandlerMapping} 内部缓存了 handler + 方法级检查结果，
+     * 同一次请求多次调用无额外开销。
+     */
+    private boolean hasSkipAnnotation(HttpServletRequest request, Class<? extends Annotation> annotationClass) {
+        for (HandlerMapping mapping : handlerMappings) {
+            try {
+                HandlerExecutionChain chain = mapping.getHandler(request);
+                if (chain != null && chain.getHandler() instanceof HandlerMethod hm) {
+                    return hm.getMethodAnnotation(annotationClass) != null
+                            || hm.getBeanType().isAnnotationPresent(annotationClass);
+                }
+            } catch (Exception e) {
+                log.debug("Failed to resolve handler via {}: {}", mapping, e.toString());
+            }
+        }
+        return false;
     }
 
     // ==================== 工具方法 ====================

@@ -25,8 +25,9 @@ describe('useProductSearch', () => {
           data: {
             records: [],
             total: 0,
-            pageNum: 1,
-            pageSize: 20,
+            current: 1,
+            size: 20,
+            pages: 0,
             facets: [],
           },
           timestamp: Date.now(),
@@ -38,8 +39,8 @@ describe('useProductSearch', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.records).toEqual([]);
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.products).toEqual([]);
   });
 
   it('is not enabled when keyword is empty', () => {
@@ -47,7 +48,7 @@ describe('useProductSearch', () => {
       wrapper: Wrapper,
     });
 
-    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.isLoading).toBe(false);
   });
 });
 
@@ -77,7 +78,7 @@ describe('useSearchSuggestions', () => {
       wrapper: Wrapper,
     });
 
-    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.data).toBeUndefined();
   });
 });
 

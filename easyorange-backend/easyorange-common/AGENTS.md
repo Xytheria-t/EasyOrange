@@ -75,8 +75,8 @@ BizRequire.requireTrue(condition, "条件不满足");
 
 - `@RateLimiter(count = 10, time = 60)` — 覆写默认限流参数（未标注时自动应用默认限流）
 - `@RepeatSubmit(interval = 3000)` — 覆写默认防重参数（未标注时所有 POST/PUT/DELETE/PATCH 自动防重）
-- `@SkipRateLimit` — 跳过当前方法的限流
-- `@SkipRepeatSubmit` — 跳过当前方法的防重提交
+- `@SkipRateLimit` — 跳过当前方法/类的限流（`RateLimitFilter` 命中规则时检查）
+- `@SkipRepeatSubmit` — 跳过当前方法/类的防重提交（`RateLimitFilter` 写方法时检查）
 
 > 操作日志为约定式自动记录，无需注解。所有非查询类 RestController 方法自动记录。
 

@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Nullable;
 import java.util.Arrays;
 
@@ -18,6 +20,7 @@ public enum ConditionLevel {
         this.desc = desc;
     }
 
+    @JsonValue
     public Integer getCode() {
         return code;
     }
@@ -33,6 +36,7 @@ public enum ConditionLevel {
      * @return the matching enum value, or {@code null} if code is null or not recognized
      */
     @Nullable
+    @JsonCreator
     public static ConditionLevel fromCode(Integer code) {
         if (code == null) {
             return null;

@@ -44,8 +44,8 @@ public class SemanticSearchService {
         return new SemanticSearchResult(
                 result.records(),
                 result.total(),
-                result.pageNum(),
-                result.pageSize()
+                result.current(),
+                result.size()
         );
     }
 }

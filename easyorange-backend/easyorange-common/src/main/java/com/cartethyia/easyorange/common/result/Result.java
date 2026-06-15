@@ -57,6 +57,14 @@ public record Result<T>(
         );
     }
 
+    public static <T> Result<T> fail(IResultCode resultCode) {
+        return error(resultCode);
+    }
+
+    public static <T> Result<T> fail(String code, String message) {
+        return error(code, message);
+    }
+
     @JsonIgnore
     public boolean isSuccess() {
         return ResultCode.SUCCESS.getCode().equals(code);

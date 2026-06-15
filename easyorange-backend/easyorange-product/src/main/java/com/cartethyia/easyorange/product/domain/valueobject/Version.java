@@ -8,7 +8,7 @@ public record Version(Integer value) {
 
     public Version {
         BizRequire.notNull(value, "版本号不能为空");
-        BizRequire.nonNegative(value, "版本号不能为负数");
+        BizRequire.requireTrue(value >= 0, "版本号不能为负数");
     }
 
     public static Version of(Integer value) {

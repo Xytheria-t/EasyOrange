@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.admin.util;
 
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BatchQueryUtil {
 
-    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    public static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(CommonConstant.DATETIME_FORMAT);
 
     private final UserMapper userMapper;
     private final ProductMapper productMapper;

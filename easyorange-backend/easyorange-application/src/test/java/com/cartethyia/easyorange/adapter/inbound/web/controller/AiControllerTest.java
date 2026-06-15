@@ -186,8 +186,8 @@ class AiControllerTest {
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().total()).isZero();
-            assertThat(result.data().pageNum()).isEqualTo(1);
-            assertThat(result.data().pageSize()).isEqualTo(20);
+            assertThat(result.data().current()).isEqualTo(1);
+            assertThat(result.data().size()).isEqualTo(20);
             verify(semanticSearchService).search("iPhone", 1, 20);
         }
 

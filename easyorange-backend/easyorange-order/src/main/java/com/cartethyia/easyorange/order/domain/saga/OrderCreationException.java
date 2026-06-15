@@ -1,9 +1,11 @@
 package com.cartethyia.easyorange.order.domain.saga;
 
+import com.cartethyia.easyorange.common.exception.BaseBusinessException;
+
 /**
  * 订单创建异常
  */
-public class OrderCreationException extends RuntimeException {
+public class OrderCreationException extends BaseBusinessException {
     
     public OrderCreationException(String message) {
         super(message);

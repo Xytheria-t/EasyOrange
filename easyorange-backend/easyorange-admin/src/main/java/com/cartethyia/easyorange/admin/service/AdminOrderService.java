@@ -15,6 +15,7 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMap
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
+import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
@@ -40,6 +41,7 @@ public class AdminOrderService {
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
     private final OrderReadRepository orderReadRepository;
+    private final OrderRepository orderRepository;
     private final UserMapper userMapper;
     private final ProductMapper productMapper;
     private final BatchQueryUtil batchQueryUtil;
@@ -189,54 +191,36 @@ public class AdminOrderService {
 
     @Transactional(rollbackFor = Exception.class)
     public void cancelOrder(Long id, String reason) {
-        OrderDO order = orderMapper.selectById(id);
-        if (order == null || order.getDelFlag() != 0) {
-            throw BusinessException.of("订单不存在");
-        }
-        OrderStatus currentStatus = OrderStatus.fromCode(order.getStatus());
-        if (currentStatus == null || !(currentStatus == OrderStatus.PENDING_PAYMENT || currentStatus == OrderStatus.PAID)) {
+        var aggregate = orderRepository.findById(OrderId.of(id))
+                .orElseThrow(() -> BusinessException.of("订单不存在"));
+
+        if (aggregate.status() == OrderStatus.PENDING_PAYMENT) {
+            var result = aggregate.cancel(reason);
+            orderRepository.update(result.aggregate());
+        } else if (aggregate.status() == OrderStatus.PAID) {
+            var result = aggregate.forceCancel(reason);
+            orderRepository.update(result.aggregate());
+        } else {
             throw BusinessException.of("当前订单状态不允许取消");
         }
-
-        order.setStatus(OrderStatus.CANCELLED.getCode());
-        order.setCancelReason(reason);
-        order.setCancelTime(LocalDateTime.now());
-        orderMapper.updateById(order);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void forceComplete(Long id, String reason) {
-        OrderDO order = orderMapper.selectById(id);
-        if (order == null || order.getDelFlag() != 0) {
-            throw BusinessException.of("订单不存在");
-        }
-        OrderStatus currentStatus = OrderStatus.fromCode(order.getStatus());
-        if (currentStatus == null || currentStatus != OrderStatus.SHIPPED) {
-            throw BusinessException.of("仅已发货的订单可强制完成");
-        }
+        var aggregate = orderRepository.findById(OrderId.of(id))
+                .orElseThrow(() -> BusinessException.of("订单不存在"));
 
-        order.setStatus(OrderStatus.COMPLETED.getCode());
-        orderMapper.updateById(order);
+        var result = aggregate.confirmReceipt();
+        orderRepository.update(result.aggregate());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void refundOrder(Long id, String reason) {
-        OrderDO order = orderMapper.selectById(id);
-        if (order == null || order.getDelFlag() != 0) {
-            throw BusinessException.of("订单不存在");
-        }
-        OrderStatus currentStatus = OrderStatus.fromCode(order.getStatus());
-        if (currentStatus == null || currentStatus == OrderStatus.REFUNDED) {
-            throw BusinessException.of("该订单已退款");
-        }
-        if (currentStatus == OrderStatus.CANCELLED) {
-            throw BusinessException.of("已取消的订单无法退款");
-        }
+        var aggregate = orderRepository.findById(OrderId.of(id))
+                .orElseThrow(() -> BusinessException.of("订单不存在"));
 
-        order.setStatus(OrderStatus.REFUNDED.getCode());
-        order.setCancelReason(reason);
-        order.setCancelTime(LocalDateTime.now());
-        orderMapper.updateById(order);
+        var result = aggregate.refund(reason);
+        orderRepository.update(result.aggregate());
     }
 
     private Map<Long, List<OrderItemDO>> batchGetOrderItems(Page<OrderDO> orderPage) {

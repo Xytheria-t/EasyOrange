@@ -33,9 +33,9 @@ public class FavoriteService {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
-        BizRequire.requireFalse(productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
-        BizRequire.requireFalse(
-                favoriteRepository.existsByUserIdAndProductId(userId, productId),
+        BizRequire.requireTrue(!productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
+        BizRequire.requireTrue(
+                !favoriteRepository.existsByUserIdAndProductId(userId, productId),
                 "已收藏过该商品"
         );
 

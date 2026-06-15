@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
@@ -16,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RedisSmsCodeAdapter implements SmsCodePort {
 
-    private static final String SMS_BASE = CommonConstant.APP_PREFIX + "sms:";
+    private static final String SMS_BASE = "eo:user:sms:";
     private static final String CODE_KEY = SMS_BASE + "code:";
     private static final String LIMIT_KEY = SMS_BASE + "limit:";
     private static final String DAILY_KEY = SMS_BASE + "daily:";

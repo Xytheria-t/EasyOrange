@@ -15,7 +15,11 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +37,8 @@ public class AdminProductService {
     private final ProductMapper productMapper;
     private final ProductDetailMapper productDetailMapper;
     private final ProductImageMapper productImageMapper;
+    private final ProductRepository productRepository;
+    private final ProductCachePort<?> productCachePort;
 
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
         int pageNum = request.pageNum() != null ? request.pageNum() : 1;
@@ -130,16 +136,27 @@ public class AdminProductService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateProductStatus(Long id, UpdateStatusRequest request) {
-        ProductDO product = productMapper.selectById(id);
-        if (product == null || product.getDelFlag() != 0) {
-            throw BusinessException.of("商品不存在");
-        }
-
         ProductStatus newStatus = ProductStatus.fromCode(request.getStatus());
         BizRequire.notNull(newStatus, "无效的商品状态");
 
-        product.setStatus(newStatus.getCode());
-        productMapper.updateById(product);
+        Product product = productRepository.findById(ProductId.of(id))
+                .orElseThrow(() -> BusinessException.of("商品不存在"));
+
+        Product updated = applyStatusTransition(product, newStatus);
+        productRepository.update(updated);
+        productCachePort.evictProductCache(id);
+    }
+
+    private Product applyStatusTransition(Product product, ProductStatus newStatus) {
+        return switch (newStatus) {
+            case ONLINE -> product.putOnline();
+            case OFFLINE -> product.takeOffline();
+            case SOLD -> product.markAsSold().product();
+            default -> product.toBuilder()
+                    .status(newStatus)
+                    .updateTime(LocalDateTime.now())
+                    .build();
+        };
     }
 
     private Map<Long, List<String>> getImagesMap(List<Long> productIds) {

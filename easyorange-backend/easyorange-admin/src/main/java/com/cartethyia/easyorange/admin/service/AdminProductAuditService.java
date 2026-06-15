@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.service.AiReviewService;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
@@ -14,16 +15,20 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
-import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.application.query.dto.SellerInfo;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductApprovedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductRejectedResult;
+import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
+import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
+import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
+import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,132 +43,134 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminProductAuditService {
 
-    private final ProductMapper productMapper;
+    private final ProductRepository productRepository;
     private final ProductAuditLogRepository productAuditLogRepository;
     private final DomainEventPublisher domainEventPublisher;
     private final ObjectMapper objectMapper;
     private final AiReviewService aiReviewService;
 
+    // ProductMapper is kept only for getAiReview() which needs cross-table read queries.
+    // The audit flow (auditProduct, batchAudit) uses ProductRepository + Product aggregate.
+    private final ProductMapper productMapper;
+
     @Transactional(rollbackFor = Exception.class)
     public void auditProduct(Long id, ProductAuditRequest request) {
-        ProductDO product = productMapper.selectById(id);
-        if (product == null || product.getDelFlag() != 0) {
-            throw BusinessException.of("商品不存在");
-        }
-
-        if (product.getStatus() != ProductStatus.PENDING_REVIEW.getCode()) {
-            throw BusinessException.of("只有待审核状态的商品可以审核");
-        }
+        Product product = productRepository.findById(ProductId.of(id))
+                .orElseThrow(() -> BusinessException.of("商品不存在"));
 
         Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String operatorName = SecurityContextUtil.getUserContext()
                 .map(authUser -> authUser.username())
                 .orElse("管理员");
 
-        Integer beforeStatus = product.getStatus();
-        Integer action = request.action();
-
-        if (action == 1) {
-            product.setStatus(ProductStatus.ONLINE.getCode());
-        } else if (action == 2) {
-            BizRequire.notBlank(request.reason(), "拒绝时必须填写原因");
-            product.setStatus(ProductStatus.REJECTED.getCode());
-        } else {
+        int beforeStatus = product.getStatus().getCode();
+        AuditAction action = AuditAction.fromCode(request.action());
+        if (action == null) {
             throw BusinessException.of("无效的审核动作");
         }
 
-        Integer afterStatus = product.getStatus();
-        productMapper.updateById(product);
+        Product updated;
+        ProductAuditedEvent event;
+
+        switch (action) {
+            case APPROVED -> {
+                ProductApprovedResult result = product.approve(request.reason());
+                updated = result.product();
+                event = result.event();
+            }
+            case REJECTED -> {
+                BizRequire.notBlank(request.reason(), "拒绝时必须填写原因");
+                ProductRejectedResult result = product.reject(request.reason());
+                updated = result.product();
+                event = result.event();
+            }
+            default -> throw BusinessException.of("无效的审核动作");
+        }
+
+        productRepository.update(updated);
 
         ProductAuditLog auditLog = ProductAuditLog.builder()
                 .productId(id)
                 .operatorId(operatorId)
                 .operatorName(operatorName)
-                .action(action)
+                .action(action.getCode())
                 .reason(request.reason())
                 .auditDimensions(toJsonString(request.dimensions()))
                 .beforeStatus(beforeStatus)
-                .afterStatus(afterStatus)
+                .afterStatus(updated.getStatus().getCode())
                 .remark(request.remark())
                 .build();
         productAuditLogRepository.save(auditLog);
 
-        ProductAuditedEvent event = new ProductAuditedEvent(
-                id,
-                product.getName(),
-                product.getUserId(),
-                action,
-                request.reason(),
-                LocalDateTime.now()
-        );
         domainEventPublisher.publish(event);
 
         log.info("action=audit_product productId={} action={} operatorId={} beforeStatus={} afterStatus={}",
-                id, action, operatorId, beforeStatus, afterStatus);
+                id, action.getCode(), operatorId, beforeStatus, updated.getStatus().getCode());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public BatchAuditResultResponse batchAudit(BatchAuditRequest request) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
+        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String operatorName = SecurityContextUtil.getUserContext()
+                .map(authUser -> authUser.username())
+                .orElse("管理员");
 
         for (BatchAuditRequest.AuditItem item : request.getItems()) {
             try {
-                ProductDO product = productMapper.selectById(item.productId());
-                if (product == null || product.getDelFlag() != 0) {
+                Product product = productRepository.findById(ProductId.of(item.productId()))
+                        .orElse(null);
+                if (product == null) {
                     errors.add("商品ID " + item.productId() + ": 不存在");
                     continue;
                 }
 
-                if (product.getStatus() != ProductStatus.PENDING_REVIEW.getCode()) {
-                    errors.add("商品ID " + item.productId() + ": 非待审核状态，无法操作");
+                AuditAction action = AuditAction.fromCode(item.action());
+                if (action == null) {
+                    errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + item.action());
                     continue;
                 }
 
-                Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
-                String operatorName = SecurityContextUtil.getUserContext()
-                        .map(authUser -> authUser.username())
-                        .orElse("管理员");
+                int beforeStatus = product.getStatus().getCode();
+                Product updated;
+                ProductAuditedEvent event;
 
-                Integer beforeStatus = product.getStatus();
-                Integer action = item.action();
-
-                if (action == 1) {
-                    product.setStatus(ProductStatus.ONLINE.getCode());
-                } else if (action == 2) {
-                    if (item.reason() == null || item.reason().isBlank()) {
-                        errors.add("商品ID " + item.productId() + ": 拒绝时必须填写原因");
+                switch (action) {
+                    case APPROVED -> {
+                        ProductApprovedResult result = product.approve(item.reason());
+                        updated = result.product();
+                        event = result.event();
+                    }
+                    case REJECTED -> {
+                        if (item.reason() == null || item.reason().isBlank()) {
+                            errors.add("商品ID " + item.productId() + ": 拒绝时必须填写原因");
+                            continue;
+                        }
+                        ProductRejectedResult result = product.reject(item.reason());
+                        updated = result.product();
+                        event = result.event();
+                    }
+                    default -> {
+                        errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + item.action());
                         continue;
                     }
-                    product.setStatus(ProductStatus.REJECTED.getCode());
-                } else {
-                    errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + action);
-                    continue;
                 }
 
-                Integer afterStatus = product.getStatus();
-                productMapper.updateById(product);
+                productRepository.update(updated);
 
                 ProductAuditLog auditLog = ProductAuditLog.builder()
                         .productId(item.productId())
                         .operatorId(operatorId)
                         .operatorName(operatorName)
-                        .action(action)
+                        .action(action.getCode())
                         .reason(item.reason())
                         .auditDimensions(toJsonString(item.dimensions()))
                         .beforeStatus(beforeStatus)
-                        .afterStatus(afterStatus)
+                        .afterStatus(updated.getStatus().getCode())
                         .build();
                 productAuditLogRepository.save(auditLog);
 
-                ProductAuditedEvent event = new ProductAuditedEvent(
-                        item.productId(),
-                        product.getName(),
-                        product.getUserId(),
-                        action,
-                        item.reason(),
-                        LocalDateTime.now()
-                );
                 domainEventPublisher.publish(event);
 
                 successCount++;
@@ -228,27 +235,16 @@ public class AdminProductAuditService {
                 log.getOperatorId(),
                 log.getOperatorName(),
                 log.getAction(),
-                getActionDesc(log.getAction()),
+                AuditAction.getDescByCode(log.getAction()),
                 log.getReason(),
                 parseDimensions(log.getAuditDimensions()),
                 log.getBeforeStatus(),
-                ProductStatus.getDescByCode(log.getBeforeStatus()),
+                com.cartethyia.easyorange.product.domain.enums.ProductStatus.getDescByCode(log.getBeforeStatus()),
                 log.getAfterStatus(),
-                ProductStatus.getDescByCode(log.getAfterStatus()),
+                com.cartethyia.easyorange.product.domain.enums.ProductStatus.getDescByCode(log.getAfterStatus()),
                 log.getRemark(),
                 log.getCreateTime()
         );
-    }
-
-    private String getActionDesc(Integer action) {
-        if (action == null) {
-            return "未知";
-        }
-        return switch (action) {
-            case 1 -> "通过";
-            case 2 -> "拒绝";
-            default -> "未知";
-        };
     }
 
     private String toJsonString(List<String> dimensions) {
