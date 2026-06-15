@@ -2,16 +2,14 @@ package com.cartethyia.easyorange.common.exception.validation;
 
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
+import lombok.Getter;
 
 import java.util.Map;
 
+@Getter
 public class ParamValidationException extends BaseBusinessException {
 
     private final Map<String, String> fieldErrors;
-
-    public Map<String, String> getFieldErrors() {
-        return fieldErrors;
-    }
 
     public ParamValidationException(Map<String, String> fieldErrors) {
         super(ResultCode.VALIDATE_FAILED, "参数校验失败");

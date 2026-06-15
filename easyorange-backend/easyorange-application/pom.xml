@@ -18,6 +18,11 @@
             <artifactId>easyorange-framework</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common</artifactId>
+        </dependency>
+
         <!-- 依赖用户模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>

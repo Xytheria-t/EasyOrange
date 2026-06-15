@@ -1,14 +1,12 @@
 package com.cartethyia.easyorange.common.util;
 
-import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
+import java.time.ZoneOffset;
 
 public class SnowflakeIdGenerator {
 
     private static final long EPOCH = LocalDate.of(2024, 1, 1)
-            .atStartOfDay(ZoneId.systemDefault())
+            .atStartOfDay(ZoneOffset.UTC)
             .toInstant()
             .toEpochMilli();
 
@@ -50,7 +48,7 @@ public class SnowflakeIdGenerator {
         long timestamp = timeGen();
 
         if (timestamp < lastTimestamp) {
-            throw new RuntimeException("Clock moved backwards. Refusing to generate id for " + (lastTimestamp - timestamp) + " milliseconds");
+            throw new IllegalStateException("Clock moved backwards. Refusing to generate id for " + (lastTimestamp - timestamp) + " milliseconds");
         }
 
         if (lastTimestamp == timestamp) {
@@ -79,18 +77,14 @@ public class SnowflakeIdGenerator {
     }
 
     private long timeGen() {
-        return Instant.now().toEpochMilli();
-    }
-
-    public static Date nextDate() {
-        return new Date(nextLong());
+        return System.currentTimeMillis();
     }
 
     public static long nextLong() {
-        return new SnowflakeIdGenerator(1, 1).nextId();
+        return INSTANCE.nextId();
     }
 
     public static String next() {
-        return String.valueOf(new SnowflakeIdGenerator(1, 1).nextId());
+        return String.valueOf(INSTANCE.nextId());
     }
 }

@@ -7,18 +7,21 @@ public final class FileSizeFormat {
     private static final long GB = MB * 1024;
 
     private FileSizeFormat() {
-        throw new IllegalStateException("Utility class");
     }
 
     public static String formatFileSize(long size) {
         if (size >= GB) {
-            return String.format("%.2f GB", size / (double) GB);
+            return formatWithUnit(size, GB, "GB");
         } else if (size >= MB) {
-            return String.format("%.2f MB", size / (double) MB);
+            return formatWithUnit(size, MB, "MB");
         } else if (size >= KB) {
-            return String.format("%.2f KB", size / (double) KB);
+            return formatWithUnit(size, KB, "KB");
         } else {
             return size + " B";
         }
+    }
+
+    private static String formatWithUnit(long size, long unit, String unitName) {
+        return String.format("%.2f %s", size / (double) unit, unitName);
     }
 }

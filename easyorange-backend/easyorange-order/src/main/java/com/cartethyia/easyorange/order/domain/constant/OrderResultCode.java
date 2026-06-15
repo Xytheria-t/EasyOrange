@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.domain.constant;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -13,6 +14,7 @@ import lombok.Getter;
  * @see IResultCode
  */
 @Getter
+@AllArgsConstructor
 public enum OrderResultCode implements IResultCode {
 
     ORDER_NOT_FOUND("B3001", "订单不存在"),
@@ -26,9 +28,4 @@ public enum OrderResultCode implements IResultCode {
 
     private final String code;
     private final String message;
-
-    OrderResultCode(String code, String message) {
-        this.code = code;
-        this.message = message;
-    }
 }

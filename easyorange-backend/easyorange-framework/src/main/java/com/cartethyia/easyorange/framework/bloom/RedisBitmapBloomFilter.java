@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
 
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -33,18 +34,15 @@ public class RedisBitmapBloomFilter implements BloomFilter {
             return 1
             """;
 
-    private static final DefaultRedisScript<Long> PUT_SCRIPT;
-    private static final DefaultRedisScript<Long> CHECK_SCRIPT;
+    private static final DefaultRedisScript<Long> PUT_SCRIPT = script(BLOOM_PUT_SCRIPT);
+    private static final DefaultRedisScript<Long> CHECK_SCRIPT = script(BLOOM_CHECK_SCRIPT);
     private static final HashFunction MURMUR3_128 = Hashing.murmur3_128();
 
-    static {
-        PUT_SCRIPT = new DefaultRedisScript<>();
-        PUT_SCRIPT.setScriptText(BLOOM_PUT_SCRIPT);
-        PUT_SCRIPT.setResultType(Long.class);
-
-        CHECK_SCRIPT = new DefaultRedisScript<>();
-        CHECK_SCRIPT.setScriptText(BLOOM_CHECK_SCRIPT);
-        CHECK_SCRIPT.setResultType(Long.class);
+    private static DefaultRedisScript<Long> script(String text) {
+        var s = new DefaultRedisScript<Long>();
+        s.setScriptText(text);
+        s.setResultType(Long.class);
+        return s;
     }
 
     private final RedisCache redisCache;
@@ -64,57 +62,29 @@ public class RedisBitmapBloomFilter implements BloomFilter {
 
     @Override
     public void put(String filterKey, String element) {
-        long[] offsets = hash(element);
-        List<String> keys = List.of(filterKey);
-        Object[] args = new Object[offsets.length];
-        for (int i = 0; i < offsets.length; i++) {
-            args[i] = String.valueOf(offsets[i]);
-        }
-        redisCache.executeLuaScript(PUT_SCRIPT, keys, args);
+        execute(filterKey, element, PUT_SCRIPT);
     }
 
     @Override
     public boolean mightContain(String filterKey, String element) {
+        Long result = execute(filterKey, element, CHECK_SCRIPT);
+        return result != null && result == 1L;
+    }
+
+    private Long execute(String filterKey, String element, DefaultRedisScript<Long> script) {
         long[] offsets = hash(element);
-        List<String> keys = List.of(filterKey);
         Object[] args = new Object[offsets.length];
         for (int i = 0; i < offsets.length; i++) {
             args[i] = String.valueOf(offsets[i]);
         }
-        Long result = redisCache.executeLuaScript(CHECK_SCRIPT, keys, args);
-        return result != null && result == 1;
-    }
-
-    @Override
-    public void rebuild(String filterKey) {
-        redisCache.delete(filterKey);
-    }
-
-    @Override
-    public long bitSize() {
-        return bitSize;
-    }
-
-    @Override
-    public int numHashFunctions() {
-        return numHashFunctions;
+        return redisCache.executeLuaScript(script, List.of(filterKey), args);
     }
 
     private long[] hash(String element) {
         var hash = MURMUR3_128.hashString(element, StandardCharsets.UTF_8);
         byte[] bytes = hash.asBytes();
-
-        long h1 = 0;
-        long h2 = 0;
-        for (int i = 0; i < 8; i++) {
-            h1 = (h1 << 8) | (bytes[i] & 0xFFL);
-        }
-        for (int i = 8; i < 16; i++) {
-            h2 = (h2 << 8) | (bytes[i] & 0xFFL);
-        }
-
-        h1 = h1 & Long.MAX_VALUE;
-        h2 = h2 & Long.MAX_VALUE;
+        long h1 = ByteBuffer.wrap(bytes).getLong() & Long.MAX_VALUE;
+        long h2 = ByteBuffer.wrap(bytes, 8, 8).getLong() & Long.MAX_VALUE;
 
         long[] offsets = new long[numHashFunctions];
         for (int i = 0; i < numHashFunctions; i++) {
@@ -123,7 +93,7 @@ public class RedisBitmapBloomFilter implements BloomFilter {
         return offsets;
     }
 
-    static long optimalBitSize(long expectedInsertions, double fpp) {
+    private static long optimalBitSize(long expectedInsertions, double fpp) {
         if (fpp <= 0 || fpp >= 1) {
             throw new IllegalArgumentException("False positive rate must be between 0 and 1");
         }
@@ -133,7 +103,7 @@ public class RedisBitmapBloomFilter implements BloomFilter {
         return (long) (-expectedInsertions * Math.log(fpp) / (Math.log(2) * Math.log(2)));
     }
 
-    static int optimalHashFunctions(long expectedInsertions, long bitSize) {
+    private static int optimalHashFunctions(long expectedInsertions, long bitSize) {
         if (bitSize <= 0 || expectedInsertions <= 0) {
             return 1;
         }

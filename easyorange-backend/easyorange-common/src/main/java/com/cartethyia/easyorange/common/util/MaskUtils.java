@@ -12,15 +12,12 @@ public class MaskUtils {
     }
 
     public static String maskEmail(String email) {
-        if (email == null || !email.contains("@")) {
-            return email;
-        }
-        String[] parts = email.split("@");
-        String name = parts[0];
-        if (name.length() <= 1) {
-            return "****@" + parts[1];
-        }
-        return name.charAt(0) + "****@" + parts[1];
+        if (email == null) return null;
+        int at = email.indexOf('@');
+        if (at == -1) return email;
+        String local = email.substring(0, at);
+        if (local.length() <= 1) return "****" + email.substring(at);
+        return local.charAt(0) + "****" + email.substring(at);
     }
 
     public static String maskIdCard(String idCard) {
@@ -38,19 +35,13 @@ public class MaskUtils {
     }
 
     public static String maskName(String name) {
-        if (name == null || name.isEmpty()) {
-            return name;
-        }
-        if (name.length() == 1) {
-            return name;
-        }
-        if (name.length() == 2) {
-            return name.charAt(0) + "*";
-        }
-        if (name.length() == 3) {
-            return name.charAt(0) + "*" + name.charAt(2);
-        }
-        return name.substring(0, 2) + "****";
+        if (name == null || name.isEmpty()) return name;
+        return switch (name.length()) {
+            case 1 -> name;
+            case 2 -> name.charAt(0) + "*";
+            case 3 -> name.charAt(0) + "*" + name.charAt(2);
+            default -> name.substring(0, 2) + "****";
+        };
     }
 
     public static String maskAddress(String address) {

@@ -5,10 +5,4 @@ public interface BloomFilter {
     void put(String filterKey, String element);
 
     boolean mightContain(String filterKey, String element);
-
-    void rebuild(String filterKey);
-
-    long bitSize();
-
-    int numHashFunctions();
 }

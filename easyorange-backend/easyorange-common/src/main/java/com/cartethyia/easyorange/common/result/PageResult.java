@@ -4,10 +4,10 @@ import java.util.List;
 
 public record PageResult<T>(
         List<T> records,
-        Long total,
-        Integer current,
-        Integer size,
-        Integer pages
+        long total,
+        int current,
+        int size,
+        int pages
 ) {
 
     public static <T> PageResult<T> of(List<T> records, long total, int pageNum, int pageSize) {

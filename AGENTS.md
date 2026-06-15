@@ -122,14 +122,14 @@ easy-orange/
 ## 模块依赖关系
 
 ```
-application → framework, user, product, order, payment, message, favorite
+application → framework, common, user, product, order, payment, message, favorite
 framework → common
-user → framework
-product → framework, user (通过 SellerInfoPort 隔离，optional)
-order → framework, product, user, payment (通过 Port 接口隔离，optional)
-payment → framework
-message → framework, user (通过 UserInfoPort 隔离，optional)
-favorite → framework, product (通过 ProductInfoPort 隔离，optional)
+user → framework, common
+product → framework, common, user (通过 SellerInfoPort 隔离，optional)
+order → framework, common, product, user, payment (通过 Port 接口隔离，optional)
+payment → framework, common
+message → framework, common, user (通过 UserInfoPort 隔离，optional)
+favorite → framework, common, product (通过 ProductInfoPort 隔离，optional)
 ai → framework, common, product (通过 ProductSearchQueryPort 隔离)
 admin → framework, common, user (optional), product (optional), order (optional), payment (optional), ai (optional)
 ```
@@ -153,6 +153,23 @@ admin → framework, common, user (optional), product (optional), order (optiona
 | D | 第三方错误 | 502 | D0502=上游服务不可用 |
 
 判断成功：`"A0000".equals(code)`
+
+### 错误码模块分配表
+
+B 前缀（业务错误码）按模块分段，新增模块时在预留段内分配：
+
+| 范围 | 模块 | 实现类 |
+|------|------|--------|
+| B000x | 全局通用 | `ResultCode` |
+| B1xxx | user | `UserResultCode` |
+| B2xxx | product | `ProductResultCode` |
+| B3xxx | order | `OrderResultCode` |
+| B4xxx | payment | `PaymentResultCode` |
+| B5xxx | file | `FileResultCode` |
+| B6xxx | **预留** | — |
+| B7xxx | message | `MessageResultCode` |
+
+> 新增模块时优先使用 B6xxx 范围，避免与现有范围冲突。各枚举统一使用 `@Getter @AllArgsConstructor` 模式实现 `IResultCode`。
 
 ## 架构文档
 

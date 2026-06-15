@@ -1,5 +1,10 @@
 package com.cartethyia.easyorange.common.enums;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
+@Getter
+@AllArgsConstructor
 public enum ResultCode implements IResultCode {
     SUCCESS("A0000", "成功"),
     FAIL("B0001", "操作失败"),
@@ -12,26 +17,8 @@ public enum ResultCode implements IResultCode {
     INTERNAL_SERVER_ERROR("C0500", "服务器内部错误"),
     SERVICE_UNAVAILABLE("C0503", "服务不可用"),
     METHOD_NOT_ALLOWED("A0405", "请求方法不允许"),
-    FILE_TOO_LARGE("B5005", "文件大小超过限制"),
-    INVALID_FILE_TYPE("B5004", "无效的文件类型"),
-    FILE_UPLOAD_FAILED("B5001", "文件上传失败"),
     CONCURRENT_UPDATE("B0006", "并发更新冲突");
 
     private final String code;
     private final String message;
-
-    ResultCode(String code, String message) {
-        this.code = code;
-        this.message = message;
-    }
-
-    @Override
-    public String getCode() {
-        return code;
-    }
-
-    @Override
-    public String getMessage() {
-        return message;
-    }
 }

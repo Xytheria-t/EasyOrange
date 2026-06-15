@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.enums;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -13,6 +14,7 @@ import lombok.Getter;
  * @see IResultCode
  */
 @Getter
+@AllArgsConstructor
 public enum MessageResultCode implements IResultCode {
 
     MESSAGE_NOT_FOUND("B7001", "消息不存在"),
@@ -25,9 +27,4 @@ public enum MessageResultCode implements IResultCode {
 
     private final String code;
     private final String message;
-
-    MessageResultCode(String code, String message) {
-        this.code = code;
-        this.message = message;
-    }
 }

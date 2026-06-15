@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq;
 
 import com.cartethyia.easyorange.common.notification.NotificationService;
+import com.cartethyia.easyorange.common.notification.NotificationService.Notification;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -99,7 +100,7 @@ class OrderNotificationEventConsumerTest {
 
             verify(idempotencyChecker).isDuplicate("OrderCreated", "created:" + ORDER_ID);
             verify(idempotencyChecker).tryMark("OrderCreated", "created:" + ORDER_ID);
-            verify(notificationService).sendEmail(EMAIL, "订单已创建", "您的订单已创建，订单号: " + ORDER_ID);
+            verify(notificationService).notify(Notification.email(EMAIL, "订单已创建", "您的订单已创建，订单号: " + ORDER_ID));
         }
 
         @Test
@@ -114,7 +115,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderCreated(event);
 
-            verify(notificationService, never()).sendEmail(anyString(), anyString(), anyString());
+            verify(notificationService, never()).notify(any());
         }
     }
 
@@ -135,7 +136,7 @@ class OrderNotificationEventConsumerTest {
 
             verify(idempotencyChecker).isDuplicate("OrderPaid", "paid:" + ORDER_ID);
             verify(idempotencyChecker).tryMark("OrderPaid", "paid:" + ORDER_ID);
-            verify(notificationService).sendEmail(EMAIL, "订单已支付", "您的订单已支付成功，订单号: " + ORDER_ID);
+            verify(notificationService).notify(Notification.email(EMAIL, "订单已支付", "您的订单已支付成功，订单号: " + ORDER_ID));
         }
     }
 
@@ -156,7 +157,7 @@ class OrderNotificationEventConsumerTest {
 
             verify(idempotencyChecker).isDuplicate("OrderShipped", "shipped:" + ORDER_ID);
             verify(idempotencyChecker).tryMark("OrderShipped", "shipped:" + ORDER_ID);
-            verify(notificationService).sendEmail(EMAIL, "订单已发货", "您的订单已发货，订单号: " + ORDER_ID);
+            verify(notificationService).notify(Notification.email(EMAIL, "订单已发货", "您的订单已发货，订单号: " + ORDER_ID));
         }
     }
 
@@ -177,7 +178,7 @@ class OrderNotificationEventConsumerTest {
 
             verify(idempotencyChecker).isDuplicate("OrderCompleted", "completed:" + ORDER_ID);
             verify(idempotencyChecker).tryMark("OrderCompleted", "completed:" + ORDER_ID);
-            verify(notificationService).sendEmail(EMAIL, "订单已完成", "您的订单已完成，订单号: " + ORDER_ID);
+            verify(notificationService).notify(Notification.email(EMAIL, "订单已完成", "您的订单已完成，订单号: " + ORDER_ID));
         }
     }
 
@@ -198,7 +199,7 @@ class OrderNotificationEventConsumerTest {
 
             verify(idempotencyChecker).isDuplicate("OrderCancelled", "cancelled:" + ORDER_ID);
             verify(idempotencyChecker).tryMark("OrderCancelled", "cancelled:" + ORDER_ID);
-            verify(notificationService).sendEmail(EMAIL, "订单已取消", "您的订单已取消，订单号: " + ORDER_ID);
+            verify(notificationService).notify(Notification.email(EMAIL, "订单已取消", "您的订单已取消，订单号: " + ORDER_ID));
         }
     }
 
@@ -219,7 +220,7 @@ class OrderNotificationEventConsumerTest {
 
             verify(idempotencyChecker).isDuplicate("OrderRefunded", "refunded:" + ORDER_ID);
             verify(idempotencyChecker).tryMark("OrderRefunded", "refunded:" + ORDER_ID);
-            verify(notificationService).sendEmail(EMAIL, "订单已退款", "您的订单已退款，订单号: " + ORDER_ID);
+            verify(notificationService).notify(Notification.email(EMAIL, "订单已退款", "您的订单已退款，订单号: " + ORDER_ID));
         }
     }
 
@@ -239,7 +240,7 @@ class OrderNotificationEventConsumerTest {
             consumer.onOrderCreated(event);
 
             verify(idempotencyChecker, never()).tryMark(anyString(), anyString());
-            verify(notificationService, never()).sendEmail(anyString(), anyString(), anyString());
+            verify(notificationService, never()).notify(any());
         }
 
         @Test
@@ -254,7 +255,7 @@ class OrderNotificationEventConsumerTest {
 
             consumer.onOrderCreated(event);
 
-            verify(notificationService, never()).sendEmail(anyString(), anyString(), anyString());
+            verify(notificationService, never()).notify(any());
         }
     }
 }

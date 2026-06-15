@@ -6,12 +6,12 @@ import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 /**
- * 业务类型枚举
- * <p>
- * 用于操作日志注解中标识操作类型。
- * 查找方法请使用 {@link com.cartethyia.easyorange.common.util.EnumUtils#fromCodeSafe}。
- * </p>
+ * 业务类型枚举，用于操作日志标识操作类型。
  *
  * @author cartethyia
  */
@@ -19,33 +19,16 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum BusinessType {
 
-    /**
-     * 其它
-     */
     OTHER(0, "其它"),
-
-    /**
-     * 新增
-     */
     ADD(1, "新增"),
-
-    /**
-     * 修改
-     */
     UPDATE(2, "修改"),
-
-    /**
-     * 删除
-     */
     DELETE(3, "删除"),
-
-    /**
-     * 登录
-     */
     LOGIN(4, "登录");
 
-    private final int code;
+    private static final Map<Integer, BusinessType> CODE_MAP = Stream.of(values())
+            .collect(Collectors.toUnmodifiableMap(e -> e.code, e -> e));
 
+    private final int code;
     private final String desc;
 
     @JsonValue
@@ -53,28 +36,17 @@ public enum BusinessType {
         return desc;
     }
 
-    /**
-     * Resolves the enum value from its integer code.
-     *
-     * @param code the integer code
-     * @return the matching enum value, or {@code null} if code is not recognized
-     */
     @Nullable
     public static BusinessType fromCode(int code) {
-        for (BusinessType value : values()) {
-            if (value.code == code) {
-                return value;
-            }
-        }
-        return null;
+        return CODE_MAP.get(code);
     }
 
     /**
-     * 从 code 值反序列化为枚举（支持 JSON 反序列化）
+     * 从 code 值反序列化为枚举（支持 JSON 反序列化），未匹配时返回 OTHER。
      */
     @JsonCreator
     public static BusinessType fromJsonValue(int code) {
-        BusinessType result = fromCode(code);
+        var result = fromCode(code);
         return result != null ? result : OTHER;
     }
 }

@@ -22,6 +22,11 @@
             <artifactId>easyorange-framework</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common</artifactId>
+        </dependency>
+
         <!-- 依赖 Product 模块（查询商品信息） - optional 因为适配器在 application 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>

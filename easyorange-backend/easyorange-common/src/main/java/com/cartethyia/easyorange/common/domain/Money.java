@@ -40,10 +40,6 @@ public record Money(@JsonValue BigDecimal value) implements Comparable<Money> {
         return value.compareTo(other.value);
     }
 
-    public boolean isPositive() {
-        return value.compareTo(BigDecimal.ZERO) > 0;
-    }
-
     public boolean isZero() {
         return value.compareTo(BigDecimal.ZERO) == 0;
     }

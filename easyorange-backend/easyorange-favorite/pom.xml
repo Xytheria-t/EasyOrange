@@ -19,6 +19,11 @@
 
         <dependency>
             <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-product</artifactId>
             <optional>true</optional>
         </dependency>

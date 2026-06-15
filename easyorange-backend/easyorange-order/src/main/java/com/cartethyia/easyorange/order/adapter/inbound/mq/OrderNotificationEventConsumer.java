@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq;
 
 import com.cartethyia.easyorange.common.notification.NotificationService;
+import com.cartethyia.easyorange.common.notification.NotificationService.Notification;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -40,7 +41,7 @@ public class OrderNotificationEventConsumer {
         try {
             String email = getUserEmail(event.getBuyerId());
             if (email != null) {
-                notificationService.sendEmail(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId());
+                notificationService.notify(Notification.email(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId()));
             }
             log.info("订单创建通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
@@ -62,7 +63,7 @@ public class OrderNotificationEventConsumer {
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
-                notificationService.sendEmail(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId());
+                notificationService.notify(Notification.email(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId()));
             }
             log.info("订单支付通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
@@ -84,7 +85,7 @@ public class OrderNotificationEventConsumer {
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
-                notificationService.sendEmail(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId());
+                notificationService.notify(Notification.email(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId()));
             }
             log.info("订单发货通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
@@ -106,7 +107,7 @@ public class OrderNotificationEventConsumer {
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
-                notificationService.sendEmail(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId());
+                notificationService.notify(Notification.email(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId()));
             }
             log.info("订单完成通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
@@ -128,7 +129,7 @@ public class OrderNotificationEventConsumer {
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
-                notificationService.sendEmail(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId());
+                notificationService.notify(Notification.email(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId()));
             }
             log.info("订单取消通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
@@ -150,7 +151,7 @@ public class OrderNotificationEventConsumer {
         try {
             String email = getEmailFromOrder(event.getOrderId());
             if (email != null) {
-                notificationService.sendEmail(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId());
+                notificationService.notify(Notification.email(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId()));
             }
             log.info("订单退款通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {

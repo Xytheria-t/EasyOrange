@@ -17,6 +17,11 @@
             <artifactId>easyorange-framework</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common</artifactId>
+        </dependency>
+
         <!-- Immutables -->
         <dependency>
             <groupId>org.immutables</groupId>

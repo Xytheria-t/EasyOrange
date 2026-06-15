@@ -16,10 +16,15 @@
     </description>
 
     <dependencies>
-        <!-- 依赖 Framework 模块（已传递依赖 Common 模块） -->
+        <!-- 依赖 Framework 模块 -->
         <dependency>
             <groupId>com.cartethyia</groupId>
             <artifactId>easyorange-framework</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.cartethyia</groupId>
+            <artifactId>easyorange-common</artifactId>
         </dependency>
 
         <!-- 依赖 User 模块（查询用户信息）- 标记为 optional，由 application 模块提供实现 -->

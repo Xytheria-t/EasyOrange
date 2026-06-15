@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.common.enums;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -12,6 +13,7 @@ import lombok.Getter;
  * @see IResultCode
  */
 @Getter
+@AllArgsConstructor
 public enum FileResultCode implements IResultCode {
 
     FILE_UPLOAD_FAILED("B5001", "文件上传失败"),
@@ -23,9 +25,4 @@ public enum FileResultCode implements IResultCode {
 
     private final String code;
     private final String message;
-
-    FileResultCode(String code, String message) {
-        this.code = code;
-        this.message = message;
-    }
 }

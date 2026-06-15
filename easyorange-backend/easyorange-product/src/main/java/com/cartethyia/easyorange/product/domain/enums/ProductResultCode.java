@@ -1,9 +1,11 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
+@AllArgsConstructor
 public enum ProductResultCode implements IResultCode {
 
     PRODUCT_NOT_FOUND("B2001", "商品不存在"),
@@ -15,9 +17,4 @@ public enum ProductResultCode implements IResultCode {
 
     private final String code;
     private final String message;
-
-    ProductResultCode(String code, String message) {
-        this.code = code;
-        this.message = message;
-    }
 }

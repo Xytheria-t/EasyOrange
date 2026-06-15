@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.domain.constant;
 
 import com.cartethyia.easyorange.common.enums.IResultCode;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
@@ -13,6 +14,7 @@ import lombok.Getter;
  * @see IResultCode
  */
 @Getter
+@AllArgsConstructor
 public enum PaymentResultCode implements IResultCode {
 
     PAYMENT_NOT_FOUND("B4001", "支付记录不存在"),
@@ -27,9 +29,4 @@ public enum PaymentResultCode implements IResultCode {
 
     private final String code;
     private final String message;
-
-    PaymentResultCode(String code, String message) {
-        this.code = code;
-        this.message = message;
-    }
 }

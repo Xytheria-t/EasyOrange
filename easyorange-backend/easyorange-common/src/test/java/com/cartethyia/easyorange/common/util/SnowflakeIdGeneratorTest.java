@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -148,14 +147,6 @@ class SnowflakeIdGeneratorTest {
         void nextLong_returnsPositive() {
             long id = SnowflakeIdGenerator.nextLong();
             assertTrue(id > 0);
-        }
-
-        @Test
-        @DisplayName("nextDate 返回非空日期")
-        void nextDate_returnsNonNullDate() {
-            Date date = SnowflakeIdGenerator.nextDate();
-            assertNotNull(date);
-            assertTrue(date.getTime() > 0);
         }
 
         @Test
