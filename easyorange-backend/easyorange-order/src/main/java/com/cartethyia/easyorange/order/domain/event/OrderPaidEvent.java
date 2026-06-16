@@ -13,13 +13,8 @@ public class OrderPaidEvent extends BaseDomainEvent {
     private final Integer paymentStatus;
 
     public OrderPaidEvent(Long orderId, Integer paymentStatus) {
-        super(OrderPaidEvent.class);
+        super();
         this.orderId = orderId;
         this.paymentStatus = paymentStatus;
-    }
-
-    @Override
-    public String eventType() {
-        return "OrderPaid";
     }
 }

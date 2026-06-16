@@ -12,12 +12,7 @@ public class OrderShippedEvent extends BaseDomainEvent {
     private final Long orderId;
 
     public OrderShippedEvent(Long orderId) {
-        super(OrderShippedEvent.class);
+        super();
         this.orderId = orderId;
-    }
-
-    @Override
-    public String eventType() {
-        return "OrderShipped";
     }
 }

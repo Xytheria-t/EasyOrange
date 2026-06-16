@@ -13,14 +13,9 @@ public class OrderCancelledEvent extends BaseDomainEvent {
     private final String reason;
 
     public OrderCancelledEvent(Long orderId, List<Long> productIds, String reason) {
-        super(OrderCancelledEvent.class);
+        super();
         this.orderId = orderId;
         this.productIds = productIds;
         this.reason = reason;
-    }
-
-    @Override
-    public String eventType() {
-        return "OrderCancelled";
     }
 }

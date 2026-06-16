@@ -23,17 +23,12 @@ public class PaymentInitiationRequestedEvent extends BaseDomainEvent {
             String attach,
             String description
     ) {
-        super(PaymentInitiationRequestedEvent.class);
+        super();
         this.orderId = orderId;
         this.buyerId = buyerId;
         this.amount = amount;
         this.paymentMethod = paymentMethod;
         this.attach = attach;
         this.description = description;
-    }
-
-    @Override
-    public String eventType() {
-        return "PaymentInitiationRequested";
     }
 }

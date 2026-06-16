@@ -12,13 +12,8 @@ public class OrderCompletedEvent extends BaseDomainEvent {
     private final List<Long> productIds;
 
     public OrderCompletedEvent(Long orderId, List<Long> productIds) {
-        super(OrderCompletedEvent.class);
+        super();
         this.orderId = orderId;
         this.productIds = productIds;
-    }
-
-    @Override
-    public String eventType() {
-        return "OrderCompleted";
     }
 }

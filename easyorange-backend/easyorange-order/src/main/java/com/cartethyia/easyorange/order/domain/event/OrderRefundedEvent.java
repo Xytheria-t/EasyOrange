@@ -13,14 +13,9 @@ public class OrderRefundedEvent extends BaseDomainEvent {
     private final String reason;
 
     public OrderRefundedEvent(Long orderId, List<Long> productIds, String reason) {
-        super(OrderRefundedEvent.class);
+        super();
         this.orderId = orderId;
         this.productIds = productIds;
         this.reason = reason;
-    }
-
-    @Override
-    public String eventType() {
-        return "OrderRefunded";
     }
 }

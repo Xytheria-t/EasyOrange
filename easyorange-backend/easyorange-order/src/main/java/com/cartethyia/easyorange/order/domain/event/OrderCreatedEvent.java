@@ -16,17 +16,12 @@ public class OrderCreatedEvent extends BaseDomainEvent {
     private final BigDecimal totalAmount;
 
     public OrderCreatedEvent(Long orderId, Long buyerId, Long sellerId, List<OrderItemPayload> items, BigDecimal totalAmount) {
-        super(OrderCreatedEvent.class);
+        super();
         this.orderId = orderId;
         this.buyerId = buyerId;
         this.sellerId = sellerId;
         this.items = items;
         this.totalAmount = totalAmount;
-    }
-
-    @Override
-    public String eventType() {
-        return "OrderCreated";
     }
 
     @Getter
