@@ -58,7 +58,7 @@ class RabbitMQDomainEventPublisherIT {
         await()
             .atMost(Duration.ofSeconds(5))
             .untilAsserted(() -> {
-                Message message = rabbitTemplate.receive("eo.product.events", 1000);
+                Message message = rabbitTemplate.receive(RabbitMQConfig.QUEUE_PRODUCT_CQRS, 1000);
                 assertThat(message).isNotNull();
             });
     }
@@ -76,7 +76,7 @@ class RabbitMQDomainEventPublisherIT {
             .untilAsserted(() -> {
                 List<Message> messages = new ArrayList<>();
                 Message msg;
-                while ((msg = rabbitTemplate.receive("eo.product.events", 100)) != null) {
+                while ((msg = rabbitTemplate.receive(RabbitMQConfig.QUEUE_PRODUCT_CQRS, 100)) != null) {
                     messages.add(msg);
                 }
                 assertThat(messages).hasSizeGreaterThanOrEqualTo(2);
