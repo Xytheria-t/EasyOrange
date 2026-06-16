@@ -14,15 +14,10 @@ public class MessageRecalledEvent extends BaseDomainEvent {
     private final LocalDateTime recalledAt;
 
     public MessageRecalledEvent(Long messageId, String conversationId, Long operatorId, LocalDateTime recalledAt) {
-        super(MessageRecalledEvent.class);
+        super();
         this.messageId = messageId;
         this.conversationId = conversationId;
         this.operatorId = operatorId;
         this.recalledAt = recalledAt;
-    }
-
-    @Override
-    public String eventType() {
-        return "MessageRecalled";
     }
 }

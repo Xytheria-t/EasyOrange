@@ -10,13 +10,8 @@ public class MessageDeletedEvent extends BaseDomainEvent {
     private final Long deleterId;
 
     public MessageDeletedEvent(Long messageId, Long deleterId) {
-        super(MessageDeletedEvent.class);
+        super();
         this.messageId = messageId;
         this.deleterId = deleterId;
-    }
-
-    @Override
-    public String eventType() {
-        return "MessageDeleted";
     }
 }

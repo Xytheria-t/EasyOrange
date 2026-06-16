@@ -10,13 +10,8 @@ public class MessageReadEvent extends BaseDomainEvent {
     private final Long readerId;
 
     public MessageReadEvent(Long messageId, Long readerId) {
-        super(MessageReadEvent.class);
+        super();
         this.messageId = messageId;
         this.readerId = readerId;
-    }
-
-    @Override
-    public String eventType() {
-        return "MessageRead";
     }
 }

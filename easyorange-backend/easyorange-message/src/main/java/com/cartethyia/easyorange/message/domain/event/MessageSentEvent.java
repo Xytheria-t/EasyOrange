@@ -12,15 +12,10 @@ public class MessageSentEvent extends BaseDomainEvent {
     private final Integer type;
 
     public MessageSentEvent(Long messageId, Long senderId, Long receiverId, Integer type) {
-        super(MessageSentEvent.class);
+        super();
         this.messageId = messageId;
         this.senderId = senderId;
         this.receiverId = receiverId;
         this.type = type;
-    }
-
-    @Override
-    public String eventType() {
-        return "MessageSent";
     }
 }
