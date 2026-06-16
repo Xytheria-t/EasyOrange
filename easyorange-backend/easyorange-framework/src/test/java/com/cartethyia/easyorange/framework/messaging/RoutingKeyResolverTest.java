@@ -21,32 +21,32 @@ class RoutingKeyResolverTest {
 
     @ParameterizedTest(name = "[{index}] {0} -> {1}")
     @CsvSource({
-        "OrderCreated, order.aggregate.created",
-        "OrderCancelled, order.aggregate.cancelled",
-        "OrderPaid, order.aggregate.paid",
-        "OrderCompleted, order.aggregate.completed",
-        "OrderRefunded, order.aggregate.refunded",
-        "OrderShipped, order.aggregate.shipped",
-        "StockReservationRequested, order.stock.reservation-requested",
-        "PaymentInitiationRequested, order.payment.initiation-requested",
-        "ProductCreated, product.aggregate.created",
-        "ProductUpdated, product.aggregate.updated",
-        "ProductDeleted, product.aggregate.deleted",
-        "ProductMarkedSold, product.aggregate.marked-sold",
-        "ProductSubmittedForReview, product.aggregate.submitted-for-review",
-        "ProductAudited, product.audit.completed",
-        "ReportProcessed, product.report.processed",
-        "StockDecreased, product.stock.decreased",
-        "StockRestored, product.stock.restored",
-        "PaymentCreated, payment.transaction.created",
-        "PaymentSucceeded, payment.transaction.succeeded",
-        "PaymentFailed, payment.transaction.failed",
-        "PaymentRefunded, payment.transaction.refunded",
-        "PaymentClosed, payment.transaction.closed",
-        "MessageSent, message.aggregate.sent",
-        "MessageRead, message.aggregate.read",
-        "MessageDeleted, message.aggregate.deleted",
-        "MessageRecalled, message.aggregate.recalled"
+        "OrderCreated, order.created",
+        "OrderCancelled, order.cancelled",
+        "OrderPaid, order.paid",
+        "OrderCompleted, order.completed",
+        "OrderRefunded, order.refunded",
+        "OrderShipped, order.shipped",
+        "StockReservationRequested, stock.reservation.requested",
+        "PaymentInitiationRequested, payment.initiation.requested",
+        "ProductCreated, product.created",
+        "ProductUpdated, product.updated",
+        "ProductDeleted, product.deleted",
+        "ProductMarkedSold, product.marked.sold",
+        "ProductSubmittedForReview, product.submitted.for.review",
+        "ProductAudited, product.audited",
+        "ReportProcessed, report.processed",
+        "StockDecreased, stock.decreased",
+        "StockRestored, stock.restored",
+        "PaymentCreated, payment.created",
+        "PaymentSucceeded, payment.succeeded",
+        "PaymentFailed, payment.failed",
+        "PaymentRefunded, payment.refunded",
+        "PaymentClosed, payment.closed",
+        "MessageSent, message.sent",
+        "MessageRead, message.read",
+        "MessageDeleted, message.deleted",
+        "MessageRecalled, message.recalled"
     })
     @DisplayName("resolve known event types returns correct routing keys")
     void resolve_knownEventType_returnsCorrectRoutingKey(String eventType, String expectedRoutingKey) {
@@ -55,44 +55,17 @@ class RoutingKeyResolverTest {
     }
 
     @Test
-    @DisplayName("resolve unknown event type throws IllegalArgumentException")
-    void resolve_unknownEventType_throwsException() {
-        var unknownEvent = createTestEvent("UnknownEvent");
-        assertThatThrownBy(() -> resolver.resolve(unknownEvent))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("No routing key defined for event type: UnknownEvent");
+    @DisplayName("resolve unknown event type produces convention-based key (no exception)")
+    void resolve_unknownEventType_producesConventionKey() {
+        var unknownEvent = createTestEvent("UserRegistered");
+        assertThat(resolver.resolve(unknownEvent)).isEqualTo("user.registered");
     }
 
     @Test
-    @DisplayName("hasRoutingKey returns true for known event type")
-    void hasRoutingKey_knownEventType_returnsTrue() {
-        assertThat(resolver.hasRoutingKey("OrderCreated")).isTrue();
-        assertThat(resolver.hasRoutingKey("PaymentFailed")).isTrue();
-        assertThat(resolver.hasRoutingKey("MessageRecalled")).isTrue();
-    }
-
-    @Test
-    @DisplayName("hasRoutingKey returns false for unknown event type")
-    void hasRoutingKey_unknownEventType_returnsFalse() {
-        assertThat(resolver.hasRoutingKey("UnknownEvent")).isFalse();
-        assertThat(resolver.hasRoutingKey("")).isFalse();
-    }
-
-    @Test
-    @DisplayName("getRegisteredEventTypes returns all 26 event types")
-    void getRegisteredEventTypes_returnsAllEventTypes() {
-        var eventTypes = resolver.getRegisteredEventTypes();
-        assertThat(eventTypes).hasSize(26);
-        assertThat(eventTypes).containsExactlyInAnyOrder(
-            "OrderCreated", "OrderCancelled", "OrderPaid", "OrderCompleted",
-            "OrderRefunded", "OrderShipped", "StockReservationRequested",
-            "PaymentInitiationRequested", "ProductCreated", "ProductUpdated",
-            "ProductDeleted", "ProductMarkedSold", "ProductSubmittedForReview",
-            "ProductAudited", "ReportProcessed",
-            "StockDecreased", "StockRestored", "PaymentCreated", "PaymentSucceeded",
-            "PaymentFailed", "PaymentRefunded", "PaymentClosed", "MessageSent",
-            "MessageRead", "MessageDeleted", "MessageRecalled"
-        );
+    @DisplayName("resolve single-word event type")
+    void resolve_singleWordEventType() {
+        var event = createTestEvent("Login");
+        assertThat(resolver.resolve(event)).isEqualTo("login");
     }
 
     private static BaseDomainEvent createTestEvent(String eventType) {
