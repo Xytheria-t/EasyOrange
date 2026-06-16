@@ -1,11 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq.subscriber;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
-import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
-import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
-import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
-import com.cartethyia.easyorange.order.domain.event.StockReservationRequestedEvent;
+import com.cartethyia.easyorange.order.domain.event.*;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,11 +17,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("OrderEventConsumers 单元测试")
+@DisplayName("OrderSagaEventConsumer 单元测试")
 class OrderEventSubscribersTest {
 
     private static final Long ORDER_ID = 100L;
@@ -34,20 +29,23 @@ class OrderEventSubscribersTest {
     private static final Long SELLER_ID = 2L;
 
     @Nested
-    @DisplayName("OrderCreatedEventConsumer")
-    class OrderCreatedEventConsumerTests {
+    @DisplayName("OrderSagaEventConsumer")
+    class OrderSagaEventConsumerTests {
 
         @Mock
         private DomainEventPublisher domainEventPublisher;
 
-        private OrderCreatedEventConsumer consumer;
+        @Mock
+        private ProductInventoryPort productInventoryPort;
+
+        private OrderSagaEventConsumer consumer;
 
         @Captor
         private ArgumentCaptor<StockReservationRequestedEvent> stockEventCaptor;
 
         @BeforeEach
         void setUp() {
-            consumer = new OrderCreatedEventConsumer(domainEventPublisher);
+            consumer = new OrderSagaEventConsumer(domainEventPublisher, productInventoryPort);
         }
 
         @Test
@@ -65,21 +63,6 @@ class OrderEventSubscribersTest {
             assertThat(captured.getProductId()).isEqualTo(PRODUCT_ID);
             assertThat(captured.getQuantity()).isEqualTo(1);
         }
-    }
-
-    @Nested
-    @DisplayName("OrderCancelledEventConsumer")
-    class OrderCancelledEventConsumerTests {
-
-        @Mock
-        private ProductInventoryPort productInventoryPort;
-
-        private OrderCancelledEventConsumer consumer;
-
-        @BeforeEach
-        void setUp() {
-            consumer = new OrderCancelledEventConsumer(productInventoryPort);
-        }
 
         @Test
         @DisplayName("收到订单取消事件后恢复库存")
@@ -90,21 +73,6 @@ class OrderEventSubscribersTest {
 
             verify(productInventoryPort).restoreStock(PRODUCT_ID);
         }
-    }
-
-    @Nested
-    @DisplayName("OrderCompletedEventConsumer")
-    class OrderCompletedEventConsumerTests {
-
-        @Mock
-        private ProductInventoryPort productInventoryPort;
-
-        private OrderCompletedEventConsumer consumer;
-
-        @BeforeEach
-        void setUp() {
-            consumer = new OrderCompletedEventConsumer(productInventoryPort);
-        }
 
         @Test
         @DisplayName("收到订单完成事件后标记商品已售")
@@ -114,21 +82,6 @@ class OrderEventSubscribersTest {
             consumer.onOrderCompleted(event);
 
             verify(productInventoryPort).markAsSold(PRODUCT_ID);
-        }
-    }
-
-    @Nested
-    @DisplayName("OrderRefundedEventConsumer")
-    class OrderRefundedEventConsumerTests {
-
-        @Mock
-        private ProductInventoryPort productInventoryPort;
-
-        private OrderRefundedEventConsumer consumer;
-
-        @BeforeEach
-        void setUp() {
-            consumer = new OrderRefundedEventConsumer(productInventoryPort);
         }
 
         @Test
