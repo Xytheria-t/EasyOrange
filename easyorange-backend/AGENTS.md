@@ -70,7 +70,10 @@ eventPublisher.publish(new SomeEvent(...));
 ```
 
 - `RabbitMQDomainEventPublisher`（`@Primary`）将事件发布到 `eo.domain.events` Topic Exchange
-- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（11 个消费者，见根目录 AGENTS.md）
+- 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
+- 每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
+- 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发，非轮询竞争）
+- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（9 个消费者，见根目录 AGENTS.md）
 - `@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
 
 ## 跨模块通信
@@ -90,8 +93,8 @@ eventPublisher.publish(new SomeEvent(...));
 
 **事件流**：
 ```
-OrderCreatedEvent → OrderCreatedEventSubscriber → StockReservationRequestedEvent → StockReservationEventListener → ProductCommandService.decrementStock()
-PaymentInitiationRequestedEvent → PaymentInitiationEventListener → PaymentCommandHandler.handle()
+OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → StockReservationEventConsumer → ProductCommandService.decrementStock()
+PaymentInitiationRequestedEvent → PaymentInitiationEventConsumer → PaymentCommandHandler.handle()
 ```
 
 ## 统一响应格式

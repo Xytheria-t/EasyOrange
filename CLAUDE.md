@@ -151,7 +151,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
 - **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）
 - **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
-- **RabbitMQ 路由键规范**: 新增领域事件必须在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 中注册路由键，格式为 `{module}.{aggregate}.{event}`（如 `order.aggregate.created`）。使用字符串映射 `event.eventType()` 作为 key（非 Class 引用），避免 Maven 循环依赖
+- **RabbitMQ 路由键规范**: 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。`BaseDomainEvent.eventType()` 自动从类名去除 `Event` 后缀，`RoutingKeyResolver` 再将 camelCase 转为 dot.case。新增领域事件只需创建事件类，路由键自动生效
+- **RabbitMQ 消费者模式**: 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），禁止在同一个队列上使用多个方法级 `@RabbitListener`（会导致轮询竞争）。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
 - **RabbitMQ-only 模式**: 领域事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange。所有消费者的 `@ConditionalOnProperty(matchIfMissing=true)` 仅用于确保无 RabbitMQ 环境（开发/测试）下启动不报错，EventBus 回退模式已移除
 - **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)

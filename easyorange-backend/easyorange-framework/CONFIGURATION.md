@@ -241,8 +241,10 @@ domainEventPublisher.publish(new UserCreatedEvent(userId));
 
 **注意事项**：
 
-- 确保事件类继承 `BaseDomainEvent`
-- 新增事件需在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 注册路由键
+- 确保事件类继承 `BaseDomainEvent`（仅含 `eventId` + `occurredOn`，`eventType()` 由类名自动派生）
+- 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
+- 每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
+- 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发）
 
 ---
 

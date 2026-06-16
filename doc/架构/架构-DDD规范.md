@@ -145,10 +145,12 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
 ## 五、领域事件
 
-- **事件基类**：所有领域事件继承 `common` 中的 `BaseDomainEvent`
+- **事件基类**：所有领域事件继承 `common` 中的 `BaseDomainEvent`（仅含 `eventId` + `occurredOn`，`eventType()` 由类名自动派生）
 - **事件命名**：使用过去时态（UserRegistered、OrderPaid、PasswordChanged）
 - **事件内容**：仅包含必要 ID 和状态，不传输完整聚合
 - **事件发布**：应用服务调用 `DomainEventPublisher` 发布，框架层通过 RabbitMQ Topic Exchange 路由到各模块 `@RabbitListener` 消费者
+- **路由键**：由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
+- **消费者模式**：多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），每个消费者独占队列，失败消息路由到 DLQ + 指数退避重试
 
 `[现状]` 已从 Spring EventBus + Outbox 迁移到 RabbitMQ 单点发布模式。`RabbitMQDomainEventPublisher` 为唯一实现，通过 Topic Exchange（`eo.domain.events`）+ Quorum Queue 确保可靠投递。`@ConditionalOnProperty(matchIfMissing=true)` 保留以支持无 RabbitMQ 环境启动。
 
