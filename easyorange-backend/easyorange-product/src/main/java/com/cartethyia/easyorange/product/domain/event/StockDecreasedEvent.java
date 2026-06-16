@@ -8,7 +8,7 @@ public class StockDecreasedEvent extends BaseDomainEvent {
     private final int quantity;
 
     public StockDecreasedEvent(Long productId) {
-        super(StockDecreasedEvent.class);
+        super();
         this.productId = productId;
         this.quantity = 1;
     }
@@ -16,8 +16,4 @@ public class StockDecreasedEvent extends BaseDomainEvent {
     public Long getProductId() { return productId; }
     public int getQuantity() { return quantity; }
 
-    @Override
-    public String eventType() {
-        return "StockDecreased";
-    }
 }

@@ -8,7 +8,7 @@ public class ProductDeletedEvent extends BaseDomainEvent {
     private final Long userId;
 
     public ProductDeletedEvent(Long productId, Long userId) {
-        super(ProductDeletedEvent.class);
+        super();
         this.productId = productId;
         this.userId = userId;
     }
@@ -16,8 +16,4 @@ public class ProductDeletedEvent extends BaseDomainEvent {
     public Long getProductId() { return productId; }
     public Long getUserId() { return userId; }
 
-    @Override
-    public String eventType() {
-        return "ProductDeleted";
-    }
 }

@@ -13,16 +13,11 @@ public class ProductSubmittedForReviewEvent extends BaseDomainEvent {
 
     public ProductSubmittedForReviewEvent(Long productId, Long sellerId,
                                           Integer beforeStatus, Integer afterStatus) {
-        super(ProductSubmittedForReviewEvent.class);
+        super();
         this.productId = productId;
         this.sellerId = sellerId;
         this.beforeStatus = beforeStatus;
         this.afterStatus = afterStatus;
-    }
-
-    @Override
-    public String eventType() {
-        return "ProductSubmittedForReview";
     }
 
     public Long getProductId() {

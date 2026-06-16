@@ -17,18 +17,13 @@ public class ReportProcessedEvent extends BaseDomainEvent {
 
     public ReportProcessedEvent(Long reportId, Long reporterId, Long productId,
                                 boolean approved, String remark, LocalDateTime processedTime) {
-        super(ReportProcessedEvent.class);
+        super();
         this.reportId = reportId;
         this.reporterId = reporterId;
         this.productId = productId;
         this.approved = approved;
         this.remark = remark;
         this.processedTime = processedTime;
-    }
-
-    @Override
-    public String eventType() {
-        return "ReportProcessed";
     }
 
     // Record-style accessors for backward compatibility

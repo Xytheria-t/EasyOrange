@@ -24,7 +24,7 @@ public class ProductCreatedEvent extends BaseDomainEvent {
                               BigDecimal price, BigDecimal originalPrice, Integer stock,
                               Integer conditionLevel, String location, String contactMethod,
                               String description, List<String> imageUrls) {
-        super(ProductCreatedEvent.class);
+        super();
         this.productId = productId;
         this.userId = userId;
         this.categoryId = categoryId;
@@ -52,8 +52,4 @@ public class ProductCreatedEvent extends BaseDomainEvent {
     public String getDescription() { return description; }
     public List<String> getImageUrls() { return imageUrls; }
 
-    @Override
-    public String eventType() {
-        return "ProductCreated";
-    }
 }

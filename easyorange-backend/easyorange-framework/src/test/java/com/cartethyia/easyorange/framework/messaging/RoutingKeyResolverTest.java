@@ -96,7 +96,7 @@ class RoutingKeyResolverTest {
     }
 
     private static BaseDomainEvent createTestEvent(String eventType) {
-        return new BaseDomainEvent(RoutingKeyResolverTest.class) {
+        return new BaseDomainEvent() {
             @Override
             public String eventType() {
                 return eventType;

@@ -84,7 +84,7 @@ class RabbitMQDomainEventPublisherIT {
     }
 
     private static BaseDomainEvent createTestEvent(String eventType) {
-        return new BaseDomainEvent(RabbitMQDomainEventPublisherIT.class) {
+        return new BaseDomainEvent() {
             @Override
             public String eventType() {
                 return eventType;

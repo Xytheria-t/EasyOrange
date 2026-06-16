@@ -8,7 +8,7 @@ public class ProductMarkedSoldEvent extends BaseDomainEvent {
     private final Long sellerId;
 
     public ProductMarkedSoldEvent(Long productId, Long sellerId) {
-        super(ProductMarkedSoldEvent.class);
+        super();
         this.productId = productId;
         this.sellerId = sellerId;
     }
@@ -17,8 +17,4 @@ public class ProductMarkedSoldEvent extends BaseDomainEvent {
 
     public Long getSellerId() { return sellerId; }
 
-    @Override
-    public String eventType() {
-        return "ProductMarkedSold";
-    }
 }

@@ -17,18 +17,13 @@ public class ProductAuditedEvent extends BaseDomainEvent {
 
     public ProductAuditedEvent(Long productId, String productName, Long sellerId,
                                Integer action, String reason, LocalDateTime auditTime) {
-        super(ProductAuditedEvent.class);
+        super();
         this.productId = productId;
         this.productName = productName;
         this.sellerId = sellerId;
         this.action = action;
         this.reason = reason;
         this.auditTime = auditTime;
-    }
-
-    @Override
-    public String eventType() {
-        return "ProductAudited";
     }
 
     // Record-style accessors for backward compatibility
