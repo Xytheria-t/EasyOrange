@@ -19,6 +19,7 @@ public class RabbitMQProperties {
 
     private PublisherConfig publisher = new PublisherConfig();
     private ConsumerConfig consumer = new ConsumerConfig();
+    private DlqConfig dlq = new DlqConfig();
     private List<QueueConfig> queues = List.of();
 
     @Data
@@ -33,6 +34,12 @@ public class RabbitMQProperties {
         private int prefetch = 10;
         private boolean defaultRequeueRejected = false;
         private ConcurrencyConfig concurrency = new ConcurrencyConfig();
+    }
+
+    @Data
+    public static class DlqConfig {
+        private boolean enabled = true;
+        private String exchange = "eo.dlq";
     }
 
     @Data
