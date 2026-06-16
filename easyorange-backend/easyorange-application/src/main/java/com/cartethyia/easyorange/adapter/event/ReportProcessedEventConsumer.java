@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.event;
 
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
 import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
@@ -18,7 +19,7 @@ public class ReportProcessedEventConsumer {
     private final MessageCommandHandler messageCommandHandler;
 
     @RabbitListener(
-        queues = "eo.message.events",
+        queues = RabbitMQConfig.QUEUE_REPORT_NOTIFICATION,
         containerFactory = "domainEventContainerFactory"
     )
     public void onReportProcessed(ReportProcessedEvent event) {

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.event;
 
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.order.domain.event.StockReservationRequestedEvent;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
 import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
@@ -18,7 +19,7 @@ public class StockReservationEventConsumer {
     private final ProductCommandService productCommandService;
 
     @RabbitListener(
-        queues = "eo.product.events",
+        queues = RabbitMQConfig.QUEUE_STOCK_RESERVATION,
         containerFactory = "domainEventContainerFactory"
     )
     public void onStockReservationRequested(StockReservationRequestedEvent event) {

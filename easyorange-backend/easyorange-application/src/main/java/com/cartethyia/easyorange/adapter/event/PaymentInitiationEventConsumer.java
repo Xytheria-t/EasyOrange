@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.event;
 
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.order.domain.event.PaymentInitiationRequestedEvent;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
@@ -18,7 +19,7 @@ public class PaymentInitiationEventConsumer {
     private final PaymentCommandHandler paymentCommandHandler;
 
     @RabbitListener(
-        queues = "eo.payment.events",
+        queues = RabbitMQConfig.QUEUE_PAYMENT_INITIATION,
         containerFactory = "domainEventContainerFactory"
     )
     public void onPaymentInitiationRequested(PaymentInitiationRequestedEvent event) {

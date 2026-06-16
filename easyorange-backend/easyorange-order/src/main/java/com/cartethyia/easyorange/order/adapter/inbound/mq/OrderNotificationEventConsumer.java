@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.adapter.inbound.mq;
 import com.cartethyia.easyorange.common.notification.NotificationService;
 import com.cartethyia.easyorange.common.notification.NotificationService.Notification;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
@@ -15,12 +16,17 @@ import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@RabbitListener(
+    queues = RabbitMQConfig.QUEUE_ORDER_NOTIFICATION,
+    containerFactory = "domainEventContainerFactory"
+)
 public class OrderNotificationEventConsumer {
 
     private final EventIdempotencyChecker idempotencyChecker;
@@ -28,10 +34,7 @@ public class OrderNotificationEventConsumer {
     private final OrderReadRepository orderReadRepository;
     private final UserInfoPort userInfoPort;
 
-    @RabbitListener(
-        queues = "eo.product.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onOrderCreated(OrderCreatedEvent event) {
         String eventId = "created:" + event.getOrderId();
         if (!tryAcquireLock("OrderCreated", eventId)) {
@@ -50,10 +53,7 @@ public class OrderNotificationEventConsumer {
         }
     }
 
-    @RabbitListener(
-        queues = "eo.product.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onOrderPaid(OrderPaidEvent event) {
         String eventId = "paid:" + event.getOrderId();
         if (!tryAcquireLock("OrderPaid", eventId)) {
@@ -72,10 +72,7 @@ public class OrderNotificationEventConsumer {
         }
     }
 
-    @RabbitListener(
-        queues = "eo.product.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onOrderShipped(OrderShippedEvent event) {
         String eventId = "shipped:" + event.getOrderId();
         if (!tryAcquireLock("OrderShipped", eventId)) {
@@ -94,10 +91,7 @@ public class OrderNotificationEventConsumer {
         }
     }
 
-    @RabbitListener(
-        queues = "eo.product.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onOrderCompleted(OrderCompletedEvent event) {
         String eventId = "completed:" + event.getOrderId();
         if (!tryAcquireLock("OrderCompleted", eventId)) {
@@ -116,10 +110,7 @@ public class OrderNotificationEventConsumer {
         }
     }
 
-    @RabbitListener(
-        queues = "eo.product.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onOrderCancelled(OrderCancelledEvent event) {
         String eventId = "cancelled:" + event.getOrderId();
         if (!tryAcquireLock("OrderCancelled", eventId)) {
@@ -138,10 +129,7 @@ public class OrderNotificationEventConsumer {
         }
     }
 
-    @RabbitListener(
-        queues = "eo.product.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onOrderRefunded(OrderRefundedEvent event) {
         String eventId = "refunded:" + event.getOrderId();
         if (!tryAcquireLock("OrderRefunded", eventId)) {

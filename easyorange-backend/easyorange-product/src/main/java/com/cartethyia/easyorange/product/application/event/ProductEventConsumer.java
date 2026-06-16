@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.event;
 
 import com.cartethyia.easyorange.framework.bloom.RedisBitmapBloomFilter;
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -10,6 +11,7 @@ import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,10 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
+@RabbitListener(
+    queues = RabbitMQConfig.QUEUE_PRODUCT_CQRS,
+    containerFactory = "domainEventContainerFactory"
+)
 public class ProductEventConsumer {
 
     private static final int LOW_STOCK_THRESHOLD = 5;
@@ -30,10 +36,7 @@ public class ProductEventConsumer {
     private final Optional<ProductSearchIndexPort> searchIndexPort;
     private final RedisBitmapBloomFilter bloomFilter;
 
-    @RabbitListener(
-        queues = "eo.order.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onProductCreated(ProductCreatedEvent event) {
         Long productId = event.getProductId();
         log.info("event=ProductCreated productId={} userId={} name={} categoryId={}",
@@ -45,10 +48,7 @@ public class ProductEventConsumer {
         searchIndexPort.ifPresent(port -> safeCall(() -> port.indexProduct(productId), "indexProduct", productId));
     }
 
-    @RabbitListener(
-        queues = "eo.order.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onProductUpdated(ProductUpdatedEvent event) {
         Long productId = event.getProductId();
         log.info("event=ProductUpdated productId={} userId={} categoryId={}", productId, event.getUserId(), event.getCategoryId());
@@ -56,10 +56,7 @@ public class ProductEventConsumer {
         searchIndexPort.ifPresent(port -> safeCall(() -> port.updateProductIndex(productId), "updateProductIndex", productId));
     }
 
-    @RabbitListener(
-        queues = "eo.order.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onProductDeleted(ProductDeletedEvent event) {
         Long productId = event.getProductId();
         log.info("event=ProductDeleted productId={} userId={}", productId, event.getUserId());
@@ -67,10 +64,7 @@ public class ProductEventConsumer {
         searchIndexPort.ifPresent(port -> safeCall(() -> port.removeProductIndex(productId), "removeProductIndex", productId));
     }
 
-    @RabbitListener(
-        queues = "eo.order.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onProductMarkedSold(ProductMarkedSoldEvent event) {
         Long productId = event.getProductId();
         log.info("event=ProductMarkedSold productId={} sellerId={}", productId, event.getSellerId());
@@ -79,20 +73,14 @@ public class ProductEventConsumer {
         searchIndexPort.ifPresent(port -> safeCall(() -> port.updateProductIndex(productId), "updateProductIndex", productId));
     }
 
-    @RabbitListener(
-        queues = "eo.order.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onStockDecreased(StockDecreasedEvent event) {
         Long productId = event.getProductId();
         log.info("event=StockDecreased productId={} quantity={}", productId, event.getQuantity());
         checkLowStock(productId);
     }
 
-    @RabbitListener(
-        queues = "eo.order.events",
-        containerFactory = "domainEventContainerFactory"
-    )
+    @RabbitHandler
     public void onStockRestored(StockRestoredEvent event) {
         Long productId = event.getProductId();
         log.info("event=StockRestored productId={} quantity={}", productId, event.getQuantity());

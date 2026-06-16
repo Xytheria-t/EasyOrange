@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.websocket;
 
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ public class WebSocketEventConsumer {
     private final ChatWebSocketHandler chatWebSocketHandler;
 
     @RabbitListener(
-        queues = "eo.message.events",
+        queues = RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET,
         containerFactory = "domainEventContainerFactory"
     )
     public void handleMessageRecalledEvent(MessageRecalledEvent event) {
