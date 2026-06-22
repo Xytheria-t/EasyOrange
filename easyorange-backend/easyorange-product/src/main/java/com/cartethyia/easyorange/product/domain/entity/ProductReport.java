@@ -9,24 +9,28 @@ import java.time.LocalDateTime;
 @Getter
 public class ProductReport {
 
-    private Long id;
+    private final Long id;
     private final Long productId;
     private final Long reporterId;
     private final String reason;
-    private Integer reasonType;
-    private ProductReportStatus status;
-    private String remark;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private final Integer reasonType;
+    private final ProductReportStatus status;
+    private final String remark;
+    private final LocalDateTime createTime;
+    private final LocalDateTime updateTime;
 
-    private ProductReport(Long productId, Long reporterId, String reason, Integer reasonType) {
+    private ProductReport(Long id, Long productId, Long reporterId, String reason,
+                          Integer reasonType, ProductReportStatus status,
+                          String remark, LocalDateTime createTime, LocalDateTime updateTime) {
+        this.id = id;
         this.productId = productId;
         this.reporterId = reporterId;
         this.reason = reason;
         this.reasonType = reasonType;
-        this.status = ProductReportStatus.PENDING;
-        this.createTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
+        this.status = status;
+        this.remark = remark;
+        this.createTime = createTime;
+        this.updateTime = updateTime;
     }
 
     public static ProductReport create(Long productId, Long reporterId, String reason, Integer reasonType) {
@@ -39,38 +43,33 @@ public class ProductReport {
         if (reason == null || reason.isBlank()) {
             throw new ReportDomainException("举报原因不能为空");
         }
-        return new ProductReport(productId, reporterId, reason, reasonType);
+        LocalDateTime now = LocalDateTime.now();
+        return new ProductReport(null, productId, reporterId, reason, reasonType,
+                ProductReportStatus.PENDING, null, now, now);
     }
 
     public static ProductReport reconstitute(Long id, Long productId, Long reporterId,
                                               String reason, ProductReportStatus status,
                                               String remark, LocalDateTime createTime,
                                               LocalDateTime updateTime, Integer reasonType) {
-        ProductReport report = new ProductReport(productId, reporterId, reason, reasonType);
-        report.id = id;
-        report.status = status;
-        report.remark = remark;
-        report.createTime = createTime;
-        report.updateTime = updateTime;
-        return report;
+        return new ProductReport(id, productId, reporterId, reason, reasonType,
+                status, remark, createTime, updateTime);
     }
 
-    public void approve(String remark) {
+    public ProductReport approve(String remark) {
         if (!isPending()) {
             throw new ReportDomainException("只有待处理的举报才能被批准");
         }
-        this.status = ProductReportStatus.RESOLVED;
-        this.remark = remark;
-        this.updateTime = LocalDateTime.now();
+        return new ProductReport(id, productId, reporterId, reason, reasonType,
+                ProductReportStatus.RESOLVED, remark, createTime, LocalDateTime.now());
     }
 
-    public void reject(String remark) {
+    public ProductReport reject(String remark) {
         if (!isPending()) {
             throw new ReportDomainException("只有待处理的举报才能被驳回");
         }
-        this.status = ProductReportStatus.DISMISSED;
-        this.remark = remark;
-        this.updateTime = LocalDateTime.now();
+        return new ProductReport(id, productId, reporterId, reason, reasonType,
+                ProductReportStatus.DISMISSED, remark, createTime, LocalDateTime.now());
     }
 
     public boolean isPending() {
@@ -81,10 +80,12 @@ public class ProductReport {
         return status != null ? status.getCode() : null;
     }
 
-    public void assignId(Long id) {
-        if (this.id == null) {
-            this.id = id;
+    public ProductReport assignId(Long id) {
+        if (this.id != null) {
+            return this;
         }
+        return new ProductReport(id, productId, reporterId, reason, reasonType,
+                status, remark, createTime, updateTime);
     }
 
     public static class ReportDomainException extends BaseBusinessException {

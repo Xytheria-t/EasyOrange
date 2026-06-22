@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useCurrentUser, useLogout } from '@/hooks'
 import { userApi } from '@/api/userApi'
 import { favoriteApi } from '@/api/favoriteApi'
+import { orderApi } from '@/api/orderApi'
+import { productApi } from '@/api/productApi'
+import { messageApi } from '@/api/messageApi'
 import { useQueryClient } from '@tanstack/react-query'
 import { useUIStore } from '@/store/uiStore'
 import { errorHandler } from '@/utils/errorHandler'
@@ -38,6 +41,9 @@ function ProfilePage() {
   const [animateIn, setAnimateIn] = useState(false)
   const [favoriteCount, setFavoriteCount] = useState(0)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [orderCount, setOrderCount] = useState(0)
+  const [productCount, setProductCount] = useState(0)
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
 
   useEffect(() => {
     const timer = setTimeout(() => setAnimateIn(true), 100)
@@ -47,6 +53,27 @@ function ProfilePage() {
   useEffect(() => {
     favoriteApi.getCount()
       .then((res) => setFavoriteCount(res.data ?? 0))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    orderApi.getMyOrders({ pageNum: 1, pageSize: 1 })
+      .then((res) => setOrderCount(res.data?.total ?? 0))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    productApi.getMyProducts({ pageNum: 1, pageSize: 1 })
+      .then((res) => setProductCount(res.data?.total ?? 0))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    messageApi.getConversations()
+      .then((res) => {
+        const totalUnread = res.data?.reduce((sum, conv) => sum + conv.unreadCount, 0) ?? 0
+        setUnreadMessageCount(totalUnread)
+      })
       .catch(() => {})
   }, [])
 
@@ -189,6 +216,9 @@ function ProfilePage() {
               <ProfileOverview
                 user={user}
                 favoriteCount={favoriteCount}
+                orderCount={orderCount}
+                productCount={productCount}
+                unreadMessageCount={unreadMessageCount}
                 editingField={editingField}
                 editValue={editValue}
                 isSaving={isSaving}

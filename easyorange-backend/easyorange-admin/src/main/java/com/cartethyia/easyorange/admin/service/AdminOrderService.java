@@ -1,29 +1,28 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrderQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -31,76 +30,65 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminOrderService {
 
-    private final OrderMapper orderMapper;
-    private final OrderItemMapper orderItemMapper;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(CommonConstant.DATETIME_FORMAT);
+
+    private final AdminOrderQueryPort adminOrderQueryPort;
+    private final AdminUserQueryPort adminUserQueryPort;
     private final OrderReadRepository orderReadRepository;
     private final OrderRepository orderRepository;
-    private final UserMapper userMapper;
-    private final ProductMapper productMapper;
-    private final BatchQueryUtil batchQueryUtil;
 
     public PageResult<AdminOrderResponse> listOrders(AdminOrderQueryRequest request) {
-        int pageNum = request.getPageNum() != null ? request.getPageNum() : 1;
-        int pageSize = request.getPageSize() != null ? request.getPageSize() : 20;
+        LocalDateTime startTime = parseStartTime(request.getStartTime());
+        LocalDateTime endTime = parseEndTime(request.getEndTime());
 
-        var wrapper = ChainWrappers.lambdaQueryChain(orderMapper)
-            .eq(OrderDO::getDelFlag, 0);
+        OrderQueryCondition condition = new OrderQueryCondition(
+            request.getOrderNo(),
+            request.getBuyerId(),
+            request.getSellerId(),
+            request.getStatus(),
+            request.getPaymentStatus(),
+            startTime,
+            endTime,
+            request.getPageNum(),
+            request.getPageSize()
+        );
 
-        if (StringUtils.hasText(request.getOrderNo())) {
-            wrapper.like(OrderDO::getOrderNo, request.getOrderNo());
-        }
-        if (request.getBuyerId() != null) {
-            wrapper.eq(OrderDO::getBuyerId, request.getBuyerId());
-        }
-        if (request.getSellerId() != null) {
-            wrapper.eq(OrderDO::getSellerId, request.getSellerId());
-        }
-        if (request.getStatus() != null) {
-            wrapper.eq(OrderDO::getStatus, request.getStatus());
-        }
-        if (request.getPaymentStatus() != null) {
-            wrapper.eq(OrderDO::getPaymentStatus, request.getPaymentStatus());
-        }
-        if (StringUtils.hasText(request.getStartTime())) {
-            try {
-                LocalDateTime startTime = LocalDateTime.parse(request.getStartTime() + " 00:00:00", BatchQueryUtil.DATE_FORMATTER);
-                wrapper.ge(OrderDO::getCreateTime, startTime);
-            } catch (Exception ignored) {
-            }
-        }
-        if (StringUtils.hasText(request.getEndTime())) {
-            try {
-                LocalDateTime endTime = LocalDateTime.parse(request.getEndTime() + " 23:59:59", BatchQueryUtil.DATE_FORMATTER);
-                wrapper.le(OrderDO::getCreateTime, endTime);
-            } catch (Exception ignored) {
-            }
-        }
-
-        wrapper.orderByDesc(OrderDO::getCreateTime);
-
-        Page<OrderDO> page = wrapper.page(new Page<>(pageNum, pageSize));
+        OrderQueryResult result = adminOrderQueryPort.queryOrders(condition);
 
         Set<Long> userIds = new HashSet<>();
-        page.getRecords().forEach(o -> {
-            if (o.getBuyerId() != null) userIds.add(o.getBuyerId());
-            if (o.getSellerId() != null) userIds.add(o.getSellerId());
+        result.records().forEach(o -> {
+            if (o.buyerId() != null) userIds.add(o.buyerId());
+            if (o.sellerId() != null) userIds.add(o.sellerId());
         });
-        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(userIds.stream().toList());
-        Map<Long, List<OrderItemDO>> itemsMap = batchGetOrderItems(page);
-        Map<Long, ProductDO> productMap = batchGetProductsFromItems(itemsMap);
+        Map<Long, UserInfo> userMap = adminUserQueryPort.getUserInfos(userIds.stream().toList());
 
-        List<AdminOrderResponse> records = page.getRecords().stream()
+        List<Long> orderIds = result.records().stream()
+            .map(OrderSummary::id)
+            .toList();
+        Map<Long, List<OrderItemInfo>> itemsMap = adminOrderQueryPort.getOrderItems(orderIds);
+
+        Set<Long> productIds = itemsMap.values().stream()
+            .flatMap(Collection::stream)
+            .map(OrderItemInfo::productId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        Map<Long, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds.stream().toList());
+
+        List<AdminOrderResponse> records = result.records().stream()
             .map(order -> toAdminOrderResponse(order, userMap, itemsMap, productMap))
             .collect(Collectors.toList());
 
-        return PageResult.of(records, page.getTotal(), pageNum, pageSize);
+        return PageResult.of(records, result.total(), result.pageNum(), result.pageSize());
     }
 
     @Transactional(readOnly = true)
@@ -108,26 +96,20 @@ public class AdminOrderService {
         OrderReadModel model = orderReadRepository.findById(new OrderId(id))
             .orElseThrow(() -> BusinessException.of("订单不存在"));
 
-        UserEntity buyer = userMapper.selectById(model.buyerId());
-        UserEntity seller = userMapper.selectById(model.sellerId());
+        UserInfo buyer = adminUserQueryPort.getUserInfo(model.buyerId());
+        UserInfo seller = adminUserQueryPort.getUserInfo(model.sellerId());
 
         List<Long> productIds = model.items().stream()
             .map(OrderItemReadModel::productId)
             .distinct()
             .toList();
-        Map<Long, ProductDO> productMap;
-        if (!productIds.isEmpty()) {
-            productMap = productMapper.selectBatchIds(productIds).stream()
-                .collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
-        } else {
-            productMap = Map.of();
-        }
+        Map<Long, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds);
 
         List<AdminOrderDetailResponse.ProductInfo> productInfos = model.items().stream()
             .map(item -> {
-                ProductDO p = productMap.get(item.productId());
+                ProductInfo p = productMap.get(item.productId());
                 return p != null
-                    ? new AdminOrderDetailResponse.ProductInfo(p.getId(), p.getName(), null, p.getPrice())
+                    ? new AdminOrderDetailResponse.ProductInfo(p.id(), p.name(), null, p.price())
                     : new AdminOrderDetailResponse.ProductInfo(item.productId(), null, null, null);
             })
             .toList();
@@ -136,10 +118,10 @@ public class AdminOrderService {
             .orderId(model.id())
             .orderNo(model.orderNo())
             .buyer(buyer != null ? new AdminOrderDetailResponse.BuyerInfo(
-                buyer.getId(), buyer.getNickName(), buyer.getAvatar(), buyer.getPhone()
+                buyer.id(), buyer.nickName(), buyer.avatar(), buyer.phone()
             ) : new AdminOrderDetailResponse.BuyerInfo(model.buyerId(), null, null, null))
             .seller(seller != null ? new AdminOrderDetailResponse.SellerInfo(
-                seller.getId(), seller.getNickName(), seller.getAvatar(), seller.getPhone()
+                seller.id(), seller.nickName(), seller.avatar(), seller.phone()
             ) : new AdminOrderDetailResponse.SellerInfo(model.sellerId(), null, null, null))
             .products(productInfos)
             .totalAmount(model.totalAmount())
@@ -167,10 +149,12 @@ public class AdminOrderService {
 
         LocalDate today = LocalDate.now();
         LocalDateTime todayStart = today.atStartOfDay();
-        long todayOrders = ChainWrappers.lambdaQueryChain(orderMapper)
-            .eq(OrderDO::getDelFlag, 0)
-            .ge(OrderDO::getCreateTime, todayStart)
-            .count();
+
+        OrderQueryCondition todayCondition = new OrderQueryCondition(
+            null, null, null, null, null,
+            todayStart, null, null, null
+        );
+        long todayOrders = adminOrderQueryPort.queryOrders(todayCondition).total();
 
         BigDecimal totalRevenue = BigDecimal.ZERO;
         BigDecimal todayRevenue = BigDecimal.ZERO;
@@ -223,75 +207,61 @@ public class AdminOrderService {
         orderRepository.update(result.aggregate());
     }
 
-    private Map<Long, List<OrderItemDO>> batchGetOrderItems(Page<OrderDO> orderPage) {
-        List<Long> orderIds = orderPage.getRecords().stream()
-            .map(OrderDO::getId)
-            .filter(Objects::nonNull)
-            .toList();
-        if (orderIds.isEmpty()) {
-            return Map.of();
+    private LocalDateTime parseStartTime(String startTimeStr) {
+        if (!StringUtils.hasText(startTimeStr)) {
+            return null;
         }
-        List<OrderItemDO> items = ChainWrappers.lambdaQueryChain(orderItemMapper)
-            .in(OrderItemDO::getOrderId, orderIds)
-            .list();
-        return items.stream().collect(Collectors.groupingBy(OrderItemDO::getOrderId));
+        try {
+            return LocalDateTime.parse(startTimeStr + " 00:00:00", DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析开始时间: {}, 格式应为 yyyy-MM-dd", startTimeStr);
+            return null;
+        }
     }
 
-    private Map<Long, ProductDO> batchGetProductsFromItems(Map<Long, List<OrderItemDO>> itemsMap) {
-        Set<Long> productIds = itemsMap.values().stream()
-            .flatMap(Collection::stream)
-            .map(OrderItemDO::getProductId)
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-        if (productIds.isEmpty()) {
-            return Map.of();
+    private LocalDateTime parseEndTime(String endTimeStr) {
+        if (!StringUtils.hasText(endTimeStr)) {
+            return null;
         }
-        List<ProductDO> products = productMapper.selectBatchIds(productIds);
-        return products.stream().collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
+        try {
+            return LocalDateTime.parse(endTimeStr + " 23:59:59", DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析结束时间: {}, 格式应为 yyyy-MM-dd", endTimeStr);
+            return null;
+        }
     }
 
-    private AdminOrderResponse toAdminOrderResponse(OrderDO order, Map<Long, UserEntity> userMap,
-                                                     Map<Long, List<OrderItemDO>> itemsMap,
-                                                     Map<Long, ProductDO> productMap) {
-        UserEntity buyer = userMap.get(order.getBuyerId());
-        UserEntity seller = userMap.get(order.getSellerId());
-        OrderStatus status = OrderStatus.fromCode(order.getStatus());
+    private AdminOrderResponse toAdminOrderResponse(OrderSummary order, Map<Long, UserInfo> userMap,
+                                                     Map<Long, List<OrderItemInfo>> itemsMap,
+                                                     Map<Long, ProductInfo> productMap) {
+        UserInfo buyer = userMap.get(order.buyerId());
+        UserInfo seller = userMap.get(order.sellerId());
 
-        List<OrderItemDO> items = itemsMap.getOrDefault(order.getId(), List.of());
+        List<OrderItemInfo> items = itemsMap.getOrDefault(order.id(), List.of());
         List<AdminOrderResponse.ItemInfo> itemInfos = items.stream()
             .map(item -> {
-                ProductDO product = productMap.get(item.getProductId());
+                ProductInfo product = productMap.get(item.productId());
                 return new AdminOrderResponse.ItemInfo(
-                    item.getProductId(),
-                    product != null ? product.getName() : null
+                    item.productId(),
+                    product != null ? product.name() : null
                 );
             })
             .toList();
 
         return new AdminOrderResponse(
-            order.getId(),
-            order.getOrderNo(),
-            order.getBuyerId(),
-            buyer != null ? buyer.getNickName() : null,
-            order.getSellerId(),
-            seller != null ? seller.getNickName() : null,
+            order.id(),
+            order.orderNo(),
+            order.buyerId(),
+            buyer != null ? buyer.nickName() : null,
+            order.sellerId(),
+            seller != null ? seller.nickName() : null,
             itemInfos,
-            order.getTotalAmount(),
-            order.getStatus(),
-            status != null ? status.getDesc() : "未知状态",
-            order.getPaymentStatus(),
-            getPaymentStatusDesc(order.getPaymentStatus()),
-            order.getCreateTime()
+            order.totalAmount(),
+            order.status(),
+            order.statusDesc(),
+            order.paymentStatus(),
+            order.paymentStatusDesc(),
+            order.createTime()
         );
-    }
-
-    private String getPaymentStatusDesc(Integer paymentStatus) {
-        if (paymentStatus == null) return "未支付";
-        return switch (paymentStatus) {
-            case 0 -> "待支付";
-            case 1 -> "已支付";
-            case 2 -> "已退款";
-            default -> "未知";
-        };
     }
 }

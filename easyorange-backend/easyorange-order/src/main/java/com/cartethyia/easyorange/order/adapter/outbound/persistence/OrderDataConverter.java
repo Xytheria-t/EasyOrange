@@ -8,6 +8,8 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -155,7 +157,7 @@ public class OrderDataConverter {
         try {
             return objectMapper.writeValueAsString(snapshot);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize ProductSnapshot", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to serialize ProductSnapshot", e);
         }
     }
 
@@ -163,7 +165,7 @@ public class OrderDataConverter {
         try {
             return objectMapper.readValue(json, ProductSnapshot.class);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to deserialize ProductSnapshot", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to deserialize ProductSnapshot", e);
         }
     }
 }

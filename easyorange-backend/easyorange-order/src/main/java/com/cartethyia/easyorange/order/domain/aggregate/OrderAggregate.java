@@ -96,7 +96,7 @@ public class OrderAggregate {
     }
 
     public List<OrderItem> items() {
-        return items;
+        return List.copyOf(items);
     }
 
     public Money totalAmount() {

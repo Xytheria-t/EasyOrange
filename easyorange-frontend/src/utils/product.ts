@@ -3,35 +3,35 @@
  * @description 提供商品相关的工具函数
  */
 
-import type { Product } from '@/types';
+import type { Product, RawProduct } from '@/types';
 import { PRODUCT_STATUS_CODE } from '@/constants';
 
-export function normalizeProduct(raw: Record<string, unknown>): Product {
-    const status = typeof raw.status === 'number' ? raw.status : 1;
-    const condition = typeof raw.condition === 'number' ? raw.condition : 0;
+export function normalizeProduct(raw: RawProduct): Product {
+    const status = raw.status ?? 1;
+    const condition = raw.condition ?? 0;
     return {
-        id: raw.id as string,
-        title: (raw.title as string) ?? '',
-        description: (raw.description as string) ?? '',
-        price: raw.price as number,
-        originalPrice: (raw.originalPrice as number | null) ?? null,
-        categoryId: raw.categoryId as number,
-        categoryName: (raw.categoryName as string) ?? '',
+        id: raw.id,
+        title: raw.title ?? '',
+        description: raw.description ?? '',
+        price: raw.price,
+        originalPrice: raw.originalPrice ?? null,
+        categoryId: raw.categoryId,
+        categoryName: raw.categoryName ?? '',
         condition,
         conditionLevel: condition,
         status: PRODUCT_STATUS_CODE[status] ?? 'ONLINE',
-        images: (raw.images as string[]) ?? [],
-        location: (raw.location as string) ?? '',
-        views: (raw.views as number) ?? 0,
-        favorites: (raw.favorites as number) ?? 0,
-        sellerId: raw.sellerId as string,
-        sellerName: ((raw.sellerName as string) || (raw.username as string)) ?? '匿名用户',
-        sellerAvatar: ((raw.sellerAvatar as string | null) || (raw.userAvatar as string | null)) ?? null,
-        sellerRating: (raw.sellerRating as number) ?? 0,
-        createTime: (raw.createTime as string) ?? '',
-        updateTime: (raw.updateTime as string) ?? '',
-        stock: raw.stock as number | undefined,
-        contactMethod: (raw.contactMethod as string) ?? undefined,
+        images: raw.images ?? [],
+        location: raw.location ?? '',
+        views: raw.views ?? 0,
+        favorites: raw.favorites ?? 0,
+        sellerId: raw.sellerId,
+        sellerName: raw.sellerName ?? raw.username ?? '匿名用户',
+        sellerAvatar: raw.sellerAvatar ?? raw.userAvatar ?? null,
+        sellerRating: raw.sellerRating ?? 0,
+        createTime: raw.createTime ?? '',
+        updateTime: raw.updateTime ?? '',
+        stock: raw.stock,
+        contactMethod: raw.contactMethod,
     };
 }
 
@@ -55,4 +55,3 @@ export function getConditionNameFromString(condition: string): string {
     };
     return conditionMap[condition] || condition;
 }
-

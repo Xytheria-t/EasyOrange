@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.payment.application.idempotency;
 
+import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
 import com.cartethyia.easyorange.payment.domain.repository.IdempotencyKeyRepositoryPort;
 import tools.jackson.databind.ObjectMapper;
@@ -72,7 +74,7 @@ public class IdempotencyService {
             return bytesToHex(hash);
         } catch (Exception e) {
             log.error("请求哈希计算失败", e);
-            throw new RuntimeException("请求哈希计算失败", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "请求哈希计算失败", e);
         }
     }
 
@@ -89,7 +91,7 @@ public class IdempotencyService {
             return objectMapper.writeValueAsString(response);
         } catch (Exception e) {
             log.error("响应序列化失败", e);
-            throw new RuntimeException("响应序列化失败", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "响应序列化失败", e);
         }
     }
 
@@ -99,7 +101,7 @@ public class IdempotencyService {
             return objectMapper.readValue(responseData, responseType);
         } catch (Exception e) {
             log.error("响应反序列化失败", e);
-            throw new RuntimeException("响应反序列化失败", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "响应反序列化失败", e);
         }
     }
 

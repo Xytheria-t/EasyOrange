@@ -24,4 +24,11 @@ public enum UserType {
         }
         throw new IllegalArgumentException("Unknown UserType code: " + code);
     }
+
+    /**
+     * 判断是否为管理员类型（超级管理员或管理员）
+     */
+    public boolean isAdmin() {
+        return this == ADMIN || this == MANAGER;
+    }
 }

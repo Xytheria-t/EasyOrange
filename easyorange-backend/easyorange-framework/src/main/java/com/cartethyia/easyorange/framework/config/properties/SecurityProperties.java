@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Data
@@ -22,6 +23,12 @@ public class SecurityProperties {
     private String logoutUrl = "/api/auth/logout";
     private int passwordEncoderStrength = 10;
     private boolean xssProtectionEnabled = false;
+    
+    /**
+     * 管理员用户类型代码列表
+     * 默认值: ["00", "02"] (超级管理员和管理员)
+     */
+    private Set<String> adminUserTypes = Set.of("00", "02");
 
     @PostConstruct
     public void validate() {
@@ -42,8 +49,8 @@ public class SecurityProperties {
         } else if (passwordEncoderStrength > 14) {
             log.warn("⚠️ 警告：密码加密强度 {} 较高，可能影响登录性能", passwordEncoderStrength);
         }
-        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}, XSS 防护：{}",
-                logoutUrl, passwordEncoderStrength, xssProtectionEnabled ? "启用" : "禁用");
+        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}, XSS 防护：{}, 管理员类型：{}",
+                logoutUrl, passwordEncoderStrength, xssProtectionEnabled ? "启用" : "禁用", adminUserTypes);
     }
 
     private void validatePaths(String name, List<String> paths) {
@@ -56,4 +63,11 @@ public class SecurityProperties {
     public List<String> getProductPaths() { return List.copyOf(productPaths); }
     public List<String> getStaticPaths() { return List.copyOf(staticPaths); }
     public List<String> getAllowedOrigins() { return List.copyOf(allowedOrigins); }
+    
+    /**
+     * 判断用户类型是否为管理员
+     */
+    public boolean isAdminUserType(String userType) {
+        return adminUserTypes.contains(userType);
+    }
 }

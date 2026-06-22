@@ -42,7 +42,13 @@ order/
 │           └── UserInfoAdapter.java          # → user 查询用户
 ├── application/
 │   ├── saga/                                 # Saga 编排（应用层）
-│   │   └── CreateOrderSaga.java            # 创建订单 Saga 编排
+│   │   ├── CreateOrderSaga.java            # 创建订单 Saga 编排（重构后仅 157 行）
+│   │   └── support/                         # Saga 支持类（职责分离）
+│   │       ├── DistributedLockManager.java  # 分布式锁管理
+│   │       ├── SagaCoordinator.java         # Saga 状态管理
+│   │       ├── OrderCompensationService.java # 订单补偿操作
+│   │       ├── OrderPreparationService.java  # 商品数据准备
+│   │       └── OrderCreationExecutor.java    # 订单创建执行
 │   ├── command/                             # 命令 (CQRS Write)
 │   │   ├── OrderCommandHandler.java
 │   │   ├── CreateOrderCommand.java / CreateOrderResult.java
@@ -64,6 +70,11 @@ order/
 │   ├── saga/                                 # Saga 支持类型（纯领域）
 │   │   ├── SagaRepository.java            # Saga 仓储接口
 │   │   ├── SagaState.java, SagaStatus.java
+│   │   ├── SagaException.java              # Saga 异常基类
+│   │   ├── SagaSerializationException.java # 序列化异常
+│   │   ├── SagaCompensationException.java  # 补偿异常
+│   │   ├── SagaLockAcquisitionException.java # 锁获取异常
+│   │   ├── PaymentGatewayAdapterException.java    # 支付网关异常
 │   │   └── OrderCreationException.java
 │   ├── valueobject/
 │   │   ├── OrderId.java, OrderNo.java
@@ -109,24 +120,26 @@ order/
 
 ## Saga 模式
 
-创建订单使用 Saga 编排分布式事务：
+创建订单使用 Saga 编排分布式事务，已重构为职责分离架构：
 
+**架构改进**：
+- CreateOrderSaga 从 327 行减至 157 行，依赖从 10 个减至 4 个
+- 分布式锁、状态管理、补偿逻辑、订单准备分离到独立支持类
+- 异常处理从 broad catch 改为具体异常类型（SagaException、PaymentGatewayAdapterException 等）
+
+**执行流程**：
 ```
 CreateOrderSaga.execute():
-  1. 创建订单 (OrderAggregate + DomainEventPublisher)
-     ├── 遍历 items，逐项调用 ProductInventoryPort.getSnapshot()
-     │   └── 校验：商品在线、非自购、库存充足
-     ├── 批量调用 ProductQueryPort.getProductsByIds() 加载商品详情
-     │   └── 填充 ProductSnapshot（name/image/description/conditionLevel）
-     ├── 计算 totalAmount
-     ├── 保存 OrderAggregate + 批量插入 OrderItem
-     └── 发布 OrderCreatedEvent（附带 items 列表）
-  2. 创建支付 (PaymentGatewayPort)    ← 补偿: 取消订单
-  失败时按逆序执行补偿操作
+  1. DistributedLockManager 获取商品锁（按 productId 排序避免死锁）
+  2. SagaCoordinator 创建初始 Saga 状态
+  3. OrderPreparationService 准备商品数据（校验在线、库存、非自购）
+  4. OrderCreationExecutor 创建订单 + 发布事件
+  5. PaymentGatewayPort 创建支付记录
+  6. 失败时 OrderCompensationService 执行补偿（逆序取消订单）
 ```
 
-- `SagaState` 持久化到 `eo_saga` 表，支持故障恢复
-- `SagaStatus`: PENDING → EXECUTING → COMPENSATING → COMPLETED/FAILED
+- `SagaState` 久化到 `eo_saga` 表，支持故障恢复
+- `SagaStatus`: PENDING → ORDER_CREATED → PAYMENT_CREATED → COMPLETED / COMPENSATING → COMPENSATED
 
 ## CQRS 架构
 

@@ -1,18 +1,19 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminOrderQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderDetailResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
-import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderItemInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.OrderSummary;
+import com.cartethyia.easyorange.admin.domain.port.AdminOrderQueryPort.ProductInfo;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderDO;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
-import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
@@ -20,10 +21,6 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,25 +47,16 @@ import static org.mockito.Mockito.*;
 class AdminOrderServiceTest {
 
     @Mock
-    private OrderMapper orderMapper;
+    private AdminOrderQueryPort adminOrderQueryPort;
 
     @Mock
-    private OrderItemMapper orderItemMapper;
+    private AdminUserQueryPort adminUserQueryPort;
 
     @Mock
     private OrderReadRepository orderReadRepository;
 
     @Mock
     private OrderRepository orderRepository;
-
-    @Mock
-    private UserMapper userMapper;
-
-    @Mock
-    private ProductMapper productMapper;
-
-    @Mock
-    private BatchQueryUtil batchQueryUtil;
 
     @InjectMocks
     private AdminOrderService orderService;
@@ -77,18 +66,12 @@ class AdminOrderServiceTest {
     private static final Long SELLER_ID = 2L;
     private static final Long PRODUCT_ID = 200L;
 
-    private OrderDO createOrderDO(int status) {
-        OrderDO order = new OrderDO();
-        order.setId(ORDER_ID);
-        order.setOrderNo("ORD2026001");
-        order.setBuyerId(BUYER_ID);
-        order.setSellerId(SELLER_ID);
-        order.setTotalAmount(new BigDecimal("99.99"));
-        order.setStatus(status);
-        order.setPaymentStatus(0);
-        order.setCreateTime(LocalDateTime.now());
-        order.setDelFlag(0);
-        return order;
+    private OrderSummary createOrderSummary(int status) {
+        return new OrderSummary(
+            ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID,
+            new BigDecimal("99.99"), status, "待支付", 0, "未支付",
+            LocalDateTime.now()
+        );
     }
 
     private OrderReadModel createReadModel(int status) {
@@ -109,23 +92,21 @@ class AdminOrderServiceTest {
         @DisplayName("分页查询订单列表")
         void listOrders_returnsPage() {
             AdminOrderQueryRequest request = new AdminOrderQueryRequest();
-            OrderDO order = createOrderDO(0);
+            OrderSummary order = createOrderSummary(0);
 
-            when(orderMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
-                    .thenAnswer(invocation -> {
-                        Page<OrderDO> p = invocation.getArgument(0);
-                        p.setRecords(List.of(order));
-                        p.setTotal(1);
-                        return p;
-                    });
-            UserEntity buyer = UserEntity.builder().id(BUYER_ID).nickName("买家").build();
-            UserEntity seller = UserEntity.builder().id(SELLER_ID).nickName("卖家").build();
-            when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(BUYER_ID, buyer, SELLER_ID, seller));
-            OrderItemDO item = OrderItemDO.builder().id(1L).orderId(ORDER_ID).productId(PRODUCT_ID).subtotal(new BigDecimal("99.99")).build();
-            when(orderItemMapper.selectList(any())).thenReturn(List.of(item));
-            ProductDO orderTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
-            orderTestProduct.setDelFlag(0);
-            when(productMapper.selectBatchIds(anyCollection())).thenReturn(List.of(orderTestProduct));
+            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+                    .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
+            when(adminUserQueryPort.getUserInfos(anyList()))
+                    .thenReturn(Map.of(
+                        BUYER_ID, new UserInfo(BUYER_ID, "buyer", "买家", null, null),
+                        SELLER_ID, new UserInfo(SELLER_ID, "seller", "卖家", null, null)
+                    ));
+            when(adminOrderQueryPort.getOrderItems(anyList()))
+                    .thenReturn(Map.of(ORDER_ID, List.of(
+                        new OrderItemInfo(ORDER_ID, PRODUCT_ID, 1, new BigDecimal("99.99"))
+                    )));
+            when(adminOrderQueryPort.getProducts(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
             PageResult<AdminOrderResponse> result = orderService.listOrders(request);
 
@@ -143,12 +124,12 @@ class AdminOrderServiceTest {
         void getOrderDetail_success() {
             OrderReadModel model = createReadModel(0);
             when(orderReadRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(model));
-            when(userMapper.selectById(BUYER_ID)).thenReturn(
-                    UserEntity.builder().id(BUYER_ID).nickName("买家").build());
-            when(userMapper.selectById(SELLER_ID)).thenReturn(
-                    UserEntity.builder().id(SELLER_ID).nickName("卖家").build());
-            when(productMapper.selectBatchIds(anyCollection())).thenReturn(
-                    List.of(ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build()));
+            when(adminUserQueryPort.getUserInfo(BUYER_ID))
+                    .thenReturn(new UserInfo(BUYER_ID, "buyer", "买家", null, null));
+            when(adminUserQueryPort.getUserInfo(SELLER_ID))
+                    .thenReturn(new UserInfo(SELLER_ID, "seller", "卖家", null, null));
+            when(adminOrderQueryPort.getProducts(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
             AdminOrderDetailResponse detail = orderService.getOrderDetail(ORDER_ID);
 
@@ -181,7 +162,8 @@ class AdminOrderServiceTest {
             when(orderReadRepository.countByStatus(OrderStatus.COMPLETED.getCode())).thenReturn(25L);
             when(orderReadRepository.countByStatus(OrderStatus.CANCELLED.getCode())).thenReturn(5L);
             when(orderReadRepository.countByStatus(OrderStatus.REFUNDED.getCode())).thenReturn(5L);
-            when(orderMapper.selectCount(any())).thenReturn(10L);
+            when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
+                    .thenReturn(new OrderQueryResult(List.of(), 10, 1, 20));
 
             OrderStatsResponse stats = orderService.getOrderStats();
 

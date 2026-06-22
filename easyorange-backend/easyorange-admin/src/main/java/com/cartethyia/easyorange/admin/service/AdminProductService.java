@@ -1,136 +1,106 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
+import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminProductService {
 
-    private final ProductMapper productMapper;
-    private final ProductDetailMapper productDetailMapper;
-    private final ProductImageMapper productImageMapper;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(CommonConstant.DATETIME_FORMAT);
+
+    private final AdminProductQueryPort adminProductQueryPort;
     private final ProductRepository productRepository;
     private final ProductCachePort<?> productCachePort;
 
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
-        int pageNum = request.pageNum() != null ? request.pageNum() : 1;
-        int pageSize = request.pageSize() != null ? request.pageSize() : 20;
+        LocalDateTime startTime = parseStartTime(request.startTime());
+        LocalDateTime endTime = parseEndTime(request.endTime());
 
-        var wrapper = ChainWrappers.lambdaQueryChain(productMapper)
-            .eq(ProductDO::getDelFlag, 0);
+        ProductQueryCondition condition = new ProductQueryCondition(
+            request.keyword(),
+            request.categoryId(),
+            request.status(),
+            request.sellerId(),
+            startTime,
+            endTime,
+            request.pageNum(),
+            request.pageSize()
+        );
 
-        if (StringUtils.hasText(request.keyword())) {
-            wrapper.like(ProductDO::getName, request.keyword());
-        }
+        ProductQueryResult result = adminProductQueryPort.queryProducts(condition);
 
-        if (request.categoryId() != null) {
-            wrapper.eq(ProductDO::getCategoryId, request.categoryId());
-        }
-
-        if (request.status() != null) {
-            wrapper.eq(ProductDO::getStatus, request.status());
-        }
-
-        if (request.sellerId() != null) {
-            wrapper.eq(ProductDO::getUserId, request.sellerId());
-        }
-
-        if (StringUtils.hasText(request.startTime())) {
-            try {
-                LocalDateTime startTime = LocalDateTime.parse(request.startTime() + " 00:00:00", BatchQueryUtil.DATE_FORMATTER);
-                wrapper.ge(ProductDO::getCreateTime, startTime);
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (StringUtils.hasText(request.endTime())) {
-            try {
-                LocalDateTime endTime = LocalDateTime.parse(request.endTime() + " 23:59:59", BatchQueryUtil.DATE_FORMATTER);
-                wrapper.le(ProductDO::getCreateTime, endTime);
-            } catch (Exception ignored) {
-            }
-        }
-
-        wrapper.orderByDesc(ProductDO::getCreateTime);
-
-        Page<ProductDO> page = wrapper.page(new Page<>(pageNum, pageSize));
-
-        List<Long> productIds = page.getRecords().stream()
-            .map(ProductDO::getId)
+        List<Long> productIds = result.records().stream()
+            .map(ProductSummary::id)
             .collect(Collectors.toList());
 
-        Map<Long, List<String>> imagesMap = getImagesMap(productIds);
+        Map<Long, List<String>> imagesMap = adminProductQueryPort.getProductImages(productIds);
 
-        List<AdminProductResponse> records = page.getRecords().stream()
+        List<AdminProductResponse> records = result.records().stream()
             .map(p -> toAdminProductResponse(p, imagesMap))
             .collect(Collectors.toList());
 
-        return PageResult.of(records, page.getTotal(), pageNum, pageSize);
+        return PageResult.of(records, result.total(), result.pageNum(), result.pageSize());
     }
 
     @Transactional(readOnly = true)
     public AdminProductResponse getProductDetail(Long id) {
-        ProductDO product = productMapper.selectById(id);
-        if (product == null || product.getDelFlag() != 0) {
+        ProductDetail productDetail = adminProductQueryPort.getProductDetail(id);
+        if (productDetail == null) {
             throw BusinessException.of("商品不存在");
         }
 
-        Map<Long, List<String>> imagesMap = getImagesMap(List.of(id));
+        Map<Long, List<String>> imagesMap = adminProductQueryPort.getProductImages(List.of(id));
+        List<String> images = imagesMap.getOrDefault(id, List.of());
+        String mainImage = images.isEmpty() ? null : images.get(0);
 
-        List<ProductDetailDO> details = productDetailMapper.selectDetailsByProductIds(List.of(id));
-        String description = details.isEmpty() ? null : details.get(0).getDescription();
-
-        AdminProductResponse vo = toAdminProductResponse(product, imagesMap);
         return AdminProductResponse.builder()
-            .productId(vo.productId())
-            .name(vo.name())
-            .description(description)
-            .price(vo.price())
-            .originalPrice(vo.originalPrice())
-            .stock(vo.stock())
-            .status(vo.status())
-            .statusDesc(vo.statusDesc())
-            .conditionLevel(vo.conditionLevel())
-            .location(vo.location())
-            .contactMethod(vo.contactMethod())
-            .images(vo.images())
-            .mainImage(vo.mainImage())
-            .categoryId(vo.categoryId())
-            .categoryName(vo.categoryName())
-            .sellerId(vo.sellerId())
-            .sellerName(vo.sellerName())
-            .sellerAvatar(vo.sellerAvatar())
-            .viewCount(vo.viewCount())
-            .createTime(vo.createTime())
-            .updateTime(vo.updateTime())
+            .productId(productDetail.id())
+            .name(productDetail.name())
+            .description(productDetail.description())
+            .price(productDetail.price())
+            .originalPrice(productDetail.originalPrice())
+            .stock(productDetail.stock())
+            .status(productDetail.status())
+            .statusDesc(productDetail.statusDesc())
+            .conditionLevel(productDetail.conditionLevel())
+            .location(productDetail.location())
+            .contactMethod(productDetail.contactMethod())
+            .images(images)
+            .mainImage(mainImage)
+            .categoryId(productDetail.categoryId())
+            .sellerId(productDetail.sellerId())
+            .viewCount(productDetail.viewCount())
+            .createTime(productDetail.createTime())
+            .updateTime(productDetail.updateTime())
             .build();
     }
 
@@ -159,43 +129,52 @@ public class AdminProductService {
         };
     }
 
-    private Map<Long, List<String>> getImagesMap(List<Long> productIds) {
-        if (productIds == null || productIds.isEmpty()) {
-            return Map.of();
+    private LocalDateTime parseStartTime(String startTimeStr) {
+        if (!StringUtils.hasText(startTimeStr)) {
+            return null;
         }
-        List<ProductImageDO> images = ChainWrappers.lambdaQueryChain(productImageMapper)
-            .in(ProductImageDO::getProductId, productIds)
-            .orderByAsc(ProductImageDO::getSortOrder)
-            .list();
-        return images.stream()
-            .collect(Collectors.groupingBy(
-                ProductImageDO::getProductId,
-                Collectors.mapping(ProductImageDO::getImageUrl, Collectors.toList())
-            ));
+        try {
+            return LocalDateTime.parse(startTimeStr + " 00:00:00", DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析开始时间: {}, 格式应为 yyyy-MM-dd", startTimeStr);
+            return null;
+        }
     }
 
-    private AdminProductResponse toAdminProductResponse(ProductDO product, Map<Long, List<String>> imagesMap) {
-        List<String> images = imagesMap.getOrDefault(product.getId(), List.of());
+    private LocalDateTime parseEndTime(String endTimeStr) {
+        if (!StringUtils.hasText(endTimeStr)) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(endTimeStr + " 23:59:59", DATE_FORMATTER);
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析结束时间: {}, 格式应为 yyyy-MM-dd", endTimeStr);
+            return null;
+        }
+    }
+
+    private AdminProductResponse toAdminProductResponse(ProductSummary product, Map<Long, List<String>> imagesMap) {
+        List<String> images = imagesMap.getOrDefault(product.id(), List.of());
         String mainImage = images.isEmpty() ? null : images.get(0);
 
         return AdminProductResponse.builder()
-            .productId(product.getId())
-            .name(product.getName())
-            .price(product.getPrice())
-            .originalPrice(product.getOriginalPrice())
-            .stock(product.getStock())
-            .status(product.getStatus())
-            .statusDesc(ProductStatus.getDescByCode(product.getStatus()))
-            .conditionLevel(product.getConditionLevel())
-            .location(product.getLocation())
-            .contactMethod(product.getContactMethod())
+            .productId(product.id())
+            .name(product.name())
+            .price(product.price())
+            .originalPrice(product.originalPrice())
+            .stock(product.stock())
+            .status(product.status())
+            .statusDesc(product.statusDesc())
+            .conditionLevel(product.conditionLevel())
+            .location(product.location())
+            .contactMethod(product.contactMethod())
             .images(images)
             .mainImage(mainImage)
-            .categoryId(product.getCategoryId())
-            .sellerId(product.getUserId())
-            .viewCount(product.getViewCount())
-            .createTime(product.getCreateTime())
-            .updateTime(product.getUpdateTime())
+            .categoryId(product.categoryId())
+            .sellerId(product.sellerId())
+            .viewCount(product.viewCount())
+            .createTime(product.createTime())
+            .updateTime(product.updateTime())
             .build();
     }
 }

@@ -1,19 +1,15 @@
 package com.cartethyia.easyorange.admin.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductDetail;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
+import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
@@ -37,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,13 +47,7 @@ import static org.mockito.Mockito.*;
 class AdminProductServiceTest {
 
     @Mock
-    private ProductMapper productMapper;
-
-    @Mock
-    private ProductDetailMapper productDetailMapper;
-
-    @Mock
-    private ProductImageMapper productImageMapper;
+    private AdminProductQueryPort adminProductQueryPort;
 
     @Mock
     private ProductRepository productRepository;
@@ -70,17 +61,21 @@ class AdminProductServiceTest {
     private static final Long PRODUCT_ID = 100L;
     private static final Long SELLER_ID = 1L;
 
-    private ProductDO createProduct(int status) {
-        ProductDO product = ProductDO.builder()
-                .id(PRODUCT_ID)
-                .userId(SELLER_ID)
-                .name("测试商品")
-                .price(new BigDecimal("99.99"))
-                .status(status)
-                .viewCount(10)
-                .build();
-        product.setDelFlag(0);
-        return product;
+    private ProductSummary createProductSummary(int status) {
+        return new ProductSummary(
+            PRODUCT_ID, "测试商品", new BigDecimal("99.99"), new BigDecimal("199.99"),
+            10, status, ProductStatus.getDescByCode(status), 1, "北京", "微信",
+            1L, SELLER_ID, 10, LocalDateTime.now(), LocalDateTime.now()
+        );
+    }
+
+    private ProductDetail createProductDetail(int status) {
+        return new ProductDetail(
+            PRODUCT_ID, "测试商品", "商品描述", new BigDecimal("99.99"),
+            new BigDecimal("199.99"), 10, status, ProductStatus.getDescByCode(status),
+            1, "北京", "微信", 1L, SELLER_ID, 10,
+            LocalDateTime.now(), LocalDateTime.now()
+        );
     }
 
     @Nested
@@ -91,17 +86,12 @@ class AdminProductServiceTest {
         @DisplayName("分页查询商品列表")
         void listProducts_returnsPage() {
             AdminProductQueryRequest request = new AdminProductQueryRequest(null, null, null, null, null, null, null, null);
-            ProductDO product = createProduct(1);
+            ProductSummary product = createProductSummary(1);
 
-            when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
-                    .thenAnswer(invocation -> {
-                        Page<ProductDO> p = invocation.getArgument(0);
-                        p.setRecords(List.of(product));
-                        p.setTotal(1);
-                        return p;
-                    });
-            when(productImageMapper.selectList(any(LambdaQueryWrapper.class)))
-                    .thenReturn(List.of());
+            when(adminProductQueryPort.queryProducts(any(ProductQueryCondition.class)))
+                    .thenReturn(new ProductQueryResult(List.of(product), 1, 1, 20));
+            when(adminProductQueryPort.getProductImages(anyList()))
+                    .thenReturn(Map.of());
 
             PageResult<AdminProductResponse> result = productService.listProducts(request);
 
@@ -114,18 +104,12 @@ class AdminProductServiceTest {
         @DisplayName("带关键词和状态过滤")
         void listProducts_withFilters_returnsFiltered() {
             AdminProductQueryRequest request = new AdminProductQueryRequest(null, null, "测试", null, 4, SELLER_ID, null, null);
+            ProductSummary product = createProductSummary(4);
 
-            ProductDO product = createProduct(4);
-
-            when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
-                    .thenAnswer(invocation -> {
-                        Page<ProductDO> p = invocation.getArgument(0);
-                        p.setRecords(List.of(product));
-                        p.setTotal(1);
-                        return p;
-                    });
-            when(productImageMapper.selectList(any(LambdaQueryWrapper.class)))
-                    .thenReturn(List.of());
+            when(adminProductQueryPort.queryProducts(any(ProductQueryCondition.class)))
+                    .thenReturn(new ProductQueryResult(List.of(product), 1, 1, 20));
+            when(adminProductQueryPort.getProductImages(anyList()))
+                    .thenReturn(Map.of());
 
             PageResult<AdminProductResponse> result = productService.listProducts(request);
 
@@ -141,13 +125,10 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("获取商品详情成功")
         void getProductDetail_success() {
-            ProductDO product = createProduct(1);
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(product);
-            when(productImageMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(
-                    List.of(ProductImageDO.builder().productId(PRODUCT_ID).imageUrl("img.jpg").build())
-            );
-            when(productDetailMapper.selectDetailsByProductIds(anyList()))
-                    .thenReturn(List.of(ProductDetailDO.builder().description("商品描述").build()));
+            ProductDetail detail = createProductDetail(1);
+            when(adminProductQueryPort.getProductDetail(PRODUCT_ID)).thenReturn(detail);
+            when(adminProductQueryPort.getProductImages(anyList()))
+                    .thenReturn(Map.of(PRODUCT_ID, List.of("img.jpg")));
 
             AdminProductResponse vo = productService.getProductDetail(PRODUCT_ID);
 
@@ -161,7 +142,7 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("商品不存在时抛出异常")
         void getProductDetail_notFound_throws() {
-            when(productMapper.selectById(PRODUCT_ID)).thenReturn(null);
+            when(adminProductQueryPort.getProductDetail(PRODUCT_ID)).thenReturn(null);
 
             assertThatThrownBy(() -> productService.getProductDetail(PRODUCT_ID))
                     .isInstanceOf(BusinessException.class)

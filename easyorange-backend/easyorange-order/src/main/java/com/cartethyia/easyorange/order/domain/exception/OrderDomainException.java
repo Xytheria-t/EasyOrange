@@ -9,6 +9,11 @@ public class OrderDomainException extends BusinessException {
         super(message);
     }
 
+    @Override
+    protected String defaultCode() {
+        return OrderResultCode.ORDER_ERROR.getCode();
+    }
+
     public OrderDomainException(OrderResultCode resultCode) {
         super(resultCode);
     }

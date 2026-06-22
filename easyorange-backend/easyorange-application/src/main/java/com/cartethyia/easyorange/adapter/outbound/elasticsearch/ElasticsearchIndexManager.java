@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
+import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +51,7 @@ public class ElasticsearchIndexManager {
             log.info("Created ES index 'products' with IK analyzer mapping");
         } catch (Exception e) {
             log.error("Failed to create ES index 'products'", e);
-            throw new RuntimeException("ES index creation failed", e);
+            throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "ES index creation failed", e);
         }
     }
 

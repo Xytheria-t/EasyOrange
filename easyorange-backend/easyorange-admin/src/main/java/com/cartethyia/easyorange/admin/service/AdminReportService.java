@@ -127,35 +127,30 @@ public class AdminReportService {
             throw BusinessException.of("该举报已被处理");
         }
 
-        applyAction(report, action, remark);
+        var updated = applyAction(report, action, remark);
         saveHandleHistory(reportId, operatorId, action, buildHistoryRemark(action, remark));
-        productReportRepository.update(report);
+        productReportRepository.update(updated);
 
-        boolean approved = ProductReportStatus.RESOLVED.equals(report.getStatus());
-        publishProcessedEvent(reportId, report, approved);
+        boolean approved = ProductReportStatus.RESOLVED.equals(updated.getStatus());
+        publishProcessedEvent(reportId, updated, approved);
     }
 
-    private void applyAction(ProductReport report, String action, String remark) {
-        switch (action) {
-            case "resolve" ->
-                report.approve(remark.isEmpty() ? "举报已处理" : remark);
-            case "dismiss" ->
-                report.reject(remark.isEmpty() ? "举报已驳回" : remark);
-            case "IGNORE" ->
-                report.reject(remark.isEmpty() ? "管理员忽略" : remark);
+    private ProductReport applyAction(ProductReport report, String action, String remark) {
+        return switch (action) {
+            case "resolve" -> report.approve(remark.isEmpty() ? "举报已处理" : remark);
+            case "dismiss" -> report.reject(remark.isEmpty() ? "举报已驳回" : remark);
+            case "IGNORE" -> report.reject(remark.isEmpty() ? "管理员忽略" : remark);
             case "PRODUCT_OFFLINE" -> {
                 handleProductOffline(report, remark);
-                report.approve("下架商品: " + (remark.isEmpty() ? "" : remark));
+                yield report.approve("下架商品: " + (remark.isEmpty() ? "" : remark));
             }
-            case "WARN_SENDER" ->
-                report.reject("警告举报人: " + remark);
+            case "WARN_SENDER" -> report.reject("警告举报人: " + remark);
             case "BAN_PRODUCT" -> {
                 handleBanProduct(report, remark);
-                report.approve("封禁商品: " + (remark.isEmpty() ? "" : remark));
+                yield report.approve("封禁商品: " + (remark.isEmpty() ? "" : remark));
             }
-            default ->
-                throw BusinessException.of("无效的处理动作");
-        }
+            default -> throw BusinessException.of("无效的处理动作");
+        };
     }
 
     private String buildHistoryRemark(String action, String remark) {

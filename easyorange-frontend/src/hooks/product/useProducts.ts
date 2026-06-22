@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
 import type { ProductQueryParams, CreateProductRequest, UpdateProductRequest, PageResult, Product } from '@/types';
 import { normalizeProduct } from '@/utils/product';
@@ -9,6 +9,12 @@ export const PRODUCT_KEYS = {
   list: (params: ProductQueryParams) =>
     [...PRODUCT_KEYS.lists(),
       params.pageNum, params.pageSize, params.keyword,
+      params.categoryId, params.sort, params.priceMin,
+      params.priceMax, params.conditions, params.hasDiscount,
+    ] as const,
+  infinite: (params: Omit<ProductQueryParams, 'pageNum'>) =>
+    [...PRODUCT_KEYS.lists(), 'infinite',
+      params.pageSize, params.keyword,
       params.categoryId, params.sort, params.priceMin,
       params.priceMax, params.conditions, params.hasDiscount,
     ] as const,
@@ -24,10 +30,40 @@ export function useProducts(params: ProductQueryParams = {}) {
       const data = response.data;
       return {
         ...data,
-        records: (data.records ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>)),
+        records: (data.records ?? []).map((r) => normalizeProduct(r)),
       };
     },
     staleTime: 2 * 60 * 1000,
+  });
+}
+
+export function useInfiniteProducts(params: Omit<ProductQueryParams, 'pageNum'> = {}) {
+  const pageSize = params.pageSize ?? 20;
+
+  return useInfiniteQuery<PageResult<Product>, Error, { pages: PageResult<Product>[]; pageParams: number[] }, readonly unknown[], number>({
+    queryKey: PRODUCT_KEYS.infinite(params),
+    queryFn: async ({ pageParam }) => {
+      const response = await productApi.getProducts({ ...params, pageNum: pageParam, pageSize });
+      const data = response.data;
+      return {
+        ...data,
+        records: (data.records ?? []).map((r) => normalizeProduct(r)),
+      };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const total = lastPage.total ?? 0;
+      const currentCount = lastPage.records?.length ?? 0;
+      const currentPage = lastPage.current ?? 1;
+
+      // 如果当前页没有数据或已加载全部数据，返回 null 表示没有更多页
+      if (currentCount === 0 || currentPage * pageSize >= total) {
+        return null;
+      }
+      return currentPage + 1;
+    },
+    staleTime: 2 * 60 * 1000,
+    maxPages: 5, // 限制缓存的页数，避免内存无限增长
   });
 }
 
@@ -36,7 +72,7 @@ export function useProduct(id: string) {
     queryKey: PRODUCT_KEYS.detail(id),
     queryFn: async () => {
       const response = await productApi.getProductById(id);
-      return normalizeProduct(response.data as unknown as Record<string, unknown>);
+      return normalizeProduct(response.data);
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -45,7 +81,7 @@ export function useProduct(id: string) {
 
 export function useCreateProduct() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: CreateProductRequest) => {
       const response = await productApi.createProduct(data);
@@ -59,7 +95,7 @@ export function useCreateProduct() {
 
 export function useUpdateProduct(id: string) {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (data: UpdateProductRequest) => {
       const response = await productApi.updateProduct(id, data);
@@ -74,7 +110,7 @@ export function useUpdateProduct(id: string) {
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: string) => {
       await productApi.deleteProduct(id);
@@ -101,7 +137,7 @@ export function useSimilarProducts(productId: string) {
     queryKey: ['similar-products', productId],
     queryFn: async () => {
       const response = await productApi.getSimilarProducts(productId);
-      return (response.data ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>));
+      return (response.data ?? []).map((r) => normalizeProduct(r));
     },
     enabled: !!productId,
     staleTime: 5 * 60 * 1000,
@@ -116,7 +152,7 @@ export function useMyProducts(params: { pageNum?: number; pageSize?: number; sta
       const data = response.data;
       return {
         ...data,
-        records: (data.records ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>)),
+        records: (data.records ?? []).map((r) => normalizeProduct(r)),
       };
     },
     staleTime: 2 * 60 * 1000,

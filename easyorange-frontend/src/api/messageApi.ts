@@ -2,7 +2,7 @@
  * @fileoverview 消息 API 模块
  */
 
-import type { PageResult, ChatSession, ChatMessage } from '@/types';
+import type { PageResult, ChatSession, RawChatMessage } from '@/types';
 import type { RecallPayload } from '@/types/message';
 import { request } from './core/request';
 
@@ -18,7 +18,7 @@ export const messageApi = {
   },
 
   getConversation(userId: string | number) {
-    return request<ChatMessage[]>(`/messages/conversation/${userId}`);
+    return request<RawChatMessage[]>(`/messages/conversation/${userId}`);
   },
 
   sendMessage(data: { receiverId: string; content: string }) {

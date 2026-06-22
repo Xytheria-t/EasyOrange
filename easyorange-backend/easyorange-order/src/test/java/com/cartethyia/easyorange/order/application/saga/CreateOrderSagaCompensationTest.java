@@ -5,6 +5,11 @@ import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
+import com.cartethyia.easyorange.order.application.saga.support.DistributedLockManager;
+import com.cartethyia.easyorange.order.application.saga.support.OrderCompensationService;
+import com.cartethyia.easyorange.order.application.saga.support.OrderCreationExecutor;
+import com.cartethyia.easyorange.order.application.saga.support.OrderPreparationService;
+import com.cartethyia.easyorange.order.application.saga.support.SagaCoordinator;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
@@ -42,7 +47,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -87,8 +91,15 @@ class CreateOrderSagaCompensationTest {
 
     @BeforeEach
     void setUp() {
-        saga = new CreateOrderSaga(orderRepository, productInventoryPort, productQueryPort, paymentGatewayPort,
-                eventPublisher, orderCachePort, redisCache, sagaRepository, objectMapper, snowflakeIdGenerator);
+        // Construct support classes with mocks
+        var lockManager = new DistributedLockManager(redisCache);
+        var sagaCoordinator = new SagaCoordinator(sagaRepository, objectMapper);
+        var compensationService = new OrderCompensationService(orderRepository, orderCachePort);
+        var preparationService = new OrderPreparationService(productInventoryPort, productQueryPort, snowflakeIdGenerator);
+        var orderCreationExecutor = new OrderCreationExecutor(
+            orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, snowflakeIdGenerator
+        );
+        saga = new CreateOrderSaga(lockManager, sagaCoordinator, compensationService, orderCreationExecutor);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(

@@ -37,7 +37,7 @@ framework/
 │   │   ├── JwtProperties.java
 │   │   ├── OperLogProperties.java
 │   │   ├── RateLimitFilterProperties.java
-│   │   ├── SecurityProperties.java
+│   │   ├── SecurityProperties.java       # 安全配置（含 adminUserTypes 管理员类型）
 │   │   ├── ThreadPoolProperties.java
 │   │   └── WebMvcProperties.java
 │   ├── redis/                    # Redis 配置
@@ -131,10 +131,12 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 1. `BearerTokenAuthenticationFilter` (Spring Security 内置) 从 `Authorization: Bearer xxx` 提取 Token
 2. 自定义 `JwtDecoder` (SecurityConfig bean) 验证签名 (Nimbus) + 黑名单检查 (Redis) + 强制登出检查 (Redis)
-3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，构造 `AuthUser` 并设置 `SecurityContext`
-4. `TokenService.createAccessToken()` / `createRefreshToken()` 使用 `JwtEncoder` (NimbusJwtEncoder) 签发
+3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，通过 `SecurityProperties.isAdminUserType()` 判定管理员角色，构造 `AuthUser` 并设置 `SecurityContext`
+4. `TokenService.createAccessToken()` / `createRefreshToken()` 使用 `JwtEncoder` (NimbusJwtEncoder) 答发
 5. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
 6. `WebSocketAuthInterceptor` 复用 `JwtDecoder` bean 做连接握手认证
+
+> **管理员判定配置化**：管理员类型代码通过 `SecurityProperties.adminUserTypes` 配置（默认 `Set.of("00", "02")`），可在 `application.yaml` 的 `security.admin-user-types` 覆盖。
 
 ### 领域事件发布流程
 

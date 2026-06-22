@@ -229,22 +229,51 @@ export class ImageUploader {
             item.draggable = true;
             item.dataset.id = String(image.id);
             item.setAttribute('role', 'listitem');
-            item.innerHTML = `
-                <img src="${image.url}" alt="预览图片 ${index + 1}">
-                ${index === 0 ? '<span class="cover-badge">封面</span>' : ''}
-                <button type="button" class="preview-remove" aria-label="删除图片">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            `;
 
-            const removeBtn = item.querySelector('.preview-remove');
-            removeBtn?.addEventListener('click', (e: Event) => {
+            const img = document.createElement('img');
+            img.src = image.url;
+            img.alt = `预览图片 ${index + 1}`;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'preview-remove';
+            removeBtn.setAttribute('aria-label', '删除图片');
+
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'none');
+            svg.setAttribute('stroke', 'currentColor');
+            svg.setAttribute('stroke-width', '2');
+
+            const line1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line1.setAttribute('x1', '18');
+            line1.setAttribute('y1', '6');
+            line1.setAttribute('x2', '6');
+            line1.setAttribute('y2', '18');
+
+            const line2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line2.setAttribute('x1', '6');
+            line2.setAttribute('y1', '6');
+            line2.setAttribute('x2', '18');
+            line2.setAttribute('y2', '18');
+
+            svg.appendChild(line1);
+            svg.appendChild(line2);
+            removeBtn.appendChild(svg);
+
+            removeBtn.addEventListener('click', (e: Event) => {
                 e.stopPropagation();
                 this.removeImage(image.id);
             });
+
+            item.appendChild(img);
+            if (index === 0) {
+                const coverBadge = document.createElement('span');
+                coverBadge.className = 'cover-badge';
+                coverBadge.textContent = '封面';
+                item.appendChild(coverBadge);
+            }
+            item.appendChild(removeBtn);
 
             item.addEventListener('dragstart', (e: DragEvent) => this.handleImageDragStart(e, image.id));
             item.addEventListener('dragend', (e: DragEvent) => this.handleImageDragEnd(e));

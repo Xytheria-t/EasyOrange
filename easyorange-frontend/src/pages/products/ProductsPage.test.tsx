@@ -4,7 +4,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProductsPage from './ProductsPage';
 
-const mockUseProducts = vi.hoisted(() => vi.fn());
+const mockUseInfiniteProducts = vi.hoisted(() => vi.fn());
 const mockUseCategories = vi.hoisted(() => vi.fn());
 const mockUseFavoriteCheck = vi.hoisted(() => vi.fn());
 const mockUseColumnCount = vi.hoisted(() => vi.fn());
@@ -24,7 +24,7 @@ const mockUseSemanticSearch = vi.hoisted(() => vi.fn(() => ({
 })));
 
 vi.mock('@/hooks', () => ({
-  useProducts: mockUseProducts,
+  useInfiniteProducts: mockUseInfiniteProducts,
   useCategories: mockUseCategories,
   useFavoriteCheck: mockUseFavoriteCheck,
   useColumnCount: mockUseColumnCount,
@@ -95,17 +95,23 @@ beforeEach(() => {
     token: null,
     isAuthenticated: false,
   }));
-  mockUseProducts.mockReturnValue({
-    data: { records: [], total: 0 },
+  mockUseInfiniteProducts.mockReturnValue({
+    data: { pages: [{ records: [], total: 0 }] },
     isLoading: false,
+    fetchNextPage: vi.fn(),
+    hasNextPage: false,
+    isFetchingNextPage: false,
   });
 });
 
 describe('ProductsPage', () => {
   it('renders loading skeleton when initially loading', () => {
-    mockUseProducts.mockReturnValue({
+    mockUseInfiniteProducts.mockReturnValue({
       data: undefined,
       isLoading: true,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
     });
 
     renderPage();
@@ -137,9 +143,12 @@ describe('ProductsPage', () => {
   });
 
   it('renders ToolsPlaza with total count', () => {
-    mockUseProducts.mockReturnValue({
-      data: { records: [], total: 42 },
+    mockUseInfiniteProducts.mockReturnValue({
+      data: { pages: [{ records: [], total: 42 }], pageParams: [] },
       isLoading: false,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
     });
 
     renderPage();
@@ -148,9 +157,12 @@ describe('ProductsPage', () => {
   });
 
   it('renders result count', () => {
-    mockUseProducts.mockReturnValue({
-      data: { records: [], total: 42 },
+    mockUseInfiniteProducts.mockReturnValue({
+      data: { pages: [{ records: [], total: 42 }], pageParams: [] },
       isLoading: false,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
     });
 
     renderPage();
@@ -160,9 +172,12 @@ describe('ProductsPage', () => {
   });
 
   it('shows category filter chip when categoryId is in params', () => {
-    mockUseProducts.mockReturnValue({
-      data: { records: [], total: 0 },
+    mockUseInfiniteProducts.mockReturnValue({
+      data: { pages: [{ records: [], total: 0 }], pageParams: [] },
       isLoading: false,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
     });
 
     renderWithProviders(<ProductsPage />, {
@@ -174,9 +189,12 @@ describe('ProductsPage', () => {
   });
 
   it('clears category filter when X is clicked', async () => {
-    mockUseProducts.mockReturnValue({
-      data: { records: [], total: 0 },
+    mockUseInfiniteProducts.mockReturnValue({
+      data: { pages: [{ records: [], total: 0 }], pageParams: [] },
       isLoading: false,
+      fetchNextPage: vi.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
     });
 
     renderWithProviders(<ProductsPage />, {

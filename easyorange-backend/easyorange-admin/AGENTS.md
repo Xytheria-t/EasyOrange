@@ -25,11 +25,18 @@ easyorange-admin/
 └── src/main/java/com/cartethyia/easyorange/admin/
     ├── adapter/
     │   └── inbound/web/controller/ # REST 控制器
+    ├── domain/
+    │   └── port/                   # 端口接口（防腐层）
+    │       ├── AdminProductQueryPort.java  # 商品查询端口
+    │       ├── AdminUserQueryPort.java     # 用户查询端口
+    │       └── AdminOrderQueryPort.java    # 订单查询端口
     ├── service/              # 业务服务层
     └── dto/                  # 数据传输对象
         ├── request/          # 请求 DTO
         └── response/         # 响应 Response
 ```
+
+> **注意**：Admin 模块通过端口接口访问其他模块数据，遵循防腐层原则，不直接依赖其他模块的 Mapper/DO。适配器实现在 `easyorange-application/adapter/outbound/admin/` 包下。
 
 ## 设计原则
 
@@ -42,11 +49,16 @@ easyorange-admin/
 
 ```
 easyorange-admin ──optional──> easyorange-common   (Result, PageResult, BusinessException)
-                 ──optional──> easyorange-user     (UserMapper, UserEntity, UserStatus)
-                 ──optional──> easyorange-product  (ProductMapper, ProductDO, ProductReviewDO, ProductReviewMapper, CategoryDO, ProductReportRepository)
-                 ──optional──> easyorange-order     (OrderReadRepository, OrderDO, OrderStatus)
+                 ──optional──> easyorange-user     (通过 AdminUserQueryPort)
+                 ──optional──> easyorange-product  (通过 AdminProductQueryPort)
+                 ──optional──> easyorange-order    (通过 AdminOrderQueryPort)
                  ──optional──> easyorange-payment  (支付信息查询)
 ```
+
+**跨模块通信**：通过 `domain/port/` 端口接口解耦，适配器实现在 `easyorange-application/adapter/outbound/admin/`：
+- `AdminProductQueryAdapter` → ProductMapper
+- `AdminUserQueryAdapter` → UserMapper
+- `AdminOrderQueryAdapter` → OrderMapper
 
 ## 常见开发任务
 

@@ -78,8 +78,6 @@ user/
 │   │   ├── UserType.java, UserStatus.java, Sex.java
 │   │   ├── LoginMethod.java, ClientType.java
 │   │   └── UserResultCode.java
-│   └── exception/
-│       └── UserDomainException.java
 └── config/
     └── UserDomainConfig.java            # Port → Bean 绑定
 ```

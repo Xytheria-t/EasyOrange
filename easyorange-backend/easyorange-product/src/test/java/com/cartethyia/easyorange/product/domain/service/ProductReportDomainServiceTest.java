@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -48,28 +49,28 @@ class ProductReportDomainServiceTest {
     @DisplayName("批准举报后应将商品下架并清除缓存")
     void processReport_withApprove_shouldOfflineProductAndEvictCache() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report.assignId(100L);
+        report = report.assignId(100L);
         when(productReportRepository.findById(100L)).thenReturn(report);
 
         domainService.processReport(100L, true);
 
         verify(productRepository).updateStatus(ProductId.of(1L), ProductStatus.OFFLINE);
         verify(productCachePort).evictProductCache(1L);
-        verify(productReportRepository).update(report);
+        verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }
 
     @Test
     @DisplayName("驳回举报不应操作商品状态和缓存")
     void processReport_withReject_shouldNotTouchProduct() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report.assignId(100L);
+        report = report.assignId(100L);
         when(productReportRepository.findById(100L)).thenReturn(report);
 
         domainService.processReport(100L, false);
 
         verify(productRepository, never()).updateStatus(any(), any());
         verify(productCachePort, never()).evictProductCache(any());
-        verify(productReportRepository).update(report);
+        verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }
 
     @Test
@@ -86,12 +87,15 @@ class ProductReportDomainServiceTest {
     @DisplayName("Processing report 更新后应保持 remark 正确")
     void processReport_withApprove_shouldSetCorrectRemark() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report.assignId(100L);
+        report = report.assignId(100L);
         when(productReportRepository.findById(100L)).thenReturn(report);
 
         domainService.processReport(100L, true);
 
-        assertThat(report.getRemark()).isNull();
-        assertThat(report.isPending()).isFalse();
+        ArgumentCaptor<ProductReport> captor = ArgumentCaptor.forClass(ProductReport.class);
+        verify(productReportRepository).update(captor.capture());
+        ProductReport updated = captor.getValue();
+        assertThat(updated.getRemark()).isNull();
+        assertThat(updated.isPending()).isFalse();
     }
 }

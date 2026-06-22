@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.framework.cache;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
 import lombok.RequiredArgsConstructor;
@@ -158,7 +160,7 @@ public class RedisCache {
                 while (cursor.hasNext()) r.add(new String(cursor.next(), StandardCharsets.UTF_8));
             } catch (Exception e) {
                 log.error("Redis SCAN failed for pattern: {}", pattern, e);
-                throw new RuntimeException(e);
+                throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, e.getMessage(), e);
             }
             return r;
         });

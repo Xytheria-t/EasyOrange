@@ -29,7 +29,7 @@ public class OrderSagaEventConsumer {
         try {
             for (OrderCreatedEvent.OrderItemPayload item : event.getItems()) {
                 var stockEvent = new StockReservationRequestedEvent(
-                        event.getOrderId(), item.getProductId(), item.getQuantity());
+                        event.getOrderId(), item.productId(), item.quantity());
                 domainEventPublisher.publish(stockEvent);
             }
             log.info("库存预留请求已发布: orderId={}", event.getOrderId());

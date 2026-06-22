@@ -4,23 +4,23 @@ import com.cartethyia.easyorange.common.enums.IResultCode;
 
 public class BusinessException extends BaseBusinessException {
 
-    public BusinessException(String message) {
+    protected BusinessException(String message) {
         super(message);
     }
 
-    public BusinessException(IResultCode resultCode) {
+    protected BusinessException(IResultCode resultCode) {
         super(resultCode);
     }
 
-    public BusinessException(String message, Throwable cause) {
+    protected BusinessException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public BusinessException(IResultCode resultCode, String message) {
+    protected BusinessException(IResultCode resultCode, String message) {
         super(resultCode, message);
     }
 
-    public BusinessException(IResultCode resultCode, String message, Throwable cause) {
+    protected BusinessException(IResultCode resultCode, String message, Throwable cause) {
         super(resultCode, message, cause);
     }
 

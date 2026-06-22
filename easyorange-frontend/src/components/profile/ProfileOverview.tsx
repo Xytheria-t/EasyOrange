@@ -1,3 +1,16 @@
+/**
+ * ProfileOverview 组件
+ * 
+ * 注意：以下数据为占位数据，待后续实现真实数据获取：
+ * - 本月交易额（¥12,580）及趋势（+23.5%）
+ * - 商品浏览量（1,234）及趋势（+15.2%）
+ * - 平均评分（4.9）
+ * - AI交易助手建议（最佳发布时间、价格建议、热门品类）
+ * - 会员等级（黄金会员）
+ * 
+ * 已实现真实数据：
+ * - 订单数、发布数、消息数、收藏数
+ */
 import { useNavigate } from 'react-router-dom'
 import {
   User, Mail, Phone, Calendar, Check, Pencil, X,
@@ -12,6 +25,9 @@ type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId'
 interface ProfileOverviewProps {
   user: UserType | undefined
   favoriteCount: number
+  orderCount: number
+  productCount: number
+  unreadMessageCount: number
   editingField: EditableField | null
   editValue: string
   isSaving: boolean
@@ -24,6 +40,9 @@ interface ProfileOverviewProps {
 export function ProfileOverview({
   user,
   favoriteCount,
+  orderCount,
+  productCount,
+  unreadMessageCount,
   editingField,
   editValue,
   isSaving,
@@ -49,9 +68,9 @@ export function ProfileOverview({
 
   const quickActions = [
     { label: '我的收藏', icon: Heart, count: favoriteCount, path: '/favorites', color: 'rose' },
-    { label: '我的订单', icon: ShoppingBag, count: 5, path: '/orders', color: 'blue' },
-    { label: '我的发布', icon: Package, count: 8, path: '/products?seller=me', color: 'orange' },
-    { label: '消息中心', icon: MessageSquare, count: 3, path: '/messages', color: 'green' },
+    { label: '我的订单', icon: ShoppingBag, count: orderCount, path: '/orders', color: 'blue' },
+    { label: '我的发布', icon: Package, count: productCount, path: '/products?seller=me', color: 'orange' },
+    { label: '消息中心', icon: MessageSquare, count: unreadMessageCount, path: '/messages', color: 'green' },
   ]
 
   return (

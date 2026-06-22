@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CreditCard, Smartphone, Wallet, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { useCreatePayment, usePaymentStatus, useOrderDetail } from '@/hooks';
@@ -29,15 +29,14 @@ function PaymentPage() {
   );
   const createPayment = useCreatePayment();
 
-  if (paymentStatus?.status === 'SUCCESS') {
-    navigate(`/payment/result?status=success&orderId=${orderId}`, { replace: true });
-    return null;
-  }
-
-  if (paymentStatus?.status === 'FAILED') {
-    navigate(`/payment/result?status=failed&orderId=${orderId}`, { replace: true });
-    return null;
-  }
+  // 处理支付状态变化，在 useEffect 中执行导航
+  useEffect(() => {
+    if (paymentStatus?.status === 'SUCCESS') {
+      navigate(`/payment/result?status=success&orderId=${orderId}`, { replace: true });
+    } else if (paymentStatus?.status === 'FAILED') {
+      navigate(`/payment/result?status=failed&orderId=${orderId}`, { replace: true });
+    }
+  }, [paymentStatus?.status, orderId, navigate]);
 
   if (!orderId) {
     return (

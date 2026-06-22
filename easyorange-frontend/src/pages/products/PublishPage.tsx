@@ -94,6 +94,18 @@ function PublishPage() {
     return () => clearTimeout(timer);
   }, []);
 
+
+  const updateField = useCallback(<K extends keyof FormState>(field: K, value: FormState[K]) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => {
+      if (prev[field as keyof FormErrors]) {
+        const next = { ...prev };
+        delete next[field as keyof FormErrors];
+        return next;
+      }
+      return prev;
+    });
+  }, []);
   useEffect(() => {
     if (autoListingResult) {
       updateField('name', autoListingResult.title);
@@ -115,7 +127,7 @@ function PublishPage() {
       }
       clearAutoListing();
     }
-  }, [autoListingResult]);
+  }, [autoListingResult, categories, updateField, clearAutoListing]);
 
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
@@ -138,16 +150,6 @@ function PublishPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const updateField = <K extends keyof FormState>(field: K, value: FormState[K]) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    if (errors[field as keyof FormErrors]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[field as keyof FormErrors];
-        return next;
-      });
-    }
-  };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

@@ -1,6 +1,7 @@
 export type { Result, PageResult, ApiCode } from './common';
 export { isSuccessCode } from './common';
 
+export type { RawProduct, RawChatMessage } from './raw';
 export type { User, LoginRequest, RegisterRequest, LoginResponse, TokenRefreshResult } from './user';
 
 export type {
@@ -27,7 +28,7 @@ export type {
     OrderDetail,
 } from './order';
 
-export type { ChatSession, ChatMessage } from './message';
+export type { ChatSession, ChatMessage, ChatMessageType, ChatMessageStatus } from './message';
 
 export type { RequestOptions } from './api';
 

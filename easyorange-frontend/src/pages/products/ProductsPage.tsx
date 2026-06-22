@@ -1,28 +1,23 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useQueryClient } from '@tanstack/react-query';
 import { X, Search } from 'lucide-react';
-import { useProducts, useCategories, useFavoriteCheck, useColumnCount, useSemanticSearch } from '@/hooks';
+import { useInfiniteProducts, useCategories, useFavoriteCheck, useColumnCount, useSemanticSearch } from '@/hooks';
 import { SemanticSearchToggle } from '@/components/ai/SemanticSearchToggle';
 import { ProductCard } from '@/components/product/ProductCard';
 import { preloadImages } from '@/components/ui/Image';
-import { productApi } from '@/api/productApi';
-import { normalizeProduct } from '@/utils/product';
-import { PRODUCT_KEYS } from '@/hooks/product/useProducts';
 
 import SortDropdown, { type SortOption } from '@/components/search/SortDropdown';
 import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPlaza';
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';
-import type { ProductQueryParams, Product } from '@/types';
+import type { Product } from '@/types';
 import './products-premium.css';
 
 function ProductsPage() {
   const [searchParams] = useSearchParams();
   const { token } = useAuthStore();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { checkFavorites, isFavorited, toggleFavorite } = useFavoriteCheck();
   const initialCategoryId = searchParams.get('category') || searchParams.get('categoryId');
   const initialKeyword = searchParams.get('keyword');
@@ -30,8 +25,16 @@ function ProductsPage() {
   const [activeFilter, setActiveFilter] = useState<ToolsPlazaFilter>('all');
   const [searchQuery, setSearchQuery] = useState(initialKeyword || '');
 
-  const [params, setParams] = useState<ProductQueryParams>({
-    pageNum: 1,
+  const [queryParams, setQueryParams] = useState<{
+    pageSize: number;
+    keyword?: string;
+    categoryId?: string;
+    sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
+    priceMin?: number;
+    priceMax?: number;
+    conditions?: number[];
+    hasDiscount?: boolean;
+  }>({
     pageSize: 20,
     keyword: initialKeyword || undefined,
     categoryId: initialCategoryId ?? undefined,
@@ -39,10 +42,17 @@ function ProductsPage() {
   });
 
   useEffect(() => {
-    setSearchQuery(params.keyword || '');
-  }, [params.keyword]);
+    setSearchQuery(queryParams.keyword || '');
+  }, [queryParams.keyword]);
 
-  const { data, isLoading } = useProducts(params);
+  const {
+    data: infiniteData,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteProducts(queryParams);
+
   const {
     results: semanticResults,
     isSearching: isSemanticSearching,
@@ -53,84 +63,58 @@ function ProductsPage() {
     toggleSemanticMode,
   } = useSemanticSearch();
 
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLooping, setIsLooping] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const products = isSemanticMode ? semanticResults : (data?.records ?? []);
-  const total = isSemanticMode ? semanticTotal : (data?.total ?? 0);
+  // 从 TanStack Query 的无限查询数据中提取所有产品
+  const allProducts = useMemo(() => {
+    if (isSemanticMode) {
+      return semanticResults;
+    }
+    if (!infiniteData?.pages) {
+      return [];
+    }
+    // 合并所有页面的产品数据
+    return infiniteData.pages.flatMap(page => page.records ?? []);
+  }, [infiniteData, isSemanticMode, semanticResults]);
+
+  // 获取总数（从第一页获取）
+  const total = isSemanticMode ? semanticTotal : (infiniteData?.pages?.[0]?.total ?? 0);
   const isSearchLoading = isSemanticMode ? isSemanticSearching : isLoading;
 
+  // 语义搜索的分页逻辑
+  const [semanticPage, setSemanticPage] = useState(1);
   useEffect(() => {
-    if (isSemanticMode && params.keyword) {
-      semanticSearch(params.keyword, params.pageNum, params.pageSize);
+    if (isSemanticMode && queryParams.keyword) {
+      semanticSearch(queryParams.keyword, semanticPage, queryParams.pageSize);
     }
-  }, [isSemanticMode, params.keyword, params.pageNum, params.pageSize, semanticSearch]);
+  }, [isSemanticMode, queryParams.keyword, semanticPage, queryParams.pageSize, semanticSearch]);
 
-  const displayProducts = useMemo(() => {
-    return isSemanticMode ? semanticResults : allProducts;
-  }, [isSemanticMode, semanticResults, allProducts]);
-
-  const displayTotal = total;
-
+  // 预加载图片
   useEffect(() => {
-    if (!isLoading && !isSemanticMode && products.length > 0) {
-      setAllProducts(prev => {
-        if (params.pageNum === 1 || isLooping) {
-          return [...products];
-        }
-        const existingIds = new Set(prev.map(p => p.id));
-        const newItems = products.filter(p => !existingIds.has(p.id));
-        const updated = [...prev, ...newItems];
-        if (newItems.length > 0) {
-          const upcomingImages = newItems.slice(0, 6).map((p: Product) => p.images?.[0]).filter(Boolean) as string[];
-          preloadImages(upcomingImages, { width: 300, format: 'webp', quality: 75 }).catch(() => {});
-        }
-        return updated;
-      });
-      setIsLooping(false);
+    if (allProducts.length > 0) {
+      const upcomingImages = allProducts.slice(0, 6).map((p: Product) => p.images?.[0]).filter(Boolean) as string[];
+      preloadImages(upcomingImages, { width: 300, format: 'webp', quality: 75 }).catch(() => {});
     }
-  }, [products, isLoading, params.pageNum, isLooping, isSemanticMode]);
+  }, [allProducts]);
 
+  // 检查收藏状态
   useEffect(() => {
     if (allProducts.length > 0 && token) {
       checkFavorites(allProducts.map(p => p.id));
     }
   }, [allProducts, token, checkFavorites]);
 
-  const hasNextPage = !isSemanticMode && allProducts.length < total && total > 0;
-
-  useEffect(() => {
-    if (!isLoading && !isSemanticMode && products.length > 0 && hasNextPage) {
-      const nextPageNum = (params.pageNum || 1) + 1;
-      const nextParams = { ...params, pageNum: nextPageNum };
-      queryClient.prefetchQuery({
-        queryKey: PRODUCT_KEYS.list(nextParams),
-        queryFn: async () => {
-          const response = await productApi.getProducts(nextParams);
-          const responseData = response.data;
-          return {
-            ...responseData,
-            records: (responseData.records ?? []).map((r) => normalizeProduct(r as unknown as Record<string, unknown>)),
-          };
-        },
-        staleTime: 30 * 1000,
-      }).catch(() => {});
-    }
-  }, [isLoading, products.length, hasNextPage, params.pageNum, queryClient]);
-
+  // Intersection Observer 处理无限滚动
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || isSemanticMode) {return;}
+    if (!sentinel || isSemanticMode) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !isLoading) {
-          if (hasNextPage) {
-            handleLoadNext();
-          } else if (!isLooping && allProducts.length > 0) {
-            handleLoopBack();
-          }
+        if (entry.isIntersecting && !isFetchingNextPage && hasNextPage) {
+          fetchNextPage();
         }
       },
       { rootMargin: '1200px' }
@@ -138,41 +122,50 @@ function ProductsPage() {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [allProducts.length, total, isLoading, isLooping, hasNextPage]);
+  }, [isSemanticMode, isFetchingNextPage, hasNextPage, fetchNextPage]);
 
-  const handleLoadNext = useCallback(() => {
-    setParams(prev => ({ ...prev, pageNum: (prev.pageNum || 1) + 1 }));
-  }, []);
+  // 语义搜索的无限滚动
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !isSemanticMode) {
+      return;
+    }
 
-  const handleLoopBack = useCallback(() => {
-    setIsLooping(true);
-    setParams(prev => ({ ...prev, pageNum: 1 }));
-  }, []);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isSemanticSearching && semanticResults.length < semanticTotal) {
+          setSemanticPage(prev => prev + 1);
+        }
+      },
+      { rootMargin: '1200px' }
+    );
 
-  const resetAllProducts = useCallback(() => {
-    setAllProducts([]);
-    setIsLooping(false);
-  }, []);
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isSemanticMode, isSemanticSearching, semanticResults.length, semanticTotal]);
 
   const { data: categories } = useCategories();
   const currentCategory = useMemo(() => {
-    if (!params.categoryId || !categories) {return null;}
-    return categories.find(c => c.id === params.categoryId) || null;
-  }, [params.categoryId, categories]);
+    if (!queryParams.categoryId || !categories) {
+      return null;
+    }
+    return categories.find(c => c.id === queryParams.categoryId) || null;
+  }, [queryParams.categoryId, categories]);
 
   const COLUMN_COUNT = useColumnCount();
 
   const rows = useMemo(() => {
     const result: (Product | null)[][] = [];
-    for (let i = 0; i < displayProducts.length; i += COLUMN_COUNT) {
-      result.push(displayProducts.slice(i, i + COLUMN_COUNT));
+    for (let i = 0; i < allProducts.length; i += COLUMN_COUNT) {
+      result.push(allProducts.slice(i, i + COLUMN_COUNT));
     }
-    if (isSearchLoading && displayProducts.length > 0 && hasNextPage) {
+    // 添加加载占位符
+    if ((isFetchingNextPage || isSemanticSearching) && allProducts.length > 0) {
       result.push(Array(COLUMN_COUNT).fill(null));
       result.push(Array(COLUMN_COUNT).fill(null));
     }
     return result;
-  }, [displayProducts, COLUMN_COUNT, isSearchLoading, hasNextPage]);
+  }, [allProducts, COLUMN_COUNT, isFetchingNextPage, isSemanticSearching]);
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
@@ -182,70 +175,70 @@ function ProductsPage() {
   });
 
   const handleSortChange = useCallback((sort: SortOption) => {
-    resetAllProducts();
-    setParams((prev) => ({ ...prev, sort, pageNum: 1 }));
-  }, [resetAllProducts]);
+    setSemanticPage(1);
+    setQueryParams(prev => ({ ...prev, sort, keyword: prev.keyword }));
+  }, []);
 
   const handleFilterChange = useCallback((filter: ToolsPlazaFilter) => {
     setActiveFilter(filter);
+    setSemanticPage(1);
     if (filter === 'all') {
-      setParams(prev => ({ ...prev, hasDiscount: undefined, sort: 'newest', pageNum: 1 }));
+      setQueryParams(prev => ({ ...prev, hasDiscount: undefined, sort: 'newest', keyword: prev.keyword }));
     } else if (filter === 'discount') {
-      setParams(prev => ({ ...prev, hasDiscount: true, pageNum: 1 }));
+      setQueryParams(prev => ({ ...prev, hasDiscount: true, keyword: prev.keyword }));
     }
   }, []);
 
   const handleApplyFilters = useCallback((filters: FilterState) => {
-    resetAllProducts();
     setActiveFilter('all');
-    setParams(prev => ({
+    setSemanticPage(1);
+    setQueryParams(prev => ({
       ...prev,
       categoryId: filters.categories.length === 1 ? filters.categories[0] : undefined,
       priceMin: filters.priceMin,
       priceMax: filters.priceMax,
       conditions: filters.conditions.length > 0 ? filters.conditions : undefined,
-      pageNum: 1,
+      keyword: prev.keyword,
     }));
     setIsFilterOpen(false);
-  }, [resetAllProducts]);
+  }, []);
 
   const handleResetFilters = useCallback(() => {
-    resetAllProducts();
     setActiveFilter('all');
-    setParams({
-      pageNum: 1,
+    setSemanticPage(1);
+    setQueryParams({
       pageSize: 20,
       sort: 'newest',
     });
-  }, [resetAllProducts]);
+  }, []);
 
   const handleClearCategory = useCallback(() => {
-    resetAllProducts();
     setActiveFilter('all');
-    setParams(prev => ({ ...prev, categoryId: undefined, pageNum: 1 }));
-  }, [resetAllProducts]);
+    setSemanticPage(1);
+    setQueryParams(prev => ({ ...prev, categoryId: undefined, keyword: prev.keyword }));
+  }, []);
 
   const handleSearchSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = searchQuery.trim();
-    if (trimmed === params.keyword) {return;}
-    resetAllProducts();
-    setParams(prev => ({
+    if (trimmed === queryParams.keyword) {
+      return;
+    }
+    setSemanticPage(1);
+    setQueryParams(prev => ({
       ...prev,
       keyword: trimmed || undefined,
-      pageNum: 1,
     }));
-  }, [searchQuery, params.keyword, resetAllProducts]);
+  }, [searchQuery, queryParams.keyword]);
 
   const handleSearchClear = useCallback(() => {
     setSearchQuery('');
-    resetAllProducts();
-    setParams(prev => ({
+    setSemanticPage(1);
+    setQueryParams(prev => ({
       ...prev,
       keyword: undefined,
-      pageNum: 1,
     }));
-  }, [resetAllProducts]);
+  }, []);
 
   const handleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
     if (!token) {
@@ -255,7 +248,7 @@ function ProductsPage() {
     toggleFavorite(productId, shouldFavorite);
   }, [token, navigate, toggleFavorite]);
 
-  if (isSearchLoading && displayProducts.length === 0) {
+  if (isSearchLoading && allProducts.length === 0) {
     return (
       <div className="products-page-wrapper">
         <div className="products-container">
@@ -292,7 +285,7 @@ function ProductsPage() {
       />
 
       <div className="products-container">
-        <ToolsPlaza onFilterChange={handleFilterChange} total={displayTotal} activeFilter={activeFilter} />
+        <ToolsPlaza onFilterChange={handleFilterChange} total={total} activeFilter={activeFilter} />
 
         <div className="products-toolbar">
           <div className="results-info">
@@ -303,7 +296,7 @@ function ProductsPage() {
                 <X size={12} className="category-clear" />
               </button>
             )}
-            <span className="results-count">{displayTotal}</span>
+            <span className="results-count">{total}</span>
             <span className="results-text"> 件商品</span>
           </div>
 
@@ -344,7 +337,7 @@ function ProductsPage() {
             </button>
 
             <SortDropdown
-              value={(params.sort ?? 'newest') as SortOption}
+              value={(queryParams.sort ?? 'newest') as SortOption}
               onChange={handleSortChange}
             />
           </div>
@@ -353,7 +346,9 @@ function ProductsPage() {
         <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
           {rowVirtualizer.getVirtualItems().map((virtualRow) => {
             const row = rows[virtualRow.index];
-            if (!row) {return null;}
+            if (!row) {
+              return null;
+            }
             return (
               <div
                 key={virtualRow.index}
@@ -395,11 +390,11 @@ function ProductsPage() {
           })}
         </div>
 
-        {displayProducts.length > 0 && (
+        {allProducts.length > 0 && (
           <div ref={sentinelRef} className="scroll-sentinel" />
         )}
 
-        {!isSearchLoading && displayProducts.length === 0 && (
+        {!isSearchLoading && allProducts.length === 0 && (
           <div className="no-results-premium">
             <div className={`no-results-icon-premium ${semanticError ? 'error' : ''}`}>
               {semanticError ? (
@@ -423,7 +418,7 @@ function ProductsPage() {
                 <div className="no-results-actions">
                   <button
                     className="semantic-retry-btn"
-                    onClick={() => params.keyword && semanticSearch(params.keyword)}
+                    onClick={() => queryParams.keyword && semanticSearch(queryParams.keyword)}
                   >
                     重试
                   </button>

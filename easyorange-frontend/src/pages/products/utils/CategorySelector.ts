@@ -119,12 +119,19 @@ export class CategorySelector {
         if (!level1Options) {return;}
 
         if (show) {
-            level1Options.innerHTML = `
-                <div class="cascade-loading">
-                    <div class="loading-spinner"></div>
-                    <span>正在加载分类...</span>
-                </div>
-            `;
+            level1Options.innerHTML = '';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'cascade-loading';
+
+            const spinnerDiv = document.createElement('div');
+            spinnerDiv.className = 'loading-spinner';
+
+            const span = document.createElement('span');
+            span.textContent = '正在加载分类...';
+
+            loadingDiv.appendChild(spinnerDiv);
+            loadingDiv.appendChild(span);
+            level1Options.appendChild(loadingDiv);
         }
     }
 
@@ -136,13 +143,26 @@ export class CategorySelector {
         const level1Options = this.elements.level1Options;
         if (!level1Options) {return;}
 
-        level1Options.innerHTML = `
-            <div class="cascade-error">
-                <span class="error-icon">⚠️</span>
-                <span>${message}</span>
-                <button class="retry-btn" onclick="location.reload()">刷新页面</button>
-            </div>
-        `;
+        level1Options.innerHTML = '';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'cascade-error';
+
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'error-icon';
+        iconSpan.textContent = '⚠️';
+
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'retry-btn';
+        retryBtn.textContent = '刷新页面';
+        retryBtn.onclick = () => location.reload();
+
+        errorDiv.appendChild(iconSpan);
+        errorDiv.appendChild(messageSpan);
+        errorDiv.appendChild(retryBtn);
+        level1Options.appendChild(errorDiv);
     }
 
     /**
@@ -162,11 +182,16 @@ export class CategorySelector {
             option.dataset.id = String(category.id);
             option.dataset.level = String(level);
 
-            const icon = category.icon || '📁';
-            option.innerHTML = `
-                <span class="cascade-icon">${icon}</span>
-                <span class="cascade-name">${category.name}</span>
-            `;
+            const iconSpan = document.createElement('span');
+            iconSpan.className = 'cascade-icon';
+            iconSpan.textContent = category.icon || '📁';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'cascade-name';
+            nameSpan.textContent = category.name;
+
+            option.appendChild(iconSpan);
+            option.appendChild(nameSpan);
 
             option.addEventListener('click', () => this.selectCategory(level, category));
 

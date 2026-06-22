@@ -54,10 +54,10 @@ product/
 │   ├── aggregate/
 │   │   └── Product.java                 # 商品聚合根
 │   ├── entity/
+│   │   ├── ProductAuditLog.java
 │   │   ├── ProductDetail.java
 │   │   ├── ProductReport.java
-│   │   ├── HotKeyword.java
-│   │   └── SearchHistory.java
+│   │   └── ReportHandleHistory.java
 │   ├── valueobject/
 │   │   ├── ProductId.java, CategoryId.java, SellerId.java
 │   │   ├── Money.java, StockQuantity.java, Version.java

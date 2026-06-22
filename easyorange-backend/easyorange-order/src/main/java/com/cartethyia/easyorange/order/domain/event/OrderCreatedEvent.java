@@ -20,22 +20,9 @@ public class OrderCreatedEvent extends BaseDomainEvent {
         this.orderId = orderId;
         this.buyerId = buyerId;
         this.sellerId = sellerId;
-        this.items = items;
+        this.items = List.copyOf(items);
         this.totalAmount = totalAmount;
     }
 
-    @Getter
-    public static class OrderItemPayload {
-        private final Long productId;
-        private final int quantity;
-        private final BigDecimal unitPrice;
-        private final BigDecimal subtotal;
-
-        public OrderItemPayload(Long productId, int quantity, BigDecimal unitPrice, BigDecimal subtotal) {
-            this.productId = productId;
-            this.quantity = quantity;
-            this.unitPrice = unitPrice;
-            this.subtotal = subtotal;
-        }
-    }
+    public record OrderItemPayload(Long productId, int quantity, BigDecimal unitPrice, BigDecimal subtotal) {}
 }

@@ -35,11 +35,6 @@ public abstract class BaseBusinessException extends RuntimeException {
         this.code = resultCode.getCode();
     }
 
-    protected BaseBusinessException(String code, String message, Throwable cause) {
-        super(message, cause);
-        this.code = code;
-    }
-
     protected String defaultCode() {
         return ResultCode.BUSINESS_ERROR.getCode();
     }

@@ -62,49 +62,15 @@ class PageResultTest {
     }
 
     @Nested
-    @DisplayName("hasData / hasNext / hasPrevious")
-    class NavigationTests {
+    @DisplayName("compact constructor null guard")
+    class CompactConstructorTests {
 
         @Test
-        @DisplayName("有数据时 hasData 为 true")
-        void hasData_withData_true() {
-            PageResult<String> result = PageResult.of(List.of("a"), 1L, 1, 10);
-            assertTrue(result.hasData());
-        }
-
-        @Test
-        @DisplayName("无数据时 hasData 为 false")
-        void hasData_noData_false() {
-            PageResult<String> result = PageResult.empty(1, 10);
-            assertFalse(result.hasData());
-        }
-
-        @Test
-        @DisplayName("当前页小于总页数时 hasNext 为 true")
-        void hasNext_hasNextPage_true() {
-            PageResult<String> result = PageResult.of(List.of("a"), 20L, 1, 10);
-            assertTrue(result.hasNext());
-        }
-
-        @Test
-        @DisplayName("最后一页时 hasNext 为 false")
-        void hasNext_lastPage_false() {
-            PageResult<String> result = PageResult.of(List.of("a"), 10L, 1, 10);
-            assertFalse(result.hasNext());
-        }
-
-        @Test
-        @DisplayName("第一页时 hasPrevious 为 false")
-        void hasPrevious_firstPage_false() {
-            PageResult<String> result = PageResult.of(List.of("a"), 20L, 1, 10);
-            assertFalse(result.hasPrevious());
-        }
-
-        @Test
-        @DisplayName("第二页时 hasPrevious 为 true")
-        void hasPrevious_secondPage_true() {
-            PageResult<String> result = PageResult.of(List.of("a"), 20L, 2, 10);
-            assertTrue(result.hasPrevious());
+        @DisplayName("canonical constructor 传入 null records 也返回空列表")
+        void canonicalConstructor_nullRecords_emptyList() {
+            PageResult<String> result = new PageResult<>(null, 5L, 1, 10, 1);
+            assertNotNull(result.records());
+            assertTrue(result.records().isEmpty());
         }
     }
 }

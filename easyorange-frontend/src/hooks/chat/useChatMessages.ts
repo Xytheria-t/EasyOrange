@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messageApi } from '@/api/messageApi';
 import { useChatStore } from '@/store/chatStore';
 import type { ChatMessage } from '@/types/message';
+import { normalizeChatMessages } from '@/utils/message';
 
 const PAGE_SIZE = 50;
 const EMPTY_MESSAGES: ChatMessage[] = [];
@@ -20,7 +21,7 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
     queryFn: async () => {
       if (!targetUserId) {return EMPTY_MESSAGES;}
       const response = await messageApi.getConversation(targetUserId);
-      const data = (response.data ?? []) as unknown as ChatMessage[];
+      const data = normalizeChatMessages(response.data ?? []);
       return data.slice(-PAGE_SIZE);
     },
     enabled: !!targetUserId,
@@ -46,7 +47,7 @@ export function useChatMessages(targetUserId: string | null, conversationId: str
 
     try {
       const response = await messageApi.getConversation(targetUserId);
-      const allMessages = (response.data ?? []) as unknown as ChatMessage[];
+      const allMessages = normalizeChatMessages(response.data ?? []);
       const oldestIndex = allMessages.findIndex((m) => m.id === oldestMessageId);
 
       if (oldestIndex <= 0) {

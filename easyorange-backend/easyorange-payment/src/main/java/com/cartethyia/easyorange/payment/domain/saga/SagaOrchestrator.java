@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.saga;
 
+import com.cartethyia.easyorange.payment.domain.exception.SagaCompensationFailedException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -54,12 +55,23 @@ public class SagaOrchestrator {
     }
 
     private void compensate() {
+        List<SagaCompensationFailedException.CompensationFailure> failures = new ArrayList<>();
+
         for (Runnable compensation : compensations) {
             try {
                 compensation.run();
             } catch (Exception e) {
                 log.error("Compensation failed", e);
+                failures.add(new SagaCompensationFailedException.CompensationFailure(
+                    "compensation",
+                    e.getMessage(),
+                    e
+                ));
             }
+        }
+
+        if (!failures.isEmpty()) {
+            throw new SagaCompensationFailedException(failures);
         }
     }
 

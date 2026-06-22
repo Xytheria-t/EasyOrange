@@ -16,7 +16,7 @@ ai/
 │   ├── CachingVisionAdapter.java   # @Primary 装饰器，L1+L2 缓存
 │   ├── outbound/
 │   │   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行)
-│   └── dto/                        # 适配器 DTO
+│   └── dto/                        # 适配器 DTO (DeepSeekRequest, DeepSeekResponse, QwenVlRequest, QwenVlResponse)
 ├── interceptor/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
 ├── enums/
@@ -33,11 +33,12 @@ ai/
 │   ├── AutoListingService.java        # 拍照上架
 │   ├── SemanticSearchService.java     # 语义搜索
 │   └── CreditScoringService.java      # 信用评分
-├── dto/                            # 业务 DTO
+├── dto/                            # 业务 DTO (AiReviewRequest/Result, CopyGenerationRequest/Result, PricingRequest/Suggestion, AutoListingResult, CreditScoreResult, QaRequest/Response, SemanticSearchQuery/Result)
 ├── config/
 │   ├── AiProperties.java           # AI 配置属性 (API key, endpoint, 模型名, cache, rateLimit)
-│   ├── AiConfig.java               # AI Bean 配置
-│   └── AiCacheConfig.java          # 6 个 MultiLevelCache Bean + 拦截器注册
+│   ├── AiConfig.java               # AI Bean 配置 (deepseekRestClient, qwenVlRestClient)
+│   ├── AiCacheConfig.java          # 6 个 MultiLevelCache Bean + 拦截器注册
+│   └── AiStaleCacheConfig.java     # Stale 缓存 (Caffeine, 24h TTL, 限流降级用)
 └── controller/                     # API 接口 (可选, 部分控制器在 easyorange-application)
 ```
 

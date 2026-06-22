@@ -336,3 +336,26 @@ WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Per
 **已修复**：`RateLimitFilter` 改用 `ObjectProvider<List<HandlerMapping>>` 延迟注入，`hasSkipAnnotation()` 调用 `handlerMappingsProvider.getIfAvailable(List::of)` 在请求时才解析 HandlerMapping，打破循环。
 
 **注意**：修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入。新增需要 `HandlerMapping` 的 Filter 时同样使用 `ObjectProvider` 模式
+
+### CategoryCacheAdapter 熔断机制
+
+`CategoryCacheAdapter` 在 Redis 连接失败时自动降级到 DB 查询，但大量请求可能导致 DB 雪崩。
+
+**已修复**：添加熔断机制：
+- 连续失败 5 次（`CIRCUIT_BREAKER_THRESHOLD`）触发熔断，跳过所有 Redis 操作
+- 60 秒后（`CIRCUIT_BREAKER_RESET_INTERVAL_MS`）自动重置熔断状态
+- 成功操作后重置失败计数器
+- ERROR 级别日志告警（包含 `action`, `operation`, `context`, `failure_count` 结构化字段）
+
+**注意**：修改缓存适配器时保持熔断逻辑，避免移除告警日志。新增缓存适配器时遵循此模式。
+
+### Admin 模块端口接口模式
+
+Admin 模块曾直接依赖其他模块的 Mapper/DO（如 `ProductMapper`, `UserMapper`），违反 DDD 防腐层原则。
+
+**已修复**：
+- 创建 `domain/port/` 端口接口（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`）
+- 适配器实现在 `easyorange-application/adapter/outbound/admin/` 包下
+- 日期解析异常处理改为记录日志而非完全吞异常
+
+**注意**：Admin 模块新增跨模块查询时必须通过端口接口，不直接依赖其他模块的 Mapper/DO。

@@ -182,7 +182,7 @@ class AdminReportServiceTest {
 
                 reportService.handleReport(REPORT_ID, request);
 
-                verify(productReportRepository).update(report);
+                verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
                 verify(reportHandleHistoryRepository).save(any(ReportHandleHistory.class));
                 verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
             } finally {
@@ -204,7 +204,7 @@ class AdminReportServiceTest {
 
                 reportService.handleReport(REPORT_ID, request);
 
-                verify(productReportRepository).update(report);
+                verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
                 verify(reportHandleHistoryRepository).save(any(ReportHandleHistory.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();

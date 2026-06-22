@@ -34,9 +34,9 @@ class GetPendingReportsHandlerTest {
     @DisplayName("获取待处理举报列表应返回分页结果")
     void handle_shouldReturnPendingReports() {
         ProductReport report1 = ProductReport.create(1L, 2L, "假货", 1);
-        report1.assignId(100L);
+        report1 = report1.assignId(100L);
         ProductReport report2 = ProductReport.create(3L, 4L, "侵权", 2);
-        report2.assignId(101L);
+        report2 = report2.assignId(101L);
 
         when(productReportRepository.findPendingReports(1, 20)).thenReturn(List.of(report1, report2));
         when(productReportRepository.countPendingReports()).thenReturn(2L);

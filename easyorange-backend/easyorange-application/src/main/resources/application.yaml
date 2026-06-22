@@ -32,7 +32,7 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:easyorange123}
+      password: ${REDIS_PASSWORD}  # 无默认值，由各 profile 提供
       database: 0
       timeout: 10000ms
 

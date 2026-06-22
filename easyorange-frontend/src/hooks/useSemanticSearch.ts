@@ -47,7 +47,7 @@ export function useSemanticSearch(): UseSemanticSearchReturn {
       const response = await aiApi.semanticSearch({ keyword, pageNum, pageSize });
       const rawRecords = response.data?.records ?? [];
       const normalized = rawRecords.map((r) =>
-        normalizeProduct(r as Record<string, unknown>)
+        normalizeProduct(r)
       );
       setResults(normalized);
       setTotal(response.data?.total ?? 0);

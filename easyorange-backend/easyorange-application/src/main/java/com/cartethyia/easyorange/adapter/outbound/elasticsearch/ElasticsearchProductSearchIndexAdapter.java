@@ -56,6 +56,22 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         log.debug("Deleted ES document for productId={}", productId);
     }
 
+    /**
+     * 保存单个商品到 ES 索引。
+     *
+     * <p><b>性能说明</b></p>
+     * <p>此方法会执行 4 次数据库查询：</p>
+     * <ul>
+     *   <li>1 次查询商品基本信息</li>
+     *   <li>1 次查询商品详情</li>
+     *   <li>1 次查询商品图片列表</li>
+     *   <li>1 次查询分类信息</li>
+     * </ul>
+     * <p>对于单个商品索引操作，这个查询开销是可接受的。</p>
+     * <p><b>批量操作请使用 {@link #indexProducts(List)} 方法，避免 N+1 查询问题。</b></p>
+     *
+     * @param productId 商品 ID
+     */
     private void saveDocument(Long productId) {
         try {
             ProductDO product = productMapper.selectById(productId);
@@ -72,7 +88,17 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
         }
     }
 
-    /** 将 ProductDO 组装为 ES ProductDocument（含关联查询） */
+    /**
+     * 将 ProductDO 组装为 ES ProductDocument（含关联查询）。
+     *
+     * <p><b>警告：N+1 查询风险</b></p>
+     * <p>此方法会执行 3 次数据库查询：ProductDetail、ProductImage、Category。</p>
+     * <p>如果循环调用此方法处理多个商品，会产生 3N 次查询。</p>
+     * <p><b>批量操作请使用 {@link #indexProducts(List)} 方法，它会批量预加载所有关联数据。</b></p>
+     *
+     * @param product 商品 DO
+     * @return ES 文档对象
+     */
     ProductDocument buildDocument(ProductDO product) {
         Long productId = product.getId();
 

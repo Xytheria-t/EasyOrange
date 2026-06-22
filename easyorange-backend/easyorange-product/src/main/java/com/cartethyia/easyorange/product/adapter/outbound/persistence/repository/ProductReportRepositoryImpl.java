@@ -88,7 +88,6 @@ public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMap
     public void save(ProductReport report) {
         ProductReportDO reportDO = convertToDO(report);
         mapper.insert(reportDO);
-        report.assignId(reportDO.getId());
     }
 
     @Override

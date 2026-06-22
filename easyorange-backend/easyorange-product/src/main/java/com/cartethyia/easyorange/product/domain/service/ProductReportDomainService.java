@@ -46,18 +46,19 @@ public class ProductReportDomainService {
             throw new ReportNotFoundException("举报记录不存在: " + reportId);
         }
 
+        ProductReport updated;
         if (approved) {
-            report.approve(null);
+            updated = report.approve(null);
             productRepository.updateStatus(
                     ProductId.of(report.getProductId()),
                     ProductStatus.OFFLINE
             );
             productCachePort.evictProductCache(report.getProductId());
         } else {
-            report.reject(null);
+            updated = report.reject(null);
         }
 
-        productReportRepository.update(report);
+        productReportRepository.update(updated);
     }
 
     public static class ReportNotFoundException extends BaseBusinessException {

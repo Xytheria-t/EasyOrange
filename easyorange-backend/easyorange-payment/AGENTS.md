@@ -66,7 +66,8 @@ payment/
 │   │   ├── PaymentSucceededEvent.java
 │   │   ├── PaymentFailedEvent.java
 │   │   ├── PaymentRefundedEvent.java
-│   │   └── PaymentClosedEvent.java
+│   │   ├── PaymentClosedEvent.java
+│   │   └── CompensationFailedAlertEvent.java  # 补偿失败告警事件
 │   ├── port/
 │   │   ├── PaymentGatewayPort.java          # 支付网关端口
 │   │   ├── IdempotencyKeyRepositoryPort.java # 幂等键仓储端口
@@ -86,7 +87,8 @@ payment/
 │       ├── PaymentGatewayException.java
 │       ├── OptimisticLockException.java
 │       ├── RefundNotAllowedException.java
-│       └── CallbackSignInvalidException.java
+│       ├── CallbackSignInvalidException.java
+│       └── SagaCompensationFailedException.java  # Saga 补偿失败异常
 └── constant/
     └── PaymentConstant.java
 ```
@@ -123,6 +125,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 - 两阶段支付：`preparePay()` → `PayPreparedResult` → 网关调用 → `confirmPay(PaymentResult)` → `PayConfirmedResult`
 - 两阶段退款：`prepareRefund()` → `RefundPreparedResult` → 网关调用 → `confirmRefund(RefundResult)` → `RefundConfirmedResult`
 - Saga 补偿：`cancelPay()` / `cancelRefund()` 回退到前一状态
+- **补偿失败处理**：补偿操作失败时抛出 `SagaCompensationFailedException`，发布 `CompensationFailedAlertEvent` 告警事件，不会被静默吞掉
 - Guard 方法：`canPay()` / `canRefund()` / `canClose()` / `canFail()` / `canConfirmPay()` / `canConfirmRefund()`
 
 ## 常见开发任务

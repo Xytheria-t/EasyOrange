@@ -182,7 +182,7 @@ public class SecurityConfig {
             }
 
             String userType = jwt.getClaimAsString("userType");
-            boolean isAdmin = "00".equals(userType) || "02".equals(userType);
+            boolean isAdmin = securityProperties.isAdminUserType(userType);
 
             List<SimpleGrantedAuthority> authorities = isAdmin
                     ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"))

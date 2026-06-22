@@ -63,20 +63,20 @@ class ProductReportTest {
     void approve_shouldChangeStatusToResolved() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
 
-        report.approve("已处理");
+        ProductReport approved = report.approve("已处理");
 
-        assertThat(report.getStatus()).isEqualTo(ProductReportStatus.RESOLVED);
-        assertThat(report.getRemark()).isEqualTo("已处理");
-        assertThat(report.isPending()).isFalse();
+        assertThat(approved.getStatus()).isEqualTo(ProductReportStatus.RESOLVED);
+        assertThat(approved.getRemark()).isEqualTo("已处理");
+        assertThat(approved.isPending()).isFalse();
     }
 
     @Test
     @DisplayName("批准非待处理的举报应抛出异常")
     void approve_whenNotPending_shouldThrow() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report.approve("已处理");
+        ProductReport approved = report.approve("已处理");
 
-        assertThatThrownBy(() -> report.approve("再次处理"))
+        assertThatThrownBy(() -> approved.approve("再次处理"))
                 .isInstanceOf(ProductReport.ReportDomainException.class)
                 .hasMessageContaining("只有待处理的举报才能被批准");
     }
@@ -86,20 +86,20 @@ class ProductReportTest {
     void reject_shouldChangeStatusToDismissed() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
 
-        report.reject("证据不足");
+        ProductReport rejected = report.reject("证据不足");
 
-        assertThat(report.getStatus()).isEqualTo(ProductReportStatus.DISMISSED);
-        assertThat(report.getRemark()).isEqualTo("证据不足");
-        assertThat(report.isPending()).isFalse();
+        assertThat(rejected.getStatus()).isEqualTo(ProductReportStatus.DISMISSED);
+        assertThat(rejected.getRemark()).isEqualTo("证据不足");
+        assertThat(rejected.isPending()).isFalse();
     }
 
     @Test
     @DisplayName("驳回非待处理的举报应抛出异常")
     void reject_whenNotPending_shouldThrow() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report.reject("证据不足");
+        ProductReport rejected = report.reject("证据不足");
 
-        assertThatThrownBy(() -> report.reject("再次驳回"))
+        assertThatThrownBy(() -> rejected.reject("再次驳回"))
                 .isInstanceOf(ProductReport.ReportDomainException.class)
                 .hasMessageContaining("只有待处理的举报才能被驳回");
     }
@@ -132,11 +132,11 @@ class ProductReportTest {
     void assignId_shouldOnlySetWhenNull() {
         ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
 
-        report.assignId(100L);
-        assertThat(report.getId()).isEqualTo(100L);
+        ProductReport withId = report.assignId(100L);
+        assertThat(withId.getId()).isEqualTo(100L);
 
-        report.assignId(200L);
-        assertThat(report.getId()).isEqualTo(100L);
+        ProductReport stillWithId = withId.assignId(200L);
+        assertThat(stillWithId.getId()).isEqualTo(100L);
     }
 
     @Test
@@ -145,7 +145,7 @@ class ProductReportTest {
         ProductReport pending = ProductReport.create(1L, 2L, "假货", 1);
         assertThat(pending.statusCode()).isEqualTo(0);
 
-        pending.approve("处理完成");
-        assertThat(pending.statusCode()).isEqualTo(2);
+        ProductReport approved = pending.approve("处理完成");
+        assertThat(approved.statusCode()).isEqualTo(2);
     }
 }

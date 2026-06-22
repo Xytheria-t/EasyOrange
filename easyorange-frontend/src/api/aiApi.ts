@@ -1,4 +1,5 @@
 import { request } from './core/request';
+import type { RawProduct } from '@/types';
 
 export interface PricingSuggestion {
     suggestedPrice: number;
@@ -29,7 +30,7 @@ export interface AiReviewResult {
 }
 
 export interface SemanticSearchResult {
-    records: unknown[];
+    records: RawProduct[];
     total: number;
     current: number;
     size: number;

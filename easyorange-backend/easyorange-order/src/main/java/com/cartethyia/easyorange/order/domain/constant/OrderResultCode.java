@@ -24,7 +24,8 @@ public enum OrderResultCode implements IResultCode {
     ORDER_ALREADY_CANCELLED("B3005", "订单已取消"),
     ORDER_ALREADY_COMPLETED("B3006", "订单已完成"),
     ORDER_CANNOT_CANCEL("B3007", "订单无法取消"),
-    ORDER_CANNOT_REFUND("B3008", "订单无法退款");
+    ORDER_CANNOT_REFUND("B3008", "订单无法退款"),
+    ORDER_ERROR("B3009", "订单业务异常");
 
     private final String code;
     private final String message;

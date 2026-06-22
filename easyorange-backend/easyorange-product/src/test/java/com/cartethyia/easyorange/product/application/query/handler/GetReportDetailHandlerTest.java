@@ -35,7 +35,7 @@ class GetReportDetailHandlerTest {
         handler = new GetReportDetailHandler(productReportRepository, productMapper);
 
         report = ProductReport.create(1L, 2L, "假货", 1);
-        report.assignId(100L);
+        report = report.assignId(100L);
     }
 
     @Test
@@ -93,7 +93,7 @@ class GetReportDetailHandlerTest {
     @Test
     @DisplayName("已处理的举报应显示正确的状态描述")
     void handle_shouldReturnCorrectStatusDesc() {
-        report.reject("证据不足");
+        report = report.reject("证据不足");
         when(productReportRepository.findById(100L)).thenReturn(report);
         when(productMapper.selectById(1L)).thenReturn(null);
 

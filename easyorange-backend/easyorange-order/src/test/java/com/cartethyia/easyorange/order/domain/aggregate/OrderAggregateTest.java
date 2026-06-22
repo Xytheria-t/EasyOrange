@@ -79,7 +79,7 @@ class OrderAggregateTest {
             assertThat(result.event().getBuyerId()).isEqualTo(BUYER_ID);
             assertThat(result.event().getSellerId()).isEqualTo(SELLER_ID);
             assertThat(result.event().getItems()).hasSize(1);
-            assertThat(result.event().getItems().get(0).getProductId()).isEqualTo(PRODUCT_ID);
+            assertThat(result.event().getItems().get(0).productId()).isEqualTo(PRODUCT_ID);
             assertThat(result.event().getTotalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(result.event().getOrderId()).isNotNull();
             assertThat(result.aggregate()).isNotNull();

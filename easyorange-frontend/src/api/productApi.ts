@@ -2,12 +2,12 @@
  * @fileoverview 商品 API 模块
  */
 
-import type { PageResult, Category, Product, ProductQueryParams, CreateProductRequest, UpdateProductRequest, ProductSearchResult, ProductSearchParams } from '@/types';
+import type { PageResult, Category, RawProduct, ProductQueryParams, CreateProductRequest, UpdateProductRequest, ProductSearchResult, ProductSearchParams } from '@/types';
 import { request } from './core/request';
 
 export const productApi = {
     getProducts(params?: ProductQueryParams) {
-        return request<PageResult<Product>>('/products', {
+        return request<PageResult<RawProduct>>('/products', {
             method: 'GET',
             params: params as Record<string, unknown>,
             skipAuth: true
@@ -15,7 +15,7 @@ export const productApi = {
     },
 
     getProductById(id: string) {
-        return request<Product>(`/products/${id}`);
+        return request<RawProduct>(`/products/${id}`);
     },
 
     createProduct(data: CreateProductRequest) {
@@ -59,7 +59,7 @@ export const productApi = {
     },
 
     getProductsByCategory(categoryId: string | number) {
-        return request<PageResult<Product>>(`/products/category/${categoryId}`, { skipAuth: true });
+        return request<PageResult<RawProduct>>(`/products/category/${categoryId}`, { skipAuth: true });
     },
 
     searchProducts(params: ProductSearchParams = {}) {
@@ -87,7 +87,7 @@ export const productApi = {
     },
 
     getProductsByIds(ids: string[]) {
-        return request<Product[]>('/products/batch', {
+        return request<RawProduct[]>('/products/batch', {
             method: 'POST',
             body: ids,
             skipAuth: true
@@ -95,7 +95,7 @@ export const productApi = {
     },
 
     getSimilarProducts(id: string) {
-        return request<Product[]>(`/products/${id}/similar`, { skipAuth: true });
+        return request<RawProduct[]>(`/products/${id}/similar`, { skipAuth: true });
     },
 
     incrementView(id: string) {
@@ -112,7 +112,7 @@ export const productApi = {
     },
 
     getMyProducts(params?: { pageNum?: number; pageSize?: number; status?: number }) {
-        return request<PageResult<Product>>('/products/my', {
+        return request<PageResult<RawProduct>>('/products/my', {
             method: 'GET',
             params: params as Record<string, unknown>,
         });
