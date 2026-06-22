@@ -33,8 +33,6 @@ common/
 │   │   └── InvalidExtensionException.java     # 非法扩展名
 │   └── validation/
 │       └── ParamValidationException.java     # 参数校验异常
-├── notification/
-│   └── NotificationService.java # 通知服务接口
 ├── result/
 │   ├── Result.java          # 统一响应 Result<T>
 │   └── PageResult.java      # 分页响应 PageResult<T>

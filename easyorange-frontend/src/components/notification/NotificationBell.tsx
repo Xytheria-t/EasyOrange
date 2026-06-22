@@ -1,10 +1,12 @@
-import { useQuery } from '@tanstack/react-query';
-import { Bell } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { notificationApi } from '@/api/notificationApi';
+import { useQuery } from '@tanstack/react-query'
+import { Bell } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { notificationApi } from '@/api/notificationApi'
+import { useNotificationSocket } from '@/hooks/useNotificationSocket'
 
 export function NotificationBell() {
   const navigate = useNavigate();
+  useNotificationSocket();
 
   const { data: unreadCount } = useQuery({
     queryKey: ['unread-count'],
@@ -12,7 +14,7 @@ export function NotificationBell() {
       const response = await notificationApi.getUnreadCount();
       return response.data;
     },
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     staleTime: 15_000,
   });
 

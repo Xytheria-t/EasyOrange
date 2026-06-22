@@ -6,5 +6,5 @@ public interface ProductNotificationPort {
 
     void notifyProductMarkedSold(Long productId, Long userId);
 
-    void notifyLowStock(Long productId, int currentStock);
+    void notifyLowStock(Long productId, Long sellerId, int currentStock);
 }

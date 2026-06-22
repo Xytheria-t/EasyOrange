@@ -95,7 +95,6 @@ message/
 └── websocket/                         # WebSocket 实时推送
     ├── WebSocketConfig.java
     ├── WebSocketAuthInterceptor.java
-    ├── WebSocketMessageHandler.java
     ├── WebSocketNotifier.java
     └── WebSocketEventListener.java
 ```
@@ -149,7 +148,7 @@ message/
 
 ### 添加 WebSocket 事件
 
-1. `WebSocketMessageHandler` 添加消息类型处理
+1. `ChatWebSocketHandler` 添加消息类型处理
 2. `WebSocketNotifier` 添加推送方法
 3. 前端添加对应监听
 4. 测试

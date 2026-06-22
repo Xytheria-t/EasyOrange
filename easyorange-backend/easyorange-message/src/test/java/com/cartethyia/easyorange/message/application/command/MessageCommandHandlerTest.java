@@ -16,6 +16,7 @@ import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreServi
 import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
+import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -59,6 +60,9 @@ class MessageCommandHandlerTest {
 
     @Mock
     private SensitiveWordFilterService sensitiveWordFilterService;
+
+    @Mock
+    private WebSocketNotifier webSocketNotifier;
 
     @InjectMocks
     private MessageCommandHandler commandHandler;
@@ -210,6 +214,7 @@ class MessageCommandHandlerTest {
             verify(messageRepository).save(any(MessageAggregate.class));
             verify(domainEventPublisher).publish(any(MessageSentEvent.class));
             verify(offlineMessageStoreService).storeIfOffline(anyLong(), any(), anyString(), eq(true));
+            verify(webSocketNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
     }
 

@@ -4,6 +4,15 @@
 
 ## [unreleased]
 
+### 2026-06-22 — 通知系统精简与实时推送
+
+- **fix(message)**: `MessageCommandHandler` 在线用户系统消息现在通过 `WebSocketNotifier.sendNotification()` 实时推送（此前仅存储不推送，前端依赖 30s 轮询）
+- **fix(product)**: 修复 `notifyLowStock` 发送给 `receiverId=null` 的 bug，现在正确传递 `sellerId`
+- **refactor(notification)**: 删除未使用的 `NotificationService` 接口 + `DefaultNotificationServiceImpl` 日志桩（common/framework 模块）
+- **refactor(order)**: `OrderNotificationEventConsumer` 从 order 模块迁移到 application 模块，改用 `MessageCommandHandler` 发送站内消息（与其他 3 个通知消费者统一路径）
+- **refactor(message)**: 删除死代码 `WebSocketMessageHandler`（`/chat.sendMessage`、`/chat.addUser` 无调用方，实际路径走 `ChatWebSocketHandler`）
+- **feat(frontend)**: 新增 `useNotificationSocket` STOMP hook 订阅 `/user/queue/notification`，`NotificationBell` 轮询降为 60s 兜底
+
 ### 2026-06-04 — 全局权限注解清理
 
 - **refactor**: 移除 46 个冗余 `@PreAuthorize("isAuthenticated()")` 注解（9 个 Controller）

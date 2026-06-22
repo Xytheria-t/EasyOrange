@@ -1,28 +1,28 @@
-package com.cartethyia.easyorange.order.adapter.inbound.mq;
+package com.cartethyia.easyorange.adapter.event;
 
-import com.cartethyia.easyorange.common.notification.NotificationService;
-import com.cartethyia.easyorange.common.notification.NotificationService.Notification;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
+import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
+import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
-import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
-import com.cartethyia.easyorange.order.domain.port.UserInfoPort.UserInfo;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RabbitListener(
     queues = RabbitMQConfig.QUEUE_ORDER_NOTIFICATION,
     containerFactory = "domainEventContainerFactory"
@@ -30,9 +30,8 @@ import org.springframework.stereotype.Component;
 public class OrderNotificationEventConsumer {
 
     private final EventIdempotencyChecker idempotencyChecker;
-    private final NotificationService notificationService;
+    private final MessageCommandHandler messageCommandHandler;
     private final OrderReadRepository orderReadRepository;
-    private final UserInfoPort userInfoPort;
 
     @RabbitHandler
     public void onOrderCreated(OrderCreatedEvent event) {
@@ -42,10 +41,12 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            String email = getUserEmail(event.getBuyerId());
-            if (email != null) {
-                notificationService.notify(Notification.email(email, "订单已创建", "您的订单已创建，订单号: " + event.getOrderId()));
-            }
+            messageCommandHandler.handle(SendSystemMessageCommand.builder()
+                    .receiverId(event.getBuyerId())
+                    .title("订单已创建")
+                    .content("您的订单已创建，订单号: " + event.getOrderId())
+                    .businessId(event.getOrderId())
+                    .build());
             log.info("订单创建通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单创建通知发送失败: orderId={}", event.getOrderId(), e);
@@ -61,10 +62,17 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            String email = getEmailFromOrder(event.getOrderId());
-            if (email != null) {
-                notificationService.notify(Notification.email(email, "订单已支付", "您的订单已支付成功，订单号: " + event.getOrderId()));
+            Long buyerId = getBuyerId(event.getOrderId());
+            if (buyerId == null) {
+                log.warn("订单不存在，跳过支付通知: orderId={}", event.getOrderId());
+                return;
             }
+            messageCommandHandler.handle(SendSystemMessageCommand.builder()
+                    .receiverId(buyerId)
+                    .title("订单已支付")
+                    .content("您的订单已支付成功，订单号: " + event.getOrderId())
+                    .businessId(event.getOrderId())
+                    .build());
             log.info("订单支付通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单支付通知发送失败: orderId={}", event.getOrderId(), e);
@@ -80,10 +88,17 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            String email = getEmailFromOrder(event.getOrderId());
-            if (email != null) {
-                notificationService.notify(Notification.email(email, "订单已发货", "您的订单已发货，订单号: " + event.getOrderId()));
+            Long buyerId = getBuyerId(event.getOrderId());
+            if (buyerId == null) {
+                log.warn("订单不存在，跳过发货通知: orderId={}", event.getOrderId());
+                return;
             }
+            messageCommandHandler.handle(SendSystemMessageCommand.builder()
+                    .receiverId(buyerId)
+                    .title("订单已发货")
+                    .content("您的订单已发货，订单号: " + event.getOrderId())
+                    .businessId(event.getOrderId())
+                    .build());
             log.info("订单发货通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单发货通知发送失败: orderId={}", event.getOrderId(), e);
@@ -99,10 +114,17 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            String email = getEmailFromOrder(event.getOrderId());
-            if (email != null) {
-                notificationService.notify(Notification.email(email, "订单已完成", "您的订单已完成，订单号: " + event.getOrderId()));
+            Long buyerId = getBuyerId(event.getOrderId());
+            if (buyerId == null) {
+                log.warn("订单不存在，跳过完成通知: orderId={}", event.getOrderId());
+                return;
             }
+            messageCommandHandler.handle(SendSystemMessageCommand.builder()
+                    .receiverId(buyerId)
+                    .title("订单已完成")
+                    .content("您的订单已完成，订单号: " + event.getOrderId())
+                    .businessId(event.getOrderId())
+                    .build());
             log.info("订单完成通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单完成通知发送失败: orderId={}", event.getOrderId(), e);
@@ -118,10 +140,17 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            String email = getEmailFromOrder(event.getOrderId());
-            if (email != null) {
-                notificationService.notify(Notification.email(email, "订单已取消", "您的订单已取消，订单号: " + event.getOrderId()));
+            Long buyerId = getBuyerId(event.getOrderId());
+            if (buyerId == null) {
+                log.warn("订单不存在，跳过取消通知: orderId={}", event.getOrderId());
+                return;
             }
+            messageCommandHandler.handle(SendSystemMessageCommand.builder()
+                    .receiverId(buyerId)
+                    .title("订单已取消")
+                    .content("您的订单已取消，订单号: " + event.getOrderId())
+                    .businessId(event.getOrderId())
+                    .build());
             log.info("订单取消通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单取消通知发送失败: orderId={}", event.getOrderId(), e);
@@ -137,10 +166,17 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            String email = getEmailFromOrder(event.getOrderId());
-            if (email != null) {
-                notificationService.notify(Notification.email(email, "订单已退款", "您的订单已退款，订单号: " + event.getOrderId()));
+            Long buyerId = getBuyerId(event.getOrderId());
+            if (buyerId == null) {
+                log.warn("订单不存在，跳过退款通知: orderId={}", event.getOrderId());
+                return;
             }
+            messageCommandHandler.handle(SendSystemMessageCommand.builder()
+                    .receiverId(buyerId)
+                    .title("订单已退款")
+                    .content("您的订单已退款，订单号: " + event.getOrderId())
+                    .businessId(event.getOrderId())
+                    .build());
             log.info("订单退款通知已发送: orderId={}", event.getOrderId());
         } catch (Exception e) {
             log.error("订单退款通知发送失败: orderId={}", event.getOrderId(), e);
@@ -155,21 +191,12 @@ public class OrderNotificationEventConsumer {
         return idempotencyChecker.tryMark(eventType, eventId);
     }
 
-    private String getUserEmail(Long userId) {
-        if (userId == null) {
-            return null;
-        }
-        return userInfoPort.getUserInfo(userId)
-                .map(UserInfo::email)
-                .orElse(null);
-    }
-
-    private String getEmailFromOrder(Long orderId) {
+    private Long getBuyerId(Long orderId) {
         if (orderId == null) {
             return null;
         }
         return orderReadRepository.findById(OrderId.of(orderId))
-                .map(readModel -> getUserEmail(readModel.buyerId()))
+                .map(readModel -> readModel.buyerId())
                 .orElse(null);
     }
 }

@@ -22,8 +22,7 @@ order/
 │   │       ├── OrderCreatedEventSubscriber.java
 │   │       ├── OrderCancelledEventSubscriber.java
 │   │       ├── OrderCompletedEventSubscriber.java
-│   │       ├── OrderRefundedEventSubscriber.java
-│   │       └── OrderNotificationEventSubscriber.java
+│   │       └── OrderRefundedEventSubscriber.java
 │   └── outbound/
 │       ├── persistence/                     # 持久化
 │       │   ├── MybatisOrderRepository.java

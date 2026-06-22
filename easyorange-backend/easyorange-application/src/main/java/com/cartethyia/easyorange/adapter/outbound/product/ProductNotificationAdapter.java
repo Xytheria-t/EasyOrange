@@ -47,18 +47,18 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
     }
 
     @Override
-    public void notifyLowStock(Long productId, int currentStock) {
+    public void notifyLowStock(Long productId, Long sellerId, int currentStock) {
         try {
             SendSystemMessageCommand command = SendSystemMessageCommand.builder()
-                    .receiverId(null)
+                    .receiverId(sellerId)
                     .title("库存不足预警")
                     .content("您的商品（ID: " + productId + "）当前库存仅剩 " + currentStock + " 件，低于安全库存阈值，请及时补货。")
                     .businessId(productId)
                     .build();
             messageCommandHandler.handle(command);
-            log.info("action=notify_low_stock productId={} currentStock={}", productId, currentStock);
+            log.info("action=notify_low_stock productId={} sellerId={} currentStock={}", productId, sellerId, currentStock);
         } catch (Exception e) {
-            log.error("action=notify_low_stock_failed productId={} currentStock={}", productId, currentStock, e);
+            log.error("action=notify_low_stock_failed productId={} sellerId={} currentStock={}", productId, sellerId, currentStock, e);
         }
     }
 }

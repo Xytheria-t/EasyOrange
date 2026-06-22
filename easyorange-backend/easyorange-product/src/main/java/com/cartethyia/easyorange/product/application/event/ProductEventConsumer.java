@@ -99,7 +99,7 @@ public class ProductEventConsumer {
             ProductReadModel readModel = productQueryService.getProductReadModel(productId);
             if (readModel != null && readModel.stock() != null && readModel.stock() <= LOW_STOCK_THRESHOLD) {
                 log.warn("event=LowStockWarning productId={} currentStock={} threshold={}", productId, readModel.stock(), LOW_STOCK_THRESHOLD);
-                notificationPort.ifPresent(port -> safeCall(() -> port.notifyLowStock(productId, readModel.stock()), "notifyLowStock", productId));
+                notificationPort.ifPresent(port -> safeCall(() -> port.notifyLowStock(productId, readModel.sellerId(), readModel.stock()), "notifyLowStock", productId));
             }
         } catch (Exception e) {
             log.error("event=checkLowStockFailed productId={}", productId, e);

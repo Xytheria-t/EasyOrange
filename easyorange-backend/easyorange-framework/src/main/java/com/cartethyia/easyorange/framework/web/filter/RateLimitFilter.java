@@ -15,8 +15,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
@@ -54,7 +54,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @Order(0)
-@RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final HexFormat HEX_FORMAT = HexFormat.of();
@@ -86,7 +85,19 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RedisCache redisCache;
     private final LocalRateLimiter localRateLimiter;
     private final ObjectMapper objectMapper;
-    private final List<HandlerMapping> handlerMappings;
+    private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
+
+    public RateLimitFilter(RateLimitFilterProperties properties,
+                           RedisCache redisCache,
+                           LocalRateLimiter localRateLimiter,
+                           ObjectMapper objectMapper,
+                           ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
+        this.properties = properties;
+        this.redisCache = redisCache;
+        this.localRateLimiter = localRateLimiter;
+        this.objectMapper = objectMapper;
+        this.handlerMappingsProvider = handlerMappingsProvider;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -233,6 +244,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
      * 同一次请求多次调用无额外开销。
      */
     private boolean hasSkipAnnotation(HttpServletRequest request, Class<? extends Annotation> annotationClass) {
+        List<HandlerMapping> handlerMappings = handlerMappingsProvider.getIfAvailable(List::of);
         for (HandlerMapping mapping : handlerMappings) {
             try {
                 HandlerExecutionChain chain = mapping.getHandler(request);

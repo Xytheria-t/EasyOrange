@@ -161,6 +161,7 @@ easyorange-application
 
 | 监听器 | 事件 | 功能 |
 |--------|------|------|
+| `OrderNotificationEventConsumer` | `OrderCreatedEvent` 等 6 个订单事件 | 订单状态变更→站内消息通知 |
 | `PaymentInitiationEventListener` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
 | `ProductAuditEventListener` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventListener` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |

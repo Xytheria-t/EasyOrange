@@ -328,3 +328,11 @@ WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Per
 2. 运行阶段：启动命令（alias `eobe`、`spring-boot-maven-plugin` 的 `jvmArguments`）均已包含该 flag
 
 **未来**：JDK 26+ 该 flag 默认值将变为 `deny`（抛出异常），届时需升级兼容 JDK 26 的 Lombok 版本。
+
+### RateLimitFilter ↔ SecurityConfig 循环依赖
+
+`RateLimitFilter` 构造器注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 `@Bean`）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖，导致启动失败。
+
+**已修复**：`RateLimitFilter` 改用 `ObjectProvider<List<HandlerMapping>>` 延迟注入，`hasSkipAnnotation()` 调用 `handlerMappingsProvider.getIfAvailable(List::of)` 在请求时才解析 HandlerMapping，打破循环。
+
+**注意**：修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入。新增需要 `HandlerMapping` 的 Filter 时同样使用 `ObjectProvider` 模式

@@ -18,10 +18,13 @@ import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreServi
 import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
+import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -34,6 +37,7 @@ public class MessageCommandHandler {
     private final OfflineMessageStoreService offlineMessageStoreService;
     private final RateLimiterService rateLimiterService;
     private final SensitiveWordFilterService sensitiveWordFilterService;
+    private final WebSocketNotifier webSocketNotifier;
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendMessageCommand command) {
@@ -82,6 +86,17 @@ public class MessageCommandHandler {
         MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
                 saved.receiverId(), saved.id(), "websocket", decision.isOnline());
+
+        if (decision.isOnline()) {
+            webSocketNotifier.sendNotification(saved.receiverId(), Map.of(
+                    "id", saved.id(),
+                    "title", saved.title() != null ? saved.title() : "",
+                    "content", saved.content() != null ? saved.content() : "",
+                    "businessId", saved.businessId() != null ? saved.businessId() : "",
+                    "type", saved.type(),
+                    "createTime", saved.createTime() != null ? saved.createTime().toString() : ""
+            ));
+        }
 
         MessageSentEvent event = saved.send();
         domainEventPublisher.publish(event);
