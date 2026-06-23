@@ -34,15 +34,6 @@ class GlobalExceptionHandlerTest {
             assertThat(response.getBody().message()).isEqualTo("测试业务异常");
         }
 
-        @Test
-        @DisplayName("使用异常自身 httpStatus() 方法的状态码")
-        void handleBaseBusinessException_usesExceptionHttpStatus() {
-            BaseBusinessException ex = new TestConflictBusinessException("冲突错误");
-
-            ResponseEntity<Result<Void>> response = handler.handleBaseBusinessException(ex);
-
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        }
     }
 
     @Nested
@@ -72,19 +63,4 @@ class GlobalExceptionHandlerTest {
         }
     }
 
-    private static class TestConflictBusinessException extends BaseBusinessException {
-        public TestConflictBusinessException(String message) {
-            super(message);
-        }
-
-        @Override
-        protected String defaultCode() {
-            return "CONFLICT_CODE";
-        }
-
-        @Override
-        public HttpStatus httpStatus() {
-            return HttpStatus.CONFLICT;
-        }
-    }
 }

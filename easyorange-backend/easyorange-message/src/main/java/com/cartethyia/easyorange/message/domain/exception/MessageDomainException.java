@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.domain.exception;
 
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.enums.IResultCode;
-import com.cartethyia.easyorange.common.enums.ResultCode;
+import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import lombok.Getter;
 
 @Getter
@@ -26,6 +26,6 @@ public class MessageDomainException extends BaseBusinessException {
 
     @Override
     protected String defaultCode() {
-        return ResultCode.BUSINESS_ERROR.getCode();
+        return MessageResultCode.MESSAGE_DOMAIN_ERROR.getCode();
     }
 }

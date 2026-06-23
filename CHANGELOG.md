@@ -4,6 +4,16 @@
 
 ## [unreleased]
 
+### 2026-06-23 — 错误码体系精简与一致性优化
+
+- **refactor(common)**: `IResultCode.mapToHttpStatus()` 静态方法移至 `GlobalExceptionHandler`（framework），`BaseBusinessException.httpStatus()` 方法删除，common 模块不再依赖 `org.springframework.http.HttpStatus`
+- **refactor(common)**: `FileException` 构造器从 `public` 改为 `protected`，统一使用 `FileException.of(...)` 工厂方法（与 `BusinessException` 模式对齐）
+- **refactor(common)**: `BizRequire` 新增 `notBlank`/`notEmpty` 的 `IResultCode` 重载（此前仅 `notNull`/`requireTrue` 支持）
+- **refactor(framework)**: `GlobalExceptionHandler` 所有异常处理器统一返回 `ResponseEntity` + 正确 HTTP 状态码（校验类错误此前返回 HTTP 200，现统一返回 400）
+- **refactor(framework)**: `extractDuplicateFieldMessage` 移除硬编码 DB 约束名（`uk_eo_user_email` 等），改为通用兜底消息
+- **refactor(product)**: 6 个异常类改用 `ProductResultCode` 专属错误码（此前回退到全局 `B0002`），新增 `REPORT_NOT_FOUND(B2007)`/`REPORT_ERROR(B2008)`/`PRODUCT_STATUS_INVALID(B2009)`
+- **refactor(message)**: `MessageDomainException.defaultCode()` 改用 `MessageResultCode.MESSAGE_DOMAIN_ERROR(B7008)`（此前回退到全局 `B0002`）
+
 ### 2026-06-22 — 通知系统精简与实时推送
 
 - **fix(message)**: `MessageCommandHandler` 在线用户系统消息现在通过 `WebSocketNotifier.sendNotification()` 实时推送（此前仅存储不推送，前端依赖 30s 轮询）

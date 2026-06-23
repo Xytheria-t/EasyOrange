@@ -23,7 +23,8 @@ public enum MessageResultCode implements IResultCode {
     TEMPLATE_CODE_DUPLICATE("B7004", "模板编码已存在"),
     TEMPLATE_DISABLED("B7005", "消息模板已禁用"),
     TEMPLATE_RENDER_ERROR("B7006", "模板渲染失败"),
-    TEMPLATE_VARIABLE_MISSING("B7007", "模板变量缺失");
+    TEMPLATE_VARIABLE_MISSING("B7007", "模板变量缺失"),
+    MESSAGE_DOMAIN_ERROR("B7008", "消息业务异常");
 
     private final String code;
     private final String message;

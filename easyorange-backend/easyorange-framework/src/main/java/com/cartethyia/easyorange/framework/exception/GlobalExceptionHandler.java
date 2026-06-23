@@ -35,14 +35,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleBaseBusinessException(BaseBusinessException e) {
         log.warn("业务异常[code={}, type={}]: {}", e.getCode(), e.getClass().getSimpleName(), e.getMessage());
         return ResponseEntity
-                .status(e.httpStatus())
+                .status(mapToHttpStatus(e.getCode()))
                 .body(Result.error(e.getCode(), e.getMessage()));
     }
 
     @ExceptionHandler(ParamValidationException.class)
-    public Result<Map<String, String>> handleParamValidationException(ParamValidationException e) {
+    public ResponseEntity<Result<Map<String, String>>> handleParamValidationException(ParamValidationException e) {
         log.warn("action=validate_error, errors={}", e.getFieldErrors());
-        return Result.error(ResultCode.VALIDATE_FAILED, e.getFirstErrorMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, e.getFirstErrorMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -58,17 +58,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+    public ResponseEntity<Result<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
         String message = extractAllErrors(e.getBindingResult());
         log.warn("action=validate_failed, msg={}", message);
-        return Result.error(ResultCode.VALIDATE_FAILED, message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, message));
     }
 
     @ExceptionHandler(BindException.class)
-    public Result<Void> handleBindException(BindException e) {
+    public ResponseEntity<Result<Void>> handleBindException(BindException e) {
         String message = extractAllErrors(e.getBindingResult());
         log.warn("action=bind_error, msg={}", message);
-        return Result.error(ResultCode.VALIDATE_FAILED, message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, message));
     }
 
     private String extractFieldErrors(List<org.springframework.validation.FieldError> errors) {
@@ -100,30 +100,30 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public Result<Void> handleConstraintViolationException(ConstraintViolationException e) {
+    public ResponseEntity<Result<Void>> handleConstraintViolationException(ConstraintViolationException e) {
         String message = e.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining("; "));
         log.warn("action=constraint_error, msg={}", message);
-        return Result.error(ResultCode.VALIDATE_FAILED, message);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, message));
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public Result<Void> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
+    public ResponseEntity<Result<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
         log.warn("action=missing_param, name={}", e.getParameterName());
-        return Result.error(ResultCode.VALIDATE_FAILED, "缺少必填参数：" + e.getParameterName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, "缺少必填参数：" + e.getParameterName()));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+    public ResponseEntity<Result<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
         log.warn("action=body_parse_error");
-        return Result.error(ResultCode.VALIDATE_FAILED, "请求体格式错误");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, "请求体格式错误"));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public Result<Void> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
+    public ResponseEntity<Result<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
         log.warn("参数类型转换失败[name={}, value={}]: {}", e.getName(), e.getValue(), e.getMessage());
-        return Result.error(ResultCode.VALIDATE_FAILED, "参数 '" + e.getName() + "' 类型错误");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, "参数 '" + e.getName() + "' 类型错误"));
     }
 
     @ExceptionHandler(NoHandlerFoundException.class)
@@ -139,37 +139,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public Result<Void> handleIllegalArgumentException(IllegalArgumentException e) {
+    public ResponseEntity<Result<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
         log.warn("非法参数: {}", e.getMessage());
-        return Result.error(ResultCode.VALIDATE_FAILED, e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, e.getMessage()));
     }
 
     @ExceptionHandler(DuplicateKeyException.class)
-    public Result<Void> handleDuplicateKeyException(DuplicateKeyException e) {
+    public ResponseEntity<Result<Void>> handleDuplicateKeyException(DuplicateKeyException e) {
         log.warn("action=duplicate_key, path={}, msg={}", RequestUtil.getRequestPath(), e.getMessage());
         String userMessage = extractDuplicateFieldMessage(e.getMessage());
-        return Result.error(ResultCode.VALIDATE_FAILED, userMessage);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, userMessage));
     }
 
     private String extractDuplicateFieldMessage(String errorMessage) {
-        if (errorMessage == null) {
-            return "数据已存在，请检查输入";
-        }
-        if (errorMessage.contains("uk_eo_user_email")) {
-            return "邮箱已被注册";
-        }
-        if (errorMessage.contains("uk_eo_user_phone")) {
-            return "手机号已被注册";
-        }
-        if (errorMessage.contains("uk_eo_user_student_id")) {
-            return "学号已被注册";
-        }
-        if (errorMessage.contains("uk_eo_user_username")) {
-            return "用户名已存在";
-        }
-        if (errorMessage.contains("uk_eo_favorite_user_product_del")) {
-            return "已收藏过该商品";
-        }
         return "数据已存在，请检查输入";
     }
 
@@ -177,5 +159,45 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Result<Void>> handleException(Exception e) {
         log.error("action=system_error, path={}", RequestUtil.getRequestPath(), e);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(ResultCode.INTERNAL_SERVER_ERROR));
+    }
+
+    /**
+     * 根据错误码前缀映射到 HTTP 状态码
+     *
+     * <p>A - 成功/客户端语义: A0401/A0402→401, A0403→403, A0404→404, A0405→405, A0500→400, 其余A→200</p>
+     * <p>B - 业务错误: 400</p>
+     * <p>C - 系统错误: 500</p>
+     * <p>D - 第三方错误: 502</p>
+     * <p>未知前缀: 400</p>
+     * <p>null: 500</p>
+     *
+     * @param code 业务错误码
+     * @return 映射后的 HTTP 状态码
+     */
+    private int mapToHttpStatus(String code) {
+        if (code == null) {
+            return 500;
+        }
+        if (code.isEmpty()) {
+            return 400;
+        }
+        return switch (code.charAt(0)) {
+            case 'A' -> {
+                if (code.length() >= 5) {
+                    yield switch (code.substring(2, 5)) {
+                        case "401", "402" -> 401;
+                        case "403"        -> 403;
+                        case "404"        -> 404;
+                        case "405"        -> 405;
+                        case "500"        -> 400;
+                        default           -> 200;
+                    };
+                }
+                yield 200;
+            }
+            case 'C' -> 500;
+            case 'D' -> 502;
+            default  -> 400;
+        };
     }
 }

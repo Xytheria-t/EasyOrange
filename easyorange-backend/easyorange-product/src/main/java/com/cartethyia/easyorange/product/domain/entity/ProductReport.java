@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.domain.entity;
 
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
+import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -91,6 +92,10 @@ public class ProductReport {
     public static class ReportDomainException extends BaseBusinessException {
         public ReportDomainException(String message) {
             super(message);
+        }
+        @Override
+        protected String defaultCode() {
+            return ProductResultCode.REPORT_ERROR.getCode();
         }
     }
 }

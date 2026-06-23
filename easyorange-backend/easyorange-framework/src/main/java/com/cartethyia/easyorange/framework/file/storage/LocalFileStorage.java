@@ -43,7 +43,7 @@ public class LocalFileStorage implements FileStorage {
         Path fullPath = basePath.resolve(relativePath).normalize();
 
         if (!fullPath.startsWith(basePath)) {
-            throw new FileException("非法文件路径");
+            throw FileException.of("非法文件路径");
         }
 
         Files.createDirectories(fullPath.getParent());
@@ -58,10 +58,10 @@ public class LocalFileStorage implements FileStorage {
         Path fullPath = basePath.resolve(identifier).normalize();
 
         if (!fullPath.startsWith(basePath)) {
-            throw new FileException("非法文件路径");
+            throw FileException.of("非法文件路径");
         }
         if (!Files.exists(fullPath)) {
-            throw new FileException("文件不存在：" + identifier);
+            throw FileException.of("文件不存在：" + identifier);
         }
 
         return Files.readAllBytes(fullPath);
@@ -72,7 +72,7 @@ public class LocalFileStorage implements FileStorage {
         Path fullPath = basePath.resolve(identifier).normalize();
 
         if (!fullPath.startsWith(basePath)) {
-            throw new FileException("非法文件路径");
+            throw FileException.of("非法文件路径");
         }
 
         Files.deleteIfExists(fullPath);

@@ -63,6 +63,8 @@ PageResult.of(records, total, page, size)
 
 ```java
 BizRequire.notNull(user, UserResultCode.USER_NOT_FOUND);
+BizRequire.notBlank(name, UserResultCode.USERNAME_EXISTS);
+BizRequire.notEmpty(items, OrderResultCode.ORDER_STATUS_ERROR);
 BizRequire.requireTrue(condition, ResultCode.PARAM_VALIDATION_FAILED);
 BizRequire.requireTrue(condition, "条件不满足");
 ```
@@ -82,4 +84,5 @@ BizRequire.requireTrue(condition, "条件不满足");
 
 - 本模块应保持轻量，禁止引入 Spring Boot Starter 或重量级框架依赖
 - 异常类必须关联 `IResultCode`，确保错误码统一
+- `FileException` 构造器为 `protected`，统一使用 `FileException.of(...)` 工厂方法（与 `BusinessException` 一致）
 - 新增通用类型前确认是否真的跨模块共享，避免 common 模块膨胀

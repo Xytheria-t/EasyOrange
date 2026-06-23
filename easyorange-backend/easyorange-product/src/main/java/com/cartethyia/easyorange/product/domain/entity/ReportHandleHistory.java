@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.domain.entity;
 
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
+import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -54,6 +55,10 @@ public class ReportHandleHistory {
     public static class HistoryDomainException extends BaseBusinessException {
         public HistoryDomainException(String message) {
             super(message);
+        }
+        @Override
+        protected String defaultCode() {
+            return ProductResultCode.REPORT_ERROR.getCode();
         }
     }
 }

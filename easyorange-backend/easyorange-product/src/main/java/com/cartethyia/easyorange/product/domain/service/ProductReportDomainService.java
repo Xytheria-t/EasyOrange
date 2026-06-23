@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
+import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -64,6 +65,10 @@ public class ProductReportDomainService {
     public static class ReportNotFoundException extends BaseBusinessException {
         public ReportNotFoundException(String message) {
             super(message);
+        }
+        @Override
+        protected String defaultCode() {
+            return ProductResultCode.REPORT_NOT_FOUND.getCode();
         }
     }
 }

@@ -171,11 +171,10 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 RuntimeException
 ├── BaseBusinessException (common, 业务异常基类)
 │   ├── code: String          # 错误码
-│   ├── message: String       # 错误消息
-│   └── httpStatus: HttpStatus # HTTP 状态码
+│   └── message: String       # 错误消息
 │   ├── BusinessException (common, 通用业务异常)
 │   ├── ParamValidationException (common, 参数校验异常)
-│   ├── FileException (common, 文件异常)
+│   ├── FileException (common, 文件异常, 构造器 protected, 使用 `FileException.of(...)`)
 │   ├── UserDomainException (user 模块, 领域层专用)
 │   ├── OrderDomainException (order 模块)
 │   ├── PaymentDomainException (payment 模块)
@@ -183,9 +182,9 @@ RuntimeException
 ```
 
 **划分原则：**
-- `BaseBusinessException` — 所有业务异常的基类，提供统一的 code + message + httpStatus
+- `BaseBusinessException` — 所有业务异常的基类，提供统一的 code + message（HTTP 状态码由 `GlobalExceptionHandler` 按错误码前缀映射）
 - `BusinessException` — 通用业务异常，用于不需要自定义子类的场景
-- 各模块异常 — 继承 `BaseBusinessException`，通过错误码区分具体业务场景
+- 各模块异常 — 继承 `BaseBusinessException`，通过模块专属 `ResultCode` 区分具体业务场景（禁止回退到全局 `B0002`）
 - 领域层异常（如 `UserDomainException`）— 领域层专用，不含任何框架依赖
 
 ### 异常传播路径

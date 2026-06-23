@@ -85,7 +85,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
             return convertToVO(uploadFile);
         } catch (IOException e) {
             log.error("文件上传失败", e);
-            throw new FileException("文件上传失败：" + e.getMessage(), e);
+            throw FileException.of("文件上传失败：" + e.getMessage(), e);
         }
     }
 
@@ -167,7 +167,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
         if (!new java.io.File(fullPath).exists()) {
             log.error("文件不存在：fileId={}, fullPath={}", fileId, fullPath);
-            throw new FileException("文件不存在：" + file.getFileName());
+            throw FileException.of("文件不存在：" + file.getFileName());
         }
 
         log.info("action=prepare_download, fileId={}, fileName={}", fileId, file.getFileName());

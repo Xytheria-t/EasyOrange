@@ -26,23 +26,23 @@ public class FileException extends BaseBusinessException {
         return new FileException(resultCode, message, cause);
     }
 
-    public FileException(IResultCode resultCode) {
+    protected FileException(IResultCode resultCode) {
         super(resultCode);
     }
 
-    public FileException(IResultCode resultCode, String message) {
+    protected FileException(IResultCode resultCode, String message) {
         super(resultCode, message);
     }
 
-    public FileException(IResultCode resultCode, String message, Throwable cause) {
+    protected FileException(IResultCode resultCode, String message, Throwable cause) {
         super(resultCode, message, cause);
     }
 
-    public FileException(String message) {
+    protected FileException(String message) {
         super(message);
     }
 
-    public FileException(String message, Throwable cause) {
+    protected FileException(String message, Throwable cause) {
         super(message, cause);
     }
 

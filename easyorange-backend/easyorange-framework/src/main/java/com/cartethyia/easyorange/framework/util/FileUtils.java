@@ -99,7 +99,7 @@ public final class FileUtils {
     public static String upload(String baseDir, MultipartFile file, Collection<String> allowedExtension, boolean useUuidName) throws IOException {
         int fileNameLength = Objects.requireNonNull(file.getOriginalFilename()).length();
         if (fileNameLength > DEFAULT_FILE_NAME_LENGTH) {
-            throw new FileException("文件名长度超出限制：" + DEFAULT_FILE_NAME_LENGTH);
+            throw FileException.of("文件名长度超出限制：" + DEFAULT_FILE_NAME_LENGTH);
         }
         assertAllowed(file, allowedExtension);
         String fileName = useUuidName ? generateUuidFilename(file) : generateTimestampFilename(file);
@@ -125,7 +125,7 @@ public final class FileUtils {
         Path basePath = Paths.get(uploadDir).normalize();
         Path filePath = basePath.resolve(fileName).normalize();
         if (!filePath.startsWith(basePath)) {
-            throw new FileException("非法文件路径：" + fileName);
+            throw FileException.of("非法文件路径：" + fileName);
         }
         File desc = filePath.toFile();
         if (!desc.exists()) {
@@ -171,7 +171,7 @@ public final class FileUtils {
                 }
             }
         } catch (IOException e) {
-            throw new FileException("文件读取失败：" + file.getOriginalFilename(), e);
+            throw FileException.of("文件读取失败：" + file.getOriginalFilename(), e);
         }
     }
 

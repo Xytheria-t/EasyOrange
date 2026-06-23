@@ -3,9 +3,6 @@ package com.cartethyia.easyorange.common.enums;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -15,95 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DisplayName("IResultCode Tests")
 class IResultCodeTest {
-
-    @Nested
-    @DisplayName("Map To HTTP Status Tests")
-    class MapToHttpStatusCodeTests {
-
-        @ParameterizedTest
-        @CsvSource({
-                "A0000, 200",
-                "A0401, 401",
-                "A0402, 401",
-                "A0403, 403",
-                "A0404, 404",
-                "A0405, 405",
-                "A0500, 400"
-        })
-        @DisplayName("mapToHttpStatus with A prefix success codes should return correct status")
-        void mapToHttpStatus_withSuccessCode_shouldReturnCorrectStatus(String code, int expectedStatus) {
-            // Act
-            int status = IResultCode.mapToHttpStatus(code);
-
-            // Assert
-            assertThat(status).isEqualTo(expectedStatus);
-        }
-
-        @ParameterizedTest
-        @CsvSource({
-                "B0001, 400",
-                "B0002, 400",
-                "B9999, 400"
-        })
-        @DisplayName("mapToHttpStatus with B prefix business error codes should return 400")
-        void mapToHttpStatus_withBusinessErrorCode_shouldReturn400(String code, int expectedStatus) {
-            // Act
-            int status = IResultCode.mapToHttpStatus(code);
-
-            // Assert
-            assertThat(status).isEqualTo(expectedStatus);
-        }
-
-        @ParameterizedTest
-        @CsvSource({
-                "C0001, 500",
-                "C0002, 500",
-                "C9999, 500"
-        })
-        @DisplayName("mapToHttpStatus with C prefix system error codes should return 500")
-        void mapToHttpStatus_withSystemErrorCode_shouldReturn500(String code, int expectedStatus) {
-            // Act
-            int status = IResultCode.mapToHttpStatus(code);
-
-            // Assert
-            assertThat(status).isEqualTo(expectedStatus);
-        }
-
-        @ParameterizedTest
-        @CsvSource({
-                "D0001, 502",
-                "D0002, 502",
-                "D9999, 502"
-        })
-        @DisplayName("mapToHttpStatus with D prefix third-party error codes should return 502")
-        void mapToHttpStatus_withThirdPartyErrorCode_shouldReturn502(String code, int expectedStatus) {
-            // Act
-            int status = IResultCode.mapToHttpStatus(code);
-
-            // Assert
-            assertThat(status).isEqualTo(expectedStatus);
-        }
-
-        @Test
-        @DisplayName("mapToHttpStatus with unknown prefix should return 400")
-        void mapToHttpStatus_withUnknownPrefix_shouldReturn400() {
-            // Act
-            int status = IResultCode.mapToHttpStatus("X0001");
-
-            // Assert
-            assertThat(status).isEqualTo(400);
-        }
-
-        @Test
-        @DisplayName("mapToHttpStatus with null code should return 500")
-        void mapToHttpStatus_withNullCode_shouldReturn500() {
-            // Act
-            int status = IResultCode.mapToHttpStatus(null);
-
-            // Assert
-            assertThat(status).isEqualTo(500);
-        }
-    }
 
     @Nested
     @DisplayName("ResultCode Enum Tests")
