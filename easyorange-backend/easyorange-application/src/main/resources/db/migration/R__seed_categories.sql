@@ -1,5 +1,5 @@
 -- ===================================================================
--- EasyOrange 校园二手交易平台 - 分类种子数据
+-- EasyOrange AI 智能托管平台 - 分类种子数据
 -- Description: Repeatable Migration - 商品分类基础数据
 -- Type: DML（可重复执行）
 -- Database: MySQL 8.0

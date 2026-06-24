@@ -25,4 +25,11 @@ public interface ProductRepository {
     boolean existsById(ProductId id);
 
     void updateStatus(ProductId id, ProductStatus status);
+
+    /**
+     * 查找所有 AI 托管且上架中的商品（用于定时降价任务）。
+     *
+     * @return AI 托管且上架中的商品列表
+     */
+    List<Product> findAiManagedOnline();
 }

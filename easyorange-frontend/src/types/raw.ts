@@ -31,6 +31,10 @@ export interface RawProduct {
     updateTime?: string;
     stock?: number;
     contactMethod?: string;
+    floorPrice?: number | null;
+    consignmentMode?: number;
+    currentPriceLevel?: number;
+    listedAt?: string | null;
 }
 
 /**

@@ -92,7 +92,7 @@ describe('PublishPage', () => {
 
     expect(screen.getByText('发布商品')).toBeInTheDocument();
     expect(
-      screen.getByText('精心填写信息，让您的闲置物品找到新主人'),
+      screen.getByText('填写信息，让 AI 帮你智能托管发布'),
     ).toBeInTheDocument();
   });
 

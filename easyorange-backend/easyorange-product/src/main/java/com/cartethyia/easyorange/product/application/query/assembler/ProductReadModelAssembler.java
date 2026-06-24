@@ -35,6 +35,9 @@ public class ProductReadModelAssembler {
                         product.getLocation() != null ? product.getLocation().value() : null, 6))
                 .contactMethod(product.getContactMethod() != null && product.getContactMethod().isNotBlank()
                         ? MaskUtils.maskPhone(product.getContactMethod().value()) : null)
+                .floorPrice(product.getFloorPrice() != null ? product.getFloorPrice().value() : null)
+                .consignmentMode(product.getConsignmentMode().getCode())
+                .currentPriceLevel(product.getCurrentPriceLevel())
                 .createTime(product.getCreateTime())
                 .updateTime(product.getUpdateTime());
 
@@ -110,6 +113,9 @@ public class ProductReadModelAssembler {
                 .contactMethod(readModel.contactMethod())
                 .images(readModel.images())
                 .mainImageUrl(readModel.mainImageUrl())
+                .floorPrice(readModel.floorPrice())
+                .consignmentMode(readModel.consignmentMode())
+                .currentPriceLevel(readModel.currentPriceLevel())
                 .createTime(readModel.createTime())
                 .updateTime(readModel.updateTime())
                 .build();

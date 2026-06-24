@@ -89,9 +89,12 @@ message/
 │   ├── MessageStatus.java
 │   ├── MessageType.java
 │   ├── ReadStatus.java
-│   └── MessageResultCode.java
+│   ├── MessageResultCode.java
+│   └── OfferMessageType.java          # 议价消息类型: OFFER(6), OFFER_ACCEPTED(7), OFFER_REJECTED(8), COUNTER_OFFER(9)
 ├── constant/
 │   └── MessageConstant.java
+├── domain/port/
+│   └── OfferProcessingPort.java       # 议价处理端口 (WebSocket → product 模块)
 └── websocket/                         # WebSocket 实时推送
     ├── WebSocketConfig.java
     ├── WebSocketAuthInterceptor.java
@@ -105,6 +108,20 @@ message/
 - 认证: `WebSocketAuthInterceptor` 从 STOMP Header 提取 JWT Token
 - 推送: `WebSocketNotifier` 向在线用户实时推送消息
 - 离线: `OfflineMessageStoreService` 存储离线消息，上线后重推
+
+### 议价协议 (WebSocket)
+
+通过 STOMP over WebSocket 支持 AI 托管寄售的实时议价：
+
+| 消息类型 | code | 说明 | 方向 |
+|---------|------|------|------|
+| OFFER | 6 | 买家发起出价 | Client → Server |
+| OFFER_ACCEPTED | 7 | AI 接受出价 | Server → Client |
+| OFFER_REJECTED | 8 | AI 拒绝出价 | Server → Client |
+| COUNTER_OFFER | 9 | AI 发起还价 | Server → Client |
+
+- 议价端点: `@MessageMapping("/offer.make")` → `OfferProcessingPort` → product 模块 `OfferAppService`
+- 消息格式: `WsMessage` 的 `type` 字段标识消息类型
 
 ## 消息路由
 

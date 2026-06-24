@@ -44,4 +44,8 @@ public class ProductCreateRequest {
 
     @Size(max = 9, message = "图片数量不能超过 9 张")
     private List<String> imageUrls;
+
+    private BigDecimal floorPrice;
+
+    private Integer consignmentMode;
 }

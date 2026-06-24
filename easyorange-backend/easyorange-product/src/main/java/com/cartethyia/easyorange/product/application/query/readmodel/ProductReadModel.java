@@ -25,6 +25,10 @@ public record ProductReadModel(
     String contactMethod,
     List<String> images,
     String mainImageUrl,
+    BigDecimal floorPrice,
+    Integer consignmentMode,
+    LocalDateTime listedAt,
+    Integer currentPriceLevel,
     LocalDateTime createTime,
     LocalDateTime updateTime
 ) { }

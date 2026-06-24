@@ -143,9 +143,14 @@ easyorange-application
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
 | `ProductNotificationAdapter` | `ProductNotificationPort` | product | 商品事件通知（发布、售出、库存预警） |
+| `AiOrderCreationAdapter` | `OrderCreationPort` | product | AI 议价接受后创建订单（含 SecurityContext 注入） |
+| `OfferProcessingAdapter` | `OfferProcessingPort` | message | AI 议价 WebSocket 处理（委派给 OfferAppService） |
 | `ProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | MySQL search_text 索引写入 |
 | `ElasticsearchProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | ES 搜索索引写入（条件激活） |
 | `ElasticsearchProductSearchQueryAdapter` | — | — | ES 商品搜索查询（含分面聚合） |
+| `AdminProductQueryAdapter` | `AdminProductQueryPort` | admin | 管理端商品查询 |
+| `AdminOrderQueryAdapter` | `AdminOrderQueryPort` | admin | 管理端订单查询 |
+| `AdminUserQueryAdapter` | `AdminUserQueryPort` | admin | 管理端用户查询 |
 
 `adapter/outbound/elasticsearch/` 搜索基础设施组件：
 

@@ -27,6 +27,9 @@ export interface Product {
     category?: string;
     stock?: number;
     contactMethod?: string;
+    floorPrice?: string | null;
+    consignmentMode?: number;
+    currentPriceLevel?: number;
 }
 
 export interface ProductQueryParams {
@@ -54,6 +57,8 @@ export interface CreateProductRequest {
     location?: string;
     contactMethod?: string;
     imageUrls: string[];
+    floorPrice?: number;
+    consignmentMode?: number;
 }
 
 export interface UpdateProductRequest {
@@ -67,6 +72,8 @@ export interface UpdateProductRequest {
     location?: string;
     contactMethod?: string;
     imageUrls?: string[];
+    floorPrice?: number;
+    consignmentMode?: number;
 }
 
 export interface Category {
@@ -136,6 +143,14 @@ export interface AiEnhancement {
     productTags: Record<string, string[]>;
     marketAnalysis: string;
     suggestedQuestions: string[];
+}
+
+/** AI 议价结果 */
+export interface OfferResult {
+  decisionType: 'ACCEPT' | 'COUNTER' | 'REJECT';
+  message: string;
+  counterPrice?: string;
+  orderId?: string;
 }
 
 /** Product search query parameters for ES search */

@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import org.springframework.stereotype.Repository;
 
@@ -194,6 +195,18 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public boolean existsById(ProductId id) {
         return productMapper.selectById(id.value()) != null;
+    }
+
+    @Override
+    public List<Product> findAiManagedOnline() {
+        LambdaQueryWrapper<ProductDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductDO::getConsignmentMode, 1)
+                .eq(ProductDO::getStatus, ProductStatus.ONLINE.getCode());
+        List<ProductDO> productDOs = productMapper.selectList(wrapper);
+        if (productDOs.isEmpty()) {
+            return List.of();
+        }
+        return batchConvertProducts(productDOs);
     }
 
     @Override

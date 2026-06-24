@@ -157,7 +157,7 @@ function MyProductsPage() {
           </div>
           <h3 className="orders-empty-title">还没有发布商品</h3>
           <p className="orders-empty-desc">
-            开始发布你的第一件商品吧<br />分享闲置好物，发现价值
+             开始发布你的第一件商品吧<br />让 AI 帮你定价、议价、成交
           </p>
           <button
             onClick={() => navigate('/publish')}

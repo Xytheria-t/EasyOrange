@@ -25,7 +25,7 @@ public class AiPricingService {
             BigDecimal originalPrice
     ) {
         String systemPrompt = """
-                你是一个校园二手交易平台的智能定价助手。根据商品信息，
+                你是 EasyOrange AI 智能托管平台的智能定价助手。根据商品信息，
                 分析市场价格并给出建议售价。
                 请以 JSON 格式返回，包含字段：
                 - suggestedPrice: 建议售价（数字）

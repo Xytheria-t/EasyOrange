@@ -18,7 +18,12 @@ public enum MessageType {
     CHAT(2, "聊天消息"),
     ORDER(3, "订单消息"),
     PAYMENT(4, "支付消息"),
-    ACTIVITY(5, "活动通知");
+    ACTIVITY(5, "活动通知"),
+
+    OFFER(6, "出价消息"),
+    OFFER_ACCEPTED(7, "出价已接受"),
+    OFFER_REJECTED(8, "出价已拒绝"),
+    COUNTER_OFFER(9, "还价");
 
     private final Integer code;
     private final String desc;

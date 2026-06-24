@@ -232,7 +232,7 @@ export default function HeroSection() {
           </h1>
 
           <p className="hero-subtitle animate-slide-up delay-1">
-            安全便捷的校园交易体验，连接每一份闲置与需求
+            把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
           </p>
 
           <div className="hero-search animate-slide-up delay-2">

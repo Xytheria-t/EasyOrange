@@ -360,6 +360,10 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 null,
                 List.of(),
                 "",
+                product.getFloorPrice(),
+                product.getConsignmentMode(),
+                product.getListedAt(),
+                product.getCurrentPriceLevel(),
                 product.getCreateTime(),
                 product.getUpdateTime()
         );

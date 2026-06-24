@@ -294,6 +294,10 @@ public class ProductQueryService {
                 readModel.contactMethod(),
                 imageUrls,
                 mainImageUrl,
+                readModel.floorPrice(),
+                readModel.consignmentMode(),
+                readModel.listedAt(),
+                readModel.currentPriceLevel(),
                 readModel.createTime(),
                 readModel.updateTime()
         );

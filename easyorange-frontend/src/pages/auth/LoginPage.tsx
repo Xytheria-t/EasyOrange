@@ -261,7 +261,7 @@ function LoginPage() {
               </svg>
             </div>
             <h2 className="auth-page-brand-title">EasyOrange</h2>
-            <p className="auth-page-brand-subtitle">易橙坊</p>
+            <p className="auth-page-brand-subtitle">AI 智能托管平台</p>
             <div className="auth-page-brand-features">
               <div className="auth-page-brand-feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -276,7 +276,7 @@ function LoginPage() {
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span>校园专属社区</span>
+                <span>AI 智能托管平台</span>
               </div>
               <div className="auth-page-brand-feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -517,7 +517,7 @@ function LoginPage() {
                   </svg>
                   创建账户
                 </h3>
-                <p>加入我们，开始校园交易之旅</p>
+                <p>加入我们，开启 AI 智能托管之旅</p>
               </div>
 
               <div className="auth-page-input-group">

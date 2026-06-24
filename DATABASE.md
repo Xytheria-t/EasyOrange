@@ -192,6 +192,10 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 | tags | VARCHAR(500) | | 标签 |
 | search_text | TEXT | | 搜索冗余文本 |
 | price_update_time | DATETIME | | 价格更新时间 |
+| floor_price | DECIMAL(10,2) | | 底价（AI 托管模式，低于此价不出售） |
+| consignment_mode | TINYINT | NOT NULL DEFAULT 0 | 寄售模式（0 手动 / 1 AI 托管） |
+| listed_at | DATETIME | | 上架时间 |
+| current_price_level | TINYINT | | 当前降价阶梯（阶梯降价用，0=初始，越大折扣越多） |
 | + 公共字段 | | | |
 
 **索引**：

@@ -23,7 +23,7 @@ export default function Footer() {
                 </div>
                 <span className="footer-brand-name">EasyOrange</span>
               </a>
-              <p className="footer-tagline">让闲置流转，让价值延续</p>
+              <p className="footer-tagline">把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核</p>
               <div className="footer-social-links">
                 <button type="button" className="social-link" data-platform="wechat" aria-label="微信">
                   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -96,7 +96,7 @@ export default function Footer() {
             <span className="heart-icon">💛</span>
             Made with care for campus life
           </p>
-          <p className="copyright-info">© 2025-2026 EasyOrange · 易橙坊</p>
+          <p className="copyright-info">© 2025-2026 EasyOrange AI 智能托管平台</p>
         </div>
       </div>
     </footer>

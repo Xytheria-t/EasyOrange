@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusEx
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -31,6 +32,8 @@ class ProductTest {
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("100")),
                 null,
+                null,
+                ConsignmentMode.MANUAL,
                 StockQuantity.of(10),
                 ConditionLevel.NEW,
                 TradeLocation.of("北京"),
@@ -46,7 +49,7 @@ class ProductTest {
     void create_shouldEmitProductCreatedEvent() {
         ProductCreatedResult result = Product.create(
                 SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("测试商品"),
-                Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
+                Money.of(new BigDecimal("100")), null, null, ConsignmentMode.MANUAL, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
@@ -60,7 +63,7 @@ class ProductTest {
     void create_withNullTitle_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
                 SellerId.of(1L), CategoryId.of(2L), null,
-                Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
+                Money.of(new BigDecimal("100")), null, null, ConsignmentMode.MANUAL, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
@@ -72,7 +75,7 @@ class ProductTest {
     void create_withZeroPrice_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
                 SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
-                Money.of(BigDecimal.ZERO), null, StockQuantity.of(10),
+                Money.of(BigDecimal.ZERO), null, null, ConsignmentMode.MANUAL, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
@@ -84,7 +87,7 @@ class ProductTest {
     void create_withEmptyImages_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
                 SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
-                Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
+                Money.of(new BigDecimal("100")), null, null, ConsignmentMode.MANUAL, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
                 ImageSet.empty()
@@ -96,7 +99,7 @@ class ProductTest {
     void decrementStock_whenNoStock_shouldThrow() {
         ProductCreatedResult result = Product.create(
                 SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
-                Money.of(new BigDecimal("100")), null, StockQuantity.of(0),
+                Money.of(new BigDecimal("100")), null, null, ConsignmentMode.MANUAL, StockQuantity.of(0),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
@@ -154,7 +157,7 @@ class ProductTest {
     void putOnline_whenNoStock_shouldThrow() {
         ProductCreatedResult result = Product.create(
                 SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
-                Money.of(new BigDecimal("100")), null, StockQuantity.of(0),
+                Money.of(new BigDecimal("100")), null, null, ConsignmentMode.MANUAL, StockQuantity.of(0),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
@@ -185,7 +188,7 @@ class ProductTest {
                 CategoryId.of(99L),
                 ProductTitle.of("新名称"),
                 Money.of(new BigDecimal("200")),
-                null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null
         );
 
         assertThat(result.product().getCategoryId().value()).isEqualTo(99L);

@@ -305,7 +305,7 @@ function ProductsPage() {
             <input
               type="text"
               className="search-bar-input"
-              placeholder="搜索闲置物品..."
+               placeholder="搜索托管商品..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />

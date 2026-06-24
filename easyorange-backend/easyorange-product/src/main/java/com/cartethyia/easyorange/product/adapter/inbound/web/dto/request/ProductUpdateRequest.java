@@ -29,6 +29,10 @@ public class ProductUpdateRequest {
     private Integer stock;
 
     private Integer conditionLevel;
+    private Integer consignmentMode;
+
+    @DecimalMin(value = "0.01", message = "底价必须大于 0")
+    private BigDecimal floorPrice;
 
     @Size(max = 100, message = "交易地点不能超过 100 个字符")
     private String location;

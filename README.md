@@ -1,6 +1,6 @@
-# EasyOrange 易橙坊
+# EasyOrange AI 智能托管平台
 
-> 让闲置流转，让价值延续 —— 安全、便捷、环保的校园交易体验
+> 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
 >
 > **2025 年 11 月启动开发**
 
@@ -11,15 +11,16 @@
 
 ## 项目简介
 
-面向校园用户的二手交易平台，采用 DDD 模块化架构 + 前后端分离设计。
+面向闲置资产托管场景的 AI 智能托管平台，采用 DDD 模块化架构 + 前后端分离设计。
 
 ### 核心特性
 
-- **校园专属** — 针对校园场景优化，安全可信
+- **AI 驱动** — AI 驱动全流程托管，智能定价、议价、发布、审核
 - **DDD 架构** — 后端 11 个 Maven 模块，高内聚低耦合
 - **AI 赋能** — 智能定价、拍照上架、AI 审核、语义搜索、信用评分
-- **事件驱动** — RabbitMQ 领域事件，9 个跨模块消费者，路由键自动派生
+- **事件驱动** — RabbitMQ 领域事件，10 个跨模块消费者，路由键自动派生
 - **完整生态** — 商品审核工作流、举报处理、Saga 事务补偿
+- **AI 全自动托管寄售** — 规则引擎议价 + LLM 话术 + 阶梯降价 + 自动成交
 
 ## 技术栈
 
@@ -68,6 +69,15 @@ cd .. && ./mvnw spring-boot:run -pl easyorange-application  # 后端 :8080
 
 详细 API 文档见 [AGENTS.md](./AGENTS.md)，数据库设计见 [DATABASE.md](./DATABASE.md)。
 
+## AI 全自动托管寄售
+
+把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核。
+
+- **智能定价**: AI 分析商品信息给出建议价 + 底价
+- **AI 议价**: 规则引擎毫秒级决策 + LLM 自然话术，7×24 自动响应买家出价
+- **阶梯降价**: 上架时间越长价格自动阶梯下调，直到底价
+- **自动成交**: AI 接受出价后自动创建订单，超时取消商品回池
+
 ## Docker 部署
 
 ```bash
@@ -100,7 +110,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + ESLint/Prettier
-- 测试: 后端 JUnit 5 (2,546 用例) + 前端 Vitest/Playwright (947 用例)
+- 测试: 后端 JUnit 5 (2,692 用例) + 前端 Vitest/Playwright (945 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南

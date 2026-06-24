@@ -13,7 +13,7 @@ export function ProfileActivity() {
       <div className="section-header">
         <div className="header-title">
           <h2>最近动态</h2>
-          <p className="header-subtitle">追踪你的校园交易足迹</p>
+          <p className="header-subtitle">追踪你的智能托管足迹</p>
         </div>
       </div>
 

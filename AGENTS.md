@@ -1,6 +1,6 @@
 # EasyOrange 项目指南
 
-EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台，**2025 年 11 月启动开发**。
+EasyOrange 是基于 Spring Boot 4 + React 的全栈 AI 智能托管平台，**2025 年 11 月启动开发**。
 
 ## 技术栈
 
@@ -20,7 +20,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台，**2025 
 | 表名 | 说明 | 备注 |
 |------|------|------|
 | `eo_user` | 用户信息表 | user_type 枚举: 00(ADMIN)/01(NORMAL)/02(MANAGER) |
-| `eo_product` | 商品信息表 | 6状态: DRAFT(0)/PENDING_REVIEW(4)/REJECTED(5)/ONLINE(1)/SOLD(2)/OFFLINE(3) |
+| `eo_product` | 商品信息表 | 6状态: DRAFT(0)/PENDING_REVIEW(4)/REJECTED(5)/ONLINE(1)/SOLD(2)/OFFLINE(3); 含 AI 托管字段: floor_price(底价), consignment_mode(0手动/1AI托管), listed_at(上架时间), current_price_level(降价阶梯) |
 | `eo_product_audit_log` | 审核记录表 | action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照 |
 | `eo_product_detail` | 商品详情表 | JSON 格式 |
 | `eo_product_image` | 商品图片表 | 1:N, 含 is_main 主图标记 + sort_order 排序; 图片不在 eo_product 表上 |
@@ -39,6 +39,30 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台，**2025 
 - 管理员审核通过→上架, 驳回→退回草稿(可重新提交)
 - 审核结果触发站内消息通知(AUDIT_SUCCESS/AUDIT_REJECTED)
 - 审核记录持久化至 `eo_product_audit_log` 表
+
+## AI 全自动托管寄售工作流
+
+寄售模式: `MANUAL(0)` 手动管理 / `AI_MANAGED(1)` AI 托管
+
+- 卖家发布商品时选择 AI 托管模式，设置底价（floorPrice）
+- **智能定价**: 复用 `AiPricingService` 给出建议价 + 底价
+- **AI 议价**: 买家出价 → `OfferRuleEngine` 规则引擎决策（接受/还价/拒绝）→ `DeepSeekNegotiationMessageAdapter` LLM 生成话术
+  - offer ≥ floorPrice → 接受，自动创建订单
+  - offer ≥ floorPrice × 0.9 → 还价 floorPrice × 0.95
+  - offer < floorPrice × 0.9 → 拒绝（已到底价阶梯且 offer ≥ floorPrice × 0.85 时最后一次还价）
+- **阶梯降价**: `ProductPriceAdjustTask` 每天凌晨 2 点执行
+  - Day 1-3: 持价 | Day 4-5: 降 5% | Day 6: 降 10% | Day 7+: 底价
+- **订单闭环**: AI 接受出价 → `OrderCreationPort` 创建订单 → 超时不付款 `OrderTimeoutTask` 自动取消 → 商品回池
+
+**议价 WebSocket 协议**:
+| 消息类型 | code | 说明 |
+|---------|------|------|
+| OFFER | 6 | 买家发起出价 |
+| OFFER_ACCEPTED | 7 | AI 接受出价 |
+| OFFER_REJECTED | 8 | AI 拒绝出价 |
+| COUNTER_OFFER | 9 | AI 发起还价 |
+
+**议价 API**: WebSocket `@MessageMapping("/offer.make")` → `OfferProcessingPort` → `OfferAppService`
 
 ## 举报处理工作流
 
@@ -75,6 +99,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈二手交易平台，**2025 
 | 信用详情 | `GET /api/credit/detail/{userId}` | 查看指定用户信用分+变更记录 |
 | 重新计算 | `POST /api/credit/recalculate` | 触发当前用户信用分重新计算 |
 | AI 审核(admin) | `GET /api/admin/products/{id}/ai-review` | 管理端获取 AI 审核建议 |
+| AI 议价 | WebSocket `/app/offer.make` | 买家出价，规则引擎决策+LLM话术，接受后自动创建订单 |
 
 ## 项目结构
 
@@ -114,7 +139,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 9 个事件消费者**: ProductEventConsumer, OrderNotificationEventConsumer, OrderSagaEventConsumer, StockReservationEventConsumer, PaymentInitiationEventConsumer, ProductAuditEventConsumer, ReportProcessedEventConsumer, WebSocketEventConsumer, PaymentMetricsConsumer
+5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 10 个事件消费者**: ProductEventConsumer, OrderNotificationEventConsumer, OrderSagaEventConsumer, StockReservationEventConsumer, PaymentInitiationEventConsumer, ProductAuditEventConsumer, ReportProcessedEventConsumer, WebSocketEventConsumer, PaymentMetricsConsumer, OfferEventConsumer
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 已合并所有子类异常处理（`BusinessException`、`FileException` 等通过多态由 `handleBaseBusinessException` 统一处理），返回动态 HTTP 状态码（按错误码前缀自动映射：A0401→401/A0403→403/B→400/C→500/D→502）+ 业务错误码；所有异常处理器（含参数校验、类型转换、重复键等）统一返回 `ResponseEntity` + 正确 HTTP 状态码（校验类错误返回 400）。**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底。`BusinessException` 和 `FileException` 构造器均设为 `protected`，抛业务异常时统一使用 `BusinessException.of(...)` / `FileException.of(...)` 工厂方法；子类可正常调用 `super(...)`。各模块领域异常必须使用模块专属 `ResultCode`（如 `ProductResultCode.PRODUCT_NOT_FOUND`），**禁止回退到全局 `B0002`**
@@ -196,6 +221,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 | `QWENVL_API_KEY` | - | 通义千问 VL API 密钥（拍照上架图片识别） |
 | `QWENVL_BASE_URL` | `https://dashscope.aliyuncs.com/compatible-mode/v1` | 通义千问 API 地址 |
 | `QWENVL_MODEL` | `qwen-vl-max` | 通义千问视觉模型 |
+| `VITE_WS_URL` | 自动推导 | WebSocket 地址（前端环境变量，默认从 `location.host` 推导） |
 
 ## 开发规范
 
@@ -205,7 +231,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
-- **测试统计**：后端 11 模块合计 2,546 测试用例，全部通过；前端 98 测试文件/947 测试用例
+- **测试统计**：后端 11 模块合计 2,692 测试用例，全部通过；前端 98 测试文件/945 测试用例
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`
 - **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
 - **Snowflake ID**: 后端 Long 主键通过 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer` 序列化为字符串；前端所有实体 ID 字段类型为 `string`，禁止使用 `number`（防止 JS 精度丢失）

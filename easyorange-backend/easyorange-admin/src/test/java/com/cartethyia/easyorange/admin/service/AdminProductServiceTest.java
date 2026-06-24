@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.Product
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -160,6 +161,7 @@ class AdminProductServiceTest {
             Product product = Product.reconstitute(
                     ProductId.of(PRODUCT_ID), SellerId.of(1L), CategoryId.of(1L),
                     ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
+                    null, ConsignmentMode.MANUAL, null, 0,
                     StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
                     0, null, null, null, null, null, TagSet.empty(), null,
                     LocalDateTime.now(), LocalDateTime.now(), LocalDateTime.now()

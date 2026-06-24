@@ -22,6 +22,8 @@ public class UpdateProductCommand {
     private BigDecimal originalPrice;
     private Integer stock;
     private Integer conditionLevel;
+    private Integer consignmentMode;
+    private BigDecimal floorPrice;
     private String location;
     private String contactMethod;
     private String description;
@@ -36,6 +38,8 @@ public class UpdateProductCommand {
                 .originalPrice(request.getOriginalPrice())
                 .stock(request.getStock())
                 .conditionLevel(request.getConditionLevel())
+                .consignmentMode(request.getConsignmentMode())
+                .floorPrice(request.getFloorPrice())
                 .location(request.getLocation())
                 .contactMethod(request.getContactMethod())
                 .description(request.getDescription())

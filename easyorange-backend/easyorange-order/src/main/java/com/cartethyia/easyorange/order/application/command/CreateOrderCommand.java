@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 import java.util.List;
 
 @Data
@@ -22,6 +23,9 @@ public class CreateOrderCommand {
     private String phone;
     private String remark;
     private Integer paymentMethod;
+
+    /** AI 议价成交价覆盖（可选，用于 AI 托管寄售） */
+    private BigDecimal agreedPrice;
 
     @Data
     @Builder

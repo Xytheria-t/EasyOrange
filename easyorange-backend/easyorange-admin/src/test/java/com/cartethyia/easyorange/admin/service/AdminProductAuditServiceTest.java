@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreated
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductSubmittedForReviewResult;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
@@ -68,7 +69,7 @@ class AdminProductAuditServiceTest {
                 CategoryId.of(1L),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("99.99")),
-                null,
+                null, null, ConsignmentMode.MANUAL,
                 StockQuantity.of(10),
                 ConditionLevel.GOOD,
                 TradeLocation.of("北京"),
@@ -87,7 +88,7 @@ class AdminProductAuditServiceTest {
                 CategoryId.of(1L),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("99.99")),
-                null,
+                null, null, ConsignmentMode.MANUAL,
                 StockQuantity.of(10),
                 ConditionLevel.GOOD,
                 TradeLocation.of("北京"),

@@ -46,7 +46,9 @@ class ProductSearchHandlerTest {
                 "测试商品", "描述", new BigDecimal("100"), null,
                 10, 1, "上架", 0, 1, "全新",
                 "北京", "微信", List.of("http://img/1.jpg"),
-                "http://img/1.jpg", LocalDateTime.now(), LocalDateTime.now()
+                "http://img/1.jpg",
+                null, 0, null, 0,
+                LocalDateTime.now(), LocalDateTime.now()
         );
     }
 

@@ -4,6 +4,16 @@
 
 ## [unreleased]
 
+### 2026-06-24 — AI 全自动托管寄售 + 品牌重塑
+
+- **feat(product)**: AI 全自动托管寄售功能全量上线 — 规则引擎议价 `OfferRuleEngine` + LLM 话术 `DeepSeekNegotiationMessageAdapter` + 阶梯降价 `ProductPriceAdjustTask` + 议价事件消费者 `OfferEventConsumer`
+- **feat(websocket)**: 议价 WebSocket 协议扩展（MessageType 6-9: OFFER/OFFER_ACCEPTED/OFFER_REJECTED/COUNTER_OFFER）
+- **feat(frontend)**: 前端完整议价交互（AI 托管开关 + 出价弹窗 + 还价弹窗 + 阶梯降价指示条 + useOfferSocket 实时推送）
+- **feat(application)**: 跨模块编排适配器（AiOrderCreationAdapter + OfferProcessingAdapter）
+- **refactor(product)**: NegotiationMessagePort 从 ai 模块移至 product 模块解决循环依赖
+- **refactor(brand)**: 全平台品牌重塑 — "二手交易平台"→"EasyOrange AI 智能托管平台"（32 文件）
+- **test**: 后端新增 ~146 测试用例（总计 2,692），前端 945 测试用例全部通过
+
 ### 2026-06-23 — 错误码体系精简与一致性优化
 
 - **refactor(common)**: `IResultCode.mapToHttpStatus()` 静态方法移至 `GlobalExceptionHandler`（framework），`BaseBusinessException.httpStatus()` 方法删除，common 模块不再依赖 `org.springframework.http.HttpStatus`

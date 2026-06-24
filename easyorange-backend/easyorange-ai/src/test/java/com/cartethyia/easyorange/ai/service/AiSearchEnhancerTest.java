@@ -55,7 +55,7 @@ class AiSearchEnhancerTest {
                 id, 1L, null, null, null, null,
                 title, null, price, price.multiply(BigDecimal.valueOf(2)),
                 null, null, null, null, null, null,
-                null, null, List.of("img.jpg"), null, null, null
+                null, null, List.of("img.jpg"), null, null, null, null, null, null, null
         );
     }
 

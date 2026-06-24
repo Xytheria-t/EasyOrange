@@ -1,6 +1,8 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
+import com.cartethyia.easyorange.product.domain.event.PriceAdjustedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
@@ -30,6 +32,8 @@ import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,6 +49,10 @@ public class Product {
     private final ProductTitle title;
     private final Money price;
     private final Money originalPrice;
+    private final Money floorPrice;
+    private final ConsignmentMode consignmentMode;
+    private final LocalDateTime listedAt;
+    private final Integer currentPriceLevel;
     private final StockQuantity stock;
     private final Version version;
     private final ProductStatus status;
@@ -69,6 +77,10 @@ public class Product {
                 .title(title)
                 .price(price)
                 .originalPrice(originalPrice)
+                .floorPrice(floorPrice)
+                .consignmentMode(consignmentMode)
+                .listedAt(listedAt)
+                .currentPriceLevel(currentPriceLevel != null ? currentPriceLevel : 0)
                 .stock(stock)
                 .version(version)
                 .status(status)
@@ -91,6 +103,8 @@ public class Product {
             ProductTitle title,
             Money price,
             Money originalPrice,
+            Money floorPrice,
+            ConsignmentMode consignmentMode,
             StockQuantity stock,
             ConditionLevel conditionLevel,
             TradeLocation location,
@@ -103,12 +117,22 @@ public class Product {
         BizRequire.requireTrue(price.isGreaterThan(Money.ZERO), "商品价格必须大于0");
         BizRequire.requireTrue(images != null && !images.isEmpty(), "商品图片不能为空");
 
+        ConsignmentMode mode = consignmentMode != null ? consignmentMode : ConsignmentMode.MANUAL;
+        if (mode == ConsignmentMode.AI_MANAGED) {
+            BizRequire.notNull(floorPrice, "AI 托管模式必须设置底价");
+            BizRequire.requireTrue(floorPrice.isGreaterThan(Money.ZERO), "底价必须大于 0");
+        }
+
         Product p = Product.builder()
                 .sellerId(sellerId)
                 .categoryId(categoryId)
                 .title(title)
                 .price(price)
                 .originalPrice(originalPrice)
+                .floorPrice(floorPrice)
+                .consignmentMode(consignmentMode != null ? consignmentMode : ConsignmentMode.MANUAL)
+                .listedAt(null)
+                .currentPriceLevel(0)
                 .stock(stock != null ? stock : StockQuantity.of(1))
                 .version(Version.INITIAL)
                 .status(ProductStatus.DRAFT)
@@ -139,6 +163,8 @@ public class Product {
     public static Product reconstitute(
             ProductId id, SellerId sellerId, CategoryId categoryId,
             ProductTitle title, Money price, Money originalPrice,
+            Money floorPrice, ConsignmentMode consignmentMode,
+            LocalDateTime listedAt, Integer currentPriceLevel,
             StockQuantity stock, Version version, ProductStatus status,
             Integer viewCount, ConditionLevel conditionLevel,
             TradeLocation location, ContactMethod contactMethod,
@@ -154,6 +180,10 @@ public class Product {
                 .title(title)
                 .price(price)
                 .originalPrice(originalPrice)
+                .floorPrice(floorPrice)
+                .consignmentMode(consignmentMode)
+                .listedAt(listedAt)
+                .currentPriceLevel(currentPriceLevel != null ? currentPriceLevel : 0)
                 .stock(stock)
                 .version(version)
                 .status(status)
@@ -178,6 +208,8 @@ public class Product {
             Money originalPrice,
             StockQuantity stock,
             ConditionLevel conditionLevel,
+            ConsignmentMode consignmentMode,
+            Money floorPrice,
             TradeLocation location,
             ContactMethod contactMethod,
             ProductDescription description,
@@ -193,12 +225,20 @@ public class Product {
         updateIfPresent(originalPrice, builder::originalPrice);
         updateIfPresent(stock, builder::stock);
         updateIfPresent(conditionLevel, builder::conditionLevel);
+        if (consignmentMode != null) {
+            builder.consignmentMode(consignmentMode);
+        }
+        if (floorPrice != null) {
+            builder.floorPrice(floorPrice);
+        }
         updateIfPresent(location, builder::location);
         updateIfPresent(contactMethod, builder::contactMethod, ContactMethod::isNotBlank);
         updateIfPresent(description, builder::description);
         updateIfPresent(images, builder::images);
 
         Product updated = builder.updateTime(LocalDateTime.now()).build();
+        validateConsignmentMode(updated);
+
         ProductUpdatedEvent event = new ProductUpdatedEvent(
                 id.value(), sellerId.value(),
                 valueOrNull(updated.categoryId, CategoryId::value),
@@ -214,6 +254,13 @@ public class Product {
         return new ProductUpdatedResult(updated, event);
     }
 
+    private static void validateConsignmentMode(Product p) {
+        if (p.consignmentMode == ConsignmentMode.AI_MANAGED) {
+            BizRequire.notNull(p.floorPrice, "AI 托管模式必须设置底价");
+            BizRequire.requireTrue(p.floorPrice.isGreaterThan(Money.ZERO), "底价必须大于 0");
+        }
+    }
+
     public Product putOnline() {
         if (status.isOnline()) {
             throw new InvalidProductStatusException("商品已上架，无需重复操作", id, status);
@@ -226,6 +273,8 @@ public class Product {
         BizRequire.requireTrue(hasStock(), "商品库存不足，无法上架");
         return toBuilder()
                 .status(ProductStatus.ONLINE)
+                .listedAt(LocalDateTime.now())
+                .currentPriceLevel(0)
                 .updateTime(LocalDateTime.now())
                 .build();
     }
@@ -292,6 +341,7 @@ public class Product {
         }
         Product updated = toBuilder()
                 .status(ProductStatus.ONLINE)
+                .listedAt(LocalDateTime.now())
                 .updateTime(LocalDateTime.now())
                 .build();
         ProductAuditedEvent event = new ProductAuditedEvent(
@@ -388,6 +438,72 @@ public class Product {
         return stock != null && stock.isAvailable();
     }
 
+    // ==================== AI Consignment Methods ====================
+
+    /**
+     * 阶梯降价 — 将商品价格调整到指定阶梯等级。
+     * <p>
+     * 只有上架中且 AI 托管的商品可以自动调价。
+     *
+     * @param targetLevel 目标阶梯等级 (0-3)
+     * @return PriceAdjustedResult 包含更新后的聚合根和 PriceAdjustedEvent
+     * @throws InvalidProductStatusException 如果商品未上架或非 AI 托管模式
+     */
+    public PriceAdjustedResult adjustPrice(int targetLevel) {
+        if (!status.isOnline()) {
+            throw new InvalidProductStatusException("只有上架商品可以调价", id, status);
+        }
+        if (consignmentMode != ConsignmentMode.AI_MANAGED) {
+            throw new InvalidProductStatusException("只有AI托管商品支持自动调价", id, status);
+        }
+        Money newPrice = calculatePriceForLevel(targetLevel);
+        Product updated = toBuilder()
+                .price(newPrice)
+                .currentPriceLevel(targetLevel)
+                .priceUpdateTime(LocalDateTime.now())
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new PriceAdjustedResult(updated,
+                new PriceAdjustedEvent(id.value(), sellerId.value(), newPrice.value(), targetLevel));
+    }
+
+    /**
+     * 根据阶梯等级计算新价格。
+     */
+    private Money calculatePriceForLevel(int level) {
+        return switch (level) {
+            case 0 -> price;
+            case 1 -> Money.of(price.value().multiply(new BigDecimal("0.95")));
+            case 2 -> Money.of(price.value().multiply(new BigDecimal("0.90")));
+            case 3 -> floorPrice;
+            default -> price;
+        };
+    }
+
+    /**
+     * 计算当前应该处于的降价阶梯等级。
+     * <p>
+     * 根据上架时间计算：
+     * <ul>
+     *   <li>0-3 天 → 0 (原价)</li>
+     *   <li>4-5 天 → 1 (降5%)</li>
+     *   <li>6 天   → 2 (降10%)</li>
+     *   <li>7 天+  → 3 (底价)</li>
+     * </ul>
+     *
+     * @return 期望的阶梯等级 (0-3)
+     */
+    public int calculateExpectedPriceLevel() {
+        if (listedAt == null || consignmentMode != ConsignmentMode.AI_MANAGED) {
+            return 0;
+        }
+        long daysOnline = Duration.between(listedAt, LocalDateTime.now()).toDays();
+        if (daysOnline >= 7) return 3;
+        if (daysOnline >= 6) return 2;
+        if (daysOnline >= 4) return 1;
+        return 0;
+    }
+
     private static <T, R> R valueOrNull(T obj, Function<T, R> extractor) {
         return obj != null ? extractor.apply(obj) : null;
     }
@@ -415,4 +531,5 @@ public class Product {
     public record ProductRejectedResult(Product product, ProductAuditedEvent event) {}
     public record StockDecreasedResult(Product product, StockDecreasedEvent event) {}
     public record StockRestoredResult(Product product, StockRestoredEvent event) {}
+    public record PriceAdjustedResult(Product product, PriceAdjustedEvent event) {}
 }

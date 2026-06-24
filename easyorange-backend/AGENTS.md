@@ -73,7 +73,7 @@ eventPublisher.publish(new SomeEvent(...));
 - 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
 - 每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
 - 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发，非轮询竞争）
-- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（9 个消费者，见根目录 AGENTS.md）
+- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（10 个消费者，见根目录 AGENTS.md）
 - `@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
 
 ## 跨模块通信
@@ -234,75 +234,25 @@ return Result.success(userId);
 
 ## 踩坑警示
 
-### MyBatis-Plus UUID TypeHandler
+### MyBatis-Plus UUID / Jackson 事件反序列化
 
-MyBatis-Plus **没有内置** `java.util.UUID` 的 TypeHandler。如果 PO 类中有 `UUID` 字段，直接 insert/update 会报：
+MyBatis-Plus **无内置** `UUID` TypeHandler，PO 含 UUID 字段时 insert 报 `Type handler was null`。已配全局 `UuidTypeHandler`（`framework/config/database/`）+ `type-handlers-package`，新增 PO 的 UUID 字段无需额外配置。数据库列类型 `CHAR(36)`。
 
-```
-Type handler was null on parameter mapping for property 'eventId'. javaType=UUID
-```
-
-**解决方案（已配置）**：
-1. 自定义 `UuidTypeHandler extends BaseTypeHandler<UUID>`（位于 `framework/config/database/`）
-2. 在 `application.yaml` 的 `mybatis-plus:` 下配置 `type-handlers-package: com.cartethyia.easyorange.framework.config.database`
-3. 数据库侧对应列类型为 `CHAR(36)`
-
-**注意**：新增 PO 的 UUID 字段时无需额外配置，全局 TypeHandler 会自动生效。
-
-### Jackson 领域事件反序列化
-
-所有领域事件类（如 `PaymentCreatedEvent`、`OrderCreatedEvent`）只有参数化构造器，无 `@JsonCreator` / `@JsonProperty` 注解。反序列化依赖 **ParameterNamesModule** 通过构造器参数名推断属性映射。
-
-如果移除 `JacksonConfig` 中的 `ParameterNamesModule` 或遗漏 `jackson-module-parameter-names` 依赖，RabbitMQ 消费者反序列化事件时会报：
-
-```
-InvalidDefinitionException: Cannot construct instance of XxxEvent (no Creators, like default constructor, exist)
-```
-
-**已配置位置**：
-1. `framework/pom.xml` — `jackson-module-parameter-names` 依赖
-2. `framework/.../JacksonConfig.java` — `mapper.registerModule(new ParameterNamesModule())`
-
-**注意**：新增领域事件类时无需添加任何 Jackson 注解，遵循现有模式即可。
+领域事件类无 `@JsonCreator`，反序列化依赖 `ParameterNamesModule`（`framework/.../JacksonConfig.java` + `framework/pom.xml` `jackson-module-parameter-names`）。移除会导致 `InvalidDefinitionException`，新增事件类无需 Jackson 注解。
 
 ### Spring Boot 4 @WebMvcTest 路径变化
 
-Spring Boot 4.0 将 `@WebMvcTest` / `@AutoConfigureMockMvc` 迁移到 `org.springframework.boot.webmvc.test.autoconfigure.web.servlet` 包。
-
-**三条规则**：
-1. 使用新 import 路径（`...webmvc.test...`）
-2. 无 `@SpringBootConfiguration` 的模块在 test 下创建 `@SpringBootApplication` 空类
-3. `@ComponentScan` 限制扫描范围为 web controller 包，否则拉入 persistence 类导致 web 切片失败
-
-已修复示例：`easyorange-order` 的 `OrderTestApplication` 已限制为 `adapter.inbound.web`
+Spring Boot 4.0 迁移到 `org.springframework.boot.webmvc.test` 包。规则：① 新 import 路径；② 无 `@SpringBootConfiguration` 的模块在 test 下创建空 `@SpringBootApplication` 类；③ `@ComponentScan` 限于 web controller 包，否则拉入 persistence 类导致切片失败。参考 `easyorange-order` 的 `OrderTestApplication`。
 
 ### framework 模块集成测试
 
-`easyorange-framework` 的集成测试（`RedisCacheImplIntegrationTest`、`RabbitMQDomainEventPublisherIT`）使用 Testcontainers，必须标注 `@Tag("integration")`。已配置 `surefire excludedGroups=integration`，默认 `mvn test` 跳过；需执行时使用 `-DexcludedGroups=""` （`./mvnw test -pl easyorange-framework -DexcludedGroups=""`）
+`RedisCacheImplIntegrationTest`、`RabbitMQDomainEventPublisherIT` 使用 Testcontainers，标注 `@Tag("integration")`。`surefire excludedGroups=integration`，默认 skips；执行用 `-DexcludedGroups=""`。
 
-### Port/Adapter IntelliJ 误报
+### Port/Adapter / MapStruct IntelliJ 误报
 
-IntelliJ Spring 插件将 domain port 接口文件也识别为 Spring Bean，与 `@Component` Adapter 冲突，误报 "存在多个 XxxPort 类型的 Bean"。
+IntelliJ 将 domain port 接口也识别为 Spring Bean，与 `@Component` Adapter 冲突。**修复**：Adapter 实现类加 `@Primary`。
 
-**修复**：Adapter 实现类上加 `@Primary`：
-
-```java
-@Primary
-@Component
-public class PasswordEncoderAdapter implements PasswordEncoderPort { ... }
-```
-
-`@Primary` 语义正确（Adapter 是 port 的默认实现）。新增 Port/Adapter 后按此方式处理。
-
-### MapStruct + IntelliJ 误报
-
-`@Mapper(componentModel = "spring")` 的接口和生成类都被 IntelliJ 计为 bean，误报 "存在多个 XxxMapper 类型的 Bean"。运行时只有 1 个 bean（`MapperScan` 只扫描 MyBatis 注解）。
-
-**修复**：
-- **构造器注入**（推荐）：参数加 `@Qualifier("xxxImpl")`
-- **字段注入**：加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`
-
-新增 MapStruct mapper 后按此方式处理。
+`@Mapper(componentModel = "spring")` 接口同理。**修复**：构造器注入加 `@Qualifier("xxxImpl")`；字段注入加 `@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")`。
 
 ### MyBatis SQL 注入：禁止在 @Select 中使用 ${} 拼接 IN 列表
 
@@ -312,50 +262,16 @@ public class PasswordEncoderAdapter implements PasswordEncoderPort { ... }
 
 **注意**：新增 Mapper 的 IN 列表查询必须使用 `<foreach>` + `#{}` 参数化方式，禁止 `String` 类型的括号内 JSON/CSV 拼接。
 
-### JDK 25 + Lombok Unsafe 终端弃用警告
+### JDK 25 + Lombok Unsafe 终端弃用
 
-启动或编译时出现以下警告，原因是 Lombok 的 `lombok.permit.Permit` 内部使用了 `sun.misc.Unsafe::objectFieldOffset`（JDK 23 起被标记为 terminally deprecated）：
+JDK 23+ 终端弃用 `sun.misc.Unsafe::objectFieldOffset`，Lombok 1.18.46 仍使用它。启动时打印 `WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Permit`。
 
-```
-WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
-WARNING: sun.misc.Unsafe::objectFieldOffset has been called by lombok.permit.Permit
-```
+**已配置**：编译阶段 `.mvn/jvm.config` + 运行阶段 `spring-boot-maven-plugin jvmArguments` 均已设置 `--sun-misc-unsafe-memory-access=allow`。JDK 26+ 默认变 `deny`，届时需升级 Lombok。
 
-**根因**：JDK 25 默认开启 `--sun-misc-unsafe-memory-access=warn`（JEP 498），调用已弃用的 Unsafe 方法时打印警告。Lombok 1.18.46（当前最新版）仍使用 Unsafe，尚在迁移中。
+### CategoryCacheAdapter 熔断
 
-**已生效的解决方案**：
-1. 编译阶段：项目根 `.mvn/jvm.config` 已配置 `--sun-misc-unsafe-memory-access=allow`，Maven 构建时自动加载
-2. 运行阶段：启动命令（alias `eobe`、`spring-boot-maven-plugin` 的 `jvmArguments`）均已包含该 flag
+Redis 连接失败时自动降级 DB，连续 5 次失败熔断（跳过 Redis 60s），成功后重置计数器。ERROR 日志含结构化字段。新增缓存适配器时遵循此模式。
 
-**未来**：JDK 26+ 该 flag 默认值将变为 `deny`（抛出异常），届时需升级兼容 JDK 26 的 Lombok 版本。
+### Admin 模块端口接口
 
-### RateLimitFilter ↔ SecurityConfig 循环依赖
-
-`RateLimitFilter` 构造器注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 `@Bean`）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖，导致启动失败。
-
-**已修复**：`RateLimitFilter` 改用 `ObjectProvider<List<HandlerMapping>>` 延迟注入，`hasSkipAnnotation()` 调用 `handlerMappingsProvider.getIfAvailable(List::of)` 在请求时才解析 HandlerMapping，打破循环。
-
-**注意**：修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入。新增需要 `HandlerMapping` 的 Filter 时同样使用 `ObjectProvider` 模式
-
-### CategoryCacheAdapter 熔断机制
-
-`CategoryCacheAdapter` 在 Redis 连接失败时自动降级到 DB 查询，但大量请求可能导致 DB 雪崩。
-
-**已修复**：添加熔断机制：
-- 连续失败 5 次（`CIRCUIT_BREAKER_THRESHOLD`）触发熔断，跳过所有 Redis 操作
-- 60 秒后（`CIRCUIT_BREAKER_RESET_INTERVAL_MS`）自动重置熔断状态
-- 成功操作后重置失败计数器
-- ERROR 级别日志告警（包含 `action`, `operation`, `context`, `failure_count` 结构化字段）
-
-**注意**：修改缓存适配器时保持熔断逻辑，避免移除告警日志。新增缓存适配器时遵循此模式。
-
-### Admin 模块端口接口模式
-
-Admin 模块曾直接依赖其他模块的 Mapper/DO（如 `ProductMapper`, `UserMapper`），违反 DDD 防腐层原则。
-
-**已修复**：
-- 创建 `domain/port/` 端口接口（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`）
-- 适配器实现在 `easyorange-application/adapter/outbound/admin/` 包下
-- 日期解析异常处理改为记录日志而非完全吞异常
-
-**注意**：Admin 模块新增跨模块查询时必须通过端口接口，不直接依赖其他模块的 Mapper/DO。
+Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。

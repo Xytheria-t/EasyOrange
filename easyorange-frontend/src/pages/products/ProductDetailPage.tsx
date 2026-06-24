@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
+import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp, Brain, Gavel } from 'lucide-react';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { useProduct, useSimilarProducts, useCreateOrder } from '@/hooks';
 import { favoriteApi } from '@/api/favoriteApi';
@@ -14,6 +14,8 @@ import { useUIStore } from '@/store/uiStore';
 import { Image, preloadImages, buildThumbnailUrl } from '@/components/ui/Image';
 import AiQaPanel from '@/components/ai/AiQaPanel';
 import { useAiQa } from '@/hooks/useAiQa';
+import { useOfferSocket } from '@/hooks/useOfferSocket';
+import type { OfferResult } from '@/types';
 import placeholderImage from '@/assets/placeholder.png';
 
 interface OrderFormData {
@@ -69,6 +71,11 @@ function ProductDetailPage() {
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [copied, setCopied] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [offerPrice, setOfferPrice] = useState('');
+  const [offerResult, setOfferResult] = useState<OfferResult | null>(null);
+  const [isOfferProcessing, setIsOfferProcessing] = useState(false);
+  const { sendOffer, onOfferResult } = useOfferSocket();
 
   const productId = id ?? '';
 
@@ -108,6 +115,60 @@ function ProductDetailPage() {
     setCurrentImageIndex(0);
     setImageLoaded(false);
   }, [productId]);
+
+  // Listen for offer results from WebSocket
+  useEffect(() => {
+    onOfferResult((result) => {
+      setIsOfferProcessing(false);
+      setOfferResult(result);
+
+      if (result.decisionType === 'ACCEPT' && result.orderId) {
+        addToast({ type: 'success', message: result.message || '出价已被接受，正在跳转...' });
+        setTimeout(() => {
+          navigate(`/orders/${result.orderId}`);
+        }, 1500);
+      } else if (result.decisionType === 'COUNTER') {
+        addToast({ type: 'info', message: '卖家还价了' });
+      } else {
+        addToast({ type: 'error', message: result.message || '出价未被接受' });
+      }
+    });
+  }, [onOfferResult, addToast, navigate]);
+
+  const handleMakeOffer = () => {
+    if (!token) {
+      navigate(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      return;
+    }
+    if (!product || isOwner) {return;}
+    setOfferPrice('');
+    setOfferResult(null);
+    setShowOfferModal(true);
+  };
+
+  const handleSubmitOffer = () => {
+    const price = Number(offerPrice);
+    if (!offerPrice || isNaN(price) || price <= 0) {
+      addToast({ type: 'error', message: '请输入有效出价' });
+      return;
+    }
+    setIsOfferProcessing(true);
+    setShowOfferModal(false);
+    sendOffer(productId, price);
+  };
+
+  const handleAcceptCounterOffer = () => {
+    if (offerResult?.counterPrice) {
+      setIsOfferProcessing(true);
+      setOfferResult(null);
+      sendOffer(productId, Number(offerResult.counterPrice));
+    }
+  };
+
+  const handleRejectCounterOffer = () => {
+    setOfferResult(null);
+    addToast({ type: 'info', message: '已拒绝还价' });
+  };
 
   useEffect(() => {
     if (!showChatModal || !product?.sellerId || !token) {return;}
@@ -523,6 +584,12 @@ function ProductDetailPage() {
                       {product.categoryName}
                     </span>
                   )}
+                  {product.consignmentMode === 1 && (
+                    <span className="pdp-ai-consignment-chip">
+                      <Brain size={12} />
+                      AI 自动议价
+                    </span>
+                  )}
                 </div>
                 <h1 className="pdp-title">{product.title}</h1>
                 <div className="pdp-meta-row">
@@ -557,6 +624,35 @@ function ProductDetailPage() {
                   </div>
                 )}
               </div>
+
+              {/* AI Consignment price level indicator */}
+              {product.consignmentMode === 1 && isOnline && (
+                <div className="pdp-consignment-level-card">
+                  <div className="pdp-consignment-level-header">
+                    <Brain size={16} />
+                    <span>AI 智能议价</span>
+                    <span className="pdp-consignment-badge">可议价</span>
+                  </div>
+                  <div className="pdp-price-level-bar">
+                    <div className="pdp-price-level-labels">
+                      <span className={(product.currentPriceLevel ?? 0) === 0 ? 'active' : ''}>原价</span>
+                      <span className={(product.currentPriceLevel ?? 0) === 1 ? 'active' : ''}>降5%</span>
+                      <span className={(product.currentPriceLevel ?? 0) === 2 ? 'active' : ''}>降10%</span>
+                      <span className={(product.currentPriceLevel ?? 0) >= 3 ? 'active' : ''}>底价</span>
+                    </div>
+                    <div className="pdp-price-level-track">
+                      <div
+                        className="pdp-price-level-fill"
+                        style={{ width: `${(product.currentPriceLevel ?? 0) * 33.33}%` }}
+                      />
+                      <div
+                        className="pdp-price-level-dot"
+                        style={{ left: `${(product.currentPriceLevel ?? 0) * 33.33}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="pdp-ai-pricing-card">
                 <div className="pdp-ai-pricing-header">
@@ -660,6 +756,28 @@ function ProductDetailPage() {
                       </button>
                     )}
                   </div>
+                ) : product.consignmentMode === 1 && isOnline ? (
+                  <>
+                    <button
+                      className="pdp-btn pdp-btn-offer"
+                      onClick={handleMakeOffer}
+                      disabled={isSold || isOfferProcessing}
+                    >
+                      <Gavel size={18} />
+                      {isOfferProcessing ? '处理中...' : '出价'}
+                    </button>
+                    <button className="pdp-btn pdp-btn-secondary" onClick={handleContactSeller}>
+                      <MessageCircle size={18} />
+                      联系卖家
+                    </button>
+                    <button
+                      className={`pdp-btn pdp-btn-fav ${isFavorited ? 'favorited' : ''}`}
+                      onClick={handleFavoriteToggle}
+                      disabled={isFavoriteLoading}
+                    >
+                      <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button
@@ -1019,6 +1137,155 @@ function ProductDetailPage() {
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offer Modal */}
+      {showOfferModal && product && (
+        <div
+          className="pdp-modal-overlay"
+          onClick={() => setShowOfferModal(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowOfferModal(false); } }}
+          aria-label="关闭出价弹窗"
+        >
+          <div className="pdp-modal pdp-offer-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="pdp-modal-header">
+              <h2 className="pdp-modal-title">
+                <Gavel size={18} />
+                出价
+              </h2>
+              <button className="pdp-modal-close" onClick={() => setShowOfferModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pdp-modal-product">
+              <div className="pdp-modal-product-image">
+                {images.length > 0 ? (
+                  <Image
+                    src={images[0]}
+                    alt={product.title}
+                    loading="lazy"
+                    placeholder="skeleton"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div className="pdp-modal-product-placeholder">
+                    <ShoppingCart size={20} />
+                  </div>
+                )}
+              </div>
+              <div className="pdp-modal-product-info">
+                <p className="pdp-modal-product-name">{product.title}</p>
+                <p className="pdp-modal-product-price">¥{product.price.toFixed(2)}</p>
+                {product.consignmentMode === 1 && (
+                  <p className="pdp-offer-hint">AI 智能议价中，输入您的出价</p>
+                )}
+              </div>
+            </div>
+
+            <div className="pdp-offer-input-section">
+              <div className="pdp-offer-label">您的出价</div>
+              <div className="pdp-offer-input-wrapper">
+                <span className="pdp-offer-currency">¥</span>
+                <input
+                  type="number"
+                  className="pdp-offer-input"
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0.01"
+                  autoFocus
+                />
+              </div>
+              <div className="pdp-offer-quick-amounts">
+                {[0.5, 0.6, 0.7, 0.8, 0.9].map((ratio) => {
+                  const quickPrice = Math.round(product.price * ratio);
+                  return (
+                    <button
+                      key={ratio}
+                      className={`pdp-offer-quick-btn ${Number(offerPrice) === quickPrice ? 'active' : ''}`}
+                      onClick={() => setOfferPrice(String(quickPrice))}
+                    >
+                      ¥{quickPrice}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="pdp-offer-tips">
+              <Info size={14} />
+              <span>AI 将根据您的出价自动决策，出价合理可快速成交</span>
+            </div>
+
+            <div className="pdp-modal-footer">
+              <button
+                onClick={() => setShowOfferModal(false)}
+                className="pdp-modal-btn pdp-modal-btn-cancel"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleSubmitOffer}
+                disabled={!offerPrice || Number(offerPrice) <= 0}
+                className="pdp-modal-btn pdp-offer-submit-btn"
+              >
+                提交出价
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Counter Offer Result Modal */}
+      {offerResult?.decisionType === 'COUNTER' && (
+        <div
+          className="pdp-modal-overlay"
+          onClick={() => setOfferResult(null)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setOfferResult(null); } }}
+          aria-label="关闭还价弹窗"
+        >
+          <div className="pdp-modal pdp-counter-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="pdp-modal-header">
+              <h2 className="pdp-modal-title">
+                <Brain size={18} />
+                AI 还价
+              </h2>
+              <button className="pdp-modal-close" onClick={() => setOfferResult(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pdp-counter-content">
+              <div className="pdp-counter-message">{offerResult.message}</div>
+              <div className="pdp-counter-price-section">
+                <span className="pdp-counter-label">AI 还价</span>
+                <span className="pdp-counter-price">¥{offerResult.counterPrice}</span>
+              </div>
+            </div>
+
+            <div className="pdp-modal-footer">
+              <button
+                onClick={handleRejectCounterOffer}
+                className="pdp-modal-btn pdp-modal-btn-cancel"
+              >
+                不接受
+              </button>
+              <button
+                onClick={handleAcceptCounterOffer}
+                disabled={isOfferProcessing}
+                className="pdp-modal-btn pdp-offer-submit-btn"
+              >
+                {isOfferProcessing ? '处理中...' : '接受还价'}
+              </button>
             </div>
           </div>
         </div>

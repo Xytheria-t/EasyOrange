@@ -102,7 +102,7 @@ describe('HeroSection', () => {
 
   it('renders the subtitle', () => {
     render(<HeroSection />);
-    expect(screen.getByText('安全便捷的校园交易体验，连接每一份闲置与需求')).toBeInTheDocument();
+    expect(screen.getByText('把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核')).toBeInTheDocument();
   });
 
   it('renders search input', () => {

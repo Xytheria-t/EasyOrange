@@ -34,7 +34,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private static final int TOP_PRODUCTS_LIMIT = 5;
 
     private static final String INTENT_SYSTEM_PROMPT = """
-        你是一个二手购物平台的 AI 导购助手。
+        你是 EasyOrange AI 智能托管平台的 AI 导购助手。
         用户输入了一段自然语言商品搜索需求。
         请用一句简洁的话总结用户想找什么，不超过30个字。
         直接输出总结，不要前缀。
@@ -46,7 +46,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         用逗号分隔输出，不要序号。
         """;
     private static final String MARKET_SYSTEM_PROMPT = """
-        你是一个二手市场分析助手。根据搜索到的商品价格信息，
+        你是 EasyOrange AI 智能托管平台的市场分析助手。根据搜索到的商品价格信息，
         用一句话概括当前市场价格情况（如均价、性价比等），不超过40个字。
         直接输出分析结果，不要前缀。
         """;

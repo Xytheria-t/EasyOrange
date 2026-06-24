@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -42,4 +43,8 @@ public class WsMessage {
     private String conversationId;
 
     private Long targetUserId;
+
+    private BigDecimal offerPrice;
+
+    private BigDecimal counterPrice;
 }

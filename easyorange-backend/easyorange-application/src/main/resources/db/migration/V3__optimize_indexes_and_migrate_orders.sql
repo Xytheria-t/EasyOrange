@@ -1,5 +1,5 @@
 -- ===================================================================
--- EasyOrange 校园二手交易平台 - 索引优化 + 订单结构迁移
+-- EasyOrange AI 智能托管平台 - 索引优化 + 订单结构迁移
 -- Version: V3 (合并原 V3__optimize_indexes + V3__migrate_existing_orders_to_items)
 -- 职责: 删除冗余索引、优化复合索引、订单数据迁移、eo_order 表结构调整
 -- Database: MySQL 8.0

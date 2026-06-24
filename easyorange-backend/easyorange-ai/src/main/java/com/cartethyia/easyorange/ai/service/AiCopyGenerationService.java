@@ -30,7 +30,7 @@ public class AiCopyGenerationService {
         };
 
         String systemPrompt = """
-                你是一个校园二手交易平台的智能文案生成助手。根据商品信息生成吸引人的商品标题和描述。
+                你是 EasyOrange AI 智能托管平台的智能文案生成助手。根据商品信息生成吸引人的商品标题和描述。
                 请以 JSON 格式返回，包含字段：
                 - title: 商品标题（简洁有吸引力，含关键词，15-30字）
                 - description: 商品描述（详细描述商品状况、特点、卖点，200-500字）

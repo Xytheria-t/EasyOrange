@@ -1,4 +1,4 @@
-# 易橙坊前端 - EasyOrange Frontend
+# EasyOrange AI 智能托管平台 Frontend
 
 > 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用（**2025 年 11 月启动**）
 
@@ -14,7 +14,7 @@
 | **构建** | Vite 8 | 极速构建工具 |
 | **样式** | Tailwind CSS 4 | 原子化 CSS |
 | **图标** | Lucide React | 图标库 |
-| **测试** | Vitest + Testing Library | 单元/组件测试（98 文件, 947 测试） |
+| **测试** | Vitest + Testing Library | 单元/组件测试（98 文件, 945 测试） |
 | | Playwright | E2E 测试 |
 | **质量** | ESLint + Prettier + jsx-a11y | 代码规范与可访问性检查 |
 
@@ -188,13 +188,13 @@ npm run preview
 ### 开发环境 (`.env.development`)
 ```env
 VITE_API_BASE_URL=/api
-VITE_APP_TITLE=易橙坊 - 让闲置流转，让价值延续
+VITE_APP_TITLE=EasyOrange AI 智能托管平台 - 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
 ```
 
 ### 生产环境 (`.env.production`)
 ```env
 VITE_API_BASE_URL=https://api.easyorange.com
-VITE_APP_TITLE=易橙坊 - 让闲置流转，让价值延续
+VITE_APP_TITLE=EasyOrange AI 智能托管平台 - 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
 ```
 
 ## 开发规范
@@ -237,4 +237,4 @@ MIT License
 
 ---
 
-**EasyOrange** - 让闲置流转，让价值延续
+**EasyOrange** - 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核

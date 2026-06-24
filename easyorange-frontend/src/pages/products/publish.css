@@ -838,6 +838,103 @@
   font-weight: 600;
 }
 
+/* ============ AI CONSIGNMENT TOGGLE ============ */
+.ai-consignment-section {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.06), rgba(99, 102, 241, 0.04));
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: var(--radius-xl);
+  animation: slideUp 0.4s var(--ease-out);
+}
+
+.ai-consignment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ai-consignment-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--indigo-500);
+}
+
+.ai-consignment-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ai-consignment-desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.ai-toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.ai-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.ai-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--gray-300);
+  border-radius: var(--radius-full);
+  transition: all 0.3s var(--ease-out);
+}
+
+.ai-toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s var(--ease-out);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+.ai-toggle input:checked + .ai-toggle-slider {
+  background: linear-gradient(135deg, var(--indigo-500), var(--purple-500));
+}
+
+.ai-toggle input:checked + .ai-toggle-slider::before {
+  transform: translateX(22px);
+}
+
+.ai-toggle input:focus-visible + .ai-toggle-slider {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+/* Floor price input */
+.ai-floor-price {
+  animation: slideUp 0.3s var(--ease-out);
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin: 0.25rem 0 0;
+  line-height: 1.4;
+}
+
 /* ============ ERROR MESSAGES ============ */
 .error-message-v2 {
   display: flex;

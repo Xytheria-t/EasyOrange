@@ -112,7 +112,7 @@ describe('PaymentPage', () => {
     expect(screen.getByText('校园卡')).toBeInTheDocument();
     expect(screen.getByText('推荐使用')).toBeInTheDocument();
     expect(screen.getByText('安全便捷')).toBeInTheDocument();
-    expect(screen.getByText('校园专属')).toBeInTheDocument();
+    expect(screen.getByText('AI 托管专属')).toBeInTheDocument();
   });
 
   it('shows security note', () => {

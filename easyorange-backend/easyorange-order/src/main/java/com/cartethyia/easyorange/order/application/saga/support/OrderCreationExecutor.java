@@ -45,7 +45,8 @@ public class OrderCreationExecutor {
 
         // 准备订单项数据
         List<OrderPreparationService.OrderItemRequest> itemRequests = command.getItems().stream()
-            .map(item -> new OrderPreparationService.OrderItemRequest(item.getProductId(), item.getQuantity()))
+            .map(item -> new OrderPreparationService.OrderItemRequest(
+                    item.getProductId(), item.getQuantity(), command.getAgreedPrice()))
             .toList();
 
         OrderPreparationService.PreparationResult preparation =

@@ -78,7 +78,7 @@ export function ProfileOverview({
       <div className="section-header">
         <div className="header-title">
           <h2>数据概览</h2>
-          <p className="header-subtitle">实时追踪你的校园交易数据</p>
+          <p className="header-subtitle">实时追踪你的智能托管数据</p>
         </div>
         <div className="header-actions">
           <button className="btn-ghost" onClick={() => navigate('/orders')}>

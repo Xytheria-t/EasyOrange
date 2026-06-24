@@ -32,6 +32,9 @@ export function normalizeProduct(raw: RawProduct): Product {
         updateTime: raw.updateTime ?? '',
         stock: raw.stock,
         contactMethod: raw.contactMethod,
+        floorPrice: raw.floorPrice != null ? String(raw.floorPrice) : null,
+        consignmentMode: raw.consignmentMode ?? 0,
+        currentPriceLevel: raw.currentPriceLevel ?? 0,
     };
 }
 

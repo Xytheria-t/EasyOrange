@@ -5,7 +5,7 @@ tags:
 
 # EasyOrange 项目指南
 
-**EasyOrange** 是一个基于 Spring Boot + React 的全栈电商平台项目，**2025 年 11 月启动开发**。
+**EasyOrange** 是一个基于 Spring Boot + React 的全栈 AI 智能托管平台项目，**2025 年 11 月启动开发**。
 
 ## 项目结构
 
@@ -18,7 +18,9 @@ easy-orange/
 │   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
 │   │   └── domain/port/         # SmsCodePort, PasswordEncoderPort, LoginAttemptPort, AvatarFilePort (端口接口)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 全自动托管寄售)
+│   │   ├── domain/port/         # OrderCreationPort, NegotiationMessagePort (议价跨模块 port)
+│   │   ├── domain/service/      # OfferRuleEngine (规则引擎议价决策)
 │   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
@@ -26,7 +28,8 @@ easy-orange/
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   │   └── adapter/inbound/web/assembler/ # FavoriteAssembler (DTO 转换)
-│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision)
+│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision + 议价话术生成)
+│   │   └── adapter/outbound/    # DeepSeekNegotiationMessageAdapter (LLM 话术)
 │   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 ├── easyorange-frontend/         # React 前端
@@ -153,6 +156,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
 - **RabbitMQ 路由键规范**: 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。`BaseDomainEvent.eventType()` 自动从类名去除 `Event` 后缀，`RoutingKeyResolver` 再将 camelCase 转为 dot.case。新增领域事件只需创建事件类，路由键自动生效
 - **RabbitMQ 消费者模式**: 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），禁止在同一个队列上使用多个方法级 `@RabbitListener`（会导致轮询竞争）。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
+- **AI 议价模块接线规则**: NegotiationMessagePort（议价话术生成 port）定义在 product 模块（消费方定义），ai 模块的 DeepSeekNegotiationMessageAdapter 实现它（ai 依赖 product，无循环依赖）。OfferProcessingPort（WebSocket 调用 port）定义在 message 模块，application 模块的 OfferProcessingAdapter 实现并委派给 OfferAppService。OrderCreationPort（订单创建 port）定义在 product 模块，application 模块的 AiOrderCreationAdapter 实现并委托给 order 模块的 OrderCommandHandler
+- **阶梯降价规则**: ProductPriceAdjustTask 每天凌晨 2 点执行，Day 1-3 持价 → Day 4-5 降 5% → Day 6 降 10% → Day 7+ 底价（currentPriceLevel 递增记录阶梯）
 - **RabbitMQ-only 模式**: 领域事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange。所有消费者的 `@ConditionalOnProperty(matchIfMissing=true)` 仅用于确保无 RabbitMQ 环境（开发/测试）下启动不报错，EventBus 回退模式已移除
 - **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)

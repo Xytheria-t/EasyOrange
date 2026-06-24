@@ -25,6 +25,8 @@ public class CreateProductCommand {
     private String contactMethod;
     private String description;
     private List<String> imageUrls;
+    private BigDecimal floorPrice;
+    private Integer consignmentMode;
 
     public static CreateProductCommand from(ProductCreateRequest request) {
         return CreateProductCommand.builder()
@@ -38,6 +40,8 @@ public class CreateProductCommand {
                 .contactMethod(request.getContactMethod())
                 .description(request.getDescription())
                 .imageUrls(request.getImageUrls())
+                .floorPrice(request.getFloorPrice())
+                .consignmentMode(request.getConsignmentMode())
                 .build();
     }
 }

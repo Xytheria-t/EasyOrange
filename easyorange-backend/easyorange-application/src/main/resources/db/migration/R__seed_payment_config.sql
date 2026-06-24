@@ -1,5 +1,5 @@
 -- ===================================================================
--- EasyOrange 校园二手交易平台 - 支付渠道种子数据
+-- EasyOrange AI 智能托管平台 - 支付渠道种子数据
 -- Description: Repeatable Migration - 支付渠道配置
 -- Type: DML（可重复执行）
 -- Database: MySQL 8.0

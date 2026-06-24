@@ -37,6 +37,7 @@ public class RabbitMQConfig {
     public static final String QUEUE_REPORT_NOTIFICATION = "eo.report.notification";
     public static final String QUEUE_MESSAGE_WEBSOCKET = "eo.message.websocket";
     public static final String QUEUE_PAYMENT_METRICS = "eo.payment.metrics";
+    public static final String QUEUE_OFFER_EVENTS = "eo.offer.events";
 
     private final RabbitMQProperties properties;
 
@@ -99,6 +100,11 @@ public class RabbitMQConfig {
         return createQueue(QUEUE_PAYMENT_METRICS);
     }
 
+    @Bean
+    public Queue offerEventsQueue() {
+        return createQueue(QUEUE_OFFER_EVENTS);
+    }
+
     // === DLQ Queues ===
 
     @Bean
@@ -146,6 +152,11 @@ public class RabbitMQConfig {
         return createDlq(QUEUE_PAYMENT_METRICS);
     }
 
+    @Bean
+    public Queue offerEventsDlq() {
+        return createDlq(QUEUE_OFFER_EVENTS);
+    }
+
     // === DLQ Bindings ===
 
     @Bean
@@ -191,6 +202,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding paymentMetricsDlqBinding() {
         return bindDlq(QUEUE_PAYMENT_METRICS);
+    }
+
+    @Bean
+    public Binding offerEventsDlqBinding() {
+        return bindDlq(QUEUE_OFFER_EVENTS);
     }
 
     // === Event Bindings (queue → exchange → routing keys) ===
@@ -267,6 +283,12 @@ public class RabbitMQConfig {
     @Bean
     public Binding paymentMetricsBinding(Queue paymentMetricsQueue, TopicExchange domainEventExchange) {
         return BindingBuilder.bind(paymentMetricsQueue).to(domainEventExchange).with("payment.#");
+    }
+
+    // Offer events: offer.accepted, offer.rejected, offer.countered
+    @Bean
+    public Binding offerEventsBinding(Queue offerEventsQueue, TopicExchange domainEventExchange) {
+        return BindingBuilder.bind(offerEventsQueue).to(domainEventExchange).with("offer.*");
     }
 
     // === Infrastructure Beans ===

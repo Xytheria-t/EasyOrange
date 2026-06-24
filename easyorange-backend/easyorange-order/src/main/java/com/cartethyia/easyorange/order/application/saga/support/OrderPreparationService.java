@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -68,7 +69,7 @@ public class OrderPreparationService {
                 BizRequire.requireTrue(snapshot.isOnline(), "商品已下架: " + item.productId());
                 BizRequire.requireTrue(snapshot.hasStock(), "商品库存不足: " + item.productId());
 
-                return new ItemPreparation(snapshot, item.quantity());
+                return new ItemPreparation(snapshot, item.quantity(), item.unitPriceOverride());
             })
             .toList();
     }
@@ -115,7 +116,9 @@ public class OrderPreparationService {
      * 构建单个订单项
      */
     private OrderItem buildOrderItem(ItemPreparation prep, Map<Long, ProductDetail> productDetailMap) {
-        Money unitPrice = Money.of(prep.snapshot().price());
+        Money unitPrice = prep.unitPriceOverride() != null
+                ? Money.of(prep.unitPriceOverride())
+                : Money.of(prep.snapshot().price());
         Money subtotal = unitPrice.multiply(prep.quantity());
 
         ProductDetail detail = productDetailMap.get(prep.snapshot().productId());
@@ -159,12 +162,14 @@ public class OrderPreparationService {
     /**
      * 订单项请求
      */
-    public record OrderItemRequest(Long productId, int quantity) {}
+    public record OrderItemRequest(Long productId, int quantity, BigDecimal unitPriceOverride) {
+        public OrderItemRequest(Long productId, int quantity) { this(productId, quantity, null); }
+    }
 
     /**
      * 商品准备结果
      */
-    public record ItemPreparation(ProductInventoryPort.ProductSnapshot snapshot, int quantity) {}
+    public record ItemPreparation(ProductInventoryPort.ProductSnapshot snapshot, int quantity, BigDecimal unitPriceOverride) {}
 
     /**
      * 准备结果

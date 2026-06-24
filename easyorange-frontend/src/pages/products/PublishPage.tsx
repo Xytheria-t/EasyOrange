@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Camera, Loader2, Sparkles, ImageIcon, Tag, FileText,
   DollarSign, MapPin, MessageCircle, Package, ChevronRight,
-  Check, AlertCircle, Upload, Trash2, GripVertical, Info
+  Check, AlertCircle, Upload, Trash2, GripVertical, Info, Brain
 } from 'lucide-react';
 import { useCreateProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
@@ -30,6 +30,8 @@ interface FormState {
   location: string;
   contactMethod: string;
   imageUrls: string[];
+  consignmentMode: number;  // 0=手动, 1=AI托管
+  floorPrice: string;
 }
 
 interface FormErrors {
@@ -38,6 +40,7 @@ interface FormErrors {
   categoryId?: string;
   conditionLevel?: string;
   imageUrls?: string;
+  floorPrice?: string;
 }
 
 const INITIAL_FORM: FormState = {
@@ -51,6 +54,8 @@ const INITIAL_FORM: FormState = {
   location: '',
   contactMethod: '',
   imageUrls: [],
+  consignmentMode: 0,
+  floorPrice: '',
 };
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -145,6 +150,14 @@ function PublishPage() {
     }
     if (form.imageUrls.length === 0) {
       newErrors.imageUrls = '请至少上传一张图片';
+    }
+    if (form.consignmentMode === 1) {
+      const fp = Number(form.floorPrice);
+      if (!form.floorPrice || isNaN(fp) || fp <= 0) {
+        newErrors.floorPrice = '请输入有效的底价';
+      } else if (fp > Number(form.price)) {
+        newErrors.floorPrice = '底价不能高于标价';
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -250,6 +263,8 @@ function PublishPage() {
       location: form.location.trim() || undefined,
       contactMethod: form.contactMethod.trim() || undefined,
       imageUrls: form.imageUrls,
+      consignmentMode: form.consignmentMode,
+      floorPrice: form.consignmentMode === 1 ? Number(form.floorPrice) : undefined,
     };
 
     try {
@@ -306,7 +321,7 @@ function PublishPage() {
               <span className="gradient-text">发布商品</span>
             </h1>
             <p className="page-subtitle-v2">
-              精心填写信息，让您的闲置物品找到新主人
+              填写信息，让 AI 帮你智能托管发布
             </p>
           </div>
 
@@ -799,6 +814,63 @@ function PublishPage() {
                     />
                     <span className="stock-unit">件</span>
                   </div>
+                </div>
+
+                {/* AI Consignment Mode Toggle */}
+                <div className="ai-consignment-section">
+                  <div className="ai-consignment-header">
+                    <div className="ai-consignment-header-left">
+                      <Brain size={18} />
+                      <span className="ai-consignment-title">AI 智能托管</span>
+                    </div>
+                    <label className="ai-toggle">
+                      <input
+                        type="checkbox"
+                        checked={form.consignmentMode === 1}
+                        onChange={(e) => {
+                          updateField('consignmentMode', e.target.checked ? 1 : 0);
+                          if (!e.target.checked) {
+                            updateField('floorPrice', '');
+                          }
+                        }}
+                      />
+                      <span className="ai-toggle-slider" />
+                    </label>
+                  </div>
+                  <p className="ai-consignment-desc">
+                    开启后，AI 将自动为您议价、阶梯降价，商品售出后自动成交
+                  </p>
+
+                  {form.consignmentMode === 1 && (
+                    <div className="ai-floor-price" style={{ marginTop: '1rem' }}>
+                      <div className="field-group-v2">
+                        <label className="field-label-v2" htmlFor="floorPrice">
+                          底价
+                          <span className="required-mark">*</span>
+                        </label>
+                        <div className={`input-wrapper-v2 price-input-wrapper ${errors.floorPrice ? 'has-error' : ''}`}>
+                          <span className="price-symbol-v2">¥</span>
+                          <input
+                            id="floorPrice"
+                            type="number"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0.01"
+                            value={form.floorPrice}
+                            onChange={e => updateField('floorPrice', e.target.value)}
+                            className="field-input-v2 price-input"
+                          />
+                        </div>
+                        {errors.floorPrice && (
+                          <div className="error-message-v2">
+                            <AlertCircle size={14} />
+                            <span>{errors.floorPrice}</span>
+                          </div>
+                        )}
+                        <p className="field-hint">底价是您能接受的最低价格，AI 议价和降价都不会低于此价格</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
