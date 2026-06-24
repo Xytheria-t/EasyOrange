@@ -155,15 +155,15 @@ function MyProductsPage() {
               <Package size={40} />
             </div>
           </div>
-          <h3 className="orders-empty-title">还没有发布商品</h3>
+          <h3 className="orders-empty-title">还没有提交资产</h3>
           <p className="orders-empty-desc">
-             开始发布你的第一件商品吧<br />让 AI 帮你定价、议价、成交
+             开始托管你的第一件资产吧<br />让 AI 帮你定价、议价、成交
           </p>
           <button
             onClick={() => navigate('/publish')}
             className="orders-empty-cta"
           >
-            发布商品
+            提交资产
             <ChevronRight size={16} />
           </button>
         </div>

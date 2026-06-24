@@ -35,7 +35,7 @@ export const routes: Record<RouteName, RouteConfig> = {
     },
     publish: {
         path: '/publish',
-        title: '发布商品',
+        title: '提交资产',
         requiresAuth: true
     },
     search: {

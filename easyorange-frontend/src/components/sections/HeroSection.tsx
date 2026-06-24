@@ -232,7 +232,7 @@ export default function HeroSection() {
           </h1>
 
           <p className="hero-subtitle animate-slide-up delay-1">
-            把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
+            设一个底价，AI 替你议价、改价、撮合——卖家全程不需要在线
           </p>
 
           <div className="hero-search animate-slide-up delay-2">
@@ -293,12 +293,12 @@ export default function HeroSection() {
             <div className="stat-divider"></div>
             <div className="stat-item">
               <span className="stat-value" data-count={String(stats.onlineProducts)} ref={(el) => { statRefs.current[1] = el }}>0</span>
-              <span className="stat-label">在售商品</span>
+              <span className="stat-label">在管资产</span>
             </div>
             <div className="stat-divider"></div>
             <div className="stat-item">
               <span className="stat-value" data-count={String(stats.completedOrders)} ref={(el) => { statRefs.current[2] = el }}>0</span>
-              <span className="stat-label">成功交易</span>
+              <span className="stat-label">AI 成交</span>
             </div>
           </div>
         </div>

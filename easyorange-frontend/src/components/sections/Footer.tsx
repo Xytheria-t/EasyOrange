@@ -23,7 +23,7 @@ export default function Footer() {
                 </div>
                 <span className="footer-brand-name">EasyOrange</span>
               </a>
-              <p className="footer-tagline">把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核</p>
+              <p className="footer-tagline">设一个底价，AI 替你议价、改价、撮合</p>
               <div className="footer-social-links">
                 <button type="button" className="social-link" data-platform="wechat" aria-label="微信">
                   <svg viewBox="0 0 24 24" fill="currentColor">
@@ -47,20 +47,20 @@ export default function Footer() {
             <div className="footer-mini-stats">
               <span className="mini-stat"><strong>5,280+</strong> 活跃用户</span>
               <span className="mini-stat-sep">·</span>
-              <span className="mini-stat"><strong>3,560+</strong> 在售商品</span>
+              <span className="mini-stat"><strong>3,560+</strong> 在管资产</span>
               <span className="mini-stat-sep">·</span>
-              <span className="mini-stat"><strong>2,180+</strong> 成功交易</span>
+              <span className="mini-stat"><strong>2,180+</strong> AI 成交</span>
             </div>
             <div className="footer-nav-compact">
               <div className="nav-compact-group">
                 <span className="nav-compact-heading">平台</span>
                 <a href="/products" className="nav-compact-link">
                   <span className="link-dot"></span>
-                  <span className="link-text">浏览商品</span>
+                  <span className="link-text">浏览资产</span>
                 </a>
                 <a href="/publish" className="nav-compact-link">
                   <span className="link-dot"></span>
-                  <span className="link-text">发布商品</span>
+                  <span className="link-text">提交资产</span>
                 </a>
               </div>
 
@@ -94,9 +94,9 @@ export default function Footer() {
           <div className="bottom-glow-line"></div>
           <p className="copyright-text">
             <span className="heart-icon">💛</span>
-            Made with care for campus life
+            Made with care for AI-driven asset stewardship
           </p>
-          <p className="copyright-info">© 2025-2026 EasyOrange AI 智能托管平台</p>
+          <p className="copyright-info">© 2025-2026 EasyOrange — AI 替卖家运营的 C2C 平台</p>
         </div>
       </div>
     </footer>

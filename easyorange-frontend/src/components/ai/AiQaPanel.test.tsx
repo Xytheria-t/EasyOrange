@@ -8,7 +8,7 @@ import type { QaHistoryItem } from '@/hooks/useAiQa';
 
 const mockProduct = {
   id: 1,
-  title: '二手iPhone 14',
+  title: 'AI托管 iPhone 14',
   description: '99新，使用一个月',
   categoryName: '手机',
   price: 4500,
@@ -104,7 +104,7 @@ describe('AiQaPanel', () => {
       const request: QaRequest = handleAsk.mock.calls[0][0];
       expect(request.question).toBe('有保修吗？');
       expect(request.productId).toBe(1);
-      expect(request.productName).toBe('二手iPhone 14');
+      expect(request.productName).toBe('AI托管 iPhone 14');
     });
 
     it('does not submit empty input', () => {

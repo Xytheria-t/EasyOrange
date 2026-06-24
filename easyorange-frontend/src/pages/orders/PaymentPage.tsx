@@ -9,7 +9,7 @@ import '@/styles/main.css';
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof CreditCard; desc: string }[] = [
   { value: 'WECHAT', label: '微信支付', icon: Smartphone, desc: '推荐使用' },
   { value: 'ALIPAY', label: '支付宝', icon: CreditCard, desc: '安全便捷' },
-  { value: 'CAMPUS_CARD', label: '校园卡', icon: Wallet, desc: 'AI 托管专属' },
+  { value: 'CAMPUS_CARD', label: '托管钱包', icon: Wallet, desc: 'AI 托管专属' },
 ];
 
 function PaymentPage() {

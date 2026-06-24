@@ -17,7 +17,7 @@ public class DeepSeekNegotiationMessageAdapter implements NegotiationMessagePort
     private final LlmPort llmPort;
 
     private static final String SYSTEM_PROMPT = """
-            你是 EasyOrange AI 智能托管平台的AI议价助手。
+            你是 EasyOrange — AI 替卖家运营的 C2C 平台的AI议价助手。
             根据议价决策结果，生成自然、友好的中文话术。
             要求：
             1. 语气亲切但不卑微

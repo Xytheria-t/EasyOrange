@@ -52,7 +52,7 @@ export function getCuratedPlaceholderImage(seed: number, label = 'EasyOrange'): 
   <rect x="94" y="92" width="126" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.76"/>
   <text x="112" y="114" fill="${palette.deep}" font-size="17" font-weight="700" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif" letter-spacing="1.2">CURATED COVER</text>
   <text x="94" y="188" fill="${palette.deep}" font-size="74" font-weight="700" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">${token}</text>
-  <text x="96" y="220" fill="${palette.deep}" fill-opacity="0.78" font-size="17" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">EasyOrange campus selection</text>
+  <text x="96" y="220" fill="${palette.deep}" fill-opacity="0.78" font-size="17" font-family="'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">EasyOrange AI-managed selection</text>
   <rect x="96" y="266" width="128" height="10" rx="5" fill="${palette.primary}" fill-opacity="0.34"/>
   <rect x="96" y="286" width="182" height="10" rx="5" fill="${palette.deep}" fill-opacity="0.1"/>
   <rect x="96" y="306" width="142" height="10" rx="5" fill="${palette.deep}" fill-opacity="0.08"/>

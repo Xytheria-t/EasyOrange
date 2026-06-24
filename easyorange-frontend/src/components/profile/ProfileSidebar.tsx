@@ -150,7 +150,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
         <div className="ps-actions">
           <button className="ps-btn-primary" onClick={() => navigate('/publish')}>
             <Package size={16} />
-            <span className="ps-btn-text">发布商品</span>
+            <span className="ps-btn-text">提交资产</span>
             <span className="ps-btn-hint">让 AI 帮你智能托管</span>
             <svg className="ps-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7" />

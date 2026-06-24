@@ -77,7 +77,7 @@ describe('CreditScoreCard', () => {
     renderWithProviders(<CreditScoreCard credit={mockExcellent} />);
     expect(screen.getByText('交易完成率')).toBeInTheDocument();
     expect(screen.getByText('96%')).toBeInTheDocument();
-    expect(screen.getByText('成功交易')).toBeInTheDocument();
+    expect(screen.getByText('AI 成交')).toBeInTheDocument();
     expect(screen.getByText('48')).toBeInTheDocument();
     expect(screen.getByText('平均评分')).toBeInTheDocument();
     expect(screen.getByText('4.8')).toBeInTheDocument();

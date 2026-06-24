@@ -315,10 +315,10 @@ function PublishPage() {
           <div className="publish-header-v2">
             <div className="header-badge">
               <Sparkles size={14} />
-              <span>发布您的宝贝</span>
+              <span>提交您的资产</span>
             </div>
             <h1 className="page-title-v2">
-              <span className="gradient-text">发布商品</span>
+              <span className="gradient-text">提交资产</span>
             </h1>
             <p className="page-subtitle-v2">
               填写信息，让 AI 帮你智能托管发布

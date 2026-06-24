@@ -107,7 +107,7 @@ describe('MyProductsPage', () => {
     expect(mockRefetch).toHaveBeenCalled();
   });
 
-  it('shows empty state with "还没有发布商品"', () => {
+  it('shows empty state with "还没有提交资产"', () => {
     mockUseMyProducts.mockReturnValue({
       data: { records: [], total: 0, pages: 1, current: 1, size: 20 },
       isLoading: false,
@@ -117,10 +117,10 @@ describe('MyProductsPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('还没有发布商品')).toBeInTheDocument();
+    expect(screen.getByText('还没有提交资产')).toBeInTheDocument();
     // Text is in a <p> with <br/>, so use regex match
     expect(
-      screen.getByText(/开始发布你的第一件商品吧/),
+      screen.getByText(/开始托管你的第一件资产吧/),
     ).toBeInTheDocument();
   });
 

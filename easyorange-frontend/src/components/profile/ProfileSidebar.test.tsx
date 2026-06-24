@@ -138,9 +138,9 @@ describe('ProfileSidebar', () => {
     expect(screen.getByText('42')).toBeInTheDocument();
   });
 
-  it('renders action buttons (发布商品, 我的发布, 购买记录, 我的信用, 退出登录)', () => {
+  it('renders action buttons (提交资产, 我的发布, 购买记录, 我的信用, 退出登录)', () => {
     render(<ProfileSidebar {...defaultProps} />);
-    expect(screen.getByText('发布商品')).toBeInTheDocument();
+    expect(screen.getByText('提交资产')).toBeInTheDocument();
     expect(screen.getByText('我的发布')).toBeInTheDocument();
     expect(screen.getByText('购买记录')).toBeInTheDocument();
     expect(screen.getByText('我的信用')).toBeInTheDocument();
@@ -149,7 +149,7 @@ describe('ProfileSidebar', () => {
 
   it('navigates to /publish on publish button click', () => {
     render(<ProfileSidebar {...defaultProps} />);
-    fireEvent.click(screen.getByText('发布商品'));
+    fireEvent.click(screen.getByText('提交资产'));
     expect(mockNavigate).toHaveBeenCalledWith('/publish');
   });
 

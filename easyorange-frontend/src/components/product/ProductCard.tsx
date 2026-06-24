@@ -255,8 +255,8 @@ export const ProductCard = memo(({
             {product.favorites != null && product.favorites > 0
               ? `${product.favorites}人收藏`
               : isHot
-              ? '热度精选'
-              : '校园在售'}
+              ? 'AI 热度精选'
+              : 'AI 托管中'}
           </span>
         </div>
 

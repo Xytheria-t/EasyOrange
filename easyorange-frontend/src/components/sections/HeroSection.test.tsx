@@ -102,7 +102,7 @@ describe('HeroSection', () => {
 
   it('renders the subtitle', () => {
     render(<HeroSection />);
-    expect(screen.getByText('把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核')).toBeInTheDocument();
+    expect(screen.getByText('设一个底价，AI 替你议价、改价、撮合——卖家全程不需要在线')).toBeInTheDocument();
   });
 
   it('renders search input', () => {
@@ -156,8 +156,8 @@ describe('HeroSection', () => {
   it('renders platform stats with data-count attributes', () => {
     render(<HeroSection />);
     expect(screen.getByText('活跃用户')).toBeInTheDocument();
-    expect(screen.getByText('在售商品')).toBeInTheDocument();
-    expect(screen.getByText('成功交易')).toBeInTheDocument();
+    expect(screen.getByText('在管资产')).toBeInTheDocument();
+    expect(screen.getByText('AI 成交')).toBeInTheDocument();
   });
 
   it('renders stat values with data attributes', () => {

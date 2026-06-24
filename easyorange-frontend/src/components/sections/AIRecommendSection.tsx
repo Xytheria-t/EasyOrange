@@ -47,7 +47,7 @@ const mockProducts: RecommendedProduct[] = [
     originalPrice: 2500,
     image: 'https://picsum.photos/seed/bike/400/400',
     category: '交通工具',
-    reason: '校园出行热门选择',
+    reason: '城市通勤热门选择',
     matchScore: 88,
     seller: { name: '毕业学长', avatar: 'https://picsum.photos/seed/user3/100/100', rating: 4.8 }
   },
@@ -80,7 +80,7 @@ const mockProducts: RecommendedProduct[] = [
     originalPrice: 399,
     image: 'https://picsum.photos/seed/badminton/400/400',
     category: '运动户外',
-    reason: '校园运动热门推荐',
+    reason: '城市运动热门推荐',
     matchScore: 82,
     seller: { name: '运动达人', avatar: 'https://picsum.photos/seed/user6/100/100', rating: 4.6 }
   }

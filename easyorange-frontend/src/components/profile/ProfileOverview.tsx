@@ -203,7 +203,7 @@ export function ProfileOverview({
             <div className="insight-content">
               <span className="insight-label">热门品类</span>
               <span className="insight-value">数码产品、教材资料</span>
-              <span className="insight-desc">校园需求量最大的品类</span>
+              <span className="insight-desc">平台需求最旺盛的托管品类</span>
             </div>
           </div>
         </div>

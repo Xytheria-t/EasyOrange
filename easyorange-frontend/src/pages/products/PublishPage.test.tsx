@@ -90,7 +90,7 @@ describe('PublishPage', () => {
   it('renders page title and subtitle', () => {
     renderPage();
 
-    expect(screen.getByText('发布商品')).toBeInTheDocument();
+    expect(screen.getByText('提交资产')).toBeInTheDocument();
     expect(
       screen.getByText('填写信息，让 AI 帮你智能托管发布'),
     ).toBeInTheDocument();

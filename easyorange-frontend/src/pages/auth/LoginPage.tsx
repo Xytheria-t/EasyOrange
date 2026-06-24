@@ -261,7 +261,7 @@ function LoginPage() {
               </svg>
             </div>
             <h2 className="auth-page-brand-title">EasyOrange</h2>
-            <p className="auth-page-brand-subtitle">AI 智能托管平台</p>
+            <p className="auth-page-brand-subtitle">AI 替卖家运营平台</p>
             <div className="auth-page-brand-features">
               <div className="auth-page-brand-feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -276,7 +276,7 @@ function LoginPage() {
                   <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                   <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
-                <span>AI 智能托管平台</span>
+                <span>AI 替卖家运营平台</span>
               </div>
               <div className="auth-page-brand-feature">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

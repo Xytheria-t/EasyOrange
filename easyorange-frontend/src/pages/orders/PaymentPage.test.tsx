@@ -109,7 +109,7 @@ describe('PaymentPage', () => {
     renderPage();
     expect(screen.getByText('微信支付')).toBeInTheDocument();
     expect(screen.getByText('支付宝')).toBeInTheDocument();
-    expect(screen.getByText('校园卡')).toBeInTheDocument();
+    expect(screen.getByText('托管钱包')).toBeInTheDocument();
     expect(screen.getByText('推荐使用')).toBeInTheDocument();
     expect(screen.getByText('安全便捷')).toBeInTheDocument();
     expect(screen.getByText('AI 托管专属')).toBeInTheDocument();

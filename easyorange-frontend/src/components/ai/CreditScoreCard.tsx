@@ -48,7 +48,7 @@ export function CreditScoreCard({ credit }: CreditScoreCardProps) {
           <span className="stat-value">{credit.tradeCompletionRate}%</span>
         </div>
         <div className="stat-item">
-          <span className="stat-label">成功交易</span>
+          <span className="stat-label">AI 成交</span>
           <span className="stat-value">{credit.completedTrades}</span>
         </div>
         <div className="stat-item">
