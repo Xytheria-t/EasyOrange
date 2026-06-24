@@ -166,9 +166,9 @@ public interface ProductCachePort {
 4. 缓存 Key 调整
 5. 测试
 
-## AI 托管寄售
+## AI 替卖家运营工作流
 
-商品模块实现了 AI 全自动托管寄售工作流，核心组件：
+商品模块实现了 AI 替卖家运营工作流（ConsignmentMode 枚举），核心组件：
 
 - **ConsignmentMode**: 寄售模式枚举（MANUAL/AI_MANAGED），存储在 `eo_product.consignment_mode` 字段
 - **OfferRuleEngine**: 议价规则引擎，基于 floorPrice 做决策（接受/还价/拒绝）
@@ -185,7 +185,7 @@ public interface ProductCachePort {
 
 `Product.create()` 同样校验：AI_MANAGED 必须设底价。
 
-### 常见开发任务：添加 AI 托管寄售新功能
+### 常见开发任务：添加 AI 替卖家运营新功能
 
 1. 规则引擎 `OfferRuleEngine` 添加新决策逻辑
 2. domain event 定义新事件类型

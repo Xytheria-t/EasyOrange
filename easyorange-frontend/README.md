@@ -1,4 +1,4 @@
-# EasyOrange AI 智能托管平台 Frontend
+# EasyOrange Frontend (AI 替卖家运营的 C2C 平台)
 
 > 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用（**2025 年 11 月启动**）
 
@@ -122,11 +122,11 @@ npm run preview
 
 | 页面 | 路由 | 功能 | 需登录 |
 |------|------|------|--------|
-| 首页 | `/` | 推荐商品、轮播图、平台统计 | 否 |
-| 商品列表 | `/products` | 商品浏览、分类筛选、排序 | 否 |
+| 首页 | `/` | 推荐资产、轮播图、平台统计 | 否 |
+| 资产列表 | `/products` | 资产浏览、分类筛选、排序 | 否 |
 | 商品详情 | `/products/:id` | 商品详情、评价、收藏 | 否 |
 | 搜索 | `/search` | 关键词搜索、筛选 | 否 |
-| 发布商品 | `/publish` | 商品发布表单 | 是 |
+| 提交资产 | `/publish` | 资产提交表单 | 是 |
 | 编辑商品 | `/products/:id/edit` | 编辑已发布商品 | 是 |
 | 个人中心 | `/profile` | 个人信息、密码修改 | 是 |
 | 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
@@ -188,13 +188,13 @@ npm run preview
 ### 开发环境 (`.env.development`)
 ```env
 VITE_API_BASE_URL=/api
-VITE_APP_TITLE=EasyOrange AI 智能托管平台 - 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
+VITE_APP_TITLE=EasyOrange — AI 替卖家运营的 C2C 平台
 ```
 
 ### 生产环境 (`.env.production`)
 ```env
 VITE_API_BASE_URL=https://api.easyorange.com
-VITE_APP_TITLE=EasyOrange AI 智能托管平台 - 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
+VITE_APP_TITLE=EasyOrange — AI 替卖家运营的 C2C 平台
 ```
 
 ## 开发规范
@@ -237,4 +237,4 @@ MIT License
 
 ---
 
-**EasyOrange** - 把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核
+**EasyOrange** — AI 替卖家运营的 C2C 平台

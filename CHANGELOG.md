@@ -4,14 +4,22 @@
 
 ## [unreleased]
 
-### 2026-06-24 — AI 全自动托管寄售 + 品牌重塑
+### 2026-06-24 — 知识库整理（neat-freak）
 
-- **feat(product)**: AI 全自动托管寄售功能全量上线 — 规则引擎议价 `OfferRuleEngine` + LLM 话术 `DeepSeekNegotiationMessageAdapter` + 阶梯降价 `ProductPriceAdjustTask` + 议价事件消费者 `OfferEventConsumer`
+- **docs**: 新建 `doc/集成/` 目录，含 `AI-替卖家运营.md`（4 决策点/议价规则/阶梯降价/WebSocket 协议）和 `API-速查.md`（全模块 REST+WebSocket 端点）
+- **docs**: AGENTS.md（315→261 行）— 详细机制迁出，改为"核心约定 + 深入文档指针"
+- **docs**: AGENTS.md 新增"集成文档"指针表
+- **docs**: README.md — 删除过期引用（`easyorange-shared/` `easyorange-miniprogram/` 这两个不存在的目录），更新项目结构图（含 `doc/集成/` + `PRODUCT_DIRECTION.md` + `codemap.md`）
+- **docs**: CLAUDE.md — 项目结构区加上"详细目录见 codemap/AGENTS"指针
+
+### 2026-06-24 — AI 替卖家运营 + 品牌重塑
+
+- **feat(product)**: AI 替卖家运营功能全量上线 — 规则引擎议价 `OfferRuleEngine` + LLM 话术 `DeepSeekNegotiationMessageAdapter` + 阶梯降价 `ProductPriceAdjustTask` + 议价事件消费者 `OfferEventConsumer`
 - **feat(websocket)**: 议价 WebSocket 协议扩展（MessageType 6-9: OFFER/OFFER_ACCEPTED/OFFER_REJECTED/COUNTER_OFFER）
 - **feat(frontend)**: 前端完整议价交互（AI 托管开关 + 出价弹窗 + 还价弹窗 + 阶梯降价指示条 + useOfferSocket 实时推送）
 - **feat(application)**: 跨模块编排适配器（AiOrderCreationAdapter + OfferProcessingAdapter）
 - **refactor(product)**: NegotiationMessagePort 从 ai 模块移至 product 模块解决循环依赖
-- **refactor(brand)**: 全平台品牌重塑 — "二手交易平台"→"EasyOrange AI 智能托管平台"（32 文件）
+- **refactor(brand)**: 全平台品牌重塑 — "二手交易平台"→"EasyOrange — AI 替卖家运营的 C2C 平台"（32 文件）
 - **test**: 后端新增 ~146 测试用例（总计 2,692），前端 945 测试用例全部通过
 
 ### 2026-06-23 — 错误码体系精简与一致性优化

@@ -1,6 +1,6 @@
 # EasyOrange 项目指南
 
-EasyOrange 是基于 Spring Boot 4 + React 的全栈 AI 智能托管平台，**2025 年 11 月启动开发**。
+EasyOrange 是基于 Spring Boot 4 + React 的全栈 **AI 替卖家运营** C2C 二手交易平台，**2025 年 11 月启动开发**。
 
 ## 技术栈
 
@@ -35,34 +35,23 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈 AI 智能托管平台，**2
 
 状态机: `DRAFT(0) → PENDING_REVIEW(4) → ONLINE(1)` / `REJECTED(5) → PENDING_REVIEW(4)` (循环)
 
-- 卖家发布商品自动进入待审核
+- 资产方提交资产自动进入待审核
 - 管理员审核通过→上架, 驳回→退回草稿(可重新提交)
 - 审核结果触发站内消息通知(AUDIT_SUCCESS/AUDIT_REJECTED)
 - 审核记录持久化至 `eo_product_audit_log` 表
 
-## AI 全自动托管寄售工作流
+## AI 替卖家运营工作流
 
-寄售模式: `MANUAL(0)` 手动管理 / `AI_MANAGED(1)` AI 托管
+托管模式: `MANUAL(0)` 卖家自营 / `AI_MANAGED(1)` AI 替卖家运营
 
-- 卖家发布商品时选择 AI 托管模式，设置底价（floorPrice）
-- **智能定价**: 复用 `AiPricingService` 给出建议价 + 底价
-- **AI 议价**: 买家出价 → `OfferRuleEngine` 规则引擎决策（接受/还价/拒绝）→ `DeepSeekNegotiationMessageAdapter` LLM 生成话术
-  - offer ≥ floorPrice → 接受，自动创建订单
-  - offer ≥ floorPrice × 0.9 → 还价 floorPrice × 0.95
-  - offer < floorPrice × 0.9 → 拒绝（已到底价阶梯且 offer ≥ floorPrice × 0.85 时最后一次还价）
-- **阶梯降价**: `ProductPriceAdjustTask` 每天凌晨 2 点执行
-  - Day 1-3: 持价 | Day 4-5: 降 5% | Day 6: 降 10% | Day 7+: 底价
-- **订单闭环**: AI 接受出价 → `OrderCreationPort` 创建订单 → 超时不付款 `OrderTimeoutTask` 自动取消 → 商品回池
+> **详细机制**（4 个 AI 决策点、议价规则引擎、阶梯降价、WebSocket 协议、C2C 直发边界）见
+> [doc/集成/AI-替卖家运营.md](doc/集成/AI-替卖家运营.md)。
 
-**议价 WebSocket 协议**:
-| 消息类型 | code | 说明 |
-|---------|------|------|
-| OFFER | 6 | 买家发起出价 |
-| OFFER_ACCEPTED | 7 | AI 接受出价 |
-| OFFER_REJECTED | 8 | AI 拒绝出价 |
-| COUNTER_OFFER | 9 | AI 发起还价 |
-
-**议价 API**: WebSocket `@MessageMapping("/offer.make")` → `OfferProcessingPort` → `OfferAppService`
+**核心约定**：
+- `AI_MANAGED` 模式必须设置 `floorPrice`，否则提交校验失败
+- 4 个 AI 决策点：**智能定价** / **AI 营销文案** / **AI 实时议价** / **AI 阶梯降价**
+- 物流走 C2C 直发，**平台不碰货、不囤货、不经手资金**
+- 议价 WebSocket 入口：`@MessageMapping("/offer.make")` → `OfferProcessingPort` → `OfferAppService`
 
 ## 举报处理工作流
 
@@ -74,32 +63,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈 AI 智能托管平台，**2
 - 处理完成后通过 `ReportProcessedEvent` → `ReportProcessedEventListener` 异步发送站内信通知举报人
 - 用户可查看自己的举报列表（分页）和详情（含处理结果）
 
-**用户侧 API**: `POST /api/reports/product/{id}`, `GET /api/reports/my`, `GET /api/reports/{id}`
-**管理端 API**: 
-| 功能 | 路由 | 说明 |
-|------|------|------|
-| 举报列表 | `GET /api/admin/reports` | 分页查询 |
-| 举报详情 | `GET /api/admin/reports/{id}` | 单条详情 |
-| 处理举报 | `PUT /api/admin/reports/{id}/handle` | 单条处理 |
-| 批量处理 | `PUT /api/admin/reports/batch-handle` | 批量操作 |
-| 处理历史 | `GET /api/admin/reports/{id}/history` | 操作记录 |
-| 统计数据 | `GET /api/admin/reports/stats` | 统计信息 |
-
-## AI 功能 API
-
-| 功能 | 路由 | 说明 |
-|------|------|------|
-| 智能定价 | `POST /api/ai/pricing` | 分析商品信息给出定价建议，参数：productName, description, categoryName, conditionLevel |
-| 拍照上架 | `POST /api/ai/auto-listing` | 上传图片自动生成商品信息（标题/描述/分类/价格） |
-| AI 审核 | `POST /api/ai/review` | AI 分析商品信息给出审核建议（通过/拒绝+风险标签） |
-| 语义搜索 | `GET /api/ai/semantic-search` | 基于语义向量搜索商品，参数：keyword, pageNum, pageSize |
-| 智能问答 | `POST /api/ai/qa` | 基于商品上下文回答买家问题 |
-| 智能文案 | `POST /api/ai/generate-copy` | 基于商品信息自动生成商品描述和标题（4种风格: standard/detailed/concise/emotional） |
-| 我的信用 | `GET /api/credit/my` | 查看当前用户信用评分 |
-| 信用详情 | `GET /api/credit/detail/{userId}` | 查看指定用户信用分+变更记录 |
-| 重新计算 | `POST /api/credit/recalculate` | 触发当前用户信用分重新计算 |
-| AI 审核(admin) | `GET /api/admin/products/{id}/ai-review` | 管理端获取 AI 审核建议 |
-| AI 议价 | WebSocket `/app/offer.make` | 买家出价，规则引擎决策+LLM话术，接受后自动创建订单 |
+> **完整 API 速查表**（用户侧 + 管理端 + 所有模块 + AI 功能）见 [doc/集成/API-速查.md](doc/集成/API-速查.md)。
 
 ## 项目结构
 
@@ -210,6 +174,15 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 | [架构-安全认证.md](doc/架构/架构-安全认证.md) | JWT 认证 |
 | [架构-数据库迁移.md](doc/架构/架构-数据库迁移.md) | Flyway 规范 |
 | [架构-部署演进.md](doc/架构/架构-部署演进.md) | 部署与演进 |
+
+## 集成文档
+
+业务专题与 API 速查见 `doc/集成/` 目录：
+
+| 文档 | 内容 |
+|------|------|
+| [AI-替卖家运营.md](doc/集成/AI-替卖家运营.md) | 4 个 AI 决策点 / 议价规则引擎 / 阶梯降价 / WebSocket 协议 / C2C 直发边界 |
+| [API-速查.md](doc/集成/API-速查.md) | 后端所有 REST + WebSocket 端点速查 |
 
 ## 环境变量
 

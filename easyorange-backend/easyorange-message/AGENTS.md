@@ -111,7 +111,7 @@ message/
 
 ### 议价协议 (WebSocket)
 
-通过 STOMP over WebSocket 支持 AI 托管寄售的实时议价：
+通过 STOMP over WebSocket 支持 AI 替卖家运营的实时议价：
 
 | 消息类型 | code | 说明 | 方向 |
 |---------|------|------|------|

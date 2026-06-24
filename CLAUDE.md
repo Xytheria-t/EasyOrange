@@ -5,9 +5,11 @@ tags:
 
 # EasyOrange 项目指南
 
-**EasyOrange** 是一个基于 Spring Boot + React 的全栈 AI 智能托管平台项目，**2025 年 11 月启动开发**。
+**EasyOrange** 是一个基于 Spring Boot + React 的全栈 **AI 替卖家运营** C2C 二手交易平台项目，**2025 年 11 月启动开发**。
 
 ## 项目结构
+
+> 详细目录说明见 [codemap.md](./codemap.md) 和 [AGENTS.md](./AGENTS.md) 的项目结构章节。
 
 ```
 easy-orange/
@@ -18,7 +20,7 @@ easy-orange/
 │   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
 │   │   └── domain/port/         # SmsCodePort, PasswordEncoderPort, LoginAttemptPort, AvatarFilePort (端口接口)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 全自动托管寄售)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 替卖家运营)
 │   │   ├── domain/port/         # OrderCreationPort, NegotiationMessagePort (议价跨模块 port)
 │   │   ├── domain/service/      # OfferRuleEngine (规则引擎议价决策)
 │   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
