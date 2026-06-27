@@ -25,10 +25,6 @@ public class ProductDO extends BaseDO {
     private String tags;
     private String searchText;
     private java.time.LocalDateTime priceUpdateTime;
-    private BigDecimal floorPrice;
-    private Integer consignmentMode;
-    private java.time.LocalDateTime listedAt;
-    private Integer currentPriceLevel;
 
     public ProductDO() {
     }
@@ -36,9 +32,7 @@ public class ProductDO extends BaseDO {
     public ProductDO(Long userId, Long categoryId, String name, BigDecimal price, BigDecimal originalPrice,
                    Integer stock, Integer version, Integer status, Integer viewCount,
                    Integer conditionLevel, String location, String contactMethod,
-                   String tags, String searchText, java.time.LocalDateTime priceUpdateTime,
-                   BigDecimal floorPrice, Integer consignmentMode,
-                   java.time.LocalDateTime listedAt, Integer currentPriceLevel) {
+                   String tags, String searchText, java.time.LocalDateTime priceUpdateTime) {
         this.userId = userId;
         this.categoryId = categoryId;
         this.name = name;
@@ -54,10 +48,6 @@ public class ProductDO extends BaseDO {
         this.tags = tags;
         this.searchText = searchText;
         this.priceUpdateTime = priceUpdateTime;
-        this.floorPrice = floorPrice;
-        this.consignmentMode = consignmentMode;
-        this.listedAt = listedAt;
-        this.currentPriceLevel = currentPriceLevel;
     }
 
     public Long getUserId() {
@@ -180,38 +170,6 @@ public class ProductDO extends BaseDO {
         this.priceUpdateTime = priceUpdateTime;
     }
 
-    public BigDecimal getFloorPrice() {
-        return floorPrice;
-    }
-
-    public void setFloorPrice(BigDecimal floorPrice) {
-        this.floorPrice = floorPrice;
-    }
-
-    public Integer getConsignmentMode() {
-        return consignmentMode;
-    }
-
-    public void setConsignmentMode(Integer consignmentMode) {
-        this.consignmentMode = consignmentMode;
-    }
-
-    public java.time.LocalDateTime getListedAt() {
-        return listedAt;
-    }
-
-    public void setListedAt(java.time.LocalDateTime listedAt) {
-        this.listedAt = listedAt;
-    }
-
-    public Integer getCurrentPriceLevel() {
-        return currentPriceLevel;
-    }
-
-    public void setCurrentPriceLevel(Integer currentPriceLevel) {
-        this.currentPriceLevel = currentPriceLevel;
-    }
-
     public static Builder builder() {
         return new Builder();
     }
@@ -233,10 +191,6 @@ public class ProductDO extends BaseDO {
         private String tags;
         private String searchText;
         private java.time.LocalDateTime priceUpdateTime;
-        private BigDecimal floorPrice;
-        private Integer consignmentMode;
-        private java.time.LocalDateTime listedAt;
-        private Integer currentPriceLevel;
 
         public Builder id(Long id) {
             this.id = id;
@@ -318,30 +272,9 @@ public class ProductDO extends BaseDO {
             return this;
         }
 
-        public Builder floorPrice(BigDecimal floorPrice) {
-            this.floorPrice = floorPrice;
-            return this;
-        }
-
-        public Builder consignmentMode(Integer consignmentMode) {
-            this.consignmentMode = consignmentMode;
-            return this;
-        }
-
-        public Builder listedAt(java.time.LocalDateTime listedAt) {
-            this.listedAt = listedAt;
-            return this;
-        }
-
-        public Builder currentPriceLevel(Integer currentPriceLevel) {
-            this.currentPriceLevel = currentPriceLevel;
-            return this;
-        }
-
         public ProductDO build() {
             ProductDO product = new ProductDO(userId, categoryId, name, price, originalPrice, stock,
-                    version, status, viewCount, conditionLevel, location, contactMethod, tags, searchText, priceUpdateTime,
-                    floorPrice, consignmentMode, listedAt, currentPriceLevel);
+                    version, status, viewCount, conditionLevel, location, contactMethod, tags, searchText, priceUpdateTime);
             if (id != null) {
                 product.setId(id);
             }

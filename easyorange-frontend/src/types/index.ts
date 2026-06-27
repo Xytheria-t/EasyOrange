@@ -16,7 +16,6 @@ export type {
     FacetBucket,
     ProductSearchResult,
     ProductSearchParams,
-    OfferResult,
 } from './product';
 
 export type {

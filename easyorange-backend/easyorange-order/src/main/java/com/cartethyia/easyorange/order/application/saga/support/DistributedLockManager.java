@@ -54,7 +54,7 @@ public class DistributedLockManager {
             Boolean locked = redisCache.tryLock(lockKey, lockValue, timeout, TimeUnit.SECONDS);
             if (!Boolean.TRUE.equals(locked)) {
                 releaseLocks(acquiredKeys, lockValue);
-                throw new SagaLockAcquisitionException("商品下单繁忙，请稍后重试");
+                throw new SagaLockAcquisitionException("资产下单繁忙，请稍后重试");
             }
             acquiredKeys.add(lockKey);
         }

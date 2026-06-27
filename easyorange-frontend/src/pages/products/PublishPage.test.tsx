@@ -116,7 +116,7 @@ describe('PublishPage', () => {
   it('renders form inputs', () => {
     renderPage();
 
-    expect(screen.getByPlaceholderText('给宝贝起个吸引人的名字')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('给资产起个吸引人的名字')).toBeInTheDocument();
     expect(screen.getAllByPlaceholderText('0.00').length).toBe(2);
     expect(screen.getByPlaceholderText('如：清水河校区南门')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('微信号 / QQ号')).toBeInTheDocument();
@@ -136,9 +136,9 @@ describe('PublishPage', () => {
     const publishBtn = screen.getByText('立即发布');
     await user.click(publishBtn);
 
-    expect(screen.getByText('请输入商品名称')).toBeInTheDocument();
+    expect(screen.getByText('请输入资产名称')).toBeInTheDocument();
     expect(screen.getByText('请输入有效价格')).toBeInTheDocument();
-    expect(screen.getByText('请选择商品类别')).toBeInTheDocument();
+    expect(screen.getByText('请选择资产类别')).toBeInTheDocument();
     expect(screen.getByText('请选择新旧程度')).toBeInTheDocument();
     expect(screen.getByText('请至少上传一张图片')).toBeInTheDocument();
   });
@@ -150,22 +150,22 @@ describe('PublishPage', () => {
     const publishBtn = screen.getByText('立即发布');
     await user.click(publishBtn);
 
-    expect(screen.getByText('请输入商品名称')).toBeInTheDocument();
+    expect(screen.getByText('请输入资产名称')).toBeInTheDocument();
 
-    const nameInput = screen.getByPlaceholderText('给宝贝起个吸引人的名字');
-    await user.type(nameInput, '测试商品');
+    const nameInput = screen.getByPlaceholderText('给资产起个吸引人的名字');
+    await user.type(nameInput, '测试资产');
 
     await waitFor(() => {
-      expect(screen.queryByText('请输入商品名称')).not.toBeInTheDocument();
+      expect(screen.queryByText('请输入资产名称')).not.toBeInTheDocument();
     });
   });
 
   it('shows character count for name field', async () => {
     renderPage();
 
-    const nameInput = screen.getByPlaceholderText('给宝贝起个吸引人的名字');
+    const nameInput = screen.getByPlaceholderText('给资产起个吸引人的名字');
     const user = userEvent.setup();
-    await user.type(nameInput, '测试商品');
+    await user.type(nameInput, '测试资产');
 
     expect(screen.getByText('4/200')).toBeInTheDocument();
   });
@@ -212,7 +212,7 @@ describe('PublishPage', () => {
     await uploadImage();
 
     const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText('给宝贝起个吸引人的名字'), '测试商品');
+    await user.type(screen.getByPlaceholderText('给资产起个吸引人的名字'), '测试资产');
     await user.type(screen.getAllByPlaceholderText('0.00')[0], '100');
     await user.selectOptions(screen.getByDisplayValue('选择类别'), '1');
     await user.selectOptions(screen.getByDisplayValue('选择成色'), '2');
@@ -238,7 +238,7 @@ describe('PublishPage', () => {
     await uploadImage();
 
     const user = userEvent.setup();
-    await user.type(screen.getByPlaceholderText('给宝贝起个吸引人的名字'), '测试商品');
+    await user.type(screen.getByPlaceholderText('给资产起个吸引人的名字'), '测试资产');
     await user.type(screen.getAllByPlaceholderText('0.00')[0], '100');
     await user.selectOptions(screen.getByDisplayValue('选择类别'), '1');
     await user.selectOptions(screen.getByDisplayValue('选择成色'), '2');

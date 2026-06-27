@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { Image } from '@/components/ui/Image'
 
 const HERO_PRODUCT = {
-  image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
+  image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop',
   tag: '热门',
-  name: 'MacBook Pro 14寸 M3芯片 深空灰',
-  price: '¥11,999',
-  originalPrice: '¥14,999'
+  name: 'Notion 团队版会员 剩余8个月',
+  price: '¥299',
+  originalPrice: '¥599'
 }
 
 const PLATFORM_STATS = {
@@ -216,23 +216,23 @@ export default function HeroSection() {
           <h1 className="hero-title animate-title-reveal">
             <span className="title-line title-line-1">
               <span className="title-char">让</span>
-              <span className="title-char">闲</span>
-              <span className="title-char">置</span>
-              <span className="title-char">流</span>
-              <span className="title-char">转</span>
+              <span className="title-char">每</span>
+              <span className="title-char">一</span>
+              <span className="title-char">份</span>
+              <span className="title-char">资</span>
+              <span className="title-char">产</span>
             </span>
             <span className="title-line title-line-2">
-              <span className="title-char">让</span>
-              <span className="title-char">价</span>
-              <span className="title-char">值</span>
-              <span className="title-char">延</span>
-              <span className="title-char">续</span>
+              <span className="title-char">运</span>
+              <span className="title-char">转</span>
+              <span className="title-char">不</span>
+              <span className="title-char">息</span>
             </span>
             <span className="title-glow"></span>
           </h1>
 
           <p className="hero-subtitle animate-slide-up delay-1">
-            设一个底价，AI 替你议价、改价、撮合——卖家全程不需要在线
+            砍业务,撑架构 · C2C 资产流转全栈架构 demo
           </p>
 
           <div className="hero-search animate-slide-up delay-2">
@@ -244,8 +244,8 @@ export default function HeroSection() {
               <input
                 type="text"
                 className="search-input"
-                placeholder="搜索你想要的商品..."
-                aria-label="搜索商品"
+                placeholder="搜索你想要的资产..."
+                aria-label="搜索资产"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
               />
@@ -260,8 +260,8 @@ export default function HeroSection() {
             <div className="search-tags">
               <span className="tag-label">热门搜索:</span>
               <button type="button" className="tag-btn" onClick={() => handleHotTagClick('教材')}>教材</button>
-              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('自行车')}>自行车</button>
-              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('电子产品')}>电子产品</button>
+              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('视频会员')}>视频会员</button>
+              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('设计素材')}>设计素材</button>
               <button type="button" className="tag-btn" onClick={() => handleHotTagClick('考研资料')}>考研资料</button>
             </div>
           </div>
@@ -275,8 +275,8 @@ export default function HeroSection() {
                 <div className="ai-icon-ring" />
               </div>
               <div className="ai-entry-content">
-                <span className="ai-entry-title">AI 智能助手</span>
-                <span className="ai-entry-desc">拍照估价 · 智能推荐 · 一键发布</span>
+                <span className="ai-entry-title">AI 资产管理</span>
+                <span className="ai-entry-desc">拍照估值 · 智能写描述 · 一键发布</span>
               </div>
               <div className="ai-entry-indicator">
                 <div className="ai-indicator-dot" />

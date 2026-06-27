@@ -38,9 +38,9 @@ function createMockOrder(overrides: Partial<Order> = {}): Order {
     id: '1',
     orderNo: 'ORD202605011001',
     buyerId: 'buyer1',
-    buyerUsername: '买家小明',
+    buyerUsername: '认领方小明',
     sellerId: 'seller1',
-    sellerUsername: '卖家张三',
+    sellerUsername: '资产方张三',
     items: [{
       itemId: 'item1',
       productId: 'prod1',
@@ -110,7 +110,7 @@ describe('OrdersPage', () => {
     mockUseMyOrders.mockReturnValue({ data: createMockPage([]), isLoading: false, isError: false });
     renderPage();
     expect(screen.getByText('暂无订单')).toBeInTheDocument();
-    expect(screen.getByText('探索好物')).toBeInTheDocument();
+    expect(screen.getByText('探索资产')).toBeInTheDocument();
   });
 
   it('renders order cards with correct content', async () => {
@@ -234,7 +234,7 @@ describe('OrdersPage', () => {
     mockUseMyOrders.mockReturnValue({ data: createMockPage([]), isLoading: false, isError: false });
     renderPage();
     const user = userEvent.setup();
-    await user.click(screen.getByText('探索好物'));
+    await user.click(screen.getByText('探索资产'));
     expect(mockNavigate).toHaveBeenCalledWith('/products');
   });
 
@@ -266,10 +266,10 @@ describe('OrdersPage', () => {
   });
 
   it('shows seller name in order card', () => {
-    const order = createMockOrder({ sellerUsername: '测试卖家' });
+    const order = createMockOrder({ sellerUsername: '测试资产方' });
     mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
     renderPage();
-    expect(screen.getByText('卖家：测试卖家')).toBeInTheDocument();
+    expect(screen.getByText('资产方：测试资产方')).toBeInTheDocument();
   });
 
   it('shows quantity in order card', () => {

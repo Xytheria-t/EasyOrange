@@ -36,10 +36,6 @@ public class ProductResponse {
     private String contactMethod;
     private List<String> images;
     private String mainImageUrl;
-    private BigDecimal floorPrice;
-    private Integer consignmentMode;
-    private LocalDateTime listedAt;
-    private Integer currentPriceLevel;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

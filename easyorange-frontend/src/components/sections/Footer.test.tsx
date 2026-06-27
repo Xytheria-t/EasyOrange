@@ -10,7 +10,7 @@ describe('Footer', () => {
 
   it('renders copyright text', () => {
     render(<Footer />);
-    expect(screen.getByText('© 2025-2026 EasyOrange — AI 替卖家运营的 C2C 平台')).toBeInTheDocument();
+    expect(screen.getByText('© 2025-2026 EasyOrange — 砍业务,撑架构')).toBeInTheDocument();
   });
 
   it('renders mini platform stats', () => {

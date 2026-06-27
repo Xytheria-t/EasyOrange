@@ -146,7 +146,7 @@ class OrderCommandHandlerTest {
         }
 
         @Test
-        @DisplayName("非买家尝试支付时抛出异常")
+        @DisplayName("非认领方尝试支付时抛出异常")
         void handle_payOrder_notOwner() {
             PayOrderCommand command = PayOrderCommand.builder()
                 .orderId(ORDER_ID)
@@ -220,7 +220,7 @@ class OrderCommandHandlerTest {
         }
 
         @Test
-        @DisplayName("非卖家尝试发货时抛出异常")
+        @DisplayName("非资产方尝试发货时抛出异常")
         void handle_shipOrder_notSeller() {
             ShipOrderCommand command = ShipOrderCommand.builder()
                 .orderId(ORDER_ID)

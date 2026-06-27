@@ -97,7 +97,7 @@ describe('SearchPage', () => {
 
   it('submits search keyword', async () => {
     const mockProducts: Product[] = [
-      { id: 'p1', title: '测试手机', price: 1999, images: [], status: 'ONLINE', condition: 1, createTime: '2026-05-10T10:00:00Z', views: 100, categoryName: '电子数码', location: '北京', sellerName: '卖家', description: 'desc', originalPrice: null, categoryId: 1, conditionLevel: 1, favorites: 0, sellerId: 's1', sellerAvatar: null, sellerRating: 0, updateTime: '2026-05-10T10:00:00Z' },
+      { id: 'p1', title: '测试手机', price: 1999, images: [], status: 'ONLINE', condition: 1, createTime: '2026-05-10T10:00:00Z', views: 100, categoryName: '电子数码', location: '北京', sellerName: '资产方', description: 'desc', originalPrice: null, categoryId: 1, conditionLevel: 1, favorites: 0, sellerId: 's1', sellerAvatar: null, sellerRating: 0, updateTime: '2026-05-10T10:00:00Z' },
     ];
     mockUseProductSearch.mockReturnValue({
       products: mockProducts,

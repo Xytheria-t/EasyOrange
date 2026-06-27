@@ -46,7 +46,7 @@ public class OrderCreationExecutor {
         // 准备订单项数据
         List<OrderPreparationService.OrderItemRequest> itemRequests = command.getItems().stream()
             .map(item -> new OrderPreparationService.OrderItemRequest(
-                    item.getProductId(), item.getQuantity(), command.getAgreedPrice()))
+                    item.getProductId(), item.getQuantity()))
             .toList();
 
         OrderPreparationService.PreparationResult preparation =
@@ -95,9 +95,9 @@ public class OrderCreationExecutor {
     }
 
     /**
-     * 清除卖家订单缓存
+     * 清除资产方订单缓存
      *
-     * @param sellerId 卖家 ID
+     * @param sellerId 资产方 ID
      */
     public void evictSellerCache(Long sellerId) {
         orderCachePort.evictSellerOrders(sellerId);

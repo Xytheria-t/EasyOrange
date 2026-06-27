@@ -51,7 +51,7 @@ function PaymentResultPage() {
 
         <p className="payment-result-desc">
           {isSuccess
-            ? '您的订单已支付成功，卖家将尽快为您发货'
+            ? '您的订单已支付成功，资产方将尽快为您发货'
             : isFailed
             ? '支付未成功，请重新尝试或选择其他支付方式'
             : '支付结果确认中，请稍后查看订单状态'}
@@ -72,12 +72,12 @@ function PaymentResultPage() {
               </div>
               <div className="ai-section-title">
                 <h3>智能推荐</h3>
-                <span>为你精选相似好物</span>
+                <span>为你精选相似资产</span>
               </div>
             </div>
             <div className="ai-section-hint">
               <Sparkles size={14} />
-              <span>AI正在为你寻找更多好物...</span>
+              <span>AI正在为你寻找更多资产...</span>
             </div>
           </div>
         )}

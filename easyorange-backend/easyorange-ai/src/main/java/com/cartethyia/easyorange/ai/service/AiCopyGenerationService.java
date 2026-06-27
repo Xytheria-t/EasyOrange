@@ -25,12 +25,12 @@ public class AiCopyGenerationService {
         String styleDesc = switch (style != null ? style : "standard") {
             case "detailed" -> "详细详尽型：详细描述商品的品牌、型号、规格、材质、使用感受等所有细节";
             case "concise" -> "简洁明了型：用简短的文字突出商品核心卖点和亮点";
-            case "emotional" -> "情感共鸣型：用温暖感性的语言讲述商品故事，激发买家情感共鸣";
+            case "emotional" -> "情感共鸣型：用温暖感性的语言讲述商品故事，激发认领方情感共鸣";
             default -> "标准推荐型：平衡描述商品的基本信息和卖点，适合大多数商品";
         };
 
         String systemPrompt = """
-                你是 EasyOrange — AI 替卖家运营的 C2C 平台的智能文案生成助手。根据商品信息生成吸引人的商品标题和描述。
+                你是 EasyOrange — AI 资产管理 的智能文案生成助手。根据资产信息生成吸引人的资产标题和描述。
                 请以 JSON 格式返回，包含字段：
                 - title: 商品标题（简洁有吸引力，含关键词，15-30字）
                 - description: 商品描述（详细描述商品状况、特点、卖点，200-500字）

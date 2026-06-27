@@ -148,8 +148,8 @@ export default function ProductsSection() {
       <div className="container">
         <div className={`section-header reveal ${isVisible ? 'revealed' : ''}`}>
           <span className="section-tag">精选推荐</span>
-          <h2 className="section-title">热门好物</h2>
-          <p className="section-desc">精心挑选的优质商品，总有一款适合你</p>
+          <h2 className="section-title">热门资产</h2>
+          <p className="section-desc">精心挑选的优质资产，总有一款适合你</p>
         </div>
 
         <div className={`products-filter reveal ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '100ms' }}>
@@ -223,14 +223,14 @@ export default function ProductsSection() {
             ))
           ) : (
             <div className="text-center py-12" style={{ gridColumn: '1 / -1' }}>
-              <p className="text-secondary">暂无商品</p>
+              <p className="text-secondary">暂无资产</p>
             </div>
           )}
         </div>
 
         <div className={`products-more reveal ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '400ms' }}>
           <a href="/products" className="btn btn-outline btn-lg">
-            <span>查看更多商品</span>
+            <span>查看更多资产</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />

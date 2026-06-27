@@ -78,13 +78,13 @@ class AiControllerTest {
             when(pricingService.suggestPrice(anyString(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
-            var request = new PricingRequest("二手 iPhone 14", "99新", "手机数码", 2, new BigDecimal("6999"));
+            var request = new PricingRequest("在管 iPhone 14", "99新", "手机数码", 2, new BigDecimal("6999"));
             Result<PricingSuggestion> result = controller.suggestPrice(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data()).isEqualTo(expected);
             assertThat(result.data().suggestedPrice()).isEqualByComparingTo(new BigDecimal("4500"));
-            verify(pricingService).suggestPrice(eq("二手 iPhone 14"), eq("99新"),
+            verify(pricingService).suggestPrice(eq("在管 iPhone 14"), eq("99新"),
                     eq("手机数码"), eq(2), eq(new BigDecimal("6999")));
         }
 
@@ -106,7 +106,7 @@ class AiControllerTest {
         @DisplayName("图片分析 — 返回 AutoListingResult")
         void autoListing_success() {
             var expected = new AutoListingResult(
-                    "二手 iPhone 14", "99新", new BigDecimal("4500"),
+                    "在管 iPhone 14", "99新", new BigDecimal("4500"),
                     "手机数码", 1, 2, "广州",
                     List.of("手机", "数码"), List.of("正面照片", "背面照片")
             );
@@ -117,7 +117,7 @@ class AiControllerTest {
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data()).isEqualTo(expected);
-            assertThat(result.data().title()).isEqualTo("二手 iPhone 14");
+            assertThat(result.data().title()).isEqualTo("在管 iPhone 14");
             verify(autoListingService).analyzeImages(imageUrls);
         }
 

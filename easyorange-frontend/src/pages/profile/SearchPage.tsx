@@ -417,7 +417,7 @@ function SearchPage() {
                                 <div className="search-section-icon-compact">
                                     <Flame size={14} />
                                 </div>
-                                <h3 className="search-section-title-compact">发现好物</h3>
+                                <h3 className="search-section-title-compact">发现资产</h3>
                             </div>
                             <div className="search-trending-cards">
                                 {TRENDING_TOPICS.map((topic) => (
@@ -458,7 +458,7 @@ function SearchPage() {
                                     <ul className="search-tips-list">
                                         <li>输入关键词即可搜索商品标题和描述</li>
                                         <li>使用空格分隔多个关键词进行精确搜索</li>
-                                        <li>浏览热门商品发现更多好物</li>
+                                        <li>浏览热门商品发现更多资产</li>
                                     </ul>
                                 </div>
                             </div>

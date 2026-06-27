@@ -23,12 +23,12 @@ public class OrderQuery {
     private Long id;
 
     /**
-     * 买家ID
+     * 认领方ID
      */
     private Long buyerId;
 
     /**
-     * 卖家ID
+     * 资产方ID
      */
     private Long sellerId;
 

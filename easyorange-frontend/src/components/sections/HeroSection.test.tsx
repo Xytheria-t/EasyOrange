@@ -95,19 +95,22 @@ describe('HeroSection', () => {
   it('renders the main title', () => {
     render(<HeroSection />);
     const rangChars = screen.getAllByText('让');
-    expect(rangChars.length).toBe(2);
-    expect(screen.getByText('闲')).toBeInTheDocument();
-    expect(screen.getByText('置')).toBeInTheDocument();
+    expect(rangChars.length).toBe(1);
+    expect(screen.getByText('每')).toBeInTheDocument();
+    expect(screen.getByText('一')).toBeInTheDocument();
+    expect(screen.getByText('份')).toBeInTheDocument();
+    expect(screen.getByText('资')).toBeInTheDocument();
+    expect(screen.getByText('产')).toBeInTheDocument();
   });
 
   it('renders the subtitle', () => {
     render(<HeroSection />);
-    expect(screen.getByText('设一个底价，AI 替你议价、改价、撮合——卖家全程不需要在线')).toBeInTheDocument();
+    expect(screen.getByText('砍业务,撑架构 · C2C 资产流转全栈架构 demo')).toBeInTheDocument();
   });
 
   it('renders search input', () => {
     render(<HeroSection />);
-    const searchInput = screen.getByPlaceholderText('搜索你想要的商品...');
+    const searchInput = screen.getByPlaceholderText('搜索你想要的资产...');
     expect(searchInput).toBeInTheDocument();
   });
 
@@ -120,9 +123,9 @@ describe('HeroSection', () => {
     render(<HeroSection />);
     expect(screen.getByText('热门搜索:')).toBeInTheDocument();
     expect(screen.getByText('教材')).toBeInTheDocument();
-    expect(screen.getByText('自行车')).toBeInTheDocument();
-    const electronicTags = screen.getAllByText('电子产品');
-    expect(electronicTags.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('视频会员')).toBeInTheDocument();
+    const designTags = screen.getAllByText('设计素材');
+    expect(designTags.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('考研资料')).toBeInTheDocument();
   });
 
@@ -134,7 +137,7 @@ describe('HeroSection', () => {
 
   it('navigates to search on form submit', () => {
     render(<HeroSection />);
-    const input = screen.getByPlaceholderText('搜索你想要的商品...');
+    const input = screen.getByPlaceholderText('搜索你想要的资产...');
     fireEvent.change(input, { target: { value: 'macbook' } });
     fireEvent.submit(screen.getByRole('button', { name: '搜索' }).closest('form')!);
     expect(mockNavigate).toHaveBeenCalledWith('/search?keyword=macbook');
@@ -149,8 +152,8 @@ describe('HeroSection', () => {
 
   it('renders AI entry button', () => {
     render(<HeroSection />);
-    expect(screen.getByText('AI 智能助手')).toBeInTheDocument();
-    expect(screen.getByText('拍照估价 · 智能推荐 · 一键发布')).toBeInTheDocument();
+    expect(screen.getByText('AI 资产管理')).toBeInTheDocument();
+    expect(screen.getByText('拍照估值 · 智能写描述 · 一键发布')).toBeInTheDocument();
   });
 
   it('renders platform stats with data-count attributes', () => {
@@ -176,8 +179,8 @@ describe('HeroSection', () => {
 
   it('renders product preview with image', () => {
     render(<HeroSection />);
-    expect(screen.getByText('MacBook Pro 14寸 M3芯片 深空灰')).toBeInTheDocument();
-    expect(screen.getByText('¥11,999')).toBeInTheDocument();
+    expect(screen.getByText('Notion 团队版会员 剩余8个月')).toBeInTheDocument();
+    expect(screen.getByText('¥299')).toBeInTheDocument();
   });
 
   it('creates IntersectionObserver for counter animation', () => {

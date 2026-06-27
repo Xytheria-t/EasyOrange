@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Camera, Loader2, Sparkles, ImageIcon, Tag, FileText,
   DollarSign, MapPin, MessageCircle, Package, ChevronRight,
-  Check, AlertCircle, Upload, Trash2, GripVertical, Info, Brain
+  Check, AlertCircle, Upload, Trash2, GripVertical, Info
 } from 'lucide-react';
 import { useCreateProduct, useCategories } from '@/hooks';
 import { uploadFile } from '@/api/uploadApi';
@@ -30,8 +30,6 @@ interface FormState {
   location: string;
   contactMethod: string;
   imageUrls: string[];
-  consignmentMode: number;  // 0=手动, 1=AI托管
-  floorPrice: string;
 }
 
 interface FormErrors {
@@ -40,7 +38,6 @@ interface FormErrors {
   categoryId?: string;
   conditionLevel?: string;
   imageUrls?: string;
-  floorPrice?: string;
 }
 
 const INITIAL_FORM: FormState = {
@@ -54,8 +51,6 @@ const INITIAL_FORM: FormState = {
   location: '',
   contactMethod: '',
   imageUrls: [],
-  consignmentMode: 0,
-  floorPrice: '',
 };
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -137,27 +132,19 @@ function PublishPage() {
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
     if (!form.name.trim()) {
-      newErrors.name = '请输入商品名称';
+      newErrors.name = '请输入资产名称';
     }
     if (!form.price || Number(form.price) <= 0 || isNaN(Number(form.price))) {
       newErrors.price = '请输入有效价格';
     }
     if (!form.categoryId || Number(form.categoryId) <= 0) {
-      newErrors.categoryId = '请选择商品类别';
+      newErrors.categoryId = '请选择资产类别';
     }
     if (!form.conditionLevel || Number(form.conditionLevel) <= 0) {
       newErrors.conditionLevel = '请选择新旧程度';
     }
     if (form.imageUrls.length === 0) {
       newErrors.imageUrls = '请至少上传一张图片';
-    }
-    if (form.consignmentMode === 1) {
-      const fp = Number(form.floorPrice);
-      if (!form.floorPrice || isNaN(fp) || fp <= 0) {
-        newErrors.floorPrice = '请输入有效的底价';
-      } else if (fp > Number(form.price)) {
-        newErrors.floorPrice = '底价不能高于标价';
-      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -263,8 +250,6 @@ function PublishPage() {
       location: form.location.trim() || undefined,
       contactMethod: form.contactMethod.trim() || undefined,
       imageUrls: form.imageUrls,
-      consignmentMode: form.consignmentMode,
-      floorPrice: form.consignmentMode === 1 ? Number(form.floorPrice) : undefined,
     };
 
     try {
@@ -290,7 +275,7 @@ function PublishPage() {
   ));
 
   const sections = [
-    { id: 'images', label: '商品图片', icon: ImageIcon },
+    { id: 'images', label: '资产图片', icon: ImageIcon },
     { id: 'basic', label: '基本信息', icon: Tag },
     { id: 'detail', label: '详细信息', icon: FileText },
     { id: 'price', label: '价格库存', icon: DollarSign },
@@ -374,7 +359,7 @@ function PublishPage() {
                   <ImageIcon size={20} />
                 </div>
                 <div className="section-title-group">
-                  <h2 className="section-title-v2">商品图片</h2>
+                  <h2 className="section-title-v2">资产图片</h2>
                   <span className="section-hint-v2">最多9张，首张为封面</span>
                 </div>
                 <span className="required-badge">必填</span>
@@ -426,7 +411,7 @@ function PublishPage() {
                         onDrop={(e) => handleDrop(e, index)}
                         onDragEnd={handleDragEnd}
                       >
-                        <img src={url} alt={`商品图片 ${index + 1}`} width="120" height="120" />
+                        <img src={url} alt={`资产图片 ${index + 1}`} width="120" height="120" />
                         {index === 0 && (
                           <div className="cover-badge-v2">
                             <span>封面</span>
@@ -490,14 +475,14 @@ function PublishPage() {
                 </div>
                 <div className="section-title-group">
                   <h2 className="section-title-v2">基本信息</h2>
-                  <span className="section-hint-v2">填写商品的核心信息</span>
+                  <span className="section-hint-v2">填写资产的核心信息</span>
                 </div>
               </div>
 
               <div className="form-fields-v2">
                 <div className="field-group-v2">
                   <label className="field-label-v2" htmlFor="name">
-                    商品名称
+                    资产名称
                     <span className="required-mark">*</span>
                   </label>
                   <div className={`input-wrapper-v2 ${errors.name ? 'has-error' : ''}`}>
@@ -505,7 +490,7 @@ function PublishPage() {
                       id="name"
                       type="text"
                       name="name"
-                      placeholder="给宝贝起个吸引人的名字"
+                      placeholder="给资产起个吸引人的名字"
                       value={form.name}
                       onChange={e => updateField('name', e.target.value)}
                       maxLength={200}
@@ -524,7 +509,7 @@ function PublishPage() {
                 <div className="field-row-v2">
                   <div className="field-group-v2">
                     <label className="field-label-v2" htmlFor="categoryId">
-                      商品类别
+                      资产类别
                       <span className="required-mark">*</span>
                     </label>
                     <div className={`select-wrapper-v2 ${errors.categoryId ? 'has-error' : ''}`}>
@@ -604,18 +589,18 @@ function PublishPage() {
                 </div>
                 <div className="section-title-group">
                   <h2 className="section-title-v2">详细信息</h2>
-                  <span className="section-hint-v2">详细描述能提高成交率</span>
+                  <span className="section-hint-v2">详细描述能提高流转率</span>
                 </div>
               </div>
 
               <div className="form-fields-v2">
                 <div className="field-group-v2">
-                  <label className="field-label-v2" htmlFor="description">商品描述</label>
+                  <label className="field-label-v2" htmlFor="description">资产描述</label>
                   <div className="textarea-wrapper-v2">
                     <textarea
                       id="description"
                       rows={5}
-                      placeholder="详细描述商品的品牌、型号、规格、使用情况等信息，让买家更了解您的宝贝..."
+                      placeholder="详细描述资产的品牌、型号、规格、使用情况等信息，让认领方更了解您的资产..."
                       value={form.description}
                       onChange={e => updateField('description', e.target.value)}
                       maxLength={2000}
@@ -694,7 +679,7 @@ function PublishPage() {
                 </div>
                 <div className="section-title-group">
                   <h2 className="section-title-v2">价格库存</h2>
-                  <span className="section-hint-v2">合理定价更容易成交</span>
+                  <span className="section-hint-v2">合理定价更容易流转</span>
                 </div>
               </div>
 
@@ -815,70 +800,13 @@ function PublishPage() {
                     <span className="stock-unit">件</span>
                   </div>
                 </div>
-
-                {/* AI Consignment Mode Toggle */}
-                <div className="ai-consignment-section">
-                  <div className="ai-consignment-header">
-                    <div className="ai-consignment-header-left">
-                      <Brain size={18} />
-                      <span className="ai-consignment-title">AI 智能托管</span>
-                    </div>
-                    <label className="ai-toggle">
-                      <input
-                        type="checkbox"
-                        checked={form.consignmentMode === 1}
-                        onChange={(e) => {
-                          updateField('consignmentMode', e.target.checked ? 1 : 0);
-                          if (!e.target.checked) {
-                            updateField('floorPrice', '');
-                          }
-                        }}
-                      />
-                      <span className="ai-toggle-slider" />
-                    </label>
-                  </div>
-                  <p className="ai-consignment-desc">
-                    开启后，AI 将自动为您议价、阶梯降价，商品售出后自动成交
-                  </p>
-
-                  {form.consignmentMode === 1 && (
-                    <div className="ai-floor-price" style={{ marginTop: '1rem' }}>
-                      <div className="field-group-v2">
-                        <label className="field-label-v2" htmlFor="floorPrice">
-                          底价
-                          <span className="required-mark">*</span>
-                        </label>
-                        <div className={`input-wrapper-v2 price-input-wrapper ${errors.floorPrice ? 'has-error' : ''}`}>
-                          <span className="price-symbol-v2">¥</span>
-                          <input
-                            id="floorPrice"
-                            type="number"
-                            placeholder="0.00"
-                            step="0.01"
-                            min="0.01"
-                            value={form.floorPrice}
-                            onChange={e => updateField('floorPrice', e.target.value)}
-                            className="field-input-v2 price-input"
-                          />
-                        </div>
-                        {errors.floorPrice && (
-                          <div className="error-message-v2">
-                            <AlertCircle size={14} />
-                            <span>{errors.floorPrice}</span>
-                          </div>
-                        )}
-                        <p className="field-hint">底价是您能接受的最低价格，AI 议价和降价都不会低于此价格</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
               </div>
             </section>
 
             {/* Info Banner */}
             <div className="info-banner-v2">
               <Info size={18} />
-              <p>发布前请确保商品信息真实有效，定价合理。禁止发布违规商品。</p>
+              <p>发布前请确保资产信息真实有效，定价合理。禁止发布违规资产。</p>
             </div>
 
             {/* Error Message */}

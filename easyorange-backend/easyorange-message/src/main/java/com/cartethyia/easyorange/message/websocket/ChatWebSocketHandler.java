@@ -3,11 +3,7 @@ package com.cartethyia.easyorange.message.websocket;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
-import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
-import com.cartethyia.easyorange.message.domain.port.OfferProcessingPort;
 import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
-import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
-import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.OfferCommand;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +26,6 @@ public class ChatWebSocketHandler {
     private final MessageCommandHandler messageCommandHandler;
     private final TypingIndicatorService typingService;
     private final RateLimiterService rateLimiterService;
-    private final WebSocketNotifier webSocketNotifier;
-    private final OfferProcessingPort offerProcessingPort;
 
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload WsMessage payload, Principal principal) {
@@ -81,27 +75,6 @@ public class ChatWebSocketHandler {
         );
 
         log.debug("action=typing_indicator conversationId={} userId={}", payload.getConversationId(), userId);
-    }
-
-    @MessageMapping("/offer.make")
-    public void handleOffer(@Payload OfferCommand command, Principal principal) {
-        Long buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        log.info("action=offer_made buyerId={} productId={} offerPrice={}",
-                buyerId, command.getProductId(), command.getOfferPrice());
-
-        OfferProcessingPort.OfferResult result = offerProcessingPort.processOffer(
-                buyerId, command.getProductId(), command.getOfferPrice());
-
-        // 推送议价结果给买家
-        switch (result.decisionType()) {
-            case "ACCEPT" -> webSocketNotifier.notifyOfferAccepted(
-                    buyerId, command.getProductId(), command.getOfferPrice());
-            case "REJECT" -> webSocketNotifier.notifyOfferRejected(
-                    buyerId, command.getProductId(), command.getOfferPrice());
-            case "COUNTER" -> webSocketNotifier.notifyCounterOffer(
-                    buyerId, command.getProductId(), result.counterPrice());
-            default -> log.warn("action=unknown_offer_decision_type decisionType={}", result.decisionType());
-        }
     }
 
     public void broadcastRecallEvent(String conversationId, Long messageId, Long operatorId) {

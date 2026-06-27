@@ -137,7 +137,7 @@ export default function ProductManagePage() {
     },
     {
       key: 'sellerName',
-      title: '卖家',
+      title: '资产方',
       render: (value) => (
         <span style={{ color: '#6B6460', fontSize: '0.85rem' }}>{value as string}</span>
       ),

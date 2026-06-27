@@ -4,7 +4,7 @@ import jakarta.annotation.Nullable;
 import java.util.Arrays;
 
 /**
- * 商品审核动作枚举。
+ * 资产审核动作枚举。
  * <p>
  * 替代审核流程中的魔法数（1=通过, 2=拒绝, 3=重提交）。
  */

@@ -3,9 +3,13 @@ tags:
   - always-on
 ---
 
-# EasyOrange 项目指南
+# EasyOrange — 砍业务,撑架构
 
-**EasyOrange** 是一个基于 Spring Boot + React 的全栈 **AI 替卖家运营** C2C 二手交易平台项目，**2025 年 11 月启动开发**。
+**EasyOrange** 是一个面向 AI 工程实践的 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 全栈架构 demo,**2025 年 11 月启动开发**。
+
+> **副标:砍业务,撑架构。** 业务做减法,架构做加法。
+
+> 选 C2C 资产流转作为业务容器，在真实场景中完整落地工业级架构。业务是容器，架构才是主角。
 
 ## 项目结构
 
@@ -20,9 +24,7 @@ easy-orange/
 │   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
 │   │   └── domain/port/         # SmsCodePort, PasswordEncoderPort, LoginAttemptPort, AvatarFilePort (端口接口)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 替卖家运营)
-│   │   ├── domain/port/         # OrderCreationPort, NegotiationMessagePort (议价跨模块 port)
-│   │   ├── domain/service/      # OfferRuleEngine (规则引擎议价决策)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 资产管理)
 │   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
@@ -30,8 +32,7 @@ easy-orange/
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   │   └── adapter/inbound/web/assembler/ # FavoriteAssembler (DTO 转换)
-│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision + 议价话术生成)
-│   │   └── adapter/outbound/    # DeepSeekNegotiationMessageAdapter (LLM 话术)
+│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision)
 │   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 ├── easyorange-frontend/         # React 前端
@@ -130,8 +131,8 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **AdminTable render 函数签名**: 列定义的 `render` 回调签名为 `(value, record)` — 第一个参数是单元格值（`getValue(record, key)` 的结果），第二个参数才是完整行记录。常见错误：只接收第一个参数 `(record) => ...` 导致实际拿到的是 `undefined`（当列 key 在数据中不存在时），点击事件无法获取行数据
 - **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
 - **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
-- **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则用户端 Header/导航栏会在管理页面显示
-- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`）。前端（用户端和管理端）TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失
+- **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则 C 端 Header/导航栏会在管理页面显示
+- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`）。前端（C 端和管理端）TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失
 - **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
 - **管理员角色判断**: 判断用户是否为管理员必须使用 `ADMIN_USER_TYPE` 常量（位于 `src/constants/app.ts`），禁止硬编码 `'00'`。使用处包括 `AdminMenuEntry`、`useAdminGuard` 等
 - **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能
@@ -158,8 +159,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
 - **RabbitMQ 路由键规范**: 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。`BaseDomainEvent.eventType()` 自动从类名去除 `Event` 后缀，`RoutingKeyResolver` 再将 camelCase 转为 dot.case。新增领域事件只需创建事件类，路由键自动生效
 - **RabbitMQ 消费者模式**: 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），禁止在同一个队列上使用多个方法级 `@RabbitListener`（会导致轮询竞争）。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
-- **AI 议价模块接线规则**: NegotiationMessagePort（议价话术生成 port）定义在 product 模块（消费方定义），ai 模块的 DeepSeekNegotiationMessageAdapter 实现它（ai 依赖 product，无循环依赖）。OfferProcessingPort（WebSocket 调用 port）定义在 message 模块，application 模块的 OfferProcessingAdapter 实现并委派给 OfferAppService。OrderCreationPort（订单创建 port）定义在 product 模块，application 模块的 AiOrderCreationAdapter 实现并委托给 order 模块的 OrderCommandHandler
-- **阶梯降价规则**: ProductPriceAdjustTask 每天凌晨 2 点执行，Day 1-3 持价 → Day 4-5 降 5% → Day 6 降 10% → Day 7+ 底价（currentPriceLevel 递增记录阶梯）
+- **AI 资产管理边界**: 平台不参与议价 / 不自动调价 / 不持有底价。资产方按固定价格上架资产，平台 AI 仅在两端做辅助：资产方侧（智能估值建议 / AI 营销文案 / AI 信用画像），认领方侧（AI 智能找货 / AI 物品评估 / AI 信用画像）。**业务定位说明**：AI 能力清单是项目展示的一部分（演示 LLM/Vision 的端口抽象 + 多级缓存 + 限流降级），不是商业模式护城河。`OfferRuleEngine` / `OfferAppService` / `ProductPriceAdjustTask` / `NegotiationMessagePort` / `OrderCreationPort`（AI 自动成单 port）已删除
 - **RabbitMQ-only 模式**: 领域事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange。所有消费者的 `@ConditionalOnProperty(matchIfMissing=true)` 仅用于确保无 RabbitMQ 环境（开发/测试）下启动不报错，EventBus 回退模式已移除
 - **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)

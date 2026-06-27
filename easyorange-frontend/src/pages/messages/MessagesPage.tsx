@@ -30,7 +30,7 @@ function MessagesPage() {
             </div>
             <div className="messages-topbar-title">
               <h1>消息中心</h1>
-              <p>与卖家实时沟通，快速达成交易</p>
+              <p>与资产方实时沟通，快速达成交易</p>
             </div>
           </div>
         </div>
@@ -97,7 +97,7 @@ function MessagesPage() {
           </div>
           <div className="messages-topbar-title">
             <h1>消息中心</h1>
-            <p>与卖家实时沟通，快速达成交易</p>
+            <p>与资产方实时沟通，快速达成交易</p>
           </div>
         </div>
       </div>
@@ -188,7 +188,7 @@ function MessagesPage() {
                     </div>
                   </div>
                   <h3>暂无新消息</h3>
-                  <p>当您收到卖家回复或系统通知时，会在这里显示</p>
+                  <p>当您收到资产方回复或系统通知时，会在这里显示</p>
                 </div>
               )}
             </div>

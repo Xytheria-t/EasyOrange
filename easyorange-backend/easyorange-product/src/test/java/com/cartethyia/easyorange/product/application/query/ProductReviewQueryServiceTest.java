@@ -66,7 +66,7 @@ class ProductReviewQueryServiceTest {
         page.setTotal(1);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
         when(sellerInfoPort.getSellerInfos(anySet())).thenReturn(Map.of(
-                1L, new SellerInfo(1L, "买家", null, "http://avatar.jpg")
+                1L, new SellerInfo(1L, "认领方", null, "http://avatar.jpg")
         ));
 
         PageResult<ProductReviewVO> result = queryService.listReviews(10L, 1, 10);
@@ -80,7 +80,7 @@ class ProductReviewQueryServiceTest {
         assertThat(vo.getRating()).isEqualTo(5);
         assertThat(vo.getContent()).isEqualTo("非常好");
         assertThat(vo.getLikes()).isEqualTo(3);
-        assertThat(vo.getUsername()).isEqualTo("买家");
+        assertThat(vo.getUsername()).isEqualTo("认领方");
         assertThat(vo.getUserAvatar()).isEqualTo("http://avatar.jpg");
     }
 

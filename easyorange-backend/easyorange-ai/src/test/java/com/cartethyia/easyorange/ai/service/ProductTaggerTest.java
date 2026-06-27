@@ -37,7 +37,7 @@ class ProductTaggerTest {
                 id, sellerId, null, null, null, null,
                 "测试商品", null, price, originalPrice,
                 null, null, null, null, null, null,
-                null, null, images, null, null, null, null, null, null, null
+                null, null, images, null, null, null
         );
     }
 

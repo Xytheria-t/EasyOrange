@@ -14,8 +14,6 @@ product/
 │   │   │   ├── ProductSearchController.java    # 搜索 (关键词/历史/热词)
 │   │   │   ├── ProductReportController.java    # 举报管理
 │   │   │   └── ProductReviewController.java    # 评价管理
-│   │   ├── scheduler/
-│   │   │   └── ProductPriceAdjustTask.java # 阶梯降价定时任务 (每天凌晨 2 点执行)
 │   │   ├── dto/request/
 │   │   └── dto/response/
 │   └── outbound/
@@ -33,8 +31,6 @@ product/
 │   ├── command/                         # 命令侧 (CQRS Write)
 │   │   ├── ProductCommandService.java
 │   │   ├── ProductReviewCommandService.java
-│   │   ├── OfferAppService.java          # AI 议价应用服务 (处理买家出价)
-│   │   ├── OfferResult.java              # 议价结果 DTO
 │   │   ├── dto/                         # Command DTOs
 │   │   └── handler/                     # 命令处理器
 │   ├── query/                           # 查询侧 (CQRS Read)
@@ -75,21 +71,15 @@ product/
 │   │   ├── ProductDeletedEvent.java
 │   │   ├── ProductMarkedSoldEvent.java
 │   │   ├── StockDecreasedEvent.java
-│   │   ├── StockRestoredEvent.java
-│   │   ├── PriceAdjustedEvent.java        # 阶梯降价事件
-│   │   ├── OfferAcceptedEvent.java        # AI 接受出价事件
-│   │   ├── OfferRejectedEvent.java        # AI 拒绝出价事件
-│   │   └── CounterOfferMadeEvent.java     # AI 还价事件
+│   │   └── StockRestoredEvent.java
 │   ├── port/
 │   │   ├── OutboundPort.java            # 标记接口 (跨模块出站端口)
 │   │   ├── ProductCachePort.java        # 缓存端口 (domain 定义, application 实现)
 │   │   ├── CategoryCachePort.java
 │   │   ├── ProductSnapshotPort.java
-│   │   ├── SellerInfoPort.java          # 卖家信息查询 (跨模块)
+│   │   ├── SellerInfoPort.java          # 资产方信息查询 (跨模块)
 │   │   ├── ProductNotificationPort.java # 商品事件通知 (跨模块)
-│   │   ├── ProductSearchIndexPort.java  # 搜索索引 (跨模块)
-│   │   ├── OrderCreationPort.java       # 创建订单端口 (AI 接受出价后自动创建订单)
-│   │   └── NegotiationMessagePort.java  # 议价消息生成端口 (LLM 生成话术)
+│   │   └── ProductSearchIndexPort.java  # 搜索索引 (跨模块)
 │   ├── repository/
 │   │   ├── ProductRepository.java       # 写仓储
 │   │   ├── ProductReportRepository.java
@@ -97,14 +87,11 @@ product/
 │   │       ├── ProductQueryRepository.java  # 读仓储
 │   │       └── CategoryQueryRepository.java
 │   ├── service/
-│   │   ├── ProductReportDomainService.java
-│   │   └── OfferRuleEngine.java           # AI 议价规则引擎 (决策接受/还价/拒绝)
+│   │   └── ProductReportDomainService.java
 │   ├── enums/
 │   │   ├── ProductStatus.java, ConditionLevel.java
 │   │   ├── ProductReportStatus.java
-│   │   ├── ProductResultCode.java
-│   │   ├── ConsignmentMode.java          # 寄售模式枚举 (MANUAL/AI_MANAGED)
-│   │   └── OfferDecision.java            # 议价决策枚举 (ACCEPT/COUNTER_OFFER/REJECT)
+│   │   └── ProductResultCode.java
 │   ├── constant/
 │   │   └── ProductConstant.java
 │   └── exception/
@@ -166,37 +153,8 @@ public interface ProductCachePort {
 4. 缓存 Key 调整
 5. 测试
 
-## AI 替卖家运营工作流
-
-商品模块实现了 AI 替卖家运营工作流（ConsignmentMode 枚举），核心组件：
-
-- **ConsignmentMode**: 寄售模式枚举（MANUAL/AI_MANAGED），存储在 `eo_product.consignment_mode` 字段
-- **OfferRuleEngine**: 议价规则引擎，基于 floorPrice 做决策（接受/还价/拒绝）
-- **OfferAppService**: 议价应用服务，处理买家出价，协调规则引擎和消息端口
-- **OfferDecision**: 议价决策枚举（ACCEPT/COUNTER_OFFER/REJECT）
-- **ProductPriceAdjustTask**: 阶梯降价定时任务，每天凌晨 2 点自动降价
-- **OrderCreationPort**: 出站端口，AI 接受出价后自动创建订单（由 order 模块实现）
-- **NegotiationMessagePort**: 出站端口，LLM 生成议价话术（由 ai 模块实现）
-- **offer 领域事件**: PriceAdjustedEvent / OfferAcceptedEvent / OfferRejectedEvent / CounterOfferMadeEvent
-
-### 编辑商品修改寄售模式
-
-`Product.update()` 新增 `consignmentMode` / `floorPrice` 参数（参见 `ProductUpdateRequest` + `UpdateProductCommand`）。**domain 层强制校验**：`consignmentMode == AI_MANAGED` 时 `floorPrice` 必须非 null 且 > 0；设置为 `MANUAL` 时可清空底价。不传 consignmentMode（null）则保持原值。
-
-`Product.create()` 同样校验：AI_MANAGED 必须设底价。
-
-### 常见开发任务：添加 AI 替卖家运营新功能
-
-1. 规则引擎 `OfferRuleEngine` 添加新决策逻辑
-2. domain event 定义新事件类型
-3. 应用服务 `OfferAppService` 编排新流程
-4. 出站端口接口 + 适配器实现
-5. 定时任务配置
-6. 测试
-
 ## 跨模块交互
 
-- **order 模块**: 通过 `ProductInventoryPort` 扣减/恢复库存；通过 `OrderCreationPort` 创建订单
+- **order 模块**: 通过 `ProductInventoryPort` 扣减/恢复库存
 - **favorite 模块**: 通过 `ProductInfoPort`（`FavoriteProductInfoAdapter` 在 application 模块实现）查询商品信息
-- **ai 模块**: 通过 `NegotiationMessagePort` 生成议价话术
-- order/favorite/ai 对 product 的 Maven 依赖均为 `<optional>true</optional>`，通过 Port 接口隔离领域模型
+- order/favorite 对 product 的 Maven 依赖均为 `<optional>true</optional>`，通过 Port 接口隔离领域模型

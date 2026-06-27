@@ -42,7 +42,7 @@ const sampleProduct: AdminProduct = {
   categoryId: 1,
   categoryName: '电子产品',
   sellerId: 1,
-  sellerName: '卖家A',
+  sellerName: '资产方A',
   sellerAvatar: null,
   viewCount: 100,
   createTime: '2026-05-16T10:00:00',
@@ -173,7 +173,7 @@ describe('ProductDetailDrawer', () => {
     expect(screen.getByText('¥100.00')).toBeInTheDocument();
     expect(screen.getByText('¥150.00')).toBeInTheDocument();
     expect(screen.getByText('电子产品')).toBeInTheDocument();
-    expect(screen.getByText('卖家A')).toBeInTheDocument();
+    expect(screen.getByText('资产方A')).toBeInTheDocument();
   });
 
   // ── Test 6: Renders 4 audit dimension buttons ──

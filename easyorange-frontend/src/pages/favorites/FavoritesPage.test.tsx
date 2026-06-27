@@ -39,7 +39,7 @@ function createMockPage(recordsCount = 1, totalOverride?: number) {
     product: {
       id: `prod${i}`,
       sellerId: 'seller1',
-      username: '卖家张三',
+      username: '资产方张三',
       userAvatar: null,
       categoryId: 1,
       categoryName: '电子产品',
@@ -90,7 +90,7 @@ describe('FavoritesPage', () => {
     mockGetList.mockResolvedValue({ data: createMockPage(0) });
     renderPage();
     expect(await screen.findByText('收藏夹空空如也')).toBeInTheDocument();
-    expect(screen.getByText('探索好物')).toBeInTheDocument();
+    expect(screen.getByText('探索资产')).toBeInTheDocument();
   });
 
   it('renders favorites list with items', async () => {

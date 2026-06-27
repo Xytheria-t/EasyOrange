@@ -102,10 +102,6 @@ public class ProductSearchHandler {
                             r.getContactMethod(),
                             r.getImages(),
                             r.getMainImageUrl(),
-                            r.getFloorPrice(),
-                            r.getConsignmentMode(),
-                            null,
-                            r.getCurrentPriceLevel(),
                             r.getCreateTime(),
                             r.getUpdateTime()
                     ))

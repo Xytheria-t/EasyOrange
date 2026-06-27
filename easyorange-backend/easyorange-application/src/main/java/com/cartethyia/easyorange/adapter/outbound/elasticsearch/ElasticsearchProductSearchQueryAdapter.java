@@ -259,10 +259,6 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                 null,                                    // contactMethod
                 doc.getImages(),
                 doc.getMainImage(),
-                null,                               // floorPrice
-                null,                               // consignmentMode
-                null,                               // listedAt
-                null,                               // currentPriceLevel
                 doc.getCreateTime(),
                 doc.getUpdateTime()
         );

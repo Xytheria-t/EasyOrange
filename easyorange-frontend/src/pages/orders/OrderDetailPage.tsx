@@ -16,7 +16,7 @@ const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Cloc
   PAID: {
     gradient: 'linear-gradient(135deg, #3B82F6 0%, #6366F1 50%, #8B5CF6 100%)',
     icon: Package,
-    hint: '卖家正在准备发货，请耐心等待',
+    hint: '资产方正在准备发货，请耐心等待',
   },
   SHIPPED: {
     gradient: 'linear-gradient(135deg, #8B5CF6 0%, #A855F7 50%, #C39BD3 100%)',
@@ -269,12 +269,12 @@ function OrderDetailPage() {
           <div className="order-detail-info-grid">
             <div className="order-detail-info-item">
               <User size={14} className="order-detail-info-item-icon" />
-              <span className="order-detail-info-item-label">买家</span>
+              <span className="order-detail-info-item-label">认领方</span>
               <span className="order-detail-info-item-value">{order.buyerUsername}</span>
             </div>
             <div className="order-detail-info-item">
               <User size={14} className="order-detail-info-item-icon" />
-              <span className="order-detail-info-item-label">卖家</span>
+              <span className="order-detail-info-item-label">资产方</span>
               <span className="order-detail-info-item-value">{order.sellerUsername}</span>
             </div>
             {order.remark && (

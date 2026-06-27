@@ -23,7 +23,7 @@ describe('PaymentResultPage - success', () => {
   it('renders success state with correct title and description', () => {
     renderPage('/payment/result?status=success&orderId=order-123');
     expect(screen.getByText('支付成功')).toBeInTheDocument();
-    expect(screen.getByText('您的订单已支付成功，卖家将尽快为您发货')).toBeInTheDocument();
+    expect(screen.getByText('您的订单已支付成功，资产方将尽快为您发货')).toBeInTheDocument();
   });
 
   it('renders order hint for success', () => {
@@ -34,7 +34,7 @@ describe('PaymentResultPage - success', () => {
   it('renders AI recommendation section for success', () => {
     renderPage('/payment/result?status=success&orderId=order-123');
     expect(screen.getByText('智能推荐')).toBeInTheDocument();
-    expect(screen.getByText('为你精选相似好物')).toBeInTheDocument();
+    expect(screen.getByText('为你精选相似资产')).toBeInTheDocument();
   });
 
   it('renders "查看订单" button for success', () => {

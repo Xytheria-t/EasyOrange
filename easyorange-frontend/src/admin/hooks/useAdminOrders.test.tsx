@@ -116,7 +116,7 @@ describe('useAdminCancelOrder', () => {
       wrapper: Wrapper,
     });
 
-    result.current.mutate({ id: 1, data: { reason: '买家要求' } });
+    result.current.mutate({ id: 1, data: { reason: '认领方要求' } });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });

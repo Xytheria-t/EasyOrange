@@ -69,14 +69,14 @@ export default function OrderManagePage() {
     },
     {
       key: 'buyerName',
-      title: '买家',
+      title: '认领方',
       render: (value) => (
         <span style={{ fontSize: '0.86rem', color: '#6B6460' }}>{value as string}</span>
       ),
     },
     {
       key: 'sellerName',
-      title: '卖家',
+      title: '资产方',
       render: (value) => (
         <span style={{ fontSize: '0.86rem', color: '#6B6460' }}>{value as string}</span>
       ),
@@ -186,7 +186,7 @@ export default function OrderManagePage() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="搜索订单号/商品/买家..."
+                  placeholder="搜索订单号/资产/认领方..."
                   style={{
                     width: '100%', padding: '0.68rem 1rem 0.68rem 2.6rem',
                     border: '1.5px solid #E5E0DB', borderRadius: 14,

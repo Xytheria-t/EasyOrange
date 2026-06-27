@@ -141,7 +141,7 @@ export default function ProductReviewPage() {
       },
       {
         key: 'sellerName',
-        title: '卖家',
+        title: '资产方',
         render: (value) => {
           const sellerName = value as string;
           return <span style={{ color: '#6B6460', fontSize: '0.85rem' }}>{sellerName}</span>;

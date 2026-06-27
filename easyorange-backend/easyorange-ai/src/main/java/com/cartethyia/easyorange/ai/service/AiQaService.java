@@ -15,7 +15,7 @@ public class AiQaService {
     private final LlmPort llmPort;
 
     private static final String SYSTEM_PROMPT = """
-            你是 EasyOrange — AI 替卖家运营的 C2C 平台的智能客服助手。
+            你是 EasyOrange — AI 资产管理 的智能客服助手。
             请基于以下商品信息回答用户的问题。
             只回答与商品相关的问题，如果问题与商品无关，请礼貌地告知用户只能回答商品相关问题。
             回答控制在50字以内，简洁准确。
@@ -48,8 +48,8 @@ public class AiQaService {
                 - 分类：%s
                 - 价格：%s
                 - 成色：%s
-                - 卖家：%s
-                - 卖家信誉等级：%s
+                - 资产方：%s
+                - 资产方信誉等级：%s
                 
                 用户提问：%s
                 """,

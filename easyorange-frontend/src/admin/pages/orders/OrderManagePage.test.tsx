@@ -119,9 +119,9 @@ const samplePageData: PageData<AdminOrder> = {
       orderId: 1,
       orderNo: 'ORD20260516001',
       buyerId: 1,
-      buyerName: '买家A',
+      buyerName: '认领方A',
       sellerId: 2,
-      sellerName: '卖家B',
+      sellerName: '资产方B',
       items: [{ itemId: 1, productId: 10, productName: '测试商品1', productImage: '', unitPrice: 100.00, quantity: 1, subtotal: 100.00 }],
       totalAmount: 100.00,
       singleItem: true,
@@ -135,9 +135,9 @@ const samplePageData: PageData<AdminOrder> = {
       orderId: 2,
       orderNo: 'ORD20260516002',
       buyerId: 3,
-      buyerName: '买家C',
+      buyerName: '认领方C',
       sellerId: 4,
-      sellerName: '卖家D',
+      sellerName: '资产方D',
       items: [{ itemId: 2, productId: 20, productName: '测试商品2', productImage: '', unitPrice: 200.00, quantity: 1, subtotal: 200.00 }],
       totalAmount: 200.00,
       singleItem: true,
@@ -201,7 +201,7 @@ describe('OrderManagePage', () => {
   it('searches by keyword', () => {
     renderWithProviders(<OrderManagePage />);
 
-    const searchInput = screen.getByPlaceholderText('搜索订单号/商品/买家...');
+    const searchInput = screen.getByPlaceholderText('搜索订单号/资产/认领方...');
     fireEvent.change(searchInput, { target: { value: 'ORD20260516001' } });
 
     // Click search button
@@ -213,7 +213,7 @@ describe('OrderManagePage', () => {
   it('triggers search on Enter key press', () => {
     renderWithProviders(<OrderManagePage />);
 
-    const searchInput = screen.getByPlaceholderText('搜索订单号/商品/买家...');
+    const searchInput = screen.getByPlaceholderText('搜索订单号/资产/认领方...');
     fireEvent.change(searchInput, { target: { value: '测试' } });
     fireEvent.keyPress(searchInput, { key: 'Enter', code: 'Enter' });
 
@@ -256,9 +256,9 @@ describe('OrderManagePage', () => {
         orderId: i + 1,
         orderNo: `ORD${String(i + 1).padStart(11, '0')}`,
         buyerId: 1,
-        buyerName: `买家${i}`,
+        buyerName: `认领方${i}`,
         sellerId: 2,
-        sellerName: `卖家${i}`,
+        sellerName: `资产方${i}`,
         items: [{ itemId: i + 1, productId: 10 + i, productName: `商品${i}`, productImage: '', unitPrice: (i + 1) * 100, quantity: 1, subtotal: (i + 1) * 100 }],
         totalAmount: (i + 1) * 100,
         singleItem: true,

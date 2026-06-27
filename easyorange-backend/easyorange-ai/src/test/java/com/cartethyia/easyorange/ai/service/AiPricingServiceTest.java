@@ -42,7 +42,7 @@ class AiPricingServiceTest {
         @Test
         @DisplayName("正常定价逻辑 — 输入商品信息返回定价建议")
         void suggestPrice_success() throws Exception {
-            String productName = "二手 iPhone 14";
+            String productName = "在管 iPhone 14";
             String description = "99新，使用3个月，配件齐全";
             String categoryName = "手机数码";
             Integer conditionLevel = 2;

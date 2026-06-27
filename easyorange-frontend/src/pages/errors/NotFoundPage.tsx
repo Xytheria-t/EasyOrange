@@ -12,7 +12,7 @@ function NotFoundPage() {
         </svg>
       ),
       label: '浏览首页',
-      desc: '发现最新上架的好物',
+      desc: '发现最新上架的资产',
       color: '#F97316', bg: 'rgba(249,115,22,0.10)',
     },
     {

@@ -31,7 +31,7 @@ class ProductReportTest {
     void create_withNullProductId_shouldThrow() {
         assertThatThrownBy(() -> ProductReport.create(null, 1L, "假货", 1))
                 .isInstanceOf(ProductReport.ReportDomainException.class)
-                .hasMessageContaining("商品ID不能为空");
+                .hasMessageContaining("资产ID不能为空");
     }
 
     @Test

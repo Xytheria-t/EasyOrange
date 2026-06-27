@@ -15,8 +15,8 @@ vi.mock('../../hooks', () => ({
 const sampleOrderDetail: AdminOrderDetail = {
   orderId: 1,
   orderNo: 'ORD20260516001',
-  buyer: { userId: 1, nickname: '买家A', avatar: null, phone: '13800138000' },
-  seller: { userId: 2, nickname: '卖家B', avatar: null, phone: '13900139000' },
+  buyer: { userId: 1, nickname: '认领方A', avatar: null, phone: '13800138000' },
+  seller: { userId: 2, nickname: '资产方B', avatar: null, phone: '13900139000' },
   items: [{ itemId: 1, productId: 10, productName: '测试商品', productImage: '', unitPrice: 100.00, quantity: 1, subtotal: 100.00 }],
   totalAmount: 100.00,
   singleItem: true,
@@ -94,8 +94,8 @@ describe('OrderDetailModal', () => {
     expect(screen.getByText('单价: ¥100.00')).toBeInTheDocument();
 
     // Buyer and seller
-    expect(screen.getByText('买家A')).toBeInTheDocument();
-    expect(screen.getByText('卖家B')).toBeInTheDocument();
+    expect(screen.getByText('认领方A')).toBeInTheDocument();
+    expect(screen.getByText('资产方B')).toBeInTheDocument();
 
     // Payment status
     expect(screen.getByText('未支付')).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('OrderDetailModal', () => {
     const orderWithCancel: AdminOrderDetail = {
       ...sampleOrderDetail,
       status: 4,
-      cancelReason: '买家申请取消',
+      cancelReason: '认领方申请取消',
     };
     setupMocks({ data: orderWithCancel });
 
@@ -185,6 +185,6 @@ describe('OrderDetailModal', () => {
     );
 
     expect(screen.getByText('取消原因')).toBeInTheDocument();
-    expect(screen.getByText('买家申请取消')).toBeInTheDocument();
+    expect(screen.getByText('认领方申请取消')).toBeInTheDocument();
   });
 });

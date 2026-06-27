@@ -61,7 +61,7 @@ const sampleProducts: AdminProduct[] = [
     categoryId: 1,
     categoryName: '电子产品',
     sellerId: 1,
-    sellerName: '卖家A',
+    sellerName: '资产方A',
     sellerAvatar: null,
     viewCount: 100,
     createTime: '2026-05-16T10:00:00',
@@ -84,7 +84,7 @@ const sampleProducts: AdminProduct[] = [
     categoryId: 2,
     categoryName: '图书教材',
     sellerId: 2,
-    sellerName: '卖家B',
+    sellerName: '资产方B',
     sellerAvatar: null,
     viewCount: 50,
     createTime: '2026-05-15T10:00:00',
@@ -163,8 +163,8 @@ describe('ProductManagePage', () => {
     renderWithProviders(<ProductManagePage />);
     expect(screen.getByText('测试商品1')).toBeInTheDocument();
     expect(screen.getByText('测试商品2')).toBeInTheDocument();
-    expect(screen.getByText('卖家A')).toBeInTheDocument();
-    expect(screen.getByText('卖家B')).toBeInTheDocument();
+    expect(screen.getByText('资产方A')).toBeInTheDocument();
+    expect(screen.getByText('资产方B')).toBeInTheDocument();
   });
 
   // ── Test 5: Empty state ──

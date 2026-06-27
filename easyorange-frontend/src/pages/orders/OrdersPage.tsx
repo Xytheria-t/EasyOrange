@@ -184,13 +184,13 @@ function OrdersPage() {
           </div>
           <h3 className="orders-empty-title">暂无订单</h3>
           <p className="orders-empty-desc">
-            还没有购买任何商品<br />去发现心仪的宝贝吧
+            还没有认领任何资产<br />去发现心仪的资产吧
           </p>
           <button
             onClick={() => navigate('/products')}
             className="orders-empty-cta"
           >
-            探索好物
+            探索资产
             <ChevronRight size={16} />
           </button>
         </div>
@@ -284,7 +284,7 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
         <div className="order-card-info-premium">
           <h3 className="order-card-title-premium">{firstItem?.productName || '未知商品'}</h3>
           {multiItemBadge && <span className="order-card-multi-badge">等{order.items.length}件</span>}
-          <p className="order-card-seller-premium">卖家：{order.sellerUsername}</p>
+          <p className="order-card-seller-premium">资产方：{order.sellerUsername}</p>
           <div className="order-card-price-row">
             <span className="order-card-price-premium">¥{order.totalAmount.toFixed(2)}</span>
             {firstItem && <span className="order-card-qty">×{firstItem.quantity}</span>}

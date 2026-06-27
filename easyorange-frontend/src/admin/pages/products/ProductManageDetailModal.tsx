@@ -275,7 +275,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <InfoCell label="新旧程度" value={conditionLabels[productData.conditionLevel || 8] || '未知'} />
                 <InfoCell label="分类" value={productData.categoryName || '—'} />
-                <InfoCell label="卖家" value={productData.sellerName || '—'} />
+                <InfoCell label="资产方" value={productData.sellerName || '—'} />
                 <InfoCell label="浏览量" value={productData.viewCount ?? 0} />
                 <InfoCell label="发布时间" value={formatDate(productData.createTime)} />
                 <InfoCell label="更新时间" value={formatDate(productData.updateTime)} />

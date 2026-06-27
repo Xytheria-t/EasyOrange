@@ -1,145 +1,210 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
 import './ai-features.css'
 
-interface AIFeature {
+type StepStatus = 'pending' | 'running' | 'done'
+
+interface PipelineStep {
   id: string
-  icon: React.ReactNode
+  index: number
+  side: 'seller' | 'buyer'
+  icon: string
   title: string
-  description: string
-  demo: string
-  gradient: string
-  glowColor: string
+  subtitle: string
+  detail: string
+  durationMs: number
+  status: StepStatus
 }
 
-const aiFeatures: AIFeature[] = [
+const PIPELINE_STEPS: PipelineStep[] = [
   {
     id: 'pricing',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
-        <circle cx="12" cy="12" r="4" />
-      </svg>
-    ),
-    title: 'AI智能估价',
-    description: '拍照识别商品，AI自动分析市场行情，给出合理定价建议',
-    demo: '拍照估价',
-    gradient: 'linear-gradient(135deg, #F97316 0%, #FB7185 100%)',
-    glowColor: 'rgba(249, 115, 22, 0.3)'
+    index: 1,
+    side: 'seller',
+    icon: '💎',
+    title: 'AI 资产估值',
+    subtitle: '上传图片 · 3 秒定价',
+    detail: '基于同款成交均价 + 视觉评估 + 信用加权,生成建议售价',
+    durationMs: 800,
+    status: 'pending'
   },
   {
-    id: 'recommend',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-      </svg>
-    ),
-    title: '智能推荐',
-    description: '基于浏览习惯和偏好，精准推荐你可能感兴趣的商品',
-    demo: '查看推荐',
-    gradient: 'linear-gradient(135deg, #FB7185 0%, #C39BD3 100%)',
-    glowColor: 'rgba(195, 155, 211, 0.3)'
+    id: 'copy',
+    index: 2,
+    side: 'seller',
+    icon: '✍️',
+    title: 'AI 智能写描述',
+    subtitle: '30 秒生成标题 + 卖点',
+    detail: '通义千问 VL 提炼图片卖点,生成 3 套不同调性的标题与描述',
+    durationMs: 1200,
+    status: 'pending'
   },
   {
-    id: 'classify',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="3" y="3" width="7" height="7" rx="1" />
-        <rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" />
-        <rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    ),
-    title: '图像识别分类',
-    description: '上传商品图片，AI自动识别类别，一键填写商品信息',
-    demo: '试试看',
-    gradient: 'linear-gradient(135deg, #C39BD3 0%, #D8B4FE 100%)',
-    glowColor: 'rgba(216, 180, 254, 0.3)'
+    id: 'listing',
+    index: 3,
+    side: 'seller',
+    icon: '🚀',
+    title: 'AI 一键发布',
+    subtitle: '描述/类目/价格自动填充',
+    detail: '填好图和价,AI 补全标题、卖点、类目与适配关键词',
+    durationMs: 1000,
+    status: 'pending'
   },
   {
-    id: 'generate',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-      </svg>
-    ),
-    title: '智能文案生成',
-    description: '输入商品关键词，AI自动生成吸引人的商品描述和标题',
-    demo: '生成文案',
-    gradient: 'linear-gradient(135deg, #FBBF24 0%, #F97316 100%)',
-    glowColor: 'rgba(251, 191, 36, 0.3)'
+    id: 'search',
+    index: 4,
+    side: 'buyer',
+    icon: '🔍',
+    title: 'AI 智能找货',
+    subtitle: '说人话就能找到',
+    detail: '"想要 500 以内的桌面摆件" — 自然语言 → 精准匹配',
+    durationMs: 900,
+    status: 'pending'
+  },
+  {
+    id: 'evaluate',
+    index: 5,
+    side: 'buyer',
+    icon: '🛡️',
+    title: 'AI 资产核验',
+    subtitle: '实物拍照验货 / 虚拟凭证核查',
+    detail: '识别实物瑕疵与描述差异,核验虚拟资产凭证有效性,给你一份"交割清单"',
+    durationMs: 1100,
+    status: 'pending'
+  },
+  {
+    id: 'credit',
+    index: 6,
+    side: 'buyer',
+    icon: '📊',
+    title: 'AI 信用画像',
+    subtitle: '5 维雷达图 · 可解释',
+    detail: '描述准确度 / 沟通及时度 / 发货速度 / 售后口碑 / 历史评价',
+    durationMs: 700,
+    status: 'pending'
   }
 ]
 
-const FEATURE_ROUTES: Record<string, string> = {
-  pricing: '/publish',
-  recommend: '/products',
-  classify: '/publish',
-  generate: '/publish',
-}
-
-function AIFeatureCard({ feature, index }: { feature: AIFeature; index: number }) {
-  const [isVisible, setIsVisible] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => setIsVisible(true), index * 100)
-        }
-      },
-      { threshold: 0.2 }
-    )
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current)
-    }
-
-    return () => observer.disconnect()
-  }, [index])
-
+function PipelineStepRow({ step, isActive, isDone }: { step: PipelineStep; isActive: boolean; isDone: boolean }) {
   return (
     <div
-      ref={cardRef}
-      className={`ai-feature-card ${isVisible ? 'visible' : ''}`}
-      style={{
-        '--card-gradient': feature.gradient,
-        '--card-glow': feature.glowColor
-      } as React.CSSProperties}
+      className={`pipeline-step ${isActive ? 'is-active' : ''} ${isDone ? 'is-done' : ''} step-${step.side}`}
+      data-testid={`pipeline-step-${step.id}`}
     >
-      <div className="ai-feature-glow" />
-      <div className="ai-feature-content">
-        <div className="ai-feature-icon" style={{ background: feature.gradient }}>
-          {feature.icon}
-        </div>
-        <h3 className="ai-feature-title">{feature.title}</h3>
-        <p className="ai-feature-description">{feature.description}</p>
-        <button
-          className="ai-feature-demo"
-          onClick={() => {
-            const route = FEATURE_ROUTES[feature.id]
-            if (route) {navigate(route)}
-          }}
-        >
-          <span>{feature.demo}</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </button>
+      <div className="step-index">
+        <span className="step-index-num">0{step.index}</span>
+        <span className="step-index-pulse" />
       </div>
-      <div className="ai-feature-particles">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="particle" style={{ animationDelay: `${i * 0.5}s` }} />
-        ))}
+      <div className="step-icon-box">
+        <span className="step-icon">{step.icon}</span>
+      </div>
+      <div className="step-body">
+        <div className="step-title-row">
+          <h3 className="step-title">{step.title}</h3>
+          {isActive && <span className="step-running-badge">AI 工作中</span>}
+          {isDone && <span className="step-done-badge">✓ 完成</span>}
+        </div>
+        <p className="step-subtitle">{step.subtitle}</p>
+        <p className="step-detail">{step.detail}</p>
+        {isActive && (
+          <div className="step-progress">
+            <div className="step-progress-bar" />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function StewardDailyReport() {
+  return (
+    <div className="steward-daily-card glass-card" data-testid="steward-daily-card">
+      <div className="daily-card-header">
+        <div className="daily-card-avatar">
+          <span className="daily-avatar-emoji">🤖</span>
+          <div className="daily-avatar-pulse" />
+        </div>
+        <div className="daily-card-title">
+          <h3>AI 资产管理 · 今日工作日报</h3>
+          <p>2026-06-25 · 你不在的时候,AI 已经帮你做了这些事</p>
+        </div>
+      </div>
+
+      <div className="daily-card-grid">
+        <div className="daily-item">
+          <span className="daily-item-num">3</span>
+          <span className="daily-item-label">件资产已智能定价</span>
+        </div>
+        <div className="daily-item-sep" />
+        <div className="daily-item">
+          <span className="daily-item-num">2</span>
+          <span className="daily-item-label">份新文案待你确认</span>
+        </div>
+        <div className="daily-item-sep" />
+        <div className="daily-item">
+          <span className="daily-item-num">1</span>
+          <span className="daily-item-label">件资产已发布上线</span>
+        </div>
+        <div className="daily-item-sep" />
+        <div className="daily-item daily-item-highlight">
+          <span className="daily-item-num">¥2,840</span>
+          <span className="daily-item-label">本月预计多回款</span>
+        </div>
+      </div>
+
+      <div className="daily-card-footer">
+        <span className="daily-footer-tip">📌 你只负责决策,过程 AI 全包</span>
+        <button className="daily-footer-btn">查看完整工作日志 →</button>
       </div>
     </div>
   )
 }
 
 function AIFeaturesSection() {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [completedCount, setCompletedCount] = useState(0)
+  const cycleRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const prefersReducedMotion = useRef(false)
+
+  useEffect(() => {
+    prefersReducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  }, [])
+
+  useEffect(() => {
+    if (prefersReducedMotion.current) {
+      setCompletedCount(PIPELINE_STEPS.length)
+      setActiveIndex(PIPELINE_STEPS.length - 1)
+      return
+    }
+
+    const tick = () => {
+      setActiveIndex(prev => {
+        const next = (prev + 1) % (PIPELINE_STEPS.length + 2)
+        if (next === PIPELINE_STEPS.length) {
+          setCompletedCount(PIPELINE_STEPS.length)
+          setTimeout(() => {
+            setCompletedCount(0)
+            setActiveIndex(0)
+          }, 2500)
+          return prev
+        }
+        if (next < prev || prev === PIPELINE_STEPS.length - 1) {
+          setCompletedCount(0)
+        } else {
+          setCompletedCount(next + 1)
+        }
+        return next
+      })
+    }
+
+    cycleRef.current = setInterval(tick, 2200)
+    return () => {
+      if (cycleRef.current) { clearInterval(cycleRef.current) }
+    }
+  }, [])
+
+  const sellerSteps = PIPELINE_STEPS.filter(s => s.side === 'seller')
+  const buyerSteps = PIPELINE_STEPS.filter(s => s.side === 'buyer')
+
   return (
     <section className="ai-features-section">
       <div className="ai-features-bg">
@@ -155,50 +220,98 @@ function AIFeaturesSection() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
-            <span>AI智能助手</span>
+            <span>AI 资产管理</span>
           </div>
           <div className="ai-features-title-group">
-            <span className="ai-features-label">智能科技</span>
-            <h2 className="ai-features-title">让交易更简单</h2>
+            <span className="ai-features-label">4 步闭环 · 双端对称</span>
+            <h2 className="ai-features-title">资产方省心 · 认领方放心</h2>
           </div>
           <p className="ai-features-subtitle">
-            基于先进AI技术，为您提供智能估价、精准推荐、自动识别等一站式智能服务
+            资产方侧,AI 替你估值、写描述、智能发布 · 认领方侧,AI 帮你找货、评估、看清信用
           </p>
         </div>
 
-        <div className="ai-features-grid">
-          {aiFeatures.map((feature, index) => (
-            <AIFeatureCard key={feature.id} feature={feature} index={index} />
-          ))}
+        <StewardDailyReport />
+
+        <div className="pipeline-board">
+          <div className="pipeline-column">
+            <div className="pipeline-column-header">
+              <span className="pipeline-column-tag pipeline-column-tag-seller">资产方</span>
+              <h3>资产方侧 · 3 步发布</h3>
+              <p>传图写价,AI 补全其余信息</p>
+            </div>
+            <div className="pipeline-column-list">
+              {sellerSteps.map(step => {
+                const isActive = PIPELINE_STEPS[activeIndex]?.id === step.id
+                const isDone = completedCount > (PIPELINE_STEPS.findIndex(s => s.id === step.id))
+                return (
+                  <PipelineStepRow
+                    key={step.id}
+                    step={step}
+                    isActive={isActive}
+                    isDone={isDone}
+                  />
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="pipeline-divider" aria-hidden="true">
+            <div className="pipeline-divider-line" />
+            <span className="pipeline-divider-label">AI 能力 · 一肩挑双端</span>
+            <div className="pipeline-divider-line" />
+          </div>
+
+          <div className="pipeline-column">
+            <div className="pipeline-column-header">
+              <span className="pipeline-column-tag pipeline-column-tag-buyer">认领方</span>
+              <h3>认领方侧 · 3 步安心</h3>
+              <p>找得到 · 看得清 · 买得放心</p>
+            </div>
+            <div className="pipeline-column-list">
+              {buyerSteps.map(step => {
+                const isActive = PIPELINE_STEPS[activeIndex]?.id === step.id
+                const isDone = completedCount > (PIPELINE_STEPS.findIndex(s => s.id === step.id))
+                return (
+                  <PipelineStepRow
+                    key={step.id}
+                    step={step}
+                    isActive={isActive}
+                    isDone={isDone}
+                  />
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="ai-features-stats">
           <div className="ai-stat-item">
             <div className="ai-stat-value">
+              <span className="gradient-text">3 秒</span>
+            </div>
+            <div className="ai-stat-label">AI 定价</div>
+          </div>
+          <div className="ai-stat-divider" />
+          <div className="ai-stat-item">
+            <div className="ai-stat-value">
+              <span className="gradient-text">24h</span>
+            </div>
+            <div className="ai-stat-label">AI 在线</div>
+          </div>
+          <div className="ai-stat-divider" />
+          <div className="ai-stat-item">
+            <div className="ai-stat-value">
               <span className="gradient-text">98%</span>
             </div>
-            <div className="ai-stat-label">估价准确率</div>
+            <div className="ai-stat-label">AI 估值准确</div>
           </div>
           <div className="ai-stat-divider" />
           <div className="ai-stat-item">
             <div className="ai-stat-value">
-              <span className="gradient-text">3秒</span>
+              <span className="gradient-text">0</span>
             </div>
-            <div className="ai-stat-label">平均识别速度</div>
-          </div>
-          <div className="ai-stat-divider" />
-          <div className="ai-stat-item">
-            <div className="ai-stat-value">
-              <span className="gradient-text">50万+</span>
-            </div>
-            <div className="ai-stat-label">AI处理请求</div>
-          </div>
-          <div className="ai-stat-divider" />
-          <div className="ai-stat-item">
-            <div className="ai-stat-value">
-              <span className="gradient-text">100+</span>
-            </div>
-            <div className="ai-stat-label">商品类别识别</div>
+            <div className="ai-stat-label">需要你盯的</div>
           </div>
         </div>
       </div>

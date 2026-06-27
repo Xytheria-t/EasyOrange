@@ -55,7 +55,7 @@ class AiSearchEnhancerTest {
                 id, 1L, null, null, null, null,
                 title, null, price, price.multiply(BigDecimal.valueOf(2)),
                 null, null, null, null, null, null,
-                null, null, List.of("img.jpg"), null, null, null, null, null, null, null
+                null, null, List.of("img.jpg"), null, null, null
         );
     }
 
@@ -148,7 +148,7 @@ class AiSearchEnhancerTest {
             when(productTagger.tagProducts(anyList()))
                     .thenReturn(Map.of(1L, List.of("💰超值")));
             when(llmPort.generateText(contains("市场分析"), anyString()))
-                    .thenReturn("当前二手笔记本均价约4800元，性价比不错");
+                    .thenReturn("当前在管笔记本均价约4800元，性价比不错");
             when(llmPort.generateText(contains("追问"), eq("推荐个5000的笔记本")))
                     .thenReturn("有游戏需求吗,需要轻薄吗");
 
@@ -161,7 +161,7 @@ class AiSearchEnhancerTest {
             AiEnhancement enhancement = result.get();
             assertThat(enhancement.intentExplanation()).isEqualTo("想找5000元左右的笔记本电脑");
             assertThat(enhancement.productTags()).containsKey(1L);
-            assertThat(enhancement.marketAnalysis()).isEqualTo("当前二手笔记本均价约4800元，性价比不错");
+            assertThat(enhancement.marketAnalysis()).isEqualTo("当前在管笔记本均价约4800元，性价比不错");
             assertThat(enhancement.suggestedQuestions())
                     .hasSize(2)
                     .containsExactly("有游戏需求吗", "需要轻薄吗");

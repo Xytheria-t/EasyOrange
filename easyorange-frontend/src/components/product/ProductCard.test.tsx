@@ -34,7 +34,7 @@ const baseProduct = createMockProduct({
   originalPrice: 150,
   condition: 1,
   location: '北京',
-  sellerName: '卖家小明',
+  sellerName: '资产方小明',
   views: 50,
   favorites: 10,
   images: ['https://example.com/image.jpg'],
@@ -49,7 +49,7 @@ describe('ProductCard', () => {
 
   it('renders seller name', () => {
     renderWithProviders(<ProductCard product={baseProduct} />);
-    expect(screen.getByText('卖家小明')).toBeInTheDocument();
+    expect(screen.getByText('资产方小明')).toBeInTheDocument();
   });
 
   it('renders discount badge when originalPrice > price', () => {

@@ -192,7 +192,7 @@ function AIRecommendSection() {
               <span>智能推荐</span>
             </div>
             <h2 className="ai-recommend-title">
-              为你<span className="gradient-text">精选</span>好物
+              为你<span className="gradient-text">精选</span>资产
             </h2>
             <p className="ai-recommend-subtitle">
               AI根据你的浏览习惯和偏好，智能推荐最适合你的商品

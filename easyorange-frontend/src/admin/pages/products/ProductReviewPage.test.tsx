@@ -86,7 +86,7 @@ function createSampleProducts(fakeNow: number) {
       categoryId: 1,
       categoryName: '电子产品',
       sellerId: 1,
-      sellerName: '卖家A',
+      sellerName: '资产方A',
       sellerAvatar: null,
       viewCount: 100,
       createTime: new Date(fakeNow - 30_000).toISOString(), // 30 seconds ago → "刚刚"
@@ -109,7 +109,7 @@ function createSampleProducts(fakeNow: number) {
       categoryId: 2,
       categoryName: '图书教材',
       sellerId: 2,
-      sellerName: '卖家B',
+      sellerName: '资产方B',
       sellerAvatar: null,
       viewCount: 50,
       createTime: new Date(fakeNow - 300_000).toISOString(), // 5 minutes ago → "5分钟前"
@@ -184,8 +184,8 @@ describe('ProductReviewPage', () => {
     renderWithProviders(<ProductReviewPage />);
     expect(screen.getByText('待审核商品')).toBeInTheDocument();
     expect(screen.getByText('已驳回商品')).toBeInTheDocument();
-    expect(screen.getByText('卖家A')).toBeInTheDocument();
-    expect(screen.getByText('卖家B')).toBeInTheDocument();
+    expect(screen.getByText('资产方A')).toBeInTheDocument();
+    expect(screen.getByText('资产方B')).toBeInTheDocument();
   });
 
   // ── Test 5: Empty state ──

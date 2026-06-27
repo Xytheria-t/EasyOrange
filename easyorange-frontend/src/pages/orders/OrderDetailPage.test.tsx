@@ -40,9 +40,9 @@ function createMockOrderDetail(overrides: Partial<OrderDetail> = {}): OrderDetai
     id: 'order-123',
     orderNo: 'ORD202605011001',
     buyerId: 'buyer1',
-    buyerUsername: '买家小明',
+    buyerUsername: '认领方小明',
     sellerId: 'seller1',
-    sellerUsername: '卖家张三',
+    sellerUsername: '资产方张三',
     items: [{
       itemId: 'item1',
       productId: 'prod1',
@@ -120,11 +120,11 @@ describe('OrderDetailPage', () => {
   });
 
   it('shows buyer and seller usernames', () => {
-    const order = createMockOrderDetail({ buyerUsername: '买家王五', sellerUsername: '卖家赵六' });
+    const order = createMockOrderDetail({ buyerUsername: '认领方王五', sellerUsername: '资产方赵六' });
     mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false, isError: false });
     renderPage();
-    expect(screen.getByText('买家王五')).toBeInTheDocument();
-    expect(screen.getByText('卖家赵六')).toBeInTheDocument();
+    expect(screen.getByText('认领方王五')).toBeInTheDocument();
+    expect(screen.getByText('资产方赵六')).toBeInTheDocument();
   });
 
   it('shows remark when present', () => {

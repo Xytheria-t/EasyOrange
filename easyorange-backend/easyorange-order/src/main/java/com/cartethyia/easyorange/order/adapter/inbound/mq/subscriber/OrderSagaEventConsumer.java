@@ -60,7 +60,7 @@ public class OrderSagaEventConsumer {
         try {
             for (Long productId : event.getProductIds()) {
                 productInventoryPort.markAsSold(productId);
-                log.info("商品标记已售成功: productId={}", productId);
+                log.info("资产标记已售成功: productId={}", productId);
             }
             log.info("订单完成事件处理完成: orderId={}", event.getOrderId());
         } catch (Exception e) {

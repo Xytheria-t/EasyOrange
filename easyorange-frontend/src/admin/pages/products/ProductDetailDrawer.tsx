@@ -306,7 +306,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                     {[
                       { label: '新旧程度', value: conditionLabels[product.conditionLevel || 8] || '未知' },
                       { label: '分类', value: product.categoryName },
-                      { label: '卖家', value: product.sellerName },
+                      { label: '资产方', value: product.sellerName },
                       { label: '发布时间', value: formatDate(product.createTime ?? '') },
                     ].map((item) => (
                       <div key={item.label} style={{
@@ -646,7 +646,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
             </div>
 
             <p style={{ fontSize: '0.85rem', color: '#6B6460', marginBottom: '0.85rem', lineHeight: 1.5 }}>
-              确定要驳回该商品吗？驳回后卖家可修改并重新提交。
+              确定要驳回该资产吗？驳回后资产方可修改并重新提交。
             </p>
 
             {/* 快捷理由选项 */}

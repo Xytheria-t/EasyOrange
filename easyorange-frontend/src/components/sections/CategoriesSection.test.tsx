@@ -28,7 +28,7 @@ describe('CategoriesSection', () => {
     render(<CategoriesSection />);
     expect(screen.getByText('探索分类')).toBeInTheDocument();
     expect(screen.getByText('发现你需要的')).toBeInTheDocument();
-    expect(screen.getByText('精选热门品类，快速找到心仪好物')).toBeInTheDocument();
+    expect(screen.getByText('精选热门品类，快速找到心仪资产')).toBeInTheDocument();
   });
 
   it('renders all category cards', () => {

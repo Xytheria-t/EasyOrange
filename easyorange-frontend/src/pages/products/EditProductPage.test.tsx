@@ -59,7 +59,7 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
     views: 100,
     favorites: 20,
     sellerId: 'user1',
-    sellerName: '卖家小明',
+    sellerName: '资产方小明',
     sellerAvatar: null,
     sellerRating: 4.5,
     createTime: '2026-05-16 10:00:00',

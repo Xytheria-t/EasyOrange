@@ -11,7 +11,7 @@ public record ProductDescription(String value) {
             value = value.trim();
             BizRequire.requireTrue(
                     value.length() <= MAX_LENGTH,
-                    "商品描述长度不能超过 " + MAX_LENGTH + " 个字符"
+                    "资产描述长度不能超过 " + MAX_LENGTH + " 个字符"
             );
         } else {
             value = null;

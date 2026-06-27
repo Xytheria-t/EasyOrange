@@ -160,7 +160,7 @@ class CreateOrderSagaCompensationTest {
     }
 
     @Test
-    @DisplayName("商品不存在时 Saga 失败")
+    @DisplayName("资产不存在时 Saga 失败")
     void execute_productNotFound_throws() {
         CreateOrderCommand command = new CreateOrderCommand();
         command.setItems(List.of(new CreateOrderItem(999L, 1)));
@@ -171,7 +171,7 @@ class CreateOrderSagaCompensationTest {
 
         assertThatThrownBy(() -> saga.execute(command))
                 .isInstanceOf(Exception.class)
-                .hasMessageContaining("商品不存在");
+                .hasMessageContaining("资产不存在");
     }
 
     @Test

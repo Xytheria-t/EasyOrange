@@ -32,7 +32,7 @@ const onlineProduct: AdminProduct = {
   categoryId: 1,
   categoryName: '电子产品',
   sellerId: 1,
-  sellerName: '卖家A',
+  sellerName: '资产方A',
   sellerAvatar: null,
   viewCount: 100,
   createTime: '2026-05-16T10:00:00',
@@ -56,7 +56,7 @@ const offlineProduct: AdminProduct = {
   categoryId: 2,
   categoryName: '图书教材',
   sellerId: 2,
-  sellerName: '卖家B',
+  sellerName: '资产方B',
   sellerAvatar: null,
   viewCount: 50,
   createTime: '2026-05-15T10:00:00',
@@ -176,7 +176,7 @@ describe('ProductManageDetailModal', () => {
     expect(screen.getByText('¥100.00')).toBeInTheDocument();
     expect(screen.getByText('9成新')).toBeInTheDocument();
     expect(screen.getByText('电子产品')).toBeInTheDocument();
-    expect(screen.getByText('卖家A')).toBeInTheDocument();
+    expect(screen.getByText('资产方A')).toBeInTheDocument();
     expect(screen.getByText('北京')).toBeInTheDocument();
   });
 

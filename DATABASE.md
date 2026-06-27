@@ -166,7 +166,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 书籍教材(2) ─┬─ 教材(20) ─── 考研资料(21)
              └─ 课外读物(22)
 服饰鞋包(3) ─┬─ 鞋靴(30) ─── 服装(31) ─── 箱包(32)
-生活用品(4) ─┬─ 宿舍好物(40) ─ 数码配件(41)
+生活用品(4) ─┬─ 宿舍资产(40) ─ 数码配件(41)
 运动健身(5) ─┬─ 健身器材(50) ─ 户外运动(51)
 虚拟物品(6) ─┬─ 游戏账号(60) ─ 会员卡券(61)
 ```
@@ -192,10 +192,6 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 | tags | VARCHAR(500) | | 标签 |
 | search_text | TEXT | | 搜索冗余文本 |
 | price_update_time | DATETIME | | 价格更新时间 |
-| floor_price | DECIMAL(10,2) | | 底价（AI 托管模式，低于此价不出售） |
-| consignment_mode | TINYINT | NOT NULL DEFAULT 0 | 寄售模式（0 手动 / 1 AI 托管） |
-| listed_at | DATETIME | | 上架时间 |
-| current_price_level | TINYINT | | 当前降价阶梯（阶梯降价用，0=初始，越大折扣越多） |
 | + 公共字段 | | | |
 
 **索引**：
@@ -278,8 +274,8 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 | order_id | BIGINT | NOT NULL | 关联订单 ID |
 | rating | TINYINT | NOT NULL DEFAULT 5 | 评分（1-5） |
 | content | TEXT | NOT NULL | 评价内容 |
-| reply_content | TEXT | | 卖家回复内容 |
-| reply_time | DATETIME | | 卖家回复时间 |
+| reply_content | TEXT | | 资产方回复内容 |
+| reply_time | DATETIME | | 资产方回复时间 |
 | likes | INT | NOT NULL DEFAULT 0 | 点赞数 |
 | status | TINYINT | NOT NULL DEFAULT 1 | 状态（0 隐藏 / 1 显示 / 2 待审核） |
 | + 公共字段 | | | |
@@ -432,8 +428,8 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 |------|------|------|------|
 | id | BIGINT | PK | 主键 ID |
 | order_no | VARCHAR(64) | NOT NULL, UK | 订单号 |
-| buyer_id | BIGINT | NOT NULL | 买家 ID |
-| seller_id | BIGINT | NOT NULL | 卖家 ID |
+| buyer_id | BIGINT | NOT NULL | 认领方 ID |
+| seller_id | BIGINT | NOT NULL | 资产方 ID |
 | total_amount | DECIMAL(10,2) | NOT NULL | 订单总金额（行项总和） |
 | status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 待付款 / 1 待发货 / 2 待收货 / 3 已完成 / 4 已取消 / 5 已退款） |
 | payment_status | TINYINT | NOT NULL DEFAULT 0 | 支付状态（0 未支付 / 1 已支付 / 2 已退款） |

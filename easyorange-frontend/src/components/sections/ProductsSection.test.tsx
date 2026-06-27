@@ -75,7 +75,7 @@ describe('ProductsSection', () => {
   it('renders section header', () => {
     render(<ProductsSection />);
     expect(screen.getByText('精选推荐')).toBeInTheDocument();
-    expect(screen.getByText('热门好物')).toBeInTheDocument();
+    expect(screen.getByText('热门资产')).toBeInTheDocument();
   });
 
   it('renders filter tabs', () => {
@@ -110,7 +110,7 @@ describe('ProductsSection', () => {
       isLoading: false,
     });
     render(<ProductsSection />);
-    expect(screen.getByText('暂无商品')).toBeInTheDocument();
+    expect(screen.getByText('暂无资产')).toBeInTheDocument();
   });
 
   it('renders "查看全部" link', () => {
@@ -118,9 +118,9 @@ describe('ProductsSection', () => {
     expect(screen.getByText('查看全部')).toBeInTheDocument();
   });
 
-  it('renders "查看更多商品" button', () => {
+  it('renders "查看更多资产" button', () => {
     render(<ProductsSection />);
-    expect(screen.getByText('查看更多商品')).toBeInTheDocument();
+    expect(screen.getByText('查看更多资产')).toBeInTheDocument();
   });
 
   it('calls checkFavorites when products and token exist', () => {

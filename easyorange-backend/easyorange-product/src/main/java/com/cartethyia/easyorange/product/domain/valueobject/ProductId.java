@@ -10,7 +10,7 @@ public record ProductId(@JsonValue Long value) {
 
     public ProductId {
         if (value != null) {
-            BizRequire.requireTrue(value > 0, "商品ID必须为正数");
+            BizRequire.requireTrue(value > 0, "资产ID必须为正数");
         }
     }
 

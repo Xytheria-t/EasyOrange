@@ -30,7 +30,7 @@ public class CreateOrderRequest {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OrderItemRequest {
-        @NotNull(message = "商品 ID 不能为空")
+        @NotNull(message = "资产 ID 不能为空")
         private Long productId;
 
         @Min(value = 1, message = "数量至少为 1")

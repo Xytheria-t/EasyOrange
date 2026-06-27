@@ -4,6 +4,59 @@
 
 ## [unreleased]
 
+### 2026-06-25 — 副标敲定:"砍业务,撑架构"
+
+- **refactor(brand)**: 副标从"业务是容器,架构才是主角"精炼为 6 字对仗版 "**砍业务,撑架构**"。长版副标"业务做减法,架构做加法"作为展开说明保留
+- **refactor(docs)**: `README.md` / `CLAUDE.md` / `AGENTS.md` / `PRODUCT_DIRECTION.md` / `index.html` 顶层副标全部统一为"砍业务,撑架构",主标题统一改为"EasyOrange — 砍业务,撑架构"
+- **docs(presentation)**: 比赛答辩 / 面试推荐开场 hook —— "别人堆功能,我压架构",引出"为什么砍 + 砍了什么 + 换来什么"5 分钟故事线
+
+### 2026-06-25 — 项目定位重塑:技术 demo 项目
+
+- **refactor(brand)**: 项目定位从"AI 资产管理产品"重塑为"DDD + CQRS + Saga + 事件驱动 + AI 多模态 全栈架构 demo"。业务场景（C2C 资产流转）从主角调整为"业务容器"，架构与工程成为主角
+- **refactor(docs)**: `README.md` 重写为技术 demo 叙事（技术亮点 + 11 Maven 模块 + 业务简化原则 + 业务是容器、架构才是主角）
+- **refactor(docs)**: `PRODUCT_DIRECTION.md` 改名为《业务场景说明》，明确说明业务简化原则 + 业务不是商业计划书
+- **refactor(docs)**: `doc/集成/AI-资产管理.md` 改名为《AI 能力清单 — 详细机制》，聚焦 AI 架构侧关注点（端口抽象、缓存装饰、限流降级）
+- **refactor(docs)**: `CLAUDE.md` / `AGENTS.md` 顶部项目说明同步更新；AGENTS.md 中"AI 资产管理 工作流"小节改名为"AI 能力清单"并补充 AI 架构侧关注点
+- **refactor(frontend)**: `easyorange-frontend/index.html` meta description / keywords / title 更新为"DDD + CQRS + Saga + 事件驱动 + AI 多模态 全栈架构 demo"
+
+### 2026-06-25 — 议价 / 阶梯降价功能下线
+
+- **refactor(product)**: 移除 `OfferRuleEngine` / `OfferAppService` / `OfferResult` / `OfferDecision` / `ConsignmentMode` 枚举 / 议价领域事件 (`PriceAdjustedEvent` / `OfferAcceptedEvent` / `OfferRejectedEvent` / `CounterOfferMadeEvent`)；`Product` 聚合根移除 `floorPrice` / `consignmentMode` / `listedAt` / `currentPriceLevel` 字段及对应调价方法
+- **refactor(product)**: 移除 `NegotiationMessagePort` / `OrderCreationPort`（AI 自动成单 port）跨模块接口
+- **refactor(product)**: 移除 `ProductPriceAdjustTask` 阶梯降价定时任务与对应 Bean 注册
+- **refactor(message)**: 移除 `OfferMessageType` 枚举 / `OfferProcessingPort` / `@MessageMapping("/offer.make")` WebSocket 端点
+- **refactor(application)**: 移除 `AiOrderCreationAdapter` / `OfferProcessingAdapter` 跨模块编排适配器
+- **refactor(ai)**: 移除 `DeepSeekNegotiationMessageAdapter` 议价话术 LLM 实现
+- **refactor(frontend)**: 移除出价弹窗 / 还价弹窗 / 议价 UI / `useOfferSocket` 实时推送 hook
+- **refactor(sql)**: Flyway 迁移 `V4__add_ai_consignment_fields.sql` 改写为 DROP COLUMN 移除 `floor_price` / `consignment_mode` / `listed_at` / `current_price_level` 字段及 `idx_product_ai_managed` 索引
+- **refactor(docs)**: `AGENTS.md` / `CLAUDE.md` / `README.md` / `DATABASE.md` / `PRODUCT_DIRECTION.md` / `doc/集成/AI-资产管理.md` / `doc/集成/API-速查.md` 同步移除议价 / 阶梯降价 / 寄售模式相关描述
+- **fix(index)**: `easyorange-frontend/index.html` meta / title 移除"AI 议价"关键词
+- **fix(sql)**: `R__seed_message_templates.sql` / `R__insert_dev_test_data.sql` 欢迎语移除"议价"相关文案
+- **test**: 后端 11 模块全量回归 + 前端 tsc + vitest
+
+### 2026-06-25 — AI 资产管理定位回滚（好物→资产）
+
+- **refactor(brand)**: 品牌定位回滚 —— "AI 好物管家" → "**AI 资产管理**"(EasyOrange — AI 资产管理 · 让每一份资产,运转不息)
+- **refactor(naming)**: 文案回滚 —— 好物 → 资产 / 管家 → AI 资产管家 / 买家 → 认领方 / 卖家 → 资产方
+- **refactor(frontend)**: `HeroSection` 主标题 "让每一份价值,物尽其用" → "让每一份价值,运转不息";副标改回 "AI 资产管理 · 把资产交给我们,管家替你估值、写描述、自动调价"
+- **refactor(frontend)**: `Footer` / `LoginPage` / `HomePage` / `AIFeaturesSection` / `ProductDetailPage` 同步资产方/认领方术语
+- **refactor(backend)**: 后端 Java 实体 / 领域事件 / Port 接口 / Service / 测试 —— 卖家→资产方、买家→认领方、好物→资产
+- **refactor(sql)**: Flyway 迁移脚本 `R__seed_categories.sql` / `R__seed_message_templates.sql` / `V1__init_schema.sql` / `R__insert_dev_test_data.sql` 全部回滚到资产方/认领方术语
+- **refactor(docs)**: `doc/集成/AI-替卖家运营.md` → `AI-资产管理.md`;`PRODUCT_DIRECTION.md` / `CLAUDE.md` / `DATABASE.md` / `AGENTS.md` 同步
+- **refactor(admin)**: 管理后台订单/商品 `AdminOrder` 字段文案 —— 买家/卖家 → 认领方/资产方(全平台术语统一)
+- **test**: 前端测试 + 后端测试 全部同步更新
+
+### 2026-06-25 — AI 好物管家定位重塑
+
+- **refactor(brand)**: 全平台品牌重塑 — "AI 替卖家运营" → "**AI 好物管家**"(EasyOrange — AI 好物管家 · 让每一份价值,物尽其用)
+- **refactor(naming)**: 文案统一替换表 —— 资产 → 好物 / 议价 → 管家 / 智能助手 → AI 好物管家
+- **refactor(frontend)**: `AIFeaturesSection` 完全重写 —— 从"4 张静态卡片"改为"双列管道 + 管家日报"(`StewardDailyReport` + `PipelineStepRow`)
+- **refactor(frontend)**: `HeroSection` 主标题 —— "让闲置流转,让价值延续" → "让每一份价值,物尽其用";副标 "设一个底价,AI 替你议价、改价、撮合" → "AI 好物管家 · 设一个底价,管家替你估值、写描述、自动调价"
+- **refactor(frontend)**: `Footer` / `LoginPage` / `HomePage` 同步新定位
+- **refactor(docs)**: `PRODUCT_DIRECTION.md` v1.0 → v2.0 —— 4 决策点扩为 6 决策点(双端对称),新增"AI 信用画像" + "AI 智能找货" + "AI 物品评估"
+- **refactor(docs)**: `README.md` 顶部"AI 替卖家运营的 C2C 平台" → "AI 好物管家 · 让每一份价值,物尽其用"
+- **test**: `HeroSection.test.tsx` + `Footer.test.tsx` 文案同步
+
 ### 2026-06-24 — 知识库整理（neat-freak）
 
 - **docs**: 新建 `doc/集成/` 目录，含 `AI-替卖家运营.md`（4 决策点/议价规则/阶梯降价/WebSocket 协议）和 `API-速查.md`（全模块 REST+WebSocket 端点）
@@ -19,8 +72,8 @@
 - **feat(frontend)**: 前端完整议价交互（AI 托管开关 + 出价弹窗 + 还价弹窗 + 阶梯降价指示条 + useOfferSocket 实时推送）
 - **feat(application)**: 跨模块编排适配器（AiOrderCreationAdapter + OfferProcessingAdapter）
 - **refactor(product)**: NegotiationMessagePort 从 ai 模块移至 product 模块解决循环依赖
-- **refactor(brand)**: 全平台品牌重塑 — "二手交易平台"→"EasyOrange — AI 替卖家运营的 C2C 平台"（32 文件）
-- **test**: 后端新增 ~146 测试用例（总计 2,692），前端 945 测试用例全部通过
+- **refactor(brand)**: 全平台品牌重塑 — "资产流转平台"→"EasyOrange — AI 替卖家运营的 C2C 平台"（32 文件）
+- **test**: 后端新增 ~146 测试用例（总计 1,269），前端 945 测试用例全部通过
 
 ### 2026-06-23 — 错误码体系精简与一致性优化
 

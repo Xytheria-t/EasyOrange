@@ -103,14 +103,14 @@ class OrderAggregateTest {
         }
 
         @Test
-        @DisplayName("买家不能购买自己的商品")
+        @DisplayName("认领方不能认领自己的资产")
         void createOrder_buyerEqualsSeller_throws() {
             assertThatThrownBy(() -> OrderAggregate.createOrder(
                     UserId.of(BUYER_ID), UserId.of(BUYER_ID), singleItemList(),
                     Address.of("地址"), Phone.of("13800138000"), "备注",
                     ORDER_ID
             )).isInstanceOf(Exception.class)
-              .hasMessageContaining("不能购买自己的商品");
+              .hasMessageContaining("不能认领自己的资产");
         }
 
         @Test
@@ -121,7 +121,7 @@ class OrderAggregateTest {
                     Address.of("地址"), Phone.of("13800138000"), "备注",
                     ORDER_ID
             )).isInstanceOf(Exception.class)
-              .hasMessageContaining("订单商品不能为空");
+              .hasMessageContaining("订单资产不能为空");
         }
     }
 

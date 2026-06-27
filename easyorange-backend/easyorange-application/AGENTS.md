@@ -139,12 +139,10 @@ easyorange-application
 | `OrderProductInventoryAdapter` | `ProductInventoryPort` | order | 商品库存操作 |
 | `OrderProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
 | `OrderUserInfoAdapter` | `UserInfoPort` | order | 用户信息查询 |
-| `SellerInfoAdapter` | `SellerInfoPort` | product | 卖家信息查询 |
+| `SellerInfoAdapter` | `SellerInfoPort` | product | 资产方信息查询 |
 | `MessageUserInfoAdapter` | `UserInfoPort` | message | 用户信息查询 |
 | `FavoriteProductInfoAdapter` | `ProductInfoPort` | favorite | 商品信息查询 |
 | `ProductNotificationAdapter` | `ProductNotificationPort` | product | 商品事件通知（发布、售出、库存预警） |
-| `AiOrderCreationAdapter` | `OrderCreationPort` | product | AI 议价接受后创建订单（含 SecurityContext 注入） |
-| `OfferProcessingAdapter` | `OfferProcessingPort` | message | AI 议价 WebSocket 处理（委派给 OfferAppService） |
 | `ProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | MySQL search_text 索引写入 |
 | `ElasticsearchProductSearchIndexAdapter` | `ProductSearchIndexPort` | product | ES 搜索索引写入（条件激活） |
 | `ElasticsearchProductSearchQueryAdapter` | — | — | ES 商品搜索查询（含分面聚合） |

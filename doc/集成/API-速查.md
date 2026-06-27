@@ -29,7 +29,7 @@
 | 上下架 | `PUT /api/products/{id}/status` | Access Token（资产方） |
 | 上传图片 | `POST /api/uploads/image` | Access Token |
 
-详见 [AI-替卖家运营.md](./AI-替卖家运营.md) 的 WebSocket 协议。
+详见 [AI-资产管理.md](./AI-资产管理.md) 的 WebSocket 协议。
 
 ## 三、搜索
 
@@ -47,7 +47,7 @@
 | 我的订单（买入） | `GET /api/orders/my` | Access Token |
 | 卖出订单 | `GET /api/orders/sold` | Access Token |
 | 取消订单 | `PUT /api/orders/{id}/cancel` | Access Token（订单双方） |
-| 确认收货 | `PUT /api/orders/{id}/confirm` | Access Token（买家） |
+| 确认收货 | `PUT /api/orders/{id}/confirm` | Access Token（认领方） |
 
 ## 五、支付
 
@@ -77,7 +77,7 @@
 | 智能问答 | `POST /api/ai/qa` | productId, question |
 | 智能文案 | `POST /api/ai/generate-copy` | productInfo + style (standard/detailed/concise/emotional) |
 | 语义搜索 | `GET /api/ai/semantic-search` | keyword, pageNum, pageSize |
-| AI 议价 | WebSocket `/app/offer.make` | productId, offerPrice |
+| AI 议价 | ~~已下线~~ | — | — |
 | 智能导购搜索 | `GET /api/ai/guide-search` | query, filters |
 
 ## 八、信用
@@ -126,5 +126,5 @@
 
 **相关文档**：
 - 架构 [doc/架构/](../架构/)
-- AI 替卖家运营 [AI-替卖家运营.md](./AI-替卖家运营.md)
+- AI 能力清单 [AI-资产管理.md](./AI-资产管理.md)
 - 顶层规则 [AGENTS.md](../../AGENTS.md)

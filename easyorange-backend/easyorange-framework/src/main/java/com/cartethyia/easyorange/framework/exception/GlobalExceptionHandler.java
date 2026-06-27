@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.framework.exception;
 
+import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.framework.util.RequestUtil;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -23,181 +25,123 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.*;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BaseBusinessException.class)
-    public ResponseEntity<Result<Void>> handleBaseBusinessException(BaseBusinessException e) {
-        log.warn("业务异常[code={}, type={}]: {}", e.getCode(), e.getClass().getSimpleName(), e.getMessage());
-        return ResponseEntity
-                .status(mapToHttpStatus(e.getCode()))
-                .body(Result.error(e.getCode(), e.getMessage()));
-    }
-
-    @ExceptionHandler(ParamValidationException.class)
-    public ResponseEntity<Result<Map<String, String>>> handleParamValidationException(ParamValidationException e) {
-        log.warn("action=validate_error, errors={}", e.getFieldErrors());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, e.getFirstErrorMessage()));
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Result<Void>> handleAccessDeniedException(AccessDeniedException e) {
-        log.warn("权限不足[path={}]: {}", RequestUtil.getRequestPath(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Result.error(ResultCode.FORBIDDEN));
-    }
-
-    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<Result<Void>> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException e) {
-        log.warn("请求方法不支持[method={}]: {}", e.getMethod(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(Result.error(ResultCode.METHOD_NOT_ALLOWED));
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Result<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-        String message = extractAllErrors(e.getBindingResult());
-        log.warn("action=validate_failed, msg={}", message);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, message));
-    }
-
-    @ExceptionHandler(BindException.class)
-    public ResponseEntity<Result<Void>> handleBindException(BindException e) {
-        String message = extractAllErrors(e.getBindingResult());
-        log.warn("action=bind_error, msg={}", message);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, message));
-    }
-
-    private String extractFieldErrors(List<org.springframework.validation.FieldError> errors) {
-        return errors.stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining("; "));
-    }
-
-    private String extractAllErrors(org.springframework.validation.BindingResult bindingResult) {
-        var sb = new StringBuilder();
-        
-        List<org.springframework.validation.FieldError> fieldErrors = bindingResult.getFieldErrors();
-        if (!fieldErrors.isEmpty()) {
-            sb.append(extractFieldErrors(fieldErrors));
-        }
-        
-        List<org.springframework.validation.ObjectError> globalErrors = bindingResult.getGlobalErrors();
-        if (!globalErrors.isEmpty()) {
-            if (sb.length() > 0) {
-                sb.append("; ");
-            }
-            String globalMessages = globalErrors.stream()
-                    .map(org.springframework.validation.ObjectError::getDefaultMessage)
-                    .collect(Collectors.joining("; "));
-            sb.append(globalMessages);
-        }
-        
-        return sb.toString();
-    }
-
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<Result<Void>> handleConstraintViolationException(ConstraintViolationException e) {
-        String message = e.getConstraintViolations().stream()
-                .map(ConstraintViolation::getMessage)
-                .collect(Collectors.joining("; "));
-        log.warn("action=constraint_error, msg={}", message);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, message));
-    }
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<Result<Void>> handleMissingServletRequestParameterException(MissingServletRequestParameterException e) {
-        log.warn("action=missing_param, name={}", e.getParameterName());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, "缺少必填参数：" + e.getParameterName()));
-    }
-
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Result<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
-        log.warn("action=body_parse_error");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, "请求体格式错误"));
-    }
-
-    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<Result<Void>> handleMethodArgumentTypeMismatchException(MethodArgumentTypeMismatchException e) {
-        log.warn("参数类型转换失败[name={}, value={}]: {}", e.getName(), e.getValue(), e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, "参数 '" + e.getName() + "' 类型错误"));
-    }
-
-    @ExceptionHandler(NoHandlerFoundException.class)
-    public ResponseEntity<Result<Void>> handleNoHandlerFoundException(NoHandlerFoundException e) {
-        log.warn("请求地址不存在: {}", e.getRequestURL());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error(ResultCode.NOT_FOUND));
-    }
-
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Result<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
-        log.debug("静态资源不存在: {}", e.getResourcePath());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Result.error(ResultCode.NOT_FOUND));
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Result<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
-        log.warn("非法参数: {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, e.getMessage()));
-    }
-
-    @ExceptionHandler(DuplicateKeyException.class)
-    public ResponseEntity<Result<Void>> handleDuplicateKeyException(DuplicateKeyException e) {
-        log.warn("action=duplicate_key, path={}, msg={}", RequestUtil.getRequestPath(), e.getMessage());
-        String userMessage = extractDuplicateFieldMessage(e.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, userMessage));
-    }
-
-    private String extractDuplicateFieldMessage(String errorMessage) {
-        return "数据已存在，请检查输入";
-    }
-
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Result<Void>> handleException(Exception e) {
-        log.error("action=system_error, path={}", RequestUtil.getRequestPath(), e);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Result.error(ResultCode.INTERNAL_SERVER_ERROR));
+    public ResponseEntity<Result<Void>> handle(Exception e) {
+        return switch (e) {
+            case ParamValidationException p -> {
+                log.warn("action=validate_error, errors={}", p.getFieldErrors());
+                yield badRequest(p.getFirstErrorMessage());
+            }
+            case BaseBusinessException b -> {
+                log.warn("业务异常[code={}, type={}]: {}", b.getCode(), b.getClass().getSimpleName(), b.getMessage());
+                yield response(resolveHttpStatus(b.getCode()), b.getCode(), b.getMessage());
+            }
+            case AccessDeniedException _ -> response(FORBIDDEN, ResultCode.FORBIDDEN);
+            case HttpRequestMethodNotSupportedException _ -> response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
+            case MethodArgumentNotValidException _, BindException _ ->
+                    handleBindingErrors(getBindingResult(e));
+            case ConstraintViolationException c -> {
+                var msg = c.getConstraintViolations().stream()
+                        .map(ConstraintViolation::getMessage)
+                        .collect(Collectors.joining("; "));
+                log.warn("action=constraint_error, msg={}", msg);
+                yield badRequest(msg);
+            }
+            case MissingServletRequestParameterException m -> {
+                log.warn("action=missing_param, name={}", m.getParameterName());
+                yield badRequest("缺少必填参数：" + m.getParameterName());
+            }
+            case HttpMessageNotReadableException _ -> {
+                log.warn("action=body_parse_error");
+                yield badRequest("请求体格式错误");
+            }
+            case MethodArgumentTypeMismatchException m -> {
+                log.warn("参数类型转换失败[name={}, value={}]: {}", m.getName(), m.getValue(), m.getMessage());
+                yield badRequest("参数 '" + m.getName() + "' 类型错误");
+            }
+            case NoHandlerFoundException n -> {
+                log.warn("请求地址不存在: {}", n.getRequestURL());
+                yield response(NOT_FOUND, ResultCode.NOT_FOUND);
+            }
+            case NoResourceFoundException n -> {
+                log.debug("静态资源不存在: {}", n.getResourcePath());
+                yield response(NOT_FOUND, ResultCode.NOT_FOUND);
+            }
+            case IllegalArgumentException a -> {
+                log.warn("非法参数: {}", a.getMessage());
+                yield badRequest(a.getMessage());
+            }
+            case DuplicateKeyException _ -> badRequest("数据已存在，请检查输入");
+            default -> {
+                log.error("action=system_error, type={}", e.getClass().getName(), e);
+                yield response(INTERNAL_SERVER_ERROR, ResultCode.INTERNAL_SERVER_ERROR);
+            }
+        };
     }
 
-    /**
-     * 根据错误码前缀映射到 HTTP 状态码
-     *
-     * <p>A - 成功/客户端语义: A0401/A0402→401, A0403→403, A0404→404, A0405→405, A0500→400, 其余A→200</p>
-     * <p>B - 业务错误: 400</p>
-     * <p>C - 系统错误: 500</p>
-     * <p>D - 第三方错误: 502</p>
-     * <p>未知前缀: 400</p>
-     * <p>null: 500</p>
-     *
-     * @param code 业务错误码
-     * @return 映射后的 HTTP 状态码
-     */
-    private int mapToHttpStatus(String code) {
-        if (code == null) {
-            return 500;
+    private ResponseEntity<Result<Void>> handleBindingErrors(BindingResult br) {
+        var msg = extractAllErrors(br);
+        log.warn("action=validation_error, msg={}", msg);
+        return badRequest(msg);
+    }
+
+    private static BindingResult getBindingResult(Exception e) {
+        return e instanceof MethodArgumentNotValidException m
+               ? m.getBindingResult()
+               : ((BindException) e).getBindingResult();
+    }
+
+    private static String extractAllErrors(BindingResult br) {
+        var fieldPart = br.getFieldErrors().stream()
+                .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        var globalPart = br.getGlobalErrors().stream()
+                .map(ObjectError::getDefaultMessage)
+                .collect(Collectors.joining("; "));
+        if (fieldPart.isEmpty()) return globalPart;
+        if (globalPart.isEmpty()) return fieldPart;
+        return fieldPart + "; " + globalPart;
+    }
+
+    private static <T> ResponseEntity<Result<T>> response(HttpStatus status, IResultCode code) {
+        return ResponseEntity.status(status).body(Result.error(code));
+    }
+
+    private static <T> ResponseEntity<Result<T>> response(HttpStatus status, String code, String msg) {
+        return ResponseEntity.status(status).body(Result.error(code, msg));
+    }
+
+    private static <T> ResponseEntity<Result<T>> badRequest(String msg) {
+        return ResponseEntity.status(BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, msg));
+    }
+
+    private static HttpStatus resolveHttpStatus(String errorCode) {
+        if (errorCode == null || errorCode.isEmpty()) {
+            return errorCode == null ? INTERNAL_SERVER_ERROR : BAD_REQUEST;
         }
-        if (code.isEmpty()) {
-            return 400;
+        if (errorCode.charAt(0) != 'A') {
+            return switch (errorCode.charAt(0)) {
+                case 'C' -> INTERNAL_SERVER_ERROR;
+                case 'D' -> BAD_GATEWAY;
+                default -> BAD_REQUEST;
+            };
         }
-        return switch (code.charAt(0)) {
-            case 'A' -> {
-                if (code.length() >= 5) {
-                    yield switch (code.substring(2, 5)) {
-                        case "401", "402" -> 401;
-                        case "403"        -> 403;
-                        case "404"        -> 404;
-                        case "405"        -> 405;
-                        case "500"        -> 400;
-                        default           -> 200;
-                    };
-                }
-                yield 200;
-            }
-            case 'C' -> 500;
-            case 'D' -> 502;
-            default  -> 400;
+        if (errorCode.length() < 5) return OK;
+        return switch (errorCode.substring(errorCode.length() - 3)) {
+            case "401", "402" -> UNAUTHORIZED;
+            case "403" -> FORBIDDEN;
+            case "404" -> NOT_FOUND;
+            case "405" -> METHOD_NOT_ALLOWED;
+            case "500" -> BAD_REQUEST;
+            default -> OK;
         };
     }
 }

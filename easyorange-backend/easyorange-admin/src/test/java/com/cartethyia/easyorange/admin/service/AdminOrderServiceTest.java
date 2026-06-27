@@ -98,8 +98,8 @@ class AdminOrderServiceTest {
                     .thenReturn(new OrderQueryResult(List.of(order), 1, 1, 20));
             when(adminUserQueryPort.getUserInfos(anyList()))
                     .thenReturn(Map.of(
-                        BUYER_ID, new UserInfo(BUYER_ID, "buyer", "买家", null, null),
-                        SELLER_ID, new UserInfo(SELLER_ID, "seller", "卖家", null, null)
+                        BUYER_ID, new UserInfo(BUYER_ID, "buyer", "认领方", null, null),
+                        SELLER_ID, new UserInfo(SELLER_ID, "seller", "资产方", null, null)
                     ));
             when(adminOrderQueryPort.getOrderItems(anyList()))
                     .thenReturn(Map.of(ORDER_ID, List.of(
@@ -125,9 +125,9 @@ class AdminOrderServiceTest {
             OrderReadModel model = createReadModel(0);
             when(orderReadRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(model));
             when(adminUserQueryPort.getUserInfo(BUYER_ID))
-                    .thenReturn(new UserInfo(BUYER_ID, "buyer", "买家", null, null));
+                    .thenReturn(new UserInfo(BUYER_ID, "buyer", "认领方", null, null));
             when(adminUserQueryPort.getUserInfo(SELLER_ID))
-                    .thenReturn(new UserInfo(SELLER_ID, "seller", "卖家", null, null));
+                    .thenReturn(new UserInfo(SELLER_ID, "seller", "资产方", null, null));
             when(adminOrderQueryPort.getProducts(anyList()))
                     .thenReturn(Map.of(PRODUCT_ID, new ProductInfo(PRODUCT_ID, "测试商品", new BigDecimal("99.99"))));
 
@@ -182,7 +182,7 @@ class AdminOrderServiceTest {
                     "地址", "13800138000", "备注", null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            orderService.cancelOrder(ORDER_ID, "买家申请取消");
+            orderService.cancelOrder(ORDER_ID, "认领方申请取消");
 
             verify(orderRepository).update(argThat(a -> a.status() == OrderStatus.CANCELLED));
         }

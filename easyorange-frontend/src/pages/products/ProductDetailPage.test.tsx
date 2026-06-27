@@ -122,7 +122,7 @@ function createMockProduct(overrides: Partial<Product> = {}): Product {
     views: 100,
     favorites: 20,
     sellerId: 'seller1',
-    sellerName: '卖家张三',
+    sellerName: '资产方张三',
     sellerAvatar: null,
     sellerRating: 4.5,
     createTime: '2026-05-01T10:00:00Z',
@@ -214,7 +214,7 @@ describe('ProductDetailPage', () => {
     const categoryElements = screen.getAllByText('电子产品');
     expect(categoryElements.length).toBeGreaterThanOrEqual(1);
     // Seller
-    expect(screen.getByText('卖家张三')).toBeInTheDocument();
+    expect(screen.getByText('资产方张三')).toBeInTheDocument();
   });
 
   it('shows "在售" status badge for ONLINE product', () => {
@@ -296,8 +296,8 @@ describe('ProductDetailPage', () => {
 
     // Owner sees "编辑商品" button
     expect(screen.getByText('编辑商品')).toBeInTheDocument();
-    // Owner does NOT see "联系卖家" in the action buttons area
-    expect(screen.queryByText('联系卖家')).not.toBeInTheDocument();
+    // Owner does NOT see "联系资产方" in the action buttons area
+    expect(screen.queryByText('联系资产方')).not.toBeInTheDocument();
   });
 
   it('shows "修改并重新提交" button for owner when product is REJECTED', () => {
@@ -332,8 +332,8 @@ describe('ProductDetailPage', () => {
 
     renderPage();
 
-    // Buyer sees "联系卖家" section
-    const contactBtns = screen.getAllByText('联系卖家');
+    // Buyer sees "联系资产方" section
+    const contactBtns = screen.getAllByText('联系资产方');
     expect(contactBtns.length).toBeGreaterThanOrEqual(1);
   });
 

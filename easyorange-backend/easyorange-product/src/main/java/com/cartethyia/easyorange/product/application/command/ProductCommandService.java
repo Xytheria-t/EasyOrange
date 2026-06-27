@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
@@ -10,9 +9,7 @@ import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldComma
 import com.cartethyia.easyorange.product.application.command.dto.RestoreStockCommand;
 import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusException;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.PriceAdjustedResult;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductDeletedResult;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductMarkedSoldResult;
@@ -28,7 +25,6 @@ import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
-import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
@@ -57,27 +53,12 @@ public class ProductCommandService {
     public Long createProduct(CreateProductCommand command) {
         Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ConsignmentMode mode = ConsignmentMode.fromCode(command.getConsignmentMode());
-        Money floorPrice = null;
-        if (mode == ConsignmentMode.AI_MANAGED) {
-            BizRequire.requireTrue(command.getFloorPrice() != null,
-                    "AI托管模式必须设置底价");
-            floorPrice = Money.of(command.getFloorPrice());
-            BizRequire.requireTrue(floorPrice.isGreaterThan(Money.ZERO),
-                    "底价必须大于0");
-            BizRequire.requireTrue(
-                    floorPrice.isLessThanOrEqual(Money.of(command.getPrice())),
-                    "底价不能高于标价");
-        }
-
         ProductCreatedResult result = Product.create(
                 SellerId.of(userId),
                 CategoryId.of(command.getCategoryId()),
                 ProductTitle.of(command.getName()),
                 Money.of(command.getPrice()),
                 command.getOriginalPrice() != null ? Money.of(command.getOriginalPrice()) : null,
-                floorPrice,
-                mode,
                 StockQuantity.of(command.getStock() != null ? command.getStock() : 1),
                 ConditionLevel.fromCode(command.getConditionLevel()),
                 TradeLocation.of(command.getLocation()),
@@ -89,15 +70,6 @@ public class ProductCommandService {
         domainEventPublisher.publish(result.event());
 
         return saved.getId().value();
-    }
-
-    public void adjustPrice(Long productId, int targetLevel) {
-        Product product = productRepository.findById(ProductId.of(productId))
-                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(productId)));
-        PriceAdjustedResult result = product.adjustPrice(targetLevel);
-        productRepository.update(result.product());
-        domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(productId);
     }
 
     public void updateProduct(UpdateProductCommand command) {
@@ -117,8 +89,6 @@ public class ProductCommandService {
                 command.getOriginalPrice() != null ? Money.of(command.getOriginalPrice()) : null,
                 command.getStock() != null ? StockQuantity.of(command.getStock()) : null,
                 command.getConditionLevel() != null ? ConditionLevel.fromCode(command.getConditionLevel()) : null,
-                command.getConsignmentMode() != null ? ConsignmentMode.fromCode(command.getConsignmentMode()) : null,
-                command.getFloorPrice() != null ? Money.of(command.getFloorPrice()) : null,
                 command.getLocation() != null ? TradeLocation.of(command.getLocation()) : null,
                 command.getContactMethod() != null ? ContactMethod.of(command.getContactMethod()) : null,
                 command.getDescription() != null ? ProductDescription.of(command.getDescription()) : null,

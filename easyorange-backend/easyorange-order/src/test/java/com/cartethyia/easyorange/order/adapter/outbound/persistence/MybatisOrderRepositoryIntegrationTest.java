@@ -144,7 +144,7 @@ class MybatisOrderRepositoryIntegrationTest {
     class FindByBuyerIdTests {
 
         @Test
-        @DisplayName("查询买家的所有订单")
+        @DisplayName("查询认领方的所有订单")
         void findByBuyerId_returnsOrders() {
             orderRepository.save(createPendingOrder(400L, 10L, 20L));
             orderRepository.save(createPendingOrder(401L, 10L, 30L));
@@ -155,7 +155,7 @@ class MybatisOrderRepositoryIntegrationTest {
         }
 
         @Test
-        @DisplayName("买家无订单返回空列表")
+        @DisplayName("认领方无订单返回空列表")
         void findByBuyerId_noOrders_returnsEmpty() {
             List<OrderAggregate> orders = orderRepository.findByBuyerId(UserId.of(999L));
             assertThat(orders).isEmpty();
@@ -167,7 +167,7 @@ class MybatisOrderRepositoryIntegrationTest {
     class FindBySellerIdTests {
 
         @Test
-        @DisplayName("查询卖家的所有订单")
+        @DisplayName("查询资产方的所有订单")
         void findBySellerId_returnsOrders() {
             orderRepository.save(createPendingOrder(500L, 10L, 20L));
             orderRepository.save(createPendingOrder(501L, 11L, 20L));

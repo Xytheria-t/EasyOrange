@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRep
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,8 +57,6 @@ class ProductQueryServiceTest {
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("100")),
                 null,
-                null,
-                ConsignmentMode.MANUAL,
                 StockQuantity.of(10),
                 ConditionLevel.NEW,
                 TradeLocation.of("北京"),

@@ -12,7 +12,6 @@ ai/
 ├── adapter/                        # 适配器 (AI 供应商实现)
 │   ├── DeepSeekLlmAdapter.java     # DeepSeek 文本模型实现
 │   ├── QwenVlVisionAdapter.java    # 通义千问 VL 视觉模型实现
-│   ├── DeepSeekNegotiationMessageAdapter.java  # 议价话术 LLM 生成 (实现 product.domain.port.NegotiationMessagePort)
 │   ├── CachingLlmAdapter.java      # @Primary 装饰器，L1+L2 缓存
 │   ├── CachingVisionAdapter.java   # @Primary 装饰器，L1+L2 缓存
 │   ├── outbound/

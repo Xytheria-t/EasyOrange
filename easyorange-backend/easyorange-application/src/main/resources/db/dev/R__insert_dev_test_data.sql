@@ -12,16 +12,16 @@ INSERT INTO `eo_user` (
     `sex`, `status`, `del_flag`, `email`, `phonenumber`, `student_id`,
     `real_name`, `avatar`, `create_time`, `update_time`
 ) VALUES
-(1,  'testuser',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '测试用户',   0, 0, 0, 'testuser@campus.edu',    '13800138001', '2023001', '张三',   'https://picsum.photos/seed/avatar1/100/100',  NOW() - INTERVAL 90 DAY, NOW()),
-(2,  'admin',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '02', '管理员',     1, 0, 0, 'admin@campus.edu',       '13800138002', NULL,      '李管理', 'https://picsum.photos/seed/avatar2/100/100',  NOW() - INTERVAL 120 DAY, NOW()),
-(3,  'liming',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '黎明',       1, 0, 0, 'liming@campus.edu',      '13800138003', '2023002', '黎明',   'https://picsum.photos/seed/avatar3/100/100',  NOW() - INTERVAL 60 DAY, NOW()),
-(4,  'wangfang',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '小芳同学',   2, 0, 0, 'wangfang@campus.edu',    '13800138004', '2023003', '王芳',   'https://picsum.photos/seed/avatar4/100/100',  NOW() - INTERVAL 45 DAY, NOW()),
-(5,  'zhaowei',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '赵伟',       1, 0, 0, 'zhaowei@campus.edu',     '13800138005', '2023004', '赵伟',   'https://picsum.photos/seed/avatar5/100/100',  NOW() - INTERVAL 30 DAY, NOW()),
-(6,  'sunli',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '孙丽',       2, 0, 0, 'sunli@campus.edu',       '13800138006', '2023005', '孙丽',   'https://picsum.photos/seed/avatar6/100/100',  NOW() - INTERVAL 20 DAY, NOW()),
-(7,  'zhouyang',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '周洋',       1, 0, 0, 'zhouyang@campus.edu',    '13800138007', '2023006', '周洋',   'https://picsum.photos/seed/avatar7/100/100',  NOW() - INTERVAL 15 DAY, NOW()),
-(8,  'chenxiao',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '陈晓',       2, 0, 0, 'chenxiao@campus.edu',    '13800138008', '2023007', '陈晓',   'https://picsum.photos/seed/avatar8/100/100',  NOW() - INTERVAL 10 DAY, NOW()),
-(9,  'lockeduser','$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '被锁定用户', 0, 2, 0, 'locked@campus.edu',      '13800138009', '2023008', '刘锁',   NULL,                                           NOW() - INTERVAL 5 DAY, NOW()),
-(10, 'disableduser','$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK','01', '已禁用用户', 0, 1, 0, 'disabled@campus.edu',    '13800138010', '2023009', '吴禁',   NULL,                                           NOW() - INTERVAL 3 DAY, NOW())
+(1,  'testuser',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '测试用户',   0, 0, 0, 'testuser@example.com',    '13800138001', '2023001', '张三',   'https://picsum.photos/seed/avatar1/100/100',  NOW() - INTERVAL 90 DAY, NOW()),
+(2,  'admin',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '02', '管理员',     1, 0, 0, 'admin@example.com',       '13800138002', NULL,      '李管理', 'https://picsum.photos/seed/avatar2/100/100',  NOW() - INTERVAL 120 DAY, NOW()),
+(3,  'liming',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '黎明',       1, 0, 0, 'liming@example.com',      '13800138003', '2023002', '黎明',   'https://picsum.photos/seed/avatar3/100/100',  NOW() - INTERVAL 60 DAY, NOW()),
+(4,  'wangfang',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '小芳同学',   2, 0, 0, 'wangfang@example.com',    '13800138004', '2023003', '王芳',   'https://picsum.photos/seed/avatar4/100/100',  NOW() - INTERVAL 45 DAY, NOW()),
+(5,  'zhaowei',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '赵伟',       1, 0, 0, 'zhaowei@example.com',     '13800138005', '2023004', '赵伟',   'https://picsum.photos/seed/avatar5/100/100',  NOW() - INTERVAL 30 DAY, NOW()),
+(6,  'sunli',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '孙丽',       2, 0, 0, 'sunli@example.com',       '13800138006', '2023005', '孙丽',   'https://picsum.photos/seed/avatar6/100/100',  NOW() - INTERVAL 20 DAY, NOW()),
+(7,  'zhouyang',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '周洋',       1, 0, 0, 'zhouyang@example.com',    '13800138007', '2023006', '周洋',   'https://picsum.photos/seed/avatar7/100/100',  NOW() - INTERVAL 15 DAY, NOW()),
+(8,  'chenxiao',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '陈晓',       2, 0, 0, 'chenxiao@example.com',    '13800138008', '2023007', '陈晓',   'https://picsum.photos/seed/avatar8/100/100',  NOW() - INTERVAL 10 DAY, NOW()),
+(9,  'lockeduser','$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '被锁定用户', 0, 2, 0, 'locked@example.com',      '13800138009', '2023008', '刘锁',   NULL,                                           NOW() - INTERVAL 5 DAY, NOW()),
+(10, 'disableduser','$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK','01', '已禁用用户', 0, 1, 0, 'disabled@example.com',    '13800138010', '2023009', '吴禁',   NULL,                                           NOW() - INTERVAL 3 DAY, NOW())
 AS new
 ON DUPLICATE KEY UPDATE
     `nick_name` = new.`nick_name`,
@@ -48,7 +48,7 @@ INSERT INTO `eo_category` (
 (30, '鞋靴',     3, 2, 1, 1, 0, NOW(), NOW()),
 (31, '服装',     3, 2, 2, 1, 0, NOW(), NOW()),
 (32, '箱包',     3, 2, 3, 1, 0, NOW(), NOW()),
-(40, '宿舍好物', 4, 2, 1, 1, 0, NOW(), NOW()),
+(40, '生活用品', 4, 2, 1, 1, 0, NOW(), NOW()),
 (41, '数码配件', 4, 2, 2, 1, 0, NOW(), NOW()),
 (50, '健身器材', 5, 2, 1, 1, 0, NOW(), NOW()),
 (51, '户外运动', 5, 2, 2, 1, 0, NOW(), NOW()),
@@ -62,7 +62,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 3. 商品数据（30+商品：覆盖所有分类、多种状态、不同卖家）
+-- 3. 商品数据（30+商品：覆盖所有分类、多种状态、不同资产方）
 -- ===================================================================
 
 INSERT INTO `eo_product` (
@@ -71,51 +71,51 @@ INSERT INTO `eo_product` (
     `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
 ) VALUES
 -- 电子数码 - 手机
-(1,  1, 10, 'iPhone 14 Pro Max 256G 暗紫色',       5999.00, 7999.00, 1, 1, 328, 9, '校园内',   '微信: test123',  '苹果,手机,旗舰',         'iPhone 14 Pro Max 256G 暗紫色 苹果 手机 旗舰', 0, NOW() - INTERVAL 30 DAY, NOW()),
+(1,  1, 10, 'iPhone 14 Pro Max 256G 暗紫色',       5999.00, 7999.00, 1, 1, 328, 9, '同城',   '微信: test123',  '苹果,手机,旗舰',         'iPhone 14 Pro Max 256G 暗紫色 苹果 手机 旗舰', 0, NOW() - INTERVAL 30 DAY, NOW()),
 (2,  3, 10, '华为 Mate 60 Pro 512G 雅丹黑',        4599.00, 6999.00, 1, 1, 256, 8, '教学楼',   '微信: liming_wx', '华为,手机,拍照',         '华为 Mate 60 Pro 512G 雅丹黑 华为 手机 拍照', 0, NOW() - INTERVAL 25 DAY, NOW()),
-(3,  5, 10, '小米14 Ultra 16+512 白色',            3999.00, 5999.00, 1, 1, 189, 7, '宿舍区',   '微信: zhaowei_wx','小米,手机,徕卡',         '小米14 Ultra 16+512 白色 小米 手机 徕卡',     0, NOW() - INTERVAL 20 DAY, NOW()),
+(3,  5, 10, '小米14 Ultra 16+512 白色',            3999.00, 5999.00, 1, 1, 189, 7, '同城',   '微信: zhaowei_wx','小米,手机,徕卡',         '小米14 Ultra 16+512 白色 小米 手机 徕卡',     0, NOW() - INTERVAL 20 DAY, NOW()),
 (4,  4, 10, 'OPPO Find X7 Ultra 天青蓝',           3299.00, 5499.00, 1, 2, 412, 8, '图书馆',   '微信: wangfang_w','OPPO,手机,影像',         'OPPO Find X7 Ultra 天青蓝 OPPO 手机 影像',   0, NOW() - INTERVAL 60 DAY, NOW()),
 -- 电子数码 - 电脑
 (5,  1, 11, 'MacBook Air M2 13寸轻薄笔记本',       6499.00, 8999.00, 1, 1, 186, 8, '图书馆',   '微信: test123',  '苹果,电脑,轻薄',         'MacBook Air M2 13寸轻薄笔记本 苹果 电脑 轻薄', 0, NOW() - INTERVAL 28 DAY, NOW()),
 (6,  7, 11, 'ThinkPad X1 Carbon Gen11 14寸',       5299.00, 8499.00, 1, 1, 134, 7, '计算机学院','微信: zhouyang_w','ThinkPad,电脑,商务',    'ThinkPad X1 Carbon Gen11 14寸 ThinkPad 电脑 商务', 0, NOW() - INTERVAL 15 DAY, NOW()),
-(7,  3, 11, '华为 MateBook X Pro 2024',            6999.00, 9999.00, 1, 0, 56,  9, '宿舍区',   '微信: liming_wx', '华为,电脑,轻薄',         '华为 MateBook X Pro 2024 华为 电脑 轻薄',     0, NOW() - INTERVAL 2 DAY, NOW()),
+(7,  3, 11, '华为 MateBook X Pro 2024',            6999.00, 9999.00, 1, 0, 56,  9, '同城',   '微信: liming_wx', '华为,电脑,轻薄',         '华为 MateBook X Pro 2024 华为 电脑 轻薄',     0, NOW() - INTERVAL 2 DAY, NOW()),
 -- 电子数码 - 耳机音箱
-(8,  1, 12, 'AirPods Pro 2 代 全新未拆封',         1299.00, 1899.00, 1, 1, 456, 9, '校园内',   '微信: test123',  '苹果,耳机,降噪',         'AirPods Pro 2 代 全新未拆封 苹果 耳机 降噪', 0, NOW() - INTERVAL 22 DAY, NOW()),
-(9,  6, 12, 'Sony WH-1000XM5 头戴式降噪耳机',     1599.00, 2499.00, 1, 1, 198, 8, '宿舍区',   '微信: sunli_wx',  'Sony,耳机,降噪',         'Sony WH-1000XM5 头戴式降噪耳机 Sony 耳机 降噪', 0, NOW() - INTERVAL 18 DAY, NOW()),
+(8,  1, 12, 'AirPods Pro 2 代 全新未拆封',         1299.00, 1899.00, 1, 1, 456, 9, '同城',   '微信: test123',  '苹果,耳机,降噪',         'AirPods Pro 2 代 全新未拆封 苹果 耳机 降噪', 0, NOW() - INTERVAL 22 DAY, NOW()),
+(9,  6, 12, 'Sony WH-1000XM5 头戴式降噪耳机',     1599.00, 2499.00, 1, 1, 198, 8, '同城',   '微信: sunli_wx',  'Sony,耳机,降噪',         'Sony WH-1000XM5 头戴式降噪耳机 Sony 耳机 降噪', 0, NOW() - INTERVAL 18 DAY, NOW()),
 (10, 8, 12, 'JBL Charge 5 蓝牙音箱 黑色',          599.00,  899.00,  1, 1, 87,  7, '操场旁',   '微信: chenxiao_w','JBL,音箱,蓝牙',          'JBL Charge 5 蓝牙音箱 黑色 JBL 音箱 蓝牙',   0, NOW() - INTERVAL 12 DAY, NOW()),
 -- 电子数码 - 智能穿戴
 (11, 1, 13, '小米手环8 NFC版 黑色',                299.00,  349.00,  1, 1, 178, 8, '体育场',   '电话: 13800138001','小米,手环,NFC',          '小米手环8 NFC版 黑色 小米 手环 NFC',          0, NOW() - INTERVAL 35 DAY, NOW()),
-(12, 4, 13, 'Apple Watch SE 2代 40mm 星光色',      1499.00, 1999.00, 1, 1, 145, 8, '校园内',   '微信: wangfang_w','苹果,手表,智能',          'Apple Watch SE 2代 40mm 星光色 苹果 手表 智能', 0, NOW() - INTERVAL 10 DAY, NOW()),
+(12, 4, 13, 'Apple Watch SE 2代 40mm 星光色',      1499.00, 1999.00, 1, 1, 145, 8, '同城',   '微信: wangfang_w','苹果,手表,智能',          'Apple Watch SE 2代 40mm 星光色 苹果 手表 智能', 0, NOW() - INTERVAL 10 DAY, NOW()),
 -- 电子数码 - 游戏设备
-(13, 5, 14, 'Switch OLED 白色 含底座',             1599.00, 2599.00, 1, 1, 267, 8, '宿舍区',   '微信: zhaowei_w','Switch,游戏机,任天堂',     'Switch OLED 白色 含底座 Switch 游戏机 任天堂', 0, NOW() - INTERVAL 40 DAY, NOW()),
-(14, 7, 14, 'PS5 光驱版 国行主机',                 2899.00, 3899.00, 1, 1, 312, 7, '宿舍区',   '微信: zhouyang_w','PS5,游戏机,索尼',         'PS5 光驱版 国行主机 PS5 游戏机 索尼',         0, NOW() - INTERVAL 22 DAY, NOW()),
+(13, 5, 14, 'Switch OLED 白色 含底座',             1599.00, 2599.00, 1, 1, 267, 8, '同城',   '微信: zhaowei_w','Switch,游戏机,任天堂',     'Switch OLED 白色 含底座 Switch 游戏机 任天堂', 0, NOW() - INTERVAL 40 DAY, NOW()),
+(14, 7, 14, 'PS5 光驱版 国行主机',                 2899.00, 3899.00, 1, 1, 312, 7, '同城',   '微信: zhouyang_w','PS5,游戏机,索尼',         'PS5 光驱版 国行主机 PS5 游戏机 索尼',         0, NOW() - INTERVAL 22 DAY, NOW()),
 -- 书籍教材 - 教材
 (15, 1, 20, '高等数学教材全套 上下册',              89.00,  128.00,  1, 1, 145, 7, '教学楼',   '电话: 13800138001','教材,数学,大一',          '高等数学教材全套 上下册 教材 数学 大一',      0, NOW() - INTERVAL 50 DAY, NOW()),
 (16, 4, 20, '线性代数及其应用 第五版',              35.00,  59.00,   1, 1, 89,  6, '数学楼',   '微信: wangfang_w','教材,线代,数学',           '线性代数及其应用 第五版 教材 线代 数学',      0, NOW() - INTERVAL 45 DAY, NOW()),
 (17, 6, 20, '大学物理 上下册 第四版',               55.00,  89.00,   1, 1, 67,  5, '物理楼',   '微信: sunli_wx',  '教材,物理,大学',          '大学物理 上下册 第四版 教材 物理 大学',       0, NOW() - INTERVAL 38 DAY, NOW()),
 -- 书籍教材 - 考研资料
-(18, 3, 21, '考研英语词汇红宝书 2025版',            35.00,  68.00,   1, 1, 234, 6, '考研自习室','微信: liming_wx', '考研,英语,词汇',         '考研英语词汇红宝书 2025版 考研 英语 词汇',   0, NOW() - INTERVAL 20 DAY, NOW()),
+(18, 3, 21, '考研英语词汇红宝书 2025版',            35.00,  68.00,   1, 1, 234, 6, '线下交易点','微信: liming_wx', '考研,英语,词汇',         '考研英语词汇红宝书 2025版 考研 英语 词汇',   0, NOW() - INTERVAL 20 DAY, NOW()),
 (19, 8, 21, '张宇考研数学基础30讲',                45.00,  79.00,   1, 1, 178, 7, '图书馆',   '微信: chenxiao_w','考研,数学,张宇',          '张宇考研数学基础30讲 考研 数学 张宇',        0, NOW() - INTERVAL 15 DAY, NOW()),
-(20, 5, 21, '肖秀荣考研政治全套 2025',              89.00,  158.00,  1, 1, 345, 8, '考研自习室','微信: zhaowei_w','考研,政治,肖秀荣',       '肖秀荣考研政治全套 2025 考研 政治 肖秀荣',   0, NOW() - INTERVAL 12 DAY, NOW()),
+(20, 5, 21, '肖秀荣考研政治全套 2025',              89.00,  158.00,  1, 1, 345, 8, '线下交易点','微信: zhaowei_w','考研,政治,肖秀荣',       '肖秀荣考研政治全套 2025 考研 政治 肖秀荣',   0, NOW() - INTERVAL 12 DAY, NOW()),
 -- 书籍教材 - 课外读物
-(21, 6, 22, '人类简史 从动物到上帝',                28.00,  49.00,   1, 1, 56,  9, '宿舍区',   '微信: sunli_wx',  '课外,历史,畅销',          '人类简史 从动物到上帝 课外 历史 畅销',       0, NOW() - INTERVAL 8 DAY, NOW()),
+(21, 6, 22, '人类简史 从动物到上帝',                28.00,  49.00,   1, 1, 56,  9, '同城',   '微信: sunli_wx',  '课外,历史,畅销',          '人类简史 从动物到上帝 课外 历史 畅销',       0, NOW() - INTERVAL 8 DAY, NOW()),
 (22, 8, 22, '算法导论 第三版 中文版',               65.00,  128.00,  1, 1, 123, 7, '计算机学院','微信: chenxiao_w','算法,计算机,经典',       '算法导论 第三版 中文版 算法 计算机 经典',    0, NOW() - INTERVAL 5 DAY, NOW()),
 -- 服饰鞋包 - 鞋靴
 (23, 3, 30, 'Nike Air Jordan 1 黑白 42码',         699.00,  1299.00, 1, 1, 289, 7, '操场旁',   '微信: liming_wx', 'Nike,球鞋,经典',         'Nike Air Jordan 1 黑白 42码 Nike 球鞋 经典', 0, NOW() - INTERVAL 18 DAY, NOW()),
-(24, 4, 30, 'New Balance 990v6 灰色 38码',         899.00,  1499.00, 1, 1, 167, 8, '宿舍区',   '微信: wangfang_w','NB,跑鞋,复古',            'New Balance 990v6 灰色 38码 NB 跑鞋 复古',   0, NOW() - INTERVAL 14 DAY, NOW()),
+(24, 4, 30, 'New Balance 990v6 灰色 38码',         899.00,  1499.00, 1, 1, 167, 8, '同城',   '微信: wangfang_w','NB,跑鞋,复古',            'New Balance 990v6 灰色 38码 NB 跑鞋 复古',   0, NOW() - INTERVAL 14 DAY, NOW()),
 (25, 7, 30, '阿迪达斯 UltraBoost 22 42码',         299.00,  899.00,  1, 1, 98,  6, '操场旁',   '微信: zhouyang_w','阿迪达斯,跑鞋,Boost',     '阿迪达斯 UltraBoost 22 42码 阿迪达斯 跑鞋 Boost', 0, NOW() - INTERVAL 25 DAY, NOW()),
 -- 服饰鞋包 - 服装
-(26, 6, 31, '北面冲锋衣 黑色 M码 防水',            399.00,  899.00,  1, 1, 156, 8, '宿舍区',   '微信: sunli_wx',  '北面,外套,户外',          '北面冲锋衣 黑色 M码 防水 北面 外套 户外',    0, NOW() - INTERVAL 16 DAY, NOW()),
-(27, 8, 31, '优衣库羽绒服 黑色 L码',               199.00,  499.00,  1, 1, 78,  7, '宿舍区',   '微信: chenxiao_w','优衣库,羽绒服,冬季',      '优衣库羽绒服 黑色 L码 优衣库 羽绒服 冬季',   0, NOW() - INTERVAL 10 DAY, NOW()),
+(26, 6, 31, '北面冲锋衣 黑色 M码 防水',            399.00,  899.00,  1, 1, 156, 8, '同城',   '微信: sunli_wx',  '北面,外套,户外',          '北面冲锋衣 黑色 M码 防水 北面 外套 户外',    0, NOW() - INTERVAL 16 DAY, NOW()),
+(27, 8, 31, '优衣库羽绒服 黑色 L码',               199.00,  499.00,  1, 1, 78,  7, '同城',   '微信: chenxiao_w','优衣库,羽绒服,冬季',      '优衣库羽绒服 黑色 L码 优衣库 羽绒服 冬季',   0, NOW() - INTERVAL 10 DAY, NOW()),
 -- 服饰鞋包 - 箱包
-(28, 5, 32, 'Nike 运动双肩背包 黑色',              159.00,  299.00,  1, 1, 112, 8, '宿舍区',   '微信: zhaowei_w','Nike,背包,运动',           'Nike 运动双肩背包 黑色 Nike 背包 运动',       0, NOW() - INTERVAL 20 DAY, NOW()),
--- 生活用品 - 宿舍好物
-(29, 1, 40, '懒人加湿器 超声波静音款',              89.00,  159.00,  1, 1, 134, 9, '宿舍区',   '微信: test123',  '加湿器,静音,家用',        '懒人加湿器 超声波静音款 加湿器 静音 家用',    0, NOW() - INTERVAL 32 DAY, NOW()),
+(28, 5, 32, 'Nike 运动双肩背包 黑色',              159.00,  299.00,  1, 1, 112, 8, '同城',   '微信: zhaowei_w','Nike,背包,运动',           'Nike 运动双肩背包 黑色 Nike 背包 运动',       0, NOW() - INTERVAL 20 DAY, NOW()),
+-- 生活用品 - 生活用品
+(29, 1, 40, '懒人加湿器 超声波静音款',              89.00,  159.00,  1, 1, 134, 9, '同城',   '微信: test123',  '加湿器,静音,家用',        '懒人加湿器 超声波静音款 加湿器 静音 家用',    0, NOW() - INTERVAL 32 DAY, NOW()),
 (30, 4, 40, '小米台灯Pro 护眼阅读灯',              89.00,  149.00,  1, 1, 167, 8, '图书馆',   '微信: wangfang_w','小米,台灯,护眼',           '小米台灯Pro 护眼阅读灯 小米 台灯 护眼',      0, NOW() - INTERVAL 8 DAY, NOW()),
-(31, 6, 40, '宿舍收纳架 桌面多层置物架',            39.00,  79.00,   2, 1, 89,  8, '宿舍区',   '微信: sunli_wx',  '收纳,宿舍,置物架',        '宿舍收纳架 桌面多层置物架 收纳 宿舍 置物架',  0, NOW() - INTERVAL 5 DAY, NOW()),
-(32, 3, 40, '电热水杯 便携旅行烧水杯 300ml',       69.00,  129.00,  1, 1, 56,  9, '宿舍区',   '微信: liming_wx', '水杯,便携,旅行',          '电热水杯 便携旅行烧水杯 300ml 水杯 便携 旅行', 0, NOW() - INTERVAL 3 DAY, NOW()),
+(31, 6, 40, '生活收纳架 桌面多层置物架',            39.00,  79.00,   2, 1, 89,  8, '同城',   '微信: sunli_wx',  '收纳,生活,置物架',        '生活收纳架 桌面多层置物架 收纳 生活 置物架',  0, NOW() - INTERVAL 5 DAY, NOW()),
+(32, 3, 40, '电热水杯 便携旅行烧水杯 300ml',       69.00,  129.00,  1, 1, 56,  9, '同城',   '微信: liming_wx', '水杯,便携,旅行',          '电热水杯 便携旅行烧水杯 300ml 水杯 便携 旅行', 0, NOW() - INTERVAL 3 DAY, NOW()),
 -- 生活用品 - 数码配件
-(33, 7, 41, 'Anker 65W 氮化镓充电器 三口',         129.00,  199.00,  1, 1, 78,  9, '宿舍区',   '微信: zhouyang_w','充电器,Anker,快充',       'Anker 65W 氮化镓充电器 三口 充电器 Anker 快充', 0, NOW() - INTERVAL 7 DAY, NOW()),
+(33, 7, 41, 'Anker 65W 氮化镓充电器 三口',         129.00,  199.00,  1, 1, 78,  9, '同城',   '微信: zhouyang_w','充电器,Anker,快充',       'Anker 65W 氮化镓充电器 三口 充电器 Anker 快充', 0, NOW() - INTERVAL 7 DAY, NOW()),
 (34, 8, 41, '绿联 Type-C 扩展坞 7合1',             89.00,  159.00,  1, 1, 45,  8, '计算机学院','微信: chenxiao_w','扩展坞,绿联,Type-C',     '绿联 Type-C 扩展坞 7合1 扩展坞 绿联 Type-C', 0, NOW() - INTERVAL 4 DAY, NOW()),
 -- 运动健身 - 健身器材
 (35, 5, 50, '健身瑜伽垫加厚加宽防滑',              69.00,  99.00,   1, 1, 98,  8, '体育馆',   '微信: zhaowei_w','瑜伽,健身,防滑',           '健身瑜伽垫加厚加宽防滑 瑜伽 健身 防滑',      0, NOW() - INTERVAL 15 DAY, NOW()),
@@ -127,11 +127,15 @@ INSERT INTO `eo_product` (
 (39, 5, 60, '原神 60级全图鉴账号',                  599.00,  NULL,    1, 1, 345, 10,'线上交易', '微信: zhaowei_w','原神,游戏,账号',           '原神 60级全图鉴账号 原神 游戏 账号',         0, NOW() - INTERVAL 8 DAY, NOW()),
 -- 虚拟物品 - 会员卡券
 (40, 6, 61, '网易云音乐年卡VIP',                    88.00,   158.00,  1, 1, 67, 10,'线上交易', '微信: sunli_wx',  '网易,音乐,会员',          '网易云音乐年卡VIP 网易 音乐 会员',           0, NOW() - INTERVAL 3 DAY, NOW()),
+(46, 3, 61, '哔哩哔哩大会员 剩余10个月',            45.00,   98.00,   1, 1, 128, 10,'线上交易', '微信: liming_wx', 'B站,会员,视频',           '哔哩哔哩大会员 剩余10个月 B站 会员 视频',    0, NOW() - INTERVAL 2 DAY, NOW()),
+-- 虚拟物品 - 数字素材
+(47, 8, 62, 'Figma设计系统UI组件包 500+矢量',       129.00,  299.00,  1, 1, 89,  10,'线上交易', '微信: chenxiao_w','设计,素材,Figma',         'Figma设计系统UI组件包 500+矢量 设计 素材 Figma', 0, NOW() - INTERVAL 1 DAY, NOW()),
+(48, 5, 62, 'Notion个人版会员 剩余8个月',           199.00,  388.00,  1, 1, 256, 10,'线上交易', '微信: zhaowei_w','Notion,会员,效率',        'Notion个人版会员 剩余8个月 Notion 会员 效率', 0, NOW() - INTERVAL 1 DAY, NOW()),
 -- 更多状态：草稿、下架、已售
-(41, 1, 10, '一加12 16+512 岩息黑（草稿）',        3499.00, 4299.00, 1, 0, 0,   9, '宿舍区',   '微信: test123',  '一加,手机,旗舰',          '一加12 16+512 岩息黑 一加 手机 旗舰',        0, NOW() - INTERVAL 1 DAY, NOW()),
-(42, 3, 11, '联想小新Pro16 2023（已下架）',        3999.00, 5499.00, 1, 3, 234, 7, '宿舍区',   '微信: liming_wx', '联想,电脑,大屏',          '联想小新Pro16 2023 联想 电脑 大屏',          0, NOW() - INTERVAL 90 DAY, NOW()),
-(43, 4, 30, 'Vans 经典款帆布鞋 39码（已售出）',    129.00,  359.00,  0, 2, 567, 6, '宿舍区',   '微信: wangfang_w','Vans,帆布鞋,经典',        'Vans 经典款帆布鞋 39码 Vans 帆布鞋 经典',    0, NOW() - INTERVAL 120 DAY, NOW()),
-(44, 6, 40, '飞利浦电动牙刷 HX6730（已售出）',     99.00,   199.00,  0, 2, 189, 8, '宿舍区',   '微信: sunli_wx',  '飞利浦,牙刷,电动',        '飞利浦电动牙刷 HX6730 飞利浦 牙刷 电动',     0, NOW() - INTERVAL 100 DAY, NOW()),
+(41, 1, 10, '一加12 16+512 岩息黑（草稿）',        3499.00, 4299.00, 1, 0, 0,   9, '同城',   '微信: test123',  '一加,手机,旗舰',          '一加12 16+512 岩息黑 一加 手机 旗舰',        0, NOW() - INTERVAL 1 DAY, NOW()),
+(42, 3, 11, '联想小新Pro16 2023（已下架）',        3999.00, 5499.00, 1, 3, 234, 7, '同城',   '微信: liming_wx', '联想,电脑,大屏',          '联想小新Pro16 2023 联想 电脑 大屏',          0, NOW() - INTERVAL 90 DAY, NOW()),
+(43, 4, 30, 'Vans 经典款帆布鞋 39码（已售出）',    129.00,  359.00,  0, 2, 567, 6, '同城',   '微信: wangfang_w','Vans,帆布鞋,经典',        'Vans 经典款帆布鞋 39码 Vans 帆布鞋 经典',    0, NOW() - INTERVAL 120 DAY, NOW()),
+(44, 6, 40, '飞利浦电动牙刷 HX6730（已售出）',     99.00,   199.00,  0, 2, 189, 8, '同城',   '微信: sunli_wx',  '飞利浦,牙刷,电动',        '飞利浦电动牙刷 HX6730 飞利浦 牙刷 电动',     0, NOW() - INTERVAL 100 DAY, NOW()),
 (45, 8, 21, '汤家凤考研数学1800题（已售出）',      25.00,   49.00,   0, 2, 234, 5, '图书馆',   '微信: chenxiao_w','考研,数学,汤家凤',        '汤家凤考研数学1800题 考研 数学 汤家凤',      0, NOW() - INTERVAL 80 DAY, NOW())
 AS new
 ON DUPLICATE KEY UPDATE
@@ -242,7 +246,13 @@ INSERT INTO `eo_product_image` (
 -- 原神账号
 (46, 39, 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
 -- 网易云年卡
-(47, 40, 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW())
+(47, 40, 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- 哔哩哔哩大会员
+(48, 46, 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Figma设计素材包
+(49, 47, 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW()),
+-- Notion会员
+(50, 48, 'https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b?w=800&auto=format&fit=crop', 0, 1, NOW(), NOW())
 AS new
 ON DUPLICATE KEY UPDATE
     `image_url` = new.`image_url`,
@@ -269,7 +279,7 @@ INSERT INTO `eo_product_detail` (
 (10, 'JBL Charge 5 蓝牙音箱 黑色 防水便携<br><br>【型号】JBL Charge 5 IP67防水<br><br>【成色】7成新，外观有轻微磨损，音质正常<br><br>【配件】原装充电线<br><br>【续航】约20小时，支持PartyBoost串联', NOW(), NOW()),
 (11, '小米手环8 NFC版 黑色 原装配件齐全<br><br>【功能】NFC门禁、NFC支付、心率监测、睡眠监测、血氧饱和度<br><br>【成色】8成新，屏幕无划痕，腕带无破损<br><br>【配件】原装充电器、说明书<br><br>【电池续航】约7天', NOW(), NOW()),
 (12, 'Apple Watch SE 2代 40mm 星光色 GPS版<br><br>【配置】S8芯片、GPS版、星光色铝金属表壳<br><br>【成色】8成新，屏幕无划痕，表带有使用痕迹<br><br>【配件】原装磁力充电线、运动表带<br><br>【功能】心率监测、运动追踪、消息通知', NOW(), NOW()),
-(13, 'Switch OLED 白色 含底座手柄 64G<br><br>【配置】7寸OLED屏、64G存储、白色Joy-Con手柄<br><br>【成色】8成新，屏幕无划痕，底座完好<br><br>【配件】主机、底座、手柄、充电线、腕带<br><br>【备注】掌机/主机双模式，适合宿舍娱乐', NOW(), NOW()),
+(13, 'Switch OLED 白色 含底座手柄 64G<br><br>【配置】7寸OLED屏、64G存储、白色Joy-Con手柄<br><br>【成色】8成新，屏幕无划痕，底座完好<br><br>【配件】主机、底座、手柄、充电线、腕带<br><br>【备注】掌机/主机双模式，适合生活娱乐', NOW(), NOW()),
 (14, 'PS5 光驱版 国行主机 含手柄<br><br>【配置】光驱版、825G SSD、DualSense手柄<br><br>【成色】7成新，主机有轻微灰尘，运行正常<br><br>【配件】主机、手柄、HDMI线、电源线、底座<br><br>【备注】国行版本，可备份港服账号', NOW(), NOW()),
 (15, '高等数学教材全套 上下册第七版 同济大学<br><br>【版本】第七版，同济大学数学系编<br><br>【成色】7成新，笔记较多但不影响阅读<br><br>【内容】上册：函数与极限、导数与微分等；下册：积分、空间解析几何等<br><br>【适合】大一新生考研复习', NOW(), NOW()),
 (16, '线性代数及其应用 第五版 戴维·C·莱<br><br>【版本】第五版，机械工业出版社<br><br>【成色】6成新，有少量笔记和划线<br><br>【内容】线性方程组、矩阵、行列式、特征值等<br><br>【适合】工科学生、考研数学', NOW(), NOW()),
@@ -287,12 +297,12 @@ INSERT INTO `eo_product_detail` (
 (28, 'Nike 运动双肩背包 黑色 30L大容量<br><br>【容量】30L，可放置15.6寸笔记本<br><br>【成色】8成新，整体清洁，无明显破损<br><br>【功能】多口袋设计、透气背垫、电脑隔层<br><br>【适用】上学、旅行、健身', NOW(), NOW()),
 (29, '懒人加湿器 超声波静音款 4.5L大容量<br><br>【容量】4.5L，持续加湿12小时<br><br>【特点】超声波静音技术，运行时噪音低于35dB<br><br>【成色】9成新，使用时间不超过1个月<br><br>【功能】智能恒湿、定时关机、过夜保护', NOW(), NOW()),
 (30, '小米台灯Pro 护眼阅读灯 国AA级<br><br>【功能】国AA级照度、无频闪、蓝光防护<br><br>【成色】8成新，使用约3个月<br><br>【特点】智能调光、定时关灯、米家APP控制<br><br>【适用】学生学习、办公阅读', NOW(), NOW()),
-(31, '宿舍收纳架 桌面多层置物架 白色 2个装<br><br>【尺寸】每层30*20*15cm，共3层<br><br>【材质】加厚碳钢+环保喷塑<br><br>【成色】8成新，无锈迹，承重良好<br><br>【适合】宿舍桌面收纳、化妆品/书籍/杂物', NOW(), NOW()),
-(32, '电热水杯 便携旅行烧水杯 300ml 白色<br><br>【容量】300ml，304不锈钢内胆<br><br>【功率】300W，宿舍可用不跳闸<br><br>【成色】9成新，使用不到1个月<br><br>【功能】多段温控、防干烧、自动断电', NOW(), NOW()),
+(31, '生活收纳架 桌面多层置物架 白色 2个装<br><br>【尺寸】每层30*20*15cm，共3层<br><br>【材质】加厚碳钢+环保喷塑<br><br>【成色】8成新，无锈迹，承重良好<br><br>【适合】生活桌面收纳、化妆品/书籍/杂物', NOW(), NOW()),
+(32, '电热水杯 便携旅行烧水杯 300ml 白色<br><br>【容量】300ml，304不锈钢内胆<br><br>【功率】300W，生活可用不跳闸<br><br>【成色】9成新，使用不到1个月<br><br>【功能】多段温控、防干烧、自动断电', NOW(), NOW()),
 (33, 'Anker 65W 氮化镓充电器 三口 黑色<br><br>【规格】2C1A三口输出，最大65W<br><br>【技术】GaN II氮化镓，体积小巧<br><br>【成色】9成新，几乎全新<br><br>【兼容】MacBook/iPad/手机/Switch全兼容', NOW(), NOW()),
 (34, '绿联 Type-C 扩展坞 7合1 银色<br><br>【接口】HDMI 4K+3*USB3.0+SD/TF+PD100W<br><br>【成色】8成新，接口完好，无松动<br><br>【兼容】MacBook/笔记本/平板通用<br><br>【适合】外接显示器、U盘读取、充电扩展', NOW(), NOW()),
 (35, '健身瑜伽垫加厚加宽防滑 TPE材质 送收纳绑带<br><br>【尺寸】183cm*80cm*10mm加宽加厚款<br><br>【材质】TPE环保材质，无异味<br><br>【成色】8成新，表面防滑性能良好<br><br>【适用】瑜伽、普拉提、健身训练', NOW(), NOW()),
-(36, '可调节哑铃 20kg单只 快调式 黑色<br><br>【重量】2.5-20kg可调节，15档快调<br><br>【成色】7成新，调节机构顺畅<br><br>【特点】一秒切换重量，节省空间<br><br>【适合】宿舍健身、家庭训练', NOW(), NOW()),
+(36, '可调节哑铃 20kg单只 快调式 黑色<br><br>【重量】2.5-20kg可调节，15档快调<br><br>【成色】7成新，调节机构顺畅<br><br>【特点】一秒切换重量，节省空间<br><br>【适合】生活健身、家庭训练', NOW(), NOW()),
 (37, '迪卡侬山地自行车 Rockrider ST520 27速<br><br>【型号】Rockrider ST520 铝合金车架<br><br>【变速】27速禧玛诺变速系统<br><br>【成色】7成新，轮胎磨损正常<br><br>【配置】前后碟刹、避震前叉、水壶架', NOW(), NOW()),
 (38, '尤尼克斯羽毛球拍 ARC-7 进攻型<br><br>【型号】Arcsaber 7 全碳素<br><br>【规格】4UG5，适合进攻打法<br><br>【成色】8成新，线已断需重新穿线<br><br>【适合】中高级球友，进攻型打法', NOW(), NOW()),
 (39, '原神 60级全图鉴账号 官服<br><br>【等级】冒险等阶60级<br><br>【角色】全图鉴含限定角色，满命座多角色<br><br>【武器】5星武器20+，含限定武器<br><br>【备注】官服可改绑，安全交易', NOW(), NOW()),
@@ -432,7 +442,7 @@ INSERT INTO `eo_message` (
     `create_time`, `update_time`
 ) VALUES
 -- 系统消息
-(1,  NULL, 1, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 智能托管平台！在这里你可以把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核，快去发布你的第一件商品吧~', 1, NOW() - INTERVAL 89 DAY, NULL, NULL, NOW() - INTERVAL 90 DAY, NOW()),
+(1,  NULL, 1, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 89 DAY, NULL, NULL, NOW() - INTERVAL 90 DAY, NOW()),
 (2,  NULL, 3, 0, '账号注册成功', '你的账号已成功注册，快去完善个人资料吧！', 1, NOW() - INTERVAL 59 DAY, NULL, NULL, NOW() - INTERVAL 60 DAY, NOW()),
 (3,  NULL, 4, 0, '账号注册成功', '你的账号已成功注册，快去完善个人资料吧！', 1, NOW() - INTERVAL 44 DAY, NULL, NULL, NOW() - INTERVAL 45 DAY, NOW()),
 (4,  NULL, 1, 0, '商品上架提醒', '你发布的商品「iPhone 14 Pro Max 256G 暗紫色」已成功上架，祝早日售出！', 1, NOW() - INTERVAL 29 DAY, 1, NULL, NOW() - INTERVAL 30 DAY, NOW()),
@@ -440,8 +450,8 @@ INSERT INTO `eo_message` (
 -- 订单消息
 (6,  NULL, 3, 2, '订单创建成功', '你已成功下单「iPhone 14 Pro Max 256G 暗紫色」，请尽快完成支付。订单号：ORD20260101001', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
 (7,  NULL, 1, 2, '收到新订单', '你的商品「iPhone 14 Pro Max 256G 暗紫色」有新订单，请尽快处理。订单号：ORD20260101001', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
-(8,  NULL, 3, 2, '支付成功', '订单 ORD20260101001 支付成功，卖家将尽快发货。', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
-(9,  NULL, 1, 2, '买家已付款', '订单 ORD20260101001 买家已付款，请尽快发货。', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
+(8,  NULL, 3, 2, '支付成功', '订单 ORD20260101001 支付成功，资产方将尽快发货。', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
+(9,  NULL, 1, 2, '认领方已付款', '订单 ORD20260101001 认领方已付款，请尽快发货。', 1, NOW() - INTERVAL 60 DAY, 1, NULL, NOW() - INTERVAL 60 DAY, NOW()),
 (10, NULL, 3, 2, '订单已完成', '订单 ORD20260101001 已完成，快去评价吧！', 1, NOW() - INTERVAL 58 DAY, 1, NULL, NOW() - INTERVAL 58 DAY, NOW()),
 (11, NULL, 7, 2, '订单创建成功', '你已成功下单「小米14 Ultra 16+512 白色」，请尽快完成支付。订单号：ORD20260202001', 1, NOW() - INTERVAL 2 DAY, 5, NULL, NOW() - INTERVAL 2 DAY, NOW()),
 (12, NULL, 5, 2, '收到新订单', '你的商品「小米14 Ultra 16+512 白色」有新订单，请尽快处理。', 0, NULL, 5, NULL, NOW() - INTERVAL 2 DAY, NOW()),
@@ -532,16 +542,16 @@ INSERT INTO `eo_message_template` (
     `id`, `template_code`, `template_name`, `template_type`, `title`, `content`, `variables`, `status`, `create_time`, `update_time`
 ) VALUES
 (1, 'ORDER_CREATED',      '订单创建通知',     'order',   '订单创建成功',   '你已成功下单「${productName}」，订单号：${orderNo}，请尽快完成支付。',       '["productName","orderNo"]',       1, NOW(), NOW()),
-(2, 'ORDER_PAID',         '订单支付通知',     'order',   '支付成功',       '订单 ${orderNo} 支付成功，卖家将尽快发货。',                                   '["orderNo"]',                     1, NOW(), NOW()),
+(2, 'ORDER_PAID',         '订单支付通知',     'order',   '支付成功',       '订单 ${orderNo} 支付成功，资产方将尽快发货。',                                   '["orderNo"]',                     1, NOW(), NOW()),
 (3, 'ORDER_SHIPPED',      '订单发货通知',     'order',   '商品已发货',     '订单 ${orderNo} 已发货，请注意查收。',                                         '["orderNo"]',                     1, NOW(), NOW()),
 (4, 'ORDER_COMPLETED',    '订单完成通知',     'order',   '订单已完成',     '订单 ${orderNo} 已完成，快去评价吧！',                                         '["orderNo"]',                     1, NOW(), NOW()),
 (5, 'ORDER_CANCELLED',    '订单取消通知',     'order',   '订单已取消',     '订单 ${orderNo} 已取消，原因：${reason}。',                                    '["orderNo","reason"]',            1, NOW(), NOW()),
 (6, 'ORDER_REFUNDED',     '订单退款通知',     'order',   '退款成功',       '订单 ${orderNo} 退款 ${amount} 元已到账。',                                    '["orderNo","amount"]',            1, NOW(), NOW()),
-(7, 'SELLER_NEW_ORDER',   '卖家新订单通知',   'order',   '收到新订单',     '你的商品「${productName}」有新订单，请尽快处理。订单号：${orderNo}',           '["productName","orderNo"]',       1, NOW(), NOW()),
-(8, 'SELLER_PAID',        '卖家收款通知',     'order',   '买家已付款',     '订单 ${orderNo} 买家已付款，请尽快发货。',                                     '["orderNo"]',                     1, NOW(), NOW()),
+(7, 'SELLER_NEW_ORDER',   '资产方新订单通知',   'order',   '收到新订单',     '你的资产「${productName}」有新订单，请尽快处理。订单号：${orderNo}',           '["productName","orderNo"]',       1, NOW(), NOW()),
+(8, 'SELLER_PAID',        '资产方收款通知',     'order',   '认领方已付款',     '订单 ${orderNo} 认领方已付款，请尽快发货。',                                     '["orderNo"]',                     1, NOW(), NOW()),
 (9, 'PRODUCT_ONLINE',     '商品上架通知',     'system',  '商品上架成功',   '你发布的商品「${productName}」已成功上架，祝早日售出！',                       '["productName"]',                 1, NOW(), NOW()),
 (10, 'PRODUCT_OFFLINE',   '商品下架通知',     'system',  '商品已下架',     '你的商品「${productName}」已下架，原因：${reason}。',                          '["productName","reason"]',        1, NOW(), NOW()),
-(11, 'USER_REGISTER',     '注册欢迎通知',     'system',  '欢迎加入',       '欢迎来到 EasyOrange AI 智能托管平台！在这里你可以把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核~',            '[]',                              1, NOW(), NOW()),
+(11, 'USER_REGISTER',     '注册欢迎通知',     'system',  '欢迎加入',       '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~',            '[]',                              1, NOW(), NOW()),
 (12, 'PRICE_DROP',        '降价提醒',         'system',  '收藏商品降价',   '你收藏的商品「${productName}」已降价至 ${price} 元，快去看看吧！',             '["productName","price"]',         1, NOW(), NOW())
 AS new
 ON DUPLICATE KEY UPDATE
@@ -608,14 +618,14 @@ INSERT INTO `eo_user` (
     `sex`, `status`, `del_flag`, `email`, `phonenumber`, `student_id`,
     `real_name`, `avatar`, `create_time`, `update_time`
 ) VALUES
-(11, 'huangjie',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '黄杰学长',   1, 0, 0, 'huangjie@campus.edu',    '13800138011', '2021001', '黄杰', 'https://picsum.photos/seed/avatar11/100/100', NOW() - INTERVAL 180 DAY, NOW()),
-(12, 'liuyan',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '刘燕',       2, 0, 0, 'liuyan@campus.edu',      '13800138012', '2022001', '刘燕', 'https://picsum.photos/seed/avatar12/100/100', NOW() - INTERVAL 120 DAY, NOW()),
-(13, 'wanghai',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '王海',       1, 0, 0, 'wanghai@campus.edu',     '13800138013', '2022002', '王海', 'https://picsum.photos/seed/avatar13/100/100', NOW() - INTERVAL 90 DAY, NOW()),
-(14, 'zhangmei',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '张梅',       2, 0, 0, 'zhangmei@campus.edu',    '13800138014', '2023003', '张梅', 'https://picsum.photos/seed/avatar14/100/100', NOW() - INTERVAL 60 DAY, NOW()),
-(15, 'liguang',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '李光',       1, 0, 0, 'liguang@campus.edu',     '13800138015', '2023004', '李光', 'https://picsum.photos/seed/avatar15/100/100', NOW() - INTERVAL 45 DAY, NOW()),
-(16, 'xujia',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '许佳',       2, 0, 0, 'xujia@campus.edu',       '13800138016', '2023005', '许佳', 'https://picsum.photos/seed/avatar16/100/100', NOW() - INTERVAL 30 DAY, NOW()),
-(17, 'qianlei',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '钱磊',       1, 0, 0, 'qianlei@campus.edu',     '13800138017', '2024001', '钱磊', 'https://picsum.photos/seed/avatar17/100/100', NOW() - INTERVAL 14 DAY, NOW()),
-(18, 'hanxue',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '韩雪',       2, 0, 0, 'hanxue@campus.edu',      '13800138018', '2024002', '韩雪', 'https://picsum.photos/seed/avatar18/100/100', NOW() - INTERVAL 7 DAY, NOW())
+(11, 'huangjie',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '黄杰学长',   1, 0, 0, 'huangjie@example.com',    '13800138011', '2021001', '黄杰', 'https://picsum.photos/seed/avatar11/100/100', NOW() - INTERVAL 180 DAY, NOW()),
+(12, 'liuyan',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '刘燕',       2, 0, 0, 'liuyan@example.com',      '13800138012', '2022001', '刘燕', 'https://picsum.photos/seed/avatar12/100/100', NOW() - INTERVAL 120 DAY, NOW()),
+(13, 'wanghai',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '王海',       1, 0, 0, 'wanghai@example.com',     '13800138013', '2022002', '王海', 'https://picsum.photos/seed/avatar13/100/100', NOW() - INTERVAL 90 DAY, NOW()),
+(14, 'zhangmei',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '张梅',       2, 0, 0, 'zhangmei@example.com',    '13800138014', '2023003', '张梅', 'https://picsum.photos/seed/avatar14/100/100', NOW() - INTERVAL 60 DAY, NOW()),
+(15, 'liguang',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '李光',       1, 0, 0, 'liguang@example.com',     '13800138015', '2023004', '李光', 'https://picsum.photos/seed/avatar15/100/100', NOW() - INTERVAL 45 DAY, NOW()),
+(16, 'xujia',     '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '许佳',       2, 0, 0, 'xujia@example.com',       '13800138016', '2023005', '许佳', 'https://picsum.photos/seed/avatar16/100/100', NOW() - INTERVAL 30 DAY, NOW()),
+(17, 'qianlei',   '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '钱磊',       1, 0, 0, 'qianlei@example.com',     '13800138017', '2024001', '钱磊', 'https://picsum.photos/seed/avatar17/100/100', NOW() - INTERVAL 14 DAY, NOW()),
+(18, 'hanxue',    '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '韩雪',       2, 0, 0, 'hanxue@example.com',      '13800138018', '2024002', '韩雪', 'https://picsum.photos/seed/avatar18/100/100', NOW() - INTERVAL 7 DAY, NOW())
 AS new
 ON DUPLICATE KEY UPDATE
     `nick_name` = new.`nick_name`,
@@ -624,7 +634,7 @@ ON DUPLICATE KEY UPDATE
     `update_time` = new.`update_time`;
 
 -- ===================================================================
--- 16. 补充商品数据（25个新商品：更多品类、价格区间、卖家）
+-- 16. 补充商品数据（25个新商品：更多品类、价格区间、资产方）
 -- ===================================================================
 
 INSERT INTO `eo_product` (
@@ -633,35 +643,35 @@ INSERT INTO `eo_product` (
     `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
 ) VALUES
 -- 电子数码 - 手机（更多品牌）
-(46, 11, 10, '三星 Galaxy S24 Ultra 12+256 钛灰',      5499.00, 7999.00, 1, 1, 198, 8, '宿舍区',   '微信: huangjie_wx','三星,手机,旗舰',          '三星 Galaxy S24 Ultra 12+256 钛灰 三星 手机 旗舰', 0, NOW() - INTERVAL 14 DAY, NOW()),
+(46, 11, 10, '三星 Galaxy S24 Ultra 12+256 钛灰',      5499.00, 7999.00, 1, 1, 198, 8, '同城',   '微信: huangjie_wx','三星,手机,旗舰',          '三星 Galaxy S24 Ultra 12+256 钛灰 三星 手机 旗舰', 0, NOW() - INTERVAL 14 DAY, NOW()),
 (47, 12, 10, 'vivo X100 Pro 16+512 落日橙',             3499.00, 4999.00, 1, 1, 156, 9, '教学楼',   '微信: liuyan_wx',  'vivo,手机,影像',          'vivo X100 Pro 16+512 落日橙 vivo 手机 影像', 0, NOW() - INTERVAL 7 DAY, NOW()),
 -- 电子数码 - 电脑（更多型号）
-(48, 13, 11, '联想拯救者Y9000P 2024 i9款',              7999.00, 9999.00, 1, 1, 289, 7, '宿舍区',   '微信: wanghai_wx', '联想,游戏本,高性能',      '联想拯救者Y9000P 2024 i9款 联想 游戏本 高性能', 0, NOW() - INTERVAL 18 DAY, NOW()),
+(48, 13, 11, '联想拯救者Y9000P 2024 i9款',              7999.00, 9999.00, 1, 1, 289, 7, '同城',   '微信: wanghai_wx', '联想,游戏本,高性能',      '联想拯救者Y9000P 2024 i9款 联想 游戏本 高性能', 0, NOW() - INTERVAL 18 DAY, NOW()),
 (49, 14, 11, '华硕天选5 Pro 锐龙版 16寸',               5999.00, 7499.00, 1, 1, 167, 8, '计算机学院','微信: zhangmei_wx','华硕,游戏本,锐龙',       '华硕天选5 Pro 锐龙版 16寸 华硕 游戏本 锐龙', 0, NOW() - INTERVAL 10 DAY, NOW()),
 -- 电子数码 - 耳机音箱（更多选择）
 (50, 15, 12, 'Bose QC45 头戴式消噪耳机 黑色',           1299.00, 2299.00, 1, 1, 134, 7, '图书馆',   '微信: liguang_wx', 'Bose,耳机,消噪',         'Bose QC45 头戴式消噪耳机 黑色 Bose 耳机 消噪', 0, NOW() - INTERVAL 22 DAY, NOW()),
-(51, 16, 12, '漫步者W820NB 双金标头戴耳机 白色',        299.00,  499.00,  1, 1, 89,  8, '宿舍区',   '微信: xujia_wx',   '漫步者,耳机,降噪',       '漫步者W820NB 双金标头戴耳机 白色 漫步者 耳机 降噪', 0, NOW() - INTERVAL 5 DAY, NOW()),
+(51, 16, 12, '漫步者W820NB 双金标头戴耳机 白色',        299.00,  499.00,  1, 1, 89,  8, '同城',   '微信: xujia_wx',   '漫步者,耳机,降噪',       '漫步者W820NB 双金标头戴耳机 白色 漫步者 耳机 降噪', 0, NOW() - INTERVAL 5 DAY, NOW()),
 -- 电子数码 - 智能穿戴
-(52, 17, 13, '华为 Watch GT4 46mm 棕色皮带',            899.00,  1488.00, 1, 1, 112, 9, '校园内',   '微信: qianlei_wx', '华为,手表,运动',         '华为 Watch GT4 46mm 棕色皮带 华为 手表 运动', 0, NOW() - INTERVAL 12 DAY, NOW()),
+(52, 17, 13, '华为 Watch GT4 46mm 棕色皮带',            899.00,  1488.00, 1, 1, 112, 9, '同城',   '微信: qianlei_wx', '华为,手表,运动',         '华为 Watch GT4 46mm 棕色皮带 华为 手表 运动', 0, NOW() - INTERVAL 12 DAY, NOW()),
 -- 电子数码 - 游戏设备
-(53, 11, 14, 'Xbox Series X 国行主机 1TB',              2999.00, 3799.00, 1, 1, 178, 8, '宿舍区',   '微信: huangjie_wx','Xbox,游戏机,微软',       'Xbox Series X 国行主机 1TB Xbox 游戏机 微软', 0, NOW() - INTERVAL 25 DAY, NOW()),
-(54, 12, 14, 'Steam Deck OLED 512G 掌机',               3299.00, 4099.00, 1, 1, 234, 9, '宿舍区',   '微信: liuyan_wx',  'Steam,掌机,游戏',        'Steam Deck OLED 512G 掌机 Steam 掌机 游戏', 0, NOW() - INTERVAL 8 DAY, NOW()),
+(53, 11, 14, 'Xbox Series X 国行主机 1TB',              2999.00, 3799.00, 1, 1, 178, 8, '同城',   '微信: huangjie_wx','Xbox,游戏机,微软',       'Xbox Series X 国行主机 1TB Xbox 游戏机 微软', 0, NOW() - INTERVAL 25 DAY, NOW()),
+(54, 12, 14, 'Steam Deck OLED 512G 掌机',               3299.00, 4099.00, 1, 1, 234, 9, '同城',   '微信: liuyan_wx',  'Steam,掌机,游戏',        'Steam Deck OLED 512G 掌机 Steam 掌机 游戏', 0, NOW() - INTERVAL 8 DAY, NOW()),
 -- 书籍教材 - 教材（更多科目）
 (55, 13, 20, 'C语言程序设计 第五版 谭浩强',              25.00,   49.00,   1, 1, 201, 6, '计算机学院','微信: wanghai_wx', '教材,C语言,编程',       'C语言程序设计 第五版 谭浩强 教材 C语言 编程', 0, NOW() - INTERVAL 35 DAY, NOW()),
 (56, 14, 20, '数据结构 C语言版 严蔚敏',                  30.00,   45.00,   1, 1, 178, 7, '计算机学院','微信: zhangmei_wx','教材,数据结构,考研',     '数据结构 C语言版 严蔚敏 教材 数据结构 考研', 0, NOW() - INTERVAL 28 DAY, NOW()),
 (57, 15, 20, '概率论与数理统计 浙大第五版',              28.00,   42.00,   2, 1, 145, 5, '数学楼',   '微信: liguang_wx', '教材,概率论,数学',       '概率论与数理统计 浙大第五版 教材 概率论 数学', 0, NOW() - INTERVAL 20 DAY, NOW()),
 -- 书籍教材 - 课外读物
-(58, 16, 22, '三体 全三册 刘慈欣 精装版',                68.00,   128.00,  1, 1, 312, 9, '宿舍区',   '微信: xujia_wx',   '课外,科幻,经典',         '三体 全三册 刘慈欣 精装版 课外 科幻 经典', 0, NOW() - INTERVAL 15 DAY, NOW()),
+(58, 16, 22, '三体 全三册 刘慈欣 精装版',                68.00,   128.00,  1, 1, 312, 9, '同城',   '微信: xujia_wx',   '课外,科幻,经典',         '三体 全三册 刘慈欣 精装版 课外 科幻 经典', 0, NOW() - INTERVAL 15 DAY, NOW()),
 (59, 17, 22, '深入理解计算机系统 CSAPP 第三版',          89.00,   139.00,  1, 1, 267, 8, '计算机学院','微信: qianlei_wx', '计算机,经典,底层',       '深入理解计算机系统 CSAPP 第三版 计算机 经典 底层', 0, NOW() - INTERVAL 9 DAY, NOW()),
 -- 服饰鞋包 - 鞋靴
-(60, 11, 30, 'Converse 1970s 黑色高帮 43码',             259.00,  459.00,  1, 1, 145, 8, '宿舍区',   '微信: huangjie_wx','匡威,帆布鞋,经典',       'Converse 1970s 黑色高帮 43码 匡威 帆布鞋 经典', 0, NOW() - INTERVAL 16 DAY, NOW()),
+(60, 11, 30, 'Converse 1970s 黑色高帮 43码',             259.00,  459.00,  1, 1, 145, 8, '同城',   '微信: huangjie_wx','匡威,帆布鞋,经典',       'Converse 1970s 黑色高帮 43码 匡威 帆布鞋 经典', 0, NOW() - INTERVAL 16 DAY, NOW()),
 -- 服饰鞋包 - 服装
-(61, 12, 31, 'Patagonia 抓绒衣 蓝色 M码',                349.00,  699.00,  1, 1, 98,  8, '宿舍区',   '微信: liuyan_wx',  'Patagonia,抓绒,户外',    'Patagonia 抓绒衣 蓝色 M码 Patagonia 抓绒 户外', 0, NOW() - INTERVAL 11 DAY, NOW()),
-(62, 13, 31, 'Levi\'s 501 经典直筒牛仔裤 32码',          199.00,  599.00,  1, 1, 78,  7, '宿舍区',   '微信: wanghai_wx', 'Levi\'s,牛仔裤,经典',    'Levi\'s 501 经典直筒牛仔裤 32码 牛仔裤 经典', 0, NOW() - INTERVAL 8 DAY, NOW()),
+(61, 12, 31, 'Patagonia 抓绒衣 蓝色 M码',                349.00,  699.00,  1, 1, 98,  8, '同城',   '微信: liuyan_wx',  'Patagonia,抓绒,户外',    'Patagonia 抓绒衣 蓝色 M码 Patagonia 抓绒 户外', 0, NOW() - INTERVAL 11 DAY, NOW()),
+(62, 13, 31, 'Levi\'s 501 经典直筒牛仔裤 32码',          199.00,  599.00,  1, 1, 78,  7, '同城',   '微信: wanghai_wx', 'Levi\'s,牛仔裤,经典',    'Levi\'s 501 经典直筒牛仔裤 32码 牛仔裤 经典', 0, NOW() - INTERVAL 8 DAY, NOW()),
 -- 服饰鞋包 - 箱包
-(63, 14, 32, 'Fjallraven Kanken 经典双肩包 森林绿',      599.00,  899.00,  1, 1, 167, 9, '宿舍区',   '微信: zhangmei_wx','北极狐,背包,经典',       'Fjallraven Kanken 经典双肩包 森林绿 北极狐 背包 经典', 0, NOW() - INTERVAL 6 DAY, NOW()),
--- 生活用品 - 宿舍好物
-(64, 15, 40, '小米空气净化器4 Lite 卧室款',              399.00,  699.00,  1, 1, 123, 9, '宿舍区',   '微信: liguang_wx', '小米,净化器,宿舍',       '小米空气净化器4 Lite 卧室款 小米 净化器 宿舍', 0, NOW() - INTERVAL 13 DAY, NOW()),
+(63, 14, 32, 'Fjallraven Kanken 经典双肩包 森林绿',      599.00,  899.00,  1, 1, 167, 9, '同城',   '微信: zhangmei_wx','北极狐,背包,经典',       'Fjallraven Kanken 经典双肩包 森林绿 北极狐 背包 经典', 0, NOW() - INTERVAL 6 DAY, NOW()),
+-- 生活用品 - 生活用品
+(64, 15, 40, '小米空气净化器4 Lite 卧室款',              399.00,  699.00,  1, 1, 123, 9, '同城',   '微信: liguang_wx', '小米,净化器,生活',       '小米空气净化器4 Lite 卧室款 小米 净化器 生活', 0, NOW() - INTERVAL 13 DAY, NOW()),
 (65, 16, 40, '得力碎纸机 家用办公4级保密',               199.00,  399.00,  1, 1, 56,  7, '教学楼',   '微信: xujia_wx',   '碎纸机,办公,得力',       '得力碎纸机 家用办公4级保密 碎纸机 办公 得力', 0, NOW() - INTERVAL 4 DAY, NOW()),
 -- 生活用品 - 数码配件
 (66, 17, 41, '罗技MX Master 3S 无线鼠标 深灰',          499.00,  749.00,  1, 1, 189, 9, '图书馆',   '微信: qianlei_wx', '罗技,鼠标,办公',         '罗技MX Master 3S 无线鼠标 深灰 罗技 鼠标 办公', 0, NOW() - INTERVAL 11 DAY, NOW()),
@@ -779,8 +789,8 @@ INSERT INTO `eo_product_detail` (
 (61, 'Patagonia 抓绒衣 蓝色 M码 户外保暖<br><br>【型号】Better Sweater 蓝色<br><br>【尺码】M码，适合身高170-175cm<br><br>【成色】8成新，无起球，保暖性良好<br><br>【特点】再生聚酯纤维、全拉链设计', NOW(), NOW()),
 (62, 'Levi\'s 501 经典直筒牛仔裤 32码 原色<br><br>【型号】501 Original Fit 原色牛<br><br>【尺码】32码（W32 L32）<br><br>【成色】7成新，有自然落色效果<br><br>【特点】经典直筒、铜扣设计、原色丹宁', NOW(), NOW()),
 (63, 'Fjallraven Kanken 经典双肩包 森林绿 瑞典<br><br>【型号】Kanken Classic 16L 森林绿<br><br>【成色】9成新，使用不到3个月<br><br>【材质】Vinylon F防水面料<br><br>【特点】轻量、防水、人体工学背负', NOW(), NOW()),
-(64, '小米空气净化器4 Lite 卧室款 静音<br><br>【型号】米家空气净化器4 Lite<br><br>【适用面积】20-40㎡ 宿舍/卧室<br><br>【成色】9成新，滤芯使用约2个月<br><br>【功能】HEPA滤芯、PM2.5实时显示、米家APP控制', NOW(), NOW()),
-(65, '得力碎纸机 家用办公4级保密 白色<br><br>【型号】得力9922 4级保密碎纸机<br><br>【成色】7成新，运行正常，刀片锋利<br><br>【功能】4级保密、可碎信用卡、连续碎纸5分钟<br><br>【适合】宿舍办公、隐私文件销毁', NOW(), NOW()),
+(64, '小米空气净化器4 Lite 卧室款 静音<br><br>【型号】米家空气净化器4 Lite<br><br>【适用面积】20-40㎡ 生活/卧室<br><br>【成色】9成新，滤芯使用约2个月<br><br>【功能】HEPA滤芯、PM2.5实时显示、米家APP控制', NOW(), NOW()),
+(65, '得力碎纸机 家用办公4级保密 白色<br><br>【型号】得力9922 4级保密碎纸机<br><br>【成色】7成新，运行正常，刀片锋利<br><br>【功能】4级保密、可碎信用卡、连续碎纸5分钟<br><br>【适合】生活办公、隐私文件销毁', NOW(), NOW()),
 (66, '罗技MX Master 3S 无线鼠标 深灰 办公神器<br><br>【型号】MX Master 3S 深灰色<br><br>【成色】9成新，手感极佳，滚轮丝滑<br><br>【连接】蓝牙+2.4G双模、支持3设备切换<br><br>【续航】约70天，Type-C快充', NOW(), NOW()),
 (67, 'Apple Magic Keyboard 妙控键盘 带触控ID<br><br>【型号】带触控ID和数字小键盘版<br><br>【成色】10成新，全新未使用<br><br>【连接】蓝牙无线、USB-C充电<br><br>【兼容】Mac/iPad 通用', NOW(), NOW()),
 (68, 'Keep 瑜伽球 65cm 抗爆 配打气筒 紫色<br><br>【尺寸】65cm，适合身高160-175cm<br><br>【材质】PVC抗爆材质，承重300kg<br><br>【成色】8成新，无漏气<br><br>【配件】打气筒、气塞、使用说明', NOW(), NOW()),
@@ -899,9 +909,9 @@ INSERT INTO `eo_message` (
     `create_time`, `update_time`
 ) VALUES
 -- 系统消息（新用户注册）
-(26, NULL, 11, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 智能托管平台！在这里你可以把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核，快去发布你的第一件商品吧~', 1, NOW() - INTERVAL 179 DAY, NULL, NULL, NOW() - INTERVAL 180 DAY, NOW()),
-(27, NULL, 12, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 智能托管平台！在这里你可以把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核，快去发布你的第一件商品吧~', 1, NOW() - INTERVAL 119 DAY, NULL, NULL, NOW() - INTERVAL 120 DAY, NOW()),
-(28, NULL, 17, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 智能托管平台！在这里你可以把闲置资产托管给 AI，让 AI 帮你定价、议价、发布、审核，快去发布你的第一件商品吧~', 1, NOW() - INTERVAL 13 DAY, NULL, NULL, NOW() - INTERVAL 14 DAY, NOW()),
+(26, NULL, 11, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 179 DAY, NULL, NULL, NOW() - INTERVAL 180 DAY, NOW()),
+(27, NULL, 12, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 119 DAY, NULL, NULL, NOW() - INTERVAL 120 DAY, NOW()),
+(28, NULL, 17, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 13 DAY, NULL, NULL, NOW() - INTERVAL 14 DAY, NOW()),
 -- 订单消息（新订单）
 (29, NULL, 14, 2, '订单创建成功', '你已成功下单「三星 Galaxy S24 Ultra」，订单号：ORD20260206001，请尽快完成支付。', 1, NOW() - INTERVAL 12 DAY, 13, NULL, NOW() - INTERVAL 12 DAY, NOW()),
 (30, NULL, 11, 2, '收到新订单', '你的商品「三星 Galaxy S24 Ultra」有新订单，请尽快处理。订单号：ORD20260206001', 1, NOW() - INTERVAL 12 DAY, 13, NULL, NOW() - INTERVAL 12 DAY, NOW()),
@@ -993,7 +1003,7 @@ INSERT INTO `eo_product_report` (
     `create_time`, `update_time`
 ) VALUES
 (1, 39, 4,  '虚拟物品交易风险，建议平台审核',   1, '已核实，商品信息真实，暂不处理', NOW() - INTERVAL 30 DAY, NOW() - INTERVAL 28 DAY),
-(2, 70, 14, '游戏账号交易存在安全隐患',         1, '已提醒卖家完善交易保障说明',     NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
+(2, 70, 14, '游戏账号交易存在安全隐患',         1, '已提醒资产方完善交易保障说明',     NOW() - INTERVAL 5 DAY, NOW() - INTERVAL 3 DAY),
 (3, 3,  17, '商品描述与实际不符，成色虚标',     0, NULL,                             NOW() - INTERVAL 1 DAY, NOW()),
 (4, 25, 12, '价格明显高于市场价，疑似哄抬价格', 2, '经核实价格合理，已忽略',         NOW() - INTERVAL 15 DAY, NOW() - INTERVAL 13 DAY),
 (5, 42, 8,  '已下架商品仍在搜索结果中显示',     1, '已优化搜索索引，下架商品不再展示', NOW() - INTERVAL 20 DAY, NOW() - INTERVAL 18 DAY)
@@ -1012,20 +1022,20 @@ INSERT INTO `eo_oper_log` (
     `oper_name`, `oper_url`, `oper_ip`, `oper_location`,
     `status`, `cost_time`, `oper_time`
 ) VALUES
-(1, '用户管理', 1, 'UserController.register()',  'POST', 1, 'testuser',  '/api/user/register', '192.168.1.100', '校园网', 0, 156, NOW() - INTERVAL 90 DAY),
-(2, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'testuser',  '/api/product/create', '192.168.1.100', '校园网', 0, 89,  NOW() - INTERVAL 30 DAY),
+(1, '用户管理', 1, 'UserController.register()',  'POST', 1, 'testuser',  '/api/user/register', '192.168.1.100', '宽带', 0, 156, NOW() - INTERVAL 90 DAY),
+(2, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'testuser',  '/api/product/create', '192.168.1.100', '宽带', 0, 89,  NOW() - INTERVAL 30 DAY),
 (3, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'liming',    '/api/product/create', '10.0.0.55',    '图书馆', 0, 112, NOW() - INTERVAL 25 DAY),
 (4, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'liming',    '/api/order/create',   '10.0.0.55',    '图书馆', 0, 234, NOW() - INTERVAL 60 DAY),
 (5, '支付管理', 2, 'PaymentController.pay()',     'POST', 1, 'liming',    '/api/payment/pay',    '10.0.0.55',    '图书馆', 0, 567, NOW() - INTERVAL 60 DAY),
-(6, '商品管理', 3, 'ProductController.update()',  'PUT',  1, 'testuser',  '/api/product/1',      '192.168.1.100', '校园网', 0, 67,  NOW() - INTERVAL 20 DAY),
-(7, '用户管理', 2, 'UserController.login()',      'POST', 1, 'wangfang',  '/api/user/login',     '172.16.0.23',  '宿舍区', 0, 45,  NOW() - INTERVAL 45 DAY),
-(8, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'wangfang',  '/api/order/create',   '172.16.0.23',  '宿舍区', 0, 189, NOW() - INTERVAL 55 DAY),
+(6, '商品管理', 3, 'ProductController.update()',  'PUT',  1, 'testuser',  '/api/product/1',      '192.168.1.100', '宽带', 0, 67,  NOW() - INTERVAL 20 DAY),
+(7, '用户管理', 2, 'UserController.login()',      'POST', 1, 'wangfang',  '/api/user/login',     '172.16.0.23',  '同城', 0, 45,  NOW() - INTERVAL 45 DAY),
+(8, '订单管理', 2, 'OrderController.create()',    'POST', 1, 'wangfang',  '/api/order/create',   '172.16.0.23',  '同城', 0, 189, NOW() - INTERVAL 55 DAY),
 (9, '收藏管理', 2, 'FavoriteController.add()',    'POST', 1, 'zhaowei',   '/api/favorite/add',   '192.168.2.34', '教学楼', 0, 34,  NOW() - INTERVAL 8 DAY),
 (10, '商品管理', 1, 'ProductController.search()',  'GET',  1, 'sunli',     '/api/product/search', '192.168.2.34', '教学楼', 0, 78,  NOW() - INTERVAL 15 DAY),
-(11, '用户管理', 2, 'UserController.login()',      'POST', 1, 'huangjie',  '/api/user/login',     '10.0.1.100',   '宿舍区', 0, 38,  NOW() - INTERVAL 180 DAY),
-(12, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'huangjie',  '/api/product/create', '10.0.1.100',   '宿舍区', 0, 95,  NOW() - INTERVAL 14 DAY),
+(11, '用户管理', 2, 'UserController.login()',      'POST', 1, 'huangjie',  '/api/user/login',     '10.0.1.100',   '同城', 0, 38,  NOW() - INTERVAL 180 DAY),
+(12, '商品管理', 2, 'ProductController.create()',  'POST', 1, 'huangjie',  '/api/product/create', '10.0.1.100',   '同城', 0, 95,  NOW() - INTERVAL 14 DAY),
 (13, '订单管理', 2, 'OrderController.cancel()',    'PUT',  1, 'wanghai',   '/api/order/20/cancel','10.0.0.88',    '图书馆', 0, 123, NOW() - INTERVAL 7 DAY),
-(14, '支付管理', 2, 'PaymentController.refund()',  'POST', 1, 'zhangmei',  '/api/payment/refund', '172.16.0.45',  '宿舍区', 0, 456, NOW() - INTERVAL 6 DAY),
+(14, '支付管理', 2, 'PaymentController.refund()',  'POST', 1, 'zhangmei',  '/api/payment/refund', '172.16.0.45',  '同城', 0, 456, NOW() - INTERVAL 6 DAY),
 (15, '系统管理', 4, 'AdminController.exportLog()',  'GET',  2, 'admin',     '/api/admin/log/export','10.0.0.1',    '服务器', 0, 2345, NOW() - INTERVAL 3 DAY)
 AS new
 ON DUPLICATE KEY UPDATE
@@ -1085,10 +1095,10 @@ ON DUPLICATE KEY UPDATE
 --   - 女装(301) → 31(服装)
 --   - 男装(302) → 31(服装)
 --   - 鞋靴(303) → 30(鞋靴)
---   - 护肤(601) → 40(宿舍好物)
---   - 彩妆(602) → 40(宿舍好物)
---   - 香水(603) → 40(宿舍好物)
---   - 美发(604) → 40(宿舍好物)
+--   - 护肤(601) → 40(生活用品)
+--   - 彩妆(602) → 40(生活用品)
+--   - 香水(603) → 40(生活用品)
+--   - 美发(604) → 40(生活用品)
 -- ===================================================================
 
 INSERT INTO `eo_product` (
@@ -1103,33 +1113,33 @@ INSERT INTO `eo_product` (
 (74, 5, 21, '考研数学真题大全解', '考研数学真题大全解 考研资料', 32.00, 78.00, 1, 1, 167, 2, '图书馆', '考研,数学,真题', '微信', 0, NOW(), NOW(), 0),
 (75, 5, 21, '考研英语词汇红宝书', '考研英语词汇红宝书 考研资料', 25.00, 58.00, 1, 1, 145, 2, '图书馆', '考研,英语,词汇', '微信', 0, NOW(), NOW(), 0),
 (76, 5, 21, '考研政治核心考点', '考研政治核心考点 考研资料', 22.00, 48.00, 1, 1, 134, 2, '图书馆', '考研,政治,考点', '微信', 0, NOW(), NOW(), 0),
-(77, 11, 22, '围城 钱钟书', '围城 钱钟书 文学名著', 18.00, 39.00, 1, 1, 89, 2, '宿舍楼下', '小说,文学,名著', '微信', 0, NOW(), NOW(), 0),
-(78, 11, 22, '活着 余华', '活着 余华 文学名著', 15.00, 35.00, 1, 1, 112, 2, '宿舍楼下', '小说,文学,名著', '微信', 0, NOW(), NOW(), 0),
+(77, 11, 22, '围城 钱钟书', '围城 钱钟书 文学名著', 18.00, 39.00, 1, 1, 89, 2, '同城', '小说,文学,名著', '微信', 0, NOW(), NOW(), 0),
+(78, 11, 22, '活着 余华', '活着 余华 文学名著', 15.00, 35.00, 1, 1, 112, 2, '同城', '小说,文学,名著', '微信', 0, NOW(), NOW(), 0),
 (79, 11, 22, 'Python编程从入门到实践', 'Python编程从入门到实践 编程书籍', 45.00, 89.00, 1, 1, 234, 2, '教学楼', '编程,Python,入门', 'QQ', 0, NOW(), NOW(), 0),
 (80, 11, 22, '算法导论 第三版', '算法导论 第三版 计算机经典', 78.00, 128.00, 1, 1, 189, 2, '教学楼', '计算机,算法,经典', 'QQ', 0, NOW(), NOW(), 0),
 -- 更多电子产品类商品
 (81, 3, 10, 'OPPO Find X3 Pro', 'OPPO Find X3 Pro 安卓手机', 2500.00, 4999.00, 1, 1, 189, 2, '南门', '手机,OPPO,安卓', '微信', 0, NOW(), NOW(), 0),
 (82, 3, 10, 'vivo X70 Pro+', 'vivo X70 Pro+ 安卓手机', 2800.00, 5499.00, 1, 1, 156, 2, '南门', '手机,vivo,安卓', '微信', 0, NOW(), NOW(), 0),
-(83, 3, 11, '华硕ROG幻14 游戏本', '华硕ROG幻14 游戏本 电竞笔记本', 7500.00, 10999.00, 1, 1, 234, 2, '宿舍楼下', '电脑,华硕,游戏', 'QQ', 0, NOW(), NOW(), 0),
+(83, 3, 11, '华硕ROG幻14 游戏本', '华硕ROG幻14 游戏本 电竞笔记本', 7500.00, 10999.00, 1, 1, 234, 2, '同城', '电脑,华硕,游戏', 'QQ', 0, NOW(), NOW(), 0),
 (84, 3, 11, '机械革命Code01 程序员本', '机械革命Code01 程序员笔记本', 4500.00, 6999.00, 1, 1, 145, 2, '图书馆', '电脑,机械革命,程序员', '微信', 0, NOW(), NOW(), 0),
 (85, 10, 13, '华为MatePad Pro 11', '华为MatePad Pro 11 安卓平板', 2200.00, 4199.00, 1, 1, 189, 2, '食堂', '平板,华为,MatePad', '微信', 0, NOW(), NOW(), 0),
 (86, 10, 12, 'Bose QC45 降噪耳机', 'Bose QC45 降噪耳机 头戴式', 1300.00, 2499.00, 1, 1, 178, 2, '教学楼', '耳机,Bose,降噪', 'QQ', 0, NOW(), NOW(), 0),
-(87, 10, 12, 'JBL蓝牙音箱', 'JBL蓝牙音箱 便携音箱', 280.00, 599.00, 1, 1, 134, 2, '宿舍楼下', '音箱,JBL,蓝牙', '微信', 0, NOW(), NOW(), 0),
+(87, 10, 12, 'JBL蓝牙音箱', 'JBL蓝牙音箱 便携音箱', 280.00, 599.00, 1, 1, 134, 2, '同城', '音箱,JBL,蓝牙', '微信', 0, NOW(), NOW(), 0),
 (88, 12, 14, '大疆DJI Mini 2 无人机', '大疆DJI Mini 2 无人机 航拍', 2800.00, 4199.00, 1, 1, 167, 2, '北门', '相机,大疆,无人机', '微信', 0, NOW(), NOW(), 0),
 (89, 12, 14, 'GoPro Hero10 运动相机', 'GoPro Hero10 运动相机', 1800.00, 3398.00, 1, 1, 123, 2, '北门', '相机,GoPro,运动', '微信', 0, NOW(), NOW(), 0),
-(90, 10, 14, 'Xbox Series X 国行', 'Xbox Series X 国行 游戏机', 3500.00, 3899.00, 1, 1, 189, 1, '宿舍楼下', '游戏机,Xbox,微软', 'QQ', 0, NOW(), NOW(), 0),
+(90, 10, 14, 'Xbox Series X 国行', 'Xbox Series X 国行 游戏机', 3500.00, 3899.00, 1, 1, 189, 1, '同城', '游戏机,Xbox,微软', 'QQ', 0, NOW(), NOW(), 0),
 -- 更多服装鞋包类商品
-(91, 6, 31, 'H&M针织开衫 M码', 'H&M针织开衫 M码 女装', 59.00, 149.00, 1, 1, 89, 2, '宿舍楼下', '女装,开衫,H&M', '微信', 0, NOW(), NOW(), 0),
-(92, 6, 31, 'ONLY牛仔裤 26码', 'ONLY牛仔裤 26码 女装', 89.00, 299.00, 1, 1, 78, 2, '宿舍楼下', '女装,牛仔裤,ONLY', '微信', 0, NOW(), NOW(), 0),
-(93, 6, 31, 'Levi\'s牛仔裤 30码', 'Levi\'s牛仔裤 30码 男装', 150.00, 599.00, 1, 1, 112, 2, '宿舍楼下', '男装,牛仔裤,Levi\'s', 'QQ', 0, NOW(), NOW(), 0),
-(94, 6, 31, 'Gap卫衣 L码', 'Gap卫衣 L码 男装', 79.00, 299.00, 1, 1, 98, 2, '宿舍楼下', '男装,卫衣,Gap', 'QQ', 0, NOW(), NOW(), 0),
+(91, 6, 31, 'H&M针织开衫 M码', 'H&M针织开衫 M码 女装', 59.00, 149.00, 1, 1, 89, 2, '同城', '女装,开衫,H&M', '微信', 0, NOW(), NOW(), 0),
+(92, 6, 31, 'ONLY牛仔裤 26码', 'ONLY牛仔裤 26码 女装', 89.00, 299.00, 1, 1, 78, 2, '同城', '女装,牛仔裤,ONLY', '微信', 0, NOW(), NOW(), 0),
+(93, 6, 31, 'Levi\'s牛仔裤 30码', 'Levi\'s牛仔裤 30码 男装', 150.00, 599.00, 1, 1, 112, 2, '同城', '男装,牛仔裤,Levi\'s', 'QQ', 0, NOW(), NOW(), 0),
+(94, 6, 31, 'Gap卫衣 L码', 'Gap卫衣 L码 男装', 79.00, 299.00, 1, 1, 98, 2, '同城', '男装,卫衣,Gap', 'QQ', 0, NOW(), NOW(), 0),
 (95, 4, 30, 'Converse帆布鞋 41码', 'Converse帆布鞋 41码 休闲鞋', 180.00, 499.00, 1, 1, 145, 2, '体育馆', '鞋子,帆布鞋,Converse', '微信', 0, NOW(), NOW(), 0),
--- 美妆护肤类商品（归类到生活用品-宿舍好物）
-(96, 9, 40, '兰蔻小黑瓶精华 50ml', '兰蔻小黑瓶精华 50ml 护肤', 380.00, 1080.00, 1, 1, 234, 1, '宿舍楼下', '护肤,精华,兰蔻', '微信', 0, NOW(), NOW(), 0),
-(97, 9, 40, 'SK-II神仙水 230ml', 'SK-II神仙水 230ml 护肤', 650.00, 1540.00, 1, 1, 189, 2, '宿舍楼下', '护肤,神仙水,SK-II', '微信', 0, NOW(), NOW(), 0),
-(98, 9, 40, 'MAC口红 Chili小辣椒', 'MAC口红 Chili小辣椒 彩妆', 89.00, 180.00, 1, 1, 267, 1, '宿舍楼下', '彩妆,口红,MAC', '微信', 0, NOW(), NOW(), 0),
-(99, 9, 40, '祖玛珑香水 蓝风铃30ml', '祖玛珑香水 蓝风铃30ml 香水', 280.00, 600.00, 1, 1, 145, 1, '宿舍楼下', '香水,祖玛珑,蓝风铃', '微信', 0, NOW(), NOW(), 0),
-(100, 9, 40, '戴森吹风机 HD08', '戴森吹风机 HD08 美发', 2200.00, 3290.00, 1, 1, 123, 2, '宿舍楼下', '美发,吹风机,戴森', '微信', 0, NOW(), NOW(), 0)
+-- 美妆护肤类商品（归类到生活用品-生活用品）
+(96, 9, 40, '兰蔻小黑瓶精华 50ml', '兰蔻小黑瓶精华 50ml 护肤', 380.00, 1080.00, 1, 1, 234, 1, '同城', '护肤,精华,兰蔻', '微信', 0, NOW(), NOW(), 0),
+(97, 9, 40, 'SK-II神仙水 230ml', 'SK-II神仙水 230ml 护肤', 650.00, 1540.00, 1, 1, 189, 2, '同城', '护肤,神仙水,SK-II', '微信', 0, NOW(), NOW(), 0),
+(98, 9, 40, 'MAC口红 Chili小辣椒', 'MAC口红 Chili小辣椒 彩妆', 89.00, 180.00, 1, 1, 267, 1, '同城', '彩妆,口红,MAC', '微信', 0, NOW(), NOW(), 0),
+(99, 9, 40, '祖玛珑香水 蓝风铃30ml', '祖玛珑香水 蓝风铃30ml 香水', 280.00, 600.00, 1, 1, 145, 1, '同城', '香水,祖玛珑,蓝风铃', '微信', 0, NOW(), NOW(), 0),
+(100, 9, 40, '戴森吹风机 HD08', '戴森吹风机 HD08 美发', 2200.00, 3290.00, 1, 1, 123, 2, '同城', '美发,吹风机,戴森', '微信', 0, NOW(), NOW(), 0)
 AS new
 ON DUPLICATE KEY UPDATE
     `name` = new.`name`,
@@ -1155,15 +1165,15 @@ INSERT INTO `eo_product` (
     `contact_method`, `tags`, `search_text`, `del_flag`, `create_time`, `update_time`
 ) VALUES
 (1001, 1, 11, 'MacBook Pro 14寸 M3芯片 深空灰', 11999.00, 14999.00, 1, 1, 256, 2, '图书馆', '微信联系', '苹果,笔记本,高性能', 'MacBook Pro 14寸 M3芯片 苹果 笔记本 高性能', 0, NOW(), NOW()),
-(1002, 1, 13, 'iPad Air 5 256G WiFi 蓝色', 3299.00, 4799.00, 1, 1, 189, 2, '校园内', '微信联系', '苹果,平板,学习', 'iPad Air 5 256G 苹果 平板 学习', 0, NOW(), NOW()),
-(1003, 1, 12, 'AirPods Pro 2 全新未拆封', 1299.00, 1899.00, 1, 1, 312, 1, '宿舍区', '微信联系', '苹果,耳机,降噪', 'AirPods Pro 2 苹果 耳机 降噪', 0, NOW(), NOW()),
+(1002, 1, 13, 'iPad Air 5 256G WiFi 蓝色', 3299.00, 4799.00, 1, 1, 189, 2, '同城', '微信联系', '苹果,平板,学习', 'iPad Air 5 256G 苹果 平板 学习', 0, NOW(), NOW()),
+(1003, 1, 12, 'AirPods Pro 2 全新未拆封', 1299.00, 1899.00, 1, 1, 312, 1, '同城', '微信联系', '苹果,耳机,降噪', 'AirPods Pro 2 苹果 耳机 降噪', 0, NOW(), NOW()),
 (1004, 1, 10, '小米13 Pro 256G 黑色', 2999.00, 4999.00, 1, 1, 145, 3, '教学楼', '微信联系', '小米,手机,拍照', '小米13 Pro 手机 拍照', 0, NOW(), NOW()),
 (1005, 1, 14, 'Switch OLED 游戏机 白色', 1599.00, 2599.00, 1, 1, 198, 2, '体育馆', '微信联系', '游戏机,任天堂,娱乐', 'Switch OLED 游戏机 任天堂 娱乐', 0, NOW(), NOW()),
-(1006, 1, 21, '考研英语词汇红宝书 2024版', 35.00, 68.00, 1, 1, 88, 3, '考研自习室', '微信联系', '考研,英语,词汇', '考研英语词汇 红宝书 考研 英语', 0, NOW(), NOW()),
+(1006, 1, 21, '考研英语词汇红宝书 2024版', 35.00, 68.00, 1, 1, 88, 3, '线下交易点', '微信联系', '考研,英语,词汇', '考研英语词汇 红宝书 考研 英语', 0, NOW(), NOW()),
 (1007, 1, 20, '高等数学同济第七版 上下册', 45.00, 89.00, 1, 1, 67, 3, '数学楼', '微信联系', '教材,数学,高数', '高等数学 同济第七版 教材 数学', 0, NOW(), NOW()),
 (1008, 1, 22, '数据结构与算法 Python版', 55.00, 99.00, 1, 1, 76, 2, '计算机学院', '微信联系', '计算机,算法,编程', '数据结构 算法 Python 计算机', 0, NOW(), NOW()),
 (1009, 1, 30, 'Nike Air Jordan 1 经典黑白 42码', 699.00, 1299.00, 1, 1, 156, 2, '操场', '微信联系', 'Nike,球鞋,经典', 'Nike Air Jordan 1 球鞋 经典', 0, NOW(), NOW()),
-(1010, 1, 31, '北面冲锋衣 黑色 M码 防水', 399.00, 899.00, 1, 1, 123, 2, '宿舍区', '微信联系', '北面,外套,户外', '北面 冲锋衣 外套 户外', 0, NOW(), NOW()),
+(1010, 1, 31, '北面冲锋衣 黑色 M码 防水', 399.00, 899.00, 1, 1, 123, 2, '同城', '微信联系', '北面,外套,户外', '北面 冲锋衣 外套 户外', 0, NOW(), NOW()),
 (1011, 1, 40, '小米台灯Pro 护眼阅读灯', 89.00, 149.00, 1, 1, 95, 2, '图书馆', '微信联系', '小米,台灯,护眼', '小米台灯Pro 护眼 台灯 阅读', 0, NOW(), NOW()),
 (1012, 1, 51, '迪卡侬山地自行车 27速', 899.00, 1599.00, 1, 1, 112, 2, '停车场', '微信联系', '自行车,运动,出行', '迪卡侬 山地自行车 运动 出行', 0, NOW(), NOW())
 AS new
@@ -1398,7 +1408,7 @@ ON DUPLICATE KEY UPDATE
 -- ===================================================================
 -- 35. 商品评价数据（基于已完成订单）
 -- 评分分布：5星50%、4星30%、3星12%、2星5%、1星3%
--- 约40%有卖家回复
+-- 约40%有资产方回复
 -- ===================================================================
 
 INSERT INTO `eo_product_review` (
@@ -1407,11 +1417,11 @@ INSERT INTO `eo_product_review` (
     `create_time`, `update_time`, `del_flag`, `version`
 ) VALUES
 -- 5星评价（好评）
-(1,  1,  3,  1,  5, '手机成色很好，和描述一致，卖家很热情，还送了手机壳，非常满意！', '感谢支持，祝使用愉快！', NOW() - INTERVAL 57 DAY, 23, 1, NOW() - INTERVAL 58 DAY, NOW() - INTERVAL 57 DAY, 0, 0),
+(1,  1,  3,  1,  5, '手机成色很好，和描述一致，资产方很热情，还送了手机壳，非常满意！', '感谢支持，祝使用愉快！', NOW() - INTERVAL 57 DAY, 23, 1, NOW() - INTERVAL 58 DAY, NOW() - INTERVAL 57 DAY, 0, 0),
 (2,  8,  4,  2,  5, 'AirPods 全新未拆封，正品保障，价格比官网便宜很多，超值！', '谢谢好评，欢迎再来~', NOW() - INTERVAL 52 DAY, 18, 1, NOW() - INTERVAL 53 DAY, NOW() - INTERVAL 52 DAY, 0, 0),
-(3,  2,  5,  3,  5, '华为Mate60拍照太棒了，卫星通话功能很酷，卖家发货快，包装仔细。', NULL, NULL, 12, 1, NOW() - INTERVAL 48 DAY, NOW(), 0, 0),
-(4,  13, 3,  11, 5, 'Switch OLED屏幕效果惊艳，掌机模式太爽了，宿舍必备！', '哈哈，游戏愉快！', NOW() - INTERVAL 7 DAY, 15, 1, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY, 0, 0),
-(5,  46, 14, 13, 5, '三星S24 Ultra的S Pen太好用了，AI功能也很强大，卖家服务态度超好！', '感谢认可，有问题随时联系~', NOW() - INTERVAL 9 DAY, 8, 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY, 0, 0),
+(3,  2,  5,  3,  5, '华为Mate60拍照太棒了，卫星通话功能很酷，资产方发货快，包装仔细。', NULL, NULL, 12, 1, NOW() - INTERVAL 48 DAY, NOW(), 0, 0),
+(4,  13, 3,  11, 5, 'Switch OLED屏幕效果惊艳，掌机模式太爽了，生活必备！', '哈哈，游戏愉快！', NOW() - INTERVAL 7 DAY, 15, 1, NOW() - INTERVAL 8 DAY, NOW() - INTERVAL 7 DAY, 0, 0),
+(5,  46, 14, 13, 5, '三星S24 Ultra的S Pen太好用了，AI功能也很强大，资产方服务态度超好！', '感谢认可，有问题随时联系~', NOW() - INTERVAL 9 DAY, 8, 1, NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 9 DAY, 0, 0),
 (6,  50, 11, 18, 5, 'Bose降噪效果一流，戴上后世界都安静了，图书馆神器！', NULL, NULL, 11, 1, NOW() - INTERVAL 17 DAY, NOW(), 0, 0),
 
 -- 4星评价（较好）
@@ -1426,7 +1436,7 @@ INSERT INTO `eo_product_review` (
 (13, 2,  5,  3,  3, '手机功能正常，但边框有轻微磕碰没在描述中提到，希望能更诚实。', NULL, NULL, 2, 1, NOW() - INTERVAL 48 DAY, NOW(), 0, 0),
 
 -- 2星评价（较差）
-(14, 24, 6,  10, 2, '鞋子尺码偏小，和卖家说的不一样，只能送人了。', '抱歉尺码问题，可以联系我换货', NOW() - INTERVAL 23 DAY, 1, 1, NOW() - INTERVAL 23 DAY, NOW() - INTERVAL 23 DAY, 0, 0),
+(14, 24, 6,  10, 2, '鞋子尺码偏小，和资产方说的不一样，只能送人了。', '抱歉尺码问题，可以联系我换货', NOW() - INTERVAL 23 DAY, 1, 1, NOW() - INTERVAL 23 DAY, NOW() - INTERVAL 23 DAY, 0, 0),
 
 -- 1星评价（差评）
 (15, 11, 5,  9,  1, '手环用了两天就充不进电了，质量太差！', '可以联系售后，可能是充电器问题', NOW() - INTERVAL 28 DAY, 0, 1, NOW() - INTERVAL 28 DAY, NOW() - INTERVAL 28 DAY, 0, 0)

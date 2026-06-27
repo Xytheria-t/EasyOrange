@@ -181,7 +181,7 @@ function FavoritesPage() {
                   My Collection
                 </div>
                 <h1 className="favorites-title">我的收藏</h1>
-                <p className="favorites-subtitle">你精心挑选的心仪好物</p>
+                <p className="favorites-subtitle">你精心挑选的心仪资产</p>
               </div>
             </div>
             <div className="favorites-empty">
@@ -197,10 +197,10 @@ function FavoritesPage() {
                 </div>
               </div>
               <h3>收藏夹空空如也</h3>
-              <p>去发现那些让你心动的宝贝，将它们收藏在这里吧</p>
+              <p>去发现那些让你心动的资产，将它们收藏在这里吧</p>
               <Link to="/products" className="explore-btn">
                 <Sparkles />
-                探索好物
+                探索资产
                 <ArrowRight />
               </Link>
             </div>
@@ -228,7 +228,7 @@ function FavoritesPage() {
                 My Collection
               </div>
               <h1 className="favorites-title">我的收藏</h1>
-              <p className="favorites-subtitle">你精心挑选的心仪好物</p>
+              <p className="favorites-subtitle">你精心挑选的心仪资产</p>
             </div>
             <div className="favorites-header-right">
               <div className="favorites-count-badge">
@@ -269,7 +269,7 @@ function FavoritesPage() {
                   </div>
                   <div className="feature-content">
                     <span className="feature-value">3件</span>
-                    <span className="feature-label">降价提醒</span>
+                    <span className="feature-label">心动降价</span>
                   </div>
                 </div>
                 <div className="favorites-ai-feature">

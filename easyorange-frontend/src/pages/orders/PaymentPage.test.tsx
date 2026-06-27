@@ -36,9 +36,9 @@ function createMockOrder(overrides: Partial<OrderDetail> = {}): OrderDetail {
     id: 'order-123',
     orderNo: 'ORD202605011001',
     buyerId: 'buyer1',
-    buyerUsername: '买家小明',
+    buyerUsername: '认领方小明',
     sellerId: 'seller1',
-    sellerUsername: '卖家张三',
+    sellerUsername: '资产方张三',
     items: [{
       itemId: 'item1',
       productId: 'prod1',

@@ -1,4 +1,4 @@
-# EasyOrange Frontend (AI 替卖家运营的 C2C 平台)
+# EasyOrange Frontend (AI 资产管理)
 
 > 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用（**2025 年 11 月启动**）
 
@@ -30,7 +30,7 @@ easyorange-frontend/
 │   │   │   ├── cache.ts      # 响应缓存
 │   │   │   ├── interceptors.ts    # 拦截器管理
 │   │   │   └── index.ts      # 统一导出
-│   │   ├── productApi.ts     # 商品 API
+│   │   ├── productApi.ts     # 资产 API
 │   │   ├── orderApi.ts       # 订单 API
 │   │   ├── aiApi.ts          # AI 功能 API（定价/审核/语义搜索/问答/拍照上架）
 │   │   ├── creditApi.ts      # 信用评分 API
@@ -45,7 +45,7 @@ easyorange-frontend/
 │   │   ├── ai/               # AI 组件（AiPricingBadge, AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, AiCopyGeneration, CreditScoreCard）
 │   │   ├── sections/         # 页面区块组件
 │   │   ├── profile/          # 个人中心组件
-│   │   ├── products/         # 商品相关组件
+│   │   ├── products/         # 资产相关组件
 │   │   └── ui/               # 基础 UI 组件
 │   ├── features/             # 业务模块
 │   │   └── auth/             # 认证模块
@@ -58,11 +58,11 @@ easyorange-frontend/
 │   │   ├── useAiCopyGeneration.ts # AI 文案生成 Hook
 │   │   ├── auth/             # 认证相关 Hooks
 │   │   ├── order/            # 订单相关 Hooks
-│   │   ├── product/          # 商品相关 Hooks
+│   │   ├── product/          # 资产相关 Hooks
 │   │   └── ui/               # UI 相关 Hooks (useColumnCount 等)
 │   ├── lib/                  # 库配置
 │   ├── pages/                # 页面组件
-│   │   └── publish/          # 发布商品子模块
+│   │   └── publish/          # 发布资产子模块
 │   ├── routes/               # 路由配置
 │   ├── store/                # Zustand 状态管理（认证、聊天、UI、Overlay）
 │   ├── styles/               # 样式文件
@@ -124,12 +124,12 @@ npm run preview
 |------|------|------|--------|
 | 首页 | `/` | 推荐资产、轮播图、平台统计 | 否 |
 | 资产列表 | `/products` | 资产浏览、分类筛选、排序 | 否 |
-| 商品详情 | `/products/:id` | 商品详情、评价、收藏 | 否 |
+| 资产详情 | `/products/:id` | 资产详情、评价、收藏 | 否 |
 | 搜索 | `/search` | 关键词搜索、筛选 | 否 |
-| 提交资产 | `/publish` | 资产提交表单 | 是 |
-| 编辑商品 | `/products/:id/edit` | 编辑已发布商品 | 是 |
+| 提交资产 | `/publish` | 资产发布表单 | 是 |
+| 编辑资产 | `/products/:id/edit` | 编辑已发布资产 | 是 |
 | 个人中心 | `/profile` | 个人信息、密码修改 | 是 |
-| 我的收藏 | `/favorites` | 收藏商品管理 | 是 |
+| 我的收藏 | `/favorites` | 收藏资产管理 | 是 |
 | 消息中心 | `/messages` | 站内消息列表 | 是 |
 | 信用评分 | `/credit` | 信用评分展示、变更记录 | 是 |
 | 通知中心 | `/notifications` | 系统通知列表、查看详情 | 是 |
@@ -142,7 +142,7 @@ npm run preview
 | 管理后台 | `/admin` | 管理端仪表盘（重定向到 /admin/dashboard） | 是 |
 | 管理仪表盘 | `/admin/dashboard` | 数据概览、待办事项、最近动态 | 是 |
 | 用户管理 | `/admin/users` | 用户列表、搜索、详情弹窗、状态变更 | 是 |
-| 商品管理 | `/admin/products` | 商品审核列表、详情抽屉、通过/拒绝 | 是 |
+| 资产管理 | `/admin/products` | 资产审核列表、详情抽屉、通过/拒绝 | 是 |
 | 订单管理 | `/admin/orders` | 订单列表、筛选、状态追踪 | 是 |
 | 分类管理 | `/admin/categories` | 分类树、CRUD 操作、启用禁用 | 是 |
 | 评价管理 | `/admin/reviews` | 评价列表、详情、删除 | 是 |
@@ -157,11 +157,11 @@ npm run preview
 - 个人资料管理
 - 密码修改与找回
 
-### 商品系统
-- 商品发布（多图上传、分类选择、草稿保存）
-- 商品编辑/删除
-- 商品搜索与筛选
-- 相似商品推荐
+### 资产系统
+- 资产发布（多图上传、分类选择、草稿保存）
+- 资产编辑/删除
+- 资产搜索与筛选
+- 相似资产推荐
 
 ### 交易系统
 - 订单创建
@@ -170,17 +170,17 @@ npm run preview
 - 评价系统
 
 ### 互动系统
-- 商品收藏
+- 资产收藏
 - 站内消息
 - 系统通知
 
 ### AI 系统
 - **智能定价** - AI 分析市场行情给出定价建议（AiPricingBadge + useAiPricing）
-- **拍照上架** - 上传图片自动生成商品信息（AiPhotoCapture + useAutoListing）
-- **AI 审核** - AI 分析商品信息给出审核建议（AiReviewSuggestion + useAdminProductAudit）
-- **语义搜索** - 基于语义向量搜索相似商品（SemanticSearchToggle + useSemanticSearch）
-- **智能问答** - 基于商品上下文回答买家问题（AiQaPanel + useAiQa）
-- **智能文案** - 基于商品信息自动生成商品描述和标题（AiCopyGeneration + useAiCopyGeneration）
+- **拍照上架** - 上传图片自动生成资产信息（AiPhotoCapture + useAutoListing）
+- **AI 审核** - AI 分析资产信息给出审核建议（AiReviewSuggestion + useAdminProductAudit）
+- **语义搜索** - 基于语义向量搜索相似资产（SemanticSearchToggle + useSemanticSearch）
+- **智能问答** - 基于资产上下文回答认领方问题（AiQaPanel + useAiQa）
+- **智能文案** - 基于资产信息自动生成资产描述和标题（AiCopyGeneration + useAiCopyGeneration）
 - **信用评分** - 基于交易数据的信用评分体系（CreditScoreCard + creditApi）
 
 ## 环境变量
@@ -188,13 +188,13 @@ npm run preview
 ### 开发环境 (`.env.development`)
 ```env
 VITE_API_BASE_URL=/api
-VITE_APP_TITLE=EasyOrange — AI 替卖家运营的 C2C 平台
+VITE_APP_TITLE=EasyOrange — AI 资产管理
 ```
 
 ### 生产环境 (`.env.production`)
 ```env
 VITE_API_BASE_URL=https://api.easyorange.com
-VITE_APP_TITLE=EasyOrange — AI 替卖家运营的 C2C 平台
+VITE_APP_TITLE=EasyOrange — AI 资产管理
 ```
 
 ## 开发规范
@@ -203,7 +203,7 @@ VITE_APP_TITLE=EasyOrange — AI 替卖家运营的 C2C 平台
 - 使用 ESLint + Prettier
 - 所有函数和变量必须有类型注解
 - 优先使用 `const` 和不可变数据模式
-- 使用 async/await 处理异步操作
+- 使用 async/await 处理异步逻辑
 
 ### 管理端开发约定
 - **样式**: 所有 `src/admin/` 页面/组件必须使用内联 `style={{}}`，禁止依赖外部CSS（`admin.css` 仅用于侧边栏/头部布局）
@@ -237,4 +237,4 @@ MIT License
 
 ---
 
-**EasyOrange** — AI 替卖家运营的 C2C 平台
+**EasyOrange** — AI 资产管理

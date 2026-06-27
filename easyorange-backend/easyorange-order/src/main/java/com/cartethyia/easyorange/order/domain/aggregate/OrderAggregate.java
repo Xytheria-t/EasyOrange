@@ -36,8 +36,8 @@ import java.util.List;
  * <p>
  * 核心不变量：
  * <ul>
- *   <li>订单必须包含至少一件商品，总金额必须大于 0</li>
- *   <li>买家不能购买自己的商品</li>
+ *   <li>订单必须包含至少一件资产，总金额必须大于 0</li>
+ *   <li>认领方不能认领自己的资产</li>
  *   <li>状态转换必须严格遵循状态机规则</li>
  *   <li>取消/退款时必须附带原因</li>
  * </ul>
@@ -136,21 +136,21 @@ public class OrderAggregate {
     /**
      * 创建新订单
      *
-     * @param buyerId  买家 ID
-     * @param sellerId 卖家 ID
-     * @param items    订单商品列表
+     * @param buyerId  认领方 ID
+     * @param sellerId 资产方 ID
+     * @param items    订单资产列表
      * @param address  收货地址
      * @param phone    联系电话
      * @param remark   备注
      * @return 订单创建结果（含聚合根与领域事件）
-     * @throws IllegalArgumentException 如果买家等于卖家、商品为空或金额为零
+     * @throws IllegalArgumentException 如果认领方等于资产方、资产为空或金额为零
      */
     public static OrderCreatedResult createOrder(UserId buyerId, UserId sellerId,
                                                   List<OrderItem> items,
                                                   Address address, Phone phone, String remark,
                                                   Long orderId) {
-        BizRequire.requireTrue(!java.util.Objects.equals(buyerId.value(), sellerId.value()), "不能购买自己的商品");
-        BizRequire.notEmpty(items, "订单商品不能为空");
+        BizRequire.requireTrue(!java.util.Objects.equals(buyerId.value(), sellerId.value()), "不能认领自己的资产");
+        BizRequire.notEmpty(items, "订单资产不能为空");
 
         BigDecimal total = items.stream()
                 .map(item -> item.subtotal().value())

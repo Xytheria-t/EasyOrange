@@ -89,11 +89,11 @@ const CATEGORY_DESCS: Record<string, string> = {
   '服饰鞋包': '潮流服饰 · 品牌鞋履 · 箱包配饰',
   '生活用品': '家居日用 · 生活百货 · 厨房用品',
   '运动健身': '健身器材 · 运动装备 · 户外用品',
-  '虚拟物品': '游戏账号 · 虚拟货币 · 会员服务',
+  '虚拟物品': '游戏账号 · 会员权益 · 数字素材 · 创作资源',
 };
 
 function getCategoryDesc(name: string): string {
-  return CATEGORY_DESCS[name] || '精选好物 · 品质保证';
+  return CATEGORY_DESCS[name] || '精选资产 · 品质保证';
 }
 
 export default function CategoriesSection() {
@@ -145,7 +145,7 @@ export default function CategoriesSection() {
         <div className="section-header reveal">
           <span className="section-tag">探索分类</span>
           <h2 className="section-title">发现你需要的</h2>
-          <p className="section-desc">精选热门品类，快速找到心仪好物</p>
+          <p className="section-desc">精选热门品类，快速找到心仪资产</p>
         </div>
 
         <div className="categories-grid reveal-stagger">

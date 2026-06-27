@@ -129,7 +129,7 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("清除买家订单缓存")
+    @DisplayName("清除认领方订单缓存")
     void testEvictBuyerOrders() {
         Long buyerId = 123456L;
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
@@ -140,7 +140,7 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("清除卖家订单缓存")
+    @DisplayName("清除资产方订单缓存")
     void testEvictSellerOrders() {
         Long sellerId = 789012L;
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
@@ -151,7 +151,7 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("清除订单缓存同时清除买家和卖家缓存")
+    @DisplayName("清除订单缓存同时清除认领方和资产方缓存")
     void testEvictOrderCache() {
         Long buyerId = 111222L;
         Long sellerId = 333444L;
@@ -164,7 +164,7 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("清除订单缓存时买家 ID 为 null")
+    @DisplayName("清除订单缓存时认领方 ID 为 null")
     void testEvictOrderCacheWithNullBuyerId() {
         Long sellerId = 555666L;
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
@@ -176,7 +176,7 @@ class OrderCacheServiceTest {
     }
 
     @Test
-    @DisplayName("清除订单缓存时卖家 ID 为 null")
+    @DisplayName("清除订单缓存时资产方 ID 为 null")
     void testEvictOrderCacheWithNullSellerId() {
         Long buyerId = 777888L;
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());

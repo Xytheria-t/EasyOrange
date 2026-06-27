@@ -20,7 +20,7 @@ const mockProduct = {
 function createHistoryItem(overrides: Partial<QaHistoryItem> = {}): QaHistoryItem {
   return {
     question: '这个商品成色如何？',
-    answer: { answer: '商品描述为99新，建议联系卖家确认具体细节。', hasConfidence: true },
+    answer: { answer: '商品描述为99新，建议联系资产方确认具体细节。', hasConfidence: true },
     ...overrides,
   };
 }
@@ -179,7 +179,7 @@ describe('AiQaPanel', () => {
         />,
       );
       expect(screen.getByText('这个商品成色如何？')).toBeInTheDocument();
-      expect(screen.getByText('商品描述为99新，建议联系卖家确认具体细节。')).toBeInTheDocument();
+      expect(screen.getByText('商品描述为99新，建议联系资产方确认具体细节。')).toBeInTheDocument();
     });
 
     it('renders multiple messages', () => {
@@ -187,7 +187,7 @@ describe('AiQaPanel', () => {
         createHistoryItem(),
         createHistoryItem({
           question: '价格还能优惠吗？',
-          answer: { answer: '您可以尝试与卖家协商。', hasConfidence: false },
+          answer: { answer: '您可以尝试与资产方协商。', hasConfidence: false },
         }),
       ];
       renderWithProviders(
@@ -200,7 +200,7 @@ describe('AiQaPanel', () => {
       );
       expect(screen.getByText('这个商品成色如何？')).toBeInTheDocument();
       expect(screen.getByText('价格还能优惠吗？')).toBeInTheDocument();
-      expect(screen.getByText('您可以尝试与卖家协商。')).toBeInTheDocument();
+      expect(screen.getByText('您可以尝试与资产方协商。')).toBeInTheDocument();
     });
 
     it('shows confidence badge when hasConfidence is true', () => {
@@ -241,7 +241,7 @@ describe('AiQaPanel', () => {
       );
       const copyBtn = screen.getByTitle('复制回答');
       await userEvent.click(copyBtn);
-      expect(writeText).toHaveBeenCalledWith('商品描述为99新，建议联系卖家确认具体细节。');
+      expect(writeText).toHaveBeenCalledWith('商品描述为99新，建议联系资产方确认具体细节。');
     });
 
     it('shows check icon after copy', async () => {

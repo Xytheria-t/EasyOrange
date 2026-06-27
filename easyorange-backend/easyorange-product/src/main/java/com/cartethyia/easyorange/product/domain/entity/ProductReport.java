@@ -36,7 +36,7 @@ public class ProductReport {
 
     public static ProductReport create(Long productId, Long reporterId, String reason, Integer reasonType) {
         if (productId == null) {
-            throw new ReportDomainException("商品ID不能为空");
+            throw new ReportDomainException("资产ID不能为空");
         }
         if (reporterId == null) {
             throw new ReportDomainException("举报人ID不能为空");

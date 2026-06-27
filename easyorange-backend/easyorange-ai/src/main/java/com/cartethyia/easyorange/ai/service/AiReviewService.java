@@ -27,7 +27,7 @@ public class AiReviewService {
             List<String> imageUrls
     ) {
         String systemPrompt = """
-                你是 EasyOrange — AI 替卖家运营的 C2C 平台的商品审核助手。
+                你是 EasyOrange — AI 资产管理 的资产审核助手。
                 根据商品信息，判断该商品是否符合平台审核标准。
                 审核标准：
                 1. 商品信息是否完整准确
@@ -49,7 +49,7 @@ public class AiReviewService {
                 分类：%s
                 成色：%s
                 价格：%s
-                卖家：%s
+                资产方：%s
                 图片数量：%d张
                 """,
                 productName,

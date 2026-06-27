@@ -97,11 +97,11 @@ class AdminOrderControllerTest {
 
     @Test
     void cancelOrder_shouldSucceed() throws Exception {
-        doNothing().when(adminOrderService).cancelOrder(eq(1L), eq("买家申请取消"));
+        doNothing().when(adminOrderService).cancelOrder(eq(1L), eq("认领方申请取消"));
 
         mockMvc.perform(put("/api/admin/orders/1/cancel")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"reason\": \"买家申请取消\"}"))
+                .content("{\"reason\": \"认领方申请取消\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
     }

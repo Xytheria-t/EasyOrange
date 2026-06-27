@@ -73,7 +73,7 @@ eventPublisher.publish(new SomeEvent(...));
 - 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
 - 每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
 - 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发，非轮询竞争）
-- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（10 个消费者，见根目录 AGENTS.md）
+- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（9 个消费者，见根目录 AGENTS.md）
 - `@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
 
 ## 跨模块通信

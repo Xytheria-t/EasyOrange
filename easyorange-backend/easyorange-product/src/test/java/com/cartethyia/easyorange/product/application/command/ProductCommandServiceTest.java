@@ -14,7 +14,6 @@ import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundExcepti
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -60,8 +59,6 @@ class ProductCommandServiceTest {
                 com.cartethyia.easyorange.product.domain.valueobject.ProductTitle.of("测试商品"),
                 com.cartethyia.easyorange.common.domain.Money.of(new BigDecimal("100")),
                 null,
-                null,
-                ConsignmentMode.MANUAL,
                 com.cartethyia.easyorange.product.domain.valueobject.StockQuantity.of(10),
                 ConditionLevel.NEW,
                 com.cartethyia.easyorange.product.domain.valueobject.TradeLocation.of("北京"),

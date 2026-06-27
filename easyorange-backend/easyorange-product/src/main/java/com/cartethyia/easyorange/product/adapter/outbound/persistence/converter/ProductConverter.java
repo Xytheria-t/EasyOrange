@@ -14,7 +14,6 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.domain.enums.ConsignmentMode;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
@@ -37,10 +36,6 @@ public final class ProductConverter {
                 ProductTitle.of(productDO.getName()),
                 Money.of(productDO.getPrice()),
                 productDO.getOriginalPrice() != null ? Money.of(productDO.getOriginalPrice()) : null,
-                productDO.getFloorPrice() != null ? Money.of(productDO.getFloorPrice()) : null,
-                ConsignmentMode.fromCode(productDO.getConsignmentMode()),
-                productDO.getListedAt(),
-                productDO.getCurrentPriceLevel() != null ? productDO.getCurrentPriceLevel() : 0,
                 StockQuantity.of(productDO.getStock()),
                 Version.of(productDO.getVersion()),
                 ProductStatus.fromCode(productDO.getStatus()),
@@ -87,10 +82,6 @@ public final class ProductConverter {
         dobj.setConditionLevel(product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null);
         dobj.setLocation(product.getLocation() != null ? product.getLocation().value() : null);
         dobj.setContactMethod(product.getContactMethod() != null && product.getContactMethod().isNotBlank() ? product.getContactMethod().value() : null);
-        dobj.setFloorPrice(product.getFloorPrice() != null ? product.getFloorPrice().value() : null);
-        dobj.setConsignmentMode(product.getConsignmentMode().getCode());
-        dobj.setListedAt(product.getListedAt());
-        dobj.setCurrentPriceLevel(product.getCurrentPriceLevel());
         dobj.setCreateTime(product.getCreateTime());
         dobj.setUpdateTime(product.getUpdateTime());
         dobj.setPriceUpdateTime(product.getPriceUpdateTime());

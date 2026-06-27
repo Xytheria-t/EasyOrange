@@ -218,7 +218,7 @@ export const ProductCard = memo(({
               onClick={(e) => { e.stopPropagation() }}
               onMouseMove={handleButtonMouseMove}
               onMouseLeave={handleButtonMouseLeave}
-              aria-label="联系卖家"
+              aria-label="联系资产方"
             >
               <MessageCircle size={17} strokeWidth={2} />
             </button>

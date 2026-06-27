@@ -231,8 +231,8 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
 
               {/* Info grid - row 1 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <InfoCell label="买家" value={orderData.buyer?.nickname || '—'} />
-                <InfoCell label="卖家" value={orderData.seller?.nickname || '—'} />
+                <InfoCell label="认领方" value={orderData.buyer?.nickname || '—'} />
+                <InfoCell label="资产方" value={orderData.seller?.nickname || '—'} />
                 <InfoCell label="支付状态" value={PAYMENT_STATUS[orderData.paymentStatus] ?? '未知'} />
                 <InfoCell label="支付金额" value={orderData.paidAmount != null ? `¥${orderData.paidAmount.toFixed(2)}` : '—'} />
               </div>

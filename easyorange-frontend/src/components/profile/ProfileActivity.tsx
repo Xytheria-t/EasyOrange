@@ -4,7 +4,7 @@ const activities = [
   { title: '发布了商品 iPhone 15 Pro', desc: '售价 ¥6,999', time: '2小时前', icon: Package, color: 'orange' },
   { title: '购买了 机械键盘', desc: '¥299', time: '昨天', icon: ShoppingBag, color: 'blue' },
   { title: '收藏了 AirPods Pro', desc: '¥1,899', time: '3天前', icon: Heart, color: 'rose' },
-  { title: '收到了新评价', desc: '买家给了五星好评', time: '1周前', icon: Star, color: 'yellow' },
+  { title: '收到了新评价', desc: '认领方给了五星好评', time: '1周前', icon: Star, color: 'yellow' },
 ]
 
 export function ProfileActivity() {
