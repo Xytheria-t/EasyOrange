@@ -253,19 +253,50 @@ class MessageTemplateServiceTest {
     }
 
     @Nested
-    @DisplayName("缓存操作（TODO 桩方法）")
+    @DisplayName("缓存操作")
     class CacheTests {
 
         @Test
-        @DisplayName("缓存方法不抛出异常")
-        void cacheMethods_noThrow() {
-            when(messageTemplateRepository.findByCondition(any())).thenReturn(List.of());
+        @DisplayName("loadingTemplateCache 将模板写入 Redis Hash")
+        void loadingTemplateCache_withTemplates_putsIntoRedis() {
+            MessageTemplateAggregate template = buildTemplate(
+                    1L, TEMPLATE_CODE, "订单通知", "SYSTEM",
+                    "标题", "内容", null, 1);
+            when(messageTemplateRepository.findByCondition(null)).thenReturn(List.of(template));
 
             templateService.loadingTemplateCache();
+
+            verify(messageTemplateRepository).findByCondition(null);
+            verify(redisCache).hashPutAll(eq("eo:message:templates"), anyMap());
+        }
+
+        @Test
+        @DisplayName("loadingTemplateCache 无模板时不调用 Redis")
+        void loadingTemplateCache_noTemplates_doesNotTouchRedis() {
+            when(messageTemplateRepository.findByCondition(null)).thenReturn(List.of());
+
+            templateService.loadingTemplateCache();
+
+            verify(redisCache, never()).hashPutAll(anyString(), anyMap());
+        }
+
+        @Test
+        @DisplayName("clearTemplateCache 删除 Redis 缓存键")
+        void clearTemplateCache_deletesRedisKey() {
             templateService.clearTemplateCache();
+
+            verify(redisCache).delete("eo:message:templates");
+        }
+
+        @Test
+        @DisplayName("resetTemplateCache 先清空再重新加载")
+        void resetTemplateCache_clearsAndReloads() {
+            when(messageTemplateRepository.findByCondition(null)).thenReturn(List.of());
+
             templateService.resetTemplateCache();
 
-            verify(redisCache, atLeastOnce()).delete(anyString());
+            verify(redisCache).delete("eo:message:templates");
+            verify(messageTemplateRepository).findByCondition(null);
         }
     }
 }
