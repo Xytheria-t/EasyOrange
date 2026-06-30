@@ -37,7 +37,7 @@ public class TokenServiceImpl implements TokenService {
     private final JwtProperties jwtProperties;
 
     @Override
-    public String createAccessToken(Long userId, String username, String userType) {
+    public String createAccessToken(String userId, String username, String userType) {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
                 .issuer(jwtProperties.getIssuer())
@@ -53,7 +53,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public String createRefreshToken(Long userId, String username, String userType) {
+    public String createRefreshToken(String userId, String username, String userType) {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
                 .issuer(jwtProperties.getIssuer())
@@ -92,7 +92,7 @@ public class TokenServiceImpl implements TokenService {
     }
 
     @Override
-    public void invalidateAllUserTokens(Long userId) {
+    public void invalidateAllUserTokens(String userId) {
         stringRedisTemplate.opsForValue().set(
                 getForceLogoutKey(userId), String.valueOf(System.currentTimeMillis()),
                 jwtProperties.getAccessTokenExpiration(), TimeUnit.MINUTES
@@ -113,7 +113,7 @@ public class TokenServiceImpl implements TokenService {
             throw BusinessException.of(ResultCode.UNAUTHORIZED, "刷新令牌已失效，请重新登录");
         }
 
-        Long userId = Long.valueOf(jwt.getSubject());
+        String userId = jwt.getSubject();
 
         invalidateToken(refreshToken);
 
@@ -130,7 +130,7 @@ public class TokenServiceImpl implements TokenService {
         return LoginCacheConstants.TOKEN_BLACKLIST_KEY + jti;
     }
 
-    private String getForceLogoutKey(Long userId) {
+    private String getForceLogoutKey(String userId) {
         return LoginCacheConstants.FORCE_LOGOUT_KEY + userId;
     }
 }

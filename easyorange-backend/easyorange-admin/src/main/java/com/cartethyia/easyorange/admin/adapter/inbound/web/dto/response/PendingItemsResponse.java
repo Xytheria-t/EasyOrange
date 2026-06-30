@@ -21,9 +21,9 @@ public class PendingItemsResponse {
     @Builder
     public static class PendingReportItem {
 
-        private Long id;
+        private String id;
 
-        private Long productId;
+        private String productId;
 
         private String productName;
 

@@ -22,13 +22,13 @@ public class BatchQueryUtil {
     private final UserMapper userMapper;
     private final ProductMapper productMapper;
 
-    public Map<Long, UserEntity> batchGetUsers(List<Long> userIds) {
+    public Map<String, UserEntity> batchGetUsers(List<String> userIds) {
         if (userIds.isEmpty()) return Map.of();
         return userMapper.selectBatchIds(userIds).stream()
                 .collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
     }
 
-    public Map<Long, ProductDO> batchGetProducts(List<Long> productIds) {
+    public Map<String, ProductDO> batchGetProducts(List<String> productIds) {
         if (productIds.isEmpty()) return Map.of();
         return productMapper.selectBatchIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));

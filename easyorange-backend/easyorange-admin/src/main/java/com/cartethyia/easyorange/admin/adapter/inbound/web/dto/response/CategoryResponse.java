@@ -3,9 +3,9 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response;
 import java.time.LocalDateTime;
 
 public record CategoryResponse(
-    Long categoryId,
+    String categoryId,
     String name,
-    Long parentId,
+    String parentId,
     String parentName,
     Integer level,
     Integer sortOrder,

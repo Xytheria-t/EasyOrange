@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 @Service
@@ -254,7 +255,7 @@ public class AdminDashboardService {
             .map(row -> {
                 int statusCode = row.get("status") != null ? ((Number) row.get("status")).intValue() : -1;
                 return TopProductResponse.builder()
-                    .productId(((Number) row.get("id")).longValue())
+                    .productId(String.valueOf(row.get("id")))
                     .name((String) row.get("name"))
                     .viewCount(row.get("view_count") != null ? ((Number) row.get("view_count")).intValue() : 0)
                     .price(row.get("price") != null ? (java.math.BigDecimal) row.get("price") : java.math.BigDecimal.ZERO)
@@ -285,10 +286,10 @@ public class AdminDashboardService {
         return result;
     }
 
-    private List<Long> getRecentProductIds(int limit) {
+    private List<String> getRecentProductIds(int limit) {
         return jdbcTemplate.queryForList(
             "SELECT id FROM eo_product WHERE del_flag = 0 ORDER BY create_time DESC LIMIT " + limit,
-            Long.class
+            String.class
         );
     }
 
@@ -313,6 +314,7 @@ public class AdminDashboardService {
     ) {
         return RecentProductResponse.builder()
             .productId(model.id())
+            .sellerId(model.sellerId())
             .name(model.title())
             .price(model.price())
             .mainImage(model.mainImageUrl())

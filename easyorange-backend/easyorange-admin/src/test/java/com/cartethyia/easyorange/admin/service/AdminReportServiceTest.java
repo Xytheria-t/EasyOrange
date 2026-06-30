@@ -78,10 +78,10 @@ class AdminReportServiceTest {
     @InjectMocks
     private AdminReportService reportService;
 
-    private static final Long REPORT_ID = 100L;
-    private static final Long PRODUCT_ID = 200L;
-    private static final Long REPORTER_ID = 1L;
-    private static final Long OPERATOR_ID = 2L;
+    private static final String REPORT_ID = "100";
+    private static final String PRODUCT_ID = "200";
+    private static final String REPORTER_ID = "1";
+    private static final String OPERATOR_ID = "2";
 
     private ProductReport createPendingReport() {
         return ProductReport.reconstitute(REPORT_ID, PRODUCT_ID, REPORTER_ID,
@@ -95,7 +95,7 @@ class AdminReportServiceTest {
                 LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), 1);
     }
 
-    private UserEntity createUser(Long id, String name) {
+    private UserEntity createUser(String id, String name) {
         return UserEntity.builder()
                 .id(id)
                 .username(name)
@@ -257,7 +257,7 @@ class AdminReportServiceTest {
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
 
             Product product = Product.reconstitute(
-                    ProductId.of(PRODUCT_ID), SellerId.of(1L), CategoryId.of(1L),
+                    ProductId.of(PRODUCT_ID), SellerId.of("1"), CategoryId.of("1"),
                     ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
                     StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
                     0, null, null, null, null, null, TagSet.empty(), null, null,
@@ -290,15 +290,15 @@ class AdminReportServiceTest {
         @DisplayName("批量处理举报")
         void batchHandleReports_success() {
             ProductReport report1 = createPendingReport();
-            ProductReport report2 = ProductReport.reconstitute(101L, PRODUCT_ID, REPORTER_ID,
+            ProductReport report2 = ProductReport.reconstitute("101", PRODUCT_ID, REPORTER_ID,
                     "侵权", ProductReportStatus.PENDING, null,
                     LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), 2);
 
-            when(productReportRepository.findById(100L)).thenReturn(report1);
-            when(productReportRepository.findById(101L)).thenReturn(report2);
+            when(productReportRepository.findById("100")).thenReturn(report1);
+            when(productReportRepository.findById("101")).thenReturn(report2);
 
             BatchHandleRequest request = new BatchHandleRequest();
-            request.setReportIds(List.of(100L, 101L));
+            request.setReportIds(List.of("100", "101"));
             request.setAction("dismiss");
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
@@ -328,7 +328,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("超过50条抛出异常")
         void batchHandleReports_exceedLimit_throws() {
-            List<Long> ids = java.util.stream.LongStream.range(1, 52).boxed().toList();
+            List<String> ids = java.util.stream.LongStream.range(1, 52).mapToObj(String::valueOf).toList();
             BatchHandleRequest request = new BatchHandleRequest();
             request.setReportIds(ids);
             request.setAction("dismiss");
@@ -363,7 +363,7 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报处理历史")
         void getReportHistory_returnsHistory() {
-            ReportHandleHistory history = ReportHandleHistory.reconstitute(1L, REPORT_ID, OPERATOR_ID,
+            ReportHandleHistory history = ReportHandleHistory.reconstitute("1", REPORT_ID, OPERATOR_ID,
                     "resolve", "已处理", LocalDateTime.now());
 
             when(reportHandleHistoryRepository.findByReportId(REPORT_ID)).thenReturn(List.of(history));

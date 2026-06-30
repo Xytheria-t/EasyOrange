@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
-public class SnowflakeIdGenerator {
+public class SnowflakeIdGenerator implements IdGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(SnowflakeIdGenerator.class);
 
@@ -89,6 +89,11 @@ public class SnowflakeIdGenerator {
 
     private long timeGen() {
         return Instant.now().toEpochMilli();
+    }
+
+    @Override
+    public String generateId() {
+        return String.valueOf(nextId());
     }
 
     public long getWorkerId() {

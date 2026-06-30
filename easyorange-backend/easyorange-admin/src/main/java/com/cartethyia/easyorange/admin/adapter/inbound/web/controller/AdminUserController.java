@@ -23,13 +23,13 @@ public class AdminUserController {
     }
 
     @GetMapping("/{id}")
-    public Result<AdminUserResponse> getUserDetail(@PathVariable Long id) {
+    public Result<AdminUserResponse> getUserDetail(@PathVariable String id) {
         return Result.success(adminUserService.getUserDetail(id));
     }
 
     @PutMapping("/{id}/status")
     public Result<Void> updateUserStatus(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody UpdateStatusRequest request
     ) {
         adminUserService.updateUserStatus(id, request);

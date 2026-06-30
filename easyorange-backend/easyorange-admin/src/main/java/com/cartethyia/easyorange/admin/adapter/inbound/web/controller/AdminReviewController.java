@@ -23,13 +23,13 @@ public class AdminReviewController {
     }
 
     @GetMapping("/{id}")
-    public Result<AdminReviewResponse> getReviewDetail(@PathVariable Long id) {
+    public Result<AdminReviewResponse> getReviewDetail(@PathVariable String id) {
         return Result.success(adminReviewService.getReviewDetail(id));
     }
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteReview(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody AdminReviewDeleteRequest request
     ) {
         adminReviewService.deleteReview(id, request);

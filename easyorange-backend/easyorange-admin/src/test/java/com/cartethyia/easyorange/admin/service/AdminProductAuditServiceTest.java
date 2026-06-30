@@ -58,14 +58,14 @@ class AdminProductAuditServiceTest {
     @InjectMocks
     private AdminProductAuditService auditService;
 
-    private static final Long PRODUCT_ID = 100L;
-    private static final Long OPERATOR_ID = 1L;
-    private static final Long SELLER_ID = 2L;
+    private static final String PRODUCT_ID = "100";
+    private static final String OPERATOR_ID = "1";
+    private static final String SELLER_ID = "2";
 
     private Product createProductInPendingReview() {
         ProductCreatedResult result = Product.create(
                 SellerId.of(SELLER_ID),
-                CategoryId.of(1L),
+                CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("99.99")),
                 null, StockQuantity.of(10),
@@ -83,7 +83,7 @@ class AdminProductAuditServiceTest {
     private Product createProductWithStatus(ProductStatus status) {
         ProductCreatedResult result = Product.create(
                 SellerId.of(SELLER_ID),
-                CategoryId.of(1L),
+                CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("99.99")),
                 null, StockQuantity.of(10),
@@ -218,13 +218,13 @@ class AdminProductAuditServiceTest {
             Product p1 = product1;
             Product p2 = product2;
 
-            when(productRepository.findById(ProductId.of(100L))).thenReturn(Optional.of(p1));
-            when(productRepository.findById(ProductId.of(101L))).thenReturn(Optional.of(p2));
+            when(productRepository.findById(ProductId.of("100"))).thenReturn(Optional.of(p1));
+            when(productRepository.findById(ProductId.of("101"))).thenReturn(Optional.of(p2));
 
             BatchAuditRequest request = new BatchAuditRequest();
             request.setItems(List.of(
-                    new BatchAuditRequest.AuditItem(100L, 1, "通过", null),
-                    new BatchAuditRequest.AuditItem(101L, 2, "信息不符", null)
+                    new BatchAuditRequest.AuditItem("100", 1, "通过", null),
+                    new BatchAuditRequest.AuditItem("101", 2, "信息不符", null)
             ));
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);
@@ -242,13 +242,13 @@ class AdminProductAuditServiceTest {
         @Test
         @DisplayName("批量审核中跳过不存在的商品")
         void batchAudit_skipNotFound() {
-            when(productRepository.findById(ProductId.of(100L))).thenReturn(Optional.empty());
-            when(productRepository.findById(ProductId.of(101L))).thenReturn(Optional.of(createProductInPendingReview()));
+            when(productRepository.findById(ProductId.of("100"))).thenReturn(Optional.empty());
+            when(productRepository.findById(ProductId.of("101"))).thenReturn(Optional.of(createProductInPendingReview()));
 
             BatchAuditRequest request = new BatchAuditRequest();
             request.setItems(List.of(
-                    new BatchAuditRequest.AuditItem(100L, 1, "通过", null),
-                    new BatchAuditRequest.AuditItem(101L, 1, "通过", null)
+                    new BatchAuditRequest.AuditItem("100", 1, "通过", null),
+                    new BatchAuditRequest.AuditItem("101", 1, "通过", null)
             ));
 
             TestSecurityUtil.setSecurityContext(OPERATOR_ID);

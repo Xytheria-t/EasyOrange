@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RecentProductResponse {
 
-    private Long productId;
+    private String productId;
 
     private String name;
 
@@ -22,7 +22,7 @@ public class RecentProductResponse {
 
     private String statusDesc;
 
-    private Long sellerId;
+    private String sellerId;
 
     private String sellerName;
 

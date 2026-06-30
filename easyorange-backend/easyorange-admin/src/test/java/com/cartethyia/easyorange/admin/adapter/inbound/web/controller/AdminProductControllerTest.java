@@ -35,9 +35,9 @@ class AdminProductControllerTest {
     @Test
     void listProducts_shouldReturnPaginatedProducts() throws Exception {
         var products = List.of(
-            AdminProductResponse.builder().productId(1L).name("Product1").price(BigDecimal.valueOf(100))
+            AdminProductResponse.builder().productId("1").name("Product1").price(BigDecimal.valueOf(100))
                 .status(1).statusDesc("上架").build(),
-            AdminProductResponse.builder().productId(2L).name("Product2").price(BigDecimal.valueOf(200))
+            AdminProductResponse.builder().productId("2").name("Product2").price(BigDecimal.valueOf(200))
                 .status(0).statusDesc("草稿").build()
         );
         var pageResult = PageResult.of(products, 2L, 1, 20);
@@ -47,7 +47,7 @@ class AdminProductControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
             .andExpect(jsonPath("$.data.records.length()").value(2))
-            .andExpect(jsonPath("$.data.records[0].productId").value(1))
+            .andExpect(jsonPath("$.data.records[0].productId").value("1"))
             .andExpect(jsonPath("$.data.records[0].name").value("Product1"))
             .andExpect(jsonPath("$.data.total").value(2));
     }
@@ -55,7 +55,7 @@ class AdminProductControllerTest {
     @Test
     void listProducts_withStatusFilter_shouldFilterByStatus() throws Exception {
         var products = List.of(
-            AdminProductResponse.builder().productId(1L).name("Online").status(1).build()
+            AdminProductResponse.builder().productId("1").name("Online").status(1).build()
         );
         var pageResult = PageResult.of(products, 1L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
@@ -68,21 +68,21 @@ class AdminProductControllerTest {
     @Test
     void getProductDetail_shouldReturnProduct() throws Exception {
         var product = AdminProductResponse.builder()
-            .productId(1L).name("DetailProduct").description("A detailed product")
+            .productId("1").name("DetailProduct").description("A detailed product")
             .price(BigDecimal.valueOf(150)).status(1).statusDesc("上架").build();
-        when(adminProductService.getProductDetail(1L)).thenReturn(product);
+        when(adminProductService.getProductDetail("1")).thenReturn(product);
 
         mockMvc.perform(get("/api/admin/products/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data.productId").value(1))
+            .andExpect(jsonPath("$.data.productId").value("1"))
             .andExpect(jsonPath("$.data.name").value("DetailProduct"))
             .andExpect(jsonPath("$.data.description").value("A detailed product"));
     }
 
     @Test
     void updateProductStatus_shouldSucceed() throws Exception {
-        doNothing().when(adminProductService).updateProductStatus(1L, null);
+        doNothing().when(adminProductService).updateProductStatus("1", null);
 
         mockMvc.perform(put("/api/admin/products/1/status")
                 .contentType(MediaType.APPLICATION_JSON)

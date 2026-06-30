@@ -38,7 +38,7 @@ class AdminProductAuditControllerTest {
 
     @Test
     void auditProduct_approve_shouldSucceed() throws Exception {
-        doNothing().when(adminProductAuditService).auditProduct(eq(1L), any(ProductAuditRequest.class));
+        doNothing().when(adminProductAuditService).auditProduct(eq("1"), any(ProductAuditRequest.class));
 
         mockMvc.perform(put("/api/admin/products/1/audit")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -49,7 +49,7 @@ class AdminProductAuditControllerTest {
 
     @Test
     void auditProduct_rejectWithReason_shouldSucceed() throws Exception {
-        doNothing().when(adminProductAuditService).auditProduct(eq(1L), any(ProductAuditRequest.class));
+        doNothing().when(adminProductAuditService).auditProduct(eq("1"), any(ProductAuditRequest.class));
 
         mockMvc.perform(put("/api/admin/products/1/audit")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -76,9 +76,9 @@ class AdminProductAuditControllerTest {
                 .content("""
                     {
                         "items": [
-                            {"productId": 1, "action": 1},
-                            {"productId": 2, "action": 2, "reason": "图片不合规"},
-                            {"productId": 3, "action": 1}
+                            {"productId": "1", "action": 1},
+                            {"productId": "2", "action": 2, "reason": "图片不合规"},
+                            {"productId": "3", "action": 1}
                         ]
                     }
                     """))
@@ -95,7 +95,7 @@ class AdminProductAuditControllerTest {
         var items = new StringBuilder("[");
         for (int i = 1; i <= 51; i++) {
             if (i > 1) items.append(",");
-            items.append("{\"productId\": ").append(i).append(", \"action\": 1}");
+            items.append("{\"productId\": \"").append(i).append("\", \"action\": 1}");
         }
         items.append("]");
 
@@ -116,16 +116,16 @@ class AdminProductAuditControllerTest {
     @Test
     void getAuditLogs_withData_shouldReturnList() throws Exception {
         var logs = List.of(
-            new AuditLogResponse(1L, 1L, 10L, "admin", 1, "通过", null, List.of(),
+            new AuditLogResponse("1", "1", "10", "admin", 1, "通过", null, List.of(),
                 4, "待审核", 1, "上架", null, LocalDateTime.of(2026, 5, 16, 10, 0))
         );
-        when(adminProductAuditService.getAuditLogs(1L)).thenReturn(logs);
+        when(adminProductAuditService.getAuditLogs("1")).thenReturn(logs);
 
         mockMvc.perform(get("/api/admin/products/1/audit-logs"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data[0].id").value(1))
-            .andExpect(jsonPath("$.data[0].productId").value(1))
+            .andExpect(jsonPath("$.data[0].id").value("1"))
+            .andExpect(jsonPath("$.data[0].productId").value("1"))
             .andExpect(jsonPath("$.data[0].action").value(1))
             .andExpect(jsonPath("$.data[0].actionDesc").value("通过"))
             .andExpect(jsonPath("$.data[0].beforeStatus").value(4))
@@ -134,7 +134,7 @@ class AdminProductAuditControllerTest {
 
     @Test
     void getAuditLogs_empty_shouldReturnEmptyList() throws Exception {
-        when(adminProductAuditService.getAuditLogs(99L)).thenReturn(List.of());
+        when(adminProductAuditService.getAuditLogs("99")).thenReturn(List.of());
 
         mockMvc.perform(get("/api/admin/products/99/audit-logs"))
             .andExpect(status().isOk())

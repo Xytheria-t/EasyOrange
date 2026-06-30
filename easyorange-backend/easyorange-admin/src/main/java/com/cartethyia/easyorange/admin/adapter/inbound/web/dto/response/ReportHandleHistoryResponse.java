@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 
 @Builder
 public record ReportHandleHistoryResponse(
-    Long id,
-    Long reportId,
+    String id,
+    String reportId,
     String operatorName,
     String action,
     String actionDesc,

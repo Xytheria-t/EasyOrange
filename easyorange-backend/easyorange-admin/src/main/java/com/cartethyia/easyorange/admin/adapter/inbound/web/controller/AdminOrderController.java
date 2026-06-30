@@ -25,7 +25,7 @@ public class AdminOrderController {
     }
 
     @GetMapping("/{id}")
-    public Result<AdminOrderDetailResponse> getOrderDetail(@PathVariable Long id) {
+    public Result<AdminOrderDetailResponse> getOrderDetail(@PathVariable String id) {
         return Result.success(adminOrderService.getOrderDetail(id));
     }
 
@@ -36,7 +36,7 @@ public class AdminOrderController {
 
     @PutMapping("/{id}/cancel")
     public Result<Void> cancelOrder(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody OrderInterventionRequest request
     ) {
         adminOrderService.cancelOrder(id, request.getReason());
@@ -45,7 +45,7 @@ public class AdminOrderController {
 
     @PutMapping("/{id}/force-complete")
     public Result<Void> forceComplete(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody OrderInterventionRequest request
     ) {
         adminOrderService.forceComplete(id, request.getReason());
@@ -54,7 +54,7 @@ public class AdminOrderController {
 
     @PutMapping("/{id}/refund")
     public Result<Void> refundOrder(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody OrderInterventionRequest request
     ) {
         adminOrderService.refundOrder(id, request.getReason());

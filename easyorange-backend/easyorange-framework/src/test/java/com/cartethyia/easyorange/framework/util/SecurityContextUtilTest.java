@@ -34,7 +34,7 @@ class SecurityContextUtilTest {
         void getCurrentUserId_withNoContext_shouldReturnEmpty() {
             SecurityContextHolder.clearContext();
 
-            Optional<Long> result = SecurityContextUtil.getCurrentUserId();
+            Optional<String> result = SecurityContextUtil.getCurrentUserId();
 
             assertThat(result).isEmpty();
         }
@@ -46,44 +46,43 @@ class SecurityContextUtilTest {
             var auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            Optional<Long> result = SecurityContextUtil.getCurrentUserId();
+            Optional<String> result = SecurityContextUtil.getCurrentUserId();
 
-            assertThat(result).contains(userId);
+            assertThat(result).contains("123");
         }
 
         @Test
         @DisplayName("getCurrentUserId with AuthUser principal should return userId")
         void getCurrentUserId_withAuthUserPrincipal_shouldReturnUserId() {
-            Long userId = 456L;
-            AuthUser authUser = new AuthUser(userId, "testuser", null, null, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("456", "testuser", null, null, System.currentTimeMillis());
             var auth = new UsernamePasswordAuthenticationToken(authUser, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            Optional<Long> result = SecurityContextUtil.getCurrentUserId();
+            Optional<String> result = SecurityContextUtil.getCurrentUserId();
 
-            assertThat(result).contains(userId);
+            assertThat(result).contains("456");
         }
 
         @Test
-        @DisplayName("getCurrentUserId with String principal should parse and return")
-        void getCurrentUserId_withStringPrincipal_shouldParseAndReturn() {
+        @DisplayName("getCurrentUserId with String principal should return it")
+        void getCurrentUserId_withStringPrincipal_shouldReturnIt() {
             String userIdStr = "789";
             var auth = new UsernamePasswordAuthenticationToken(userIdStr, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            Optional<Long> result = SecurityContextUtil.getCurrentUserId();
+            Optional<String> result = SecurityContextUtil.getCurrentUserId();
 
-            assertThat(result).contains(789L);
+            assertThat(result).contains("789");
         }
 
         @Test
-        @DisplayName("getCurrentUserId with invalid String principal should return empty")
-        void getCurrentUserId_withInvalidStringPrincipal_shouldReturnEmpty() {
-            String userIdStr = "invalid";
-            var auth = new UsernamePasswordAuthenticationToken(userIdStr, null, List.of());
+        @DisplayName("getCurrentUserId with AuthUser having null userId should return empty")
+        void getCurrentUserId_withAuthUserNullUserId_shouldReturnEmpty() {
+            AuthUser authUser = new AuthUser(null, "testuser", null, null, System.currentTimeMillis());
+            var auth = new UsernamePasswordAuthenticationToken(authUser, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            Optional<Long> result = SecurityContextUtil.getCurrentUserId();
+            Optional<String> result = SecurityContextUtil.getCurrentUserId();
 
             assertThat(result).isEmpty();
         }
@@ -101,13 +100,12 @@ class SecurityContextUtilTest {
         @Test
         @DisplayName("getCurrentUserIdOrThrow with authenticated should return id")
         void getCurrentUserIdOrThrow_withAuthenticated_shouldReturnId() {
-            Long userId = 999L;
-            var auth = new UsernamePasswordAuthenticationToken(userId, null, List.of());
+            var auth = new UsernamePasswordAuthenticationToken("999", null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
-            Long result = SecurityContextUtil.getCurrentUserIdOrThrow();
+            String result = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-            assertThat(result).isEqualTo(userId);
+            assertThat(result).isEqualTo("999");
         }
     }
 
@@ -128,7 +126,7 @@ class SecurityContextUtilTest {
         @Test
         @DisplayName("getUserContext with AuthUser principal should return it")
         void getUserContext_withAuthUserPrincipal_shouldReturnIt() {
-            AuthUser authUser = new AuthUser(1L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), System.currentTimeMillis());
             var auth = new UsernamePasswordAuthenticationToken(authUser, null, List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
@@ -141,7 +139,7 @@ class SecurityContextUtilTest {
         @DisplayName("getUserContext with other principal should build AuthUser")
         void getUserContext_withOtherPrincipal_shouldBuildAuthUser() {
             var auth = new UsernamePasswordAuthenticationToken(
-                    1L, "testuser", List.of(
+                    "1", "testuser", List.of(
                             new SimpleGrantedAuthority("ROLE_USER"),
                             new SimpleGrantedAuthority("user:read")
                     )
@@ -151,7 +149,7 @@ class SecurityContextUtilTest {
             Optional<AuthUser> result = SecurityContextUtil.getUserContext();
 
             assertThat(result).isPresent();
-            assertThat(result.get().userId()).isEqualTo(1L);
+            assertThat(result.get().userId()).isEqualTo("1");
             assertThat(result.get().username()).isEqualTo("testuser");
             assertThat(result.get().roles()).contains("USER");
             assertThat(result.get().permissions()).contains("user:read");
@@ -170,12 +168,12 @@ class SecurityContextUtilTest {
         @Test
         @DisplayName("getUserContextOrThrow with authenticated should return AuthUser")
         void getUserContextOrThrow_withAuthenticated_shouldReturnAuthUser() {
-            var auth = new UsernamePasswordAuthenticationToken(1L, "testuser", List.of());
+            var auth = new UsernamePasswordAuthenticationToken("1", "testuser", List.of());
             SecurityContextHolder.getContext().setAuthentication(auth);
 
             AuthUser result = SecurityContextUtil.getUserContextOrThrow();
 
-            assertThat(result.userId()).isEqualTo(1L);
+            assertThat(result.userId()).isEqualTo("1");
             assertThat(result.username()).isEqualTo("testuser");
         }
     }

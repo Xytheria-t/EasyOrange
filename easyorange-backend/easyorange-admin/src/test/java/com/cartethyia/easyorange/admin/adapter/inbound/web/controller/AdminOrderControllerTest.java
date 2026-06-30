@@ -39,8 +39,8 @@ class AdminOrderControllerTest {
     @Test
     void listOrders_shouldReturnPaginatedOrders() throws Exception {
         var orders = List.of(
-            new AdminOrderResponse(1L, "ORD001", 10L, "buyer1", 20L, "seller1",
-                List.of(new AdminOrderResponse.ItemInfo(100L, "Product1")),
+            new AdminOrderResponse("1", "ORD001", "10", "buyer1", "20", "seller1",
+                List.of(new AdminOrderResponse.ItemInfo("100", "Product1")),
                 BigDecimal.valueOf(199), 1, "待付款", 0, "未支付",
                 LocalDateTime.of(2026, 5, 16, 10, 0))
         );
@@ -50,7 +50,7 @@ class AdminOrderControllerTest {
         mockMvc.perform(get("/api/admin/orders"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data.records[0].orderId").value(1))
+            .andExpect(jsonPath("$.data.records[0].orderId").value("1"))
             .andExpect(jsonPath("$.data.records[0].orderNo").value("ORD001"))
             .andExpect(jsonPath("$.data.records[0].status").value(1))
             .andExpect(jsonPath("$.data.total").value(1));
@@ -59,20 +59,20 @@ class AdminOrderControllerTest {
     @Test
     void getOrderDetail_shouldReturnDetail() throws Exception {
         var detail = AdminOrderDetailResponse.builder()
-            .orderId(1L).orderNo("ORD001")
-            .buyer(new AdminOrderDetailResponse.BuyerInfo(10L, "buyer1", "avatar1", "13800138000"))
-            .seller(new AdminOrderDetailResponse.SellerInfo(20L, "seller1", "avatar2", "13900139000"))
-            .products(List.of(new AdminOrderDetailResponse.ProductInfo(100L, "Product1", "img.jpg", BigDecimal.valueOf(199))))
+            .orderId("1").orderNo("ORD001")
+            .buyer(new AdminOrderDetailResponse.BuyerInfo("10", "buyer1", "avatar1", "13800138000"))
+            .seller(new AdminOrderDetailResponse.SellerInfo("20", "seller1", "avatar2", "13900139000"))
+            .products(List.of(new AdminOrderDetailResponse.ProductInfo("100", "Product1", "img.jpg", BigDecimal.valueOf(199))))
             .totalAmount(BigDecimal.valueOf(199)).status(1).statusDesc("待付款").createTime(LocalDateTime.of(2026, 5, 16, 10, 0))
             .build();
-        when(adminOrderService.getOrderDetail(1L)).thenReturn(detail);
+        when(adminOrderService.getOrderDetail("1")).thenReturn(detail);
 
         mockMvc.perform(get("/api/admin/orders/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data.orderId").value(1))
+            .andExpect(jsonPath("$.data.orderId").value("1"))
             .andExpect(jsonPath("$.data.orderNo").value("ORD001"))
-            .andExpect(jsonPath("$.data.buyer.userId").value(10))
+            .andExpect(jsonPath("$.data.buyer.userId").value("10"))
             .andExpect(jsonPath("$.data.seller.nickname").value("seller1"))
             .andExpect(jsonPath("$.data.products[0].name").value("Product1"));
     }
@@ -97,7 +97,7 @@ class AdminOrderControllerTest {
 
     @Test
     void cancelOrder_shouldSucceed() throws Exception {
-        doNothing().when(adminOrderService).cancelOrder(eq(1L), eq("认领方申请取消"));
+        doNothing().when(adminOrderService).cancelOrder(eq("1"), eq("认领方申请取消"));
 
         mockMvc.perform(put("/api/admin/orders/1/cancel")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -116,7 +116,7 @@ class AdminOrderControllerTest {
 
     @Test
     void forceComplete_shouldSucceed() throws Exception {
-        doNothing().when(adminOrderService).forceComplete(eq(1L), eq("管理员强制完成"));
+        doNothing().when(adminOrderService).forceComplete(eq("1"), eq("管理员强制完成"));
 
         mockMvc.perform(put("/api/admin/orders/1/force-complete")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -135,7 +135,7 @@ class AdminOrderControllerTest {
 
     @Test
     void refundOrder_shouldSucceed() throws Exception {
-        doNothing().when(adminOrderService).refundOrder(eq(1L), eq("商品质量问题退款"));
+        doNothing().when(adminOrderService).refundOrder(eq("1"), eq("商品质量问题退款"));
 
         mockMvc.perform(put("/api/admin/orders/1/refund")
                 .contentType(MediaType.APPLICATION_JSON)

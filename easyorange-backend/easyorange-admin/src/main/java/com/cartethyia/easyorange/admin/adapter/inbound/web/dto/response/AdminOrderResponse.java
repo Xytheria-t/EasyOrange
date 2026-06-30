@@ -5,11 +5,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record AdminOrderResponse(
-    Long orderId,
+    String orderId,
     String orderNo,
-    Long buyerId,
+    String buyerId,
     String buyerName,
-    Long sellerId,
+    String sellerId,
     String sellerName,
     List<ItemInfo> items,
     BigDecimal totalAmount,
@@ -19,5 +19,5 @@ public record AdminOrderResponse(
     String paymentStatusDesc,
     LocalDateTime createTime
 ) {
-    public record ItemInfo(Long productId, String productName) {}
+    public record ItemInfo(String productId, String productName) {}
 }

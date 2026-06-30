@@ -2,13 +2,13 @@ package com.cartethyia.easyorange.framework.auth;
 
 public interface TokenService {
 
-    String createAccessToken(Long userId, String username, String userType);
+    String createAccessToken(String userId, String username, String userType);
 
-    String createRefreshToken(Long userId, String username, String userType);
+    String createRefreshToken(String userId, String username, String userType);
 
     void invalidateToken(String token);
 
-    void invalidateAllUserTokens(Long userId);
+    void invalidateAllUserTokens(String userId);
 
     TokenRefreshResult refreshToken(String refreshToken);
 }

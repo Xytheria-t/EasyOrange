@@ -37,10 +37,10 @@ class AdminReportControllerTest {
     @Test
     void listReports_shouldReturnPaginatedReports() throws Exception {
         var reports = List.of(
-            new AdminReportResponse(1L, 100L, "Product1", null, 10L, "reporter1",
+            new AdminReportResponse("1", "100", "Product1", null, "10", "reporter1",
                 1, "虚假信息", "描述", 0, "待处理", null, null,
                 LocalDateTime.of(2026, 5, 16, 10, 0), null),
-            new AdminReportResponse(2L, 101L, "Product2", null, 11L, "reporter2",
+            new AdminReportResponse("2", "101", "Product2", null, "11", "reporter2",
                 2, "侵权投诉", "描述2", 1, "处理中", null, null,
                 LocalDateTime.of(2026, 5, 16, 11, 0), null)
         );
@@ -51,7 +51,7 @@ class AdminReportControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
             .andExpect(jsonPath("$.data.records.length()").value(2))
-            .andExpect(jsonPath("$.data.records[0].reportId").value(1))
+            .andExpect(jsonPath("$.data.records[0].reportId").value("1"))
             .andExpect(jsonPath("$.data.records[0].status").value(0))
             .andExpect(jsonPath("$.data.total").value(2));
     }
@@ -59,7 +59,7 @@ class AdminReportControllerTest {
     @Test
     void listReports_withStatusFilter_shouldFilterByStatus() throws Exception {
         var reports = List.of(
-            new AdminReportResponse(2L, 101L, "Product2", null, 11L, "reporter2",
+            new AdminReportResponse("2", "101", "Product2", null, "11", "reporter2",
                 2, "侵权投诉", "描述", 1, "处理中", null, null,
                 LocalDateTime.of(2026, 5, 16, 11, 0), null)
         );
@@ -73,15 +73,15 @@ class AdminReportControllerTest {
 
     @Test
     void getReportDetail_shouldReturnReport() throws Exception {
-        var report = new AdminReportResponse(1L, 100L, "Product1", null, 10L, "reporter1",
+        var report = new AdminReportResponse("1", "100", "Product1", null, "10", "reporter1",
             1, "虚假信息", "描述", 0, "待处理", null, null,
             LocalDateTime.of(2026, 5, 16, 10, 0), null);
-        when(adminReportService.getReportDetail(1L)).thenReturn(report);
+        when(adminReportService.getReportDetail("1")).thenReturn(report);
 
         mockMvc.perform(get("/api/admin/reports/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data.reportId").value(1))
+            .andExpect(jsonPath("$.data.reportId").value("1"))
             .andExpect(jsonPath("$.data.productName").value("Product1"))
             .andExpect(jsonPath("$.data.reasonType").value(1));
     }
@@ -90,24 +90,24 @@ class AdminReportControllerTest {
     void getReportHistory_shouldReturnHistoryList() throws Exception {
         var history = List.of(
             ReportHandleHistoryResponse.builder()
-                .id(1L).reportId(1L).operatorName("admin")
+                .id("1").reportId("1").operatorName("admin")
                 .action("resolve").actionDesc("处理通过")
                 .remark("举报已处理").createTime(LocalDateTime.of(2026, 5, 16, 12, 0))
                 .build()
         );
-        when(adminReportService.getReportHistory(1L)).thenReturn(history);
+        when(adminReportService.getReportHistory("1")).thenReturn(history);
 
         mockMvc.perform(get("/api/admin/reports/1/history"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data[0].id").value(1))
+            .andExpect(jsonPath("$.data[0].id").value("1"))
             .andExpect(jsonPath("$.data[0].action").value("resolve"))
             .andExpect(jsonPath("$.data[0].actionDesc").value("处理通过"));
     }
 
     @Test
     void handleReport_validAction_shouldSucceed() throws Exception {
-        doNothing().when(adminReportService).handleReport(anyLong(), any());
+        doNothing().when(adminReportService).handleReport(anyString(), any());
 
         mockMvc.perform(put("/api/admin/reports/1/handle")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -138,7 +138,7 @@ class AdminReportControllerTest {
 
         mockMvc.perform(put("/api/admin/reports/batch-handle")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"reportIds\": [1, 2, 3], \"action\": \"dismiss\", \"remark\": \"批量驳回\"}"))
+                .content("{\"reportIds\": [\"1\", \"2\", \"3\"], \"action\": \"dismiss\", \"remark\": \"批量驳回\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
     }

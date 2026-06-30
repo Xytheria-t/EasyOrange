@@ -12,17 +12,17 @@ public interface FileService extends IService<UploadFile> {
 
     UploadFileVO uploadFile(MultipartFile file, String businessType);
 
-    UploadFileVO uploadFile(MultipartFile file, String businessType, Long businessId);
+    UploadFileVO uploadFile(MultipartFile file, String businessType, String businessId);
 
     List<UploadFileVO> uploadFiles(List<MultipartFile> files, String businessType);
 
-    UploadFileVO getFileInfo(Long fileId);
+    UploadFileVO getFileInfo(String fileId);
 
-    void deleteFile(Long fileId);
+    void deleteFile(String fileId);
 
-    void bindBusiness(Long fileId, String businessType, Long businessId);
+    void bindBusiness(String fileId, String businessType, String businessId);
 
-    List<UploadFileVO> getFilesByBusiness(String businessType, Long businessId);
+    List<UploadFileVO> getFilesByBusiness(String businessType, String businessId);
 
-    Resource downloadFile(Long fileId);
+    Resource downloadFile(String fileId);
 }

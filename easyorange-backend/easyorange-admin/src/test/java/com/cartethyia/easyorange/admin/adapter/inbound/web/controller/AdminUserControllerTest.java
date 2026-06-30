@@ -35,8 +35,8 @@ class AdminUserControllerTest {
     @Test
     void listUsers_shouldReturnPaginatedUsers() throws Exception {
         var users = List.of(
-            AdminUserResponse.builder().userId(1L).username("alice").status("1").statusDesc("正常").build(),
-            AdminUserResponse.builder().userId(2L).username("bob").status("1").statusDesc("正常").build()
+            AdminUserResponse.builder().userId("1").username("alice").status("1").statusDesc("正常").build(),
+            AdminUserResponse.builder().userId("2").username("bob").status("1").statusDesc("正常").build()
         );
         var pageResult = PageResult.of(users, 2L, 1, 20);
         when(adminUserService.listUsers(any())).thenReturn(pageResult);
@@ -45,7 +45,7 @@ class AdminUserControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
             .andExpect(jsonPath("$.data.records.length()").value(2))
-            .andExpect(jsonPath("$.data.records[0].userId").value(1))
+            .andExpect(jsonPath("$.data.records[0].userId").value("1"))
             .andExpect(jsonPath("$.data.records[0].username").value("alice"))
             .andExpect(jsonPath("$.data.total").value(2))
             .andExpect(jsonPath("$.data.current").value(1))
@@ -55,7 +55,7 @@ class AdminUserControllerTest {
     @Test
     void listUsers_withKeyword_shouldFilterByKeyword() throws Exception {
         var users = List.of(
-            AdminUserResponse.builder().userId(1L).username("alice").build()
+            AdminUserResponse.builder().userId("1").username("alice").build()
         );
         var pageResult = PageResult.of(users, 1L, 1, 20);
         when(adminUserService.listUsers(any())).thenReturn(pageResult);
@@ -69,22 +69,22 @@ class AdminUserControllerTest {
     @Test
     void getUserDetail_shouldReturnUser() throws Exception {
         var user = AdminUserResponse.builder()
-            .userId(1L).username("alice").nickname("Alice").email("alice@test.com")
+            .userId("1").username("alice").nickname("Alice").email("alice@test.com")
             .status("1").statusDesc("正常").createTime(LocalDateTime.of(2026, 1, 1, 0, 0))
             .build();
-        when(adminUserService.getUserDetail(1L)).thenReturn(user);
+        when(adminUserService.getUserDetail("1")).thenReturn(user);
 
         mockMvc.perform(get("/api/admin/users/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data.userId").value(1))
+            .andExpect(jsonPath("$.data.userId").value("1"))
             .andExpect(jsonPath("$.data.username").value("alice"))
             .andExpect(jsonPath("$.data.email").value("alice@test.com"));
     }
 
     @Test
     void updateUserStatus_shouldSucceed() throws Exception {
-        doNothing().when(adminUserService).updateUserStatus(1L, null);
+        doNothing().when(adminUserService).updateUserStatus("1", null);
 
         mockMvc.perform(put("/api/admin/users/1/status")
                 .contentType(MediaType.APPLICATION_JSON)

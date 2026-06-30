@@ -31,7 +31,7 @@ class AdminUserControllerExtensionTest {
 
     @Test
     void unlockUser_shouldSucceed() throws Exception {
-        doNothing().when(adminUserSecurityService).unlockUser(1L);
+        doNothing().when(adminUserSecurityService).unlockUser("1");
 
         mockMvc.perform(put("/api/admin/users/1/unlock"))
             .andExpect(status().isOk())
@@ -42,7 +42,7 @@ class AdminUserControllerExtensionTest {
     void resetPassword_shouldReturnNewPassword() throws Exception {
         var resetResponse = ResetPasswordResponse.builder()
             .newPassword("newPass123!").message("密码已重置").build();
-        when(adminUserSecurityService.resetPassword(eq(1L))).thenReturn(resetResponse);
+        when(adminUserSecurityService.resetPassword(eq("1"))).thenReturn(resetResponse);
 
         mockMvc.perform(put("/api/admin/users/1/reset-password")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -63,18 +63,18 @@ class AdminUserControllerExtensionTest {
 
     @Test
     void forceLogout_shouldSucceed() throws Exception {
-        doNothing().when(adminUserSecurityService).forceLogout(1L);
+        doNothing().when(adminUserSecurityService).forceLogout("1");
 
         mockMvc.perform(put("/api/admin/users/1/force-logout"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
 
-        verify(adminUserSecurityService).forceLogout(1L);
+        verify(adminUserSecurityService).forceLogout("1");
     }
 
     @Test
     void changeUserRole_shouldSucceed() throws Exception {
-        doNothing().when(adminUserSecurityService).changeUserRole(eq(1L), any());
+        doNothing().when(adminUserSecurityService).changeUserRole(eq("1"), any());
 
         mockMvc.perform(put("/api/admin/users/1/role")
                 .contentType(MediaType.APPLICATION_JSON)

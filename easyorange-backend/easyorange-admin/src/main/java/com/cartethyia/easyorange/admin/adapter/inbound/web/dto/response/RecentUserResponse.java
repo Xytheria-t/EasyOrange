@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class RecentUserResponse {
 
-    private Long userId;
+    private String userId;
 
     private String username;
 

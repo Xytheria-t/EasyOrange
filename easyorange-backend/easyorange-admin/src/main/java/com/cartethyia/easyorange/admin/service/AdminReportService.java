@@ -50,8 +50,8 @@ public class AdminReportService {
 
         PageResult<ProductReport> reportPage = productReportRepository.findByStatus(status, page, size);
 
-        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
-        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
+        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
+        Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
 
         List<AdminReportResponse> records = reportPage.records().stream()
             .map(r -> toAdminReportResponse(r, userMap, productMap))
@@ -61,28 +61,28 @@ public class AdminReportService {
     }
 
     @Transactional(readOnly = true)
-    public AdminReportResponse getReportDetail(Long id) {
+    public AdminReportResponse getReportDetail(String id) {
         ProductReport report = productReportRepository.findById(id);
         BizRequire.notNull(report, "举报记录不存在");
 
-        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
-        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(report.getProductId()));
+        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
+        Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(report.getProductId()));
 
         return toAdminReportResponse(report, userMap, productMap);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleReport(Long id, ReportHandleRequest request) {
-        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void handleReport(String id, ReportHandleRequest request) {
+        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String remark = request.getRemark() != null ? request.getRemark() : "";
         processSingleReport(id, request.getAction(), remark, operatorId);
     }
 
     @Transactional(readOnly = true)
-    public List<ReportHandleHistoryResponse> getReportHistory(Long reportId) {
+    public List<ReportHandleHistoryResponse> getReportHistory(String reportId) {
         List<ReportHandleHistory> histories = reportHandleHistoryRepository.findByReportId(reportId);
 
-        Map<Long, UserEntity> operatorMap = batchQueryUtil.batchGetUsers(histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
+        Map<String, UserEntity> operatorMap = batchQueryUtil.batchGetUsers(histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
 
         return histories.stream()
             .map(h -> toHistoryResponse(h, operatorMap))
@@ -96,11 +96,11 @@ public class AdminReportService {
             throw BusinessException.of("批量处理数量不能超过50条");
         }
 
-        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String action = request.getAction();
         String remark = request.getRemark() != null ? request.getRemark() : "";
 
-        for (Long reportId : request.getReportIds()) {
+        for (String reportId : request.getReportIds()) {
             try {
                 processSingleReport(reportId, action, remark, operatorId);
             } catch (BusinessException e) {
@@ -120,7 +120,7 @@ public class AdminReportService {
             .build();
     }
 
-    private void processSingleReport(Long reportId, String action, String remark, Long operatorId) {
+    private void processSingleReport(String reportId, String action, String remark, String operatorId) {
         ProductReport report = productReportRepository.findById(reportId);
         BizRequire.notNull(report, "举报记录不存在");
         if (!report.isPending()) {
@@ -165,7 +165,7 @@ public class AdminReportService {
         };
     }
 
-    private void publishProcessedEvent(Long reportId, ProductReport report, boolean approved) {
+    private void publishProcessedEvent(String reportId, ProductReport report, boolean approved) {
         ReportProcessedEvent event = new ReportProcessedEvent(
                 reportId,
                 report.getReporterId(),
@@ -177,7 +177,7 @@ public class AdminReportService {
         domainEventPublisher.publish(event);
     }
 
-    private void saveHandleHistory(Long reportId, Long operatorId, String action, String remark) {
+    private void saveHandleHistory(String reportId, String operatorId, String action, String remark) {
         ReportHandleHistory history = ReportHandleHistory.create(reportId, operatorId, action, remark);
         reportHandleHistoryRepository.save(history);
     }
@@ -203,8 +203,8 @@ public class AdminReportService {
 
     private AdminReportResponse toAdminReportResponse(
         ProductReport report,
-        Map<Long, UserEntity> userMap,
-        Map<Long, ProductDO> productMap
+        Map<String, UserEntity> userMap,
+        Map<String, ProductDO> productMap
     ) {
         UserEntity reporter = userMap.get(report.getReporterId());
         ProductDO product = productMap.get(report.getProductId());
@@ -248,7 +248,7 @@ public class AdminReportService {
 
     private ReportHandleHistoryResponse toHistoryResponse(
         ReportHandleHistory history,
-        Map<Long, UserEntity> operatorMap
+        Map<String, UserEntity> operatorMap
     ) {
         UserEntity operator = operatorMap.get(history.getOperatorId());
 

@@ -11,7 +11,10 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "easyorange.idgen")
 public class IdGenProperties {
 
-    private boolean enabled = true;
+    /**
+     * ID 生成器类型：uuidv7（默认） | snowflake
+     */
+    private String type = "uuidv7";
 
     private long dataCenterId = 1L;
 }

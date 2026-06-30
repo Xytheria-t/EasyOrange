@@ -19,8 +19,8 @@ import java.time.LocalDateTime;
 @TableName("eo_oper_log")
 public class SysOperLog {
 
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long operId;
+    @TableId(type = IdType.INPUT)
+    private String operId;
 
     private String title;
 

@@ -64,12 +64,12 @@ public class FileController {
     }
 
     @GetMapping("/{id}")
-    public Result<UploadFileVO> getFileInfo(@PathVariable Long id) {
+    public Result<UploadFileVO> getFileInfo(@PathVariable String id) {
         return Result.success(fileService.getFileInfo(id));
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteFile(@PathVariable Long id) {
+    public Result<Void> deleteFile(@PathVariable String id) {
         fileService.deleteFile(id);
         evictImageCache(id);
         return Result.success();
@@ -78,21 +78,21 @@ public class FileController {
     @GetMapping("/business/{businessType}/{businessId}")
     public Result<List<UploadFileVO>> getFilesByBusiness(
             @PathVariable String businessType,
-            @PathVariable Long businessId) {
+            @PathVariable String businessId) {
         return Result.success(fileService.getFilesByBusiness(businessType, businessId));
     }
 
     @PutMapping("/{id}/bind")
     public Result<Void> bindBusiness(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam String businessType,
-            @RequestParam Long businessId) {
+            @RequestParam String businessId) {
         fileService.bindBusiness(id, businessType, businessId);
         return Result.success();
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<Resource> downloadFile(@PathVariable Long id) {
+    public ResponseEntity<Resource> downloadFile(@PathVariable String id) {
         Resource resource = fileService.downloadFile(id);
 
         return ResponseEntity.ok()
@@ -103,7 +103,7 @@ public class FileController {
 
     @GetMapping("/{id}/view")
     public ResponseEntity<Resource> viewFile(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(value = "w", required = false) Integer width,
             @RequestParam(value = "h", required = false) Integer height,
             @RequestParam(value = "format", required = false, defaultValue = "webp") String format,
@@ -166,7 +166,7 @@ public class FileController {
 
     @GetMapping("/{id}/thumbnail")
     public ResponseEntity<Resource> getThumbnail(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(value = "size", required = false, defaultValue = "200") Integer size,
             @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch) throws IOException {
 
@@ -191,7 +191,7 @@ public class FileController {
 
     @GetMapping("/{id}/responsive")
     public ResponseEntity<Resource> getResponsiveImage(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(value = "w", required = false) Integer width,
             @RequestParam(value = "format", required = false, defaultValue = "webp") String format,
             @RequestParam(value = "q", required = false, defaultValue = "80") Integer quality,
@@ -220,8 +220,8 @@ public class FileController {
         return buildCachedResponse(responseResource, cached.entry().mimeType(), cached.entry().eTag());
     }
 
-    private String buildCacheKey(Long fileId, int width, int height, ImageFormat format, float quality) {
-        return String.format("%d_%dx%d_%s_%.0f", fileId, width, height, format.name(), quality * 100);
+    private String buildCacheKey(String fileId, int width, int height, ImageFormat format, float quality) {
+        return String.format("%s_%dx%d_%s_%.0f", fileId, width, height, format.name(), quality * 100);
     }
 
     private CachedResult getCachedOrProcess(String cacheKey, File originalFile, int width, int height,
@@ -290,7 +290,7 @@ public class FileController {
                 .body(resource);
     }
 
-    private void evictImageCache(Long fileId) {
+    private void evictImageCache(String fileId) {
         imageProcessCache.asMap().keySet().removeIf(key -> key.startsWith(fileId + "_"));
         log.info("Evicted image cache for fileId={}", fileId);
     }

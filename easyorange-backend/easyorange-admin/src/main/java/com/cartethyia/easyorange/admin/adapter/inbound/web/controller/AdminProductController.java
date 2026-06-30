@@ -23,13 +23,13 @@ public class AdminProductController {
     }
 
     @GetMapping("/{id}")
-    public Result<AdminProductResponse> getProductDetail(@PathVariable Long id) {
+    public Result<AdminProductResponse> getProductDetail(@PathVariable String id) {
         return Result.success(adminProductService.getProductDetail(id));
     }
 
     @PutMapping("/{id}/status")
     public Result<Void> updateProductStatus(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody UpdateStatusRequest request
     ) {
         adminProductService.updateProductStatus(id, request);

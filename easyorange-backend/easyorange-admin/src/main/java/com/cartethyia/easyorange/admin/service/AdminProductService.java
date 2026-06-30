@@ -58,11 +58,11 @@ public class AdminProductService {
 
         ProductQueryResult result = adminProductQueryPort.queryProducts(condition);
 
-        List<Long> productIds = result.records().stream()
+        List<String> productIds = result.records().stream()
             .map(ProductSummary::id)
             .collect(Collectors.toList());
 
-        Map<Long, List<String>> imagesMap = adminProductQueryPort.getProductImages(productIds);
+        Map<String, List<String>> imagesMap = adminProductQueryPort.getProductImages(productIds);
 
         List<AdminProductResponse> records = result.records().stream()
             .map(p -> toAdminProductResponse(p, imagesMap))
@@ -72,13 +72,13 @@ public class AdminProductService {
     }
 
     @Transactional(readOnly = true)
-    public AdminProductResponse getProductDetail(Long id) {
+    public AdminProductResponse getProductDetail(String id) {
         ProductDetail productDetail = adminProductQueryPort.getProductDetail(id);
         if (productDetail == null) {
             throw BusinessException.of("商品不存在");
         }
 
-        Map<Long, List<String>> imagesMap = adminProductQueryPort.getProductImages(List.of(id));
+        Map<String, List<String>> imagesMap = adminProductQueryPort.getProductImages(List.of(id));
         List<String> images = imagesMap.getOrDefault(id, List.of());
         String mainImage = images.isEmpty() ? null : images.get(0);
 
@@ -105,7 +105,7 @@ public class AdminProductService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void updateProductStatus(Long id, UpdateStatusRequest request) {
+    public void updateProductStatus(String id, UpdateStatusRequest request) {
         ProductStatus newStatus = ProductStatus.fromCode(request.getStatus());
         BizRequire.notNull(newStatus, "无效的商品状态");
 
@@ -153,7 +153,7 @@ public class AdminProductService {
         }
     }
 
-    private AdminProductResponse toAdminProductResponse(ProductSummary product, Map<Long, List<String>> imagesMap) {
+    private AdminProductResponse toAdminProductResponse(ProductSummary product, Map<String, List<String>> imagesMap) {
         List<String> images = imagesMap.getOrDefault(product.id(), List.of());
         String mainImage = images.isEmpty() ? null : images.get(0);
 

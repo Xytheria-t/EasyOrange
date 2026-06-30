@@ -9,8 +9,8 @@ public class AdminReviewQueryRequest {
 
     private Integer pageNum = 1;
     private Integer pageSize = 20;
-    private Long productId;
-    private Long userId;
+    private String productId;
+    private String userId;
     private Integer rating;
     private Integer status;
     private String keyword;

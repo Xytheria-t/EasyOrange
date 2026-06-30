@@ -20,7 +20,7 @@ public class AdminCategoryController {
     private final AdminCategoryService adminCategoryService;
 
     @GetMapping
-    public Result<List<CategoryResponse>> listCategories(@RequestParam(required = false) Long parentId) {
+    public Result<List<CategoryResponse>> listCategories(@RequestParam(required = false) String parentId) {
         return Result.success(adminCategoryService.listCategories(parentId));
     }
 
@@ -36,20 +36,20 @@ public class AdminCategoryController {
 
     @PutMapping("/{id}")
     public Result<CategoryResponse> updateCategory(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody CategoryUpdateRequest request
     ) {
         return Result.success(adminCategoryService.updateCategory(id, request));
     }
 
     @PutMapping("/{id}/status")
-    public Result<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> updateStatus(        @PathVariable String id, @RequestParam Integer status) {
         adminCategoryService.updateStatus(id, status);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteCategory(@PathVariable Long id) {
+    public Result<Void> deleteCategory(@PathVariable String id) {
         adminCategoryService.deleteCategory(id);
         return Result.success();
     }

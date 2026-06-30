@@ -39,10 +39,10 @@ class AdminCategoryServiceTest {
     @InjectMocks
     private AdminCategoryService categoryService;
 
-    private static final Long CATEGORY_ID = 1L;
-    private static final Long PARENT_ID = 10L;
+    private static final String CATEGORY_ID = "1";
+    private static final String PARENT_ID = "10";
 
-    private CategoryDO createCategory(Long id, String name, Long parentId, Integer level) {
+    private CategoryDO createCategory(String id, String name, String parentId, Integer level) {
         CategoryDO cat = new CategoryDO(name, parentId, level, null, 0, 1);
         cat.setId(id);
         cat.setDelFlag(0);
@@ -92,7 +92,7 @@ class AdminCategoryServiceTest {
             // Set ID on insert to avoid NPE in toCategoryResponse (entity.id would be null after mocked insert)
             doAnswer(invocation -> {
                 CategoryDO entity = invocation.getArgument(0);
-                entity.setId(99L);
+                entity.setId("99");
                 return 1;
             }).when(categoryMapper).insert(any(CategoryDO.class));
 
@@ -111,7 +111,7 @@ class AdminCategoryServiceTest {
             when(categoryQueryRepository.findByName("手机")).thenReturn(null);
             doAnswer(invocation -> {
                 CategoryDO entity = invocation.getArgument(0);
-                entity.setId(99L);
+                entity.setId("99");
                 return 1;
             }).when(categoryMapper).insert(any(CategoryDO.class));
 

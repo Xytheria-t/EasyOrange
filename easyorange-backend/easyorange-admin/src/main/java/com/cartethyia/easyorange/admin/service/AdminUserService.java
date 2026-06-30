@@ -83,7 +83,7 @@ public class AdminUserService {
     }
 
     @Transactional(readOnly = true)
-    public AdminUserResponse getUserDetail(Long id) {
+    public AdminUserResponse getUserDetail(String id) {
         UserEntity entity = userMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("用户不存在");
@@ -92,7 +92,7 @@ public class AdminUserService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void updateUserStatus(Long id, UpdateStatusRequest request) {
+    public void updateUserStatus(String id, UpdateStatusRequest request) {
         UserEntity entity = userMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("用户不存在");

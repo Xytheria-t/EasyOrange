@@ -31,18 +31,18 @@ public class AdminReportController {
     }
 
     @GetMapping("/{id}")
-    public Result<AdminReportResponse> getReportDetail(@PathVariable Long id) {
+    public Result<AdminReportResponse> getReportDetail(@PathVariable String id) {
         return Result.success(adminReportService.getReportDetail(id));
     }
 
     @GetMapping("/{id}/history")
-    public Result<List<ReportHandleHistoryResponse>> getReportHistory(@PathVariable Long id) {
+    public Result<List<ReportHandleHistoryResponse>> getReportHistory(@PathVariable String id) {
         return Result.success(adminReportService.getReportHistory(id));
     }
 
     @PutMapping("/{id}/handle")
     public Result<Void> handleReport(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody ReportHandleRequest request
     ) {
         adminReportService.handleReport(id, request);

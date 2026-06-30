@@ -50,7 +50,7 @@ public class GlobalExceptionHandler {
                     handleBindingErrors(getBindingResult(e));
             case ConstraintViolationException c -> {
                 var msg = c.getConstraintViolations().stream()
-                        .map(ConstraintViolation::getMessage)
+                        .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                         .collect(Collectors.joining("; "));
                 log.warn("action=constraint_error, msg={}", msg);
                 yield badRequest(msg);
@@ -125,7 +125,7 @@ public class GlobalExceptionHandler {
 
     private static HttpStatus resolveHttpStatus(String errorCode) {
         if (errorCode == null || errorCode.isEmpty()) {
-            return errorCode == null ? INTERNAL_SERVER_ERROR : BAD_REQUEST;
+            return BAD_REQUEST;
         }
         if (errorCode.charAt(0) != 'A') {
             return switch (errorCode.charAt(0)) {
@@ -134,7 +134,8 @@ public class GlobalExceptionHandler {
                 default -> BAD_REQUEST;
             };
         }
-        if (errorCode.length() < 5) return OK;
+        // A 前缀: 从最后 3 位推导 HTTP 状态码
+        if (errorCode.length() < 5) return BAD_REQUEST;
         return switch (errorCode.substring(errorCode.length() - 3)) {
             case "401", "402" -> UNAUTHORIZED;
             case "403" -> FORBIDDEN;

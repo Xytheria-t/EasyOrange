@@ -54,11 +54,11 @@ public class AdminProductAuditService {
     private final ProductMapper productMapper;
 
     @Transactional(rollbackFor = Exception.class)
-    public void auditProduct(Long id, ProductAuditRequest request) {
+    public void auditProduct(String id, ProductAuditRequest request) {
         Product product = productRepository.findById(ProductId.of(id))
                 .orElseThrow(() -> BusinessException.of("商品不存在"));
 
-        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String operatorName = SecurityContextUtil.getUserContext()
                 .map(authUser -> authUser.username())
                 .orElse("管理员");
@@ -112,7 +112,7 @@ public class AdminProductAuditService {
     public BatchAuditResultResponse batchAudit(BatchAuditRequest request) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
-        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         String operatorName = SecurityContextUtil.getUserContext()
                 .map(authUser -> authUser.username())
                 .orElse("管理员");
@@ -190,13 +190,13 @@ public class AdminProductAuditService {
     }
 
     @Transactional(readOnly = true)
-    public List<AuditLogResponse> getAuditLogs(Long productId) {
+    public List<AuditLogResponse> getAuditLogs(String productId) {
         var logs = productAuditLogRepository.findByProductId(productId);
         return logs.stream().map(this::toAuditLogResponse).toList();
     }
 
     @Transactional(readOnly = true)
-    public AiReviewResult getAiReview(Long productId) {
+    public AiReviewResult getAiReview(String productId) {
         ProductDO product = productMapper.selectById(productId);
         if (product == null || product.getDelFlag() != 0) {
             throw BusinessException.of("商品不存在");
@@ -208,7 +208,7 @@ public class AdminProductAuditService {
         List<CategoryDO> categories = productMapper.selectCategoriesByIds(List.of(product.getCategoryId()));
         String categoryName = categories.isEmpty() ? null : categories.get(0).getName();
 
-        Set<Long> sellerIds = Set.of(product.getUserId());
+        Set<String> sellerIds = Set.of(product.getUserId());
         List<SellerInfo> sellers = productMapper.selectSellersByIds(sellerIds);
         String sellerName = sellers.isEmpty() ? null : sellers.get(0).nickName();
 

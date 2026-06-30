@@ -61,10 +61,10 @@ class AdminOrderServiceTest {
     @InjectMocks
     private AdminOrderService orderService;
 
-    private static final Long ORDER_ID = 100L;
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
-    private static final Long PRODUCT_ID = 200L;
+    private static final String ORDER_ID = "100";
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
+    private static final String PRODUCT_ID = "200";
 
     private OrderSummary createOrderSummary(int status) {
         return new OrderSummary(
@@ -77,7 +77,7 @@ class AdminOrderServiceTest {
     private OrderReadModel createReadModel(int status) {
         return new OrderReadModel(
                 ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID,
-                List.of(new OrderItemReadModel(1L, PRODUCT_ID, "{}", new BigDecimal("99.99"), 1, new BigDecimal("99.99"))),
+                List.of(new OrderItemReadModel("1", PRODUCT_ID, "{}", new BigDecimal("99.99"), 1, new BigDecimal("99.99"))),
                 new BigDecimal("99.99"), status, "待支付", 0,
                 "地址", "13800138000", "备注", null, null,
                 LocalDateTime.now(), LocalDateTime.now()

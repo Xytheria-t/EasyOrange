@@ -65,24 +65,24 @@ public class AdminOrderService {
 
         OrderQueryResult result = adminOrderQueryPort.queryOrders(condition);
 
-        Set<Long> userIds = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
         result.records().forEach(o -> {
             if (o.buyerId() != null) userIds.add(o.buyerId());
             if (o.sellerId() != null) userIds.add(o.sellerId());
         });
-        Map<Long, UserInfo> userMap = adminUserQueryPort.getUserInfos(userIds.stream().toList());
+        Map<String, UserInfo> userMap = adminUserQueryPort.getUserInfos(userIds.stream().toList());
 
-        List<Long> orderIds = result.records().stream()
+        List<String> orderIds = result.records().stream()
             .map(OrderSummary::id)
             .toList();
-        Map<Long, List<OrderItemInfo>> itemsMap = adminOrderQueryPort.getOrderItems(orderIds);
+        Map<String, List<OrderItemInfo>> itemsMap = adminOrderQueryPort.getOrderItems(orderIds);
 
-        Set<Long> productIds = itemsMap.values().stream()
+        Set<String> productIds = itemsMap.values().stream()
             .flatMap(Collection::stream)
             .map(OrderItemInfo::productId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
-        Map<Long, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds.stream().toList());
+        Map<String, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds.stream().toList());
 
         List<AdminOrderResponse> records = result.records().stream()
             .map(order -> toAdminOrderResponse(order, userMap, itemsMap, productMap))
@@ -92,18 +92,18 @@ public class AdminOrderService {
     }
 
     @Transactional(readOnly = true)
-    public AdminOrderDetailResponse getOrderDetail(Long id) {
+    public AdminOrderDetailResponse getOrderDetail(String id) {
         OrderReadModel model = orderReadRepository.findById(new OrderId(id))
             .orElseThrow(() -> BusinessException.of("订单不存在"));
 
         UserInfo buyer = adminUserQueryPort.getUserInfo(model.buyerId());
         UserInfo seller = adminUserQueryPort.getUserInfo(model.sellerId());
 
-        List<Long> productIds = model.items().stream()
+        List<String> productIds = model.items().stream()
             .map(OrderItemReadModel::productId)
             .distinct()
             .toList();
-        Map<Long, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds);
+        Map<String, ProductInfo> productMap = adminOrderQueryPort.getProducts(productIds);
 
         List<AdminOrderDetailResponse.ProductInfo> productInfos = model.items().stream()
             .map(item -> {
@@ -174,7 +174,7 @@ public class AdminOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void cancelOrder(Long id, String reason) {
+    public void cancelOrder(String id, String reason) {
         var aggregate = orderRepository.findById(OrderId.of(id))
                 .orElseThrow(() -> BusinessException.of("订单不存在"));
 
@@ -190,7 +190,7 @@ public class AdminOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void forceComplete(Long id, String reason) {
+    public void forceComplete(String id, String reason) {
         var aggregate = orderRepository.findById(OrderId.of(id))
                 .orElseThrow(() -> BusinessException.of("订单不存在"));
 
@@ -199,7 +199,7 @@ public class AdminOrderService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void refundOrder(Long id, String reason) {
+    public void refundOrder(String id, String reason) {
         var aggregate = orderRepository.findById(OrderId.of(id))
                 .orElseThrow(() -> BusinessException.of("订单不存在"));
 
@@ -231,9 +231,9 @@ public class AdminOrderService {
         }
     }
 
-    private AdminOrderResponse toAdminOrderResponse(OrderSummary order, Map<Long, UserInfo> userMap,
-                                                     Map<Long, List<OrderItemInfo>> itemsMap,
-                                                     Map<Long, ProductInfo> productMap) {
+    private AdminOrderResponse toAdminOrderResponse(OrderSummary order, Map<String, UserInfo> userMap,
+                                                      Map<String, List<OrderItemInfo>> itemsMap,
+                                                      Map<String, ProductInfo> productMap) {
         UserInfo buyer = userMap.get(order.buyerId());
         UserInfo seller = userMap.get(order.sellerId());
 

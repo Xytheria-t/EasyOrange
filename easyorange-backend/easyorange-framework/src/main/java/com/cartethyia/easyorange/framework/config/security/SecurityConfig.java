@@ -190,7 +190,7 @@ public class SecurityConfig {
             Set<String> roles = isAdmin ? Set.of("ADMIN", "USER") : Set.of("USER");
 
             var user = AuthUser.builder()
-                    .userId(Long.valueOf(jwt.getSubject()))
+                    .userId(jwt.getSubject())
                     .username(jwt.getClaimAsString("username"))
                     .roles(roles)
                     .build();

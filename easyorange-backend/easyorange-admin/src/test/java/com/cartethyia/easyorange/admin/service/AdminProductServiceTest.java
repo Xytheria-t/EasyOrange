@@ -58,14 +58,14 @@ class AdminProductServiceTest {
     @InjectMocks
     private AdminProductService productService;
 
-    private static final Long PRODUCT_ID = 100L;
-    private static final Long SELLER_ID = 1L;
+    private static final String PRODUCT_ID = "100";
+    private static final String SELLER_ID = "1";
 
     private ProductSummary createProductSummary(int status) {
         return new ProductSummary(
             PRODUCT_ID, "测试商品", new BigDecimal("99.99"), new BigDecimal("199.99"),
             10, status, ProductStatus.getDescByCode(status), 1, "北京", "微信",
-            1L, SELLER_ID, 10, LocalDateTime.now(), LocalDateTime.now()
+            "1", SELLER_ID, 10, LocalDateTime.now(), LocalDateTime.now()
         );
     }
 
@@ -73,7 +73,7 @@ class AdminProductServiceTest {
         return new ProductDetail(
             PRODUCT_ID, "测试商品", "商品描述", new BigDecimal("99.99"),
             new BigDecimal("199.99"), 10, status, ProductStatus.getDescByCode(status),
-            1, "北京", "微信", 1L, SELLER_ID, 10,
+            1, "北京", "微信", "1", SELLER_ID, 10,
             LocalDateTime.now(), LocalDateTime.now()
         );
     }
@@ -158,7 +158,7 @@ class AdminProductServiceTest {
         @DisplayName("更新商品状态成功 — ONLINE -> OFFLINE")
         void updateProductStatus_success() {
             Product product = Product.reconstitute(
-                    ProductId.of(PRODUCT_ID), SellerId.of(1L), CategoryId.of(1L),
+                    ProductId.of(PRODUCT_ID), SellerId.of("1"), CategoryId.of("1"),
                     ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
                     StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
                     0, null, null, null, null, null, TagSet.empty(), null, null,

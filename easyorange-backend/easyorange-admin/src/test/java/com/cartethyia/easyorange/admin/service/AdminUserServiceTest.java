@@ -25,7 +25,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,7 +37,7 @@ class AdminUserServiceTest {
     @InjectMocks
     private AdminUserService userService;
 
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
 
     private UserEntity createTestUser() {
         UserEntity user = UserEntity.builder()

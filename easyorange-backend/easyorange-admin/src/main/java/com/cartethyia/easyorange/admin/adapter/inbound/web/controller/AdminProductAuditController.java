@@ -22,7 +22,7 @@ public class AdminProductAuditController {
 
     @PutMapping("/{id}/audit")
     public Result<Void> auditProduct(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody ProductAuditRequest request
     ) {
         adminProductAuditService.auditProduct(id, request);
@@ -37,12 +37,12 @@ public class AdminProductAuditController {
     }
 
     @GetMapping("/{id}/audit-logs")
-    public Result<List<AuditLogResponse>> getAuditLogs(@PathVariable Long id) {
+    public Result<List<AuditLogResponse>> getAuditLogs(@PathVariable String id) {
         return Result.success(adminProductAuditService.getAuditLogs(id));
     }
 
     @GetMapping("/{id}/ai-review")
-    public Result<AiReviewResult> getAiReview(@PathVariable Long id) {
+    public Result<AiReviewResult> getAiReview(@PathVariable String id) {
         return Result.success(adminProductAuditService.getAiReview(id));
     }
 }

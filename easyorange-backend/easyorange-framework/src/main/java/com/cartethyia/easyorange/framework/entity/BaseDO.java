@@ -21,8 +21,8 @@ import java.time.LocalDateTime;
 @Setter
 public abstract class BaseDO {
 
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
+    @TableId(type = IdType.INPUT)
+    private String id;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -31,10 +31,10 @@ public abstract class BaseDO {
     private LocalDateTime updateTime;
 
     @TableField(fill = FieldFill.INSERT)
-    private Long createBy;
+    private String createBy;
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
-    private Long updateBy;
+    private String updateBy;
 
     @TableLogic(value = "0", delval = "2")
     private Integer delFlag;

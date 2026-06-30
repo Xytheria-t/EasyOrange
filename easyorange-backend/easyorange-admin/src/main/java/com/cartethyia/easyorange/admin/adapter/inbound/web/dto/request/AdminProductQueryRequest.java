@@ -8,9 +8,9 @@ public record AdminProductQueryRequest(
     @Min(value = 1, message = "每页条数最小为1")
     @Max(value = 100, message = "每页条数最大为100") Integer pageSize,
     String keyword,
-    Long categoryId,
+    String categoryId,
     Integer status,
-    Long sellerId,
+    String sellerId,
     String startTime,
     String endTime
 ) {}

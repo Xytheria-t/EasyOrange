@@ -61,7 +61,7 @@ class AdminDashboardServiceTest {
 
     private UserEntity createTestUser() {
         return UserEntity.builder()
-                .id(1L)
+                .id("1")
                 .username("testuser")
                 .nickName("测试用户")
                 .userType(UserType.fromCode("01"))
@@ -106,7 +106,7 @@ class AdminDashboardServiceTest {
             when(productQueryRepository.countByStatus(anyInt())).thenReturn(7L);
             when(productReportRepository.findPendingReports(anyInt(), anyInt()))
                     .thenReturn(List.of(
-                            ProductReport.reconstitute(1L, 100L, 1L,
+                            ProductReport.reconstitute("1", "100", "1",
                                     "虚假信息", null, null,
                                     LocalDateTime.now(), LocalDateTime.now(), 1)
                     ));

@@ -19,20 +19,20 @@ public interface AdminOrderQueryPort {
     /**
      * 根据订单 ID 列表批量查询订单项
      */
-    Map<Long, List<OrderItemInfo>> getOrderItems(List<Long> orderIds);
+    Map<String, List<OrderItemInfo>> getOrderItems(List<String> orderIds);
 
     /**
      * 根据产品 ID 列表批量查询产品信息
      */
-    Map<Long, ProductInfo> getProducts(List<Long> productIds);
+    Map<String, ProductInfo> getProducts(List<String> productIds);
 
     /**
      * 订单查询条件
      */
     record OrderQueryCondition(
         String orderNo,
-        Long buyerId,
-        Long sellerId,
+        String buyerId,
+        String sellerId,
         Integer status,
         Integer paymentStatus,
         LocalDateTime startTime,
@@ -55,10 +55,10 @@ public interface AdminOrderQueryPort {
      * 订单摘要信息
      */
     record OrderSummary(
-        Long id,
+        String id,
         String orderNo,
-        Long buyerId,
-        Long sellerId,
+        String buyerId,
+        String sellerId,
         BigDecimal totalAmount,
         Integer status,
         String statusDesc,
@@ -71,8 +71,8 @@ public interface AdminOrderQueryPort {
      * 订单项信息
      */
     record OrderItemInfo(
-        Long orderId,
-        Long productId,
+        String orderId,
+        String productId,
         Integer quantity,
         BigDecimal price
     ) {}
@@ -81,7 +81,7 @@ public interface AdminOrderQueryPort {
      * 产品信息（用于订单查询）
      */
     record ProductInfo(
-        Long id,
+        String id,
         String name,
         BigDecimal price
     ) {}

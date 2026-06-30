@@ -15,21 +15,21 @@ public class CustomMetaObjectHandler implements MetaObjectHandler {
     @Override
     public void insertFill(MetaObject metaObject) {
         LocalDateTime now = LocalDateTime.now();
-        Long userId = getCurrentUserId();
+        String userId = getCurrentUserId();
 
         this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, now);
         this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, now);
-        this.strictInsertFill(metaObject, "createBy", Long.class, userId);
-        this.strictInsertFill(metaObject, "updateBy", Long.class, userId);
+        this.strictInsertFill(metaObject, "createBy", String.class, userId);
+        this.strictInsertFill(metaObject, "updateBy", String.class, userId);
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
         this.strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        this.strictUpdateFill(metaObject, "updateBy", Long.class, getCurrentUserId());
+        this.strictUpdateFill(metaObject, "updateBy", String.class, getCurrentUserId());
     }
 
-    private Long getCurrentUserId() {
+    private String getCurrentUserId() {
         return SecurityContextUtil.getCurrentUserId().orElse(null);
     }
 }

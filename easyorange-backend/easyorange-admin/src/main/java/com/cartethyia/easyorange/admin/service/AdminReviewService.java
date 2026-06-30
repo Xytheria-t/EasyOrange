@@ -46,8 +46,8 @@ public class AdminReviewService {
             return PageResult.empty(pageNum, pageSize);
         }
 
-        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(reviewPage.getRecords().stream().map(ProductReviewDO::getProductId).distinct().toList());
-        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(reviewPage.getRecords().stream().map(ProductReviewDO::getUserId).distinct().toList());
+        Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reviewPage.getRecords().stream().map(ProductReviewDO::getProductId).distinct().toList());
+        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(reviewPage.getRecords().stream().map(ProductReviewDO::getUserId).distinct().toList());
 
         List<AdminReviewResponse> records = reviewPage.getRecords().stream()
             .map(r -> toAdminReviewResponse(r, productMap, userMap))
@@ -57,26 +57,26 @@ public class AdminReviewService {
     }
 
     @Transactional(readOnly = true)
-    public AdminReviewResponse getReviewDetail(Long id) {
+    public AdminReviewResponse getReviewDetail(String id) {
         ProductReviewDO review = reviewMapper.selectById(id);
         if (review == null || review.getDelFlag() != 0) {
             throw BusinessException.of("评价不存在");
         }
 
-        Map<Long, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(review.getProductId()));
-        Map<Long, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(review.getUserId()));
+        Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(review.getProductId()));
+        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(review.getUserId()));
 
         return toAdminReviewResponse(review, productMap, userMap);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteReview(Long id, AdminReviewDeleteRequest request) {
+    public void deleteReview(String id, AdminReviewDeleteRequest request) {
         ProductReviewDO review = reviewMapper.selectById(id);
         if (review == null || review.getDelFlag() != 0) {
             throw BusinessException.of("评价不存在或已被删除");
         }
 
-        Long operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String operatorId = SecurityContextUtil.getCurrentUserIdOrThrow();
         reviewMapper.deleteById(id);
 
         log.info("action=admin_delete_review reviewId={} operatorId={} reason={}",
@@ -115,8 +115,8 @@ public class AdminReviewService {
 
     private AdminReviewResponse toAdminReviewResponse(
         ProductReviewDO review,
-        Map<Long, ProductDO> productMap,
-        Map<Long, UserEntity> userMap
+        Map<String, ProductDO> productMap,
+        Map<String, UserEntity> userMap
     ) {
         ProductDO product = productMap.get(review.getProductId());
         UserEntity user = userMap.get(review.getUserId());

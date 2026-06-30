@@ -44,11 +44,11 @@ class AdminReviewServiceTest {
     @InjectMocks
     private AdminReviewService reviewService;
 
-    private static final Long REVIEW_ID = 100L;
-    private static final Long PRODUCT_ID = 200L;
-    private static final Long USER_ID = 300L;
+    private static final String REVIEW_ID = "100";
+    private static final String PRODUCT_ID = "200";
+    private static final String USER_ID = "300";
 
-    private ProductReviewDO createReview(Long id, Long productId, Long userId, Integer rating, String content, Integer delFlag) {
+    private ProductReviewDO createReview(String id, String productId, String userId, Integer rating, String content, Integer delFlag) {
         return ProductReviewDO.builder()
             .id(id)
             .productId(productId)
@@ -63,12 +63,12 @@ class AdminReviewServiceTest {
             .build();
     }
 
-    private ProductDO createProduct(Long id, String name) {
+    private ProductDO createProduct(String id, String name) {
         ProductDO product = ProductDO.builder()
             .id(id)
             .name(name)
             .userId(USER_ID)
-            .categoryId(1L)
+            .categoryId("1")
             .price(new BigDecimal("99.00"))
             .stock(10)
             .status(1)
@@ -79,7 +79,7 @@ class AdminReviewServiceTest {
         return product;
     }
 
-    private UserEntity createUser(Long id, String username, String nickname) {
+    private UserEntity createUser(String id, String username, String nickname) {
         return UserEntity.builder()
             .id(id)
             .username(username)
@@ -162,9 +162,9 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("评价不存在抛出异常")
         void getReviewDetail_notFound_throwsException() {
-            when(reviewMapper.selectById(999L)).thenReturn(null);
+            when(reviewMapper.selectById("999")).thenReturn(null);
 
-            assertThatThrownBy(() -> reviewService.getReviewDetail(999L))
+            assertThatThrownBy(() -> reviewService.getReviewDetail("999"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("评价不存在");
         }
@@ -210,9 +210,9 @@ class AdminReviewServiceTest {
             AdminReviewDeleteRequest request = new AdminReviewDeleteRequest();
             request.setReason("test");
 
-            when(reviewMapper.selectById(999L)).thenReturn(null);
+            when(reviewMapper.selectById("999")).thenReturn(null);
 
-            assertThatThrownBy(() -> reviewService.deleteReview(999L, request))
+            assertThatThrownBy(() -> reviewService.deleteReview("999", request))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage("评价不存在或已被删除");
         }

@@ -26,7 +26,7 @@ public class AdminCategoryService {
 
     private static final int MAX_CATEGORY_LEVEL = 3;
 
-    public List<CategoryResponse> listCategories(Long parentId) {
+    public List<CategoryResponse> listCategories(String parentId) {
         List<CategoryDO> entities;
         if (parentId != null) {
             entities = categoryQueryRepository.findByParentId(parentId);
@@ -37,8 +37,8 @@ public class AdminCategoryService {
                 .list();
         }
 
-        Map<Long, Long> productCountMap = countProductMaps(entities);
-        Map<Long, String> parentNameMap = buildParentNameMap(entities);
+        Map<String, Long> productCountMap = countProductMaps(entities);
+        Map<String, String> parentNameMap = buildParentNameMap(entities);
 
         return entities.stream()
             .map(cat -> toCategoryResponse(cat, productCountMap, parentNameMap))
@@ -52,16 +52,16 @@ public class AdminCategoryService {
             .orderByAsc(CategoryDO::getSortOrder)
             .list();
 
-        Map<Long, List<CategoryDO>> groupedByParent = all.stream()
+        Map<String, List<CategoryDO>> groupedByParent = all.stream()
             .collect(Collectors.groupingBy(
-                cat -> cat.getParentId() != null ? cat.getParentId() : 0L,
+                cat -> cat.getParentId() != null ? cat.getParentId() : "0",
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
 
-        Function<Long, List<CategoryTreeResponse>> buildChildren = new Function<>() {
+        Function<String, List<CategoryTreeResponse>> buildChildren = new Function<>() {
             @Override
-            public List<CategoryTreeResponse> apply(Long pid) {
+            public List<CategoryTreeResponse> apply(String pid) {
                 List<CategoryDO> children = groupedByParent.getOrDefault(pid, List.of());
                 return children.stream()
                     .map(cat -> new CategoryTreeResponse(
@@ -76,7 +76,7 @@ public class AdminCategoryService {
             }
         };
 
-        return buildChildren.apply(0L);
+        return buildChildren.apply("0");
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -110,7 +110,7 @@ public class AdminCategoryService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public CategoryResponse updateCategory(Long id, CategoryUpdateRequest request) {
+    public CategoryResponse updateCategory(String id, CategoryUpdateRequest request) {
         CategoryDO entity = categoryMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("分类不存在");
@@ -133,7 +133,7 @@ public class AdminCategoryService {
         }
 
         if (!Objects.equals(request.name(), entity.getName())) {
-            Long checkParentId = entity.getParentId() != null ? entity.getParentId() : null;
+            String checkParentId = entity.getParentId();
             if (checkParentId != null) {
                 checkDuplicateName(request.name(), checkParentId);
             } else {
@@ -148,12 +148,12 @@ public class AdminCategoryService {
 
         categoryMapper.updateById(entity);
 
-        Map<Long, Long> productCountMap = countProductMaps(List.of(entity));
+        Map<String, Long> productCountMap = countProductMaps(List.of(entity));
         return toCategoryResponse(entity, productCountMap, Map.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void updateStatus(Long id, Integer status) {
+    public void updateStatus(String id, Integer status) {
         CategoryDO entity = categoryMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("分类不存在");
@@ -163,7 +163,7 @@ public class AdminCategoryService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteCategory(Long id) {
+    public void deleteCategory(String id) {
         CategoryDO entity = categoryMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("分类不存在");
@@ -186,7 +186,7 @@ public class AdminCategoryService {
         categoryMapper.updateById(entity);
     }
 
-    private void checkDuplicateName(String name, Long parentId) {
+    private void checkDuplicateName(String name, String parentId) {
         CategoryDO existing = categoryQueryRepository.findByName(name);
         if (existing != null && existing.getDelFlag() == 0 && Objects.equals(existing.getParentId(), parentId)) {
             throw BusinessException.of("同级下已存在同名分类");
@@ -200,21 +200,21 @@ public class AdminCategoryService {
         }
     }
 
-    private Map<Long, Long> countProductMaps(List<CategoryDO> categories) {
+    private Map<String, Long> countProductMaps(List<CategoryDO> categories) {
         if (categories == null || categories.isEmpty()) {
             return Map.of();
         }
-        List<Long> ids = categories.stream().map(CategoryDO::getId).collect(Collectors.toList());
+        List<String> ids = categories.stream().map(CategoryDO::getId).collect(Collectors.toList());
         return categoryQueryRepository.countProductsByCategoryIds(ids);
     }
 
-    private Long countProductsByCategoryId(Long categoryId) {
-        Map<Long, Long> result = categoryQueryRepository.countProductsByCategoryIds(List.of(categoryId));
+    private Long countProductsByCategoryId(String categoryId) {
+        Map<String, Long> result = categoryQueryRepository.countProductsByCategoryIds(List.of(categoryId));
         return result.getOrDefault(categoryId, 0L);
     }
 
-    private Map<Long, String> buildParentNameMap(List<CategoryDO> categories) {
-        Set<Long> parentIds = categories.stream()
+    private Map<String, String> buildParentNameMap(List<CategoryDO> categories) {
+        Set<String> parentIds = categories.stream()
             .map(CategoryDO::getParentId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
@@ -228,7 +228,7 @@ public class AdminCategoryService {
             .collect(Collectors.toMap(CategoryDO::getId, CategoryDO::getName, (a, b) -> a));
     }
 
-    private CategoryResponse toCategoryResponse(CategoryDO dobj, Map<Long, Long> productCountMap, Map<Long, String> parentNameMap) {
+    private CategoryResponse toCategoryResponse(CategoryDO dobj, Map<String, Long> productCountMap, Map<String, String> parentNameMap) {
         return new CategoryResponse(
             dobj.getId(),
             dobj.getName(),

@@ -83,8 +83,8 @@ class AdminDashboardControllerTest {
     @Test
     void getRecentUsers_shouldReturnUserList() throws Exception {
         var users = List.of(
-            RecentUserResponse.builder().userId(1L).username("user1").nickname("User1").build(),
-            RecentUserResponse.builder().userId(2L).username("user2").nickname("User2").build()
+            RecentUserResponse.builder().userId("1").username("user1").nickname("User1").build(),
+            RecentUserResponse.builder().userId("2").username("user2").nickname("User2").build()
         );
         when(adminDashboardService.getRecentUsers(10)).thenReturn(users);
 
@@ -92,21 +92,21 @@ class AdminDashboardControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
             .andExpect(jsonPath("$.data.length()").value(2))
-            .andExpect(jsonPath("$.data[0].userId").value(1))
+            .andExpect(jsonPath("$.data[0].userId").value("1"))
             .andExpect(jsonPath("$.data[1].username").value("user2"));
     }
 
     @Test
     void getRecentProducts_shouldReturnProductList() throws Exception {
         var products = List.of(
-            RecentProductResponse.builder().productId(1L).name("Product1").price(BigDecimal.valueOf(100)).build()
+            RecentProductResponse.builder().productId("1").name("Product1").price(BigDecimal.valueOf(100)).build()
         );
         when(adminDashboardService.getRecentProducts(10)).thenReturn(products);
 
         mockMvc.perform(get("/api/admin/dashboard/recent-products"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data[0].productId").value(1))
+            .andExpect(jsonPath("$.data[0].productId").value("1"))
             .andExpect(jsonPath("$.data[0].name").value("Product1"));
     }
 
@@ -157,7 +157,7 @@ class AdminDashboardControllerTest {
     @Test
     void getTopProducts_shouldReturnTopProducts() throws Exception {
         var topProducts = List.of(
-            TopProductResponse.builder().productId(1L).name("Top1").viewCount(1000)
+            TopProductResponse.builder().productId("1").name("Top1").viewCount(1000)
                 .price(BigDecimal.valueOf(99)).status(1).statusDesc("上架").build()
         );
         when(adminDashboardService.getTopProducts(10)).thenReturn(topProducts);
@@ -165,20 +165,20 @@ class AdminDashboardControllerTest {
         mockMvc.perform(get("/api/admin/dashboard/top-products"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data[0].productId").value(1))
+            .andExpect(jsonPath("$.data[0].productId").value("1"))
             .andExpect(jsonPath("$.data[0].viewCount").value(1000));
     }
 
     @Test
     void getTopProducts_withCustomLimit_shouldUseGivenLimit() throws Exception {
         var topProducts = List.of(
-            TopProductResponse.builder().productId(1L).name("Top1").viewCount(500).build()
+            TopProductResponse.builder().productId("1").name("Top1").viewCount(500).build()
         );
         when(adminDashboardService.getTopProducts(5)).thenReturn(topProducts);
 
         mockMvc.perform(get("/api/admin/dashboard/top-products?limit=5"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"))
-            .andExpect(jsonPath("$.data[0].productId").value(1));
+            .andExpect(jsonPath("$.data[0].productId").value("1"));
     }
 }

@@ -74,7 +74,8 @@ framework/
 │   ├── Node.java                 # 节点接口
 │   └── ConsistentHashRouter.java # 虚拟节点 TreeMap 路由 (MD5 哈希)
 ├── idgen/                   # 分布式 ID 生成器
-│   ├── SnowflakeIdGenerator.java     # 增强版 Snowflake (时钟回拨容忍 + Redis WorkerId)
+│   ├── UuidV7IdGenerator.java      # @Primary UUID v7 (RFC 9562) 主实现
+│   ├── SnowflakeIdGenerator.java   # 增强版 Snowflake (备选，时钟回拨容忍 + Redis WorkerId)
 │   ├── WorkerIdProvider.java         # 工作节点接口
 │   └── RedisWorkerIdProvider.java    # Redis 自动注册 + 心跳续期
 ├── messaging/               # RabbitMQ 消息队列
@@ -213,7 +214,9 @@ multiLevelCache.evict("product:detail:" + id);
 
 ### 分布式 ID 生成器 (idgen/)
 
-增强版 Snowflake，通过 Redis 自动分配 WorkerId：
+主实现：`UuidV7IdGenerator`（`@Primary`）——纯 Java 无外部依赖，生成 RFC 9562 UUID v7（毫秒级有序 + 随机后缀）。
+
+备选：`SnowflakeIdGenerator`——增强版 Snowflake，通过 Redis 自动分配 WorkerId：
 
 - 支持最多 32 个工作节点 (5 bit WorkerId)
 - Redis WorkerId 自动注册 + 心跳续期防过期
@@ -221,7 +224,8 @@ multiLevelCache.evict("product:detail:" + id);
 - 可配置 DataCenterId
 
 ```properties
-# 启用 Snowflake ID 生成器 (默认关闭)
+# UUID v7 为默认 (`@Primary`)，无需配置即可使用
+# Snowflake 作为备选，需显式启用：
 easyorange.idgen.enabled=true
 easyorange.idgen.data-center-id=1
 ```

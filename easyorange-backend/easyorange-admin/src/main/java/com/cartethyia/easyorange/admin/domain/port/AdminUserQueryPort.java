@@ -12,18 +12,18 @@ public interface AdminUserQueryPort {
     /**
      * 根据用户 ID 查询用户信息
      */
-    UserInfo getUserInfo(Long userId);
+    UserInfo getUserInfo(String userId);
 
     /**
      * 根据用户 ID 列表批量查询用户信息
      */
-    Map<Long, UserInfo> getUserInfos(List<Long> userIds);
+    Map<String, UserInfo> getUserInfos(List<String> userIds);
 
     /**
      * 用户信息
      */
     record UserInfo(
-        Long id,
+        String id,
         String username,
         String nickName,
         String avatar,

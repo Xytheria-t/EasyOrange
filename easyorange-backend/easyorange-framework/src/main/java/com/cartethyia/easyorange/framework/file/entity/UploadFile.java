@@ -36,9 +36,9 @@ public class UploadFile extends BaseDO {
 
     private String businessType;
 
-    private Long businessId;
+    private String businessId;
 
-    private Long uploaderId;
+    private String uploaderId;
 
     private Integer status;
 }

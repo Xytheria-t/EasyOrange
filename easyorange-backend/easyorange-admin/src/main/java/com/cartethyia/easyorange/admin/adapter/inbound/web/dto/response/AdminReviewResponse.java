@@ -6,10 +6,10 @@ import java.time.LocalDateTime;
 
 @Builder
 public record AdminReviewResponse(
-    Long reviewId,
-    Long productId,
+    String reviewId,
+    String productId,
     String productName,
-    Long userId,
+    String userId,
     String username,
     String userAvatar,
     Integer rating,

@@ -19,21 +19,21 @@ public interface AdminProductQueryPort {
     /**
      * 根据产品 ID 查询产品详情
      */
-    ProductDetail getProductDetail(Long productId);
+    ProductDetail getProductDetail(String productId);
 
     /**
      * 根据产品 ID 列表批量查询产品图片
      */
-    Map<Long, List<String>> getProductImages(List<Long> productIds);
+    Map<String, List<String>> getProductImages(List<String> productIds);
 
     /**
      * 产品查询条件
      */
     record ProductQueryCondition(
         String keyword,
-        Long categoryId,
+        String categoryId,
         Integer status,
-        Long sellerId,
+        String sellerId,
         LocalDateTime startTime,
         LocalDateTime endTime,
         Integer pageNum,
@@ -54,7 +54,7 @@ public interface AdminProductQueryPort {
      * 产品摘要信息
      */
     record ProductSummary(
-        Long id,
+        String id,
         String name,
         BigDecimal price,
         BigDecimal originalPrice,
@@ -64,8 +64,8 @@ public interface AdminProductQueryPort {
         Integer conditionLevel,
         String location,
         String contactMethod,
-        Long categoryId,
-        Long sellerId,
+        String categoryId,
+        String sellerId,
         Integer viewCount,
         LocalDateTime createTime,
         LocalDateTime updateTime
@@ -75,7 +75,7 @@ public interface AdminProductQueryPort {
      * 产品详情信息
      */
     record ProductDetail(
-        Long id,
+        String id,
         String name,
         String description,
         BigDecimal price,
@@ -86,8 +86,8 @@ public interface AdminProductQueryPort {
         Integer conditionLevel,
         String location,
         String contactMethod,
-        Long categoryId,
-        Long sellerId,
+        String categoryId,
+        String sellerId,
         Integer viewCount,
         LocalDateTime createTime,
         LocalDateTime updateTime

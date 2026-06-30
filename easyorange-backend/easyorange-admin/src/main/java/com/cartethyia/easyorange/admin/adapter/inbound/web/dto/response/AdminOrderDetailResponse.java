@@ -8,7 +8,7 @@ import java.util.List;
 
 @Builder
 public record AdminOrderDetailResponse(
-    Long orderId,
+    String orderId,
     String orderNo,
     BuyerInfo buyer,
     SellerInfo seller,
@@ -28,8 +28,8 @@ public record AdminOrderDetailResponse(
     LocalDateTime updateTime,
     LocalDateTime cancelTime
 ) {
-    public record BuyerInfo(Long userId, String nickname, String avatar, String phone) {}
-    public record SellerInfo(Long userId, String nickname, String avatar, String phone) {}
-    public record ProductInfo(Long productId, String name, String mainImage, BigDecimal price) {}
+    public record BuyerInfo(String userId, String nickname, String avatar, String phone) {}
+    public record SellerInfo(String userId, String nickname, String avatar, String phone) {}
+    public record ProductInfo(String productId, String name, String mainImage, BigDecimal price) {}
     public record Address(String receiverName, String phone, String detailAddress) {}
 }

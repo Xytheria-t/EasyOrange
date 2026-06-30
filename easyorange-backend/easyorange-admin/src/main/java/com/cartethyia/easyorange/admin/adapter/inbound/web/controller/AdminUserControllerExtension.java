@@ -17,28 +17,28 @@ public class AdminUserControllerExtension {
     private final AdminUserSecurityService adminUserSecurityService;
 
     @PutMapping("/{id}/unlock")
-    public Result<Void> unlockUser(@PathVariable Long id) {
+    public Result<Void> unlockUser(@PathVariable String id) {
         adminUserSecurityService.unlockUser(id);
         return Result.success();
     }
 
     @PutMapping("/{id}/reset-password")
     public Result<ResetPasswordResponse> resetPassword(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody ResetPasswordRequest request
     ) {
         return Result.success(adminUserSecurityService.resetPassword(id));
     }
 
     @PutMapping("/{id}/force-logout")
-    public Result<Void> forceLogout(@PathVariable Long id) {
+    public Result<Void> forceLogout(@PathVariable String id) {
         adminUserSecurityService.forceLogout(id);
         return Result.success();
     }
 
     @PutMapping("/{id}/role")
     public Result<Void> changeUserRole(
-        @PathVariable Long id,
+        @PathVariable String id,
         @Valid @RequestBody UserRoleRequest request
     ) {
         adminUserSecurityService.changeUserRole(id, request);

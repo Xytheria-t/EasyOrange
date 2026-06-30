@@ -8,7 +8,7 @@ import java.util.List;
 
 @Builder
 public record AdminProductResponse(
-    Long productId,
+    String productId,
     String name,
     String description,
     BigDecimal price,
@@ -21,9 +21,9 @@ public record AdminProductResponse(
     String contactMethod,
     List<String> images,
     String mainImage,
-    Long categoryId,
+    String categoryId,
     String categoryName,
-    Long sellerId,
+    String sellerId,
     String sellerName,
     String sellerAvatar,
     Integer viewCount,

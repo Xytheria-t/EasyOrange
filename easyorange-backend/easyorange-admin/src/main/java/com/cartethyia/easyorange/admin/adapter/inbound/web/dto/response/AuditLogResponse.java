@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record AuditLogResponse(
-    Long id,
-    Long productId,
-    Long operatorId,
+    String id,
+    String productId,
+    String operatorId,
     String operatorName,
     Integer action,
     String actionDesc,

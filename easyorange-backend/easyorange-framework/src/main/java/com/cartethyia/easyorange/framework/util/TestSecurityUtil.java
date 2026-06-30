@@ -30,6 +30,24 @@ public final class TestSecurityUtil {
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
+    public static void setSecurityContext(String userId) {
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                userId, null, List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    public static void setSecurityContext(String userId, String... roles) {
+        List<SimpleGrantedAuthority> authorities = List.of(roles).stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .map(SimpleGrantedAuthority::new)
+                .toList();
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                userId, null, authorities
+        );
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
     public static void clearSecurityContext() {
         SecurityContextHolder.clearContext();
     }

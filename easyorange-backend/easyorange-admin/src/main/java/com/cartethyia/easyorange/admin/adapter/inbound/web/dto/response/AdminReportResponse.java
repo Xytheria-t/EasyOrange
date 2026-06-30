@@ -6,11 +6,11 @@ import java.time.LocalDateTime;
 
 @Builder
 public record AdminReportResponse(
-    Long reportId,
-    Long productId,
+    String reportId,
+    String productId,
     String productName,
     String productImage,
-    Long reporterId,
+    String reporterId,
     String reporterName,
     Integer reasonType,
     String reasonTypeDesc,

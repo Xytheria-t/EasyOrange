@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 public class AdminUserResponse {
 
-    private Long userId;
+    private String userId;
 
     private String username;
 

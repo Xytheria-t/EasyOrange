@@ -32,7 +32,7 @@ public class AdminUserSecurityService {
     private final TokenService tokenService;
 
     @Transactional(rollbackFor = Exception.class)
-    public void unlockUser(Long id) {
+    public void unlockUser(String id) {
         UserEntity entity = findUserByIdOrThrow(id);
         if (entity.getStatus() != UserStatus.LOCKED && entity.getStatus() != UserStatus.DISABLED) {
             throw BusinessException.of("该用户未被锁定或禁用");
@@ -42,7 +42,7 @@ public class AdminUserSecurityService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public ResetPasswordResponse resetPassword(Long id) {
+    public ResetPasswordResponse resetPassword(String id) {
         UserEntity entity = findUserByIdOrThrow(id);
         String newPassword = generateRandomPassword();
         entity.setPassword(passwordEncoder.encode(newPassword));
@@ -54,13 +54,13 @@ public class AdminUserSecurityService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void forceLogout(Long id) {
+    public void forceLogout(String id) {
         findUserByIdOrThrow(id);
         tokenService.invalidateAllUserTokens(id);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void changeUserRole(Long id, UserRoleRequest request) {
+    public void changeUserRole(String id, UserRoleRequest request) {
         UserEntity entity = findUserByIdOrThrow(id);
         UserType newRole = UserType.fromCode(request.getRole());
         if (newRole == entity.getUserType()) {
@@ -79,7 +79,7 @@ public class AdminUserSecurityService {
         userMapper.updateById(entity);
     }
 
-    private UserEntity findUserByIdOrThrow(Long id) {
+    private UserEntity findUserByIdOrThrow(String id) {
         UserEntity entity = userMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("用户不存在");

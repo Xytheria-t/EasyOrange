@@ -46,11 +46,11 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public UploadFileVO uploadFile(MultipartFile file, String businessType, Long businessId) {
+    public UploadFileVO uploadFile(MultipartFile file, String businessType, String businessId) {
         BizRequire.notNull(file, "上传文件不能为空");
         BizRequire.requireTrue(!file.isEmpty(), "上传文件不能为空");
 
-        Long userId = SecurityContextUtil.getCurrentUserId()
+        String userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
 
         try {
@@ -103,7 +103,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     }
 
     @Override
-    public UploadFileVO getFileInfo(Long fileId) {
+    public UploadFileVO getFileInfo(String fileId) {
         UploadFile file = getById(fileId);
         BizRequire.notNull(file, "文件不存在");
         return convertToVO(file);
@@ -111,11 +111,11 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteFile(Long fileId) {
+    public void deleteFile(String fileId) {
         UploadFile file = getById(fileId);
         BizRequire.notNull(file, "文件不存在");
 
-        Long userId = SecurityContextUtil.getCurrentUserId()
+        String userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
 
         BizRequire.requireTrue(java.util.Objects.equals(file.getUploaderId(), userId), "无权限删除该文件");
@@ -134,7 +134,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void bindBusiness(Long fileId, String businessType, Long businessId) {
+    public void bindBusiness(String fileId, String businessType, String businessId) {
         UploadFile file = getById(fileId);
         BizRequire.notNull(file, "文件不存在");
 
@@ -144,7 +144,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     }
 
     @Override
-    public List<UploadFileVO> getFilesByBusiness(String businessType, Long businessId) {
+    public List<UploadFileVO> getFilesByBusiness(String businessType, String businessId) {
         List<UploadFile> files = ChainWrappers.lambdaQueryChain(baseMapper)
                 .eq(UploadFile::getBusinessType, businessType)
                 .eq(UploadFile::getBusinessId, businessId)
@@ -157,7 +157,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     }
 
     @Override
-    public Resource downloadFile(Long fileId) {
+    public Resource downloadFile(String fileId) {
         UploadFile file = getById(fileId);
         BizRequire.notNull(file, "文件不存在");
 
