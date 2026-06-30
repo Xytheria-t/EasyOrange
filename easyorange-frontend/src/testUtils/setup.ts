@@ -24,6 +24,31 @@ if (typeof globalThis.localStorage === 'undefined') {
   });
 }
 
+// jsdom does not implement PointerEvent capture APIs used by Radix UI primitives
+if (typeof Element.prototype.hasPointerCapture !== 'function') {
+  Element.prototype.hasPointerCapture = () => false;
+}
+if (typeof Element.prototype.setPointerCapture !== 'function') {
+  Element.prototype.setPointerCapture = () => {};
+}
+if (typeof Element.prototype.releasePointerCapture !== 'function') {
+  Element.prototype.releasePointerCapture = () => {};
+}
+
+// jsdom does not implement scrollIntoView — used by Radix Select/Dialog for focus management
+if (typeof Element.prototype.scrollIntoView !== 'function') {
+  Element.prototype.scrollIntoView = () => {};
+}
+
+// jsdom does not implement ResizeObserver — used by Radix Checkbox/Tooltip primitives
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 if (typeof globalThis.sessionStorage === 'undefined') {
   const storage = new Map<string, string>();
   Object.defineProperty(globalThis, 'sessionStorage', {

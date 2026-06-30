@@ -58,12 +58,13 @@ export function useStompChat(): UseStompChatReturn {
       },
     });
 
+    const subscriptions = subscriptionsRef.current;
     client.activate();
     clientRef.current = client;
 
     return () => {
-      subscriptionsRef.current.forEach((unsub) => unsub());
-      subscriptionsRef.current.clear();
+      subscriptions.forEach((unsub) => unsub());
+      subscriptions.clear();
       client.deactivate();
       clientRef.current = null;
     };

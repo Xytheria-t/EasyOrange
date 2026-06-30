@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface WaveLayer {
   amplitude: number;
@@ -27,7 +27,7 @@ export default function BackgroundEffects() {
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
     : false;
 
-  const scheduleDraw = () => {
+  const scheduleDraw = useCallback(() => {
     if (drawScheduledRef.current) {return;}
     drawScheduledRef.current = true;
     
@@ -94,7 +94,7 @@ export default function BackgroundEffects() {
     };
     
     requestAnimationFrame(doDraw);
-  };
+  }, []);
 
   useEffect(() => {
     if (prefersReducedMotion) {
@@ -108,6 +108,7 @@ export default function BackgroundEffects() {
 
     const ctx = canvas.getContext('2d');
     if (!ctx) {return;}
+    const c = ctx;
 
     function resize() {
       if (!canvas) {return;}
@@ -116,7 +117,7 @@ export default function BackgroundEffects() {
       canvas.height = window.innerHeight * dpr;
       canvas.style.width = `${window.innerWidth  }px`;
       canvas.style.height = `${window.innerHeight  }px`;
-      ctx!.scale(dpr, dpr);
+      c.scale(dpr, dpr);
     }
 
     const handleVisibilityChange = () => {
@@ -170,7 +171,7 @@ export default function BackgroundEffects() {
       visibilityObserver?.disconnect();
       if (resizeTimeout) {clearTimeout(resizeTimeout);}
     };
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, setIsVisible, setShouldAnimate, scheduleDraw]);
 
   if (prefersReducedMotion) {
     return (

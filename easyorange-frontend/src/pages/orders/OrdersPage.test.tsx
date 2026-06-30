@@ -226,7 +226,7 @@ describe('OrdersPage', () => {
     const user = userEvent.setup();
     const card = screen.getByText('测试商品名称').closest('[role="button"]');
     expect(card).not.toBeNull();
-    await user.click(card!);
+    await user.click(card as HTMLElement);
     expect(mockNavigate).toHaveBeenCalledWith('/orders/order-detail-1');
   });
 

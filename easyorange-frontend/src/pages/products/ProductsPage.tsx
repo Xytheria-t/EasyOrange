@@ -12,6 +12,8 @@ import { ToolsPlaza, type ToolsPlazaFilter } from '@/components/product/ToolsPla
 import { FilterSidebar, type FilterState } from '@/components/product/FilterSidebar';
 import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui';
 import './products-premium.css';
 
 function ProductsPage() {
@@ -290,11 +292,11 @@ function ProductsPage() {
         <div className="products-toolbar">
           <div className="results-info">
             {currentCategory && (
-              <button className="results-category" onClick={handleClearCategory}>
+              <Button variant="ghost" size="sm" className="results-category" onClick={handleClearCategory}>
                 <span className="category-label">分类：</span>
                 <span className="category-name">{currentCategory.name}</span>
                 <X size={12} className="category-clear" />
-              </button>
+              </Button>
             )}
             <span className="results-count">{total}</span>
             <span className="results-text"> 件商品</span>
@@ -302,7 +304,7 @@ function ProductsPage() {
 
           <form className="search-bar" onSubmit={handleSearchSubmit}>
             <Search size={16} className="search-bar-icon" />
-            <input
+            <Input
               type="text"
               className="search-bar-input"
                placeholder="搜索托管商品..."
@@ -310,9 +312,9 @@ function ProductsPage() {
               onChange={e => setSearchQuery(e.target.value)}
             />
             {searchQuery && (
-              <button type="button" className="search-bar-clear" onClick={handleSearchClear} aria-label="清除搜索">
+              <Button type="button" variant="ghost" size="icon" className="search-bar-clear" onClick={handleSearchClear} aria-label="清除搜索">
                 <X size={14} />
-              </button>
+              </Button>
             )}
           </form>
 
@@ -321,7 +323,8 @@ function ProductsPage() {
               isActive={isSemanticMode}
               onToggle={toggleSemanticMode}
             />
-            <button
+            <Button
+              variant="outline"
               className="filter-toggle-btn"
               onClick={() => setIsFilterOpen(true)}
             >
@@ -334,7 +337,7 @@ function ProductsPage() {
                 <line x1="20" y1="12" x2="20" y2="3" />
               </svg>
               <span>筛选</span>
-            </button>
+            </Button>
 
             <SortDropdown
               value={(queryParams.sort ?? 'newest') as SortOption}
@@ -416,18 +419,19 @@ function ProductsPage() {
                 <h3>语义搜索暂不可用</h3>
                 <p className="no-results-error">{semanticError}</p>
                 <div className="no-results-actions">
-                  <button
+                  <Button
                     className="semantic-retry-btn"
                     onClick={() => queryParams.keyword && semanticSearch(queryParams.keyword)}
                   >
                     重试
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="outline"
                     className="semantic-fallback-btn"
                     onClick={toggleSemanticMode}
                   >
                     切换到关键词搜索
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : isSemanticMode ? (
@@ -435,12 +439,13 @@ function ProductsPage() {
                 <h3>未找到相关商品</h3>
                 <p>语义搜索未匹配到结果，试试其他关键词</p>
                 <div className="no-results-actions">
-                  <button
+                  <Button
+                    variant="outline"
                     className="semantic-fallback-btn"
                     onClick={toggleSemanticMode}
                   >
                     切换到关键词搜索
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : (

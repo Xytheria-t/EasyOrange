@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import MessagesPage from './MessagesPage';
 
 const mockGetConversations = vi.hoisted(() => vi.fn());

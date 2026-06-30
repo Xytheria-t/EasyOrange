@@ -7,6 +7,7 @@ import {
 import { useMyProducts } from '@/hooks/product/useProducts';
 import { STATUS_LABEL_MAP, PRODUCT_STATUS_CODE } from '@/constants/product';
 import type { Product, ProductStatus } from '@/types';
+import { Button } from '@/components/ui/button';
 
 import '../orders/payment.css';
 import './products-premium.css';
@@ -102,8 +103,9 @@ function MyProductsPage() {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <Button
               key={tab.id}
+              variant="ghost"
               onClick={() => setActiveTab(tab.id)}
               className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
               style={{ animationDelay: `${index * 60}ms` }}
@@ -111,20 +113,20 @@ function MyProductsPage() {
               <Icon size={15} className="orders-tab-icon" />
               <span>{tab.label}</span>
               {isActive && <div className="orders-tab-indicator" />}
-            </button>
+            </Button>
           );
         })}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
-        <button
+        <Button
           onClick={() => navigate('/publish')}
           className="orders-empty-cta"
           style={{ animation: 'none' }}
         >
           <Plus size={16} />
           发布新商品
-        </button>
+        </Button>
       </div>
 
       {isLoading && (
@@ -140,9 +142,9 @@ function MyProductsPage() {
         <div className="orders-error-card">
           <div className="orders-error-icon">!</div>
           <p className="orders-error-text">加载失败，请稍后重试</p>
-          <button onClick={() => refetch()} className="orders-error-btn">
+          <Button onClick={() => refetch()} className="orders-error-btn">
             重新加载
-          </button>
+          </Button>
         </div>
       )}
 
@@ -159,13 +161,13 @@ function MyProductsPage() {
           <p className="orders-empty-desc">
              开始托管你的第一件资产吧<br />让 AI 帮你定价、写描述、发布上线
           </p>
-          <button
+          <Button
             onClick={() => navigate('/publish')}
             className="orders-empty-cta"
           >
             提交资产
             <ChevronRight size={16} />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -269,20 +271,21 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
           {!['DRAFT', 'REJECTED', 'PENDING_REVIEW'].includes(statusKey) && ''}
         </span>
         <div className="order-card-actions-premium" role="group" aria-label="商品操作">
-          <button
+          <Button
+            variant="outline"
             onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="order-btn-secondary"
           >
             <Edit size={14} />
             编辑
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={(e) => { e.stopPropagation(); onClick(); }}
             className="order-btn-primary"
           >
             <Eye size={14} />
             查看
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -290,7 +290,7 @@ describe('ProductManagePage', () => {
       (btn) => btn.tagName === 'BUTTON' && btn.closest('td') !== null,
     );
     expect(actionBtn).toBeTruthy();
-    fireEvent.click(actionBtn!);
+    fireEvent.click(actionBtn as HTMLElement);
 
     expect(mutateAsyncMock).toHaveBeenCalledWith({
       id: 1,

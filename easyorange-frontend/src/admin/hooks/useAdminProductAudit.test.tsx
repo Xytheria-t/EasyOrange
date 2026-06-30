@@ -108,8 +108,8 @@ describe('useAuditLogs', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].action).toBe(1);
-    expect(result.current.data![0].actionDesc).toBe('审核通过');
+    expect(result.current.data?.[0]?.action).toBe(1);
+    expect(result.current.data?.[0]?.actionDesc).toBe('审核通过');
   });
 
   it('is not enabled when productId is null', () => {

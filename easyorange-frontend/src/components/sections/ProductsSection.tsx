@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ProductCard } from '@/components/product/ProductCard'
 import { useProducts, useFavoriteCheck } from '@/hooks'
 import { useAuthStore } from '@/store/authStore'
+import { Button } from '@/components/ui/button'
 import type { Product, ProductQueryParams } from '@/types'
 
 type FilterKey = 'all' | 'new' | 'hot' | 'discount'
@@ -25,13 +26,13 @@ export default function ProductsSection() {
 
   // Use a ref to stabilize the products reference and avoid cascading re-renders
   const prevProductsKeyRef = useRef<string>('');
+  const productsKey = products.length > 0 ? products.map(p => p.id).join(',') : '';
   useEffect(() => {
-    const productsKey = products.length > 0 ? products.map(p => p.id).join(',') : '';
     if (productsKey && productsKey !== prevProductsKeyRef.current && token) {
       prevProductsKeyRef.current = productsKey;
-      checkFavorites(products.map(p => p.id));
+      checkFavorites(productsKey.split(','));
     }
-  }, [products.length, token, checkFavorites])
+  }, [productsKey, token, checkFavorites])
 
   const handleFavorite = useCallback(async (productId: string, shouldFavorite: boolean) => {
     if (!token) {
@@ -170,15 +171,16 @@ export default function ProductsSection() {
               }}
             />
             {filters.map((filter) => (
-              <button
+              <Button
                 key={filter.id}
+                variant="ghost"
                 className={`filter-tab ${activeFilter === filter.id ? 'active' : ''}`}
                 data-filter={filter.id}
                 onClick={handleFilterClick(filter.id)}
                 aria-pressed={activeFilter === filter.id}
               >
                 {filter.label}
-              </button>
+              </Button>
             ))}
           </div>
           <a href="/products" className="view-all-link">
@@ -229,13 +231,13 @@ export default function ProductsSection() {
         </div>
 
         <div className={`products-more reveal ${isVisible ? 'revealed' : ''}`} style={{ transitionDelay: '400ms' }}>
-          <a href="/products" className="btn btn-outline btn-lg">
+          <Button variant="outline" size="lg" onClick={() => navigate('/products')}>
             <span>查看更多资产</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="5" y1="12" x2="19" y2="12" />
               <polyline points="12 5 19 12 12 19" />
             </svg>
-          </a>
+          </Button>
         </div>
       </div>
     </section>

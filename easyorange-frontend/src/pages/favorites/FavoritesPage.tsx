@@ -7,6 +7,8 @@ import { useUIStore } from '@/store/uiStore';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import type { Favorite } from '@/types';
 import { Image } from '@/components/ui/Image';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import './favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -149,13 +151,13 @@ function FavoritesPage() {
               </div>
               <h3>加载失败</h3>
               <p>无法获取收藏列表，请检查网络后重试</p>
-              <button
+              <Button
                 className="retry-btn"
                 onClick={() => queryClient.invalidateQueries({ queryKey: ['favorites'] })}
               >
                 <RefreshCw />
                 重新加载
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -198,11 +200,13 @@ function FavoritesPage() {
               </div>
               <h3>收藏夹空空如也</h3>
               <p>去发现那些让你心动的资产，将它们收藏在这里吧</p>
-              <Link to="/products" className="explore-btn">
-                <Sparkles />
-                探索资产
-                <ArrowRight />
-              </Link>
+              <Button asChild className="explore-btn">
+                <Link to="/products">
+                  <Sparkles />
+                  探索资产
+                  <ArrowRight />
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -236,14 +240,15 @@ function FavoritesPage() {
                 <span className="count-label">件商品</span>
               </div>
               {selectedIds.size > 0 && (
-                <button
+                <Button
+                  variant="destructive"
                   className="favorites-batch-btn"
                   onClick={handleBatchRemove}
                   disabled={removeManyMutation.isPending}
                 >
                   <Trash2 />
                   删除选中 ({selectedIds.size})
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -291,10 +296,10 @@ function FavoritesPage() {
                   </div>
                 </div>
               </div>
-              <button className="favorites-ai-btn">
+              <Button className="favorites-ai-btn">
                 <Sparkles size={14} />
                 查看智能推荐
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -308,7 +313,7 @@ function FavoritesPage() {
               const conditionIcon = CONDITION_ICONS[product.condition] ?? '';
               const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
               const discountPercent = hasDiscount
-                ? Math.round((1 - product.price / product.originalPrice!) * 100)
+                ? Math.round((1 - product.price / (product.originalPrice as number)) * 100)
                 : 0;
               const isHot = product.views != null && product.views > 200;
               const quickLocation = product.location?.trim() || '校内面交';
@@ -341,16 +346,17 @@ function FavoritesPage() {
                       onClick={(e) => e.stopPropagation()}
                       onKeyDown={(e) => e.stopPropagation()}
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id={`fav-${fav.id}`}
                         checked={selectedIds.has(fav.id)}
-                        onChange={() => toggleSelect(fav.id)}
+                        onCheckedChange={() => toggleSelect(fav.id)}
+                        aria-label="选择此收藏项"
                       />
-                      <label htmlFor={`fav-${fav.id}`} aria-label="选择此收藏项" />
                     </div>
 
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className={`fav-card-heart${removingId === product.id ? ' removing' : ''}`}
                       onClick={(e) => handleRemove(e, product.id)}
                       disabled={removeMutation.isPending}
@@ -358,7 +364,7 @@ function FavoritesPage() {
                       <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                       </svg>
-                    </button>
+                    </Button>
 
                     <div className="fav-card-badges">
                       {conditionLabel && (
@@ -407,12 +413,12 @@ function FavoritesPage() {
                       <div className="fav-card-price">
                         <span className="price-current">¥{formatPrice(product.price)}</span>
                         {hasDiscount && (
-                          <span className="price-original">¥{formatPrice(product.originalPrice!)}</span>
+                          <span className="price-original">¥{formatPrice(product.originalPrice as number)}</span>
                         )}
                       </div>
                       {hasDiscount && (
                         <span className="fav-card-savings">
-                          省 ¥{formatPrice(product.originalPrice! - product.price)}
+                          省 ¥{formatPrice((product.originalPrice as number) - product.price)}
                         </span>
                       )}
                     </div>
@@ -446,23 +452,25 @@ function FavoritesPage() {
 
           {totalPages > 1 && (
             <div className="favorites-pagination">
-              <button
+              <Button
+                variant="outline"
                 className="pagination-btn"
                 onClick={() => setPageNum((p) => Math.max(1, p - 1))}
                 disabled={pageNum <= 1}
               >
                 上一页
-              </button>
+              </Button>
               <span className="pagination-info">
                 {pageNum} / {totalPages}
               </span>
-              <button
+              <Button
+                variant="outline"
                 className="pagination-btn"
                 onClick={() => setPageNum((p) => Math.min(totalPages, p + 1))}
                 disabled={pageNum >= totalPages}
               >
                 下一页
-              </button>
+              </Button>
             </div>
           )}
         </div>

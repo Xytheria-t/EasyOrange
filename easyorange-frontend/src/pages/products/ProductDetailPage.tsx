@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, X, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
+import { MapPin, User, Eye, Heart, Share2, MessageCircle, ChevronLeft, ChevronRight, Pencil, ShoppingCart, ArrowLeft, Clock, Shield, Tag, ChevronRight as BreadcrumbSep, Sparkles, TrendingUp, Zap, Star, Info, Send, Copy, Check, MessageSquare, ThumbsUp } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Input,
+  Label,
+  Textarea,
+} from '@/components/ui';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { useProduct, useSimilarProducts, useCreateOrder } from '@/hooks';
 import { favoriteApi } from '@/api/favoriteApi';
@@ -14,6 +24,7 @@ import { useUIStore } from '@/store/uiStore';
 import { Image, preloadImages, buildThumbnailUrl } from '@/components/ui/Image';
 import AiQaPanel from '@/components/ai/AiQaPanel';
 import { useAiQa } from '@/hooks/useAiQa';
+import { Button } from '@/components/ui/button';
 import placeholderImage from '@/assets/placeholder.png';
 
 interface OrderFormData {
@@ -193,10 +204,10 @@ function ProductDetailPage() {
         </div>
         <h3 className="pdp-empty-title">商品不存在</h3>
         <p className="pdp-empty-desc">该商品可能已下架或被删除</p>
-        <button className="pdp-empty-btn" onClick={() => navigate('/products')}>
+        <Button className="pdp-empty-btn" onClick={() => navigate('/products')}>
           <ArrowLeft size={16} />
           返回商城
-        </button>
+        </Button>
       </div>
     );
   }
@@ -213,7 +224,7 @@ function ProductDetailPage() {
   const isRejected = product.status === 'REJECTED';
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price;
   const discountPercent = hasDiscount
-    ? Math.round((1 - product.price / product.originalPrice!) * 100)
+    ? Math.round((1 - product.price / (product.originalPrice as number)) * 100)
     : 0;
 
   const handlePrevImage = () => {
@@ -381,12 +392,12 @@ function ProductDetailPage() {
 
       <div className="pdp-container">
         <nav className="pdp-breadcrumb">
-          <button className="pdp-back-btn" onClick={() => navigate(-1)}>
+          <Button variant="ghost" className="pdp-back-btn" onClick={() => navigate(-1)}>
             <ArrowLeft size={16} />
             返回
-          </button>
+          </Button>
           <div className="pdp-breadcrumb-trail">
-            <button type="button" className="pdp-breadcrumb-item" onClick={() => navigate('/products')}>商城</button>
+            <Button type="button" variant="link" className="pdp-breadcrumb-item" onClick={() => navigate('/products')}>商城</Button>
             <BreadcrumbSep size={14} className="pdp-breadcrumb-sep" />
             {product.categoryName && (
               <>
@@ -449,12 +460,12 @@ function ProductDetailPage() {
 
               {images.length > 1 && (
                 <>
-                  <button onClick={handlePrevImage} className="pdp-gallery-nav pdp-gallery-prev">
+                  <Button variant="ghost" size="icon" onClick={handlePrevImage} className="pdp-gallery-nav pdp-gallery-prev">
                     <ChevronLeft size={20} />
-                  </button>
-                  <button onClick={handleNextImage} className="pdp-gallery-nav pdp-gallery-next">
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={handleNextImage} className="pdp-gallery-nav pdp-gallery-next">
                     <ChevronRight size={20} />
-                  </button>
+                  </Button>
                   <div className="pdp-gallery-counter">
                     {currentImageIndex + 1} / {images.length}
                   </div>
@@ -462,24 +473,27 @@ function ProductDetailPage() {
               )}
 
               <div className="pdp-gallery-actions">
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className={`pdp-action-fab ${isFavorited ? 'favorited' : ''}`}
                   onClick={handleFavoriteToggle}
                   disabled={isFavoriteLoading}
                 >
                   <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-                </button>
-                <button className="pdp-action-fab" onClick={handleShare}>
+                </Button>
+                <Button variant="ghost" size="icon" className="pdp-action-fab" onClick={handleShare}>
                   <Share2 size={18} />
-                </button>
+                </Button>
               </div>
             </div>
 
             {images.length > 1 && (
               <div className="pdp-gallery-thumbs">
                 {images.map((img, idx) => (
-                  <button
+                  <Button
                     key={idx}
+                    variant="ghost"
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
                   >
@@ -491,7 +505,7 @@ function ProductDetailPage() {
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     <div className="pdp-thumb-indicator" />
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -546,14 +560,14 @@ function ProductDetailPage() {
                   <span className="pdp-price-value">¥{product.price.toFixed(2)}</span>
                   {hasDiscount && (
                     <div className="pdp-price-discount">
-                      <span className="pdp-price-original">¥{product.originalPrice!.toFixed(2)}</span>
+                      <span className="pdp-price-original">¥{(product.originalPrice as number).toFixed(2)}</span>
                       <span className="pdp-discount-badge">-{discountPercent}%</span>
                     </div>
                   )}
                 </div>
                 {hasDiscount && (
                   <div className="pdp-savings">
-                    比原价省 <strong>¥{(product.originalPrice! - product.price).toFixed(2)}</strong>
+                    比原价省 <strong>¥{((product.originalPrice as number) - product.price).toFixed(2)}</strong>
                   </div>
                 )}
               </div>
@@ -629,10 +643,10 @@ function ProductDetailPage() {
                     <span className="pdp-detail-value">{product.sellerName}</span>
                   </div>
                   {!isOwner && (
-                    <button className="pdp-contact-btn" onClick={handleContactSeller}>
+                    <Button className="pdp-contact-btn" onClick={handleContactSeller}>
                       <MessageCircle size={14} />
                       联系
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -640,47 +654,47 @@ function ProductDetailPage() {
               <div className="pdp-actions">
                 {isOwner ? (
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <button
+                    <Button
                       className="pdp-btn pdp-btn-primary"
                       onClick={() => navigate(`/products/${id}/edit`)}
                       disabled={isPendingReview}
-                      style={isPendingReview ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                     >
                       <Pencil size={18} />
                       编辑商品
-                    </button>
+                    </Button>
                     {isRejected && (
-                      <button
+                      <Button
                         className="pdp-btn pdp-btn-primary"
                         onClick={() => resubmitForReview.mutate()}
                         disabled={resubmitForReview.isPending}
-                        style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
                       >
                         {resubmitForReview.isPending ? '提交中...' : '修改并重新提交'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : (
                   <>
-                    <button
+                    <Button
                       className="pdp-btn pdp-btn-primary"
                       onClick={handleBuyClick}
                       disabled={isSold}
                     >
                       <ShoppingCart size={18} />
                       {isSold ? '已售出' : '立即购买'}
-                    </button>
-                    <button className="pdp-btn pdp-btn-secondary" onClick={handleContactSeller}>
+                    </Button>
+                    <Button variant="outline" className="pdp-btn pdp-btn-secondary" onClick={handleContactSeller}>
                       <MessageCircle size={18} />
                       联系资产方
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
                       className={`pdp-btn pdp-btn-fav ${isFavorited ? 'favorited' : ''}`}
                       onClick={handleFavoriteToggle}
                       disabled={isFavoriteLoading}
                     >
                       <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
@@ -765,10 +779,10 @@ function ProductDetailPage() {
                   <p className="pdp-review-content">{(review.content as string) || '用户未填写评价内容'}</p>
                   {(review.likes as number) > 0 && (
                     <div className="pdp-review-footer">
-                      <button className="pdp-review-like">
+                      <Button variant="ghost" size="sm" className="pdp-review-like">
                         <ThumbsUp size={14} />
                         <span>{String(review.likes)}</span>
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -784,10 +798,10 @@ function ProductDetailPage() {
 
           {token && !isOwner && (
             <div className="pdp-reviews-action">
-              <button className="pdp-btn pdp-btn-secondary" onClick={() => setShowReviewModal(true)}>
+              <Button variant="outline" className="pdp-btn pdp-btn-secondary" onClick={() => setShowReviewModal(true)}>
                 <Star size={16} />
                 发表评价
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -808,9 +822,10 @@ function ProductDetailPage() {
             <>
               <div className="pdp-similar-grid">
                 {similarProducts.slice(0, 4).map((item) => (
-                  <button
+                  <Button
                     key={item.id}
                     type="button"
+                    variant="ghost"
                     className="pdp-similar-card"
                     onClick={() => navigate(`/products/${item.id}`)}
                   >
@@ -827,14 +842,14 @@ function ProductDetailPage() {
                       <h4 className="pdp-similar-title">{item.title}</h4>
                       <div className="pdp-similar-price">¥{item.price.toFixed(0)}</div>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="pdp-similar-footer">
-                <button className="pdp-similar-more" onClick={() => navigate('/products')}>
+                <Button variant="ghost" className="pdp-similar-more" onClick={() => navigate('/products')}>
                   <span>查看更多相似商品</span>
                   <ChevronRight size={16} />
-                </button>
+                </Button>
               </div>
             </>
           ) : (
@@ -863,333 +878,280 @@ function ProductDetailPage() {
         </div>
       </div>
 
-      {showOrderModal && (
-        <div
-          className="pdp-modal-overlay"
-          onClick={() => setShowOrderModal(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowOrderModal(false); } }}
-          aria-label="关闭订单确认弹窗"
-        >
-          { }
-          <div className="pdp-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="pdp-modal-header">
-              <h2 className="pdp-modal-title">确认购买</h2>
-              <button className="pdp-modal-close" onClick={() => setShowOrderModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
+      <Dialog open={showOrderModal} onOpenChange={(open) => !open && setShowOrderModal(false)}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>确认购买</DialogTitle>
+          </DialogHeader>
 
-            <div className="pdp-modal-product">
-              <div className="pdp-modal-product-image">
-                {images.length > 0 ? (
-                  <Image
-                    src={images[0]}
-                    alt={product.title}
-                    loading="lazy"
-                    placeholder="skeleton"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div className="pdp-modal-product-placeholder">
-                    <ShoppingCart size={20} />
-                  </div>
-                )}
-              </div>
-              <div className="pdp-modal-product-info">
-                <p className="pdp-modal-product-name">{product.title}</p>
-                <p className="pdp-modal-product-price">¥{product.price.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <div className="pdp-modal-form">
-              <div className="pdp-form-group">
-                <label className="pdp-form-label" htmlFor="order-location">交易地点</label>
-                <button
-                  type="button"
-                  className="pdp-form-input"
-                  style={{ background: 'rgba(21, 30, 52, 0.04)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-                  onClick={() => { setShowOrderModal(false); navigate(`/messages/${product.sellerId}`); }}
-                >
-                  <span style={{ color: '#64748b' }}>私聊资产方协商交易地点</span>
-                  <MessageCircle size={16} style={{ color: '#64748b' }} />
-                </button>
-              </div>
-              <div className="pdp-form-group">
-                <label className="pdp-form-label" htmlFor="order-phone">
-                  联系电话 <span className="pdp-form-required">*</span>
-                </label>
-                <input
-                  id="order-phone"
-                  type="tel"
-                  value={orderForm.phone}
-                  onChange={(e) => handleOrderFormChange('phone', e.target.value)}
-                  placeholder="请输入手机号"
-                  maxLength={11}
-                  className="pdp-form-input"
+          <div className="pdp-modal-product">
+            <div className="pdp-modal-product-image">
+              {images.length > 0 ? (
+                <Image
+                  src={images[0]}
+                  alt={product.title}
+                  loading="lazy"
+                  placeholder="skeleton"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-              </div>
-              <div className="pdp-form-group">
-                <label className="pdp-form-label" htmlFor="order-remark">备注</label>
-                <textarea
-                  id="order-remark"
-                  value={orderForm.remark}
-                  onChange={(e) => handleOrderFormChange('remark', e.target.value)}
-                  placeholder="选填，对资产方留言"
-                  rows={3}
-                  className="pdp-form-textarea"
-                />
-              </div>
-            </div>
-
-            <div className="pdp-modal-footer">
-              <button
-                onClick={() => setShowOrderModal(false)}
-                className="pdp-modal-btn pdp-modal-btn-cancel"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleSubmitOrder}
-                disabled={createOrder.isPending}
-                className="pdp-modal-btn pdp-modal-btn-submit"
-              >
-                {createOrder.isPending ? '提交中...' : '提交订单'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showShareModal && (
-        <div
-          className="pdp-modal-overlay"
-          onClick={() => setShowShareModal(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowShareModal(false); } }}
-          aria-label="关闭分享弹窗"
-        >
-          { }
-          <div className="pdp-modal pdp-share-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="pdp-modal-header">
-              <h2 className="pdp-modal-title">分享商品</h2>
-              <button className="pdp-modal-close" onClick={() => setShowShareModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="pdp-share-content">
-              <div className="pdp-share-platforms">
-                <button className="pdp-share-platform pdp-share-wechat">
-                  <div className="pdp-share-icon">
-                    <MessageCircle size={24} />
-                  </div>
-                  <span>微信</span>
-                </button>
-                <button className="pdp-share-platform pdp-share-qq">
-                  <div className="pdp-share-icon">Q</div>
-                  <span>QQ</span>
-                </button>
-                <button className="pdp-share-platform pdp-share-weibo">
-                  <div className="pdp-share-icon">微</div>
-                  <span>微博</span>
-                </button>
-                <button className="pdp-share-platform pdp-share-copy" onClick={handleCopyLink}>
-                  <div className="pdp-share-icon">
-                    {copied ? <Check size={24} /> : <Copy size={24} />}
-                  </div>
-                  <span>{copied ? '已复制' : '复制链接'}</span>
-                </button>
-              </div>
-
-              <div className="pdp-share-link">
-                <label className="pdp-form-label" htmlFor="share-link">商品链接</label>
-                <div className="pdp-share-link-box">
-                  <input
-                    id="share-link"
-                    type="text"
-                    value={window.location.href}
-                    readOnly
-                    className="pdp-form-input"
-                  />
-                  <button className="pdp-share-copy-btn" onClick={handleCopyLink}>
-                    {copied ? <Check size={16} /> : <Copy size={16} />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showChatModal && (
-        <div
-          className="pdp-modal-overlay"
-          onClick={() => setShowChatModal(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowChatModal(false); } }}
-          aria-label="关闭聊天弹窗"
-        >
-          { }
-          <div className="pdp-modal pdp-chat-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="pdp-modal-header">
-              <h2 className="pdp-modal-title">
-                <MessageCircle size={18} />
-                联系资产方
-              </h2>
-              <button className="pdp-modal-close" onClick={() => setShowChatModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="pdp-chat-seller">
-              <div className="pdp-chat-seller-avatar">
-                <User size={20} />
-              </div>
-              <div className="pdp-chat-seller-info">
-                <span className="pdp-chat-seller-name">{product.sellerName}</span>
-                <span className="pdp-chat-product">{product.title}</span>
-              </div>
-            </div>
-
-            <div className="pdp-chat-messages">
-              {chatMessages.length > 0 ? (
-                chatMessages.map((msg) => (
-                  <div key={msg.id} className={`pdp-chat-message ${msg.isMine ? 'mine' : 'theirs'}`}>
-                    <div className="pdp-chat-bubble">{msg.content}</div>
-                    <span className="pdp-chat-time">{formatRelativeTime(msg.createTime)}</span>
-                  </div>
-                ))
               ) : (
-                <div className="pdp-chat-empty">
-                  <MessageCircle size={32} />
-                  <p>开始与资产方聊天吧</p>
+                <div className="pdp-modal-product-placeholder">
+                  <ShoppingCart size={20} />
                 </div>
               )}
             </div>
-
-            <div className="pdp-chat-quick-replies">
-              {quickReplies.map((text, idx) => (
-                <button
-                  key={idx}
-                  className="pdp-chat-quick-reply"
-                  onClick={() => handleQuickReply(text)}
-                >
-                  {text}
-                </button>
-              ))}
+            <div className="pdp-modal-product-info">
+              <p className="pdp-modal-product-name">{product.title}</p>
+              <p className="pdp-modal-product-price">¥{product.price.toFixed(2)}</p>
             </div>
+          </div>
 
-            <div className="pdp-chat-input">
-              <input
-                type="text"
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                placeholder="输入消息..."
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                className="pdp-form-input"
+          <div className="pdp-modal-form">
+            <div className="pdp-form-group">
+              <Label htmlFor="order-location">交易地点</Label>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full justify-between"
+                onClick={() => { setShowOrderModal(false); navigate(`/messages/${product.sellerId}`); }}
+              >
+                <span className="text-muted-foreground">私聊资产方协商交易地点</span>
+                <MessageCircle size={16} className="text-muted-foreground" />
+              </Button>
+            </div>
+            <div className="pdp-form-group">
+              <Label htmlFor="order-phone">
+                联系电话 <span className="pdp-form-required">*</span>
+              </Label>
+              <Input
+                id="order-phone"
+                type="tel"
+                value={orderForm.phone}
+                onChange={(e) => handleOrderFormChange('phone', e.target.value)}
+                placeholder="请输入手机号"
+                maxLength={11}
               />
-              <button
-                className="pdp-chat-send"
-                onClick={handleSendMessage}
-                disabled={!chatMessage.trim()}
-              >
-                <Send size={18} />
-              </button>
+            </div>
+            <div className="pdp-form-group">
+              <Label htmlFor="order-remark">备注</Label>
+              <Textarea
+                id="order-remark"
+                value={orderForm.remark}
+                onChange={(e) => handleOrderFormChange('remark', e.target.value)}
+                placeholder="选填，对资产方留言"
+                rows={3}
+              />
             </div>
           </div>
-        </div>
-      )}
 
-      {showReviewModal && (
-        <div
-          className="pdp-modal-overlay"
-          onClick={() => setShowReviewModal(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setShowReviewModal(false); } }}
-          aria-label="关闭评价弹窗"
-        >
-          { }
-          <div className="pdp-modal" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="pdp-modal-header">
-              <h2 className="pdp-modal-title">发表评价</h2>
-              <button className="pdp-modal-close" onClick={() => setShowReviewModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
+          <DialogFooter className="flex-row gap-2.5 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowOrderModal(false)}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleSubmitOrder}
+              disabled={createOrder.isPending}
+            >
+              {createOrder.isPending ? '提交中...' : '提交订单'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-            <div className="pdp-modal-product">
-              <div className="pdp-modal-product-image">
-                {images.length > 0 ? (
-                  <Image
-                    src={images[0]}
-                    alt={product.title}
-                    loading="lazy"
-                    placeholder="skeleton"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <div className="pdp-modal-product-placeholder">
-                    <Star size={20} />
-                  </div>
-                )}
-              </div>
-              <div className="pdp-modal-product-info">
-                <p className="pdp-modal-product-name">{product.title}</p>
-              </div>
-            </div>
+      <Dialog open={showShareModal} onOpenChange={(open) => !open && setShowShareModal(false)}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>分享商品</DialogTitle>
+          </DialogHeader>
 
-            <div className="pdp-modal-form">
-              <div className="pdp-form-group">
-                <span className="pdp-form-label" id="review-rating-label">评分</span>
-                <div className="pdp-review-stars" role="group" aria-labelledby="review-rating-label">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      className={`pdp-review-star ${star <= reviewForm.rating ? 'active' : ''}`}
-                      onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
-                      aria-label={`${star}星`}
-                    >
-                      <Star size={24} fill={star <= reviewForm.rating ? 'currentColor' : 'none'} />
-                    </button>
-                  ))}
+          <div className="pdp-share-content">
+            <div className="pdp-share-platforms">
+              <Button variant="ghost" className="pdp-share-platform pdp-share-wechat">
+                <div className="pdp-share-icon">
+                  <MessageCircle size={24} />
                 </div>
-              </div>
-              <div className="pdp-form-group">
-                <label className="pdp-form-label" htmlFor="review-content">评价内容</label>
-                <textarea
-                  id="review-content"
-                  value={reviewForm.content}
-                  onChange={(e) => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="分享您的购买体验..."
-                  rows={4}
-                  className="pdp-form-textarea"
-                />
-              </div>
+                <span>微信</span>
+              </Button>
+              <Button variant="ghost" className="pdp-share-platform pdp-share-qq">
+                <div className="pdp-share-icon">Q</div>
+                <span>QQ</span>
+              </Button>
+              <Button variant="ghost" className="pdp-share-platform pdp-share-weibo">
+                <div className="pdp-share-icon">微</div>
+                <span>微博</span>
+              </Button>
+              <Button variant="ghost" className="pdp-share-platform pdp-share-copy" onClick={handleCopyLink}>
+                <div className="pdp-share-icon">
+                  {copied ? <Check size={24} /> : <Copy size={24} />}
+                </div>
+                <span>{copied ? '已复制' : '复制链接'}</span>
+              </Button>
             </div>
 
-            <div className="pdp-modal-footer">
-              <button
-                onClick={() => setShowReviewModal(false)}
-                className="pdp-modal-btn pdp-modal-btn-cancel"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleSubmitReview}
-                disabled={submitReview.isPending}
-                className="pdp-modal-btn pdp-modal-btn-submit"
-              >
-                {submitReview.isPending ? '提交中...' : '提交评价'}
-              </button>
+            <div className="pdp-share-link">
+              <Label htmlFor="share-link">商品链接</Label>
+              <div className="relative flex items-center">
+                <Input
+                  id="share-link"
+                  type="text"
+                  value={window.location.href}
+                  readOnly
+                  className="pr-10"
+                />
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={handleCopyLink}>
+                  {copied ? <Check size={16} /> : <Copy size={16} />}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showChatModal} onOpenChange={(open) => !open && setShowChatModal(false)}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>
+              <MessageCircle size={18} />
+              联系资产方
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="pdp-chat-seller">
+            <div className="pdp-chat-seller-avatar">
+              <User size={20} />
+            </div>
+            <div className="pdp-chat-seller-info">
+              <span className="pdp-chat-seller-name">{product.sellerName}</span>
+              <span className="pdp-chat-product">{product.title}</span>
+            </div>
+          </div>
+
+          <div className="pdp-chat-messages">
+            {chatMessages.length > 0 ? (
+              chatMessages.map((msg) => (
+                <div key={msg.id} className={`pdp-chat-message ${msg.isMine ? 'mine' : 'theirs'}`}>
+                  <div className="pdp-chat-bubble">{msg.content}</div>
+                  <span className="pdp-chat-time">{formatRelativeTime(msg.createTime)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="pdp-chat-empty">
+                <MessageCircle size={32} />
+                <p>开始与资产方聊天吧</p>
+              </div>
+            )}
+          </div>
+
+          <div className="pdp-chat-quick-replies">
+            {quickReplies.map((text, idx) => (
+              <Button
+                key={idx}
+                variant="outline"
+                size="sm"
+                className="pdp-chat-quick-reply"
+                onClick={() => handleQuickReply(text)}
+              >
+                {text}
+              </Button>
+            ))}
+          </div>
+
+          <div className="relative flex items-center gap-2">
+            <Input
+              type="text"
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              placeholder="输入消息..."
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+              className="flex-1"
+            />
+            <Button
+              size="icon"
+              onClick={handleSendMessage}
+              disabled={!chatMessage.trim()}
+            >
+              <Send size={18} />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReviewModal} onOpenChange={(open) => !open && setShowReviewModal(false)}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>发表评价</DialogTitle>
+          </DialogHeader>
+
+          <div className="pdp-modal-product">
+            <div className="pdp-modal-product-image">
+              {images.length > 0 ? (
+                <Image
+                  src={images[0]}
+                  alt={product.title}
+                  loading="lazy"
+                  placeholder="skeleton"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div className="pdp-modal-product-placeholder">
+                  <Star size={20} />
+                </div>
+              )}
+            </div>
+            <div className="pdp-modal-product-info">
+              <p className="pdp-modal-product-name">{product.title}</p>
+            </div>
+          </div>
+
+          <div className="pdp-modal-form">
+            <div className="pdp-form-group">
+              <Label className="pdp-form-label" id="review-rating-label">评分</Label>
+              <div className="pdp-review-stars" role="group" aria-labelledby="review-rating-label">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Button
+                    key={star}
+                    variant="ghost"
+                    size="icon"
+                    className={`pdp-review-star ${star <= reviewForm.rating ? 'active' : ''}`}
+                    onClick={() => setReviewForm(prev => ({ ...prev, rating: star }))}
+                    aria-label={`${star}星`}
+                  >
+                    <Star size={24} fill={star <= reviewForm.rating ? 'currentColor' : 'none'} />
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="pdp-form-group">
+              <Label htmlFor="review-content">评价内容</Label>
+              <Textarea
+                id="review-content"
+                value={reviewForm.content}
+                onChange={(e) => setReviewForm(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="分享您的购买体验..."
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-2.5 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setShowReviewModal(false)}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={handleSubmitReview}
+              disabled={submitReview.isPending}
+            >
+              {submitReview.isPending ? '提交中...' : '提交评价'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

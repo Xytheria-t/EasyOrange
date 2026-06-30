@@ -415,7 +415,7 @@ describe('ProductDetailDrawer', () => {
     // Click the one from the reject modal tags (the button element)
     const rejectTag = infoTags.find((el) => el.tagName === 'BUTTON');
     expect(rejectTag).toBeTruthy();
-    fireEvent.click(rejectTag!);
+    fireEvent.click(rejectTag as HTMLElement);
     const textarea = screen.getByPlaceholderText(
       '请填写驳回原因（必填）...',
     ) as HTMLTextAreaElement;
@@ -432,8 +432,9 @@ describe('ProductDetailDrawer', () => {
         onSuccess={vi.fn()}
       />,
     );
-    // "关闭" button is in the footer
-    expect(screen.getByText('关闭')).toBeInTheDocument();
+    // "关闭" button is in the footer (ignore hidden sheet sr-only text)
+    const closeButtons = screen.getAllByText('关闭').filter((el) => el.tagName === 'BUTTON');
+    expect(closeButtons.length).toBeGreaterThanOrEqual(1);
   });
 
   // ── Test 20: "关闭" button calls onClose ──
@@ -447,10 +448,9 @@ describe('ProductDetailDrawer', () => {
         onSuccess={vi.fn()}
       />,
     );
-    const closeBtn = screen.getAllByText('关闭');
-    // There's the drawer close button and the footer close button
-    // Click the last one (footer close)
-    fireEvent.click(closeBtn[closeBtn.length - 1]);
+    // Filter to visible button elements and click the footer close button
+    const closeButtons = screen.getAllByText('关闭').filter((el) => el.tagName === 'BUTTON');
+    fireEvent.click(closeButtons[closeButtons.length - 1]);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

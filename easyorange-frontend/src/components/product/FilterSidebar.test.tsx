@@ -1,10 +1,10 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/testUtils/mocks/server';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import { FilterSidebar, type FilterState } from './FilterSidebar';
+import { FilterSidebar } from './FilterSidebar';
 
 const mockCategories = [
   { id: '1', name: '电子产品', productCount: 10 },

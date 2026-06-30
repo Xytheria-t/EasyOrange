@@ -1,4 +1,5 @@
 import { Loader2, Sparkles, TrendingUp, Info } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { PricingSuggestion } from '@/api/aiApi'
 import './ai-components.css'
 
@@ -45,12 +46,12 @@ export function AiPricingBadge({ suggestion, onApply, isLoading }: AiPricingBadg
           <Info size={14} />
           <span>{suggestion.marketContext}</span>
         </div>
-        <button
+        <Button
           className="ai-apply-btn"
           onClick={() => onApply(suggestion.suggestedPrice)}
         >
           采纳此定价
-        </button>
+        </Button>
       </div>
     </div>
   )

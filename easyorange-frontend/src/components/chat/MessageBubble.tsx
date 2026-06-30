@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Copy, RotateCcw, Check, CheckCheck } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { ChatMessage } from '@/types/message'
 
 interface MessageBubbleProps {
@@ -80,7 +81,7 @@ function MessageBubble({
   }, [])
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(message.content).catch(console.error)
+    navigator.clipboard.writeText(message.content).catch(() => {})
     hideMenu()
   }
 
@@ -104,6 +105,9 @@ function MessageBubble({
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onContextMenu={showMenu}
+          role="button"
+          tabIndex={-1}
+          onKeyDown={() => {}}
         >
           {isRecalled ? (
             <span className="italic opacity-60">[消息已撤回]</span>
@@ -152,21 +156,25 @@ function MessageBubble({
             className="fixed z-50 chat-context-menu"
             style={{ left: menuPos.x, top: menuPos.y }}
           >
-            <button
+            <Button
+              type="button"
+              variant="ghost"
               onClick={handleCopy}
               className="chat-context-item"
             >
               <Copy size={14} />
               复制
-            </button>
+            </Button>
             {canRecallThis && (
-              <button
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={handleRecall}
                 className="chat-context-item chat-context-item-danger"
               >
                 <RotateCcw size={14} />
                 撤回
-              </button>
+              </Button>
             )}
           </div>
         )}

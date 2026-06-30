@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/uiStore'
 import { throttle } from '@/utils/functionUtils'
 import { useAdminGuard } from '@/admin/hooks/useAdminGuard'
 import { useLogout } from '@/hooks'
+import { Button } from '@/components/ui/button'
 
 export function Header() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -115,23 +116,27 @@ export function Header() {
         {/* 右侧操作区 */}
         <div className="floating-nav__actions">
           {/* 搜索按钮 */}
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             className="floating-nav__icon-btn"
             onClick={() => navigate('/search')}
             aria-label="搜索"
           >
             <Search size={19} />
-          </button>
+          </Button>
 
           {/* 消息入口（仅登录可见） */}
           {isLoggedIn && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               className="floating-nav__icon-btn"
               onClick={() => navigate('/messages')}
               aria-label="消息"
             >
               <MessageCircle size={19} />
-            </button>
+            </Button>
           )}
 
           {/* 用户菜单 */}
@@ -140,7 +145,8 @@ export function Header() {
             ref={userMenuRef}
             style={{ display: isLoggedIn ? 'block' : 'none' }}
           >
-            <button
+            <Button
+              variant="ghost"
               className="floating-nav__user-btn"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               aria-expanded={isUserMenuOpen}
@@ -166,7 +172,7 @@ export function Header() {
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-            </button>
+            </Button>
 
             <div className="floating-nav__user-menu">
               <Link to="/profile" className="floating-nav__menu-item" onClick={() => setIsUserMenuOpen(false)} data-testid="menu-item-profile">
@@ -199,36 +205,43 @@ export function Header() {
                 </Link>
               )}
               <div className="floating-nav__menu-divider" />
-              <button className="floating-nav__menu-item floating-nav__menu-item--logout" onClick={handleLogoutClick} data-testid="btn-logout">
+              <Button
+                variant="ghost"
+                className="floating-nav__menu-item floating-nav__menu-item--logout"
+                onClick={handleLogoutClick}
+                data-testid="btn-logout"
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                   <polyline points="16 17 21 12 16 7" />
                   <line x1="21" y1="12" x2="9" y2="12" />
                 </svg>
                 <span>退出登录</span>
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* 登录按钮 */}
           {isLoggedIn ? null : (
-            <button className="floating-nav__login-btn" onClick={handleLoginClick} data-testid="btn-login">
+            <Button className="floating-nav__login-btn" onClick={handleLoginClick} data-testid="btn-login">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
               <span>登录</span>
-            </button>
+            </Button>
           )}
 
           {/* 发布按钮 */}
-          <Link to="/publish" className="floating-nav__publish-btn">
-            <svg className="plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            <span>发布</span>
-          </Link>
+          <Button asChild className="floating-nav__publish-btn">
+            <Link to="/publish">
+              <svg className="plus-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              <span>发布</span>
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

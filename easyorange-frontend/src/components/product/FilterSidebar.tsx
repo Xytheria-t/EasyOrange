@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useCategories } from '@/hooks';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface FilterSidebarProps {
   isOpen: boolean;
@@ -73,12 +76,18 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
       <aside className={`filter-sidebar ${isOpen ? 'open' : ''}`}>
         <div className="filter-header">
           <h3>筛选条件</h3>
-          <button className="filter-close" onClick={onClose} aria-label="关闭筛选面板">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="filter-close"
+            onClick={onClose}
+            aria-label="关闭筛选面板"
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         <div className="filter-content">
@@ -91,23 +100,22 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
             </h4>
             <div className="filter-options">
               {categories?.map(category => (
-                <label
+                <div
                   key={category.id}
-                  className={`filter-checkbox ${selectedCategories.includes(category.id) ? 'is-checked' : ''}`}
+                  className="filter-checkbox"
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
+                    id={`cat-${category.id}`}
                     checked={selectedCategories.includes(category.id)}
-                    onChange={() => handleCategoryToggle(category.id)}
+                    onCheckedChange={() => handleCategoryToggle(category.id)}
                   />
-                  <span className="checkbox-custom" />
-                  <span className="checkbox-label">{category.name}</span>
+                  <label htmlFor={`cat-${category.id}`} className="checkbox-label">{category.name}</label>
                   {(category.productCount ?? 0) > 0 && (
                     <span className="condition-icon condition-count">
                       ({category.productCount})
                     </span>
                   )}
-                </label>
+                </div>
               ))}
             </div>
           </div>
@@ -122,7 +130,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
             </h4>
             <div className="price-range">
               <div className="price-inputs">
-                <input
+                <Input
                   type="number"
                   name="priceMin"
                   className="price-input"
@@ -132,7 +140,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                   onChange={e => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
                 />
                 <span className="price-separator">-</span>
-                <input
+                <Input
                   type="number"
                   name="priceMax"
                   className="price-input"
@@ -143,30 +151,38 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                 />
               </div>
               <div className="price-presets">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="preset-btn"
                   onClick={() => setPriceRange({ min: '0', max: '50' })}
                 >
                   ¥50 以下
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="preset-btn"
                   onClick={() => setPriceRange({ min: '50', max: '200' })}
                 >
                   ¥50-200
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="preset-btn"
                   onClick={() => setPriceRange({ min: '200', max: '500' })}
                 >
                   ¥200-500
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="preset-btn"
                   onClick={() => setPriceRange({ min: '500', max: '' })}
                 >
                   ¥500 以上
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -180,30 +196,26 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
               新旧程度
             </h4>
             <div className="filter-options condition-options">
-              <label className={`filter-checkbox ${selectedConditions.includes(1) ? 'is-checked' : ''}`}>
-                <input type="checkbox" checked={selectedConditions.includes(1)} onChange={() => handleConditionToggle(1)} />
-                <span className="checkbox-custom" />
-                <span className="checkbox-label">全新</span>
+              <div className="filter-checkbox">
+                <Checkbox id="cond-1" checked={selectedConditions.includes(1)} onCheckedChange={() => handleConditionToggle(1)} />
+                <label htmlFor="cond-1" className="checkbox-label">全新</label>
                 <span className="condition-icon">✨</span>
-              </label>
-              <label className={`filter-checkbox ${selectedConditions.includes(2) ? 'is-checked' : ''}`}>
-                <input type="checkbox" checked={selectedConditions.includes(2)} onChange={() => handleConditionToggle(2)} />
-                <span className="checkbox-custom" />
-                <span className="checkbox-label">几乎全新</span>
+              </div>
+              <div className="filter-checkbox">
+                <Checkbox id="cond-2" checked={selectedConditions.includes(2)} onCheckedChange={() => handleConditionToggle(2)} />
+                <label htmlFor="cond-2" className="checkbox-label">几乎全新</label>
                 <span className="condition-icon">🌟</span>
-              </label>
-              <label className={`filter-checkbox ${selectedConditions.includes(3) ? 'is-checked' : ''}`}>
-                <input type="checkbox" checked={selectedConditions.includes(3)} onChange={() => handleConditionToggle(3)} />
-                <span className="checkbox-custom" />
-                <span className="checkbox-label">轻微使用</span>
+              </div>
+              <div className="filter-checkbox">
+                <Checkbox id="cond-3" checked={selectedConditions.includes(3)} onCheckedChange={() => handleConditionToggle(3)} />
+                <label htmlFor="cond-3" className="checkbox-label">轻微使用</label>
                 <span className="condition-icon">💫</span>
-              </label>
-              <label className={`filter-checkbox ${selectedConditions.includes(4) ? 'is-checked' : ''}`}>
-                <input type="checkbox" checked={selectedConditions.includes(4)} onChange={() => handleConditionToggle(4)} />
-                <span className="checkbox-custom" />
-                <span className="checkbox-label">明显使用</span>
+              </div>
+              <div className="filter-checkbox">
+                <Checkbox id="cond-4" checked={selectedConditions.includes(4)} onCheckedChange={() => handleConditionToggle(4)} />
+                <label htmlFor="cond-4" className="checkbox-label">明显使用</label>
                 <span className="condition-icon">⭐</span>
-              </label>
+              </div>
             </div>
           </div>
 
@@ -211,12 +223,12 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
         </div>
 
         <div className="filter-footer">
-          <button className="btn btn-ghost" onClick={handleResetFilters}>
+          <Button variant="ghost" onClick={handleResetFilters}>
             重置
-          </button>
-          <button className="btn btn-secondary" onClick={handleApplyFilters}>
+          </Button>
+          <Button variant="outline" onClick={handleApplyFilters}>
             应用筛选
-          </button>
+          </Button>
         </div>
       </aside>
     </>

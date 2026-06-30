@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { creditApi, type CreditScoreResult } from '@/api/creditApi';
 import { CreditScoreCard } from '@/components/ai/CreditScoreCard';
 import { RefreshCw, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import '@/styles/main.css';
 import '@/components/ai/ai-components.css';
 
@@ -50,14 +51,14 @@ function CreditPage() {
     <div className="credit-page">
       <div className="credit-page-header">
         <h1>我的信用</h1>
-        <button
+        <Button
           className="refresh-btn"
           onClick={handleRecalculate}
           disabled={isRecalculating}
         >
           <RefreshCw size={16} className={isRecalculating ? 'animate-spin' : ''} />
           重新计算
-        </button>
+        </Button>
       </div>
 
       <CreditScoreCard credit={credit} />

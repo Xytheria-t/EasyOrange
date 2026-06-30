@@ -44,7 +44,7 @@ describe('ConfirmModal', () => {
     );
     const confirmBtn = screen.getAllByRole('button').find(b => b.textContent === '确认');
     expect(confirmBtn).toBeDefined();
-    await userEvent.click(confirmBtn!);
+    await userEvent.click(confirmBtn as HTMLElement);
     expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
@@ -63,7 +63,7 @@ describe('ConfirmModal', () => {
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
-  it('calls onCancel when backdrop clicked', async () => {
+  it('calls onCancel when escape key pressed', async () => {
     const onCancel = vi.fn();
     render(
       <ConfirmModal
@@ -74,7 +74,7 @@ describe('ConfirmModal', () => {
         onCancel={onCancel}
       />,
     );
-    await userEvent.click(screen.getByLabelText('关闭对话框'));
+    await userEvent.keyboard('{Escape}');
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 

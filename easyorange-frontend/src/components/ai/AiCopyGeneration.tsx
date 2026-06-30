@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Sparkles, Loader2, FileText, Check, ChevronDown } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { CopyGenerationResult } from '@/api/aiApi'
 import './ai-components.css'
 
@@ -40,7 +41,9 @@ export function AiCopyGeneration({
           <span className="ai-copy-title">AI 智能文案</span>
         </div>
         <div className="ai-copy-style-selector">
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             className="ai-copy-style-btn"
             onClick={() => setShowStylePicker(!showStylePicker)}
             type="button"
@@ -48,12 +51,13 @@ export function AiCopyGeneration({
             <FileText size={14} />
             <span>{STYLE_OPTIONS.find(s => s.value === selectedStyle)?.label}</span>
             <ChevronDown size={12} className={`ai-copy-chevron ${showStylePicker ? 'open' : ''}`} />
-          </button>
+          </Button>
           {showStylePicker && (
             <div className="ai-copy-style-dropdown">
               {STYLE_OPTIONS.map(style => (
-                <button
+                <Button
                   key={style.value}
+                  variant="ghost"
                   className={`ai-copy-style-option ${selectedStyle === style.value ? 'active' : ''}`}
                   onClick={() => {
                     setSelectedStyle(style.value)
@@ -63,14 +67,14 @@ export function AiCopyGeneration({
                 >
                   <span className="style-label">{style.label}</span>
                   <span className="style-desc">{style.desc}</span>
-                </button>
+                </Button>
               ))}
             </div>
           )}
         </div>
       </div>
 
-      <button
+      <Button
         className={`ai-copy-generate-btn ${!canGenerate ? 'disabled' : ''}`}
         onClick={() => onGenerate(selectedStyle)}
         disabled={!canGenerate}
@@ -87,7 +91,7 @@ export function AiCopyGeneration({
             生成商品描述
           </>
         )}
-      </button>
+      </Button>
 
       {!productName.trim() && !isLoading && (
         <p className="ai-copy-hint">请先填写商品名称，AI 将为您生成专业的商品描述</p>
@@ -110,15 +114,16 @@ export function AiCopyGeneration({
             </div>
           </div>
           <div className="ai-copy-result-actions">
-            <button
+            <Button
               className="ai-copy-apply-btn"
               onClick={() => onApply(result)}
               type="button"
             >
               <Check size={14} />
               采纳并填充
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               className="ai-copy-regenerate-btn"
               onClick={() => onGenerate(selectedStyle)}
               disabled={isLoading}
@@ -126,7 +131,7 @@ export function AiCopyGeneration({
             >
               <Sparkles size={14} />
               重新生成
-            </button>
+            </Button>
           </div>
         </div>
       )}

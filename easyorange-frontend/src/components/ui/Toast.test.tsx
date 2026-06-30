@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import { ToastContainer } from './Toast';
 import { useUIStore } from '@/store';
@@ -9,9 +10,9 @@ beforeEach(() => {
 });
 
 describe('ToastContainer', () => {
-  it('renders nothing when no toasts exist', () => {
-    const { container } = renderWithProviders(<ToastContainer />);
-    expect(container.firstChild).toBeNull();
+  it('renders no toast messages when no toasts exist', () => {
+    renderWithProviders(<ToastContainer />);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('renders toasts from store', () => {
@@ -34,14 +35,14 @@ describe('ToastContainer', () => {
     expect(screen.getByLabelText('关闭通知')).toBeInTheDocument();
   });
 
-  it('removes toast when close button clicked', () => {
+  it('removes toast when close button clicked', async () => {
     useUIStore.setState({
       toasts: [{ id: '1', type: 'info', message: '可关闭' }],
     });
     renderWithProviders(<ToastContainer />);
 
     const closeBtn = screen.getByLabelText('关闭通知');
-    closeBtn.click();
+    await userEvent.click(closeBtn);
 
     const state = useUIStore.getState();
     expect(state.toasts).toHaveLength(0);

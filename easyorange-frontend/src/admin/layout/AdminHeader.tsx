@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAdminStore } from '../store';
 import { useAuthStore } from '@/store';
+import { Button } from '@/components/ui/button';
 
 const PAGE_TITLES: Record<string, string> = {
   '/admin': '仪表盘',
@@ -26,7 +27,9 @@ export function AdminHeader() {
   return (
     <header className={`admin-header ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="header-left">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={toggleSidebar}
           className={`collapse-btn ${sidebarCollapsed ? 'collapsed' : ''}`}
           title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
@@ -34,7 +37,7 @@ export function AdminHeader() {
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
           </svg>
-        </button>
+        </Button>
         <span className="header-title">{title}</span>
       </div>
 

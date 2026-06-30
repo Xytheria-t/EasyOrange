@@ -1,4 +1,5 @@
 import { Camera, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import './ai-components.css'
 
 interface AiPhotoCaptureProps {
@@ -12,7 +13,7 @@ export function AiPhotoCapture({ onAnalyze, isLoading, hasImages }: AiPhotoCaptu
 
   return (
     <div className="ai-photo-capture">
-      <button
+      <Button
         className="ai-photo-btn"
         onClick={onAnalyze}
         disabled={isLoading}
@@ -28,7 +29,7 @@ export function AiPhotoCapture({ onAnalyze, isLoading, hasImages }: AiPhotoCaptu
             AI 智能识别
           </>
         )}
-      </button>
+      </Button>
       <p className="ai-photo-hint">
         一键识别商品信息，自动填写名称、描述和类别
       </p>

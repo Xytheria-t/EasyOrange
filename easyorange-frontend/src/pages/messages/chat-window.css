@@ -122,7 +122,6 @@
   background: rgba(249, 115, 22, 0.08);
   color: var(--text-secondary);
   border: none;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -201,7 +200,6 @@
   background: transparent;
   color: var(--text-tertiary);
   border: none;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -392,8 +390,9 @@
   color: var(--text-primary);
   background: transparent;
   border: none;
-  cursor: pointer;
   transition: all 0.2s ease;
+  height: auto;
+  min-height: unset;
 }
 
 .chat-context-item:hover {
@@ -494,7 +493,6 @@
   background: rgba(249, 115, 22, 0.06);
   color: var(--text-tertiary);
   border: none;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   flex-shrink: 0;
   margin-bottom: 2px;
@@ -563,7 +561,6 @@
   background: linear-gradient(135deg, #F97316 0%, #FB7185 50%, #C39BD3 100%);
   color: white;
   border: none;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   flex-shrink: 0;
   box-shadow:
@@ -607,6 +604,8 @@
 
 .chat-send-btn:disabled::before {
   display: none;
+  height: auto;
+  min-height: unset;
 }
 
 /* ============ LOAD MORE BUTTON ============ */
@@ -623,9 +622,10 @@
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
-  cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 0.75rem;
+  height: auto;
+  min-height: unset;
 }
 
 .chat-load-more:hover {
@@ -690,6 +690,8 @@
   .chat-action-btn:nth-child(1),
   .chat-action-btn:nth-child(2) {
     display: none;
+    height: auto;
+    min-height: unset;
   }
 }
 

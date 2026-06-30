@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/testUtils/mocks/server';
 import { clearCache } from '@/api/core/cache';
 import { usePlatformStats } from './useStats';
-import type { ReactNode, FC } from 'react';
+import type { ReactNode } from 'react';
 
 function Wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({

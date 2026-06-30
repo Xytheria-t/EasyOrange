@@ -87,7 +87,7 @@ describe('useRecentUsers', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].username).toBe('testuser');
+    expect(result.current.data?.[0]?.username).toBe('testuser');
   });
 });
 
@@ -108,7 +108,7 @@ describe('useRecentProducts', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].name).toBe('新品');
+    expect(result.current.data?.[0]?.name).toBe('新品');
   });
 });
 
@@ -129,8 +129,8 @@ describe('useTrend', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].month).toBe('2026-05');
-    expect(result.current.data![0].users).toBe(10);
+    expect(result.current.data?.[0]?.month).toBe('2026-05');
+    expect(result.current.data?.[0]?.users).toBe(10);
   });
 });
 
@@ -151,7 +151,7 @@ describe('useRecentActivity', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].text).toBe('LOGIN');
+    expect(result.current.data?.[0]?.text).toBe('LOGIN');
   });
 });
 
@@ -172,7 +172,7 @@ describe('useUserActivityHeatmap', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].count).toBe(5);
+    expect(result.current.data?.[0]?.count).toBe(5);
   });
 });
 
@@ -193,7 +193,7 @@ describe('useTopProducts', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].name).toBe('热销商品');
-    expect(result.current.data![0].viewCount).toBe(50);
+    expect(result.current.data?.[0]?.name).toBe('热销商品');
+    expect(result.current.data?.[0]?.viewCount).toBe(50);
   });
 });

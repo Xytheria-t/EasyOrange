@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach, beforeAll, afterAll } from 'vitest';
+import { describe, it, vi, afterEach, beforeAll, afterAll } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useScrollReveal } from './useScrollReveal';
 

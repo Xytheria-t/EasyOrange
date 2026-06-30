@@ -95,7 +95,6 @@
   backdrop-filter: blur(8px);
   border-radius: 10px;
   color: var(--text-secondary, #6B7280);
-  cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
   margin-top: 2px;
@@ -162,11 +161,12 @@
   color: #F97316;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
   margin-top: 4px;
   flex-shrink: 0;
+  height: auto;
+  min-height: unset;
 }
 
 .notifications-mark-all-btn:hover:not(:disabled) {
@@ -273,8 +273,9 @@
   color: #F97316;
   font-size: 13px;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.2s ease;
+  height: auto;
+  min-height: unset;
 }
 
 .notifications-retry-btn:hover {
@@ -296,7 +297,6 @@
   backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 14px;
-  cursor: pointer;
   transition: all 0.25s ease;
   text-align: left;
   width: 100%;
@@ -304,6 +304,8 @@
   position: relative;
   overflow: hidden;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  height: auto;
+  min-height: unset;
 }
 
 .notification-card:hover {
@@ -460,9 +462,10 @@
   color: var(--text-secondary, #6B7280);
   font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  height: auto;
+  min-height: unset;
 }
 
 .pagination-btn:hover:not(:disabled) {

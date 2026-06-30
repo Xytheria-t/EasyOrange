@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
 import type { AdminUser } from '../../types/admin';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui';
+import { Button } from '@/components/ui/button';
 
 export interface UserDetailModalProps {
   open: boolean;
@@ -39,19 +46,6 @@ export function UserDetailModal({
 }: UserDetailModalProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>(user?.status ?? '0');
 
-  useEffect(() => {
-    if (!open) {return;}
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !loading) {onClose();}
-    };
-    document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
-  }, [open, loading, onClose]);
-
   if (!open || !user) {return null;}
 
   const handleSave = async () => {
@@ -71,138 +65,77 @@ export function UserDetailModal({
 
   const maskEmail = (email: string) => {
     const [name, domain] = email.split('@');
-    const maskedName = name.length > 2 ? `${name[0]  }***${  name[name.length - 1]}` : name;
+    const maskedName = name.length > 2 ? `${name[0]}***${name[name.length - 1]}` : name;
     return `${maskedName}@${domain}`;
   };
 
   const avatarGradient = AVATAR_GRADIENTS[Number(user.userId ?? 0) % AVATAR_GRADIENTS.length];
   const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES['0'];
 
-  return createPortal(
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-    }}>
-      {/* Backdrop */}
-      <div
-        role="button"
-        tabIndex={0}
-        style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(42,37,32,0.45)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
-          animation: 'modalFadeIn 0.2s ease-out',
-        }}
-        onClick={() => !loading && onClose()}
-        onKeyDown={(e) => e.key === 'Enter' && !loading && onClose()}
-        aria-label="关闭对话框"
-      />
-
-      {/* Modal */}
-      <div style={{
-        position: 'fixed', left: '50%', top: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: 'calc(100% - 2rem)', maxWidth: 440,
-        maxHeight: 'calc(100vh - 2rem)',
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        border: '1px solid rgba(255,255,255,0.7)',
-        borderRadius: 24,
-        boxShadow: '0 24px 64px rgba(42,37,32,0.18), 0 8px 24px rgba(249,115,22,0.06)',
-        overflow: 'hidden',
-        display: 'flex', flexDirection: 'column',
-        animation: 'modalSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}>
+  return (
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) {onClose();} }}>
+      <DialogContent
+        className="[&>button]:hidden max-w-[440px] w-[calc(100%-2rem)] p-0 gap-0 overflow-hidden rounded-3xl border border-white/70 bg-white/92 shadow-[0_24px_64px_rgba(42,37,32,0.18),0_8px_24px_rgba(249,115,22,0.06)]"
+        style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
+      >
         {/* Header */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid rgba(229,224,219,0.5)',
-          position: 'relative',
-        }}>
-          <div style={{
-            position: 'absolute', bottom: 0, left: '1.5rem', right: '1.5rem', height: 1,
-            background: 'linear-gradient(90deg, rgba(249,115,22,0.12), rgba(195,155,211,0.08), transparent)',
-          }} />
-          <h3 style={{
-            fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-            fontSize: '1.1rem', fontWeight: 700, color: '#2A2520',
-            display: 'flex', alignItems: 'center', gap: '0.5rem',
-          }}>
-            <span style={{
-              width: 26, height: 26, borderRadius: 8,
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              background: 'linear-gradient(135deg, #F97316, #FB923C)',
-              color: '#fff', flexShrink: 0,
-            }}>
+        <DialogHeader className="relative flex-row items-center justify-between border-b border-[rgba(229,224,219,0.5)] px-6 py-5 text-left">
+          <div
+            className="absolute bottom-0 left-6 right-6 h-px"
+            style={{ background: 'linear-gradient(90deg, rgba(249,115,22,0.12), rgba(195,155,211,0.08), transparent)' }}
+          />
+          <DialogTitle
+            className="flex items-center gap-2 text-[1.1rem] font-bold text-[#2A2520]"
+            style={{ fontFamily: "'Playfair Display', 'Noto Serif SC', serif" }}
+          >
+            <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#F97316,#FB923C)] text-white">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
               </svg>
             </span>
             用户详情
-          </h3>
-          <button
+          </DialogTitle>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
             disabled={loading}
-            style={{
-              width: 32, height: 32, borderRadius: 10,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '1.5px solid #E5E0DB', background: '#fff',
-              color: '#8B857E', cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s ease', opacity: loading ? 0.5 : 1,
-            }}
-            onMouseEnter={(e) => { if (!loading) { e.currentTarget.style.background = 'rgba(244,63,94,0.06)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.2)'; e.currentTarget.style.color = '#E11D48'; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.color = '#8B857E'; }}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="关闭"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>
-          </button>
-        </div>
+          </Button>
+        </DialogHeader>
 
         {/* Body */}
-        <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <div className="max-h-[calc(100vh-2rem)] flex-1 overflow-y-auto p-6">
           {/* User profile card */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '1rem',
-            padding: '1rem 1.15rem',
-            background: 'linear-gradient(135deg, rgba(249,115,22,0.04), rgba(195,155,211,0.03))',
-            borderRadius: 16, marginBottom: '1.25rem',
-            border: '1px solid rgba(249,115,22,0.06)',
-          }}>
-            <div style={{
-              width: 52, height: 52, borderRadius: 16,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.25rem', fontWeight: 700, color: '#fff',
-              fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-              background: avatarGradient, flexShrink: 0,
-              boxShadow: '0 4px 12px rgba(249,115,22,0.18)',
-            }}>
+          <div className="mb-5 flex items-center gap-4 rounded-2xl border border-[rgba(249,115,22,0.06)] bg-[linear-gradient(135deg,rgba(249,115,22,0.04),rgba(195,155,211,0.03))] p-4">
+            <div
+              className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-[1.25rem] font-bold text-white"
+              style={{ fontFamily: "'Playfair Display', 'Noto Serif SC', serif", background: avatarGradient, boxShadow: '0 4px 12px rgba(249,115,22,0.18)' }}
+            >
               {(user.nickname || user.username || '?').charAt(0).toUpperCase()}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontWeight: 700, color: '#2A2520', fontSize: '1rem', lineHeight: 1.3 }}>
+            <div className="min-w-0 flex-1">
+              <p className="text-[1rem] font-bold leading-tight text-[#2A2520]">
                 {user.nickname || user.username}
               </p>
-              <p style={{ fontSize: '0.82rem', color: '#9B9590', marginTop: 2 }}>@{user.username}</p>
+              <p className="mt-0.5 text-[0.82rem] text-[#9B9590]">@{user.username}</p>
             </div>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
-              padding: '0.3rem 0.7rem', borderRadius: 10,
-              background: currentStatusStyle.bg, fontSize: '0.78rem', fontWeight: 600,
-              color: currentStatusStyle.color,
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: currentStatusStyle.dot, flexShrink: 0 }} />
+            <div
+              className="inline-flex items-center gap-[0.35rem] rounded-[10px] px-[0.7rem] py-[0.3rem] text-[0.78rem] font-semibold"
+              style={{ background: currentStatusStyle.bg, color: currentStatusStyle.color }}
+            >
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: currentStatusStyle.dot }} />
               {currentStatusStyle.label}
             </div>
           </div>
 
           {/* Info grid */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem',
-            marginBottom: '1.25rem',
-          }}>
+          <div className="mb-5 grid grid-cols-2 gap-[0.85rem]">
             {[
               { label: '用户名', value: user.username },
               { label: '昵称', value: user.nickname || '未设置' },
@@ -211,78 +144,56 @@ export function UserDetailModal({
               { label: '用户类型', value: user.userType === '01' ? '🎓 学生' : '👨‍🏫 教师' },
               { label: '注册时间', value: formatDate(user.createTime ?? '') },
             ].map((item) => (
-              <div key={item.label} style={{
-                padding: '0.65rem 0.85rem',
-                background: 'rgba(255,255,255,0.6)',
-                border: '1px solid rgba(229,224,219,0.4)',
-                borderRadius: 12,
-              }}>
-                <p style={{ fontSize: '0.72rem', color: '#9B9590', marginBottom: 2, fontWeight: 500 }}>{item.label}</p>
-                <p style={{ fontSize: '0.87rem', color: '#2A2520', fontWeight: 600 }}>{item.value}</p>
+              <div key={item.label} className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.85rem] py-[0.65rem]">
+                <p className="mb-0.5 text-[0.72rem] font-medium text-[#9B9590]">{item.label}</p>
+                <p className="text-[0.87rem] font-semibold text-[#2A2520]">{item.value}</p>
               </div>
             ))}
           </div>
 
           {/* Stats row */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 0,
-            padding: '0.85rem 0',
-            borderTop: '1px solid rgba(229,224,219,0.4)',
-            borderBottom: '1px solid rgba(229,224,219,0.4)',
-            marginBottom: '1.25rem',
-          }}>
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: '1.5rem', fontWeight: 700, color: '#F97316',
-                lineHeight: 1.2,
-              }}>
+          <div className="mb-5 flex items-center gap-0 border-y border-[rgba(229,224,219,0.4)] py-[0.85rem]">
+            <div className="flex-1 text-center">
+              <p className="text-[1.5rem] font-bold leading-tight text-[#F97316]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 —
               </p>
-              <p style={{ fontSize: '0.78rem', color: '#9B9590', marginTop: 2 }}>商品数</p>
+              <p className="mt-0.5 text-[0.78rem] text-[#9B9590]">商品数</p>
             </div>
-            <div style={{ width: 1, height: 36, background: 'rgba(229,224,219,0.5)' }} />
-            <div style={{ flex: 1, textAlign: 'center' }}>
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: '1.5rem', fontWeight: 700, color: '#C39BD3',
-                lineHeight: 1.2,
-              }}>
+            <div className="h-9 w-px bg-[rgba(229,224,219,0.5)]" />
+            <div className="flex-1 text-center">
+              <p className="text-[1.5rem] font-bold leading-tight text-[#C39BD3]" style={{ fontFamily: "'DM Sans', sans-serif" }}>
                 —
               </p>
-              <p style={{ fontSize: '0.78rem', color: '#9B9590', marginTop: 2 }}>订单数</p>
+              <p className="mt-0.5 text-[0.78rem] text-[#9B9590]">订单数</p>
             </div>
           </div>
 
           {/* Status selector */}
           <div>
-            <label htmlFor="status-select" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.5rem' }}>
+            <label htmlFor="status-select" className="mb-2 block text-[0.82rem] font-semibold text-[#6B6460]">
               调整状态
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem' }} id="status-select" role="radiogroup">
+            <div className="flex gap-2" id="status-select" role="radiogroup">
               {statusOptions.map((opt) => {
                 const isActive = selectedStatus === opt.value;
                 const sStyle = STATUS_STYLES[opt.value];
                 return (
-                  <button
+                  <Button
                     key={opt.value}
+                    type="button"
+                    variant="outline"
                     onClick={() => setSelectedStatus(opt.value)}
                     disabled={loading}
+                    className="flex flex-1 items-center justify-center gap-[0.35rem] rounded-xl border-[1.5px] px-2 py-[0.6rem] text-[0.84rem] font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60"
                     style={{
-                      flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
-                      padding: '0.6rem 0.5rem', borderRadius: 12,
-                      border: isActive ? `1.5px solid ${sStyle.dot}` : '1.5px solid #E5E0DB',
+                      borderColor: isActive ? sStyle.dot : '#E5E0DB',
                       background: isActive ? sStyle.bg : '#fff',
                       color: isActive ? sStyle.color : '#8B857E',
-                      fontSize: '0.84rem', fontWeight: 600,
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s ease',
-                      opacity: loading ? 0.6 : 1,
                     }}
                   >
-                    <span style={{ fontSize: '0.9rem' }}>{opt.emoji}</span>
+                    <span className="text-[0.9rem]">{opt.emoji}</span>
                     {opt.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -290,63 +201,26 @@ export function UserDetailModal({
         </div>
 
         {/* Footer */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem',
-          padding: '1rem 1.5rem',
-          background: 'linear-gradient(180deg, rgba(250,248,245,0.5), rgba(250,248,245,0.9))',
-          borderTop: '1px solid rgba(229,224,219,0.4)',
-        }}>
-          <button
+        <DialogFooter className="flex-row justify-end gap-[0.65rem] border-t border-[rgba(229,224,219,0.4)] bg-[linear-gradient(180deg,rgba(250,248,245,0.5),rgba(250,248,245,0.9))] px-6 py-4">
+          <Button
+            variant="outline"
             onClick={onClose}
             disabled={loading}
-            style={{
-              padding: '0.6rem 1.2rem', borderRadius: 12,
-              border: '1.5px solid #E5E0DB', background: '#fff',
-              fontSize: '0.87rem', fontWeight: 600, color: '#6B6460',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              transition: 'all 0.15s ease', opacity: loading ? 0.5 : 1,
-            }}
-            onMouseEnter={(e) => { if (!loading) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}
+            className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
           >
             取消
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={loading || selectedStatus === user.status}
-            style={{
-              padding: '0.6rem 1.5rem', borderRadius: 12,
-              border: 'none',
-              background: (loading || selectedStatus === user.status)
-                ? '#D6CEC5'
-                : 'linear-gradient(135deg, #F97316, #EA580C)',
-              fontSize: '0.87rem', fontWeight: 600, color: '#fff',
-              cursor: (loading || selectedStatus === user.status) ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: (loading || selectedStatus === user.status) ? 'none' : '0 3px 12px rgba(249,115,22,0.3)',
-            }}
-            onMouseEnter={(e) => { if (!loading && selectedStatus !== user.status) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 5px 18px rgba(249,115,22,0.4)'; } }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = (loading || selectedStatus === user.status) ? 'none' : '0 3px 12px rgba(249,115,22,0.3)'; }}
+            isLoading={loading}
+            loadingText="保存中..."
+            className="h-10 rounded-xl border-none bg-[linear-gradient(135deg,#F97316,#EA580C)] px-6 text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(249,115,22,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(249,115,22,0.4)] disabled:translate-y-0 disabled:bg-[#D6CEC5] disabled:shadow-none"
           >
-            {loading ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <svg style={{ width: 15, height: 15, animation: 'spin 0.7s linear infinite' }} fill="none" viewBox="0 0 24 24">
-                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                保存中...
-              </span>
-            ) : '保存修改'}
-          </button>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes modalSlideIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-    </div>,
-    document.body
+            保存修改
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -5,6 +5,7 @@ import { ArrowLeft, Package, MapPin, Phone, RefreshCw, User, FileText, Truck, Ch
 import { useOrderDetail, useCancelOrder, usePayOrder, useReceiveOrder, useRefundOrder } from '@/hooks';
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/constants';
 import { useUIStore } from '@/store';
+import { Button } from '@/components/ui/button';
 import type { OrderStatus } from '@/types';
 
 const STATUS_HERO_MAP: Record<OrderStatus, { gradient: string; icon: typeof Clock; hint: string }> = {
@@ -103,12 +104,12 @@ function OrderDetailPage() {
         <div className="order-detail-error-icon">!</div>
         <p className="order-detail-error-text">订单不存在或加载失败</p>
         <div className="order-detail-error-actions">
-          <button onClick={() => refetch()} className="order-detail-error-btn">
+          <Button variant="ghost" onClick={() => refetch()} className="order-detail-error-btn">
             重新加载
-          </button>
-          <button onClick={() => navigate('/orders')} className="order-detail-error-btn">
+          </Button>
+          <Button variant="ghost" onClick={() => navigate('/orders')} className="order-detail-error-btn">
             返回订单列表
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -162,12 +163,14 @@ function OrderDetailPage() {
   return (
     <div className="order-detail-premium">
       <div className="order-detail-nav">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={() => navigate(-1)}
           className="order-detail-back-btn"
         >
           <ArrowLeft size={20} />
-        </button>
+        </Button>
         <h1 className="order-detail-nav-title">订单详情</h1>
         <div className="order-detail-nav-spacer" />
       </div>
@@ -312,40 +315,42 @@ function OrderDetailPage() {
       <div className="order-detail-actions-premium">
         {statusKey === 'PENDING_PAYMENT' && (
           <>
-            <button
+            <Button
+              variant="outline"
               onClick={handleCancel}
               disabled={isActionLoading}
               className="order-detail-btn-secondary"
             >
               {isCancelling ? <Loader2 size={14} className="animate-spin" /> : null}
               取消订单
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handlePay}
               disabled={isActionLoading}
               className="order-detail-btn-primary"
             >
               立即支付
-            </button>
+            </Button>
           </>
         )}
         {statusKey === 'PAID' && (
-          <button
+          <Button
+            variant="outline"
             onClick={handleRefund}
             disabled={isActionLoading}
             className="order-detail-btn-secondary"
           >
             申请退款
-          </button>
+          </Button>
         )}
         {statusKey === 'SHIPPED' && (
-          <button
+          <Button
             onClick={handleReceive}
             disabled={isActionLoading}
             className="order-detail-btn-primary"
           >
             确认收货
-          </button>
+          </Button>
         )}
       </div>
     </div>

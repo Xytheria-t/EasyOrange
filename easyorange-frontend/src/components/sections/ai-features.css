@@ -20,11 +20,12 @@
   -webkit-backdrop-filter: blur(24px) saturate(1.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-2xl);
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   position: relative;
   overflow: hidden;
   max-width: 320px;
+  height: auto;
+  min-height: unset;
 }
 
 /* Subtle warm glow on hover */
@@ -68,6 +69,8 @@
   pointer-events: none;
   opacity: 0.4;
   transition: opacity 0.3s ease;
+  height: auto;
+  min-height: unset;
 }
 
 .ai-entry-btn:hover {
@@ -619,7 +622,8 @@
   color: var(--text-secondary);
   border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
-  cursor: pointer;
+  height: auto;
+  min-height: unset;
 }
 
 .recommend-tab:hover {
@@ -702,6 +706,8 @@
   color: var(--text-primary);
   transform: translateY(10px);
   transition: all var(--transition-fast);
+  height: auto;
+  min-height: unset;
 }
 
 .product-recommend-card:hover .quick-view-btn {
@@ -870,6 +876,8 @@
   box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
   transition: all var(--transition-fast);
   margin-bottom: 1rem;
+  height: auto;
+  min-height: unset;
 }
 
 .view-more-btn svg {
@@ -970,6 +978,8 @@
   .ai-entry-btn {
     padding: 0.5rem 0.875rem;
     max-width: 280px;
+    height: auto;
+    min-height: unset;
   }
 
   .ai-entry-icon {
@@ -1167,8 +1177,9 @@
   border-radius: 999px;
   font-size: 0.875rem;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.25s ease;
+  height: auto;
+  min-height: unset;
 }
 
 .daily-footer-btn:hover {

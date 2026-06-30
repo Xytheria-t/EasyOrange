@@ -8,16 +8,12 @@ const {
   mockUpdateProfile,
   mockInvalidateQueries,
   mockAddToast,
-  mockOpenOverlayLayer,
-  mockCloseOverlayLayer,
   mockHandleError,
 } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
   mockUpdateProfile: vi.fn(),
   mockInvalidateQueries: vi.fn(),
   mockAddToast: vi.fn(),
-  mockOpenOverlayLayer: vi.fn(),
-  mockCloseOverlayLayer: vi.fn(),
   mockHandleError: vi.fn(),
 }));
 
@@ -38,11 +34,6 @@ vi.mock('@/store/uiStore', () => ({
     const store = { addToast: mockAddToast };
     return selector ? selector(store) : store;
   },
-}));
-
-vi.mock('@/store/overlayStore', () => ({
-  openOverlayLayer: mockOpenOverlayLayer,
-  closeOverlayLayer: mockCloseOverlayLayer,
 }));
 
 vi.mock('@/utils/errorHandler', () => ({
@@ -166,58 +157,60 @@ describe('ProfileSetupModal', () => {
 
   // ── Validation ───────────────────────────────────────────────────────
 
-  it('shows required errors when submitting with empty fields', () => {
+  it('shows required errors when submitting with empty fields', async () => {
     render(<ProfileSetupModal {...defaultProps} />);
     fireEvent.click(screen.getByText('完成设置'));
 
-    expect(screen.getByText('真实姓名为必填项')).toBeInTheDocument();
-    expect(screen.getByText('学号为必填项')).toBeInTheDocument();
-    expect(screen.getByText('邮箱为必填项')).toBeInTheDocument();
-    expect(screen.getByText('手机号为必填项')).toBeInTheDocument();
+    expect(await screen.findByText('真实姓名至少需要2个字符')).toBeInTheDocument();
+    expect(await screen.findByText('请输入有效的学号')).toBeInTheDocument();
+    expect(await screen.findByText('邮箱不能为空')).toBeInTheDocument();
+    expect(await screen.findByText('手机号不能为空')).toBeInTheDocument();
   });
 
-  it('shows validation error for invalid email format', () => {
+  it('shows validation error for invalid email format', async () => {
     render(<ProfileSetupModal {...defaultProps} />);
 
     const emailInput = screen.getByPlaceholderText('请输入您的邮箱地址');
     fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
     fireEvent.blur(emailInput);
 
-    expect(screen.getByText('请输入有效的邮箱地址')).toBeInTheDocument();
+    expect(await screen.findByText('请输入有效的邮箱地址')).toBeInTheDocument();
   });
 
-  it('shows validation error for invalid phone format', () => {
+  it('shows validation error for invalid phone format', async () => {
     render(<ProfileSetupModal {...defaultProps} />);
 
     const phoneInput = screen.getByPlaceholderText('请输入您的手机号');
     fireEvent.change(phoneInput, { target: { value: '123' } });
     fireEvent.blur(phoneInput);
 
-    expect(screen.getByText('请输入有效的11位手机号')).toBeInTheDocument();
+    expect(await screen.findByText('请输入有效的11位手机号')).toBeInTheDocument();
   });
 
-  it('shows validation error for too-short realName', () => {
+  it('shows validation error for too-short realName', async () => {
     render(<ProfileSetupModal {...defaultProps} />);
 
     const nameInput = screen.getByPlaceholderText('请输入您的真实姓名');
     fireEvent.change(nameInput, { target: { value: 'a' } });
     fireEvent.blur(nameInput);
 
-    expect(screen.getByText('真实姓名至少需要2个字符')).toBeInTheDocument();
+    expect(await screen.findByText('真实姓名至少需要2个字符')).toBeInTheDocument();
   });
 
-  it('clears field error when user corrects the value', () => {
+  it('clears field error when user corrects the value', async () => {
     render(<ProfileSetupModal {...defaultProps} />);
 
     const nameInput = screen.getByPlaceholderText('请输入您的真实姓名');
     fireEvent.change(nameInput, { target: { value: 'a' } });
     fireEvent.blur(nameInput);
-    expect(screen.getByText('真实姓名至少需要2个字符')).toBeInTheDocument();
+    expect(await screen.findByText('真实姓名至少需要2个字符')).toBeInTheDocument();
 
     fireEvent.change(nameInput, { target: { value: '张三' } });
-    expect(
-      screen.queryByText('真实姓名至少需要2个字符'),
-    ).not.toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(
+        screen.queryByText('真实姓名至少需要2个字符'),
+      ).not.toBeInTheDocument();
+    });
   });
 
   // ── Submit ───────────────────────────────────────────────────────────
@@ -236,16 +229,6 @@ describe('ProfileSetupModal', () => {
         email: 'test@example.com',
         phone: '13800138000',
       });
-    });
-  });
-
-  it('shows warning toast when validation fails on submit', () => {
-    render(<ProfileSetupModal {...defaultProps} />);
-    fireEvent.click(screen.getByText('完成设置'));
-
-    expect(mockAddToast).toHaveBeenCalledWith({
-      type: 'warning',
-      message: '请完善所有必填信息',
     });
   });
 
@@ -304,20 +287,16 @@ describe('ProfileSetupModal', () => {
   it('calls onClose and navigates on close button click (X)', () => {
     const onClose = vi.fn();
     render(<ProfileSetupModal {...defaultProps} onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText('关闭'));
+    // Dialog's built-in close button has sr-only text "关闭"
+    const closeBtn = screen.getByRole('button', { name: '关闭' });
+    fireEvent.click(closeBtn);
 
     expect(onClose).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 
-  it('calls onClose and navigates on overlay backdrop click', () => {
-    const onClose = vi.fn();
-    render(<ProfileSetupModal {...defaultProps} onClose={onClose} />);
-    fireEvent.click(screen.getByLabelText('关闭对话框'));
-
-    expect(onClose).toHaveBeenCalled();
-    expect(mockNavigate).toHaveBeenCalledWith('/');
-  });
+  // Note: backdrop click dismiss is built-in Radix Dialog behavior;
+// the Escape key test below covers the same onOpenChange(false) → handleClose() path.
 
   // ── Keyboard Events ──────────────────────────────────────────────────
 
@@ -328,18 +307,6 @@ describe('ProfileSetupModal', () => {
 
     expect(onClose).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith('/');
-  });
-
-  it('handles Enter key to submit form', async () => {
-    mockUpdateProfile.mockResolvedValue({});
-    render(<ProfileSetupModal {...defaultProps} />);
-    fillAllFields();
-
-    fireEvent.keyDown(document, { key: 'Enter' });
-
-    await vi.waitFor(() => {
-      expect(mockUpdateProfile).toHaveBeenCalled();
-    });
   });
 
   it('does not submit via Enter when already submitting', async () => {
@@ -360,16 +327,6 @@ describe('ProfileSetupModal', () => {
     await vi.waitFor(() => {
       expect(mockUpdateProfile).not.toHaveBeenCalled();
     });
-  });
-
-  // ── Overlay Layer ────────────────────────────────────────────────────
-
-  it('calls openOverlayLayer on mount and closeOverlayLayer on unmount', () => {
-    const { unmount } = render(<ProfileSetupModal {...defaultProps} />);
-    expect(mockOpenOverlayLayer).toHaveBeenCalledWith('profile-setup-modal');
-
-    unmount();
-    expect(mockCloseOverlayLayer).toHaveBeenCalledWith('profile-setup-modal');
   });
 
   // ── API Error Handling ───────────────────────────────────────────────

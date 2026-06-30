@@ -1,5 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Package, ArrowLeft, Sparkles, Home, ShoppingBag, Brain, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import './payment-result.css';
 
 function PaymentResultPage() {
@@ -22,9 +23,9 @@ function PaymentResultPage() {
       </div>
 
       <div className="payment-result-header">
-        <button className="payment-back-btn" onClick={() => navigate('/orders')}>
+        <Button variant="ghost" size="icon" className="payment-back-btn" onClick={() => navigate('/orders')}>
           <ArrowLeft size={20} />
-        </button>
+        </Button>
         <h1 className="payment-title">支付结果</h1>
         <div className="payment-header-spacer" />
       </div>
@@ -84,50 +85,52 @@ function PaymentResultPage() {
 
         <div className="payment-result-actions">
           {isSuccess && (
-            <button
+            <Button
               className="result-btn result-btn-primary"
               onClick={() => navigate(orderId ? `/orders/${orderId}` : '/orders')}
             >
               <Package size={18} />
               查看订单
-            </button>
+            </Button>
           )}
 
           {isFailed && (
-            <button
+            <Button
               className="result-btn result-btn-primary"
               onClick={() => navigate(orderId ? `/payment?orderId=${orderId}` : '/orders')}
             >
               <RefreshCw size={18} />
               重新支付
-            </button>
+            </Button>
           )}
 
           {isPending && (
-            <button
+            <Button
               className="result-btn result-btn-primary"
               onClick={() => navigate('/orders')}
             >
               <Package size={18} />
               查看订单
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
+            variant="outline"
             className="result-btn result-btn-secondary"
             onClick={() => navigate('/products')}
           >
             <ShoppingBag size={18} />
             继续购物
-          </button>
+          </Button>
 
-          <button
+          <Button
+            variant="ghost"
             className="result-btn result-btn-ghost"
             onClick={() => navigate('/')}
           >
             <Home size={18} />
             返回首页
-          </button>
+          </Button>
         </div>
       </div>
     </div>

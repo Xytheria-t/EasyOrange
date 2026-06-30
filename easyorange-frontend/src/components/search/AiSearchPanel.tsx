@@ -1,4 +1,5 @@
 import { Sparkles, TrendingUp, HelpCircle, Target } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { AiEnhancement } from '@/types/product';
 
 interface AiSearchPanelProps {
@@ -42,13 +43,16 @@ export function AiSearchPanel({ enhancement, onQuestionClick }: AiSearchPanelPro
                     </div>
                     <div className="ai-questions">
                         {enhancement.suggestedQuestions.map((q, i) => (
-                            <button
+                            <Button
                                 key={i}
+                                type="button"
+                                variant="outline"
+                                size="sm"
                                 className="ai-question-btn"
                                 onClick={() => onQuestionClick(q)}
                             >
                                 {q}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 </div>

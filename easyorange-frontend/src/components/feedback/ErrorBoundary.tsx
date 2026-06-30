@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, Home, Bug, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import './error-boundary.css';
 
 interface ErrorBoundaryProps {
@@ -70,14 +71,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             )}
 
             <div className="error-boundary-actions">
-              <button className="error-boundary-btn error-boundary-btn-secondary" onClick={this.handleReset}>
+              <Button
+                variant="outline"
+                className="error-boundary-btn error-boundary-btn-secondary"
+                onClick={this.handleReset}
+              >
                 <RefreshCw size={18} />
                 重试
-              </button>
-              <button className="error-boundary-btn error-boundary-btn-primary" onClick={this.handleReload}>
+              </Button>
+              <Button
+                className="error-boundary-btn error-boundary-btn-primary"
+                onClick={this.handleReload}
+              >
                 <Home size={18} />
                 刷新页面
-              </button>
+              </Button>
             </div>
 
             <div className="error-boundary-tips">

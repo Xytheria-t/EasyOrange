@@ -5,6 +5,7 @@ import type { Product } from '@/types'
 import { CONDITION_LABEL_MAP } from '@/constants'
 import { formatPrice, formatRelativeTime } from '@/utils'
 import { Image } from '@/components/ui/Image'
+import { Button } from '@/components/ui/button'
 import { AiTag } from './AiTag'
 import placeholderImage from '@/assets/placeholder.png'
 import '../../pages/products/products-premium.css'
@@ -36,7 +37,7 @@ export const ProductCard = memo(({
   const conditionLabel = CONDITION_LABEL_MAP[product.condition] || product.condition
   const hasDiscount = product.originalPrice != null && product.originalPrice > product.price
   const discountPercent = hasDiscount
-    ? Math.round((1 - product.price / product.originalPrice!) * 100)
+    ? Math.round((1 - product.price / (product.originalPrice as number)) * 100)
     : 0
   const isHot = product.isHot || (product.views != null && product.views > 200)
   const quickLocation = product.location?.trim() || '校内面交'
@@ -202,7 +203,9 @@ export const ProductCard = memo(({
 
         {/* Action buttons - slide in from right with magnetic pull */}
         <div className={`product-actions-premium ${isHovered ? 'visible' : ''}`}>
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             className={`action-icon-premium favorite-btn-premium ${isFavorited ? 'favorited' : ''}`}
             onClick={handleFavoriteClick}
             onMouseMove={handleButtonMouseMove}
@@ -211,9 +214,11 @@ export const ProductCard = memo(({
             aria-pressed={isFavorited}
           >
             <Heart size={17} fill={isFavorited ? 'currentColor' : 'none'} strokeWidth={2} />
-          </button>
+          </Button>
           {product.sellerId && (
-            <button
+            <Button
+              variant="outline"
+              size="icon"
               className="action-icon-premium contact-btn-premium"
               onClick={(e) => { e.stopPropagation() }}
               onMouseMove={handleButtonMouseMove}
@@ -221,9 +226,11 @@ export const ProductCard = memo(({
               aria-label="联系资产方"
             >
               <MessageCircle size={17} strokeWidth={2} />
-            </button>
+            </Button>
           )}
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             className="action-icon-premium view-btn-premium"
             onClick={(e) => { e.stopPropagation(); navigate(`/products/${product.id}`) }}
             onMouseMove={handleButtonMouseMove}
@@ -231,14 +238,14 @@ export const ProductCard = memo(({
             aria-label="查看详情"
           >
             <Eye size={17} strokeWidth={2} />
-          </button>
+          </Button>
         </div>
 
         {/* Price tag floating on image */}
         <div className={`product-image-price-tag ${isHovered ? 'visible' : ''}`}>
           <span className="price-tag-current">¥{formatPrice(product.price)}</span>
           {hasDiscount && (
-            <span className="price-tag-original">¥{formatPrice(product.originalPrice!)}</span>
+            <span className="price-tag-original">¥{formatPrice((product.originalPrice as number))}</span>
           )}
         </div>
       </figure>
@@ -265,7 +272,7 @@ export const ProductCard = memo(({
         {/* Description expand on hover */}
         {hasDescription && (
           <div className={`product-desc-expand ${isHovered ? 'expanded' : ''}`}>
-            <p>{product.description!.slice(0, 60)}{product.description!.length > 60 ? '...' : ''}</p>
+            <p>{(product.description as string).slice(0, 60)}{(product.description as string).length > 60 ? '...' : ''}</p>
           </div>
         )}
 
@@ -286,12 +293,12 @@ export const ProductCard = memo(({
             <div className="product-price-row-premium">
               <span className="price-current-premium">¥{formatPrice(product.price)}</span>
               {hasDiscount && (
-                <span className="price-original-premium">¥{formatPrice(product.originalPrice!)}</span>
+                <span className="price-original-premium">¥{formatPrice((product.originalPrice as number))}</span>
               )}
             </div>
             {hasDiscount && (
               <span className="price-note-premium price-save-badge">
-                立省 ¥{formatPrice(product.originalPrice! - product.price)}
+                立省 ¥{formatPrice((product.originalPrice as number) - product.price)}
               </span>
             )}
           </div>

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent } from 'react';
 import { Bot, Send, User, Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { QaRequest } from '@/api/aiApi';
 import type { QaHistoryItem } from '@/hooks/useAiQa';
 import './ai-components.css';
@@ -107,8 +109,10 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
             <p className="qa-empty-desc">智能助手将基于商品信息为您提供专业解答</p>
             <div className="qa-suggested-questions">
               {suggestedQuestions.map((q, idx) => (
-                <button
+                <Button
                   key={idx}
+                  variant="outline"
+                  size="sm"
                   className="qa-suggested-chip"
                   onClick={() => {
                     setInputValue(q);
@@ -117,7 +121,7 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
                 >
                   <Sparkles size={10} />
                   {q}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -155,13 +159,15 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
                     </div>
                     <div className="qa-message-actions">
                       <span className="qa-message-time">{formatTime(new Date())}</span>
-                      <button
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="qa-copy-btn"
                         onClick={() => handleCopy(item.answer.answer, index)}
                         title="复制回答"
                       >
                         {copiedIndex === index ? <Check size={12} /> : <Copy size={12} />}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -191,7 +197,7 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
 
       <form className="qa-input-form" onSubmit={handleSubmit}>
         <div className="qa-input-wrapper">
-          <input
+          <Input
             ref={inputRef}
             className="qa-input"
             type="text"
@@ -204,13 +210,14 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
           {inputValue.length > 400 && (
             <span className="qa-input-count">{inputValue.length}/500</span>
           )}
-          <button
+          <Button
             className={`qa-send-btn ${inputValue.trim() ? 'active' : ''}`}
             type="submit"
             disabled={isLoading || !inputValue.trim()}
+            size="icon"
           >
             {isLoading ? <Loader2 size={16} className="qa-send-spinner" /> : <Send size={16} />}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

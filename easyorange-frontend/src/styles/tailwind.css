@@ -1,10 +1,71 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+@theme {
+  /* shadcn/ui theme tokens mapped to EasyOrange design system */
+  --color-background: var(--gray-50);
+  --color-foreground: var(--text-primary);
+
+  --color-card: var(--white);
+  --color-card-foreground: var(--text-primary);
+
+  --color-popover: var(--white);
+  --color-popover-foreground: var(--text-primary);
+
+  --color-primary: var(--primary-500);
+  --color-primary-foreground: var(--white);
+
+  --color-secondary: var(--primary-50);
+  --color-secondary-foreground: var(--primary-700);
+
+  --color-muted: var(--gray-100);
+  --color-muted-foreground: var(--text-tertiary);
+
+  --color-accent: var(--rose-50);
+  --color-accent-foreground: var(--rose-600);
+
+  --color-destructive: var(--error);
+  --color-destructive-foreground: var(--white);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--white);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--white);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--white);
+
+  --color-border: var(--border-medium);
+  --color-input: var(--border-medium);
+  --color-ring: var(--primary-400);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-3xl: var(--radius-3xl);
+  --radius-full: var(--radius-full);
+
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-display: var(--font-display);
+  --font-accent: var(--font-accent);
+  --font-price: var(--font-price);
+  --font-mono: var(--font-mono);
+}
 
 @layer base {
   html {
     @apply antialiased;
   }
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-background text-foreground;
+  }
+
+  /* Focus ring consistent with the warm orange design system */
+  * {
+    @apply border-border;
   }
 }

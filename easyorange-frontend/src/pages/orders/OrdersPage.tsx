@@ -5,6 +5,7 @@ import { useMyOrders, useCancelOrder, usePayOrder, useReceiveOrder } from '@/hoo
 import { getOrderStatusLabel, getOrderStatusFromCode } from '@/constants';
 import type { Order, OrderStatus } from '@/types';
 import { useUIStore } from '@/store';
+import { Button } from '@/components/ui/button';
 import './payment.css';
 
 const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
@@ -140,8 +141,9 @@ function OrdersPage() {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
-            <button
+            <Button
               key={tab.id}
+              variant="ghost"
               onClick={() => setActiveTab(tab.id)}
               className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
               style={{ animationDelay: `${index * 60}ms` }}
@@ -149,7 +151,7 @@ function OrdersPage() {
               <Icon size={15} className="orders-tab-icon" />
               <span>{tab.label}</span>
               {isActive && <div className="orders-tab-indicator" />}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -167,9 +169,9 @@ function OrdersPage() {
         <div className="orders-error-card">
           <div className="orders-error-icon">!</div>
           <p className="orders-error-text">加载失败，请稍后重试</p>
-          <button onClick={() => refetch()} className="orders-error-btn">
+          <Button variant="ghost" className="orders-error-btn" onClick={() => refetch()}>
             重新加载
-          </button>
+          </Button>
         </div>
       )}
 
@@ -186,13 +188,13 @@ function OrdersPage() {
           <p className="orders-empty-desc">
             还没有认领任何资产<br />去发现心仪的资产吧
           </p>
-          <button
-            onClick={() => navigate('/products')}
+          <Button
             className="orders-empty-cta"
+            onClick={() => navigate('/products')}
           >
             探索资产
             <ChevronRight size={16} />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -303,30 +305,31 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
         >
           {statusKey === 'PENDING_PAYMENT' && (
             <>
-              <button
+              <Button
+                variant="outline"
+                className="order-btn-secondary"
                 onClick={() => onCancel(order.id)}
                 disabled={isCancelling}
-                className="order-btn-secondary"
               >
                 {isCancelling ? <Loader2 size={14} className="animate-spin" /> : null}
                 取消订单
-              </button>
-              <button
+              </Button>
+              <Button
+                className="order-btn-primary"
                 onClick={() => onPay(order.id)}
                 disabled={isCancelling}
-                className="order-btn-primary"
               >
                 立即支付
-              </button>
+              </Button>
             </>
           )}
           {statusKey === 'SHIPPED' && (
-            <button
-              onClick={() => onReceive(order.id)}
+            <Button
               className="order-btn-primary"
+              onClick={() => onReceive(order.id)}
             >
               确认收货
-            </button>
+            </Button>
           )}
         </div>
       </div>

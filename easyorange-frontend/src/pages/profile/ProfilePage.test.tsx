@@ -173,9 +173,9 @@ describe('ProfilePage', () => {
     fireEvent.click(changePwdBtns[0]);
 
     await screen.findByPlaceholderText('请输入6位验证码');
-    const verifyCodeInput = document.getElementById('change-verify-code')!;
-    const newPwdInput = document.getElementById('new-password')!;
-    const confirmPwdInput = document.getElementById('confirm-password')!;
+    const verifyCodeInput = document.getElementById('change-verify-code') as HTMLElement;
+    const newPwdInput = document.getElementById('new-password') as HTMLElement;
+    const confirmPwdInput = document.getElementById('confirm-password') as HTMLElement;
 
     fireEvent.change(verifyCodeInput, { target: { value: '123456' } });
     fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
@@ -201,9 +201,9 @@ describe('ProfilePage', () => {
     fireEvent.click(changePwdBtns[0]);
 
     await screen.findByPlaceholderText('请输入6位验证码');
-    const verifyCodeInput = document.getElementById('change-verify-code')!;
-    const newPwdInput = document.getElementById('new-password')!;
-    const confirmPwdInput = document.getElementById('confirm-password')!;
+    const verifyCodeInput = document.getElementById('change-verify-code') as HTMLElement;
+    const newPwdInput = document.getElementById('new-password') as HTMLElement;
+    const confirmPwdInput = document.getElementById('confirm-password') as HTMLElement;
 
     fireEvent.change(verifyCodeInput, { target: { value: '000000' } });
     fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
@@ -225,9 +225,9 @@ describe('ProfilePage', () => {
     fireEvent.click(changePwdBtns[0]);
 
     await screen.findByPlaceholderText('请输入6位验证码');
-    const verifyCodeInput = document.getElementById('change-verify-code')!;
-    const newPwdInput = document.getElementById('new-password')!;
-    const confirmPwdInput = document.getElementById('confirm-password')!;
+    const verifyCodeInput = document.getElementById('change-verify-code') as HTMLElement;
+    const newPwdInput = document.getElementById('new-password') as HTMLElement;
+    const confirmPwdInput = document.getElementById('confirm-password') as HTMLElement;
 
     fireEvent.change(verifyCodeInput, { target: { value: '123456' } });
     fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });

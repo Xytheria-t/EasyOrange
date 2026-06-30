@@ -3,6 +3,7 @@ import { MessageCircle, Sparkles, Zap, Send, Brain, RefreshCw } from 'lucide-rea
 import { useQuery } from '@tanstack/react-query';
 import { messageApi } from '@/api/messageApi';
 import type { ChatSession } from '@/types';
+import { Button } from '@/components/ui/button';
 import './messages.css';
 
 function MessagesPage() {
@@ -68,10 +69,10 @@ function MessagesPage() {
           <div className="messages-welcome-panel">
             <div className="messages-error">
               <p>加载消息失败，请稍后重试</p>
-              <button type="button" className="error-retry-btn" onClick={() => refetch()}>
+              <Button type="button" variant="outline" className="error-retry-btn" onClick={() => refetch()}>
                 <RefreshCw size={14} style={{ marginRight: '0.375rem', display: 'inline' }} />
                 重新加载
-              </button>
+              </Button>
             </div>
           </div>
         </div>

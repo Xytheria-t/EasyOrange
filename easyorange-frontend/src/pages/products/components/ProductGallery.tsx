@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Heart, Share2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Image, preloadImages, buildThumbnailUrl } from '@/components/ui/Image';
 import placeholderImage from '@/assets/placeholder.png';
 
@@ -26,7 +27,7 @@ export function ProductGallery({
   const productImages = images.length > 0 ? images : [placeholderImage];
 
   const preloadAdjacentImages = useCallback((centerIdx: number, allImages: string[]) => {
-    if (allImages.length <= 1) return;
+    if (allImages.length <= 1) {return;}
     const prevIdx = (centerIdx - 1 + allImages.length) % allImages.length;
     const nextIdx = (centerIdx + 1) % allImages.length;
     preloadImages([allImages[prevIdx], allImages[nextIdx]], { width: 600, format: 'webp', quality: 80 }).catch(() => {});
@@ -95,12 +96,12 @@ export function ProductGallery({
 
         {productImages.length > 1 && (
           <>
-            <button onClick={handlePrevImage} className="pdp-gallery-nav pdp-gallery-prev">
+            <Button type="button" variant="outline" size="icon" onClick={handlePrevImage} className="pdp-gallery-nav pdp-gallery-prev">
               <ChevronLeft size={20} />
-            </button>
-            <button onClick={handleNextImage} className="pdp-gallery-nav pdp-gallery-next">
+            </Button>
+            <Button type="button" variant="outline" size="icon" onClick={handleNextImage} className="pdp-gallery-nav pdp-gallery-next">
               <ChevronRight size={20} />
-            </button>
+            </Button>
             <div className="pdp-gallery-counter">
               {currentImageIndex + 1} / {productImages.length}
             </div>
@@ -108,24 +109,29 @@ export function ProductGallery({
         )}
 
         <div className="pdp-gallery-actions">
-          <button
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
             className={`pdp-action-fab ${isFavorited ? 'favorited' : ''}`}
             onClick={onFavoriteToggle}
             disabled={isFavoriteLoading}
           >
             <Heart size={18} fill={isFavorited ? 'currentColor' : 'none'} />
-          </button>
-          <button className="pdp-action-fab" onClick={onShare}>
+          </Button>
+          <Button type="button" variant="outline" size="icon" className="pdp-action-fab" onClick={onShare}>
             <Share2 size={18} />
-          </button>
+          </Button>
         </div>
       </div>
 
       {productImages.length > 1 && (
         <div className="pdp-gallery-thumbs">
           {productImages.map((img, idx) => (
-            <button
+            <Button
               key={idx}
+              type="button"
+              variant="ghost"
               onClick={() => setCurrentImageIndex(idx)}
               className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
             >
@@ -137,7 +143,7 @@ export function ProductGallery({
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               <div className="pdp-thumb-indicator" />
-            </button>
+            </Button>
           ))}
         </div>
       )}

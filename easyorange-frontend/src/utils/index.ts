@@ -29,8 +29,5 @@ export type { DebounceOptions } from './functionUtils';
 // 商品工具
 export { calculateDiscount, getConditionNameFromString, normalizeProduct } from './product';
 
-// 错误处理
+  // 错误处理
 export { errorHandler } from './errorHandler';
-
-// 验证工具
-export { validator, ValidatorUtils } from './validator';

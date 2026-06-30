@@ -18,6 +18,8 @@ import {
   TrendingUp, Shield, ChevronRight, Sparkles,
   Award, Eye, Star, Target, Lightbulb, Brain
 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui'
 import type { User as UserType } from '@/types'
 
 type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId'
@@ -81,10 +83,10 @@ export function ProfileOverview({
           <p className="header-subtitle">实时追踪你的智能托管数据</p>
         </div>
         <div className="header-actions">
-          <button className="btn-ghost" onClick={() => navigate('/orders')}>
+          <Button variant="ghost" onClick={() => navigate('/orders')}>
             <ShoppingBag size={16} />
             查看订单
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -170,10 +172,10 @@ export function ProfileOverview({
               <p>智能分析你的交易习惯，提供个性化建议</p>
             </div>
           </div>
-          <button className="ai-refresh-btn">
+          <Button variant="outline" size="sm" className="ai-refresh-btn">
             <Sparkles size={14} />
             刷新建议
-          </button>
+          </Button>
         </div>
         <div className="ai-insights-grid">
           <div className="ai-insight-card highlight">
@@ -215,8 +217,9 @@ export function ProfileOverview({
           {quickActions.map((action) => {
             const Icon = action.icon
             return (
-              <button
+              <Button
                 key={action.label}
+                variant="ghost"
                 className="action-card"
                 onClick={() => navigate(action.path)}
               >
@@ -228,7 +231,7 @@ export function ProfileOverview({
                   <span className="action-count">{action.count} 条记录</span>
                 </div>
                 <ChevronRight size={20} className="action-arrow" />
-              </button>
+              </Button>
             )
           })}
         </div>
@@ -257,34 +260,34 @@ export function ProfileOverview({
                 </div>
                 {editingField === key ? (
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
-                    <input
-                      className="form-input"
+                    <Input
                       style={{ padding: '0.375rem 0.75rem', fontSize: '0.875rem', maxWidth: 200 }}
                       value={editValue}
                       onChange={(e) => onEditValueChange(e.target.value)}
-                       
                       autoFocus
                       onKeyDown={(e) => { if (e.key === 'Enter') {onSave();} if (e.key === 'Escape') {onCancel()} }}
                     />
-                    <button className="profile-action-btn profile-action-save" onClick={onSave} disabled={isSaving}>
+                    <Button variant="ghost" size="icon" className="profile-action-btn profile-action-save" onClick={onSave} disabled={isSaving}>
                       <Check size={14} />
-                    </button>
-                    <button className="profile-action-btn profile-action-cancel" onClick={onCancel}>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="profile-action-btn profile-action-cancel" onClick={onCancel}>
                       <X size={14} />
-                    </button>
+                    </Button>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span className="info-value" style={{ color: value ? 'var(--profile-ink)' : 'var(--profile-ink-soft)' }}>
                       {value || '未设置'}
                     </span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="profile-edit-btn"
                       onClick={() => onEdit(key, value || '')}
                       style={{ opacity: 0.6 }}
                     >
                       <Pencil size={12} />
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

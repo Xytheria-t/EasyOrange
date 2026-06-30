@@ -50,7 +50,7 @@ describe('AdminTable', () => {
     render(
       <AdminTable columns={columns} data={data} rowKey="id" onRowClick={onRowClick} />,
     );
-    fireEvent.click(screen.getByText('Alice').closest('td')!);
+    fireEvent.click(screen.getByText('Alice').closest('td') as HTMLTableCellElement);
     expect(onRowClick).toHaveBeenCalledWith(data[0]);
   });
 
@@ -111,7 +111,7 @@ describe('AdminTable', () => {
     );
     const page2 = screen.getAllByRole('button').find(b => b.textContent === '2');
     expect(page2).toBeDefined();
-    fireEvent.click(page2!);
+    fireEvent.click(page2 as HTMLElement);
     expect(onChange).toHaveBeenCalledWith(2);
   });
 

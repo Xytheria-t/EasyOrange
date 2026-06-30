@@ -139,13 +139,13 @@ describe('HeroSection', () => {
     render(<HeroSection />);
     const input = screen.getByPlaceholderText('搜索你想要的资产...');
     fireEvent.change(input, { target: { value: 'macbook' } });
-    fireEvent.submit(screen.getByRole('button', { name: '搜索' }).closest('form')!);
+    fireEvent.submit(screen.getByRole('button', { name: '搜索' }).closest('form') as HTMLFormElement);
     expect(mockNavigate).toHaveBeenCalledWith('/search?keyword=macbook');
   });
 
   it('does not navigate on empty search', () => {
     render(<HeroSection />);
-    const form = screen.getByRole('button', { name: '搜索' }).closest('form')!;
+    const form = screen.getByRole('button', { name: '搜索' }).closest('form') as HTMLFormElement;
     fireEvent.submit(form);
     expect(mockNavigate).not.toHaveBeenCalled();
   });

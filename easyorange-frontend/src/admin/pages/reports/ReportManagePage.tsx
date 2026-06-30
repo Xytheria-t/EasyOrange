@@ -5,6 +5,8 @@ import { ConfirmModal } from '../../components/ConfirmModal';
 import { AdminSelect } from '../../components/AdminSelect';
 import { useAdminReports, useHandleReport } from '../../hooks';
 import type { AdminReport } from '../../types/admin';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
@@ -141,36 +143,42 @@ export default function ReportManagePage() {
         <div style={{ display: 'flex', gap: '0.4rem' }}>
           {record.status === 0 && (
             <>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: Number(record.reportId), action: 'resolve' }); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                   padding: '0.35rem 0.7rem', borderRadius: 10,
                   fontSize: '0.78rem', fontWeight: 600,
                   color: '#059669', background: 'rgba(16,185,129,0.07)',
-                  border: '1px solid transparent', cursor: 'pointer',
+                  border: '1px solid transparent',
                   transition: 'all 0.2s ease',
+                  height: 'auto', minHeight: 'unset',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(16,185,129,0.14)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(16,185,129,0.07)'; }}
               >
                 处理
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, reportId: Number(record.reportId), action: 'dismiss' }); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                   padding: '0.35rem 0.7rem', borderRadius: 10,
                   fontSize: '0.78rem', fontWeight: 600,
                   color: '#9B9590', background: 'rgba(155,149,144,0.07)',
-                  border: '1px solid transparent', cursor: 'pointer',
+                  border: '1px solid transparent',
                   transition: 'all 0.2s ease',
+                  height: 'auto', minHeight: 'unset',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(155,149,144,0.14)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(155,149,144,0.07)'; }}
               >
                 驳回
-              </button>
+              </Button>
             </>
           )}
           {record.status !== 0 && (
@@ -226,12 +234,13 @@ export default function ReportManagePage() {
             {/* Search */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
               <div style={{ position: 'relative', width: 280 }}>
-                <input
+                <Input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="搜索举报对象/原因..."
+                  className="h-auto"
                   style={{
                     width: '100%', padding: '0.68rem 1rem 0.68rem 2.6rem',
                     border: '1.5px solid #E5E0DB', borderRadius: 14,
@@ -246,22 +255,25 @@ export default function ReportManagePage() {
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </div>
-              <button
+              <Button
+                variant="default"
+                size="sm"
                 onClick={handleSearch}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   padding: '0.68rem 1.2rem', border: 'none', borderRadius: 14,
                   background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
                   color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  transition: 'all 0.2s ease',
                   boxShadow: '0 2px 8px rgba(244,63,94,0.28)',
                   whiteSpace: 'nowrap',
+                  height: 'auto', minHeight: 'unset',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(244,63,94,0.38)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(244,63,94,0.28)'; }}
               >
                 搜索
-              </button>
+              </Button>
             </div>
           </div>
         </header>

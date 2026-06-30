@@ -23,7 +23,7 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
     (pendingItems?.pendingReports ?? 0) +
     (pendingItems?.pendingOrders ?? 0);
 
-  if (!hasPendingItems) return null;
+  if (!hasPendingItems) {return null;}
 
   const sectionCard: React.CSSProperties = {
     background: 'rgba(255,255,255,0.65)',

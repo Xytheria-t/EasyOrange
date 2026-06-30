@@ -196,7 +196,7 @@ describe('EditProductPage', () => {
     const saveBtn = screen.getByText('保存修改');
     await user.click(saveBtn);
 
-    expect(screen.getByText('请输入商品名称')).toBeInTheDocument();
+    expect(screen.getByText('请输入资产名称')).toBeInTheDocument();
   });
 
   it('calls updateProduct and navigates on save', async () => {
@@ -330,10 +330,14 @@ describe('EditProductPage', () => {
     expect(screen.getByText('AI智能助手：完善商品信息可获得更多曝光')).toBeInTheDocument();
   });
 
-  it('renders category select with options', () => {
+  it('renders category select with options', async () => {
     renderPage();
 
-    expect(screen.getByText('电子产品')).toBeInTheDocument();
-    expect(screen.getByText('服装鞋帽')).toBeInTheDocument();
+    const user = userEvent.setup();
+    const categoryTrigger = screen.getByRole('combobox', { name: /商品类别/ });
+    await user.click(categoryTrigger);
+
+    expect(screen.getByRole('option', { name: '电子产品' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: '服装鞋帽' })).toBeInTheDocument();
   });
 });

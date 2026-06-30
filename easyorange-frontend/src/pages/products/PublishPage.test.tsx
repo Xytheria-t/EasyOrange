@@ -137,7 +137,7 @@ describe('PublishPage', () => {
     await user.click(publishBtn);
 
     expect(screen.getByText('请输入资产名称')).toBeInTheDocument();
-    expect(screen.getByText('请输入有效价格')).toBeInTheDocument();
+    expect(screen.getByText('请输入价格')).toBeInTheDocument();
     expect(screen.getByText('请选择资产类别')).toBeInTheDocument();
     expect(screen.getByText('请选择新旧程度')).toBeInTheDocument();
     expect(screen.getByText('请至少上传一张图片')).toBeInTheDocument();
@@ -214,8 +214,10 @@ describe('PublishPage', () => {
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText('给资产起个吸引人的名字'), '测试资产');
     await user.type(screen.getAllByPlaceholderText('0.00')[0], '100');
-    await user.selectOptions(screen.getByDisplayValue('选择类别'), '1');
-    await user.selectOptions(screen.getByDisplayValue('选择成色'), '2');
+    await user.click(screen.getByRole('combobox', { name: /资产类别/ }));
+    await user.click(screen.getByRole('option', { name: '电子产品' }));
+    await user.click(screen.getByRole('combobox', { name: /新旧程度/ }));
+    await user.click(screen.getByRole('option', { name: '几乎全新' }));
 
     const draftBtn = screen.getByText('保存草稿');
     await user.click(draftBtn);
@@ -240,8 +242,10 @@ describe('PublishPage', () => {
     const user = userEvent.setup();
     await user.type(screen.getByPlaceholderText('给资产起个吸引人的名字'), '测试资产');
     await user.type(screen.getAllByPlaceholderText('0.00')[0], '100');
-    await user.selectOptions(screen.getByDisplayValue('选择类别'), '1');
-    await user.selectOptions(screen.getByDisplayValue('选择成色'), '2');
+    await user.click(screen.getByRole('combobox', { name: /资产类别/ }));
+    await user.click(screen.getByRole('option', { name: '电子产品' }));
+    await user.click(screen.getByRole('combobox', { name: /新旧程度/ }));
+    await user.click(screen.getByRole('option', { name: '几乎全新' }));
 
     const publishBtn = screen.getByText('立即发布');
     await user.click(publishBtn);

@@ -1,5 +1,12 @@
-import { ReactNode } from 'react';
-import { cn } from '@/utils/cn';
+import type { ReactNode } from 'react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui';
 
 export interface AdminCardProps {
   title?: string;
@@ -19,15 +26,15 @@ export function AdminCard({
   noPadding = false,
 }: AdminCardProps) {
   return (
-    <div className={cn('admin-card', className)}>
+    <Card className={cn('rounded-2xl border border-border/60 bg-white shadow-md', className)}>
       {(title || extra) && (
-        <div className="admin-card-header">
-          {title && <h3 className="admin-card-title">{title}</h3>}
+        <CardHeader className="flex flex-row items-center justify-between gap-4 p-5 pb-0">
+          {title && <CardTitle className="font-serif text-base font-bold tracking-tight">{title}</CardTitle>}
           {extra && <div className="flex items-center gap-2">{extra}</div>}
-        </div>
+        </CardHeader>
       )}
-      <div className={cn(!noPadding && 'admin-card-body', bodyClassName)}>{children}</div>
-    </div>
+      <CardContent className={cn(!noPadding && 'p-5', bodyClassName)}>{children}</CardContent>
+    </Card>
   );
 }
 
@@ -44,38 +51,34 @@ export interface AdminCardStatsProps {
 
 export function AdminCardStats({ title, value, icon, trend, className }: AdminCardStatsProps) {
   return (
-    <div className={cn('admin-card p-5', className)}>
+    <Card className={cn('rounded-2xl border border-border/60 bg-white p-5 shadow-md transition-all hover:-translate-y-1 hover:shadow-lg', className)}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-500 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+          <p className="mb-1 text-sm text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold text-foreground">{value}</p>
           {trend && (
             <p
               className={cn(
-                'text-sm mt-2 flex items-center gap-1',
+                'mt-2 flex items-center gap-1 text-sm',
                 trend.isPositive ? 'text-green-600' : 'text-red-500'
               )}
             >
               {trend.isPositive ? (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
+                <TrendingUp className="h-4 w-4" />
               ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+                <TrendingDown className="h-4 w-4" />
               )}
               <span>{Math.abs(trend.value)}%</span>
-              <span className="text-gray-400">较昨日</span>
+              <span className="text-muted-foreground/70">较昨日</span>
             </p>
           )}
         </div>
         {icon && (
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-md">
             {icon}
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

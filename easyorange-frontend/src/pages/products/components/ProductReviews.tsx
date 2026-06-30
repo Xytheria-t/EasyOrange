@@ -1,5 +1,6 @@
 import { MessageSquare, Star, User, ThumbsUp } from 'lucide-react';
 import { formatRelativeTime } from '@/utils';
+import { Button } from '@/components/ui/button';
 
 interface Review {
   id: number;
@@ -78,10 +79,10 @@ export function ProductReviews({
               <p className="pdp-review-content">{review.content || '用户未填写评价内容'}</p>
               {(review.likes ?? 0) > 0 && (
                 <div className="pdp-review-footer">
-                  <button className="pdp-review-like">
+                  <Button variant="ghost" size="sm" className="pdp-review-like">
                     <ThumbsUp size={14} />
                     <span>{String(review.likes)}</span>
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -97,10 +98,10 @@ export function ProductReviews({
 
       {canReview && (
         <div className="pdp-reviews-action">
-          <button className="pdp-btn pdp-btn-secondary" onClick={onReviewClick}>
+          <Button variant="outline" className="pdp-btn pdp-btn-secondary" onClick={onReviewClick}>
             <Star size={16} />
             发表评价
-          </button>
+          </Button>
         </div>
       )}
     </div>

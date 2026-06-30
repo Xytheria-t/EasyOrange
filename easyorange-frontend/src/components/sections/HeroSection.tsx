@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Image } from '@/components/ui/Image'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const HERO_PRODUCT = {
   image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop',
@@ -241,7 +243,7 @@ export default function HeroSection() {
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <input
+              <Input
                 type="text"
                 className="search-input"
                 placeholder="搜索你想要的资产..."
@@ -249,25 +251,25 @@ export default function HeroSection() {
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
               />
-              <button type="submit" className="search-btn btn btn-primary">
+              <Button type="submit" className="search-btn">
                 <span>搜索</span>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="5" y1="12" x2="19" y2="12" />
                   <polyline points="12 5 19 12 12 19" />
                 </svg>
-              </button>
+              </Button>
             </form>
             <div className="search-tags">
               <span className="tag-label">热门搜索:</span>
-              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('教材')}>教材</button>
-              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('视频会员')}>视频会员</button>
-              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('设计素材')}>设计素材</button>
-              <button type="button" className="tag-btn" onClick={() => handleHotTagClick('考研资料')}>考研资料</button>
+              <Button variant="outline" size="sm" className="tag-btn" onClick={() => handleHotTagClick('教材')}>教材</Button>
+              <Button variant="outline" size="sm" className="tag-btn" onClick={() => handleHotTagClick('视频会员')}>视频会员</Button>
+              <Button variant="outline" size="sm" className="tag-btn" onClick={() => handleHotTagClick('设计素材')}>设计素材</Button>
+              <Button variant="outline" size="sm" className="tag-btn" onClick={() => handleHotTagClick('考研资料')}>考研资料</Button>
             </div>
           </div>
 
           <div className="hero-ai-entry animate-slide-up delay-3">
-            <button className="ai-entry-btn">
+            <Button variant="outline" className="ai-entry-btn">
               <div className="ai-entry-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -282,7 +284,7 @@ export default function HeroSection() {
                 <div className="ai-indicator-dot" />
                 <div className="ai-indicator-shimmer" />
               </div>
-            </button>
+            </Button>
           </div>
 
           <div className="hero-stats animate-slide-up delay-4">

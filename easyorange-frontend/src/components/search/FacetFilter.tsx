@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { FacetBucket } from '@/types/product';
 
 interface FacetFilterProps {
@@ -89,7 +90,7 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
           items: [],
         });
       }
-      map.get(group)!.items.push({
+      map.get(group)?.items.push({
         value,
         label: getItemLabel(group, value),
         count: facet.count,
@@ -114,13 +115,15 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-semibold text-gray-700">{group.label}</h4>
               {filters[group.key] && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onFilterChange(group.key, null)}
-                  className="text-[11px] text-orange-500 hover:text-orange-600 font-medium transition-colors ml-2 shrink-0"
+                  className="text-[11px] text-orange-500 hover:text-orange-600 font-medium transition-colors ml-2 shrink-0 h-auto min-h-0"
                 >
                   清除
-                </button>
+                </Button>
               )}
             </div>
 
@@ -129,13 +132,15 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
               {group.items.map((item) => {
                 const isActive = filters[group.key] === item.value;
                 return (
-                  <button
+                  <Button
                     key={item.value}
                     type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={() => onFilterChange(group.key, isActive ? null : item.value)}
                     className={`
                       inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium
-                      transition-all duration-200 border
+                      transition-all duration-200 border h-auto min-h-0
                       ${isActive
                         ? 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm'
                         : 'bg-white text-gray-600 border-gray-200 hover:border-orange-200 hover:text-orange-500 hover:bg-orange-50/50'
@@ -155,7 +160,7 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
                     {isActive && (
                       <X size={10} className="text-orange-400 shrink-0" />
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

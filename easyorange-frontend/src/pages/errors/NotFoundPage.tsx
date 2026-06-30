@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 
 function NotFoundPage() {
   const navigate = useNavigate();
@@ -170,15 +171,17 @@ function NotFoundPage() {
           flexWrap: 'wrap', marginBottom: '2.5rem',
           animation: 'nfFadeUp 0.6s ease-out 0.35s both',
         }}>
-          <button
+          <Button
+            variant="outline"
             onClick={() => navigate(-1)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
               padding: '0.72rem 1.5rem', borderRadius: 14,
               border: '1.5px solid #E5E0DB', background: '#fff',
               fontSize: '0.9rem', fontWeight: 600, color: '#4A4540',
-              cursor: 'pointer', transition: 'all 0.25s ease',
+              transition: 'all 0.25s ease',
               boxShadow: '0 1px 3px rgba(42,37,32,0.04)',
+              height: 'auto', minHeight: 'unset',
             }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(229,224,219,0.3)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(0)'; }}
@@ -187,7 +190,7 @@ function NotFoundPage() {
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
             返回上页
-          </button>
+          </Button>
           <Link
             to="/"
             style={{

@@ -16,7 +16,7 @@ const PRODUCT_ICONS: Record<string, string> = {
 
 function getProductIcon(name: string): string {
   for (const key of Object.keys(PRODUCT_ICONS)) {
-    if (key !== 'default' && name.includes(key)) return PRODUCT_ICONS[key];
+    if (key !== 'default' && name.includes(key)) {return PRODUCT_ICONS[key];}
   }
   return PRODUCT_ICONS.default;
 }

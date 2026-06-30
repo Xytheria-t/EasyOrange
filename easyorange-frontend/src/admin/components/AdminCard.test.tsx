@@ -21,7 +21,7 @@ describe('AdminCard', () => {
 
   it('does not render header without title or extra', () => {
     const { container } = renderWithProviders(<AdminCard>内容</AdminCard>);
-    expect(container.querySelector('.admin-card-header')).toBeNull();
+    expect(container.querySelector('[role="heading"]')).toBeNull();
   });
 });
 

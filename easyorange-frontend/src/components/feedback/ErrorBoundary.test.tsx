@@ -57,7 +57,7 @@ describe('ErrorBoundary', () => {
       throw new Error('测试错误');
     };
 
-    const { container } = renderWithProviders(
+    renderWithProviders(
       <ErrorBoundary>
         <ThrowComponent />
       </ErrorBoundary>,

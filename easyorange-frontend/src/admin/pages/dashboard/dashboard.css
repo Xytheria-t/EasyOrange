@@ -460,7 +460,6 @@
     transition: all var(--transition-fast);
     letter-spacing: 0.01em;
     border: none;
-    cursor: pointer;
 }
 
 .pending-action:hover {

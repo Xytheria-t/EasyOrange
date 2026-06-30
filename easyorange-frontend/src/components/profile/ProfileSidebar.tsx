@@ -6,6 +6,7 @@ import { useUIStore } from '@/store/uiStore'
 import { userApi } from '@/api/userApi'
 import { useQueryClient } from '@tanstack/react-query'
 import { errorHandler } from '@/utils/errorHandler'
+import { Button } from '@/components/ui/button'
 
 type TabType = 'overview' | 'activity' | 'security' | 'preferences'
 
@@ -67,8 +68,10 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
 
         {/* Avatar + Name row */}
         <div className="ps-avatar-row">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             className="ps-avatar-wrapper"
             onClick={handleAvatarClick}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleAvatarClick() } }}
@@ -95,7 +98,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
               style={{ display: 'none' }}
               onChange={handleAvatarChange}
             />
-          </button>
+          </Button>
 
           <div className="ps-user-info">
             <span className="ps-presence">
@@ -148,35 +151,35 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
 
         {/* Action Buttons */}
         <div className="ps-actions">
-          <button className="ps-btn-primary" onClick={() => navigate('/publish')}>
+          <Button className="ps-btn-primary" onClick={() => navigate('/publish')}>
             <Package size={16} />
             <span className="ps-btn-text">提交资产</span>
             <span className="ps-btn-hint">让 AI 帮你智能托管</span>
             <svg className="ps-btn-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
 
           <div className="ps-btn-grid">
-            <button className="ps-btn-secondary" onClick={() => navigate('/my-products')}>
+            <Button variant="outline" className="ps-btn-secondary" onClick={() => navigate('/my-products')}>
               <List size={18} />
               <span className="ps-btn-secondary-text">我的发布</span>
-            </button>
-            <button className="ps-btn-secondary" onClick={() => navigate('/orders')}>
+            </Button>
+            <Button variant="outline" className="ps-btn-secondary" onClick={() => navigate('/orders')}>
               <ShoppingBag size={18} />
               <span className="ps-btn-secondary-text">购买记录</span>
-            </button>
+            </Button>
           </div>
 
-          <button className="ps-btn-secondary" onClick={() => navigate('/credit')} style={{ width: '100%' }}>
+          <Button variant="outline" className="ps-btn-secondary" onClick={() => navigate('/credit')} style={{ width: '100%' }}>
             <Award size={18} />
             <span className="ps-btn-secondary-text">我的信用</span>
-          </button>
+          </Button>
 
-          <button className="ps-btn-logout" onClick={onLogout} data-testid="btn-profile-logout">
+          <Button variant="ghost" className="ps-btn-logout" onClick={onLogout} data-testid="btn-profile-logout">
             <LogOut size={16} />
             <span>退出登录</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -185,8 +188,9 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
         {navItems.map((item) => {
           const Icon = item.icon
           return (
-            <button
+            <Button
               key={item.id}
+              variant="ghost"
               className={`ps-nav-item ${activeTab === item.id ? 'active' : ''}`}
               onClick={() => {
                 onTabChange(item.id)
@@ -198,7 +202,7 @@ export function ProfileSidebar({ user, activeTab, onTabChange, onLogout, animate
               </span>
               <span className="ps-nav-text">{item.label}</span>
               <span className="ps-nav-active-bar" />
-            </button>
+            </Button>
           )
         })}
       </nav>

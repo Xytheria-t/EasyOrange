@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import { StatCard } from './StatCard';
 import { LazyTrendChart, LazyTopProductsChart } from './charts/lazyCharts';
 import ActivityHeatmap from './charts/ActivityHeatmap';
@@ -351,7 +352,8 @@ export default function DashboardPage() {
                 {(statsErr ?? pendingErr ?? usersErr ?? productsErr)?.message && ` · ${(statsErr ?? pendingErr ?? usersErr ?? productsErr)?.message}`}
               </div>
             </div>
-            <button
+            <Button
+              variant="default"
               onClick={() => window.location.reload()}
               style={{
                 padding: '0.5rem 1.15rem', borderRadius: 12,
@@ -366,7 +368,7 @@ export default function DashboardPage() {
               onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 3px 12px rgba(244,63,94,0.28)'; }}
             >
               刷新页面
-            </button>
+            </Button>
           </section>
         )}
 

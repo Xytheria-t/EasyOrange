@@ -1,6 +1,12 @@
 import { useState, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { ConfirmModal } from '../../components/ConfirmModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui';
 import { AdminSelect } from '../../components/AdminSelect';
 import {
   useAdminCategoryTree,
@@ -10,6 +16,10 @@ import {
   useDeleteCategory,
 } from '../../hooks';
 import type { CategoryTreeResponse, CategoryCreateRequest, CategoryUpdateRequest } from '../../types/admin';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type SortField = 'name' | 'sortOrder';
 type SortDir = 'asc' | 'desc';
@@ -188,6 +198,9 @@ export default function CategoryManagePage() {
       <div key={node.categoryId}>
         {/* Node row */}
         <div
+          role="button"
+          tabIndex={-1}
+          onKeyDown={() => {}}
           style={{
             display: 'flex', alignItems: 'center', gap: '0.5rem',
             padding: '0.6rem 1rem 0.6rem 0',
@@ -200,14 +213,15 @@ export default function CategoryManagePage() {
           onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
         >
           {/* Expand/collapse */}
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={() => toggleExpand(Number(node.categoryId))}
             style={{
               width: 20, height: 20, flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               border: 'none', background: 'transparent',
-              cursor: hasChildren ? 'pointer' : 'default',
               color: hasChildren ? '#9B9590' : 'transparent',
               transition: 'transform 0.2s ease',
               transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -218,7 +232,7 @@ export default function CategoryManagePage() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
-          </button>
+          </Button>
 
           {/* Level badge */}
           <span style={{
@@ -270,8 +284,10 @@ export default function CategoryManagePage() {
           {/* Actions */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexShrink: 0 }}>
             {/* Toggle status */}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               title={isEnabled ? '禁用' : '启用'}
               onClick={() => handleToggleStatus(Number(node.categoryId), node.status)}
               disabled={updateStatusMutation.isPending}
@@ -280,7 +296,7 @@ export default function CategoryManagePage() {
                 width: 30, height: 30, borderRadius: 8,
                 border: 'none', background: 'transparent',
                 color: isEnabled ? '#F59E0B' : '#10B981',
-                cursor: 'pointer', transition: 'all 0.15s ease',
+                transition: 'all 0.15s ease',
                 opacity: updateStatusMutation.isPending ? 0.5 : 1,
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(42,37,32,0.05)'; }}
@@ -297,18 +313,20 @@ export default function CategoryManagePage() {
                   <circle cx="12" cy="12" r="3" />
                 </svg>
               )}
-            </button>
+            </Button>
 
             {/* Edit */}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               title="编辑"
               onClick={() => openEdit(node)}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 30, height: 30, borderRadius: 8,
                 border: 'none', background: 'transparent',
-                color: '#6B6460', cursor: 'pointer', transition: 'all 0.15s ease',
+                color: '#6B6460', transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.08)'; e.currentTarget.style.color = '#EA580C'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B6460'; }}
@@ -317,18 +335,20 @@ export default function CategoryManagePage() {
                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-            </button>
+            </Button>
 
             {/* Delete */}
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               title="删除"
               onClick={() => setDeleteTarget(node)}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 30, height: 30, borderRadius: 8,
                 border: 'none', background: 'transparent',
-                color: '#6B6460', cursor: 'pointer', transition: 'all 0.15s ease',
+                color: '#6B6460', transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.08)'; e.currentTarget.style.color = '#E11D48'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6B6460'; }}
@@ -337,7 +357,7 @@ export default function CategoryManagePage() {
                 <polyline points="3 6 5 6 21 6" />
                 <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
               </svg>
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -408,11 +428,12 @@ export default function CategoryManagePage() {
               <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
               <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>无法连接到服务器，请检查后端服务是否启动</div>
             </div>
-            <button onClick={() => window.location.reload()} style={{
+            <Button onClick={() => window.location.reload()} variant="default" size="sm" style={{
               padding: '0.45rem 1rem', borderRadius: 10, background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
-              color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer',
+              color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none',
               boxShadow: '0 2px 8px rgba(244,63,94,0.25)',
-            }}>刷新</button>
+              height: 'auto', minHeight: 'unset',
+            }}>刷新</Button>
           </div>
         )}
 
@@ -446,15 +467,16 @@ export default function CategoryManagePage() {
             </div>
 
             {/* Add button */}
-            <button
+            <Button
               type="button"
+              variant="default"
               onClick={() => setCreateOpen(true)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
                 padding: '0.68rem 1.2rem', border: 'none', borderRadius: 14,
                 background: 'linear-gradient(135deg, #F97316, #EA580C)',
                 color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                cursor: 'pointer', transition: 'all 0.2s ease',
+                transition: 'all 0.2s ease',
                 boxShadow: '0 2px 8px rgba(249,115,22,0.28)',
                 whiteSpace: 'nowrap', letterSpacing: '0.01em',
               }}
@@ -466,7 +488,7 @@ export default function CategoryManagePage() {
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               添加分类
-            </button>
+            </Button>
           </div>
         </header>
 
@@ -506,15 +528,17 @@ export default function CategoryManagePage() {
               value={sortField}
               onChange={(val) => setSortField(val as SortField)}
             />
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="icon"
               onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
               title={sortDir === 'asc' ? '升序' : '降序'}
               style={{
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 width: 30, height: 30, borderRadius: 8,
                 border: '1.5px solid #E5E0DB', background: '#fff',
-                color: '#6B6460', cursor: 'pointer',
+                color: '#6B6460',
                 transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.color = '#EA580C'; }}
@@ -525,16 +549,17 @@ export default function CategoryManagePage() {
               >
                 <polyline points="18 15 12 9 6 15" />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* Search */}
           <div style={{ position: 'relative', width: 200 }}>
-            <input
+            <Input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="搜索分类名称..."
+              className="h-auto"
               style={{
                 width: '100%', padding: '0.5rem 0.85rem 0.5rem 2.2rem',
                 border: '1.5px solid #E5E0DB', borderRadius: 12,
@@ -611,331 +636,273 @@ export default function CategoryManagePage() {
       </div>
 
       {/* ===== Create Modal ===== */}
-      {createOpen && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
-          <div
-            role="button"
-            tabIndex={0}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(42,37,32,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
-            onClick={() => !createMutation.isPending && setCreateOpen(false)}
-            onKeyDown={(e) => e.key === 'Enter' && !createMutation.isPending && setCreateOpen(false)}
-            aria-label="关闭"
-          />
-          <div style={{
-            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-            width: 'calc(100% - 2rem)', maxWidth: 480,
-            background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.7)', borderRadius: 24,
-            boxShadow: '0 24px 64px rgba(42,37,32,0.18)',
-            maxHeight: 'calc(100vh - 2rem)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          }}>
-            {/* Header */}
-            <div style={{ padding: '1.5rem 1.5rem 0' }}>
-              <h3 style={{
-                fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                fontSize: '1.1rem', fontWeight: 700, color: '#2A2520',
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
+      <Dialog open={createOpen} onOpenChange={(open) => !open && !createMutation.isPending && setCreateOpen(false)}>
+        <DialogContent className="sm:max-w-[480px] gap-0 p-0 overflow-hidden rounded-3xl">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              <span style={{
+                width: 28, height: 28, borderRadius: 10,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(135deg, #F97316, #FB923C)',
+                color: '#fff', flexShrink: 0,
               }}>
-                <span style={{
-                  width: 28, height: 28, borderRadius: 10,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'linear-gradient(135deg, #F97316, #FB923C)',
-                  color: '#fff', flexShrink: 0,
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                </span>
-                添加分类
-              </h3>
-            </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </span>
+              添加分类
+            </DialogTitle>
+          </DialogHeader>
 
-            {/* Body */}
-            <div style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto' }}>
-              {/* Name */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label htmlFor="create-category-name" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  分类名称 <span style={{ color: '#E11D48' }}>*</span>
-                </label>
-                <input
-                  id="create-category-name"
-                  type="text"
-                  value={createName}
-                  onChange={(e) => setCreateName(e.target.value)}
-                  placeholder="请输入分类名称"
-                  maxLength={20}
-                  style={{
-                    width: '100%', padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #E5E0DB', borderRadius: 12,
-                    fontSize: '0.87rem', color: '#2A2520', outline: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
-                />
-              </div>
-
-              {/* Parent */}
-              <div style={{ marginBottom: '1rem' }}>
-                <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  父级分类
-                </span>
-                <AdminSelect
-                  options={parentOptions}
-                  value={createParentId !== undefined ? String(createParentId) : ''}
-                  onChange={(val) => setCreateParentId(val ? Number(val) : undefined)}
-                />
-                <p style={{ fontSize: '0.75rem', color: '#B5AEA8', marginTop: '0.25rem' }}>
-                  不选则为一级分类，最多支持三级分类
-                </p>
-              </div>
-
-              {/* Sort order */}
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label htmlFor="create-category-sort" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  排序值
-                </label>
-                <input
-                  id="create-category-sort"
-                  type="number"
-                  value={createSortOrder}
-                  onChange={(e) => setCreateSortOrder(Number(e.target.value))}
-                  min={0}
-                  max={9999}
-                  style={{
-                    width: '100%', padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #E5E0DB', borderRadius: 12,
-                    fontSize: '0.87rem', color: '#2A2520', outline: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
-                />
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem',
-              padding: '1rem 1.5rem',
-              background: 'linear-gradient(180deg, rgba(250,248,245,0.5), rgba(250,248,245,0.9))',
-              borderTop: '1px solid rgba(229,224,219,0.4)',
-            }}>
-              <button
-                type="button"
-                onClick={() => setCreateOpen(false)}
-                disabled={createMutation.isPending}
+          {/* Body */}
+          <div className="p-6">
+            {/* Name */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="create-category-name" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                分类名称 <span style={{ color: '#E11D48' }}>*</span>
+              </label>
+              <Input
+                id="create-category-name"
+                type="text"
+                value={createName}
+                onChange={(e) => setCreateName(e.target.value)}
+                placeholder="请输入分类名称"
+                maxLength={20}
+                className="h-auto"
                 style={{
-                  padding: '0.6rem 1.2rem', borderRadius: 12,
-                  border: '1.5px solid #E5E0DB', background: '#fff',
-                  fontSize: '0.87rem', fontWeight: 600, color: '#6B6460',
-                  cursor: 'pointer', transition: 'all 0.15s ease',
-                }}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={createMutation.isPending || !createName.trim()}
-                style={{
-                  padding: '0.6rem 1.5rem', borderRadius: 12, border: 'none',
-                  background: createMutation.isPending || !createName.trim() ? '#D6CEC5' : 'linear-gradient(135deg, #F97316, #EA580C)',
-                  fontSize: '0.87rem', fontWeight: 600, color: '#fff',
-                  cursor: createMutation.isPending || !createName.trim() ? 'not-allowed' : 'pointer',
+                  width: '100%', padding: '0.65rem 0.85rem',
+                  border: '1.5px solid #E5E0DB', borderRadius: 12,
+                  fontSize: '0.87rem', color: '#2A2520', outline: 'none',
                   transition: 'all 0.2s ease',
-                  boxShadow: createMutation.isPending || !createName.trim() ? 'none' : '0 3px 12px rgba(249,115,22,0.28)',
                 }}
-              >
-                {createMutation.isPending ? '创建中...' : '确认创建'}
-              </button>
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Parent */}
+            <div style={{ marginBottom: '1rem' }}>
+              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                父级分类
+              </span>
+              <AdminSelect
+                options={parentOptions}
+                value={createParentId !== undefined ? String(createParentId) : ''}
+                onChange={(val) => setCreateParentId(val ? Number(val) : undefined)}
+              />
+              <p style={{ fontSize: '0.75rem', color: '#B5AEA8', marginTop: '0.25rem' }}>
+                不选则为一级分类，最多支持三级分类
+              </p>
+            </div>
+
+            {/* Sort order */}
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label htmlFor="create-category-sort" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                排序值
+              </label>
+              <Input
+                id="create-category-sort"
+                type="number"
+                value={createSortOrder}
+                onChange={(e) => setCreateSortOrder(Number(e.target.value))}
+                min={0}
+                max={9999}
+                className="h-auto"
+                style={{
+                  width: '100%', padding: '0.65rem 0.85rem',
+                  border: '1.5px solid #E5E0DB', borderRadius: 12,
+                  fontSize: '0.87rem', color: '#2A2520', outline: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
+              />
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+
+          <DialogFooter className="flex-row justify-end gap-2.5 p-4 border-t border-border/40 bg-gradient-to-b from-background/50 to-background/90">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setCreateOpen(false)}
+              disabled={createMutation.isPending}
+              style={{
+                padding: '0.6rem 1.2rem', borderRadius: 12,
+                border: '1.5px solid #E5E0DB', background: '#fff',
+                fontSize: '0.87rem', fontWeight: 600, color: '#6B6460',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={handleCreate}
+              disabled={createMutation.isPending || !createName.trim()}
+              style={{
+                padding: '0.6rem 1.5rem', borderRadius: 12, border: 'none',
+                background: createMutation.isPending || !createName.trim() ? '#D6CEC5' : 'linear-gradient(135deg, #F97316, #EA580C)',
+                fontSize: '0.87rem', fontWeight: 600, color: '#fff',
+                cursor: createMutation.isPending || !createName.trim() ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: createMutation.isPending || !createName.trim() ? 'none' : '0 3px 12px rgba(249,115,22,0.28)',
+              }}
+            >
+              {createMutation.isPending ? '创建中...' : '确认创建'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ===== Edit Modal ===== */}
-      {editOpen && editId && createPortal(
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
-          <div
-            role="button"
-            tabIndex={0}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(42,37,32,0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
-            onClick={() => !updateMutation.isPending && setEditOpen(false)}
-            onKeyDown={(e) => e.key === 'Enter' && !updateMutation.isPending && setEditOpen(false)}
-            aria-label="关闭"
-          />
-          <div style={{
-            position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%, -50%)',
-            width: 'calc(100% - 2rem)', maxWidth: 480,
-            background: 'rgba(255,255,255,0.94)', backdropFilter: 'blur(24px)',
-            WebkitBackdropFilter: 'blur(24px)',
-            border: '1px solid rgba(255,255,255,0.7)', borderRadius: 24,
-            boxShadow: '0 24px 64px rgba(42,37,32,0.18)',
-            maxHeight: 'calc(100vh - 2rem)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          }}>
-            {/* Header */}
-            <div style={{ padding: '1.5rem 1.5rem 0' }}>
-              <h3 style={{
-                fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                fontSize: '1.1rem', fontWeight: 700, color: '#2A2520',
-                display: 'flex', alignItems: 'center', gap: '0.5rem',
+      <Dialog open={editOpen && !!editId} onOpenChange={(open) => !open && !updateMutation.isPending && setEditOpen(false)}>
+        <DialogContent className="sm:max-w-[480px] gap-0 p-0 overflow-hidden rounded-3xl">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle className="flex items-center gap-2">
+              <span style={{
+                width: 28, height: 28, borderRadius: 10,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                color: '#fff', flexShrink: 0,
               }}>
-                <span style={{
-                  width: 28, height: 28, borderRadius: 10,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  background: 'linear-gradient(135deg, #3B82F6, #2563EB)',
-                  color: '#fff', flexShrink: 0,
-                }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </span>
-                编辑分类
-              </h3>
-            </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </span>
+              编辑分类
+            </DialogTitle>
+          </DialogHeader>
 
-            {/* Body */}
-            <div style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto' }}>
-              {/* Name */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label htmlFor="edit-category-name" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  分类名称 <span style={{ color: '#E11D48' }}>*</span>
-                </label>
-                <input
-                  id="edit-category-name"
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="请输入分类名称"
-                  maxLength={20}
-                  style={{
-                    width: '100%', padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #E5E0DB', borderRadius: 12,
-                    fontSize: '0.87rem', color: '#2A2520', outline: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
-                />
-              </div>
-
-              {/* Parent */}
-              <div style={{ marginBottom: '1rem' }}>
-                <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  父级分类
-                </span>
-                <AdminSelect
-                  options={parentOptions}
-                  value={editParentId !== undefined ? String(editParentId) : ''}
-                  onChange={(val) => setEditParentId(val ? Number(val) : undefined)}
-                />
-              </div>
-
-              {/* Sort order */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label htmlFor="edit-category-sort" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  排序值
-                </label>
-                <input
-                  id="edit-category-sort"
-                  type="number"
-                  value={editSortOrder}
-                  onChange={(e) => setEditSortOrder(Number(e.target.value))}
-                  min={0}
-                  max={9999}
-                  style={{
-                    width: '100%', padding: '0.65rem 0.85rem',
-                    border: '1.5px solid #E5E0DB', borderRadius: 12,
-                    fontSize: '0.87rem', color: '#2A2520', outline: 'none',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
-                />
-              </div>
-
-              {/* Status */}
-              <div>
-                <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
-                  状态
-                </span>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <label style={{
-                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                    padding: '0.5rem 1rem', borderRadius: 10,
-                    border: `1.5px solid ${editStatus === 1 ? '#10B981' : '#E5E0DB'}`,
-                    background: editStatus === 1 ? 'rgba(16,185,129,0.05)' : '#fff',
-                    cursor: 'pointer', transition: 'all 0.15s ease',
-                  }}>
-                    <input
-                      type="radio"
-                      checked={editStatus === 1}
-                      onChange={() => setEditStatus(1)}
-                      style={{ accentColor: '#10B981' }}
-                    />
-                    <span style={{ fontSize: '0.84rem', fontWeight: 500, color: editStatus === 1 ? '#059669' : '#6B6460' }}>启用</span>
-                  </label>
-                  <label style={{
-                    display: 'flex', alignItems: 'center', gap: '0.4rem',
-                    padding: '0.5rem 1rem', borderRadius: 10,
-                    border: `1.5px solid ${editStatus === 0 ? '#F43F5E' : '#E5E0DB'}`,
-                    background: editStatus === 0 ? 'rgba(244,63,94,0.05)' : '#fff',
-                    cursor: 'pointer', transition: 'all 0.15s ease',
-                  }}>
-                    <input
-                      type="radio"
-                      checked={editStatus === 0}
-                      onChange={() => setEditStatus(0)}
-                      style={{ accentColor: '#F43F5E' }}
-                    />
-                    <span style={{ fontSize: '0.84rem', fontWeight: 500, color: editStatus === 0 ? '#E11D48' : '#6B6460' }}>禁用</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.65rem',
-              padding: '1rem 1.5rem',
-              background: 'linear-gradient(180deg, rgba(250,248,245,0.5), rgba(250,248,245,0.9))',
-              borderTop: '1px solid rgba(229,224,219,0.4)',
-            }}>
-              <button
-                type="button"
-                onClick={() => setEditOpen(false)}
-                disabled={updateMutation.isPending}
+          {/* Body */}
+          <div className="p-6">
+            {/* Name */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="edit-category-name" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                分类名称 <span style={{ color: '#E11D48' }}>*</span>
+              </label>
+              <Input
+                id="edit-category-name"
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="请输入分类名称"
+                maxLength={20}
+                className="h-auto"
                 style={{
-                  padding: '0.6rem 1.2rem', borderRadius: 12,
-                  border: '1.5px solid #E5E0DB', background: '#fff',
-                  fontSize: '0.87rem', fontWeight: 600, color: '#6B6460',
-                  cursor: 'pointer', transition: 'all 0.15s ease',
-                }}
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                onClick={handleEdit}
-                disabled={updateMutation.isPending || !editName.trim()}
-                style={{
-                  padding: '0.6rem 1.5rem', borderRadius: 12, border: 'none',
-                  background: updateMutation.isPending || !editName.trim() ? '#D6CEC5' : 'linear-gradient(135deg, #3B82F6, #2563EB)',
-                  fontSize: '0.87rem', fontWeight: 600, color: '#fff',
-                  cursor: updateMutation.isPending || !editName.trim() ? 'not-allowed' : 'pointer',
+                  width: '100%', padding: '0.65rem 0.85rem',
+                  border: '1.5px solid #E5E0DB', borderRadius: 12,
+                  fontSize: '0.87rem', color: '#2A2520', outline: 'none',
                   transition: 'all 0.2s ease',
-                  boxShadow: updateMutation.isPending || !editName.trim() ? 'none' : '0 3px 12px rgba(59,130,246,0.28)',
                 }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Parent */}
+            <div style={{ marginBottom: '1rem' }}>
+              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                父级分类
+              </span>
+              <AdminSelect
+                options={parentOptions}
+                value={editParentId !== undefined ? String(editParentId) : ''}
+                onChange={(val) => setEditParentId(val ? Number(val) : undefined)}
+              />
+            </div>
+
+            {/* Sort order */}
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="edit-category-sort" style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                排序值
+              </label>
+              <Input
+                id="edit-category-sort"
+                type="number"
+                value={editSortOrder}
+                onChange={(e) => setEditSortOrder(Number(e.target.value))}
+                min={0}
+                max={9999}
+                className="h-auto"
+                style={{
+                  width: '100%', padding: '0.65rem 0.85rem',
+                  border: '1.5px solid #E5E0DB', borderRadius: 12,
+                  fontSize: '0.87rem', color: '#2A2520', outline: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(249,115,22,0.08)'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Status */}
+            <div>
+              <span style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#2A2520', marginBottom: '0.4rem' }}>
+                状态
+              </span>
+              <RadioGroup
+                value={String(editStatus)}
+                onValueChange={(value) => setEditStatus(Number(value))}
+                className="flex gap-3"
               >
-                {updateMutation.isPending ? '保存中...' : '保存修改'}
-              </button>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-[#E5E0DB] bg-white'}`}
+                  onClick={() => setEditStatus(1)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditStatus(1); } }}
+                >
+                  <RadioGroupItem value="1" id="status-enabled" />
+                  <Label htmlFor="status-enabled" className={`text-sm font-medium cursor-pointer ${editStatus === 1 ? 'text-emerald-600' : 'text-[#6B6460]'}`}>启用</Label>
+                </div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-[#E5E0DB] bg-white'}`}
+                  onClick={() => setEditStatus(0)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setEditStatus(0); } }}
+                >
+                  <RadioGroupItem value="0" id="status-disabled" />
+                  <Label htmlFor="status-disabled" className={`text-sm font-medium cursor-pointer ${editStatus === 0 ? 'text-rose-600' : 'text-[#6B6460]'}`}>禁用</Label>
+                </div>
+              </RadioGroup>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+
+          <DialogFooter className="flex-row justify-end gap-2.5 p-4 border-t border-border/40 bg-gradient-to-b from-background/50 to-background/90">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEditOpen(false)}
+              disabled={updateMutation.isPending}
+              style={{
+                padding: '0.6rem 1.2rem', borderRadius: 12,
+                border: '1.5px solid #E5E0DB', background: '#fff',
+                fontSize: '0.87rem', fontWeight: 600, color: '#6B6460',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={handleEdit}
+              disabled={updateMutation.isPending || !editName.trim()}
+              style={{
+                padding: '0.6rem 1.5rem', borderRadius: 12, border: 'none',
+                background: updateMutation.isPending || !editName.trim() ? '#D6CEC5' : 'linear-gradient(135deg, #3B82F6, #2563EB)',
+                fontSize: '0.87rem', fontWeight: 600, color: '#fff',
+                cursor: updateMutation.isPending || !editName.trim() ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: updateMutation.isPending || !editName.trim() ? 'none' : '0 3px 12px rgba(59,130,246,0.28)',
+              }}
+            >
+              {updateMutation.isPending ? '保存中...' : '保存修改'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ===== Delete Confirm ===== */}
       <ConfirmModal

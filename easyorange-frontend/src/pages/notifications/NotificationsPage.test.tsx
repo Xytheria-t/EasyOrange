@@ -213,7 +213,7 @@ describe('NotificationsPage', () => {
     // Click the notification card
     const notificationCard = screen.getByText('审核通过').closest('button');
     expect(notificationCard).not.toBeNull();
-    await user.click(notificationCard!);
+    await user.click(notificationCard as HTMLElement);
 
     // Should mark as read
     expect(mockMarkAsRead).toHaveBeenCalledWith('1');
@@ -250,7 +250,7 @@ describe('NotificationsPage', () => {
 
     const notificationCard = screen.getByText('审核通过').closest('button');
     expect(notificationCard).not.toBeNull();
-    await user.click(notificationCard!);
+    await user.click(notificationCard as HTMLElement);
 
     // Already read, so markAsRead should NOT be called
     expect(mockMarkAsRead).not.toHaveBeenCalled();

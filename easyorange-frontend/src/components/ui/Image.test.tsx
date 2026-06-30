@@ -53,7 +53,7 @@ describe('Image', () => {
   });
 
   it('does not show placeholder when placeholder is none', () => {
-    const { container } = render(
+    render(
       <Image src="/api/file/test.jpg" alt="no-placeholder" placeholder="none" />,
     );
     // Should not have shimmer or blur placeholder divs

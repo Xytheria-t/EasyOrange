@@ -12,6 +12,8 @@ import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
 import { debounce } from '@/utils';
 import type { ProductSearchParams } from '@/types/product';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui';
 import '@/styles/main.css';
 import './search.css';
 
@@ -217,13 +219,13 @@ function SearchPage() {
             <div className="search-page-content">
                 {/* Search Header */}
                 <div className="search-header-bar">
-                    <button className="search-back-btn" onClick={() => navigate(-1)}>
+                    <Button variant="ghost" size="icon" className="search-back-btn" onClick={() => navigate(-1)}>
                         <ArrowLeft size={20} />
-                    </button>
+                    </Button>
                     <form onSubmit={handleSubmit} className="search-form-wrapper">
                         <div className="search-input-premium">
                             <Search size={18} className="search-input-icon" />
-                            <input
+                            <Input
                                 ref={inputRef}
                                 type="text"
                                 value={keyword}
@@ -234,21 +236,23 @@ function SearchPage() {
                                 className="search-input-field"
                             />
                             {keyword && (
-                                <button type="button" onClick={handleClear} className="search-clear-btn">
+                                <Button type="button" variant="ghost" size="icon" onClick={handleClear} className="search-clear-btn">
                                     <X size={12} />
-                                </button>
+                                </Button>
                             )}
-                            <button type="button"
+                            <Button type="button"
+                                variant="ghost"
+                                size="icon"
                                 className={`search-ai-btn ${aiEnabled ? 'ai-enabled' : ''}`}
                                 title={aiEnabled ? '关闭AI智能搜索' : '开启AI智能搜索'}
                                 onClick={handleAiToggle}
                             >
                                 <Sparkles size={14} />
-                            </button>
-                            <button type="submit" className="search-submit-btn">
+                            </Button>
+                            <Button type="submit" className="search-submit-btn">
                                 <Search size={14} />
                                 <span>搜索</span>
-                            </button>
+                            </Button>
                         </div>
                         {showSuggestions && suggestions && suggestions.length > 0 && !submittedKeyword && (
                             <div className="search-suggestions-dropdown">
@@ -257,16 +261,17 @@ function SearchPage() {
                                     <span>AI智能建议</span>
                                 </div>
                                 {suggestions.map(s => (
-                                    <button
+                                    <Button
                                         key={s}
                                         type="button"
-                                        className="suggestion-item"
+                                        variant="ghost"
+                                        className="suggestion-item justify-start"
                                         onMouseDown={() => handleSuggestionClick(s)}
                                     >
                                         <Search size={14} className="suggestion-icon" />
                                         <span className="suggestion-text">{s}</span>
                                         <ChevronRight size={14} className="suggestion-arrow" />
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         )}
@@ -286,29 +291,34 @@ function SearchPage() {
                                                 <History size={14} />
                                             </div>
                                             <h3 className="search-top-card-title">最近搜索</h3>
-                                            <button className="search-top-card-action" onClick={clearHistory}>
+                                            <Button variant="ghost" size="sm" className="search-top-card-action" onClick={clearHistory}>
                                                 <Trash2 size={12} />
                                                 <span>清空</span>
-                                            </button>
+                                            </Button>
                                         </div>
                                         <div className="search-history-tags">
                                             {searchHistory.map(item => (
-                                                <button
+                                                <div
                                                     key={item}
+                                                    role="button"
+                                                    tabIndex={0}
                                                     className="search-history-tag"
                                                     onClick={() => handleHotKeywordClick(item)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleHotKeywordClick(item); } }}
                                                 >
                                                     <Clock size={10} />
                                                     <span>{item}</span>
-                                                    <button
+                                                    <Button
                                                         type="button"
+                                                        variant="ghost"
+                                                        size="icon"
                                                         className="search-history-remove"
                                                         onClick={(e) => removeFromHistory(item, e)}
                                                         aria-label={`删除搜索记录 ${item}`}
                                                     >
                                                         <X size={8} />
-                                                    </button>
-                                                </button>
+                                                    </Button>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
@@ -324,8 +334,10 @@ function SearchPage() {
                                         </div>
                                         <div className="search-hot-tags">
                                             {hotKeywords.map((item, index) => (
-                                                <button
+                                                <Button
                                                     key={item.keyword}
+                                                    type="button"
+                                                    variant="ghost"
                                                     className={`search-hot-tag ${index < 3 ? 'search-hot-tag-highlight' : ''}`}
                                                     onClick={() => handleHotKeywordClick(item.keyword)}
                                                 >
@@ -335,7 +347,7 @@ function SearchPage() {
                                                         </span>
                                                     )}
                                                     <span>{item.keyword}</span>
-                                                </button>
+                                                </Button>
                                             ))}
                                         </div>
                                     </div>
@@ -375,10 +387,10 @@ function SearchPage() {
                                         <span>品质保障</span>
                                     </div>
                                 </div>
-                                <button className="search-ai-btn-main">
+                                <Button className="search-ai-btn-main">
                                     <Sparkles size={16} />
                                     <span>开启AI搜索体验</span>
-                                </button>
+                                </Button>
                             </div>
                         </div>
 
@@ -395,9 +407,11 @@ function SearchPage() {
                                     const iconConfig = CATEGORY_ICON_MAP[cat.name] || DEFAULT_CATEGORY_ICON;
                                     const IconComponent = iconConfig.icon;
                                     return (
-                                        <button
+                                        <Button
                                             key={cat.id}
-                                            className="search-category-card"
+                                            type="button"
+                                            variant="ghost"
+                                            className="search-category-card whitespace-normal"
                                             onClick={() => handleCategoryClick(cat.id)}
                                             style={{ '--cat-color': iconConfig.color, '--cat-bg': iconConfig.bg } as React.CSSProperties}
                                         >
@@ -405,7 +419,7 @@ function SearchPage() {
                                                 <IconComponent size={20} />
                                             </div>
                                             <span className="search-category-name">{cat.name}</span>
-                                        </button>
+                                        </Button>
                                     );
                                 })}
                             </div>
@@ -424,8 +438,11 @@ function SearchPage() {
                                     <div
                                         key={topic.title}
                                         className="search-trending-card"
+                                        role="button"
+                                        tabIndex={-1}
                                         style={{ '--topic-color': topic.color } as React.CSSProperties}
                                         onMouseMove={handleMouseMove}
+                                        onKeyDown={() => {}}
                                     >
                                         <div
                                             className="trending-card-glow"
@@ -555,13 +572,15 @@ function SearchPage() {
                                         <span className="search-hint-label">试试搜索：</span>
                                         <div className="search-hint-tags">
                                             {hotKeywords.slice(0, 5).map(item => (
-                                                <button
+                                                <Button
                                                     key={item.keyword}
+                                                    variant="outline"
+                                                    size="sm"
                                                     className="search-hint-tag"
                                                     onClick={() => handleHotKeywordClick(item.keyword)}
                                                 >
                                                     {item.keyword}
-                                                </button>
+                                                </Button>
                                             ))}
                                         </div>
                                     </div>

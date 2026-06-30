@@ -1,5 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { Send, Paperclip, Smile } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 
 interface ChatInputBarProps {
   onSend: (content: string) => void
@@ -65,16 +67,19 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false }: ChatInputBarProp
   return (
     <div className="chat-input-bar">
       <div className="chat-input-bar-inner">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           className="chat-input-action-btn"
           aria-label="附件"
           disabled={isDisabled}
         >
           <Paperclip size={20} />
-        </button>
+        </Button>
 
         <div className="chat-input-wrapper">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={value}
             onChange={handleChange}
@@ -87,22 +92,27 @@ function ChatInputBar({ onSend, onTyping, isDisabled = false }: ChatInputBarProp
           />
         </div>
 
-        <button
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           className="chat-input-action-btn"
           aria-label="表情"
           disabled={isDisabled}
         >
           <Smile size={20} />
-        </button>
+        </Button>
 
-        <button
+        <Button
+          type="button"
+          size="icon"
           onClick={handleSubmit}
           disabled={!value.trim() || isDisabled}
           className="chat-send-btn"
           aria-label="发送"
         >
           <Send size={18} className="-rotate-[15deg] translate-x-[1px]" />
-        </button>
+        </Button>
       </div>
     </div>
   )

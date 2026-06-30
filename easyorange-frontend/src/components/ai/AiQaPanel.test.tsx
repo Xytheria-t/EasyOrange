@@ -92,7 +92,7 @@ describe('AiQaPanel', () => {
       );
       const input = screen.getByPlaceholderText('输入您的问题...');
       fireEvent.change(input, { target: { value: question } });
-      const form = container.querySelector('form')!;
+      const form = container.querySelector('form') as HTMLFormElement;
       fireEvent.submit(form);
       return { input, form };
     }
@@ -117,7 +117,7 @@ describe('AiQaPanel', () => {
           isLoading={false}
         />,
       );
-      const sendBtn = container.querySelector('button[type="submit"]')!;
+      const sendBtn = container.querySelector('button[type="submit"]') as HTMLButtonElement;
       expect(sendBtn).toBeDisabled();
     });
 

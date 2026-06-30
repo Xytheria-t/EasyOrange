@@ -1,5 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
 
 export type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'popular';
 
@@ -16,55 +21,26 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 ];
 
 export default function SortDropdown({ value, onChange }: SortDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedLabel = SORT_OPTIONS.find(o => o.value === value)?.label ?? '排序方式';
-
   return (
-    <div ref={ref} className="sort-dropdown relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="sort-dropdown-trigger"
-        aria-expanded={open}
-        aria-haspopup="listbox"
+    <Select value={value} onValueChange={(v) => onChange(v as SortOption)}>
+      <SelectTrigger
+        className="h-auto w-auto gap-2 rounded-xl border-primary-500/15 bg-white/85 px-5 py-2.5 text-sm font-bold text-primary-600 backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:border-primary-500/30 hover:bg-primary-500/8 hover:shadow-[0_4px_16px_rgba(249,115,22,0.15)]"
       >
-        <span>{selectedLabel}</span>
-        <ChevronDown size={14} className={`sort-dropdown-arrow ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="sort-dropdown-panel" role="listbox">
-          {SORT_OPTIONS.map(option => (
-            <button
-              key={option.value}
-              type="button"
-              role="option"
-              aria-selected={value === option.value}
-              className={`sort-dropdown-item ${value === option.value ? 'active' : ''}`}
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
-              }}
-            >
-              <span>{option.label}</span>
-              {value === option.value && (
-                <span className="sort-dropdown-check">✓</span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+        <SelectValue placeholder="排序方式" />
+      </SelectTrigger>
+      <SelectContent
+        className="rounded-2xl border-primary-500/10 bg-white/97 backdrop-blur-xl shadow-xl"
+      >
+        {SORT_OPTIONS.map((option) => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            className="rounded-lg px-3 py-2.5 text-[0.8125rem] font-semibold text-[var(--text-secondary)] focus:bg-primary-500/6 focus:text-primary-600 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-primary-500/10 data-[state=checked]:to-rose-400/6 data-[state=checked]:text-primary-600"
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

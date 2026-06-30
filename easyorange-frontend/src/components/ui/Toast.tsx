@@ -1,28 +1,38 @@
 import { useUIStore } from '@/store';
-import '@/styles/main.css';
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastDescription,
+  ToastClose,
+} from './toast-primitive';
+
+const variantMap: Record<string, 'default' | 'success' | 'error' | 'info' | 'warning'> = {
+  success: 'success',
+  error: 'error',
+  info: 'info',
+  warning: 'warning',
+};
 
 export function ToastContainer() {
   const { toasts, removeToast } = useUIStore();
 
-  if (toasts.length === 0) {return null;}
-
   return (
-    <div className="toast-container" aria-live="polite" aria-atomic="true">
+    <ToastProvider>
       {toasts.map((toast) => (
-        <div
+        <Toast
           key={toast.id}
+          variant={variantMap[toast.type] ?? 'default'}
           className={`toast-item toast-${toast.type}`}
+          onOpenChange={(open: boolean) => !open && removeToast(toast.id)}
         >
-          <span className="toast-message">{toast.message}</span>
-          <button
-            onClick={() => removeToast(toast.id)}
-            className="toast-close"
-            aria-label="关闭通知"
-          >
-            ×
-          </button>
-        </div>
+          <div className="grid gap-1">
+            <ToastDescription className="toast-message text-sm font-semibold">{toast.message}</ToastDescription>
+          </div>
+          <ToastClose aria-label="关闭通知" />
+        </Toast>
       ))}
-    </div>
+      <ToastViewport />
+    </ToastProvider>
   );
 }

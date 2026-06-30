@@ -63,6 +63,9 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
 
   return (
     <div
+      role="button"
+      tabIndex={-1}
+      onKeyDown={() => {}}
       style={{
         position: 'relative',
         background: 'rgba(255,255,255,0.72)',

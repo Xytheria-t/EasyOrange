@@ -192,12 +192,13 @@
     border-radius: var(--radius-xl);
     font-size: 0.875rem;
     font-weight: 600;
-    cursor: pointer;
     transition: all var(--transition-fast);
     border: 1.5px solid rgba(239, 68, 68, 0.25);
     background: rgba(239, 68, 68, 0.04);
     color: #DC2626;
     letter-spacing: 0.01em;
+    height: auto;
+    min-height: unset;
 }
 
 .favorites-batch-btn:hover {
@@ -375,7 +376,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
     transition: all var(--transition-fast);
     color: var(--error);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -728,10 +728,11 @@
     color: var(--white);
     font-weight: 600;
     font-size: 0.875rem;
-    cursor: pointer;
     border: none;
     transition: all var(--transition-fast);
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    height: auto;
+    min-height: unset;
 }
 
 .favorites-error .retry-btn:hover {
@@ -857,7 +858,6 @@
     color: var(--white);
     font-weight: 700;
     font-size: 0.9375rem;
-    cursor: pointer;
     border: none;
     text-decoration: none;
     transition: all var(--transition-fast);
@@ -865,6 +865,8 @@
     position: relative;
     overflow: hidden;
     letter-spacing: 0.01em;
+    height: auto;
+    min-height: unset;
 }
 
 .favorites-empty .explore-btn::before {
@@ -909,8 +911,9 @@
     color: var(--text-primary);
     font-size: 0.875rem;
     font-weight: 600;
-    cursor: pointer;
     transition: all var(--transition-fast);
+    height: auto;
+    min-height: unset;
 }
 
 .favorites-pagination .pagination-btn:hover:not(:disabled) {
@@ -1089,10 +1092,11 @@
     border-radius: var(--radius-xl);
     font-size: 0.875rem;
     font-weight: 700;
-    cursor: pointer;
     transition: all var(--transition-fast);
     box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
     align-self: flex-start;
+    height: auto;
+    min-height: unset;
 }
 
 .favorites-ai-btn:hover {

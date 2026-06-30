@@ -120,7 +120,7 @@ describe('MessageList', () => {
       { index: 0, start: 0, end: 72, key: 'm1', size: 72 },
     ];
     const messages = [makeMessage({ id: 'm1', senderId: 'user1' })];
-    const { container } = render(
+    render(
       <MessageList
         messages={messages}
         currentUserId="user1"

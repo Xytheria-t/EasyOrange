@@ -5,6 +5,8 @@ import { AdminSelect } from '../../components/AdminSelect';
 import { UserDetailModal } from './UserDetailModal';
 import { useAdminUsers, useUpdateUserStatus } from '../../hooks';
 import type { AdminUser } from '../../types/admin';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const STATUS_FILTER_OPTIONS = [
   { value: '', label: '全部状态' },
@@ -37,7 +39,7 @@ export default function UserManagePage() {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const { data, isLoading, isError, error: _error } = useAdminUsers({
+  const { data, isLoading, isError } = useAdminUsers({
     pageNum: page,
     pageSize,
     keyword: keyword || undefined,
@@ -131,16 +133,19 @@ export default function UserManagePage() {
       key: 'actions',
       title: '操作',
       render: (_, record) => (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={(e) => { e.stopPropagation(); handleViewDetail(record); }}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.38rem 0.85rem', borderRadius: 10,
             fontSize: '0.81rem', fontWeight: 600,
             color: '#EA580C', background: 'rgba(249,115,22,0.07)',
-            border: '1px solid transparent', cursor: 'pointer',
+            border: '1px solid transparent',
             transition: 'all 0.2s ease', letterSpacing: '0.01em',
             textDecoration: 'none',
+            height: 'auto', minHeight: 'unset',
           }}
           onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.14)'; e.currentTarget.style.transform = 'translateX(2px)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(249,115,22,0.07)'; e.currentTarget.style.transform = 'translateX(0)'; }}
@@ -150,7 +155,7 @@ export default function UserManagePage() {
             <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
           </svg>
           详情
-        </button>
+        </Button>
       ),
     },
   ];
@@ -200,11 +205,12 @@ export default function UserManagePage() {
               <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#E11D48' }}>数据加载失败</div>
               <div style={{ fontSize: '0.8rem', color: '#9B9590' }}>无法连接到服务器，请检查后端服务是否启动</div>
             </div>
-            <button onClick={() => window.location.reload()} style={{
+            <Button onClick={() => window.location.reload()} variant="default" size="sm" style={{
               padding: '0.45rem 1rem', borderRadius: 10, background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
-              color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer',
+              color: '#fff', fontSize: '0.8rem', fontWeight: 600, border: 'none',
               boxShadow: '0 2px 8px rgba(244,63,94,0.25)',
-            }}>刷新</button>
+              height: 'auto', minHeight: 'unset',
+            }}>刷新</Button>
           </div>
         )}
 
@@ -241,12 +247,13 @@ export default function UserManagePage() {
             {/* Search */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexShrink: 0 }}>
               <div style={{ position: 'relative', width: 280 }}>
-                <input
+                <Input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="搜索用户名/邮箱..."
+                  className="h-auto"
                   style={{
                     width: '100%', padding: '0.68rem 1rem 0.68rem 2.6rem',
                     border: '1.5px solid #E5E0DB', borderRadius: 14,
@@ -264,22 +271,25 @@ export default function UserManagePage() {
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
               </div>
-              <button
+              <Button
+                variant="default"
+                size="sm"
                 onClick={handleSearch}
                 style={{
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   padding: '0.68rem 1.2rem', border: 'none', borderRadius: 14,
                   background: 'linear-gradient(135deg, #F97316, #EA580C)',
                   color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                  cursor: 'pointer', transition: 'all 0.2s ease',
+                  transition: 'all 0.2s ease',
                   boxShadow: '0 2px 8px rgba(249,115,22,0.28)',
                   whiteSpace: 'nowrap', letterSpacing: '0.01em',
+                  height: 'auto', minHeight: 'unset',
                 }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(249,115,22,0.38)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(249,115,22,0.28)'; }}
               >
                 搜索
-              </button>
+              </Button>
             </div>
           </div>
         </header>

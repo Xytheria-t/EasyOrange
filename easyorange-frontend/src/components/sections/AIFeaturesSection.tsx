@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Button } from '@/components/ui/button'
 import './ai-features.css'
 
 type StepStatus = 'pending' | 'running' | 'done'
@@ -153,7 +154,7 @@ function StewardDailyReport() {
 
       <div className="daily-card-footer">
         <span className="daily-footer-tip">📌 你只负责决策,过程 AI 全包</span>
-        <button className="daily-footer-btn">查看完整工作日志 →</button>
+        <Button variant="outline" className="daily-footer-btn">查看完整工作日志 →</Button>
       </div>
     </div>
   )

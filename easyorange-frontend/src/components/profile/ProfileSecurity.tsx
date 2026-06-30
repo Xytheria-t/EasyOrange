@@ -1,4 +1,5 @@
 import { KeyRound, Phone, Mail, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { User } from '@/types'
 
 interface ProfileSecurityProps {
@@ -53,10 +54,10 @@ export function ProfileSecurity({ user, onEdit, onShowPasswordModal }: ProfileSe
             <h3>账号安全良好</h3>
             <p>建议绑定手机和邮箱以提升安全等级</p>
             <div className="score-actions">
-              <button className="btn-outline" onClick={onShowPasswordModal}>
+              <Button variant="outline" onClick={onShowPasswordModal}>
                 <KeyRound size={16} />
                 修改密码
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -80,9 +81,9 @@ export function ProfileSecurity({ user, onEdit, onShowPasswordModal }: ProfileSe
                   <span className={`status-badge ${isActive ? 'active' : ''}`}>
                     {item.status}
                   </span>
-                  <button className="btn-outline" onClick={item.action}>
+                  <Button variant="outline" onClick={item.action}>
                     {isActive ? '修改' : '去设置'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )

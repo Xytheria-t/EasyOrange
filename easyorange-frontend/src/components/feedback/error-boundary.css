@@ -171,8 +171,9 @@
   font-weight: 600;
   font-size: 0.9375rem;
   transition: all var(--transition-normal);
-  cursor: pointer;
   border: none;
+  height: auto;
+  min-height: unset;
 }
 
 .error-boundary-btn-primary {

@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { cn } from '@/lib/utils';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
 import { useAuditProduct, useAuditLogs } from '../../hooks/useAdminProductAudit';
 import type { AuditLogResponse, AuditDimension, AiReviewResult } from '../../types/admin';
 import { adminApi } from '../../api/adminApi';
 import { AiReviewSuggestion } from '../../../components/ai/AiReviewSuggestion';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  Textarea,
+  ShadcnButton,
+} from '@/components/ui';
 
 interface ProductDetailDrawerProps {
   open: boolean;
@@ -26,6 +34,15 @@ const createInitialState = () => ({
   showRejectModal: false,
 });
 
+const DIMENSIONS: { key: AuditDimension; label: string }[] = [
+  { key: 'basic', label: '基本信息合规' },
+  { key: 'compliance', label: '内容无违规' },
+  { key: 'image', label: '图片质量合格' },
+  { key: 'price', label: '价格合理' },
+];
+
+const REJECT_TAGS = ['信息不完整', '图片模糊', '疑似虚假信息', '价格异常', '违规内容', '其他'];
+
 export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: ProductDetailDrawerProps) {
   const [state, setState] = useState(createInitialState);
   const { selectedImage, previewImage, selectedDimensions, auditRemark, rejectReason, showRejectModal } = state;
@@ -37,7 +54,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
   const updateStatus = useAuditProduct();
   const auditLogs = useAuditLogs(productId);
 
-  // Reset state and refetch when opening drawer or switching products
   useEffect(() => {
     if (open && productId) {
       setState(createInitialState());
@@ -70,19 +86,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     }
   };
 
-  useEffect(() => {
-    if (!open) {return;}
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !previewImage) {onClose();}
-    };
-    document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
-  }, [open, previewImage, onClose]);
-
   const handleApproveWithDimensions = () => {
     if (!product) {return;}
     updateStatus.mutateAsync({
@@ -109,6 +112,22 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     }
   };
 
+  const toggleDimension = (key: AuditDimension) => {
+    setState(prev => ({
+      ...prev,
+      selectedDimensions: prev.selectedDimensions.includes(key)
+        ? prev.selectedDimensions.filter(d => d !== key)
+        : [...prev.selectedDimensions, key],
+    }));
+  };
+
+  const appendRejectTag = (tag: string) => {
+    setState(prev => ({
+      ...prev,
+      rejectReason: (prev.rejectReason ? `${prev.rejectReason}；` : '') + tag,
+    }));
+  };
+
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleString('zh-CN', {
       year: 'numeric', month: '2-digit', day: '2-digit',
@@ -119,596 +138,410 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
   if (!open) {return null;}
 
-  return createPortal(
-    <>
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999 }}>
-        {/* Backdrop */}
-        <div
-          role="button"
-          tabIndex={0}
-          style={{
-            position: 'absolute', inset: 0,
-            background: 'rgba(42,37,32,0.4)',
-            backdropFilter: 'blur(4px)',
-            WebkitBackdropFilter: 'blur(4px)',
-            animation: 'drawerFadeIn 0.25s ease-out',
-          }}
-          onClick={onClose}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') { onClose(); } }}
-        />
-
-        {/* Drawer panel */}
-        <div style={{
-          position: 'absolute', right: 0, top: 0, height: '100%',
-          width: '100%', maxWidth: 520,
-          background: 'rgba(255,255,255,0.94)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          borderLeft: '1px solid rgba(229,224,219,0.4)',
-          boxShadow: '-16px 0 48px rgba(42,37,32,0.12)',
-          transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
-        }}>
-          {/* Header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '1.15rem 1.5rem',
-            borderBottom: '1px solid rgba(229,224,219,0.4)',
-            position: 'relative',
-          }}>
-            <div style={{
-              position: 'absolute', bottom: 0, left: '1.5rem', right: '1.5rem', height: 1,
-              background: 'linear-gradient(90deg, rgba(251,113,133,0.12), rgba(195,155,211,0.08), transparent)',
-            }} />
-            <h2 style={{
-              fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-              fontSize: '1.1rem', fontWeight: 700, color: '#2A2520',
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-            }}>
-              <span style={{
-                width: 26, height: 26, borderRadius: 8,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                background: 'linear-gradient(135deg, #FB7185, #C39BD3)',
-                color: '#fff', flexShrink: 0,
-              }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
-                </svg>
-              </span>
-              商品详情
-            </h2>
-            <button
-              onClick={onClose}
-              style={{
-                width: 32, height: 32, borderRadius: 10,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '1.5px solid #E5E0DB', background: '#fff',
-                color: '#8B857E', cursor: 'pointer', transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(244,63,94,0.06)'; e.currentTarget.style.borderColor = 'rgba(244,63,94,0.2)'; e.currentTarget.style.color = '#E11D48'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.color = '#8B857E'; }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6L6 18M6 6l12 12" />
+  return (
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) {onClose();} }}>
+      <SheetContent
+        side="right"
+        className="[&>button]:hidden flex h-full w-full max-w-[520px] flex-col gap-0 overflow-hidden border-l border-[rgba(229,224,219,0.4)] bg-white/92 p-0 shadow-[-16px_0_48px_rgba(42,37,32,0.12)]"
+        style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
+      >
+        {/* Header */}
+        <SheetHeader className="relative flex-row items-center justify-between border-b border-[rgba(229,224,219,0.4)] px-6 py-[1.15rem] text-left">
+          <div
+            className="absolute bottom-0 left-6 right-6 h-px"
+            style={{ background: 'linear-gradient(90deg, rgba(251,113,133,0.12), rgba(195,155,211,0.08), transparent)' }}
+          />
+          <SheetTitle
+            className="flex items-center gap-2 text-[1.1rem] font-bold text-[#2A2520]"
+            style={{ fontFamily: "'Playfair Display', 'Noto Serif SC', serif" }}
+          >
+            <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#FB7185,#C39BD3)] text-white">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
               </svg>
-            </button>
-          </div>
+            </span>
+            商品详情
+          </SheetTitle>
+          <ShadcnButton
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            disabled={updateStatus.isPending}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48] disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="关闭"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </ShadcnButton>
+        </SheetHeader>
 
-          {/* Content */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', minHeight: 0 }}>
-            {isLoading ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.7rem', padding: '4rem 1rem' }}>
-                <div style={{
-                  width: 28, height: 28,
-                  border: '2.5px solid #E5E0DB', borderTopColor: '#F97316',
-                  borderRadius: '50%', animation: 'spin 0.7s linear infinite',
-                }} />
-                <span style={{ fontSize: '0.87rem', color: '#9B9590' }}>加载中...</span>
-              </div>
-            ) : product ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {/* Image gallery */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div
-                    role="button"
-                    tabIndex={product.images[selectedImage] ? 0 : -1}
-                    style={{
-                      position: 'relative', width: '100%', aspectRatio: '16/10',
-                      overflow: 'hidden', borderRadius: 16,
-                      background: 'linear-gradient(135deg, #F5F2EE, #EDE8E3)',
-                      cursor: product.images[selectedImage] ? 'pointer' : 'default',
-                    }}
-                    onClick={() => product.images[selectedImage] && setState(prev => ({ ...prev, previewImage: product.images[selectedImage] }))}
-                    onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && product.images[selectedImage]) { setState(prev => ({ ...prev, previewImage: product.images[selectedImage] })); } }}
-                  >
-                    {product.images[selectedImage] ? (
-                      <img
-                        src={product.images[selectedImage]}
-                        alt={product.name}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#B5AEA8' }}>
-                        <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
-                    {product.images[selectedImage] && (
-                      <div style={{
-                        position: 'absolute', bottom: 8, right: 8,
-                        background: 'rgba(42,37,32,0.55)', backdropFilter: 'blur(4px)',
-                        color: '#fff', fontSize: '0.72rem', fontWeight: 500,
-                        padding: '0.25rem 0.6rem', borderRadius: 8,
-                      }}>
-                        点击预览
-                      </div>
-                    )}
-                  </div>
-
-                  {product.images.length > 1 && (
-                    <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.25rem' }}>
-                      {product.images.map((img, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setState(prev => ({ ...prev, selectedImage: index }))}
-                          style={{
-                            flexShrink: 0, width: 56, height: 56, borderRadius: 12,
-                            overflow: 'hidden',
-                            border: selectedImage === index ? '2px solid #F97316' : '2px solid transparent',
-                            padding: 0, cursor: 'pointer',
-                            transition: 'border-color 0.15s ease',
-                            boxShadow: selectedImage === index ? '0 2px 8px rgba(249,115,22,0.2)' : 'none',
-                          }}
-                        >
-                          <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        </button>
-                      ))}
+        {/* Content */}
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center gap-[0.7rem] py-16 px-4">
+              <div className="h-7 w-7 animate-spin rounded-full border-[2.5px] border-[#E5E0DB] border-t-[#F97316]" />
+              <span className="text-[0.87rem] text-[#9B9590]">加载中...</span>
+            </div>
+          ) : product ? (
+            <div className="flex flex-col gap-6">
+              {/* Image gallery */}
+              <div className="flex flex-col gap-3">
+                <div
+                  role="button"
+                  tabIndex={product.images[selectedImage] ? 0 : -1}
+                  className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
+                  style={{ aspectRatio: '16/10', cursor: product.images[selectedImage] ? 'pointer' : 'default' }}
+                  onClick={() => product.images[selectedImage] && setState(prev => ({ ...prev, previewImage: product.images[selectedImage] }))}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && product.images[selectedImage]) {setState(prev => ({ ...prev, previewImage: product.images[selectedImage] }));} }}
+                >
+                  {product.images[selectedImage] ? (
+                    <img src={product.images[selectedImage]} alt={product.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-[#B5AEA8]">
+                      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                  {product.images[selectedImage] && (
+                    <div className="absolute bottom-2 right-2 rounded-lg bg-[rgba(42,37,32,0.55)] px-[0.6rem] py-1 text-[0.72rem] font-medium text-white backdrop-blur-sm">
+                      点击预览
                     </div>
                   )}
                 </div>
 
-                {/* Product info */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div>
-                    <h3 style={{
-                      fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                      fontSize: '1.25rem', fontWeight: 700, color: '#2A2520',
-                      lineHeight: 1.3,
-                    }}>
-                      {product.name}
-                    </h3>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                    <span style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: '1.5rem', fontWeight: 700,
-                      background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}>
-                      {formatPrice(product.price ?? 0)}
-                    </span>
-                    {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
-                      <span style={{ fontSize: '0.85rem', color: '#B5AEA8', textDecoration: 'line-through' }}>
-                        {formatPrice(product.originalPrice)}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Detail grid */}
-                  <div style={{
-                    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem',
-                  }}>
-                    {[
-                      { label: '新旧程度', value: conditionLabels[product.conditionLevel || 8] || '未知' },
-                      { label: '分类', value: product.categoryName },
-                      { label: '资产方', value: product.sellerName },
-                      { label: '发布时间', value: formatDate(product.createTime ?? '') },
-                    ].map((item) => (
-                      <div key={item.label} style={{
-                        padding: '0.6rem 0.8rem',
-                        background: 'rgba(255,255,255,0.6)',
-                        border: '1px solid rgba(229,224,219,0.4)',
-                        borderRadius: 12,
-                      }}>
-                        <p style={{ fontSize: '0.72rem', color: '#9B9590', marginBottom: 2, fontWeight: 500 }}>{item.label}</p>
-                        <p style={{ fontSize: '0.85rem', color: '#2A2520', fontWeight: 600 }}>{item.value}</p>
-                      </div>
+                {product.images.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {product.images.map((img, index) => (
+                      <ShadcnButton
+                        key={index}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setState(prev => ({ ...prev, selectedImage: index }))}
+                        className="shrink-0 overflow-hidden rounded-xl border-2 p-0 transition-all duration-150"
+                        style={{
+                          width: 56, height: 56, minHeight: 'unset',
+                          borderColor: selectedImage === index ? '#F97316' : 'transparent',
+                          boxShadow: selectedImage === index ? '0 2px 8px rgba(249,115,22,0.2)' : 'none',
+                        }}
+                      >
+                        <img src={img} alt="" className="h-full w-full object-cover" />
+                      </ShadcnButton>
                     ))}
                   </div>
+                )}
+              </div>
 
-                  {/* Stats */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '0.75rem 0',
-                      borderTop: '1px solid rgba(229,224,219,0.4)',
-                      borderBottom: '1px solid rgba(229,224,219,0.4)',
-                    }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem', color: '#8B857E' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      <span style={{ fontWeight: 600, color: '#4A4540' }}>{product.viewCount ?? 0}</span> 次浏览
-                    </div>
-                  </div>
+              {/* Product info */}
+              <div className="flex flex-col gap-4">
+                <div>
+                  <h3
+                    className="text-[1.25rem] font-bold leading-tight text-[#2A2520]"
+                    style={{ fontFamily: "'Playfair Display', 'Noto Serif SC', serif" }}
+                  >
+                    {product.name}
+                  </h3>
+                </div>
 
-                  {/* Description */}
-                  {product.description && (
-                    <div style={{
-                      padding: '1rem',
-                      background: 'linear-gradient(135deg, rgba(249,115,22,0.03), rgba(195,155,211,0.02))',
-                      borderRadius: 14,
-                      border: '1px solid rgba(229,224,219,0.35)',
-                    }}>
-                      <h4 style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.45rem' }}>商品描述</h4>
-                      <p style={{ fontSize: '0.87rem', color: '#4A4540', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>{product.description}</p>
-                    </div>
-                  )}
-
-                  {/* 审核记录时间线 */}
-                  {auditLogs.data && auditLogs.data.length > 0 && (
-                    <div style={{
-                      padding: '1rem',
-                      background: 'linear-gradient(135deg, rgba(249,115,22,0.03), rgba(195,155,211,0.02))',
-                      borderRadius: 14,
-                      border: '1px solid rgba(229,224,219,0.35)',
-                    }}>
-                      <h4 style={{ fontSize: '0.82rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        📜 审核记录
-                      </h4>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-                        {auditLogs.data.map((log: AuditLogResponse) => (
-                          <div key={log.id} style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start' }}>
-                            <div style={{
-                              width: 8, height: 8, borderRadius: '50%', marginTop: '5px', flexShrink: 0,
-                              background: log.action === 1 ? '#10B981' : log.action === 2 ? '#F43F5E' : '#D6CEC5',
-                              border: log.action === 3 ? '1.5px solid #D6CEC5' : 'none',
-                            }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem', flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '0.78rem', color: '#9B9590' }}>{log.createTime?.replace('T', ' ').slice(0, 16)}</span>
-                                <span style={{ fontSize: '0.81rem', fontWeight: 600, color: '#2A2520' }}>{log.operatorName}</span>
-                                <span style={{
-                                  fontSize: '0.75rem', fontWeight: 600, padding: '0.1rem 0.45rem', borderRadius: 6,
-                                  color: log.action === 1 ? '#059669' : log.action === 2 ? '#E11D48' : '#8B857E',
-                                  background: log.action === 1 ? 'rgba(16,185,129,0.08)' : log.action === 2 ? 'rgba(244,63,94,0.08)' : 'rgba(139,133,126,0.08)',
-                                }}>
-                                  {log.actionDesc}
-                                </span>
-                              </div>
-                              {log.reason && (
-                                <div style={{ fontSize: '0.82rem', color: '#4A4540', lineHeight: 1.55 }}>{log.reason}</div>
-                              )}
-                              {log.dimensions && log.dimensions.length > 0 && (
-                                <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                                  {log.dimensions.map((dimension) => (
-                                    <span key={dimension} style={{
-                                      fontSize: '0.72rem', padding: '0.1rem 0.4rem', borderRadius: 4,
-                                      background: 'rgba(249,115,22,0.06)', color: '#C2410C',
-                                    }}>
-                                      {dimension === 'basic' ? '基本信息' : dimension === 'compliance' ? '内容合规' : dimension === 'image' ? '图片质量' : '价格合理'}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Location */}
-                  {product.location && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.85rem' }}>
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span style={{ color: '#9B9590' }}>交易地点：</span>
-                      <span style={{ color: '#2A2520', fontWeight: 600 }}>{product.location}</span>
-                    </div>
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="text-[1.5rem] font-bold"
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      background: 'linear-gradient(135deg, #F97316, #EA580C)',
+                      WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                    }}
+                  >
+                    {formatPrice(product.price ?? 0)}
+                  </span>
+                  {product.originalPrice && product.originalPrice > (product.price ?? 0) && (
+                    <span className="text-[0.85rem] text-[#B5AEA8] line-through">{formatPrice(product.originalPrice)}</span>
                   )}
                 </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '4rem 1rem', color: '#B5AEA8' }}>
-                <span style={{ fontSize: '2rem', opacity: 0.4 }}>📭</span>
-                <span style={{ fontSize: '0.9rem' }}>商品不存在或已被删除</span>
-              </div>
-            )}
-          </div>
 
-          {/* Footer actions - 完整审核操作区 */}
-          {product && (
-            <div style={{
-              display: 'flex', flexDirection: 'column', gap: '0.75rem',
-              padding: '1rem 1.5rem',
-              borderTop: '1px solid rgba(229,224,219,0.4)',
-              background: 'linear-gradient(180deg, rgba(250,248,245,0.5), rgba(250,248,245,0.9))',
-            }}>
-              {/* AI 审核建议 */}
-              {product && (
-                <AiReviewSuggestion
-                  result={aiReviewResult}
-                  isLoading={aiReviewLoading}
-                  onGetSuggestion={handleGetAiSuggestion}
-                  onApply={handleApplyAiSuggestion}
-                />
-              )}
-
-              {/* 审核维度 */}
-              <div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6B6460', marginBottom: '0.45rem' }}>
-                  审核维度
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {/* Detail grid */}
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { key: 'basic' as AuditDimension, label: '基本信息合规' },
-                    { key: 'compliance' as AuditDimension, label: '内容无违规' },
-                    { key: 'image' as AuditDimension, label: '图片质量合格' },
-                    { key: 'price' as AuditDimension, label: '价格合理' },
-                  ].map((dim) => (
-                    <button
-                      key={dim.key}
-                      onClick={() => setState(prev => ({
-                        ...prev,
-                        selectedDimensions: prev.selectedDimensions.includes(dim.key)
-                          ? prev.selectedDimensions.filter(dimension => dimension !== dim.key)
-                          : [...prev.selectedDimensions, dim.key]
-                      }))}
-                      style={{
-                        padding: '0.35rem 0.7rem', borderRadius: 8,
-                        border: selectedDimensions.includes(dim.key)
-                          ? '2px solid #F97316'
-                          : '1.5px solid #E5E0DB',
-                        background: selectedDimensions.includes(dim.key)
-                          ? 'rgba(249,115,22,0.08)'
-                          : '#fff',
-                        color: selectedDimensions.includes(dim.key) ? '#EA580C' : '#8B857E',
-                        fontSize: '0.79rem', fontWeight: 500,
-                        cursor: 'pointer', transition: 'all 0.15s ease',
-                      }}
-                    >
-                      {selectedDimensions.includes(dim.key) ? '✓ ' : ''}
-                      {dim.label}
-                    </button>
+                    { label: '新旧程度', value: conditionLabels[product.conditionLevel || 8] || '未知' },
+                    { label: '分类', value: product.categoryName },
+                    { label: '资产方', value: product.sellerName },
+                    { label: '发布时间', value: formatDate(product.createTime ?? '') },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-xl border border-[rgba(229,224,219,0.4)] bg-white/60 px-[0.8rem] py-[0.6rem]">
+                      <p className="mb-0.5 text-[0.72rem] font-medium text-[#9B9590]">{item.label}</p>
+                      <p className="text-[0.85rem] font-semibold text-[#2A2520]">{item.value}</p>
+                    </div>
                   ))}
                 </div>
-              </div>
 
-              {/* 审核意见 */}
-              <div>
-                <textarea
-                  placeholder="审核意见（选填）..."
-                  value={auditRemark}
-                  onChange={(e) => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
-                  style={{
-                    width: '100%', padding: '0.6rem 0.8rem', borderRadius: 10,
-                    border: '1.5px solid #E5E0DB', background: '#fff',
-                    fontSize: '0.84rem', color: '#2A2520', resize: 'vertical',
-                    minHeight: '52px', outline: 'none', fontFamily: 'inherit',
-                  }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#F97316'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; }}
-                />
-              </div>
+                {/* Stats */}
+                <div className="flex items-center gap-6 border-y border-[rgba(229,224,219,0.4)] py-3">
+                  <div className="flex items-center gap-[0.4rem] text-[0.84rem] text-[#8B857E]">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span className="font-semibold text-[#4A4540]">{product.viewCount ?? 0}</span> 次浏览
+                  </div>
+                </div>
 
-              {/* 操作按钮行 */}
-              <div style={{ display: 'flex', gap: '0.65rem' }}>
-                <button
-                  onClick={() => handleApproveWithDimensions()}
-                  disabled={updateStatus.isPending}
-                  style={{
-                    flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
-                    border: 'none',
-                    background: updateStatus.isPending ? '#D6CEC5' : 'linear-gradient(135deg, #10B981, #059669)',
-                    color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                    cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: updateStatus.isPending ? 'none' : '0 3px 12px rgba(16,185,129,0.28)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!updateStatus.isPending) {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 5px 18px rgba(16,185,129,0.38)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!updateStatus.isPending) {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(16,185,129,0.28)';
-                    }
-                  }}
-                >
-                  ✅ 通过审核
-                </button>
-                <button
-                  onClick={() => setState(prev => ({ ...prev, showRejectModal: true }))}
-                  disabled={updateStatus.isPending}
-                  style={{
-                    flex: 1, padding: '0.65rem 1rem', borderRadius: 12,
-                    border: 'none',
-                    background: updateStatus.isPending ? '#D6CEC5' : 'linear-gradient(135deg, #F43F5E, #E11D48)',
-                    color: '#fff', fontSize: '0.87rem', fontWeight: 600,
-                    cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: updateStatus.isPending ? 'none' : '0 3px 12px rgba(244,63,94,0.28)',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!updateStatus.isPending) {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 5px 18px rgba(244,63,94,0.38)';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!updateStatus.isPending) {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 3px 12px rgba(244,63,94,0.28)';
-                    }
-                  }}
-                >
-                  🚫 驳回商品
-                </button>
-                <button
-                  onClick={onClose}
-                  disabled={updateStatus.isPending}
-                  style={{
-                    padding: '0.65rem 1.2rem', borderRadius: 12,
-                    border: '1.5px solid #E5E0DB', background: '#fff',
-                    color: '#6B6460', fontSize: '0.87rem', fontWeight: 600,
-                    cursor: updateStatus.isPending ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s ease',
-                    opacity: updateStatus.isPending ? 0.5 : 1,
-                  }}
-                  onMouseEnter={(e) => { if (!updateStatus.isPending) {e.currentTarget.style.background = 'rgba(229,224,219,0.3)';} }}
-                  onMouseLeave={(e) => { if (!updateStatus.isPending) {e.currentTarget.style.background = '#fff';} }}
-                >
-                  关闭
-                </button>
+                {/* Description */}
+                {product.description && (
+                  <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(249,115,22,0.03),rgba(195,155,211,0.02))] p-4">
+                    <h4 className="mb-[0.45rem] text-[0.82rem] font-semibold text-[#6B6460]">商品描述</h4>
+                    <p className="whitespace-pre-wrap text-[0.87rem] leading-relaxed text-[#4A4540]">{product.description}</p>
+                  </div>
+                )}
+
+                {/* 审核记录时间线 */}
+                {auditLogs.data && auditLogs.data.length > 0 && (
+                  <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(249,115,22,0.03),rgba(195,155,211,0.02))] p-4">
+                    <h4 className="mb-[0.65rem] flex items-center gap-[0.35rem] text-[0.82rem] font-semibold text-[#6B6460]">
+                      📜 审核记录
+                    </h4>
+                    <div className="flex flex-col gap-[0.7rem]">
+                      {auditLogs.data.map((log: AuditLogResponse) => (
+                        <div key={log.id} className="flex items-start gap-[0.6rem]">
+                          <div
+                            className="mt-[5px] h-2 w-2 shrink-0 rounded-full"
+                            style={{
+                              background: log.action === 1 ? '#10B981' : log.action === 2 ? '#F43F5E' : '#D6CEC5',
+                              border: log.action === 3 ? '1.5px solid #D6CEC5' : 'none',
+                            }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="mb-[0.15rem] flex flex-wrap items-center gap-2">
+                              <span className="text-[0.78rem] text-[#9B9590]">{log.createTime?.replace('T', ' ').slice(0, 16)}</span>
+                              <span className="text-[0.81rem] font-semibold text-[#2A2520]">{log.operatorName}</span>
+                              <span
+                                className="rounded-md px-[0.45rem] py-[0.1rem] text-[0.75rem] font-semibold"
+                                style={{
+                                  color: log.action === 1 ? '#059669' : log.action === 2 ? '#E11D48' : '#8B857E',
+                                  background: log.action === 1 ? 'rgba(16,185,129,0.08)' : log.action === 2 ? 'rgba(244,63,94,0.08)' : 'rgba(139,133,126,0.08)',
+                                }}
+                              >
+                                {log.actionDesc}
+                              </span>
+                            </div>
+                            {log.reason && (
+                              <div className="text-[0.82rem] leading-relaxed text-[#4A4540]">{log.reason}</div>
+                            )}
+                            {log.dimensions && log.dimensions.length > 0 && (
+                              <div className="mt-[0.2rem] flex flex-wrap gap-[0.3rem]">
+                                {log.dimensions.map((dimension) => (
+                                  <span key={dimension} className="rounded bg-[rgba(249,115,22,0.06)] px-[0.4rem] py-[0.1rem] text-[0.72rem] text-[#C2410C]">
+                                    {dimension === 'basic' ? '基本信息' : dimension === 'compliance' ? '内容合规' : dimension === 'image' ? '图片质量' : '价格合理'}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Location */}
+                {product.location && (
+                  <div className="flex items-center gap-[0.45rem] text-[0.85rem]">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F97316" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span className="text-[#9B9590]">交易地点：</span>
+                    <span className="font-semibold text-[#2A2520]">{product.location}</span>
+                  </div>
+                )}
               </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-[#B5AEA8]">
+              <span className="text-[2rem] opacity-40">📭</span>
+              <span className="text-[0.9rem]">商品不存在或已被删除</span>
             </div>
           )}
         </div>
-      </div>
 
-      {/* Image preview overlay */}
-      {previewImage && (
-        <div
-          role="button"
-          tabIndex={0}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 50,
-            background: 'rgba(42,37,32,0.88)',
-            backdropFilter: 'blur(8px)',
-            WebkitBackdropFilter: 'blur(8px)',
-            animation: 'drawerFadeIn 0.2s ease-out',
-          }}
-          onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
-          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') { setState(prev => ({ ...prev, previewImage: null })); } }}
-        >
-          <button
-            style={{
-              position: 'fixed', top: '1.25rem', right: '1.25rem',
-              width: 40, height: 40, borderRadius: 12,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '1.5px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-              color: '#fff', cursor: 'pointer', transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; }}
-            onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-          <img
-            src={previewImage}
-            alt="预览"
-            style={{
-              position: 'fixed', left: '50%', top: '50%',
-              transform: 'translate(-50%, -50%)',
-              maxHeight: '90vh', maxWidth: '90vw',
-              objectFit: 'contain', borderRadius: 12,
-            }}
-          />
-        </div>
-      )}
-
-      {/* 驳回弹窗 */}
-      {showRejectModal && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 50,
-          background: 'rgba(42,37,32,0.5)', backdropFilter: 'blur(4px)',
-        }}>
-          <div style={{
-            position: 'fixed', left: '50%', top: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 'calc(100% - 2rem)', maxWidth: 420,
-            background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(24px)',
-            borderRadius: 20, padding: '1.5rem',
-            border: '1px solid rgba(229,224,219,0.4)',
-            boxShadow: '0 20px 60px rgba(42,37,32,0.15)',
-            animation: 'modalIn 0.25s ease-out',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#E11D48', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                ⚠️ 确认驳回商品
-              </h3>
-              <button onClick={() => { setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' })); }} style={{
-                width: 30, height: 30, borderRadius: 8, border: '1.5px solid #E5E0DB', background: '#fff',
-                color: '#8B857E', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>✕</button>
-            </div>
-
-            <p style={{ fontSize: '0.85rem', color: '#6B6460', marginBottom: '0.85rem', lineHeight: 1.5 }}>
-              确定要驳回该资产吗？驳回后资产方可修改并重新提交。
-            </p>
-
-            {/* 快捷理由选项 */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.75rem' }}>
-              {['信息不完整', '图片模糊', '疑似虚假信息', '价格异常', '违规内容', '其他'].map((tag) => (
-                <button key={tag} onClick={() => {
-                  setState(prev => ({ ...prev, rejectReason: (prev.rejectReason ? `${prev.rejectReason}；` : '') + tag }));
-                }} style={{
-                  padding: '0.28rem 0.55rem', borderRadius: 6,
-                  border: '1.5px solid #E5E0DB', background: '#fff',
-                  color: '#8B857E', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer',
-                  transition: 'all 0.12s ease',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#F43F5E'; e.currentTarget.style.color = '#E11D48'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E5E0DB'; e.currentTarget.style.color = '#8B857E'; }}
-                >{tag}</button>
-              ))}
-            </div>
-
-            {/* 原因输入框 */}
-            <textarea
-              placeholder="请填写驳回原因（必填）..."
-              value={rejectReason}
-              onChange={(e) => setState(prev => ({ ...prev, rejectReason: e.target.value }))}
-              rows={3}
-              style={{
-                width: '100%', padding: '0.65rem 0.8rem', borderRadius: 10,
-                border: '2px solid #E5E0DB', background: '#fff',
-                fontSize: '0.85rem', color: '#2A2520', resize: 'vertical',
-                outline: 'none', fontFamily: 'inherit', marginBottom: '1rem',
-              }}
-              onFocus={(e) => { e.currentTarget.style.borderColor = '#F43F5E'; }}
-              onBlur={(e) => { e.currentTarget.style.borderColor = rejectReason ? '#F97316' : '#E5E0DB'; }}
+        {/* Footer actions */}
+        {product && (
+          <div className="flex flex-col gap-3 border-t border-[rgba(229,224,219,0.4)] bg-[linear-gradient(180deg,rgba(250,248,245,0.5),rgba(250,248,245,0.9))] px-6 py-4">
+            {/* AI 审核建议 */}
+            <AiReviewSuggestion
+              result={aiReviewResult}
+              isLoading={aiReviewLoading}
+              onGetSuggestion={handleGetAiSuggestion}
+              onApply={handleApplyAiSuggestion}
             />
 
-            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end' }}>
-              <button onClick={() => { setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' })); }} style={{
-                padding: '0.55rem 1.1rem', borderRadius: 10, border: '1.5px solid #E5E0DB',
-                background: '#fff', color: '#6B6460', fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer',
-              }}>取消</button>
-              <button
-                onClick={handleRejectWithReason}
-                disabled={!rejectReason.trim() || updateStatus.isPending}
-                style={{
-                  padding: '0.55rem 1.3rem', borderRadius: 10, border: 'none',
-                  background: (!rejectReason.trim() || updateStatus.isPending) ? '#D6CEC5' : 'linear-gradient(135deg, #F43F5E, #E11D48)',
-                  color: '#fff', fontSize: '0.84rem', fontWeight: 600,
-                  cursor: (!rejectReason.trim() || updateStatus.isPending) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-              >确认驳回</button>
+            {/* 审核维度 */}
+            <div>
+              <div className="mb-[0.45rem] text-[0.78rem] font-semibold text-[#6B6460]">
+                审核维度
+              </div>
+              <div className="flex flex-wrap gap-[0.4rem]">
+                {DIMENSIONS.map((dim) => {
+                  const active = selectedDimensions.includes(dim.key);
+                  return (
+                    <ShadcnButton
+                      key={dim.key}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleDimension(dim.key)}
+                      disabled={updateStatus.isPending}
+                      className={cn(
+                        'h-auto min-h-0 rounded-lg px-[0.7rem] py-[0.35rem] text-[0.79rem] font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60',
+                        active
+                          ? 'border-2 border-[#F97316] bg-[rgba(249,115,22,0.08)] text-[#EA580C] hover:bg-[rgba(249,115,22,0.08)] hover:text-[#EA580C]'
+                          : 'border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] hover:bg-white hover:text-[#8B857E]'
+                      )}
+                    >
+                      {active ? '✓ ' : ''}
+                      {dim.label}
+                    </ShadcnButton>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 审核意见 */}
+            <Textarea
+              placeholder="审核意见（选填）..."
+              value={auditRemark}
+              onChange={(e) => setState(prev => ({ ...prev, auditRemark: e.target.value }))}
+              className="min-h-[52px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.6rem] text-[0.84rem] text-[#2A2520] placeholder:text-[#B5AEA8] focus-visible:border-[#F97316] focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+
+            {/* 操作按钮行 */}
+            <div className="flex gap-[0.65rem]">
+              <ShadcnButton
+                onClick={handleApproveWithDimensions}
+                disabled={updateStatus.isPending}
+                isLoading={updateStatus.isPending}
+                className="h-10 flex-1 rounded-xl border-none bg-[linear-gradient(135deg,#10B981,#059669)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(16,185,129,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(16,185,129,0.38)]"
+              >
+                ✅ 通过审核
+              </ShadcnButton>
+              <ShadcnButton
+                onClick={() => setState(prev => ({ ...prev, showRejectModal: true }))}
+                disabled={updateStatus.isPending}
+                className="h-10 flex-1 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] text-[0.87rem] font-semibold text-white shadow-[0_3px_12px_rgba(244,63,94,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_5px_18px_rgba(244,63,94,0.38)]"
+              >
+                🚫 驳回商品
+              </ShadcnButton>
+              <ShadcnButton
+                variant="outline"
+                onClick={onClose}
+                disabled={updateStatus.isPending}
+                className="h-10 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-5 text-[0.87rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
+              >
+                关闭
+              </ShadcnButton>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <style>{`
-        @keyframes drawerFadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes modalIn { from { opacity: 0; } to { opacity: 1; } }
-      `}</style>
-    </>,
-    document.body
+        {/* Image preview overlay */}
+        {previewImage && (
+          <div
+            role="button"
+            tabIndex={0}
+            className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.88)]"
+            style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+            onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
+            onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') {setState(prev => ({ ...prev, previewImage: null }));} }}
+          >
+            <ShadcnButton
+              variant="ghost"
+              size="icon"
+              className="fixed right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-white/20 bg-white/10 text-white transition-all duration-150 hover:bg-white/20"
+              onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
+              aria-label="关闭预览"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </ShadcnButton>
+            <img
+              src={previewImage}
+              alt="预览"
+              className="fixed left-1/2 top-1/2 max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
+            />
+          </div>
+        )}
+
+        {/* 驳回弹窗 */}
+        {showRejectModal && (
+          <div className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.5)]" style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
+            <div
+              className="fixed left-1/2 top-1/2 w-[calc(100%-2rem)] max-w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-[20px] border border-[rgba(229,224,219,0.4)] bg-white/96 p-6 shadow-[0_20px_60px_rgba(42,37,32,0.15)]"
+              style={{ backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="flex items-center gap-[0.45rem] text-[1.05rem] font-bold text-[#E11D48]">
+                  ⚠️ 确认驳回商品
+                </h3>
+                <ShadcnButton
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }))}
+                  className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-lg border-[1.5px] border-[#E5E0DB] bg-white text-[#8B857E] transition-all duration-150 hover:border-[rgba(244,63,94,0.2)] hover:bg-[rgba(244,63,94,0.06)] hover:text-[#E11D48]"
+                  aria-label="关闭"
+                >
+                  ✕
+                </ShadcnButton>
+              </div>
+
+              <p className="mb-[0.85rem] text-[0.85rem] leading-relaxed text-[#6B6460]">
+                确定要驳回该资产吗？驳回后资产方可修改并重新提交。
+              </p>
+
+              {/* 快捷理由选项 */}
+              <div className="mb-[0.75rem] flex flex-wrap gap-[0.35rem]">
+                {REJECT_TAGS.map((tag) => (
+                  <ShadcnButton
+                    key={tag}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => appendRejectTag(tag)}
+                    className="h-auto min-h-0 rounded-md border-[1.5px] border-[#E5E0DB] bg-white px-[0.55rem] py-[0.28rem] text-[0.76rem] font-medium text-[#8B857E] transition-all duration-150 hover:border-[#F43F5E] hover:bg-white hover:text-[#E11D48]"
+                  >
+                    {tag}
+                  </ShadcnButton>
+                ))}
+              </div>
+
+              {/* 原因输入框 */}
+              <Textarea
+                placeholder="请填写驳回原因（必填）..."
+                value={rejectReason}
+                onChange={(e) => setState(prev => ({ ...prev, rejectReason: e.target.value }))}
+                rows={3}
+                className="mb-4 min-h-[80px] resize-y rounded-[10px] border-[1.5px] border-[#E5E0DB] bg-white px-[0.8rem] py-[0.65rem] text-[0.85rem] text-[#2A2520] placeholder:text-[#B5AEA8] focus-visible:border-[#F43F5E] focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+
+              <div className="flex justify-end gap-[0.6rem]">
+                <ShadcnButton
+                  variant="outline"
+                  onClick={() => setState(prev => ({ ...prev, showRejectModal: false, rejectReason: '' }))}
+                  className="h-9 rounded-xl border-[1.5px] border-[#E5E0DB] bg-white px-[1.1rem] text-[0.84rem] font-semibold text-[#6B6460] hover:bg-[rgba(229,224,219,0.3)] hover:text-[#6B6460]"
+                >
+                  取消
+                </ShadcnButton>
+                <ShadcnButton
+                  onClick={handleRejectWithReason}
+                  disabled={!rejectReason.trim() || updateStatus.isPending}
+                  isLoading={updateStatus.isPending}
+                  className="h-9 rounded-xl border-none bg-[linear-gradient(135deg,#F43F5E,#E11D48)] px-[1.3rem] text-[0.84rem] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 disabled:translate-y-0 disabled:bg-[#D6CEC5]"
+                >
+                  确认驳回
+                </ShadcnButton>
+              </div>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Camera, Loader2, Sparkles, ImageIcon, Tag, FileText,
   DollarSign, MapPin, MessageCircle, Package, ChevronRight,
@@ -17,41 +19,18 @@ import { AiCopyGeneration } from '@/components/ai/AiCopyGeneration';
 import { useAiPricing } from '@/hooks/useAiPricing';
 import { useAutoListing } from '@/hooks/useAutoListing';
 import { useAiCopyGeneration } from '@/hooks/useAiCopyGeneration';
+import { Button } from '@/components/ui/button';
+import { Input, Label } from '@/components/ui';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { publishSchema, type PublishFormData } from '@/schemas/publishSchema';
 import './publish.css';
-
-interface FormState {
-  name: string;
-  description: string;
-  price: string;
-  originalPrice: string;
-  categoryId: string;
-  conditionLevel: string;
-  stock: string;
-  location: string;
-  contactMethod: string;
-  imageUrls: string[];
-}
-
-interface FormErrors {
-  name?: string;
-  price?: string;
-  categoryId?: string;
-  conditionLevel?: string;
-  imageUrls?: string;
-}
-
-const INITIAL_FORM: FormState = {
-  name: '',
-  description: '',
-  price: '',
-  originalPrice: '',
-  categoryId: '',
-  conditionLevel: '',
-  stock: '1',
-  location: '',
-  contactMethod: '',
-  imageUrls: [],
-};
 
 const CONDITION_ICONS: Record<number, string> = {
   1: '✨',
@@ -72,8 +51,6 @@ function PublishPage() {
   const createProduct = useCreateProduct();
   const { data: categories } = useCategories();
   const addToast = useUIStore((s) => s.addToast);
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [errors, setErrors] = useState<FormErrors>({});
   const { suggestion, isLoading: aiPricingLoading, getPricing, clearSuggestion } = useAiPricing();
   const { result: autoListingResult, isLoading: autoListingLoading, analyzeImages, clearResult: clearAutoListing } = useAutoListing();
   const { result: copyResult, isLoading: copyLoading, generateCopy, clearResult: clearCopy } = useAiCopyGeneration();
@@ -85,6 +62,32 @@ function PublishPage() {
   const dragItemRef = useRef<number | null>(null);
   const pageRef = useRef<HTMLDivElement>(null);
 
+  const {
+    register,
+    handleSubmit: rhfHandleSubmit,
+    watch,
+    setValue,
+    control,
+    formState,
+  } = useForm<PublishFormData>({
+    resolver: zodResolver(publishSchema),
+    reValidateMode: 'onChange',
+    defaultValues: {
+      name: '',
+      description: '',
+      price: '',
+      originalPrice: '',
+      categoryId: '',
+      conditionLevel: '',
+      stock: '1',
+      location: '',
+      contactMethod: '',
+      imageUrls: [],
+    },
+  });
+
+  const vals = watch();
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (pageRef.current) {
@@ -94,61 +97,28 @@ function PublishPage() {
     return () => clearTimeout(timer);
   }, []);
 
-
-  const updateField = useCallback(<K extends keyof FormState>(field: K, value: FormState[K]) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => {
-      if (prev[field as keyof FormErrors]) {
-        const next = { ...prev };
-        delete next[field as keyof FormErrors];
-        return next;
-      }
-      return prev;
-    });
-  }, []);
   useEffect(() => {
     if (autoListingResult) {
-      updateField('name', autoListingResult.title);
-      updateField('description', autoListingResult.description);
+      setValue('name', autoListingResult.title);
+      setValue('description', autoListingResult.description);
       if (autoListingResult.price > 0) {
-        updateField('price', String(autoListingResult.price));
+        setValue('price', String(autoListingResult.price));
       }
       if (autoListingResult.conditionLevel > 0) {
-        updateField('conditionLevel', String(autoListingResult.conditionLevel));
+        setValue('conditionLevel', String(autoListingResult.conditionLevel));
       }
       if (autoListingResult.location) {
-        updateField('location', autoListingResult.location);
+        setValue('location', autoListingResult.location);
       }
       if (autoListingResult.categoryName) {
         const category = categories?.find(c => c.name === autoListingResult.categoryName);
         if (category) {
-          updateField('categoryId', String(category.id));
+          setValue('categoryId', String(category.id));
         }
       }
       clearAutoListing();
     }
-  }, [autoListingResult, categories, updateField, clearAutoListing]);
-
-  const validate = (): boolean => {
-    const newErrors: FormErrors = {};
-    if (!form.name.trim()) {
-      newErrors.name = '请输入资产名称';
-    }
-    if (!form.price || Number(form.price) <= 0 || isNaN(Number(form.price))) {
-      newErrors.price = '请输入有效价格';
-    }
-    if (!form.categoryId || Number(form.categoryId) <= 0) {
-      newErrors.categoryId = '请选择资产类别';
-    }
-    if (!form.conditionLevel || Number(form.conditionLevel) <= 0) {
-      newErrors.conditionLevel = '请选择新旧程度';
-    }
-    if (form.imageUrls.length === 0) {
-      newErrors.imageUrls = '请至少上传一张图片';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  }, [autoListingResult, categories, setValue, clearAutoListing]);
 
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,17 +132,18 @@ function PublishPage() {
 
   const processFiles = async (files: File[]) => {
     for (const file of files) {
-      if (form.imageUrls.length >= 9) {break;}
+      const currentImages = watch('imageUrls');
+      if (currentImages.length >= 9) {break;}
       if (!file.type.startsWith('image/')) {continue;}
       if (file.size > 10 * 1024 * 1024) {continue;}
 
-      const index = form.imageUrls.length;
+      const index = currentImages.length;
       setUploadingIndex(index);
       try {
         const compressed = await compressImage(file);
         const result = await uploadFile(compressed);
         if (result.data?.url) {
-          setForm(prev => ({ ...prev, imageUrls: [...prev.imageUrls, result.data.url] }));
+          setValue('imageUrls', [...watch('imageUrls'), result.data.url], { shouldValidate: true });
         }
       } catch {
         addToast({ type: 'error', message: '图片上传失败，请重试' });
@@ -183,7 +154,7 @@ function PublishPage() {
   };
 
   const handleImageUrlRemove = (index: number) => {
-    setForm(prev => ({ ...prev, imageUrls: prev.imageUrls.filter((_, i) => i !== index) }));
+    setValue('imageUrls', watch('imageUrls').filter((_, i) => i !== index), { shouldValidate: true });
   };
 
   const handleDragStart = (index: number) => {
@@ -201,14 +172,12 @@ function PublishPage() {
     const draggedIndex = dragItemRef.current;
     if (draggedIndex === null || draggedIndex === index) {return;}
 
-    setForm(prev => {
-      const newUrls = [...prev.imageUrls];
-      const [removed] = newUrls.splice(draggedIndex, 1);
-      newUrls.splice(index, 0, removed);
-      return { ...prev, imageUrls: newUrls };
-    });
+    const newUrls = [...watch('imageUrls')];
+    const [removed] = newUrls.splice(draggedIndex, 1);
+    newUrls.splice(index, 0, removed);
+    setValue('imageUrls', newUrls);
     dragItemRef.current = null;
-  }, []);
+  }, [watch, setValue]);
 
   const handleDragEnd = () => {
     dragItemRef.current = null;
@@ -236,20 +205,18 @@ function PublishPage() {
     }
   };
 
-  const handleSubmit = async (isDraft: boolean) => {
-    if (!validate()) {return;}
-
+  const handleFormSubmit = async (data: PublishFormData, isDraft: boolean) => {
     const payload = {
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price: Number(form.price),
-      originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
-      categoryId: Number(form.categoryId),
-      conditionLevel: Number(form.conditionLevel),
-      stock: Number(form.stock) || 1,
-      location: form.location.trim() || undefined,
-      contactMethod: form.contactMethod.trim() || undefined,
-      imageUrls: form.imageUrls,
+      name: data.name.trim(),
+      description: data.description.trim(),
+      price: Number(data.price),
+      originalPrice: data.originalPrice ? Number(data.originalPrice) : undefined,
+      categoryId: Number(data.categoryId),
+      conditionLevel: Number(data.conditionLevel),
+      stock: Number(data.stock) || 1,
+      location: data.location.trim() || undefined,
+      contactMethod: data.contactMethod.trim() || undefined,
+      imageUrls: data.imageUrls,
     };
 
     try {
@@ -265,13 +232,16 @@ function PublishPage() {
     }
   };
 
-  const isSubmitting = createProduct.isPending;
+  const onSubmitDraft = rhfHandleSubmit((data) => handleFormSubmit(data, true));
+  const onSubmitPublish = rhfHandleSubmit((data) => handleFormSubmit(data, false));
+
+  const isSubmitting = formState.isSubmitting || createProduct.isPending;
   const progress = Math.min(100, Math.round(
-    ((form.imageUrls.length > 0 ? 1 : 0) +
-      (form.name ? 1 : 0) +
-      (form.price ? 1 : 0) +
-      (form.categoryId ? 1 : 0) +
-      (form.conditionLevel ? 1 : 0)) / 5 * 100
+    ((vals.imageUrls.length > 0 ? 1 : 0) +
+      (vals.name ? 1 : 0) +
+      (vals.price ? 1 : 0) +
+      (vals.categoryId ? 1 : 0) +
+      (vals.conditionLevel ? 1 : 0)) / 5 * 100
   ));
 
   const sections = [
@@ -327,13 +297,14 @@ function PublishPage() {
                 const Icon = section.icon;
                 const isActive = index <= activeSection;
                 const isCompleted = index < activeSection ||
-                  (index === 0 && form.imageUrls.length > 0) ||
-                  (index === 1 && form.name && form.categoryId && form.conditionLevel) ||
-                  (index === 2 && form.description) ||
-                  (index === 3 && form.price);
+                  (index === 0 && vals.imageUrls.length > 0) ||
+                  (index === 1 && vals.name && vals.categoryId && vals.conditionLevel) ||
+                  (index === 2 && vals.description) ||
+                  (index === 3 && vals.price);
                 return (
-                  <button
+                  <Button
                     key={section.id}
+                    variant="ghost"
                     className={`progress-step-v2 ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}
                     onClick={() => {
                       setActiveSection(index);
@@ -344,7 +315,7 @@ function PublishPage() {
                       {isCompleted ? <Check size={14} /> : <Icon size={14} />}
                     </div>
                     <span className="step-label-v2">{section.label}</span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -366,7 +337,9 @@ function PublishPage() {
               </div>
 
               <div
-                className={`upload-zone-v2 ${isDragging ? 'dragover' : ''} ${errors.imageUrls ? 'has-error' : ''}`}
+                className={`upload-zone-v2 ${isDragging ? 'dragover' : ''} ${formState.errors.imageUrls?.message ? 'has-error' : ''}`}
+                role="region"
+                aria-label="图片上传区域"
                 onDragEnter={handleDragEnter}
                 onDragOver={handleDragEnter}
                 onDragLeave={handleDragLeave}
@@ -380,9 +353,10 @@ function PublishPage() {
                   onChange={handleImageSelect}
                   style={{ display: 'none' }}
                 />
-                {form.imageUrls.length === 0 ? (
-                  <button
+                {vals.imageUrls.length === 0 ? (
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={() => fileInputRef.current?.click()}
                     className="upload-trigger-v2"
                     disabled={uploadingIndex !== null}
@@ -398,18 +372,21 @@ function PublishPage() {
                       <span className="upload-title">点击或拖拽上传图片</span>
                       <span className="upload-desc">支持 JPG、PNG、WEBP 格式，单张不超过 10MB</span>
                     </div>
-                  </button>
+                  </Button>
                 ) : (
                   <div className="image-grid-v2">
-                    {form.imageUrls.map((url, index) => (
+                    {vals.imageUrls.map((url, index) => (
                       <div
                         key={`${url}-${index}`}
                         className={`image-item-v2 ${dragOverIndex === index ? 'drag-over' : ''} ${index === 0 ? 'is-cover' : ''}`}
+                        role="button"
+                        tabIndex={-1}
                         draggable
                         onDragStart={() => handleDragStart(index)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={(e) => handleDrop(e, index)}
                         onDragEnd={handleDragEnd}
+                        onKeyDown={() => {}}
                       >
                         <img src={url} alt={`资产图片 ${index + 1}`} width="120" height="120" />
                         {index === 0 && (
@@ -418,23 +395,26 @@ function PublishPage() {
                           </div>
                         )}
                         <div className="image-actions-v2">
-                          <button
+                          <Button
                             type="button"
+                            variant="ghost"
+                            size="icon"
                             className="image-action-btn"
                             onClick={() => handleImageUrlRemove(index)}
                             title="删除"
                           >
                             <Trash2 size={14} />
-                          </button>
+                          </Button>
                         </div>
                         <div className="drag-handle-v2">
                           <GripVertical size={14} />
                         </div>
                       </div>
                     ))}
-                    {form.imageUrls.length < 9 && (
-                      <button
+                    {vals.imageUrls.length < 9 && (
+                      <Button
                         type="button"
+                        variant="outline"
                         onClick={() => fileInputRef.current?.click()}
                         className="add-more-v2"
                         disabled={uploadingIndex !== null}
@@ -447,22 +427,22 @@ function PublishPage() {
                             <span>添加图片</span>
                           </>
                         )}
-                      </button>
+                      </Button>
                     )}
                   </div>
                 )}
-                {form.imageUrls.length > 0 && (
+                {vals.imageUrls.length > 0 && (
                   <AiPhotoCapture
-                    onAnalyze={() => analyzeImages(form.imageUrls)}
+                    onAnalyze={() => analyzeImages(vals.imageUrls)}
                     isLoading={autoListingLoading}
-                    hasImages={form.imageUrls.length > 0}
+                    hasImages={vals.imageUrls.length > 0}
                   />
                 )}
               </div>
-              {errors.imageUrls && (
+              {formState.errors.imageUrls?.message && (
                 <div className="error-message-v2">
                   <AlertCircle size={14} />
-                  <span>{errors.imageUrls}</span>
+                  <span>{formState.errors.imageUrls.message}</span>
                 </div>
               )}
             </section>
@@ -481,99 +461,114 @@ function PublishPage() {
 
               <div className="form-fields-v2">
                 <div className="field-group-v2">
-                  <label className="field-label-v2" htmlFor="name">
-                    资产名称
-                    <span className="required-mark">*</span>
-                  </label>
-                  <div className={`input-wrapper-v2 ${errors.name ? 'has-error' : ''}`}>
-                    <input
-                      id="name"
-                      type="text"
-                      name="name"
-                      placeholder="给资产起个吸引人的名字"
-                      value={form.name}
-                      onChange={e => updateField('name', e.target.value)}
-                      maxLength={200}
-                      className="field-input-v2"
-                    />
-                    <span className="char-count-v2">{form.name.length}/200</span>
-                  </div>
-                  {errors.name && (
-                    <div className="error-message-v2">
-                      <AlertCircle size={14} />
-                      <span>{errors.name}</span>
+                    <Label className="field-label-v2" htmlFor="name">
+                      资产名称
+                      <span className="required-mark">*</span>
+                    </Label>
+                    <div className={`input-wrapper-v2 ${formState.errors.name?.message ? 'has-error' : ''}`}>
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="给资产起个吸引人的名字"
+                        maxLength={200}
+                        className="field-input-v2"
+                        {...register('name')}
+                      />
+                      <span className="char-count-v2">{vals.name.length}/200</span>
                     </div>
-                  )}
-                </div>
+                    {formState.errors.name?.message && (
+                      <div className="error-message-v2">
+                        <AlertCircle size={14} />
+                        <span>{formState.errors.name.message}</span>
+                      </div>
+                    )}
+                  </div>
 
                 <div className="field-row-v2">
                   <div className="field-group-v2">
-                    <label className="field-label-v2" htmlFor="categoryId">
+                    <Label className="field-label-v2" htmlFor="categoryId">
                       资产类别
                       <span className="required-mark">*</span>
-                    </label>
-                    <div className={`select-wrapper-v2 ${errors.categoryId ? 'has-error' : ''}`}>
-                      <select
-                        id="categoryId"
-                        value={form.categoryId}
-                        onChange={e => updateField('categoryId', e.target.value)}
-                        className="field-select-v2"
-                      >
-                        <option value="">选择类别</option>
-                        {categories?.map(cat => (
-                          <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                      </select>
+                    </Label>
+                    <div className={`select-wrapper-v2 ${formState.errors.categoryId?.message ? 'has-error' : ''}`}>
+                      <Controller
+                        name="categoryId"
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || '__empty__'}
+                            onValueChange={(value) => field.onChange(value === '__empty__' ? '' : value)}
+                          >
+                            <SelectTrigger id="categoryId" className="field-select-v2">
+                              <SelectValue placeholder="选择类别" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__empty__">选择类别</SelectItem>
+                              {categories?.map(cat => (
+                                <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
                       <ChevronRight size={16} className="select-arrow" />
                     </div>
-                    {errors.categoryId && (
+                    {formState.errors.categoryId?.message && (
                       <div className="error-message-v2">
                         <AlertCircle size={14} />
-                        <span>{errors.categoryId}</span>
+                        <span>{formState.errors.categoryId.message}</span>
                       </div>
                     )}
                   </div>
 
                   <div className="field-group-v2">
-                    <label className="field-label-v2" htmlFor="conditionLevel">
+                    <Label className="field-label-v2" htmlFor="conditionLevel">
                       新旧程度
                       <span className="required-mark">*</span>
-                    </label>
-                    <div className={`select-wrapper-v2 ${errors.conditionLevel ? 'has-error' : ''}`}>
-                      <select
-                        id="conditionLevel"
+                    </Label>
+                    <div className={`select-wrapper-v2 ${formState.errors.conditionLevel?.message ? 'has-error' : ''}`}>
+                      <Controller
                         name="conditionLevel"
-                        value={form.conditionLevel}
-                        onChange={e => updateField('conditionLevel', e.target.value)}
-                        className="field-select-v2"
-                      >
-                        <option value="">选择成色</option>
-                        {Object.entries(CONDITION_LABEL_MAP).map(([code, label]) => (
-                          <option key={code} value={code}>{label}</option>
-                        ))}
-                      </select>
+                        control={control}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value || '__empty__'}
+                            onValueChange={(value) => field.onChange(value === '__empty__' ? '' : value)}
+                          >
+                            <SelectTrigger id="conditionLevel" className="field-select-v2">
+                              <SelectValue placeholder="选择成色" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__empty__">选择成色</SelectItem>
+                              {Object.entries(CONDITION_LABEL_MAP).map(([code, label]) => (
+                                <SelectItem key={code} value={code}>{label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
                       <ChevronRight size={16} className="select-arrow" />
                     </div>
-                    {errors.conditionLevel && (
+                    {formState.errors.conditionLevel?.message && (
                       <div className="error-message-v2">
                         <AlertCircle size={14} />
-                        <span>{errors.conditionLevel}</span>
+                        <span>{formState.errors.conditionLevel.message}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
-                {form.conditionLevel && (
+                {vals.conditionLevel && (
                   <div className="condition-preview">
                     <div className="condition-icon-large">
-                      {CONDITION_ICONS[Number(form.conditionLevel)]}
+                      {CONDITION_ICONS[Number(vals.conditionLevel)]}
                     </div>
                     <div className="condition-info">
                       <span className="condition-name">
-                        {CONDITION_LABEL_MAP[Number(form.conditionLevel)]}
+                        {CONDITION_LABEL_MAP[Number(vals.conditionLevel)]}
                       </span>
                       <span className="condition-desc">
-                        {CONDITION_DESC[Number(form.conditionLevel)]}
+                        {CONDITION_DESC[Number(vals.conditionLevel)]}
                       </span>
                     </div>
                   </div>
@@ -595,36 +590,35 @@ function PublishPage() {
 
               <div className="form-fields-v2">
                 <div className="field-group-v2">
-                  <label className="field-label-v2" htmlFor="description">资产描述</label>
+                  <Label className="field-label-v2" htmlFor="description">资产描述</Label>
                   <div className="textarea-wrapper-v2">
-                    <textarea
-                      id="description"
-                      rows={5}
-                      placeholder="详细描述资产的品牌、型号、规格、使用情况等信息，让认领方更了解您的资产..."
-                      value={form.description}
-                      onChange={e => updateField('description', e.target.value)}
-                      maxLength={2000}
-                      className="field-textarea-v2"
-                    />
-                    <span className="char-count-v2">{form.description.length}/2000</span>
-                  </div>
-                  <AiCopyGeneration
-                    productName={form.name}
-                    onGenerate={(style) => {
-                      const category = categories?.find(c => String(c.id) === form.categoryId)
-                      generateCopy({
-                        productName: form.name,
-                        categoryName: category?.name || undefined,
-                        conditionLevel: form.conditionLevel ? Number(form.conditionLevel) : undefined,
-                        originalPrice: form.originalPrice || undefined,
-                        style,
-                      })
-                    }}
-                    onApply={(result) => {
-                      updateField('name', result.title)
-                      updateField('description', result.description)
-                      clearCopy()
-                    }}
+                  <Textarea
+                        id="description"
+                        rows={5}
+                        placeholder="详细描述资产的品牌、型号、规格、使用情况等信息，让认领方更了解您的资产..."
+                        maxLength={2000}
+                        className="field-textarea-v2"
+                        {...register('description')}
+                      />
+                      <span className="char-count-v2">{vals.description.length}/2000</span>
+                    </div>
+                    <AiCopyGeneration
+                      productName={vals.name}
+                      onGenerate={(style) => {
+                        const category = categories?.find(c => String(c.id) === vals.categoryId)
+                        generateCopy({
+                          productName: vals.name,
+                          categoryName: category?.name || undefined,
+                          conditionLevel: vals.conditionLevel ? Number(vals.conditionLevel) : undefined,
+                        originalPrice: vals.originalPrice || undefined,
+                          style,
+                        })
+                      }}
+                      onApply={(result) => {
+                        setValue('name', result.title)
+                        setValue('description', result.description)
+                        clearCopy()
+                      }}
                     result={copyResult}
                     isLoading={copyLoading}
                   />
@@ -632,38 +626,35 @@ function PublishPage() {
 
                 <div className="field-row-v2">
                   <div className="field-group-v2">
-                    <label className="field-label-v2" htmlFor="location">
+                    <Label className="field-label-v2" htmlFor="location">
                       <MapPin size={14} />
                       交易地点
-                    </label>
+                    </Label>
                     <div className="input-wrapper-v2">
-                      <input
+                      <Input
                         id="location"
                         type="text"
-                        name="location"
                         placeholder="如：清水河校区南门"
-                        value={form.location}
-                        onChange={e => updateField('location', e.target.value)}
                         maxLength={100}
                         className="field-input-v2"
+                        {...register('location')}
                       />
                     </div>
                   </div>
 
                   <div className="field-group-v2">
-                    <label className="field-label-v2" htmlFor="contactMethod">
+                    <Label className="field-label-v2" htmlFor="contactMethod">
                       <MessageCircle size={14} />
                       联系方式
-                    </label>
+                    </Label>
                     <div className="input-wrapper-v2">
-                      <input
+                      <Input
                         id="contactMethod"
                         type="text"
                         placeholder="微信号 / QQ号"
-                        value={form.contactMethod}
-                        onChange={e => updateField('contactMethod', e.target.value)}
                         maxLength={50}
                         className="field-input-v2"
+                        {...register('contactMethod')}
                       />
                     </div>
                   </div>
@@ -686,72 +677,69 @@ function PublishPage() {
               <div className="form-fields-v2">
                 <div className="field-row-v2">
                   <div className="field-group-v2">
-                    <label className="field-label-v2" htmlFor="price">
+                    <Label className="field-label-v2" htmlFor="price">
                       出售价格
                       <span className="required-mark">*</span>
-                    </label>
-                    <div className={`input-wrapper-v2 price-input-wrapper ${errors.price ? 'has-error' : ''}`}>
+                    </Label>
+                    <div className={`input-wrapper-v2 price-input-wrapper ${formState.errors.price?.message ? 'has-error' : ''}`}>
                       <span className="price-symbol-v2">¥</span>
-                      <input
+                      <Input
                         id="price"
                         type="number"
-                        name="price"
                         placeholder="0.00"
                         step="0.01"
                         min="0.01"
-                        value={form.price}
-                        onChange={e => updateField('price', e.target.value)}
                         className="field-input-v2 price-input"
+                        {...register('price')}
                       />
                     </div>
-                    {errors.price && (
+                    {formState.errors.price?.message && (
                       <div className="error-message-v2">
                         <AlertCircle size={14} />
-                        <span>{errors.price}</span>
+                        <span>{formState.errors.price.message}</span>
                       </div>
                     )}
                   </div>
 
                   <div className="field-group-v2">
-                    <label className="field-label-v2" htmlFor="originalPrice">原价（选填）</label>
+                    <Label className="field-label-v2" htmlFor="originalPrice">原价（选填）</Label>
                     <div className="input-wrapper-v2 price-input-wrapper">
                       <span className="price-symbol-v2">¥</span>
-                      <input
+                      <Input
                         id="originalPrice"
                         type="number"
                         placeholder="0.00"
                         step="0.01"
                         min="0.01"
-                        value={form.originalPrice}
-                        onChange={e => updateField('originalPrice', e.target.value)}
                         className="field-input-v2 price-input"
+                        {...register('originalPrice')}
                       />
                     </div>
                   </div>
                 </div>
 
-                {form.price && form.originalPrice && Number(form.originalPrice) > Number(form.price) && (
+                {vals.price && vals.originalPrice && Number(vals.originalPrice) > Number(vals.price) && (
                   <div className="discount-tag">
                     <span className="discount-badge">
-                      省 {Math.round((1 - Number(form.price) / Number(form.originalPrice)) * 100)}%
+                      省 {Math.round((1 - Number(vals.price) / Number(vals.originalPrice)) * 100)}%
                     </span>
                     <span className="discount-text">
-                      比原价优惠 ¥{(Number(form.originalPrice) - Number(form.price)).toFixed(2)}
+                      比原价优惠 ¥{(Number(vals.originalPrice) - Number(vals.price)).toFixed(2)}
                     </span>
                   </div>
                 )}
 
-                {form.name && !suggestion && (
-                  <button
+                {vals.name && !suggestion && (
+                  <Button
                     className="ai-pricing-btn"
                     onClick={() => {
-                      const category = categories?.find(c => String(c.id) === form.categoryId)
+                      const category = categories?.find(c => String(c.id) === vals.categoryId)
                       getPricing({
-                        productName: form.name,
-                        description: form.description || undefined,
+                        productName: vals.name,
+                        description: vals.description || undefined,
                         categoryName: category?.name || undefined,
-                        conditionLevel: form.conditionLevel ? Number(form.conditionLevel) : undefined,
-                        originalPrice: form.originalPrice ? Number(form.originalPrice) : undefined,
+                        conditionLevel: vals.conditionLevel ? Number(vals.conditionLevel) : undefined,
+                        originalPrice: vals.originalPrice ? Number(vals.originalPrice) : undefined,
                       })
                     }}
                     disabled={aiPricingLoading}
@@ -767,14 +755,14 @@ function PublishPage() {
                         AI 智能定价
                       </>
                     )}
-                  </button>
+                  </Button>
                 )}
 
                 {suggestion && (
                   <AiPricingBadge
                     suggestion={suggestion}
                     onApply={(price) => {
-                      updateField('price', String(price))
+                      setValue('price', String(price))
                       clearSuggestion()
                     }}
                     isLoading={aiPricingLoading}
@@ -782,21 +770,19 @@ function PublishPage() {
                 )}
 
                 <div className="field-group-v2" style={{ maxWidth: '200px' }}>
-                  <label className="field-label-v2" htmlFor="stock">
+                  <Label className="field-label-v2" htmlFor="stock">
                     <Package size={14} />
                     库存数量
-                  </label>
+                  </Label>
                   <div className="input-wrapper-v2">
-                    <input
-                      id="stock"
-                      type="number"
-                      name="stock"
-                      placeholder="1"
-                      min="1"
-                      value={form.stock}
-                      onChange={e => updateField('stock', e.target.value)}
-                      className="field-input-v2"
-                    />
+                      <Input
+                        id="stock"
+                        type="number"
+                        placeholder="1"
+                        min="1"
+                        className="field-input-v2"
+                        {...register('stock')}
+                      />
                     <span className="stock-unit">件</span>
                   </div>
                 </div>
@@ -819,16 +805,17 @@ function PublishPage() {
 
             {/* Actions */}
             <div className="form-actions-v2">
-              <button
+              <Button
+                variant="outline"
                 className="btn-draft-v2"
-                onClick={() => handleSubmit(true)}
+                onClick={onSubmitDraft}
                 disabled={isSubmitting}
               >
                 保存草稿
-              </button>
-              <button
+              </Button>
+              <Button
                 className="btn-publish-v2"
-                onClick={() => handleSubmit(false)}
+                onClick={onSubmitPublish}
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -842,7 +829,7 @@ function PublishPage() {
                     立即发布
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

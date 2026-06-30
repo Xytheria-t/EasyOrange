@@ -1,4 +1,5 @@
 import { Sparkles, Loader2, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import type { AiReviewResult } from '@/api/aiApi';
 import './ai-components.css';
 
@@ -55,16 +56,13 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
           <div className="ai-reasoning" style={{ margin: '8px 0', lineHeight: 1.6 }}>
             {result.reasoning}
           </div>
-          <button
+          <Button
             className="ai-apply-btn"
             onClick={() => onApply(result.isApproved ? 'approve' : 'reject')}
-            style={{
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            }}
           >
             <Sparkles size={14} />
             采纳 AI 建议
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -79,10 +77,10 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
       <p style={{ fontSize: 13, color: '#713f12', margin: '0 0 12px', lineHeight: 1.5 }}>
         让 AI 分析商品信息，提供审核建议
       </p>
-      <button className="ai-review-trigger" onClick={onGetSuggestion}>
-        <Sparkles size={14} style={{ marginRight: 6, verticalAlign: 'middle' }} />
+      <Button className="ai-review-trigger" onClick={onGetSuggestion}>
+        <Sparkles size={14} />
         获取 AI 审核建议
-      </button>
+      </Button>
     </div>
   );
 }

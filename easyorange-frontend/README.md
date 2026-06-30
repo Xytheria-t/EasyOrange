@@ -12,9 +12,10 @@
 | **数据获取** | TanStack React Query 5 | 服务端状态管理 |
 | **状态管理** | Zustand 5 | 客户端状态管理 |
 | **构建** | Vite 8 | 极速构建工具 |
-| **样式** | Tailwind CSS 4 | 原子化 CSS |
+| **样式** | Tailwind CSS 4 + shadcn/ui | 原子化 CSS + 可复用组件库 |
+| **表单校验** | react-hook-form + Zod 4 | 类型安全表单验证 |
 | **图标** | Lucide React | 图标库 |
-| **测试** | Vitest + Testing Library | 单元/组件测试（98 文件, 945 测试） |
+| **测试** | Vitest + Testing Library | 单元/组件测试（100 文件, 952 测试） |
 | | Playwright | E2E 测试 |
 | **质量** | ESLint + Prettier + jsx-a11y | 代码规范与可访问性检查 |
 

@@ -41,7 +41,7 @@ describe('useAdminCategories', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].name).toBe('电子产品');
+    expect(result.current.data?.[0]?.name).toBe('电子产品');
   });
 });
 
@@ -62,7 +62,7 @@ describe('useAdminCategoryTree', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toHaveLength(1);
-    expect(result.current.data![0].name).toBe('电子产品');
+    expect(result.current.data?.[0]?.name).toBe('电子产品');
   });
 });
 

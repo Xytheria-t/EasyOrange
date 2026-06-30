@@ -210,25 +210,21 @@ describe('ProductsPage', () => {
   it('shows default sort as newest in SortDropdown trigger', () => {
     renderPage();
 
-    // SortDropdown trigger shows "最新发布" by default
-    const newestTexts = screen.getAllByText('最新发布');
-    const triggerSpan = newestTexts.find(el => el.closest('button'));
-    expect(triggerSpan).toBeTruthy();
+    // Radix Select trigger is a combobox button showing the selected value
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toHaveTextContent('最新发布');
   });
 
   it('opens SortDropdown panel and changes sort on selection', async () => {
     renderPage();
 
     const user = userEvent.setup();
-    // Find the SortDropdown trigger button (contains "最新发布" span inside a button)
-    const newestTexts = screen.getAllByText('最新发布');
-    const triggerSpan = newestTexts.find(el => el.closest('button')) as HTMLElement;
-    const trigger = triggerSpan?.closest('button') as HTMLElement;
+    // Radix Select trigger is a combobox button
+    const trigger = screen.getByRole('combobox');
     await user.click(trigger);
 
-    // Panel should show all options
-    const priceAscTexts = screen.getAllByText('价格从低到高');
-    const priceAscOption = priceAscTexts.find(el => el.closest('.sort-dropdown-panel')) as HTMLElement;
+    // Radix Select renders options in a portal as option roles
+    const priceAscOption = await screen.findByRole('option', { name: '价格从低到高' });
     expect(priceAscOption).toBeInTheDocument();
 
     // Click price_asc option in the panel

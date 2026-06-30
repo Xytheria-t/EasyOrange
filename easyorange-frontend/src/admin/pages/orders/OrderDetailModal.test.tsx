@@ -118,7 +118,8 @@ describe('OrderDetailModal', () => {
       <OrderDetailModal open={true} orderId={1} onClose={onClose} />,
     );
 
-    const closeBtn = screen.getByRole('button', { name: /关闭对话框/i });
+    // The visible header close button shares the accessible name with the hidden dialog close button
+    const [closeBtn] = screen.getAllByRole('button', { name: '关闭' });
     fireEvent.click(closeBtn);
     expect(onClose).toHaveBeenCalledTimes(1);
   });

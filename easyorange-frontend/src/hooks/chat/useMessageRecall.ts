@@ -36,7 +36,7 @@ export function useMessageRecall(conversationId: string) {
   )
 
   const copyMessage = useCallback((content: string) => {
-    navigator.clipboard.writeText(content).catch(console.error)
+    navigator.clipboard.writeText(content).catch(() => {})
   }, [])
 
   return { canRecall, recallMessage, copyMessage }

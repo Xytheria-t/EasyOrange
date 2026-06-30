@@ -100,7 +100,6 @@
   background: rgba(244, 63, 94, 0.08);
   border: 1px solid rgba(244, 63, 94, 0.15);
   color: var(--error);
-  cursor: pointer;
   transition: all 0.3s var(--ease-out);
 }
 
@@ -442,6 +441,25 @@
   min-height: 100px;
 }
 
+/* shadcn Textarea overrides: preserve custom glass styling and focus shadow */
+.edit-field-group .edit-textarea {
+  resize: vertical;
+  min-height: 100px;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1.5px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+}
+
+.edit-field-group .edit-textarea:focus-visible {
+  outline: none;
+  border-color: var(--primary-400);
+  background: white;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
+  --tw-ring-offset-width: 0px;
+  --tw-ring-color: transparent;
+}
+
 .edit-error-text {
   display: flex;
   align-items: center;
@@ -482,10 +500,11 @@
   border-radius: var(--radius-xl);
   font-size: 0.9375rem;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.35s var(--ease-spring);
   border: none;
   font-family: inherit;
+  height: auto;
+  min-height: unset;
 }
 
 .edit-btn-primary {
@@ -580,8 +599,9 @@
   color: var(--error);
   font-size: 0.875rem;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.3s var(--ease-out);
+  height: auto;
+  min-height: unset;
 }
 
 .edit-delete-btn:hover {
@@ -724,9 +744,10 @@
   color: white;
   font-size: 0.9375rem;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.3s var(--ease-out);
   box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+  height: auto;
+  min-height: unset;
 }
 
 .edit-empty-btn:hover {

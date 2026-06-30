@@ -191,8 +191,9 @@ describe('ProductManageDetailModal', () => {
         onSuccess={vi.fn()}
       />,
     );
-    const closeButton = screen.getByText('关闭');
-    fireEvent.click(closeButton);
+    // Filter to the visible footer close button (ignore hidden dialog sr-only text)
+    const closeButtons = screen.getAllByText('关闭').filter((el) => el.tagName === 'BUTTON');
+    fireEvent.click(closeButtons[closeButtons.length - 1]);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
@@ -296,8 +297,9 @@ describe('ProductManageDetailModal', () => {
         onSuccess={vi.fn()}
       />,
     );
-    const offlineButton = screen.getByText('下架');
-    expect(offlineButton).toBeDisabled();
+    // ShadcnButton shows loadingText and is disabled while isPending
+    const loadingButton = screen.getByText('处理中...');
+    expect(loadingButton).toBeDisabled();
   });
 
   // ── Test 13: Escape key calls onClose ──

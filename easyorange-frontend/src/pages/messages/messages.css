@@ -582,9 +582,10 @@
   border-radius: var(--radius-lg);
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
   transition: all var(--transition-fast);
   box-shadow: 0 3px 8px rgba(249, 115, 22, 0.2);
+  height: auto;
+  min-height: unset;
 }
 
 .error-retry-btn:hover {

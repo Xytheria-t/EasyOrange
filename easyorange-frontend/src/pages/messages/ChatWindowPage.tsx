@@ -40,9 +40,9 @@ function ChatWindowPage() {
       .map((m) => m.id);
 
     if (unreadIds.length > 0) {
-      messageApi.markAsRead(unreadIds.map((id) => Number(id))).catch(console.error);
+      messageApi.markAsRead(unreadIds.map((id) => Number(id))).catch(() => {});
     }
-  }, [messages.length, targetUserId]);
+  }, [messages, targetUserId]);
 
   const handleSend = useCallback(
     (content: string) => {

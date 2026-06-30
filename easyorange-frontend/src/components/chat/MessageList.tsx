@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, forwardRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
+import { Button } from '@/components/ui/button'
 import type { ChatMessage } from '@/types/message'
 import MessageBubble from './MessageBubble'
 import TypingIndicator from './TypingIndicator'
@@ -114,15 +115,17 @@ const MessageList = forwardRef<HTMLDivElement, MessageListProps>(
 
             if (isLoadMoreRow) {
               return (
-                <button
+                <Button
                   key="load-more"
+                  type="button"
+                  variant="outline"
                   onClick={onLoadMore}
                   className="chat-load-more"
                   style={{ transform: `translateY(${virtualItem.start}px)` }}
                 >
                   加载更多消息
-                </button>
-              )
+                </Button>
+              );
             }
 
             if (isTypingRow) {

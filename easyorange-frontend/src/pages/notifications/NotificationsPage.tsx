@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { notificationApi } from '@/api/notificationApi';
 import type { NotificationItem } from '@/types';
+import { Button } from '@/components/ui/button';
 import './notifications.css';
 
 const PAGE_SIZE = 20;
@@ -100,13 +101,15 @@ export default function NotificationsPage() {
         {/* Header */}
         <div className="notifications-header">
           <div className="notifications-header-left">
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               className="notifications-back-btn"
               onClick={() => navigate(-1)}
               aria-label="返回"
             >
               <ArrowLeft size={20} />
-            </button>
+            </Button>
             <div className="notifications-header-info">
               <h1 className="notifications-title">系统通知</h1>
               <div className="notifications-header-meta">
@@ -121,7 +124,7 @@ export default function NotificationsPage() {
             </div>
           </div>
           {unreadCount > 0 && (
-            <button
+            <Button
               className="notifications-mark-all-btn"
               onClick={() => markAllReadMutation.mutate()}
               disabled={markAllReadMutation.isPending}
@@ -132,7 +135,7 @@ export default function NotificationsPage() {
                 <CheckCheck size={16} />
               )}
               全部已读
-            </button>
+            </Button>
           )}
         </div>
 
@@ -149,12 +152,13 @@ export default function NotificationsPage() {
             <Bell size={48} className="notifications-empty-icon" />
             <h3>加载失败</h3>
             <p>请稍后重试</p>
-            <button
+            <Button
+              variant="ghost"
               className="notifications-retry-btn"
               onClick={() => queryClient.invalidateQueries({ queryKey: ['notifications'] })}
             >
               重新加载
-            </button>
+            </Button>
           </div>
         ) : notifications.length === 0 ? (
           <div className="notifications-empty">
@@ -174,8 +178,9 @@ export default function NotificationsPage() {
                 const { icon: Icon, color } = getNotificationIcon(item.title);
                 const isUnread = item.isRead === 0;
                 return (
-                  <button
+                  <Button
                     key={item.id}
+                    variant="ghost"
                     className={`notification-card ${isUnread ? 'unread' : ''}`}
                     onClick={() => handleNotificationClick(item)}
                   >
@@ -208,7 +213,7 @@ export default function NotificationsPage() {
                         </span>
                       )}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -216,23 +221,27 @@ export default function NotificationsPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="notifications-pagination">
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="pagination-btn"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                 >
                   上一页
-                </button>
+                </Button>
                 <span className="pagination-info">
                   {page} / {totalPages}
                 </span>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="pagination-btn"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
                   下一页
-                </button>
+                </Button>
               </div>
             )}
           </>

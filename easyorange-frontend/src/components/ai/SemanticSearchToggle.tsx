@@ -1,4 +1,5 @@
 import { Sparkles, Search, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SemanticSearchToggleProps {
   isActive: boolean;
@@ -8,7 +9,9 @@ interface SemanticSearchToggleProps {
 export function SemanticSearchToggle({ isActive, onToggle }: SemanticSearchToggleProps) {
   return (
     <div className="semantic-toggle-wrapper">
-      <button
+      <Button
+        type="button"
+        variant="outline"
         className={`semantic-toggle ${isActive ? 'active' : ''}`}
         onClick={onToggle}
       >
@@ -19,7 +22,7 @@ export function SemanticSearchToggle({ isActive, onToggle }: SemanticSearchToggl
           {isActive ? '语义搜索' : '关键词搜索'}
         </span>
         {isActive && <span className="semantic-toggle-dot" />}
-      </button>
+      </Button>
       <div className="semantic-toggle-tooltip">
         <Info size={12} />
         <span>{isActive ? 'AI理解搜索意图，匹配更精准' : '切换为AI语义理解搜索'}</span>

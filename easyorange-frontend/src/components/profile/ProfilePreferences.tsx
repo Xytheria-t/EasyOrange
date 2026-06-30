@@ -1,4 +1,5 @@
 import { ChevronRight, Trash2 } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 
 export function ProfilePreferences() {
   return (
@@ -12,42 +13,6 @@ export function ProfilePreferences() {
 
       <div className="preferences-grid">
         <div className="pref-card">
-          <h3>主题外观</h3>
-          <div className="theme-options">
-            <div className="theme-option active">
-              <div className="theme-preview light">
-                <div className="preview-header"></div>
-                <div className="preview-content">
-                  <div className="preview-line"></div>
-                  <div className="preview-line short"></div>
-                </div>
-              </div>
-              <span>浅色</span>
-            </div>
-            <div className="theme-option">
-              <div className="theme-preview dark">
-                <div className="preview-header"></div>
-                <div className="preview-content">
-                  <div className="preview-line"></div>
-                  <div className="preview-line short"></div>
-                </div>
-              </div>
-              <span>深色</span>
-            </div>
-            <div className="theme-option">
-              <div className="theme-preview auto">
-                <div className="preview-header"></div>
-                <div className="preview-content">
-                  <div className="preview-line"></div>
-                  <div className="preview-line short"></div>
-                </div>
-              </div>
-              <span>自动</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="pref-card">
           <h3>通知设置</h3>
           <div className="pref-list">
             <div className="pref-item">
@@ -55,30 +20,21 @@ export function ProfilePreferences() {
                 <span className="pref-title">订单通知</span>
                 <span className="pref-desc">接收订单状态变更提醒</span>
               </div>
-              <label className="switch">
-                <input type="checkbox" defaultChecked aria-label="订单通知" />
-                <span className="switch-slider"></span>
-              </label>
+              <Switch defaultChecked aria-label="订单通知" />
             </div>
             <div className="pref-item">
               <div className="pref-info">
                 <span className="pref-title">消息提醒</span>
                 <span className="pref-desc">接收私信和系统消息</span>
               </div>
-              <label className="switch">
-                <input type="checkbox" defaultChecked aria-label="消息提醒" />
-                <span className="switch-slider"></span>
-              </label>
+              <Switch defaultChecked aria-label="消息提醒" />
             </div>
             <div className="pref-item">
               <div className="pref-info">
                 <span className="pref-title">营销推送</span>
                 <span className="pref-desc">接收优惠活动和推荐</span>
               </div>
-              <label className="switch">
-                <input type="checkbox" aria-label="营销推送" />
-                <span className="switch-slider"></span>
-              </label>
+              <Switch aria-label="营销推送" />
             </div>
           </div>
         </div>
@@ -91,20 +47,14 @@ export function ProfilePreferences() {
                 <span className="pref-title">公开个人资料</span>
                 <span className="pref-desc">其他用户可查看你的资料</span>
               </div>
-              <label className="switch">
-                <input type="checkbox" defaultChecked aria-label="公开个人资料" />
-                <span className="switch-slider"></span>
-              </label>
+              <Switch defaultChecked aria-label="公开个人资料" />
             </div>
             <div className="pref-item">
               <div className="pref-info">
                 <span className="pref-title">显示在线状态</span>
                 <span className="pref-desc">其他用户可看到你的在线状态</span>
               </div>
-              <label className="switch">
-                <input type="checkbox" defaultChecked aria-label="显示在线状态" />
-                <span className="switch-slider"></span>
-              </label>
+              <Switch defaultChecked aria-label="显示在线状态" />
             </div>
           </div>
         </div>

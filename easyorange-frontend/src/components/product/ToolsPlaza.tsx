@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export type ToolsPlazaFilter = 'all' | 'ai' | 'discount';
 
@@ -60,7 +61,9 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
       </div>
 
       <div className="plaza-tools">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           className={`plaza-tool plaza-ai-tool ${aiMode ? 'active' : ''}`}
           onClick={() => handleFilterClick('ai')}
         >
@@ -72,12 +75,14 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
             <Zap size={8} />
             AI
           </div>
-        </button>
+        </Button>
 
         <div className="tool-divider" />
 
         <div className="tool-group">
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             className={`plaza-tool ${activeFilter === 'all' && !aiMode ? 'active' : ''}`}
             onClick={() => handleFilterClick('all')}
           >
@@ -91,10 +96,12 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
             </div>
             <span className="tool-label">全部</span>
             <div className="tool-badge">ALL</div>
-          </button>
+          </Button>
 
 
-          <button
+          <Button
+            type="button"
+            variant="ghost"
             className={`plaza-tool ${activeFilter === 'discount' && !aiMode ? 'active' : ''}`}
             onClick={() => handleFilterClick('discount')}
           >
@@ -107,7 +114,7 @@ export function ToolsPlaza({ onFilterChange, total = 0, activeFilter: externalAc
             </div>
             <span className="tool-label">特价优惠</span>
             <div className="tool-badge">SALE</div>
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -1,4 +1,5 @@
 import { ArrowLeft, MoreVertical } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface TargetUser {
   id: string
@@ -16,13 +17,15 @@ function ChatHeader({ targetUser, onBack }: ChatHeaderProps) {
     <header className="chat-header">
       <div className="chat-header-inner">
         <div className="flex items-center gap-3">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onBack}
             className="chat-back-btn"
             aria-label="返回"
           >
             <ArrowLeft size={20} />
-          </button>
+          </Button>
 
           {targetUser && (
             <div className="flex items-center gap-3">
@@ -47,9 +50,9 @@ function ChatHeader({ targetUser, onBack }: ChatHeaderProps) {
         </div>
 
         <div className="flex items-center gap-1">
-          <button className="chat-action-btn" aria-label="更多选项">
+          <Button variant="ghost" size="icon" className="chat-action-btn" aria-label="更多选项">
             <MoreVertical size={18} />
-          </button>
+          </Button>
         </div>
       </div>
     </header>

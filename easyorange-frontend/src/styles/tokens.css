@@ -104,6 +104,7 @@
     --border-light: rgba(42, 37, 32, 0.05);
     --border-medium: rgba(42, 37, 32, 0.08);
     --border-strong: rgba(42, 37, 32, 0.12);
+    --border-control: rgba(42, 37, 32, 0.35);
     --border-glass: rgba(255, 255, 255, 0.7);
 
     /* Shadows - Warm tinted */
@@ -123,7 +124,6 @@
     /* Glassmorphism - Enhanced */
     --glass-bg: rgba(255, 255, 255, 0.78);
     --glass-bg-heavy: rgba(255, 255, 255, 0.92);
-    --glass-bg-dark: rgba(42, 37, 32, 0.85);
     --glass-border: rgba(255, 255, 255, 0.6);
     --glass-blur: blur(24px);
     --glass-blur-heavy: blur(48px);

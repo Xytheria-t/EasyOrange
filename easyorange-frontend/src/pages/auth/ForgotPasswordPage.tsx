@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { userApi } from '@/api/userApi'
 import { ArrowLeft, KeyRound, Smartphone, ShieldCheck, Sparkles, Check } from 'lucide-react'
 import { useUIStore } from '@/store/uiStore'
 import { errorHandler } from '@/utils/errorHandler'
+import { resetPasswordSchema, type ResetPasswordForm } from '@/schemas/authSchema'
+import { Button } from '@/components/ui/button'
+import { Input, Label } from '@/components/ui'
 import './forgot-password.css'
 
 type Step = 1 | 2 | 3
@@ -12,12 +17,15 @@ function ForgotPasswordPage() {
   const navigate = useNavigate()
   const addToast = useUIStore((s) => s.addToast)
   const [step, setStep] = useState<Step>(1)
-  const [phone, setPhone] = useState('')
-  const [verifyCode, setVerifyCode] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [countdown, setCountdown] = useState(0)
+
+  const { register, watch, formState, trigger } = useForm<ResetPasswordForm>({
+    resolver: zodResolver(resetPasswordSchema),
+    reValidateMode: 'onChange',
+    defaultValues: { phone: '', verifyCode: '', newPassword: '', confirmPassword: '' },
+  })
+  const vals = watch()
 
   const startCountdown = () => {
     setCountdown(60)
@@ -33,12 +41,13 @@ function ForgotPasswordPage() {
   }
 
   const handleSendCode = async () => {
-    if (!phone) {
-      addToast({ type: 'warning', message: '请输入手机号' })
+    const valid = await trigger('phone')
+    if (!valid) {
+      addToast({ type: 'warning', message: formState.errors.phone?.message || '请输入手机号' })
       return
     }
     try {
-      await userApi.sendSmsCode(phone)
+      await userApi.sendSmsCode(vals.phone)
       startCountdown()
       setStep(2)
       addToast({ type: 'success', message: '验证码已发送' })
@@ -48,29 +57,32 @@ function ForgotPasswordPage() {
     }
   }
 
-  const handleVerifyCode = () => {
-    if (!verifyCode) {
-      addToast({ type: 'warning', message: '请输入验证码' })
+  const handleVerifyCode = async () => {
+    const valid = await trigger('verifyCode')
+    if (!valid) {
+      addToast({ type: 'warning', message: formState.errors.verifyCode?.message || '请输入验证码' })
       return
     }
     setStep(3)
   }
 
   const handleResetPassword = async () => {
-    if (!newPassword) {
+    if (!vals.newPassword) {
       addToast({ type: 'warning', message: '请输入新密码' })
       return
     }
-    if (newPassword !== confirmPassword) {
-      addToast({ type: 'warning', message: '两次输入的密码不一致' })
+    const valid = await trigger(['newPassword', 'confirmPassword'])
+    if (!valid) {
+      const errMsg = formState.errors.confirmPassword?.message || formState.errors.newPassword?.message || '密码不符合要求'
+      addToast({ type: 'warning', message: errMsg })
       return
     }
     setIsLoading(true)
     try {
       await userApi.forgotPassword({
-        phone,
-        verifyCode,
-        newPassword
+        phone: vals.phone,
+        verifyCode: vals.verifyCode,
+        newPassword: vals.newPassword,
       })
       addToast({ type: 'success', message: '密码重置成功，请使用新密码登录' })
       navigate('/login')
@@ -99,12 +111,12 @@ function ForgotPasswordPage() {
         </div>
       </div>
 
-      <button className="forgot-password-close-btn" onClick={() => navigate('/login')} aria-label="返回登录">
+      <Button variant="ghost" size="icon" className="forgot-password-close-btn" onClick={() => navigate('/login')} aria-label="返回登录">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
-      </button>
+      </Button>
 
       <div className="forgot-password-container">
         <div className="forgot-password-card">
@@ -137,22 +149,21 @@ function ForgotPasswordPage() {
             {step === 1 && (
               <div className="forgot-password-form-step">
                 <div className="form-group">
-                  <label className="form-label" htmlFor="forgot-phone">手机号</label>
-                  <div className="input-wrapper">
+                  <Label htmlFor="forgot-phone">手机号</Label>
+                  <div className="relative flex items-center">
                     <Smartphone size={18} className="input-icon" />
-                    <input
+                    <Input
                       id="forgot-phone"
-                      className="form-input"
                       type="tel"
                       placeholder="请输入注册时绑定的手机号"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
                       maxLength={11}
                       data-testid="input-forgot-phone"
+                      className="pl-11"
+                      {...register('phone')}
                     />
                   </div>
                 </div>
-                <button 
+                <Button 
                   className="forgot-password-btn" 
                   onClick={handleSendCode} 
                   disabled={countdown > 0}
@@ -160,90 +171,89 @@ function ForgotPasswordPage() {
                 >
                   <Sparkles size={16} />
                   {countdown > 0 ? `${countdown}s 后重新发送` : '发送验证码'}
-                </button>
+                </Button>
               </div>
             )}
 
             {step === 2 && (
               <div className="forgot-password-form-step">
                 <div className="form-group">
-                  <label className="form-label" htmlFor="forgot-verify-code">验证码</label>
-                  <div className="input-wrapper">
+                  <Label htmlFor="forgot-verify-code">验证码</Label>
+                  <div className="relative flex items-center">
                     <ShieldCheck size={18} className="input-icon" />
-                    <input
+                    <Input
                       id="forgot-verify-code"
-                      className="form-input"
                       type="text"
                       placeholder="请输入6位验证码"
-                      value={verifyCode}
-                      onChange={(e) => setVerifyCode(e.target.value)}
                       maxLength={6}
                       data-testid="input-verify-code"
+                      className="pl-11 pr-20"
+                      {...register('verifyCode')}
                     />
-                    <button
-                      className="resend-btn"
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={handleSendCode}
                       disabled={countdown > 0}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 px-2 text-xs font-semibold text-primary-600"
                     >
                       {countdown > 0 ? `${countdown}s` : '重新发送'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                <button className="forgot-password-btn" onClick={handleVerifyCode} data-testid="btn-verify-next">
+                <Button className="forgot-password-btn" onClick={handleVerifyCode} data-testid="btn-verify-next">
                   下一步
-                </button>
+                </Button>
               </div>
             )}
 
             {step === 3 && (
               <div className="forgot-password-form-step">
                 <div className="form-group">
-                  <label className="form-label" htmlFor="forgot-new-password">新密码</label>
-                  <div className="input-wrapper">
+                  <Label htmlFor="forgot-new-password">新密码</Label>
+                  <div className="relative flex items-center">
                     <KeyRound size={18} className="input-icon" />
-                    <input
+                    <Input
                       id="forgot-new-password"
-                      className="form-input"
                       type="password"
                       placeholder="需包含大小写字母和数字，6-20位"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
                       data-testid="input-new-password"
+                      className="pl-11"
+                      {...register('newPassword')}
                     />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label" htmlFor="forgot-confirm-password">确认新密码</label>
-                  <div className="input-wrapper">
+                  <Label htmlFor="forgot-confirm-password">确认新密码</Label>
+                  <div className="relative flex items-center">
                     <KeyRound size={18} className="input-icon" />
-                    <input
+                    <Input
                       id="forgot-confirm-password"
-                      className="form-input"
                       type="password"
                       placeholder="再次输入新密码"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
                       data-testid="input-confirm-new-password"
+                      className="pl-11"
+                      {...register('confirmPassword')}
                     />
                   </div>
                 </div>
-                <button 
+                <Button 
                   className="forgot-password-btn" 
                   onClick={handleResetPassword} 
                   disabled={isLoading}
                   data-testid="btn-reset-password"
                 >
                   {isLoading ? '重置中...' : '重置密码'}
-                </button>
+                </Button>
               </div>
             )}
           </div>
 
           <div className="forgot-password-footer">
-            <button className="back-to-login-btn" onClick={() => navigate('/login')}>
+            <Button variant="outline" className="back-to-login-btn" onClick={() => navigate('/login')}>
               <ArrowLeft size={16} />
               返回登录
-            </button>
+            </Button>
           </div>
         </div>
       </div>

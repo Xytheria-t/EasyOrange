@@ -437,7 +437,6 @@
     );
     border-radius: 12px;
     color: var(--island-text-muted);
-    cursor: pointer;
     transition: all 0.35s var(--ease-out-expo);
     position: relative;
     overflow: hidden;
@@ -544,13 +543,14 @@
     );
     border: 1px solid rgba(255, 255, 255, 0.7);
     border-radius: 16px;
-    cursor: pointer;
     transition: all 0.35s var(--ease-out-expo);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.9),
         0 2px 6px rgba(0, 0, 0, 0.03);
     position: relative;
     overflow: hidden;
+    height: auto;
+    min-height: unset;
 }
 
 .floating-nav__user-btn::before {
@@ -730,11 +730,12 @@
     color: var(--island-text);
     font-size: 14px;
     text-decoration: none;
-    cursor: pointer;
     transition: all 0.3s var(--ease-out-expo);
     position: relative;
     overflow: hidden;
     isolation: isolate;
+    height: auto;
+    min-height: unset;
 }
 
 .floating-nav__menu-item::before {
@@ -855,7 +856,6 @@
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
-    cursor: pointer;
     transition: all 0.4s var(--ease-out-expo);
     position: relative;
     overflow: hidden;
@@ -866,6 +866,8 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.1);
     isolation: isolate;
     animation: btnGradient 4s ease infinite;
+    height: auto;
+    min-height: unset;
 }
 
 @keyframes btnGradient {
@@ -956,7 +958,6 @@
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
-    cursor: pointer;
     transition: all 0.4s var(--ease-out-expo);
     position: relative;
     overflow: hidden;
@@ -967,6 +968,8 @@
         inset 0 -1px 0 rgba(0, 0, 0, 0.12);
     isolation: isolate;
     animation: publishGradient 5s ease infinite;
+    height: auto;
+    min-height: unset;
 }
 
 @keyframes publishGradient {
@@ -1102,12 +1105,16 @@
     .floating-nav__login-btn span,
     .floating-nav__publish-btn span {
         display: none;
+        height: auto;
+        min-height: unset;
     }
 
     .floating-nav__login-btn,
     .floating-nav__publish-btn {
         padding: 10px;
         border-radius: 12px;
+        height: auto;
+        min-height: unset;
     }
 }
 

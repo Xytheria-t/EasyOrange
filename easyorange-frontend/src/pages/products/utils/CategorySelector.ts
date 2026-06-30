@@ -98,7 +98,7 @@ export class CategorySelector {
             } else {
                 throw new Error('分类数据格式错误');
             }
-        } catch (error) {
+        } catch {
             if (retryCount < maxRetries) {
                 await new Promise(resolve => setTimeout(resolve, retryDelay));
                 return this.loadCategories(api, retryCount + 1);

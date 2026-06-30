@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 
 interface RecommendedProduct {
   id: number
@@ -119,7 +120,7 @@ function ProductRecommendCard({ product, index }: { product: RecommendedProduct;
       <div className="product-recommend-image">
         <img src={product.image} alt={product.title} loading="lazy" />
         <div className="product-recommend-overlay">
-          <button className="quick-view-btn">快速查看</button>
+          <Button variant="outline" size="sm" className="quick-view-btn">快速查看</Button>
         </div>
         {discount > 0 && (
           <div className="discount-badge">-{discount}%</div>
@@ -201,13 +202,14 @@ function AIRecommendSection() {
 
           <div className="ai-recommend-tabs">
             {tabs.map(tab => (
-              <button
+              <Button
                 key={tab.id}
+                variant="ghost"
                 className={`recommend-tab ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
               >
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -219,12 +221,12 @@ function AIRecommendSection() {
         </div>
 
         <div className="ai-recommend-footer">
-          <button className="view-more-btn" onClick={() => navigate('/products')}>
+          <Button variant="outline" className="view-more-btn" onClick={() => navigate('/products')}>
             <span>查看更多推荐</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
           <p className="ai-tip">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="10" />

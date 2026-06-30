@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CreditCard, Smartphone, Wallet, ArrowLeft, Shield, Loader2 } from 'lucide-react';
 import { useCreatePayment, usePaymentStatus, useOrderDetail } from '@/hooks';
 import { useUIStore } from '@/store/uiStore';
+import { Button } from '@/components/ui/button';
 import type { PaymentMethod } from '@/types';
 import '@/styles/main.css';
 
@@ -44,9 +45,9 @@ function PaymentPage() {
         <div className="payment-error-state">
           <h2>无效的订单</h2>
           <p>请从订单页面重新发起支付</p>
-          <button className="btn btn-primary" onClick={() => navigate('/orders')}>
+          <Button onClick={() => navigate('/orders')}>
             返回订单
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -86,9 +87,9 @@ function PaymentPage() {
   return (
     <div className="payment-page">
       <div className="payment-header">
-        <button className="payment-back-btn" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="icon" className="payment-back-btn" onClick={() => navigate(-1)}>
           <ArrowLeft size={20} />
-        </button>
+        </Button>
         <h1 className="payment-title">收银台</h1>
         <div className="payment-header-spacer" />
       </div>
@@ -113,8 +114,9 @@ function PaymentPage() {
             const Icon = method.icon;
             const isSelected = selectedMethod === method.value;
             return (
-              <button
+              <Button
                 key={method.value}
+                variant="outline"
                 className={`payment-method-item ${isSelected ? 'payment-method-selected' : ''}`}
                 onClick={() => setSelectedMethod(method.value)}
                 disabled={isPaying}
@@ -127,7 +129,7 @@ function PaymentPage() {
                   <span className="payment-method-desc">{method.desc}</span>
                 </div>
                 <div className={`payment-method-radio ${isSelected ? 'radio-checked' : ''}`} />
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -145,7 +147,7 @@ function PaymentPage() {
             ¥{order?.totalAmount?.toFixed(2) ?? '0.00'}
           </span>
         </div>
-        <button
+        <Button
           className="payment-submit-btn"
           onClick={handleSubmit}
           disabled={isSubmitting || isPaying}
@@ -166,7 +168,7 @@ function PaymentPage() {
               立即支付
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

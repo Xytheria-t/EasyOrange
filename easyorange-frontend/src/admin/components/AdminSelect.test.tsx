@@ -1,17 +1,21 @@
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { AdminSelect } from './AdminSelect';
-
-beforeAll(() => {
-  // scrollIntoView is not available in jsdom
-  Element.prototype.scrollIntoView = vi.fn();
-});
 
 const options = [
   { value: '1', label: 'Option A' },
   { value: '2', label: 'Option B' },
   { value: '3', label: 'Option C' },
 ];
+
+beforeAll(() => {
+  // jsdom does not implement these PointerEvent APIs that Radix Select uses
+  Element.prototype.scrollIntoView = vi.fn();
+  Element.prototype.hasPointerCapture = vi.fn(() => false);
+  Element.prototype.setPointerCapture = vi.fn();
+  Element.prototype.releasePointerCapture = vi.fn();
+});
 
 describe('AdminSelect', () => {
   it('shows selected label', () => {
@@ -26,48 +30,42 @@ describe('AdminSelect', () => {
     expect(screen.getByText('请选择')).toBeInTheDocument();
   });
 
-  it('opens dropdown on click', () => {
+  it('opens dropdown on click', async () => {
     render(<AdminSelect options={options} value="1" onChange={() => {}} />);
-    fireEvent.click(screen.getByText('Option A'));
+    await userEvent.click(screen.getByRole('combobox'));
     expect(screen.getByText('Option B')).toBeInTheDocument();
     expect(screen.getByText('Option C')).toBeInTheDocument();
   });
 
-  it('selects option on click', () => {
+  it('selects option on click', async () => {
     const onChange = vi.fn();
     render(<AdminSelect options={options} value="1" onChange={onChange} />);
-    fireEvent.click(screen.getByText('Option A'));
-    fireEvent.click(screen.getByText('Option B'));
+    await userEvent.click(screen.getByRole('combobox'));
+    await userEvent.click(screen.getByText('Option B'));
     expect(onChange).toHaveBeenCalledWith('2');
   });
 
-  it('closes dropdown after selection', () => {
+  it('closes dropdown after selection', async () => {
     const onChange = vi.fn();
     render(<AdminSelect options={options} value="1" onChange={onChange} />);
-    fireEvent.click(screen.getByText('Option A'));
-    fireEvent.click(screen.getByText('Option B'));
+    await userEvent.click(screen.getByRole('combobox'));
+    await userEvent.click(screen.getByText('Option B'));
     expect(screen.queryByText('Option C')).not.toBeInTheDocument();
   });
 
-  it('shows checkmark on selected option', () => {
+  it('shows checkmark on selected option', async () => {
     render(<AdminSelect options={options} value="1" onChange={() => {}} />);
-    fireEvent.click(screen.getByText('Option A'));
-    // After opening, find the Option A inside the dropdown (portal) and check for checkmark
-    const optionButtons = screen.getAllByText('Option A');
-    expect(optionButtons.length).toBeGreaterThanOrEqual(1);
-    // The last one should be in the dropdown portal
-    const dropdownOption = optionButtons[optionButtons.length - 1].closest('button');
-    const checkmarkPaths = dropdownOption?.querySelector('svg');
-    expect(checkmarkPaths).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox'));
+    const selectedItem = screen.getByRole('option', { selected: true });
+    expect(selectedItem).toHaveTextContent('Option A');
+    expect(selectedItem.querySelector('svg')).toBeInTheDocument();
   });
 
-  it('toggles dropdown open/close', () => {
+  it('closes dropdown on escape', async () => {
     render(<AdminSelect options={options} value="1" onChange={() => {}} />);
-    fireEvent.click(screen.getByText('Option A'));
+    await userEvent.click(screen.getByRole('combobox'));
     expect(screen.getByText('Option B')).toBeInTheDocument();
-    // Click the trigger button (the first Option A) to close
-    const triggerButton = screen.getAllByText('Option A')[0].closest('button');
-    fireEvent.click(triggerButton!);
+    await userEvent.keyboard('{Escape}');
     expect(screen.queryByText('Option B')).not.toBeInTheDocument();
   });
 });
