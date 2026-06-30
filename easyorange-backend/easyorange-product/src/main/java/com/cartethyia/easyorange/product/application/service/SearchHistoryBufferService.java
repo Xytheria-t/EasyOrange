@@ -23,7 +23,7 @@ public class SearchHistoryBufferService {
     
     private static final int BATCH_SIZE = 100;
 
-    public void addToBuffer(Long userId, String keyword) {
+    public void addToBuffer(String userId, String keyword) {
         if (userId == null || keyword == null || keyword.isBlank()) {
             return;
         }

@@ -9,9 +9,9 @@ import lombok.Getter;
 @Getter
 public class OrderShippedEvent extends BaseDomainEvent {
 
-    private final Long orderId;
+    private final String orderId;
 
-    public OrderShippedEvent(Long orderId) {
+    public OrderShippedEvent(String orderId) {
         super();
         this.orderId = orderId;
     }

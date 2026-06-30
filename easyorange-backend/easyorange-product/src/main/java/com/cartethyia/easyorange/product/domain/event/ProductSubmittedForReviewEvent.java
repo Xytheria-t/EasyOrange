@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 
 public class ProductSubmittedForReviewEvent extends BaseDomainEvent {
 
-    private final Long productId;
-    private final Long sellerId;
+    private final String productId;
+    private final String sellerId;
     private final Integer beforeStatus;
     private final Integer afterStatus;
 
-    public ProductSubmittedForReviewEvent(Long productId, Long sellerId,
+    public ProductSubmittedForReviewEvent(String productId, String sellerId,
                                           Integer beforeStatus, Integer afterStatus) {
         super();
         this.productId = productId;
@@ -20,11 +20,11 @@ public class ProductSubmittedForReviewEvent extends BaseDomainEvent {
         this.afterStatus = afterStatus;
     }
 
-    public Long getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public Long getSellerId() {
+    public String getSellerId() {
         return sellerId;
     }
 

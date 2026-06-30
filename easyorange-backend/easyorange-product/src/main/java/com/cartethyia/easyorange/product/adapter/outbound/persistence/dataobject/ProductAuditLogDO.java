@@ -6,8 +6,8 @@ import com.cartethyia.easyorange.framework.entity.BaseDO;
 @TableName("eo_product_audit_log")
 public class ProductAuditLogDO extends BaseDO {
 
-    private Long productId;
-    private Long operatorId;
+    private String productId;
+    private String operatorId;
     private String operatorName;
     private Integer action;
     private String reason;
@@ -19,7 +19,7 @@ public class ProductAuditLogDO extends BaseDO {
     public ProductAuditLogDO() {
     }
 
-    public ProductAuditLogDO(Long productId, Long operatorId, String operatorName, Integer action,
+    public ProductAuditLogDO(String productId, String operatorId, String operatorName, Integer action,
                               String reason, String auditDimensions, Integer beforeStatus,
                               Integer afterStatus, String remark) {
         this.productId = productId;
@@ -33,19 +33,19 @@ public class ProductAuditLogDO extends BaseDO {
         this.remark = remark;
     }
 
-    public Long getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public void setProductId(Long productId) {
+    public void setProductId(String productId) {
         this.productId = productId;
     }
 
-    public Long getOperatorId() {
+    public String getOperatorId() {
         return operatorId;
     }
 
-    public void setOperatorId(Long operatorId) {
+    public void setOperatorId(String operatorId) {
         this.operatorId = operatorId;
     }
 
@@ -110,9 +110,9 @@ public class ProductAuditLogDO extends BaseDO {
     }
 
     public static class Builder {
-        private Long id;
-        private Long productId;
-        private Long operatorId;
+        private String id;
+        private String productId;
+        private String operatorId;
         private String operatorName;
         private Integer action;
         private String reason;
@@ -121,17 +121,17 @@ public class ProductAuditLogDO extends BaseDO {
         private Integer afterStatus;
         private String remark;
 
-        public Builder id(Long id) {
+        public Builder id(String id) {
             this.id = id;
             return this;
         }
 
-        public Builder productId(Long productId) {
+        public Builder productId(String productId) {
             this.productId = productId;
             return this;
         }
 
-        public Builder operatorId(Long operatorId) {
+        public Builder operatorId(String operatorId) {
             this.operatorId = operatorId;
             return this;
         }

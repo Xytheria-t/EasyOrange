@@ -9,10 +9,10 @@ import lombok.Getter;
 @Getter
 public class OrderPaidEvent extends BaseDomainEvent {
 
-    private final Long orderId;
+    private final String orderId;
     private final Integer paymentStatus;
 
-    public OrderPaidEvent(Long orderId, Integer paymentStatus) {
+    public OrderPaidEvent(String orderId, Integer paymentStatus) {
         super();
         this.orderId = orderId;
         this.paymentStatus = paymentStatus;

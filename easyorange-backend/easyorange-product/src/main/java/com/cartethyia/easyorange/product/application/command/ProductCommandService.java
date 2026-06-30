@@ -50,8 +50,8 @@ public class ProductCommandService {
     private final DomainEventPublisher domainEventPublisher;
     private final ProductAuditLogRepository productAuditLogRepository;
 
-    public Long createProduct(CreateProductCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public String createProduct(CreateProductCommand command) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         ProductCreatedResult result = Product.create(
                 SellerId.of(userId),
@@ -69,11 +69,11 @@ public class ProductCommandService {
         Product saved = productRepository.save(result.product());
         domainEventPublisher.publish(result.event());
 
-        return saved.getId().value();
+        return saved.getId().value(); // already String
     }
 
     public void updateProduct(UpdateProductCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         ProductId productId = ProductId.of(command.getId());
 
         Product product = productRepository.findById(productId)
@@ -100,7 +100,7 @@ public class ProductCommandService {
     }
 
     public void deleteProduct(DeleteProductCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         ProductId productId = ProductId.of(command.getId());
 
         Product product = productRepository.findById(productId)
@@ -134,8 +134,8 @@ public class ProductCommandService {
         productCachePort.evictProductCache(result.product().getId().value());
     }
 
-    public void putOnline(Long productId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void putOnline(String productId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         Product product = productRepository.findById(ProductId.of(productId))
                 .orElseThrow(() -> new ProductNotFoundException(ProductId.of(productId)));
         if (!product.getSellerId().equals(SellerId.of(userId))) {
@@ -146,8 +146,8 @@ public class ProductCommandService {
         productCachePort.evictProductCache(productId);
     }
 
-    public void takeOffline(Long productId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void takeOffline(String productId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         Product product = productRepository.findById(ProductId.of(productId))
                 .orElseThrow(() -> new ProductNotFoundException(ProductId.of(productId)));
         if (!product.getSellerId().equals(SellerId.of(userId))) {
@@ -169,8 +169,8 @@ public class ProductCommandService {
         productCachePort.evictProductCache(result.product().getId().value());
     }
 
-    public void submitForReview(Long productId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void submitForReview(String productId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         ProductId pid = ProductId.of(productId);
 
         Product product = productRepository.findById(pid)
@@ -190,6 +190,6 @@ public class ProductCommandService {
                 .beforeStatus(beforeStatus)
                 .afterStatus(ProductStatus.PENDING_REVIEW.getCode())
                 .build();
-        productAuditLogRepository.save(auditLog);
+        productAuditLogRepository.save(auditLog); // String.valueOf already applied
     }
 }

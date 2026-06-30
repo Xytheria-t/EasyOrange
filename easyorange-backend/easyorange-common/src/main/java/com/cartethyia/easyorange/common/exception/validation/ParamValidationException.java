@@ -12,10 +12,7 @@ public class ParamValidationException extends BaseBusinessException {
     private final Map<String, String> fieldErrors;
 
     public ParamValidationException(Map<String, String> fieldErrors) {
-        super(ResultCode.VALIDATE_FAILED, "参数校验失败");
-        this.fieldErrors = fieldErrors != null
-                ? Map.copyOf(fieldErrors)
-                : Map.of();
+        this(ResultCode.VALIDATE_FAILED.getMessage(), fieldErrors);
     }
 
     public ParamValidationException(String message, Map<String, String> fieldErrors) {

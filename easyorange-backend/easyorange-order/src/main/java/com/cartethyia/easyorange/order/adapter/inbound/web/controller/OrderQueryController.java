@@ -17,7 +17,7 @@ public class OrderQueryController {
     private final OrderQueryHandler queryHandler;
 
     @GetMapping("/{id}")
-    public Result<OrderVO> getOrderDetail(@PathVariable Long id) {
+    public Result<OrderVO> getOrderDetail(@PathVariable String id) {
         return Result.success(queryHandler.getOrderDetailForOwner(id));
     }
 

@@ -29,7 +29,7 @@ public class CreateOrderCommand {
     @AllArgsConstructor
     public static class CreateOrderItem {
         @NotNull(message = "资产 ID 不能为空")
-        private Long productId;
+        private String productId;
 
         @Min(value = 1, message = "数量至少为 1")
         private int quantity = 1;

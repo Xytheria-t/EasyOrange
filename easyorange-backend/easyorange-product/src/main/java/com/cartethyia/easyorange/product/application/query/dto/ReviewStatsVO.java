@@ -14,7 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class ReviewStatsVO {
 
-    private Long productId;
+    private String productId;
 
     private Long totalCount;
 

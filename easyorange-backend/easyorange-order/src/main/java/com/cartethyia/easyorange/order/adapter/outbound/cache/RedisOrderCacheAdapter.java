@@ -87,7 +87,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Optional<OrderVO> getOrderDetail(Long orderId) {
+    public Optional<OrderVO> getOrderDetail(String orderId) {
         if (orderId == null) {
             return Optional.empty();
         }
@@ -114,7 +114,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void putOrderDetail(Long orderId, OrderVO orderVO) {
+    public void putOrderDetail(String orderId, OrderVO orderVO) {
         if (orderId == null || orderVO == null) {
             return;
         }
@@ -136,7 +136,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void evictOrderDetail(Long orderId) {
+    public void evictOrderDetail(String orderId) {
         if (orderId == null) {
             return;
         }
@@ -151,7 +151,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void evictBuyerOrders(Long buyerId) {
+    public void evictBuyerOrders(String buyerId) {
         if (buyerId == null) {
             return;
         }
@@ -160,7 +160,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void evictSellerOrders(Long sellerId) {
+    public void evictSellerOrders(String sellerId) {
         if (sellerId == null) {
             return;
         }
@@ -169,7 +169,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public void evictOrderCache(Long buyerId, Long sellerId) {
+    public void evictOrderCache(String buyerId, String sellerId) {
         if (buyerId != null) {
             evictBuyerOrders(buyerId);
         }
@@ -179,7 +179,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public String buildOrderListKey(Long userId, Integer status, Integer pageNum, Integer pageSize) {
+    public String buildOrderListKey(String userId, Integer status, Integer pageNum, Integer pageSize) {
         if (userId == null) {
             return null;
         }
@@ -201,11 +201,11 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public String buildOrderListKey(Long userId, Integer status) {
+    public String buildOrderListKey(String userId, Integer status) {
         return buildOrderListKey(userId, status, 1, 10);
     }
 
-    private void evictOrderCacheByRole(Long roleId, String roleType) {
+    private void evictOrderCacheByRole(String roleId, String roleType) {
         String pattern = ORDER_LIST_CACHE_KEY_PREFIX + roleId + ":*";
 
         try {
@@ -223,7 +223,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
         }
     }
 
-    private String buildOrderDetailKey(Long orderId) {
+    private String buildOrderDetailKey(String orderId) {
         return ORDER_DETAIL_CACHE_KEY_PREFIX + orderId;
     }
 }

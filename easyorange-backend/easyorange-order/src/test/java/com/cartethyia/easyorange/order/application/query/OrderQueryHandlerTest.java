@@ -57,18 +57,18 @@ class OrderQueryHandlerTest {
         handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, orderVOAssembler);
 
         testOrderReadModel = new OrderReadModel(
-                1L, "ORD001", 100L, 200L, List.of(),
+                "1", "ORD001", "100", "200", List.of(),
                 new BigDecimal("99.99"), 0, "待付款", 0,
                 "北京市朝阳区", "13800138000", "备注", null, null,
                 LocalDateTime.now(), LocalDateTime.now()
         );
 
         testProductDetail = new ProductDetail(
-                300L, "测试商品", new BigDecimal("99.99"), 1, List.of("http://img.jpg"), null, null
+                "300", "测试商品", new BigDecimal("99.99"), 1, List.of("http://img.jpg"), null, null
         );
         
         OrderVO mockOrderVO = OrderVO.builder()
-                .id(1L)
+                .id("1")
                 .orderNo("ORD001")
                 .totalAmount(new BigDecimal("99.99"))
                 .build();
@@ -78,7 +78,7 @@ class OrderQueryHandlerTest {
         when(orderVOAssembler.toOrderVOs(any(), anyMap()))
                 .thenReturn(List.of(mockOrderVO));
         when(orderVOAssembler.buildProductMap(any()))
-                .thenReturn(Map.of(300L, testProductDetail));
+                .thenReturn(Map.of("300", testProductDetail));
     }
 
     @Test
@@ -87,10 +87,10 @@ class OrderQueryHandlerTest {
         when(orderReadRepository.findById(any())).thenReturn(Optional.of(testOrderReadModel));
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail));
 
-        OrderVO result = handler.getOrderDetail(1L);
+        OrderVO result = handler.getOrderDetail("1");
 
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo("1");
         assertThat(result.getOrderNo()).isEqualTo("ORD001");
         assertThat(result.getTotalAmount()).isEqualByComparingTo(new BigDecimal("99.99"));
     }
@@ -100,7 +100,7 @@ class OrderQueryHandlerTest {
     void getOrderDetail_nonExistingOrder_returnsNull() {
         when(orderReadRepository.findById(any())).thenReturn(Optional.empty());
 
-        OrderVO result = handler.getOrderDetail(999L);
+        OrderVO result = handler.getOrderDetail("999");
 
         assertThat(result).isNull();
     }

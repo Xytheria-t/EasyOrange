@@ -17,11 +17,11 @@ import lombok.experimental.SuperBuilder;
 @TableName("eo_product_review")
 public class ProductReviewDO extends BaseDO {
 
-    private Long productId;
+    private String productId;
 
-    private Long userId;
+    private String userId;
 
-    private Long orderId;
+    private String orderId;
 
     private Integer rating;
 

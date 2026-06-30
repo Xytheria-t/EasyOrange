@@ -24,7 +24,7 @@ public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHand
     }
 
     @Override
-    public List<ReportHandleHistory> findByReportId(Long reportId) {
+    public List<ReportHandleHistory> findByReportId(String reportId) {
         return lambdaQuery()
                 .eq(ReportHandleHistoryDO::getReportId, reportId)
                 .orderByDesc(ReportHandleHistoryDO::getCreateTime)

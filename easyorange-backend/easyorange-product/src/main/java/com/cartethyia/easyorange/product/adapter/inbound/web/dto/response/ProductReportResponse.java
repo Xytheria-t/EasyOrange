@@ -5,9 +5,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductReportResponse {
 
-    private Long id;
-    private Long productId;
-    private Long reporterId;
+    private String id;
+    private String productId;
+    private String reporterId;
     private String reason;
     private Integer reasonType;
     private Integer status;
@@ -15,7 +15,7 @@ public class ProductReportResponse {
     public ProductReportResponse() {
     }
 
-    public ProductReportResponse(Long id, Long productId, Long reporterId, String reason, Integer reasonType, Integer status) {
+    public ProductReportResponse(String id, String productId, String reporterId, String reason, Integer reasonType, Integer status) {
         this.id = id;
         this.productId = productId;
         this.reporterId = reporterId;
@@ -24,27 +24,27 @@ public class ProductReportResponse {
         this.status = status;
     }
 
-    public Long getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Long getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public void setProductId(Long productId) {
+    public void setProductId(String productId) {
         this.productId = productId;
     }
 
-    public Long getReporterId() {
+    public String getReporterId() {
         return reporterId;
     }
 
-    public void setReporterId(Long reporterId) {
+    public void setReporterId(String reporterId) {
         this.reporterId = reporterId;
     }
 

@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 public record CategoryReadModel(
-        Long id,
+        String id,
         String name,
-        Long parentId,
+        String parentId,
         Integer level,
         String icon,
         Integer sortOrder,

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.application.saga.support;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
+import com.cartethyia.easyorange.framework.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
@@ -32,7 +32,7 @@ public class OrderCreationExecutor {
     private final PaymentGatewayPort paymentGatewayPort;
     private final OrderCachePort<?> orderCachePort;
     private final OrderPreparationService preparationService;
-    private final SnowflakeIdGenerator snowflakeIdGenerator;
+    private final IdGenerator idGenerator;
 
     /**
      * 创建订单
@@ -41,7 +41,7 @@ public class OrderCreationExecutor {
      * @return 创建结果
      */
     public OrderAggregate.OrderCreatedResult createOrder(CreateOrderCommand command) {
-        Long buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         // 准备订单项数据
         List<OrderPreparationService.OrderItemRequest> itemRequests = command.getItems().stream()
@@ -63,7 +63,7 @@ public class OrderCreationExecutor {
             Address.of(resolvedAddress),
             Phone.of(command.getPhone()),
             command.getRemark(),
-            snowflakeIdGenerator.nextId()
+            idGenerator.generateId()
         );
 
         // 保存并发布事件
@@ -99,7 +99,7 @@ public class OrderCreationExecutor {
      *
      * @param sellerId 资产方 ID
      */
-    public void evictSellerCache(Long sellerId) {
+    public void evictSellerCache(String sellerId) {
         orderCachePort.evictSellerOrders(sellerId);
     }
 

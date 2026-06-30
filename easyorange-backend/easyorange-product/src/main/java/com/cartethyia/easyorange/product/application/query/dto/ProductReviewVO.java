@@ -13,11 +13,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ProductReviewVO {
 
-    private Long id;
+    private String id;
 
-    private Long productId;
+    private String productId;
 
-    private Long userId;
+    private String userId;
 
     private String username;
 

@@ -8,5 +8,5 @@ public interface ProductAuditLogRepository {
 
     void save(ProductAuditLog auditLog);
 
-    List<ProductAuditLog> findByProductId(Long productId);
+    List<ProductAuditLog> findByProductId(String productId);
 }

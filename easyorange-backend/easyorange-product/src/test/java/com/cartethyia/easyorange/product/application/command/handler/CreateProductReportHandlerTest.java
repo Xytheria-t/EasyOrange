@@ -33,20 +33,20 @@ class CreateProductReportHandlerTest {
     @Test
     @DisplayName("正常举报应调用领域服务")
     void handleReport_shouldDelegateToDomainService() {
-        when(productReportRepository.existsRecentReport(1L, 2L)).thenReturn(false);
+        when(productReportRepository.existsRecentReport("1", "2")).thenReturn(false);
 
-        handler.handleReport(1L, 2L, "假货", 1);
+        handler.handleReport("1", "2", "假货", 1);
 
-        verify(productReportRepository).existsRecentReport(1L, 2L);
-        verify(productReportDomainService).reportProduct(1L, 2L, "假货", 1);
+        verify(productReportRepository).existsRecentReport("1", "2");
+        verify(productReportDomainService).reportProduct("1", "2", "假货", 1);
     }
 
     @Test
     @DisplayName("24小时内重复举报应抛出异常")
     void handleReport_whenRecentReportExists_shouldThrow() {
-        when(productReportRepository.existsRecentReport(1L, 2L)).thenReturn(true);
+        when(productReportRepository.existsRecentReport("1", "2")).thenReturn(true);
 
-        assertThatThrownBy(() -> handler.handleReport(1L, 2L, "假货", 1))
+        assertThatThrownBy(() -> handler.handleReport("1", "2", "假货", 1))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("已在24小时内举报过");
 

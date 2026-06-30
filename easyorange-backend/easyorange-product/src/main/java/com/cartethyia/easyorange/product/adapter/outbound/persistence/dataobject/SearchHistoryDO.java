@@ -8,24 +8,24 @@ import java.time.LocalDateTime;
 @TableName("eo_search_history")
 public class SearchHistoryDO extends BaseDO {
 
-    private Long userId;
+    private String userId;
     private String keyword;
     private LocalDateTime searchTime;
 
     public SearchHistoryDO() {
     }
 
-    public SearchHistoryDO(Long userId, String keyword, LocalDateTime searchTime) {
+    public SearchHistoryDO(String userId, String keyword, LocalDateTime searchTime) {
         this.userId = userId;
         this.keyword = keyword;
         this.searchTime = searchTime;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
@@ -50,11 +50,11 @@ public class SearchHistoryDO extends BaseDO {
     }
 
     public static class Builder {
-        private Long userId;
+        private String userId;
         private String keyword;
         private LocalDateTime searchTime;
 
-        public Builder userId(Long userId) {
+        public Builder userId(String userId) {
             this.userId = userId;
             return this;
         }

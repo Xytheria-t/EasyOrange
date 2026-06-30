@@ -5,17 +5,17 @@ import java.util.Optional;
 
 public interface ProductInventoryPort {
 
-    Optional<ProductSnapshot> getSnapshot(Long productId);
+    Optional<ProductSnapshot> getSnapshot(String productId);
 
-    boolean decreaseStock(Long productId);
+    boolean decreaseStock(String productId);
 
-    void restoreStock(Long productId);
+    void restoreStock(String productId);
 
-    void markAsSold(Long productId);
+    void markAsSold(String productId);
 
     record ProductSnapshot(
-            Long productId,
-            Long sellerId,
+            String productId,
+            String sellerId,
             BigDecimal price,
             boolean isOnline,
             boolean hasStock,

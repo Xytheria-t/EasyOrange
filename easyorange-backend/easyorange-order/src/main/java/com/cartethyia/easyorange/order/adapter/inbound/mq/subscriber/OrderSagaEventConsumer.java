@@ -43,7 +43,7 @@ public class OrderSagaEventConsumer {
     public void onOrderCancelled(OrderCancelledEvent event) {
         log.info("收到订单取消事件: orderId={}, productCount={}", event.getOrderId(), event.getProductIds().size());
         try {
-            for (Long productId : event.getProductIds()) {
+            for (String productId : event.getProductIds()) {
                 productInventoryPort.restoreStock(productId);
                 log.info("库存恢复成功: productId={}", productId);
             }
@@ -58,7 +58,7 @@ public class OrderSagaEventConsumer {
     public void onOrderCompleted(OrderCompletedEvent event) {
         log.info("收到订单完成事件: orderId={}, productCount={}", event.getOrderId(), event.getProductIds().size());
         try {
-            for (Long productId : event.getProductIds()) {
+            for (String productId : event.getProductIds()) {
                 productInventoryPort.markAsSold(productId);
                 log.info("资产标记已售成功: productId={}", productId);
             }
@@ -73,7 +73,7 @@ public class OrderSagaEventConsumer {
     public void onOrderRefunded(OrderRefundedEvent event) {
         log.info("收到订单退款事件: orderId={}, productCount={}", event.getOrderId(), event.getProductIds().size());
         try {
-            for (Long productId : event.getProductIds()) {
+            for (String productId : event.getProductIds()) {
                 productInventoryPort.restoreStock(productId);
                 log.info("库存恢复成功: productId={}", productId);
             }

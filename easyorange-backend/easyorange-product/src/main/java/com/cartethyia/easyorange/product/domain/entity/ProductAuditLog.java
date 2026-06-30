@@ -4,9 +4,9 @@ import java.time.LocalDateTime;
 
 public class ProductAuditLog {
 
-    private Long id;
-    private Long productId;
-    private Long operatorId;
+    private String id;
+    private String productId;
+    private String operatorId;
     private String operatorName;
     private Integer action;
     private String reason;
@@ -16,7 +16,7 @@ public class ProductAuditLog {
     private String remark;
     private LocalDateTime createTime;
 
-    private ProductAuditLog(Long productId, Long operatorId, String operatorName,
+    private ProductAuditLog(String productId, String operatorId, String operatorName,
                             Integer action, String reason, String auditDimensions,
                             Integer beforeStatus, Integer afterStatus, String remark) {
         this.productId = productId;
@@ -31,9 +31,9 @@ public class ProductAuditLog {
         this.createTime = LocalDateTime.now();
     }
 
-    public Long getId() { return id; }
-    public Long getProductId() { return productId; }
-    public Long getOperatorId() { return operatorId; }
+    public String getId() { return id; }
+    public String getProductId() { return productId; }
+    public String getOperatorId() { return operatorId; }
     public String getOperatorName() { return operatorName; }
     public Integer getAction() { return action; }
     public String getReason() { return reason; }
@@ -46,8 +46,8 @@ public class ProductAuditLog {
     public static Builder builder() { return new Builder(); }
 
     public static class Builder {
-        private Long productId;
-        private Long operatorId;
+        private String productId;
+        private String operatorId;
         private String operatorName;
         private Integer action;
         private String reason;
@@ -56,8 +56,8 @@ public class ProductAuditLog {
         private Integer afterStatus;
         private String remark;
 
-        public Builder productId(Long productId) { this.productId = productId; return this; }
-        public Builder operatorId(Long operatorId) { this.operatorId = operatorId; return this; }
+        public Builder productId(String productId) { this.productId = productId; return this; }
+        public Builder operatorId(String operatorId) { this.operatorId = operatorId; return this; }
         public Builder operatorName(String operatorName) { this.operatorName = operatorName; return this; }
         public Builder action(Integer action) { this.action = action; return this; }
         public Builder reason(String reason) { this.reason = reason; return this; }

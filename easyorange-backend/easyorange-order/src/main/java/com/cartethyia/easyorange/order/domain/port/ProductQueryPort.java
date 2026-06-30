@@ -6,12 +6,12 @@ import java.util.Optional;
 
 public interface ProductQueryPort {
 
-    Optional<ProductDetail> getProductById(Long productId);
+    Optional<ProductDetail> getProductById(String productId);
 
-    List<ProductDetail> getProductsByIds(List<Long> productIds);
+    List<ProductDetail> getProductsByIds(List<String> productIds);
 
     record ProductDetail(
-            Long id,
+            String id,
             String title,
             BigDecimal price,
             Integer status,

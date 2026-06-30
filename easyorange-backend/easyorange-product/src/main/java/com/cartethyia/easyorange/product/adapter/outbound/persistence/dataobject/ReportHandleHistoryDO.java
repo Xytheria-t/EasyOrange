@@ -16,9 +16,9 @@ import lombok.experimental.SuperBuilder;
 @TableName("eo_report_handle_history")
 public class ReportHandleHistoryDO extends BaseDO {
 
-    private Long reportId;
+    private String reportId;
 
-    private Long operatorId;
+    private String operatorId;
 
     private String action;
 

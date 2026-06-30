@@ -31,20 +31,20 @@ public class ProductReviewController {
 
     @GetMapping("/{productId}/reviews")
     public Result<PageResult<ProductReviewVO>> listReviews(
-            @PathVariable Long productId,
+            @PathVariable String productId,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         return Result.success(reviewQueryService.listReviews(productId, pageNum, pageSize));
     }
 
     @GetMapping("/{productId}/reviews/stats")
-    public Result<ReviewStatsVO> getReviewStats(@PathVariable Long productId) {
+    public Result<ReviewStatsVO> getReviewStats(@PathVariable String productId) {
         return Result.success(reviewQueryService.getReviewStats(productId));
     }
 
     @PostMapping("/{productId}/reviews")
-    public Result<Long> createReview(
-            @PathVariable Long productId,
+    public Result<String> createReview(
+            @PathVariable String productId,
             @Valid @RequestBody CreateReviewRequest request) {
         CreateProductReviewCommand command = CreateProductReviewCommand.builder()
                 .productId(productId)
@@ -55,13 +55,13 @@ public class ProductReviewController {
     }
 
     @DeleteMapping("/{productId}/reviews/{reviewId}")
-    public Result<Void> deleteReview(@PathVariable Long productId, @PathVariable Long reviewId) {
+    public Result<Void> deleteReview(@PathVariable String productId, @PathVariable String reviewId) {
         reviewCommandService.deleteReview(reviewId);
         return Result.success();
     }
 
     @PostMapping("/{productId}/reviews/{reviewId}/like")
-    public Result<Void> likeReview(@PathVariable Long productId, @PathVariable Long reviewId) {
+    public Result<Void> likeReview(@PathVariable String productId, @PathVariable String reviewId) {
         reviewCommandService.likeReview(reviewId);
         return Result.success();
     }

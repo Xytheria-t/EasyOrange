@@ -34,7 +34,7 @@ public class ProductQueryService {
     private final ProductCachePort<ProductVO> productCachePort;
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> listProducts(String keyword, Long categoryId, Integer status,
+    public PageResult<ProductVO> listProducts(String keyword, String categoryId, Integer status,
                                                BigDecimal minPrice, BigDecimal maxPrice,
                                                Integer conditionLevel, String sort,
                                                Boolean hasDiscount,
@@ -55,18 +55,18 @@ public class ProductQueryService {
                 effectivePageSize
         );
 
-        List<Long> productIds = page.records().stream()
+        List<String> productIds = page.records().stream()
                 .map(ProductReadModel::id)
                 .collect(Collectors.toList());
-        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+        Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
-        Set<Long> sellerIds = page.records().stream()
+        Set<String> sellerIds = page.records().stream()
                 .map(ProductReadModel::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
-        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+        Map<String, SellerReadModel> sellerMap = sellerIds.isEmpty()
                 ? Map.of()
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
@@ -79,22 +79,22 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> getMyProducts(Long sellerId, Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<ProductVO> getMyProducts(String sellerId, Integer status, Integer pageNum, Integer pageSize) {
         PageResult<ProductReadModel> page = productQueryRepository.findProductsBySellerId(
                 sellerId, status, pageNum, pageSize);
 
-        List<Long> productIds = page.records().stream()
+        List<String> productIds = page.records().stream()
                 .map(ProductReadModel::id)
                 .collect(Collectors.toList());
-        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+        Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
-        Set<Long> sellerIds = page.records().stream()
+        Set<String> sellerIds = page.records().stream()
                 .map(ProductReadModel::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
-        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+        Map<String, SellerReadModel> sellerMap = sellerIds.isEmpty()
                 ? Map.of()
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
@@ -107,14 +107,14 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public ProductVO getProductById(Long id) {
+    public ProductVO getProductById(String id) {
         ProductVO cachedProduct = productCachePort.getProductCache(id);
         if (cachedProduct != null) {
             return cachedProduct;
         }
 
         Product product = productRepository.findById(ProductId.of(id))
-                .orElseThrow(() -> new ProductNotFoundException(id));
+                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
         ProductVO productVO = assembleProductVO(product);
 
         productCachePort.setProductCache(id, productVO);
@@ -122,7 +122,7 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductVO> getProductsByIds(List<Long> ids) {
+    public List<ProductVO> getProductsByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
@@ -132,23 +132,23 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductVO> getProductsBySellerId(Long sellerId) {
+    public List<ProductVO> getProductsBySellerId(String sellerId) {
         List<Product> products = productRepository.findBySellerId(SellerId.of(sellerId));
         return assembleProductVOs(products);
     }
 
     @Transactional(readOnly = true)
-    public ProductReadModel getProductReadModel(Long id) {
+    public ProductReadModel getProductReadModel(String id) {
         return productQueryRepository.findProductById(id);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductReadModel> getProductReadModels(List<Long> ids) {
+    public List<ProductReadModel> getProductReadModels(List<String> ids) {
         return productQueryRepository.findProductsByIds(ids);
     }
 
     @Transactional(readOnly = true)
-    public List<ProductVO> getSimilarProducts(Long productId, Integer limit) {
+    public List<ProductVO> getSimilarProducts(String productId, Integer limit) {
         ProductReadModel product = productQueryRepository.findProductById(productId);
         if (product == null || product.categoryId() == null) {
             return List.of();
@@ -158,22 +158,22 @@ public class ProductQueryService {
         PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
                 null, product.categoryId(), null, null, null, null, null, null, 1, effectiveLimit + 1);
 
-        List<Long> similarIds = page.records().stream()
+        List<String> similarIds = page.records().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
                 .map(ProductReadModel::id)
                 .collect(Collectors.toList());
-        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+        Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
                 .findImagesByProductIds(similarIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 
-        Set<Long> sellerIds = page.records().stream()
+        Set<String> sellerIds = page.records().stream()
                 .filter(p -> !p.id().equals(productId))
                 .limit(effectiveLimit)
                 .map(ProductReadModel::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
-        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+        Map<String, SellerReadModel> sellerMap = sellerIds.isEmpty()
                 ? Map.of()
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
@@ -189,23 +189,23 @@ public class ProductQueryService {
         if (product == null) {
             return null;
         }
-        Long productId = product.getId().value();
-        List<Long> productIds = List.of(productId);
-        List<Long> categoryIds = product.getCategoryId() != null
+        String productId = product.getId().value();
+        List<String> productIds = List.of(productId);
+        List<String> categoryIds = product.getCategoryId() != null
                 ? List.of(product.getCategoryId().value()) : List.of();
-        Set<Long> sellerIds = product.getSellerId() != null
+        Set<String> sellerIds = product.getSellerId() != null
                 ? Set.of(product.getSellerId().value()) : Set.of();
 
-        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+        var imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
-        Map<Long, ProductQueryRepository.CategoryInfo> categoryMap = productQueryRepository
+        var categoryMap = productQueryRepository
                 .findCategoriesByIds(categoryIds).stream()
                 .collect(Collectors.toMap(ProductQueryRepository.CategoryInfo::id, c -> c, (a, b) -> a));
-        Map<Long, ProductQueryRepository.ProductDetailInfo> detailMap = productQueryRepository
+        var detailMap = productQueryRepository
                 .findDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductQueryRepository.ProductDetailInfo::productId, d -> d, (a, b) -> a));
-        Map<Long, SellerReadModel> sellerMap = productQueryRepository
+        var sellerMap = productQueryRepository
                 .findSellersByIds(sellerIds).stream()
                 .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
 
@@ -217,30 +217,30 @@ public class ProductQueryService {
             return List.of();
         }
 
-        List<Long> productIds = products.stream()
+        List<String> productIds = products.stream()
                 .map(p -> p.getId().value())
                 .collect(Collectors.toList());
-        List<Long> categoryIds = products.stream()
+        List<String> categoryIds = products.stream()
                 .filter(p -> p.getCategoryId() != null)
                 .map(p -> p.getCategoryId().value())
                 .distinct()
                 .collect(Collectors.toList());
-        Set<Long> sellerIds = products.stream()
+        Set<String> sellerIds = products.stream()
                 .filter(p -> p.getSellerId() != null)
                 .map(p -> p.getSellerId().value())
                 .collect(Collectors.toSet());
 
-        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+        var imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
-        Map<Long, ProductQueryRepository.CategoryInfo> categoryMap = categoryIds.isEmpty()
-                ? Map.of()
+        var categoryMap = categoryIds.isEmpty()
+                ? Map.<String, ProductQueryRepository.CategoryInfo>of()
                 : productQueryRepository.findCategoriesByIds(categoryIds).stream()
                         .collect(Collectors.toMap(ProductQueryRepository.CategoryInfo::id, c -> c, (a, b) -> a));
-        Map<Long, ProductQueryRepository.ProductDetailInfo> detailMap = productQueryRepository
+        Map<String, ProductQueryRepository.ProductDetailInfo> detailMap = productQueryRepository
                 .findDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductQueryRepository.ProductDetailInfo::productId, d -> d, (a, b) -> a));
-        Map<Long, SellerReadModel> sellerMap = sellerIds.isEmpty()
+        Map<String, SellerReadModel> sellerMap = sellerIds.isEmpty()
                 ? Map.of()
                 : productQueryRepository.findSellersByIds(sellerIds).stream()
                         .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, b) -> a));
@@ -251,8 +251,8 @@ public class ProductQueryService {
     }
 
     private ProductVO voFromReadModel(ProductReadModel readModel,
-                                       Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
-                                       Map<Long, SellerReadModel> sellerMap) {
+                                       Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
+                                       Map<String, SellerReadModel> sellerMap) {
         SellerReadModel seller = sellerMap.get(readModel.sellerId());
         String username = seller != null
                 ? (seller.nickName() != null ? seller.nickName() : seller.username())

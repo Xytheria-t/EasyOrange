@@ -5,7 +5,7 @@ import java.util.Map;
 
 public record AiEnhancement(
     String intentExplanation,
-    Map<Long, List<String>> productTags,
+    Map<String, List<String>> productTags,
     String marketAnalysis,
     List<String> suggestedQuestions
 ) {}

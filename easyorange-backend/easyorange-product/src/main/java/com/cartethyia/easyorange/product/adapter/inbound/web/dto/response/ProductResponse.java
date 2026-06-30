@@ -16,11 +16,11 @@ import java.util.List;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductResponse {
-    private Long id;
-    private Long sellerId;
+    private String id;
+    private String sellerId;
     private String username;
     private String userAvatar;
-    private Long categoryId;
+    private String categoryId;
     private String categoryName;
     private String title;
     private String description;

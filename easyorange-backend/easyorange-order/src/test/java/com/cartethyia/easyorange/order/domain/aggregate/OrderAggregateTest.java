@@ -28,15 +28,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("OrderAggregate 单元测试")
 class OrderAggregateTest {
 
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
-    private static final Long PRODUCT_ID = 100L;
-    private static final Long ORDER_ID = 1000L;
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
+    private static final String PRODUCT_ID = "100";
+    private static final String ORDER_ID = "ORD1000";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
 
     private static List<OrderItem> singleItemList() {
         return List.of(OrderItem.builder()
-                .id(1L)
+                .id("1")
                 .productId(ProductId.of(PRODUCT_ID))
                 .unitPrice(Money.of(AMOUNT))
                 .quantity(1)
@@ -47,15 +47,15 @@ class OrderAggregateTest {
     private static List<OrderItem> multiItemList() {
         return List.of(
                 OrderItem.builder()
-                        .id(1L)
+                        .id("1")
                         .productId(ProductId.of(PRODUCT_ID))
                         .unitPrice(Money.of(AMOUNT))
                         .quantity(1)
                         .subtotal(Money.of(AMOUNT))
                         .build(),
                 OrderItem.builder()
-                        .id(2L)
-                        .productId(ProductId.of(200L))
+                        .id("2")
+                        .productId(ProductId.of("200"))
                         .unitPrice(Money.of(new BigDecimal("49.99")))
                         .quantity(2)
                         .subtotal(Money.of(new BigDecimal("99.98")))
@@ -133,11 +133,11 @@ class OrderAggregateTest {
         @DisplayName("fromRaw 正确转换")
         void fromRaw_validParams_returnsAggregate() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
-                    1L, "ORD123", BUYER_ID, SELLER_ID,
+                    "1", "ORD123", BUYER_ID, SELLER_ID,
                     AMOUNT, 0, 0, "地址", "13800138000", "备注", null, null
             );
 
-            assertThat(aggregate.id().value()).isEqualTo(1L);
+            assertThat(aggregate.id().value()).isEqualTo("1");
             assertThat(aggregate.orderNo().value()).isEqualTo("ORD123");
             assertThat(aggregate.buyerId().value()).isEqualTo(BUYER_ID);
             assertThat(aggregate.sellerId().value()).isEqualTo(SELLER_ID);
@@ -315,7 +315,7 @@ class OrderAggregateTest {
 
     private static List<OrderItem> itemForTest() {
         return List.of(OrderItem.builder()
-                .id(1L)
+                .id("1")
                 .productId(ProductId.of(PRODUCT_ID))
                 .unitPrice(Money.of(AMOUNT))
                 .quantity(1)
@@ -325,7 +325,7 @@ class OrderAggregateTest {
 
     private OrderAggregate createPendingPaymentAggregate() {
         return OrderAggregate.from(
-                OrderId.of(1L), OrderNo.of("ORD1"),
+                OrderId.of("1"), OrderNo.of("ORD1"),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
                 Money.of(AMOUNT), OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
                 Address.of("地址"), Phone.of("13800138000"), "备注", null, null
@@ -334,7 +334,7 @@ class OrderAggregateTest {
 
     private OrderAggregate createPaidAggregate() {
         return OrderAggregate.from(
-                OrderId.of(1L), OrderNo.of("ORD1"),
+                OrderId.of("1"), OrderNo.of("ORD1"),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
                 Money.of(AMOUNT), OrderStatus.PAID, PaymentStatus.PAID,
                 Address.of("地址"), Phone.of("13800138000"), "备注", null, null
@@ -343,7 +343,7 @@ class OrderAggregateTest {
 
     private OrderAggregate createShippedAggregate() {
         return OrderAggregate.from(
-                OrderId.of(1L), OrderNo.of("ORD1"),
+                OrderId.of("1"), OrderNo.of("ORD1"),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
                 Money.of(AMOUNT), OrderStatus.SHIPPED, PaymentStatus.PAID,
                 Address.of("地址"), Phone.of("13800138000"), "备注", null, null
@@ -352,7 +352,7 @@ class OrderAggregateTest {
 
     private OrderAggregate createCompletedAggregate() {
         return OrderAggregate.from(
-                OrderId.of(1L), OrderNo.of("ORD1"),
+                OrderId.of("1"), OrderNo.of("ORD1"),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
                 Money.of(AMOUNT), OrderStatus.COMPLETED, PaymentStatus.PAID,
                 Address.of("地址"), Phone.of("13800138000"), "备注", null, null
@@ -361,7 +361,7 @@ class OrderAggregateTest {
 
     private OrderAggregate createCancelledAggregate() {
         return OrderAggregate.from(
-                OrderId.of(1L), OrderNo.of("ORD1"),
+                OrderId.of("1"), OrderNo.of("ORD1"),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
                 Money.of(AMOUNT), OrderStatus.CANCELLED, PaymentStatus.UNPAID,
                 Address.of("地址"), Phone.of("13800138000"), "备注", null, null

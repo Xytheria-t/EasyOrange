@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.product.domain.port;
 
 public interface ProductSearchIndexPort {
 
-    void indexProduct(Long productId);
+    void indexProduct(String productId);
 
-    void updateProductIndex(Long productId);
+    void updateProductIndex(String productId);
 
-    void removeProductIndex(Long productId);
+    void removeProductIndex(String productId);
 }

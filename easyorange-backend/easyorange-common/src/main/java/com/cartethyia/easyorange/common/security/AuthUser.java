@@ -5,7 +5,7 @@ import java.util.Set;
 
 @Builder
 public record AuthUser(
-        Long userId,
+        String userId,
         String username,
         Set<String> roles,
         Set<String> permissions,

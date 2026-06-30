@@ -38,7 +38,7 @@ class SearchHistoryBufferServiceTest {
         @Test
         @DisplayName("添加搜索历史到缓冲区成功")
         void addToBuffer_success() {
-            bufferService.addToBuffer(1L, "手机");
+            bufferService.addToBuffer("1", "手机");
 
             assertThat(bufferService.getBufferSize()).isEqualTo(1);
         }
@@ -54,7 +54,7 @@ class SearchHistoryBufferServiceTest {
         @Test
         @DisplayName("keyword为null时不添加")
         void addToBuffer_nullKeyword_noop() {
-            bufferService.addToBuffer(1L, null);
+            bufferService.addToBuffer("1", null);
 
             assertThat(bufferService.getBufferSize()).isEqualTo(0);
         }
@@ -62,7 +62,7 @@ class SearchHistoryBufferServiceTest {
         @Test
         @DisplayName("keyword为空白时不添加")
         void addToBuffer_blankKeyword_noop() {
-            bufferService.addToBuffer(1L, "   ");
+            bufferService.addToBuffer("1", "   ");
 
             assertThat(bufferService.getBufferSize()).isEqualTo(0);
         }
@@ -83,8 +83,8 @@ class SearchHistoryBufferServiceTest {
         @Test
         @DisplayName("刷入缓冲区成功")
         void flushBuffer_success() {
-            bufferService.addToBuffer(1L, "手机");
-            bufferService.addToBuffer(1L, "电脑");
+            bufferService.addToBuffer("1", "手机");
+            bufferService.addToBuffer("1", "电脑");
 
             bufferService.flushBuffer();
 
@@ -97,7 +97,7 @@ class SearchHistoryBufferServiceTest {
         @Test
         @DisplayName("批量插入失败后回退到缓冲区")
         void flushBuffer_failure_requeue() {
-            bufferService.addToBuffer(1L, "手机");
+            bufferService.addToBuffer("1", "手机");
             doThrow(new RuntimeException("DB error")).when(searchHistoryMapper).batchInsert(any());
 
             bufferService.flushBuffer();
@@ -110,7 +110,7 @@ class SearchHistoryBufferServiceTest {
         @DisplayName("超过批量大小时仅刷入BATCH_SIZE条")
         void flushBuffer_respectsBatchSize() {
             for (int i = 0; i < 150; i++) {
-                bufferService.addToBuffer(1L, "keyword" + i);
+                bufferService.addToBuffer("1", "keyword" + i);
             }
 
             bufferService.flushBuffer();

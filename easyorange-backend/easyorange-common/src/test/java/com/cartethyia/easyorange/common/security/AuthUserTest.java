@@ -30,7 +30,7 @@ class AuthUserTest {
             Set<String> permissions = Set.of("user:read");
 
             // Act
-            AuthUser authUser = new AuthUser(1L, "testuser", nullRoles, permissions, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", nullRoles, permissions, System.currentTimeMillis());
 
             // Assert
             assertThat(authUser.roles()).isNotNull();
@@ -45,7 +45,7 @@ class AuthUserTest {
             Set<String> nullPermissions = null;
 
             // Act
-            AuthUser authUser = new AuthUser(1L, "testuser", roles, nullPermissions, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", roles, nullPermissions, System.currentTimeMillis());
 
             // Assert
             assertThat(authUser.permissions()).isNotNull();
@@ -56,7 +56,7 @@ class AuthUserTest {
         @DisplayName("Constructor with both null should convert both to empty sets")
         void constructor_withBothNull_convertsBothToEmptySets() {
             // Act
-            AuthUser authUser = new AuthUser(1L, "testuser", null, null, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", null, null, System.currentTimeMillis());
 
             // Assert
             assertThat(authUser.roles()).isNotNull().isEmpty();
@@ -74,7 +74,7 @@ class AuthUserTest {
             // Arrange
             Set<String> mutableRoles = new HashSet<>();
             mutableRoles.add("ROLE_USER");
-            AuthUser authUser = new AuthUser(1L, "testuser", mutableRoles, null, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", mutableRoles, null, System.currentTimeMillis());
 
             // Act & Assert
             assertThatThrownBy(() -> authUser.roles().add("ROLE_ADMIN"))
@@ -87,7 +87,7 @@ class AuthUserTest {
             // Arrange
             Set<String> mutablePermissions = new HashSet<>();
             mutablePermissions.add("user:read");
-            AuthUser authUser = new AuthUser(1L, "testuser", null, mutablePermissions, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", null, mutablePermissions, System.currentTimeMillis());
 
             // Act & Assert
             assertThatThrownBy(() -> authUser.permissions().add("user:write"))
@@ -100,7 +100,7 @@ class AuthUserTest {
             // Arrange
             Set<String> mutableRoles = new HashSet<>();
             mutableRoles.add("ROLE_USER");
-            AuthUser authUser = new AuthUser(1L, "testuser", mutableRoles, null, System.currentTimeMillis());
+            AuthUser authUser = new AuthUser("1", "testuser", mutableRoles, null, System.currentTimeMillis());
 
             // Act
             mutableRoles.add("ROLE_ADMIN");
@@ -120,7 +120,7 @@ class AuthUserTest {
         void builder_withNullRoles_createsEmptySet() {
             // Act
             AuthUser authUser = AuthUser.builder()
-                    .userId(1L)
+                    .userId("1")
                     .username("testuser")
                     .roles(null)
                     .permissions(Set.of("user:read"))
@@ -136,7 +136,7 @@ class AuthUserTest {
         void builder_withNullPermissions_createsEmptySet() {
             // Act
             AuthUser authUser = AuthUser.builder()
-                    .userId(1L)
+                    .userId("1")
                     .username("testuser")
                     .roles(Set.of("ROLE_USER"))
                     .permissions(null)
@@ -151,7 +151,7 @@ class AuthUserTest {
         @DisplayName("Builder with valid data should create AuthUser correctly")
         void builder_withValidData_createsAuthUserCorrectly() {
             // Arrange
-            Long userId = 1L;
+            String userId = "1";
             String username = "testuser";
             Set<String> roles = Set.of("ROLE_USER", "ROLE_ADMIN");
             Set<String> permissions = Set.of("user:read", "user:write");
@@ -184,9 +184,9 @@ class AuthUserTest {
         void equals_shouldWorkCorrectly() {
             // Arrange
             Long loginTime = System.currentTimeMillis();
-            AuthUser user1 = new AuthUser(1L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
-            AuthUser user2 = new AuthUser(1L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
-            AuthUser user3 = new AuthUser(2L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
+            AuthUser user1 = new AuthUser("1", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
+            AuthUser user2 = new AuthUser("1", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
+            AuthUser user3 = new AuthUser("2", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
 
             // Assert
             assertThat(user1).isEqualTo(user2);
@@ -198,8 +198,8 @@ class AuthUserTest {
         void hashCode_shouldBeConsistent() {
             // Arrange
             Long loginTime = System.currentTimeMillis();
-            AuthUser user1 = new AuthUser(1L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
-            AuthUser user2 = new AuthUser(1L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
+            AuthUser user1 = new AuthUser("1", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
+            AuthUser user2 = new AuthUser("1", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), loginTime);
 
             // Assert
             assertThat(user1.hashCode()).isEqualTo(user2.hashCode());
@@ -209,7 +209,7 @@ class AuthUserTest {
         @DisplayName("ToString should contain all fields")
         void toString_shouldContainAllFields() {
             // Arrange
-            AuthUser authUser = new AuthUser(1L, "testuser", Set.of("ROLE_USER"), Set.of("user:read"), 1234567890L);
+            AuthUser authUser = new AuthUser("1", "testuser", Set.of("ROLE_USER"), Set.of("user:read"), 1234567890L);
 
             // Act
             String result = authUser.toString();

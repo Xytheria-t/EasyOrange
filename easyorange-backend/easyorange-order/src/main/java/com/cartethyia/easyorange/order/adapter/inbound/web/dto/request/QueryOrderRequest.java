@@ -16,8 +16,8 @@ public class QueryOrderRequest extends PageRequest {
 
     private String orderNo;
     private Integer status;
-    private Long buyerId;
-    private Long sellerId;
+    private String buyerId;
+    private String sellerId;
 
     @Override
     public QueryOrderRequest normalized() {

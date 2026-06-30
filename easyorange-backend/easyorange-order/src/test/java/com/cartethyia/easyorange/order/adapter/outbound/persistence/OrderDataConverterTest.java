@@ -39,11 +39,11 @@ class OrderDataConverterTest {
         return mapper;
     }
 
-    private static final Long ID = 100L;
+    private static final String ID = "100";
     private static final String ORDER_NO = "ORD100";
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
-    private static final Long PRODUCT_ID = 200L;
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
+    private static final String PRODUCT_ID = "200";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
     private static final Integer STATUS = OrderStatus.PENDING_PAYMENT.getCode();
     private static final String ADDRESS = "北京市朝阳区建国路88号";
@@ -76,7 +76,7 @@ class OrderDataConverterTest {
 
     private static List<OrderItem> itemForTest() {
         return List.of(OrderItem.builder()
-                .id(1L)
+                .id("1")
                 .productId(ProductId.of(PRODUCT_ID))
                 .unitPrice(Money.of(AMOUNT))
                 .quantity(1)
@@ -240,7 +240,7 @@ class OrderDataConverterTest {
         @DisplayName("toItemReadModel 应将 OrderItemDO 正确映射")
         void toItemReadModel_shouldMapAllFields() {
             OrderItemDO itemDO = OrderItemDO.builder()
-                    .id(1L).orderId(ID).productId(PRODUCT_ID)
+                    .id("1").orderId(ID).productId(PRODUCT_ID)
                     .productSnapshot("{}")
                     .unitPrice(AMOUNT).quantity(1).subtotal(AMOUNT)
                     .build();
@@ -248,7 +248,7 @@ class OrderDataConverterTest {
             OrderItemReadModel readModel = converter.toItemReadModel(itemDO);
 
             assertThat(readModel).isNotNull();
-            assertThat(readModel.itemId()).isEqualTo(1L);
+            assertThat(readModel.itemId()).isEqualTo("1");
             assertThat(readModel.productId()).isEqualTo(PRODUCT_ID);
             assertThat(readModel.unitPrice()).isEqualByComparingTo(AMOUNT);
             assertThat(readModel.quantity()).isEqualTo(1);

@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DecrementStockCommand {
 
-    private Long productId;
+    private String productId;
     private Integer quantity;
 }

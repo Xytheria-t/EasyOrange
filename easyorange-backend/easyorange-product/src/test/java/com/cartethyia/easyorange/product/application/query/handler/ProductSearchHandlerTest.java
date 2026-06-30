@@ -42,7 +42,7 @@ class ProductSearchHandlerTest {
         searchHandler = new ProductSearchHandler(productQueryRepository, Optional.empty(), Optional.empty());
 
         testProduct = new ProductReadModel(
-                1L, 10L, "资产方", null, 2L, "分类",
+                "1", "10", "资产方", null, "2", "分类",
                 "测试商品", "描述", new BigDecimal("100"), null,
                 10, 1, "上架", 0, 1, "全新",
                 "北京", "微信", List.of("http://img/1.jpg"),
@@ -56,11 +56,11 @@ class ProductSearchHandlerTest {
     void handleSearch_shouldReturnPageResult() {
         ProductSearchRequest request = new ProductSearchRequest();
         request.setKeyword("手机");
-        request.setCategoryId(2L);
+        request.setCategoryId("2");
         request.setStatus(1);
 
         PageResult<ProductReadModel> page = PageResult.of(List.of(testProduct), 1, 1, 20);
-        when(productQueryRepository.searchProducts("手机", 2L, 1, 1, 20))
+        when(productQueryRepository.searchProducts("手机", "2", 1, 1, 20))
                 .thenReturn(page);
 
         SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
@@ -68,7 +68,7 @@ class ProductSearchHandlerTest {
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
         assertThat(result.total()).isEqualTo(1);
-        assertThat(result.records().get(0).getId()).isEqualTo(1L);
+        assertThat(result.records().get(0).getId()).isEqualTo("1");
         assertThat(result.records().get(0).getTitle()).isEqualTo("测试商品");
         assertThat(result.records().get(0).getPrice()).isEqualByComparingTo(new BigDecimal("100"));
         assertThat(result.records().get(0).getMainImageUrl()).isEqualTo("http://img/1.jpg");
@@ -109,14 +109,14 @@ class ProductSearchHandlerTest {
     void getMySearchHistory_shouldReturnHistory() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            SearchHistoryReadModel history = new SearchHistoryReadModel(100L, "手机", LocalDateTime.now());
-            when(productQueryRepository.findSearchHistoryByUserId(1L, 10))
+            SearchHistoryReadModel history = new SearchHistoryReadModel("100", "手机", LocalDateTime.now());
+            when(productQueryRepository.findSearchHistoryByUserId("1", 10))
                     .thenReturn(List.of(history));
 
             List<SearchHistoryResponse> result = searchHandler.getMySearchHistory(10);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getId()).isEqualTo(100L);
+            assertThat(result.get(0).getId()).isEqualTo("100");
             assertThat(result.get(0).getKeyword()).isEqualTo("手机");
         } finally {
             TestSecurityUtil.clearSecurityContext();
@@ -130,7 +130,7 @@ class ProductSearchHandlerTest {
         try {
             searchHandler.clearMySearchHistory();
 
-            verify(productQueryRepository).clearSearchHistory(1L);
+            verify(productQueryRepository).clearSearchHistory("1");
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -141,9 +141,9 @@ class ProductSearchHandlerTest {
     void deleteSearchHistory_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            searchHandler.deleteSearchHistory(100L);
+            searchHandler.deleteSearchHistory("100");
 
-            verify(productQueryRepository).deleteSearchHistoryById(100L, 1L);
+            verify(productQueryRepository).deleteSearchHistoryById("100", "1");
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -152,13 +152,13 @@ class ProductSearchHandlerTest {
     @Test
     @DisplayName("获取热门关键词应返回列表")
     void getHotKeywords_shouldReturnKeywords() {
-        HotKeywordReadModel keyword = new HotKeywordReadModel(1L, "手机", 100, 5);
+        HotKeywordReadModel keyword = new HotKeywordReadModel("1", "手机", 100, 5);
         when(productQueryRepository.findHotKeywords(10)).thenReturn(List.of(keyword));
 
         List<HotKeywordResponse> result = searchHandler.getHotKeywords(10);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo(1L);
+        assertThat(result.get(0).getId()).isEqualTo("1");
         assertThat(result.get(0).getKeyword()).isEqualTo("手机");
         assertThat(result.get(0).getSearchCount()).isEqualTo(100);
         assertThat(result.get(0).getHotLevel()).isEqualTo(5);
@@ -183,7 +183,7 @@ class ProductSearchHandlerTest {
         try {
             searchHandler.recordSearch("手机");
 
-            verify(productQueryRepository).saveSearchHistory(1L, "手机");
+            verify(productQueryRepository).saveSearchHistory("1", "手机");
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }

@@ -40,7 +40,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("举报商品时应创建并保存举报")
     void reportProduct_shouldCreateAndSave() {
-        domainService.reportProduct(1L, 2L, "假货", 1);
+        domainService.reportProduct("1", "2", "假货", 1);
 
         verify(productReportRepository).save(any(ProductReport.class));
     }
@@ -48,25 +48,25 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("批准举报后应将商品下架并清除缓存")
     void processReport_withApprove_shouldOfflineProductAndEvictCache() {
-        ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report = report.assignId(100L);
-        when(productReportRepository.findById(100L)).thenReturn(report);
+        ProductReport report = ProductReport.create("1", "2", "假货", 1);
+        report = report.assignId("100");
+        when(productReportRepository.findById("100")).thenReturn(report);
 
-        domainService.processReport(100L, true);
+        domainService.processReport("100", true);
 
-        verify(productRepository).updateStatus(ProductId.of(1L), ProductStatus.OFFLINE);
-        verify(productCachePort).evictProductCache(1L);
+        verify(productRepository).updateStatus(ProductId.of("1"), ProductStatus.OFFLINE);
+        verify(productCachePort).evictProductCache("1");
         verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }
 
     @Test
     @DisplayName("驳回举报不应操作商品状态和缓存")
     void processReport_withReject_shouldNotTouchProduct() {
-        ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report = report.assignId(100L);
-        when(productReportRepository.findById(100L)).thenReturn(report);
+        ProductReport report = ProductReport.create("1", "2", "假货", 1);
+        report = report.assignId("100");
+        when(productReportRepository.findById("100")).thenReturn(report);
 
-        domainService.processReport(100L, false);
+        domainService.processReport("100", false);
 
         verify(productRepository, never()).updateStatus(any(), any());
         verify(productCachePort, never()).evictProductCache(any());
@@ -76,9 +76,9 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("处理不存在的举报应抛出异常")
     void processReport_whenNotFound_shouldThrow() {
-        when(productReportRepository.findById(999L)).thenReturn(null);
+        when(productReportRepository.findById("999")).thenReturn(null);
 
-        assertThatThrownBy(() -> domainService.processReport(999L, true))
+        assertThatThrownBy(() -> domainService.processReport("999", true))
                 .isInstanceOf(ProductReportDomainService.ReportNotFoundException.class)
                 .hasMessageContaining("举报记录不存在");
     }
@@ -86,11 +86,11 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("Processing report 更新后应保持 remark 正确")
     void processReport_withApprove_shouldSetCorrectRemark() {
-        ProductReport report = ProductReport.create(1L, 2L, "假货", 1);
-        report = report.assignId(100L);
-        when(productReportRepository.findById(100L)).thenReturn(report);
+        ProductReport report = ProductReport.create("1", "2", "假货", 1);
+        report = report.assignId("100");
+        when(productReportRepository.findById("100")).thenReturn(report);
 
-        domainService.processReport(100L, true);
+        domainService.processReport("100", true);
 
         ArgumentCaptor<ProductReport> captor = ArgumentCaptor.forClass(ProductReport.class);
         verify(productReportRepository).update(captor.capture());

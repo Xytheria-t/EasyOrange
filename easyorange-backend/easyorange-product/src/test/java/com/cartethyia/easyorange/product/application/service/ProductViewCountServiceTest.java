@@ -53,7 +53,7 @@ class ProductViewCountServiceTest {
         void incrementViewCount_success() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
 
-            viewCountService.incrementViewCount(1L);
+            viewCountService.incrementViewCount("1");
 
             verify(hashOperations).increment("eo:product:views:pending", "1", 1);
         }
@@ -71,7 +71,7 @@ class ProductViewCountServiceTest {
         void incrementViewCount_redisError_doesNotThrow() {
             when(redisTemplate.opsForHash()).thenThrow(new RuntimeException("Redis error"));
 
-            viewCountService.incrementViewCount(1L);
+            viewCountService.incrementViewCount("1");
         }
     }
 
@@ -91,7 +91,7 @@ class ProductViewCountServiceTest {
 
             viewCountService.flushViewCountBatch();
 
-            verify(productMapper).batchAddViewCounts(Map.of(1L, 5, 2L, 3));
+            verify(productMapper).batchAddViewCounts(Map.of("1", 5, "2", 3));
             verify(hashOperations).delete(eq("eo:product:views:pending"), any(Object[].class));
             verify(redisTemplate).delete("eo:product:views:lock");
         }
@@ -133,7 +133,7 @@ class ProductViewCountServiceTest {
                     .thenReturn(true);
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
             when(hashOperations.entries("eo:product:views:pending"))
-                    .thenReturn(Map.of("invalid", "5"));
+                    .thenReturn(Map.of("100", "invalid"));
 
             viewCountService.flushViewCountBatch();
 

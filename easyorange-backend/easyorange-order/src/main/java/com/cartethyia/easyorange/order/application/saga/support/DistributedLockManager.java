@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.application.saga.support;
 
 import com.cartethyia.easyorange.framework.cache.RedisCache;
-import com.cartethyia.easyorange.order.domain.saga.SagaLockAcquisitionException;
+import com.cartethyia.easyorange.order.domain.saga.SagaException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,7 +31,7 @@ public class DistributedLockManager {
      * @param operation   要执行的操作
      * @param <T>         操作返回类型
      * @return 操作结果
-     * @throws SagaLockAcquisitionException 如果无法获取锁
+     * @throws SagaException 如果无法获取锁
      */
     public <T> T executeWithLocks(List<String> lockKeys, long lockTimeout, LockOperation<T> operation) {
         String lockValue = UUID.randomUUID().toString();
@@ -49,12 +49,12 @@ public class DistributedLockManager {
      * 批量获取锁
      */
     private void acquireLocks(List<String> lockKeys, String lockValue, long timeout,
-                               List<String> acquiredKeys) throws SagaLockAcquisitionException {
+                               List<String> acquiredKeys) throws SagaException {
         for (String lockKey : lockKeys) {
             Boolean locked = redisCache.tryLock(lockKey, lockValue, timeout, TimeUnit.SECONDS);
             if (!Boolean.TRUE.equals(locked)) {
                 releaseLocks(acquiredKeys, lockValue);
-                throw new SagaLockAcquisitionException("资产下单繁忙，请稍后重试");
+                throw new SagaException("资产下单繁忙，请稍后重试");
             }
             acquiredKeys.add(lockKey);
         }

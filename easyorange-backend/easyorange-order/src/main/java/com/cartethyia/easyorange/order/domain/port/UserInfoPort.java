@@ -5,10 +5,10 @@ import java.util.Optional;
 
 public interface UserInfoPort {
 
-    Optional<UserInfo> getUserInfo(Long userId);
+    Optional<UserInfo> getUserInfo(String userId);
 
     record UserInfo(
-            Long id,
+            String id,
             String username,
             String email
     ) {}

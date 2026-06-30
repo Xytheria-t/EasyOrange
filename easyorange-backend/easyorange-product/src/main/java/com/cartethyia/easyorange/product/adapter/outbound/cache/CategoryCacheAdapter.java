@@ -121,7 +121,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
     }
 
     @Override
-    public List<CategoryReadModel> getCategoriesByParentId(Long parentId) {
+    public List<CategoryReadModel> getCategoriesByParentId(String parentId) {
         String cacheKey = CACHE_KEY_PARENT + parentId;
 
         List<CategoryReadModel> cached = localCache.getIfPresent(cacheKey);
@@ -177,7 +177,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
     }
 
     @Override
-    public Optional<CategoryReadModel> getCategoryById(Long id) {
+    public Optional<CategoryReadModel> getCategoryById(String id) {
         if (id == null) {
             return Optional.empty();
         }
@@ -274,7 +274,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
     }
 
     @Override
-    public void evictByParentId(Long parentId) {
+    public void evictByParentId(String parentId) {
         String cacheKey = CACHE_KEY_PARENT + parentId;
         localCache.invalidate(cacheKey);
 

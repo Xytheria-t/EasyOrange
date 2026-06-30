@@ -23,9 +23,9 @@ public class ProductReportController {
     private final GetReportDetailHandler getReportDetailHandler;
 
     @PostMapping("/product/{productId}")
-    public Result<Void> reportProduct(@PathVariable Long productId,
+    public Result<Void> reportProduct(@PathVariable String productId,
                                        @Valid @RequestBody ReportRequest request) {
-        Long reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
         createProductReportHandler.handleReport(productId, reporterId, request.getReason(), request.getReasonType());
         return Result.success();
     }
@@ -34,13 +34,13 @@ public class ProductReportController {
     public Result<PageResult<ProductReportResponse>> myReports(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize) {
-        Long reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return Result.success(getMyReportsHandler.handle(reporterId, pageNum, pageSize));
     }
 
     @GetMapping("/{reportId}")
-    public Result<ProductReportDetailResponse> getReportDetail(@PathVariable Long reportId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public Result<ProductReportDetailResponse> getReportDetail(@PathVariable String reportId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return Result.success(getReportDetailHandler.handle(reportId, userId));
     }
 }

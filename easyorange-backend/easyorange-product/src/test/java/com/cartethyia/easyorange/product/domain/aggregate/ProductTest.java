@@ -26,8 +26,8 @@ class ProductTest {
 
     private Product createDefaultProduct() {
         ProductCreatedResult result = Product.create(
-                SellerId.of(1L),
-                CategoryId.of(2L),
+                SellerId.of("1"),
+                CategoryId.of("2"),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("100")),
                 null,
@@ -38,14 +38,14 @@ class ProductTest {
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
         );
-        return result.product().assignId(1L);
+        return result.product().assignId("1");
     }
 
     @Test
     @DisplayName("创建商品时应生成 ProductCreatedEvent")
     void create_shouldEmitProductCreatedEvent() {
         ProductCreatedResult result = Product.create(
-                SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("测试商品"),
+                SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
@@ -59,7 +59,7 @@ class ProductTest {
     @DisplayName("创建商品时名称不能为空")
     void create_withNullTitle_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
-                SellerId.of(1L), CategoryId.of(2L), null,
+                SellerId.of("1"), CategoryId.of("2"), null,
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
@@ -71,7 +71,7 @@ class ProductTest {
     @DisplayName("创建商品时价格必须大于0")
     void create_withZeroPrice_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
-                SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
+                SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("商品"),
                 Money.of(BigDecimal.ZERO), null, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
@@ -83,7 +83,7 @@ class ProductTest {
     @DisplayName("创建商品时图片不能为空")
     void create_withEmptyImages_shouldThrow() {
         assertThatThrownBy(() -> Product.create(
-                SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
+                SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
@@ -95,7 +95,7 @@ class ProductTest {
     @DisplayName("库存不足时应抛出 InsufficientStockException")
     void decrementStock_whenNoStock_shouldThrow() {
         ProductCreatedResult result = Product.create(
-                SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
+                SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(0),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
@@ -153,7 +153,7 @@ class ProductTest {
     @DisplayName("库存为0时不能上架")
     void putOnline_whenNoStock_shouldThrow() {
         ProductCreatedResult result = Product.create(
-                SellerId.of(1L), CategoryId.of(2L), ProductTitle.of("商品"),
+                SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(0),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
                 ContactMethod.of("微信"), ProductDescription.of("描述"),
@@ -182,13 +182,13 @@ class ProductTest {
         Product product = createDefaultProduct();
 
         Product.ProductUpdatedResult result = product.update(
-                CategoryId.of(99L),
+                CategoryId.of("99"),
                 ProductTitle.of("新名称"),
                 Money.of(new BigDecimal("200")),
                 null, null, null, null, null, null, null
         );
 
-        assertThat(result.product().getCategoryId().value()).isEqualTo(99L);
+        assertThat(result.product().getCategoryId().value()).isEqualTo("99");
         assertThat(result.product().getTitle().value()).isEqualTo("新名称");
         assertThat(result.product().getPrice().value()).isEqualByComparingTo(new BigDecimal("200"));
     }

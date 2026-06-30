@@ -8,10 +8,10 @@ import java.util.List;
 @Getter
 public class OrderCompletedEvent extends BaseDomainEvent {
 
-    private final Long orderId;
-    private final List<Long> productIds;
+    private final String orderId;
+    private final List<String> productIds;
 
-    public OrderCompletedEvent(Long orderId, List<Long> productIds) {
+    public OrderCompletedEvent(String orderId, List<String> productIds) {
         super();
         this.orderId = orderId;
         this.productIds = productIds;

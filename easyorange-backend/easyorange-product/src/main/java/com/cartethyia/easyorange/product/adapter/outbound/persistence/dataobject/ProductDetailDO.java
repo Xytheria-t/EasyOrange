@@ -10,36 +10,36 @@ import com.cartethyia.easyorange.framework.entity.BaseDO;
 public class ProductDetailDO extends BaseDO {
 
     @TableField(exist = false)
-    private Long id;
+    private String id;
 
     @TableId(value = "product_id", type = IdType.INPUT)
-    private Long productId;
+    private String productId;
 
     private String description;
 
     public ProductDetailDO() {
     }
 
-    public ProductDetailDO(Long productId, String description) {
+    public ProductDetailDO(String productId, String description) {
         this.productId = productId;
         this.description = description;
     }
 
     @Override
-    public Long getId() {
+    public String getId() {
         return this.id != null ? this.id : this.productId;
     }
 
     @Override
-    public void setId(Long id) {
+    public void setId(String id) {
         this.id = id;
     }
 
-    public Long getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public void setProductId(Long productId) {
+    public void setProductId(String productId) {
         this.productId = productId;
     }
 
@@ -56,10 +56,10 @@ public class ProductDetailDO extends BaseDO {
     }
 
     public static class Builder {
-        private Long productId;
+        private String productId;
         private String description;
 
-        public Builder productId(Long productId) {
+        public Builder productId(String productId) {
             this.productId = productId;
             return this;
         }

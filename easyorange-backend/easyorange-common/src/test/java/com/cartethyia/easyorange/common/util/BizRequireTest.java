@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -93,18 +92,6 @@ class BizRequireTest {
         @DisplayName("空集合抛出异常")
         void notEmpty_emptyCollection_throwsException() {
             assertThrows(BusinessException.class, () -> BizRequire.notEmpty(List.of(), "不能为空"));
-        }
-
-        @Test
-        @DisplayName("null Map 抛出异常")
-        void notEmpty_nullMap_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.notEmpty((Map<?, ?>) null, "不能为空"));
-        }
-
-        @Test
-        @DisplayName("空数组抛出异常")
-        void notEmpty_emptyArray_throwsException() {
-            assertThrows(BusinessException.class, () -> BizRequire.notEmpty(new Object[0], "不能为空"));
         }
 
         @Test

@@ -52,8 +52,8 @@ class ProductQueryServiceTest {
         queryService = new ProductQueryService(productRepository, productQueryRepository, readModelAssembler, productCachePort);
 
         testProduct = Product.create(
-                SellerId.of(1L),
-                CategoryId.of(2L),
+                SellerId.of("1"),
+                CategoryId.of("2"),
                 ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("100")),
                 null,
@@ -63,10 +63,10 @@ class ProductQueryServiceTest {
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
-        ).product().assignId(1L);
+        ).product().assignId("1");
 
         testProductVO = ProductVO.builder()
-                .id(1L)
+                .id("1")
                 .title("测试商品")
                 .price(new BigDecimal("100"))
                 .stock(10)
@@ -76,40 +76,40 @@ class ProductQueryServiceTest {
     @Test
     @DisplayName("缓存命中时直接返回缓存数据")
     void getProductById_cacheHit_shouldReturnCached() {
-        when(productCachePort.getProductCache(1L)).thenReturn(testProductVO);
+        when(productCachePort.getProductCache("1")).thenReturn(testProductVO);
 
-        ProductVO result = queryService.getProductById(1L);
+        ProductVO result = queryService.getProductById("1");
 
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getId()).isEqualTo("1");
         verify(productRepository, never()).findById(any());
     }
 
     @Test
     @DisplayName("缓存未命中时从数据库查询并写入缓存")
     void getProductById_cacheMiss_shouldQueryDbAndSetCache() {
-        when(productCachePort.getProductCache(1L)).thenReturn(null);
-        when(productRepository.findById(ProductId.of(1L))).thenReturn(Optional.of(testProduct));
+        when(productCachePort.getProductCache("1")).thenReturn(null);
+        when(productRepository.findById(ProductId.of("1"))).thenReturn(Optional.of(testProduct));
         when(productQueryRepository.findImagesByProductIds(any())).thenReturn(List.of());
         when(productQueryRepository.findCategoriesByIds(any())).thenReturn(List.of());
         when(productQueryRepository.findDetailsByProductIds(any())).thenReturn(List.of());
         when(productQueryRepository.findSellersByIds(any())).thenReturn(List.of());
         when(readModelAssembler.toProductVO(eq(testProduct), any(), any(), any(), any())).thenReturn(testProductVO);
 
-        ProductVO result = queryService.getProductById(1L);
+        ProductVO result = queryService.getProductById("1");
 
         assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(1L);
-        verify(productCachePort).setProductCache(eq(1L), eq(testProductVO));
+        assertThat(result.getId()).isEqualTo("1");
+        verify(productCachePort).setProductCache(eq("1"), eq(testProductVO));
     }
 
     @Test
     @DisplayName("查询不存在的商品应抛出异常")
     void getProductById_notFound_shouldThrow() {
-        when(productCachePort.getProductCache(999L)).thenReturn(null);
-        when(productRepository.findById(ProductId.of(999L))).thenReturn(Optional.empty());
+        when(productCachePort.getProductCache("999")).thenReturn(null);
+        when(productRepository.findById(ProductId.of("999"))).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> queryService.getProductById(999L))
+        assertThatThrownBy(() -> queryService.getProductById("999"))
                 .isInstanceOf(ProductNotFoundException.class);
     }
 

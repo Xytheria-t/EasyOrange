@@ -9,5 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RestoreStockCommand {
 
-    private Long productId;
+    private String productId;
 }

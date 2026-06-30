@@ -12,19 +12,19 @@ public interface OrderCachePort<T> {
 
     void evictOrderList(String cacheKey);
 
-    Optional<T> getOrderDetail(Long orderId);
+    Optional<T> getOrderDetail(String orderId);
 
-    void putOrderDetail(Long orderId, T orderVO);
+    void putOrderDetail(String orderId, T orderVO);
 
-    void evictOrderDetail(Long orderId);
+    void evictOrderDetail(String orderId);
 
-    void evictBuyerOrders(Long buyerId);
+    void evictBuyerOrders(String buyerId);
 
-    void evictSellerOrders(Long sellerId);
+    void evictSellerOrders(String sellerId);
 
-    void evictOrderCache(Long buyerId, Long sellerId);
+    void evictOrderCache(String buyerId, String sellerId);
 
-    String buildOrderListKey(Long userId, Integer status, Integer pageNum, Integer pageSize);
+    String buildOrderListKey(String userId, Integer status, Integer pageNum, Integer pageSize);
 
-    String buildOrderListKey(Long userId, Integer status);
+    String buildOrderListKey(String userId, Integer status);
 }

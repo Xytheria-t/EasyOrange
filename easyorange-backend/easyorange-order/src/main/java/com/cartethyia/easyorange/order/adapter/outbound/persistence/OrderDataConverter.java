@@ -119,7 +119,7 @@ public class OrderDataConverter {
         );
     }
 
-    public OrderItemDO toItemDO(Long orderId, OrderItem item) {
+    public OrderItemDO toItemDO(String orderId, OrderItem item) {
         return OrderItemDO.builder()
                 .id(item.id())
                 .orderId(orderId)

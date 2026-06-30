@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HotKeywordResponse {
 
-    private Long id;
+    private String id;
 
     private String keyword;
 

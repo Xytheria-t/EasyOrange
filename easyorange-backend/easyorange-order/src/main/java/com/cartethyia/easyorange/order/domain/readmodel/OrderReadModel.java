@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record OrderReadModel(
-    Long id,
+    String id,
     String orderNo,
-    Long buyerId,
-    Long sellerId,
+    String buyerId,
+    String sellerId,
     List<OrderItemReadModel> items,
     BigDecimal totalAmount,
     Integer status,

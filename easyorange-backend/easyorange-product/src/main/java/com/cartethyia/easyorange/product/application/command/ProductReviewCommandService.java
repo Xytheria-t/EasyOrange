@@ -16,8 +16,8 @@ public class ProductReviewCommandService {
     private final ProductReviewMapper reviewMapper;
 
     @Transactional(rollbackFor = Exception.class)
-    public Long createReview(CreateProductReviewCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public String createReview(CreateProductReviewCommand command) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         ProductReviewDO review = ProductReviewDO.builder()
                 .productId(command.getProductId())
@@ -37,8 +37,8 @@ public class ProductReviewCommandService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void deleteReview(Long reviewId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void deleteReview(String reviewId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         ProductReviewDO review = reviewMapper.selectById(reviewId);
         if (review == null || review.getDelFlag() != 0) {
@@ -55,7 +55,7 @@ public class ProductReviewCommandService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void likeReview(Long reviewId) {
+    public void likeReview(String reviewId) {
         reviewMapper.incrementLikes(reviewId);
         log.info("action=like_review reviewId={}", reviewId);
     }

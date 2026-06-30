@@ -43,7 +43,7 @@ public class ProductQueryController {
     }
 
     @GetMapping("/{id}")
-    public Result<ProductVO> getProduct(@PathVariable Long id) {
+    public Result<ProductVO> getProduct(@PathVariable String id) {
         return Result.success(queryService.getProductById(id));
     }
 
@@ -52,13 +52,13 @@ public class ProductQueryController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize,
             @RequestParam(required = false) Integer status) {
-        Long currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return Result.success(queryService.getMyProducts(currentUserId, status, pageNum, pageSize));
     }
 
     @GetMapping("/category/{categoryId}")
     public Result<PageResult<ProductVO>> getProductsByCategory(
-            @PathVariable Long categoryId,
+            @PathVariable String categoryId,
             @Valid ProductQueryRequest request) {
         return Result.success(queryService.listProducts(
                 request.getKeyword(), categoryId, request.getStatus(),
@@ -70,19 +70,19 @@ public class ProductQueryController {
 
     @GetMapping("/{id}/similar")
     public Result<List<ProductVO>> getSimilarProducts(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestParam(defaultValue = "10") Integer limit) {
         return Result.success(queryService.getSimilarProducts(id, limit));
     }
 
     @PostMapping("/batch")
-    public Result<List<ProductVO>> getProductsByIds(@RequestBody List<Long> ids) {
+    public Result<List<ProductVO>> getProductsByIds(@RequestBody List<String> ids) {
         return Result.success(queryService.getProductsByIds(ids));
     }
 
     @GetMapping("/categories")
     public Result<List<CategoryResponse>> getCategories(
-            @RequestParam(required = false) Long parentId) {
+            @RequestParam(required = false) String parentId) {
         var categories = categoryQueryService.getCategories(parentId);
         return Result.success(categoryAssembler.toCategoryResponses(categories));
     }

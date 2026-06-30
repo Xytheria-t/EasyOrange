@@ -4,13 +4,13 @@ import com.cartethyia.easyorange.common.util.BizRequire;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public record CategoryId(@JsonValue Long value) {
+public record CategoryId(@JsonValue String value) {
 
     public static final CategoryId EMPTY = new CategoryId(null);
 
     public CategoryId {
         if (value != null) {
-            BizRequire.requireTrue(value > 0, "分类ID必须为正数");
+            BizRequire.requireTrue(!value.isBlank(), "分类ID不能为空");
         }
     }
 
@@ -19,7 +19,7 @@ public record CategoryId(@JsonValue Long value) {
     }
 
     @JsonCreator
-    public static CategoryId of(Long value) {
+    public static CategoryId of(String value) {
         if (value == null) {
             return EMPTY;
         }
@@ -28,6 +28,6 @@ public record CategoryId(@JsonValue Long value) {
 
     @Override
     public String toString() {
-        return isPersisted() ? value.toString() : "(未持久化)";
+        return isPersisted() ? value : "(未持久化)";
     }
 }

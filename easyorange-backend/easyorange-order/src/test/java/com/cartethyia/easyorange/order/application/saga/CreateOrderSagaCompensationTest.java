@@ -86,8 +86,8 @@ class CreateOrderSagaCompensationTest {
 
     private CreateOrderSaga saga;
 
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
 
     @BeforeEach
     void setUp() {
@@ -109,21 +109,21 @@ class CreateOrderSagaCompensationTest {
 
         when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of());
-        when(snowflakeIdGenerator.nextId()).thenReturn(100L);
+        when(snowflakeIdGenerator.generateId()).thenReturn("ORD100");
     }
 
     @Test
     @DisplayName("正常创建订单 Saga 成功")
     void execute_normalFlow_succeeds() {
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem(100L, 1)));
+        command.setItems(List.of(new CreateOrderItem("100", 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
         command.setRemark("备注");
 
-        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
-        when(productInventoryPort.getSnapshot(100L)).thenReturn(Optional.of(snapshot));
-        when(paymentGatewayPort.createPayment(any())).thenReturn(1L);
+        ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
+        when(productInventoryPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
+        when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
         CreateOrderResult result = saga.execute(command);
 
@@ -138,16 +138,16 @@ class CreateOrderSagaCompensationTest {
     @DisplayName("支付失败时执行订单补偿")
     void execute_paymentFails_cancelsOrder() {
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem(100L, 1)));
+        command.setItems(List.of(new CreateOrderItem("100", 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 
-        ProductSnapshot snapshot = new ProductSnapshot(100L, SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
-        when(productInventoryPort.getSnapshot(100L)).thenReturn(Optional.of(snapshot));
+        ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
+        when(productInventoryPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
         OrderAggregate cancelledAggregate = OrderAggregate.fromRaw(
-                1L, "ORD1", BUYER_ID, SELLER_ID,
+                "1", "ORD1", BUYER_ID, SELLER_ID,
                 new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
                 "地址", "13800138000", "备注", null, null
         );
@@ -163,11 +163,11 @@ class CreateOrderSagaCompensationTest {
     @DisplayName("资产不存在时 Saga 失败")
     void execute_productNotFound_throws() {
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem(999L, 1)));
+        command.setItems(List.of(new CreateOrderItem("999", 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 
-        when(productInventoryPort.getSnapshot(999L)).thenReturn(Optional.empty());
+        when(productInventoryPort.getSnapshot("999")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saga.execute(command))
                 .isInstanceOf(Exception.class)
@@ -180,7 +180,7 @@ class CreateOrderSagaCompensationTest {
         when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(false);
 
         CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem(100L, 1)));
+        command.setItems(List.of(new CreateOrderItem("100", 1)));
         command.setAddress("北京市朝阳区");
         command.setPhone("13800138000");
 

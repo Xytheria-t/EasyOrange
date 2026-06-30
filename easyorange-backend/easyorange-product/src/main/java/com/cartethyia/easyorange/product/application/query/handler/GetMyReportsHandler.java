@@ -18,7 +18,7 @@ public class GetMyReportsHandler {
     private final ProductReportRepository productReportRepository;
 
     @Transactional(readOnly = true)
-    public PageResult<ProductReportResponse> handle(Long reporterId, int pageNum, int pageSize) {
+    public PageResult<ProductReportResponse> handle(String reporterId, int pageNum, int pageSize) {
         PageResult<ProductReport> reportPage = productReportRepository.findByReporterId(reporterId, pageNum, pageSize);
 
         List<ProductReportResponse> voList = reportPage.records().stream()

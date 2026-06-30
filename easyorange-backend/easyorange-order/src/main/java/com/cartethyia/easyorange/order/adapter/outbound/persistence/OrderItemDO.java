@@ -16,9 +16,9 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(callSuper = false)
 @TableName("eo_order_item")
 public class OrderItemDO extends BaseDO {
-    private Long id;
-    private Long orderId;
-    private Long productId;
+    private String id;
+    private String orderId;
+    private String productId;
     private String productSnapshot;
     private BigDecimal unitPrice;
     private Integer quantity;

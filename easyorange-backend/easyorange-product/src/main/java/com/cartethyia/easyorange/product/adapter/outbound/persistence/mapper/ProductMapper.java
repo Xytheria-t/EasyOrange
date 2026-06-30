@@ -29,16 +29,16 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
                                     @Param("conditionLevel") Integer conditionLevel,
                                     @Param("hasDiscount") Boolean hasDiscount);
 
-    List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<Long> productIds);
+    List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<String> productIds);
 
-    List<ProductImageDO> selectImagesByProductIds(@Param("productIds") List<Long> productIds);
+    List<ProductImageDO> selectImagesByProductIds(@Param("productIds") List<String> productIds);
 
-    List<CategoryDO> selectCategoriesByIds(@Param("categoryIds") List<Long> categoryIds);
+    List<CategoryDO> selectCategoriesByIds(@Param("categoryIds") List<String> categoryIds);
 
-    List<SellerInfo> selectSellersByIds(@Param("sellerIds") Set<Long> sellerIds);
+    List<SellerInfo> selectSellersByIds(@Param("sellerIds") Set<String> sellerIds);
 
-    void batchAddViewCounts(@Param("viewCounts") java.util.Map<Long, Integer> viewCounts);
+    void batchAddViewCounts(@Param("viewCounts") java.util.Map<String, Integer> viewCounts);
 
-    void updateSearchText(@Param("productId") Long productId,
+    void updateSearchText(@Param("productId") String productId,
                           @Param("searchText") String searchText);
 }

@@ -16,8 +16,8 @@ public interface ProductReviewMapper extends BaseMapper<ProductReviewDO> {
     @Select("SELECT rating, COUNT(*) as count FROM eo_product_review " +
             "WHERE product_id = #{productId} AND del_flag = 0 AND status = 1 " +
             "GROUP BY rating")
-    List<Map<String, Object>> countByRating(@Param("productId") Long productId);
+    List<Map<String, Object>> countByRating(@Param("productId") String productId);
 
     @Update("UPDATE eo_product_review SET likes = likes + 1 WHERE id = #{reviewId} AND del_flag = 0")
-    int incrementLikes(@Param("reviewId") Long reviewId);
+    int incrementLikes(@Param("reviewId") String reviewId);
 }

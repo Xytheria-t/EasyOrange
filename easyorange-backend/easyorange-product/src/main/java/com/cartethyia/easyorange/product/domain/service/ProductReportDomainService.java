@@ -25,7 +25,7 @@ public class ProductReportDomainService {
      * @param reason     the description of the report
      * @param reasonType the category code of the report
      */
-    public void reportProduct(Long productId, Long reporterId, String reason, Integer reasonType) {
+    public void reportProduct(String productId, String reporterId, String reason, Integer reasonType) {
         ProductReport report = ProductReport.create(productId, reporterId, reason, reasonType);
         productReportRepository.save(report);
     }
@@ -41,7 +41,7 @@ public class ProductReportDomainService {
      *                 {@code false} to reject the report
      * @throws ReportNotFoundException if no report exists with the given ID
      */
-    public void processReport(Long reportId, boolean approved) {
+    public void processReport(String reportId, boolean approved) {
         ProductReport report = productReportRepository.findById(reportId);
         if (report == null) {
             throw new ReportNotFoundException("举报记录不存在: " + reportId);

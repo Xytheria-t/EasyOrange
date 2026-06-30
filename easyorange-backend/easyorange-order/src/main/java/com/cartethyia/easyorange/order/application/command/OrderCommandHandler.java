@@ -84,18 +84,18 @@ public class OrderCommandHandler {
         domainEventPublisher.publish(result.event());
     }
 
-    private OrderAggregate validateBuyerOrder(Long orderId) {
+    private OrderAggregate validateBuyerOrder(String orderId) {
         OrderAggregate aggregate = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         BizRequire.requireTrue(java.util.Objects.equals(aggregate.buyerId().value(), userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }
 
-    private OrderAggregate validateSellerOrder(Long orderId) {
+    private OrderAggregate validateSellerOrder(String orderId) {
         OrderAggregate aggregate = orderRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         BizRequire.requireTrue(java.util.Objects.equals(aggregate.sellerId().value(), userId), OrderResultCode.ORDER_NOT_OWNER);
         return aggregate;
     }

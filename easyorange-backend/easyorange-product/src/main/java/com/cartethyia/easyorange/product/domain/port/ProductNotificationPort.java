@@ -2,9 +2,9 @@ package com.cartethyia.easyorange.product.domain.port;
 
 public interface ProductNotificationPort {
 
-    void notifyProductCreated(Long productId, Long userId);
+    void notifyProductCreated(String productId, String userId);
 
-    void notifyProductMarkedSold(Long productId, Long userId);
+    void notifyProductMarkedSold(String productId, String userId);
 
-    void notifyLowStock(Long productId, Long sellerId, int currentStock);
+    void notifyLowStock(String productId, String sellerId, int currentStock);
 }

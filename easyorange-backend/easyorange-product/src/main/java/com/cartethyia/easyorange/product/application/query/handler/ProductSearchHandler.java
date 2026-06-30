@@ -82,7 +82,7 @@ public class ProductSearchHandler {
             List<ProductReadModel> topProducts = result.records().stream()
                     .limit(5)
                     .<ProductReadModel>map(r -> new ProductReadModel(
-                            r.getId() != null ? Long.valueOf(r.getId()) : null,
+                            r.getId(),
                             r.getSellerId(),
                             r.getUsername(),
                             r.getUserAvatar(),
@@ -119,7 +119,7 @@ public class ProductSearchHandler {
 
     @Transactional(readOnly = true)
     public List<SearchHistoryResponse> getMySearchHistory(Integer limit) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         List<SearchHistoryReadModel> histories = productQueryRepository.findSearchHistoryByUserId(userId, limit);
         return histories.stream()
                 .map(h -> SearchHistoryResponse.builder()
@@ -131,12 +131,12 @@ public class ProductSearchHandler {
     }
 
     public void clearMySearchHistory() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         productQueryRepository.clearSearchHistory(userId);
     }
 
-    public void deleteSearchHistory(Long historyId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void deleteSearchHistory(String historyId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         productQueryRepository.deleteSearchHistoryById(historyId, userId);
     }
 
@@ -159,7 +159,7 @@ public class ProductSearchHandler {
     }
 
     public void recordSearch(String keyword) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         productQueryRepository.saveSearchHistory(userId, keyword);
     }
 

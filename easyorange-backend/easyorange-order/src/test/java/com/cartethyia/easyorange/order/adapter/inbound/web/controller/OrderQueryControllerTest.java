@@ -39,12 +39,12 @@ class OrderQueryControllerTest {
     @MockitoBean
     private OrderQueryHandler queryHandler;
 
-    private OrderVO createOrderVO(Long id, String orderNo, Integer status, String statusDesc) {
+    private OrderVO createOrderVO(String id, String orderNo, Integer status, String statusDesc) {
         return OrderVO.builder()
                 .id(id)
                 .orderNo(orderNo)
-                .buyerId(1L)
-                .sellerId(2L)
+                .buyerId("1")
+                .sellerId("2")
                 .totalAmount(new BigDecimal("99.99"))
                 .status(status)
                 .statusDesc(statusDesc)
@@ -63,8 +63,8 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("存在的订单应返回订单详情")
         void getOrderDetail_withExistingId_shouldReturnOrder() throws Exception {
-            OrderVO vo = createOrderVO(100L, "ORD100", 0, "待付款");
-            when(queryHandler.getOrderDetailForOwner(100L)).thenReturn(vo);
+            OrderVO vo = createOrderVO("100", "ORD100", 0, "待付款");
+            when(queryHandler.getOrderDetailForOwner("100")).thenReturn(vo);
 
             mockMvc.perform(get("/api/orders/{id}", 100L))
                     .andExpect(status().isOk())
@@ -78,7 +78,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("不存在的订单应返回空 data")
         void getOrderDetail_withNonExistentId_shouldReturnNullData() throws Exception {
-            when(queryHandler.getOrderDetailForOwner(999L)).thenReturn(null);
+            when(queryHandler.getOrderDetailForOwner("999")).thenReturn(null);
 
             mockMvc.perform(get("/api/orders/{id}", 999L))
                     .andExpect(status().isOk())
@@ -89,7 +89,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("handler 异常应包装为 ServletException")
         void getOrderDetail_whenHandlerThrows_shouldThrowServletException() {
-            when(queryHandler.getOrderDetailForOwner(100L))
+            when(queryHandler.getOrderDetailForOwner("100"))
                     .thenThrow(new RuntimeException("订单不存在"));
 
             org.junit.jupiter.api.Assertions.assertThrows(
@@ -107,8 +107,8 @@ class OrderQueryControllerTest {
         @DisplayName("有订单数据应返回分页结果")
         void getMyOrders_withData_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
-                    createOrderVO(100L, "ORD100", 0, "待付款"),
-                    createOrderVO(101L, "ORD101", 1, "已付款")
+                    createOrderVO("100", "ORD100", 0, "待付款"),
+                    createOrderVO("101", "ORD101", 1, "已付款")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 2L, 1, 10);
             when(queryHandler.getMyOrders(any(), any(), any())).thenReturn(pageResult);
@@ -149,7 +149,7 @@ class OrderQueryControllerTest {
         @DisplayName("有售出订单应返回分页结果")
         void getSoldOrders_withData_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
-                    createOrderVO(100L, "ORD100", 2, "已发货")
+                    createOrderVO("100", "ORD100", 2, "已发货")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
             when(queryHandler.getSoldOrders(any(), any(), any())).thenReturn(pageResult);
@@ -183,7 +183,7 @@ class OrderQueryControllerTest {
         @DisplayName("通用查询应返回分页结果")
         void queryOrders_withFilters_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
-                    createOrderVO(100L, "ORD100", 0, "待付款")
+                    createOrderVO("100", "ORD100", 0, "待付款")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
             when(queryHandler.handle(any(), any(), any(), any(), any(), any())).thenReturn(pageResult);

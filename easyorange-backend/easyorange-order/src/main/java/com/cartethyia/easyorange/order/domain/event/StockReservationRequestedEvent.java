@@ -6,11 +6,11 @@ import lombok.Getter;
 @Getter
 public class StockReservationRequestedEvent extends BaseDomainEvent {
 
-    private final Long orderId;
-    private final Long productId;
+    private final String orderId;
+    private final String productId;
     private final int quantity;
 
-    public StockReservationRequestedEvent(Long orderId, Long productId, int quantity) {
+    public StockReservationRequestedEvent(String orderId, String productId, int quantity) {
         super();
         this.orderId = orderId;
         this.productId = productId;

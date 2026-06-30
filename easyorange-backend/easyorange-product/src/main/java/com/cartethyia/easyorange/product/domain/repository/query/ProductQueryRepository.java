@@ -12,47 +12,47 @@ import java.util.Set;
 
 public interface ProductQueryRepository {
 
-    PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
                                            Integer pageNum, Integer pageSize);
 
-    PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
+    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
                                           BigDecimal minPrice, BigDecimal maxPrice,
                                           Integer conditionLevel, String sort,
                                           Boolean hasDiscount,
                                           Integer pageNum, Integer pageSize);
 
-    PageResult<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
+    PageResult<ProductReadModel> findProductsBySellerId(String sellerId, Integer status,
                                                    Integer pageNum, Integer pageSize);
 
-    List<ProductReadModel> findProductsByIds(List<Long> ids);
+    List<ProductReadModel> findProductsByIds(List<String> ids);
 
-    ProductReadModel findProductById(Long id);
+    ProductReadModel findProductById(String id);
 
-    List<SearchHistoryReadModel> findSearchHistoryByUserId(Long userId, Integer limit);
+    List<SearchHistoryReadModel> findSearchHistoryByUserId(String userId, Integer limit);
 
     List<HotKeywordReadModel> findHotKeywords(Integer limit);
 
     List<String> findSearchSuggestions(String keyword, Integer limit);
 
-    List<SellerReadModel> findSellersByIds(Set<Long> sellerIds);
+    List<SellerReadModel> findSellersByIds(Set<String> sellerIds);
 
-    List<CategoryInfo> findCategoriesByIds(List<Long> categoryIds);
+    List<CategoryInfo> findCategoriesByIds(List<String> categoryIds);
 
-    List<ProductDetailInfo> findDetailsByProductIds(List<Long> productIds);
+    List<ProductDetailInfo> findDetailsByProductIds(List<String> productIds);
 
-    List<ProductImageInfo> findImagesByProductIds(List<Long> productIds);
+    List<ProductImageInfo> findImagesByProductIds(List<String> productIds);
 
-    void saveSearchHistory(Long userId, String keyword);
+    void saveSearchHistory(String userId, String keyword);
 
-    void clearSearchHistory(Long userId);
+    void clearSearchHistory(String userId);
 
-    void deleteSearchHistoryById(Long historyId, Long userId);
+    void deleteSearchHistoryById(String historyId, String userId);
 
     long countByStatus(Integer status);
 
-    record CategoryInfo(Long id, String name, Long parentId, Integer level, Integer sortOrder) { }
+    record CategoryInfo(String id, String name, String parentId, Integer level, Integer sortOrder) { }
 
-    record ProductDetailInfo(Long productId, String description) { }
+    record ProductDetailInfo(String productId, String description) { }
 
-    record ProductImageInfo(Long productId, String imageUrl, Integer sortOrder, boolean isMain) { }
+    record ProductImageInfo(String productId, String imageUrl, Integer sortOrder, boolean isMain) { }
 }

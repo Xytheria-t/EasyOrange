@@ -12,7 +12,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.Serializable;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -37,25 +36,25 @@ class ProductReviewCommandServiceTest {
         try {
             doAnswer(invocation -> {
                 ProductReviewDO review = invocation.getArgument(0);
-                review.setId(100L);
+                review.setId("100");
                 return 1;
             }).when(reviewMapper).insert(any(ProductReviewDO.class));
 
             CreateProductReviewCommand command = CreateProductReviewCommand.builder()
-                    .productId(10L)
+                    .productId("10")
                     .rating(5)
                     .content("非常好的商品")
                     .build();
 
-            Long reviewId = commandService.createReview(command);
+            String reviewId = commandService.createReview(command);
 
-            assertThat(reviewId).isEqualTo(100L);
+            assertThat(reviewId).isEqualTo("100");
 
             ArgumentCaptor<ProductReviewDO> captor = ArgumentCaptor.forClass(ProductReviewDO.class);
             verify(reviewMapper).insert(captor.capture());
             ProductReviewDO captured = captor.getValue();
-            assertThat(captured.getProductId()).isEqualTo(10L);
-            assertThat(captured.getUserId()).isEqualTo(1L);
+            assertThat(captured.getProductId()).isEqualTo("10");
+            assertThat(captured.getUserId()).isEqualTo("1");
             assertThat(captured.getRating()).isEqualTo(5);
             assertThat(captured.getContent()).isEqualTo("非常好的商品");
             assertThat(captured.getLikes()).isEqualTo(0);
@@ -71,15 +70,15 @@ class ProductReviewCommandServiceTest {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             ProductReviewDO existing = new ProductReviewDO();
-            existing.setId(100L);
-            existing.setProductId(10L);
-            existing.setUserId(1L);
+            existing.setId("100");
+            existing.setProductId("10");
+            existing.setUserId("1");
             existing.setDelFlag(0);
-            when(reviewMapper.selectById(100L)).thenReturn(existing);
+            when(reviewMapper.selectById("100")).thenReturn(existing);
 
-            commandService.deleteReview(100L);
+            commandService.deleteReview("100");
 
-            verify(reviewMapper).deleteById((Serializable) 100L);
+            verify(reviewMapper).deleteById("100");
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -90,13 +89,13 @@ class ProductReviewCommandServiceTest {
     void deleteReview_notFound_shouldThrow() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            when(reviewMapper.selectById(999L)).thenReturn(null);
+            when(reviewMapper.selectById("999")).thenReturn(null);
 
-            assertThatThrownBy(() -> commandService.deleteReview(999L))
+            assertThatThrownBy(() -> commandService.deleteReview("999"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("评价不存在");
 
-            verify(reviewMapper, never()).deleteById(any(Serializable.class));
+            verify(reviewMapper, never()).deleteById(anyString());
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -108,16 +107,16 @@ class ProductReviewCommandServiceTest {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             ProductReviewDO existing = new ProductReviewDO();
-            existing.setId(100L);
-            existing.setUserId(1L);
+            existing.setId("100");
+            existing.setUserId("1");
             existing.setDelFlag(2);
-            when(reviewMapper.selectById(100L)).thenReturn(existing);
+            when(reviewMapper.selectById("100")).thenReturn(existing);
 
-            assertThatThrownBy(() -> commandService.deleteReview(100L))
+            assertThatThrownBy(() -> commandService.deleteReview("100"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("评价不存在");
 
-            verify(reviewMapper, never()).deleteById(any(Serializable.class));
+            verify(reviewMapper, never()).deleteById(anyString());
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -129,16 +128,16 @@ class ProductReviewCommandServiceTest {
         TestSecurityUtil.setSecurityContext(2L);
         try {
             ProductReviewDO existing = new ProductReviewDO();
-            existing.setId(100L);
-            existing.setUserId(1L);
+            existing.setId("100");
+            existing.setUserId("1");
             existing.setDelFlag(0);
-            when(reviewMapper.selectById(100L)).thenReturn(existing);
+            when(reviewMapper.selectById("100")).thenReturn(existing);
 
-            assertThatThrownBy(() -> commandService.deleteReview(100L))
+            assertThatThrownBy(() -> commandService.deleteReview("100"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("只能删除自己的评价");
 
-            verify(reviewMapper, never()).deleteById(any(Serializable.class));
+            verify(reviewMapper, never()).deleteById(anyString());
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -147,8 +146,8 @@ class ProductReviewCommandServiceTest {
     @Test
     @DisplayName("点赞评价应增加点赞数")
     void likeReview_shouldIncrementLikes() {
-        commandService.likeReview(100L);
+        commandService.likeReview("100");
 
-        verify(reviewMapper).incrementLikes(100L);
+        verify(reviewMapper).incrementLikes("100");
     }
 }

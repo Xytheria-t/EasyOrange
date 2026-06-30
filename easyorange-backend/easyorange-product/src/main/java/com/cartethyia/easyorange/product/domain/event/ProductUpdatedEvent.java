@@ -7,9 +7,9 @@ import java.util.List;
 
 public class ProductUpdatedEvent extends BaseDomainEvent {
 
-    private final Long productId;
-    private final Long userId;
-    private final Long categoryId;
+    private final String productId;
+    private final String userId;
+    private final String categoryId;
     private final String name;
     private final BigDecimal price;
     private final BigDecimal originalPrice;
@@ -20,7 +20,7 @@ public class ProductUpdatedEvent extends BaseDomainEvent {
     private final String description;
     private final List<String> imageUrls;
 
-    public ProductUpdatedEvent(Long productId, Long userId, Long categoryId, String name,
+    public ProductUpdatedEvent(String productId, String userId, String categoryId, String name,
                               BigDecimal price, BigDecimal originalPrice, Integer stock,
                               Integer conditionLevel, String location, String contactMethod,
                               String description, List<String> imageUrls) {
@@ -39,9 +39,9 @@ public class ProductUpdatedEvent extends BaseDomainEvent {
         this.imageUrls = imageUrls != null ? List.copyOf(imageUrls) : List.of();
     }
 
-    public Long getProductId() { return productId; }
-    public Long getUserId() { return userId; }
-    public Long getCategoryId() { return categoryId; }
+    public String getProductId() { return productId; }
+    public String getUserId() { return userId; }
+    public String getCategoryId() { return categoryId; }
     public String getName() { return name; }
     public BigDecimal getPrice() { return price; }
     public BigDecimal getOriginalPrice() { return originalPrice; }

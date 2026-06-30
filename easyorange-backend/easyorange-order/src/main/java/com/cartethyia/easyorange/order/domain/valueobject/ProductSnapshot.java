@@ -5,7 +5,7 @@ import lombok.Builder;
 
 @Builder
 public record ProductSnapshot(
-    Long productId,
+    String productId,
     String name,
     String image,
     String description,

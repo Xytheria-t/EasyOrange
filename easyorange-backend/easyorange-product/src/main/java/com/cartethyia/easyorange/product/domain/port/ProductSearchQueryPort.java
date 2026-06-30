@@ -8,7 +8,7 @@ public interface ProductSearchQueryPort {
 
     record ProductSearchQuery(
         String keyword,
-        Long categoryId,
+        String categoryId,
         Integer status,
         java.math.BigDecimal minPrice,
         java.math.BigDecimal maxPrice,

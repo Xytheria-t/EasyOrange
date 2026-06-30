@@ -12,7 +12,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductUpdateRequest {
 
-    private Long categoryId;
+    private String categoryId;
 
     @Size(max = 200, message = "商品名称不能超过 200 个字符")
     private String name;

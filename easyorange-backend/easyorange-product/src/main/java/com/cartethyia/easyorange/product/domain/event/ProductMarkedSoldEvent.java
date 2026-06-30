@@ -4,17 +4,17 @@ import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 
 public class ProductMarkedSoldEvent extends BaseDomainEvent {
 
-    private final Long productId;
-    private final Long sellerId;
+    private final String productId;
+    private final String sellerId;
 
-    public ProductMarkedSoldEvent(Long productId, Long sellerId) {
+    public ProductMarkedSoldEvent(String productId, String sellerId) {
         super();
         this.productId = productId;
         this.sellerId = sellerId;
     }
 
-    public Long getProductId() { return productId; }
+    public String getProductId() { return productId; }
 
-    public Long getSellerId() { return sellerId; }
+    public String getSellerId() { return sellerId; }
 
 }

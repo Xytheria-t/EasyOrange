@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -21,7 +22,7 @@ public class CategoryQueryService {
     private final CategoryQueryRepository categoryQueryRepository;
 
     @Transactional(readOnly = true)
-    public List<CategoryReadModel> getCategories(Long parentId) {
+    public List<CategoryReadModel> getCategories(String parentId) {
         List<CategoryReadModel> categories;
         if (parentId != null) {
             categories = categoryCachePort.getCategoriesByParentId(parentId);
@@ -33,11 +34,12 @@ public class CategoryQueryService {
             return List.of();
         }
 
-        List<Long> categoryIds = categories.stream()
+        List<String> categoryIds = categories.stream()
                 .map(CategoryReadModel::id)
+                .filter(Objects::nonNull)
                 .toList();
 
-        Map<Long, Long> productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
+        Map<String, Long> productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
 
         return categories.stream()
                 .map(cat -> new CategoryReadModel(

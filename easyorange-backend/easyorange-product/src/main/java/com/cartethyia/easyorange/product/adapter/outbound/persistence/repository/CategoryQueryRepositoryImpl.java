@@ -19,7 +19,7 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
     }
 
     @Override
-    public List<CategoryDO> findByParentId(Long parentId) {
+    public List<CategoryDO> findByParentId(String parentId) {
         return lambdaQuery()
                 .eq(CategoryDO::getParentId, parentId)
                 .orderByAsc(CategoryDO::getSortOrder)
@@ -42,7 +42,7 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
     }
 
     @Override
-    public List<CategoryDO> findByIds(List<Long> ids) {
+    public List<CategoryDO> findByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
@@ -50,13 +50,13 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
     }
 
     @Override
-    public Map<Long, Long> countProductsByCategoryIds(List<Long> categoryIds) {
+    public Map<String, Long> countProductsByCategoryIds(List<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return Map.of();
         }
 
         List<CategoryProductCountDO> counts = mapper.countProductsByCategoryIds(categoryIds);
-        Map<Long, Long> result = new HashMap<>(counts.size());
+        Map<String, Long> result = new HashMap<>(counts.size());
         for (CategoryProductCountDO row : counts) {
             if (row.getCategoryId() != null && row.getProductCount() != null) {
                 result.put(row.getCategoryId(), row.getProductCount().longValue());

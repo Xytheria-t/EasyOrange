@@ -24,7 +24,7 @@ public class OrderCommandController {
     private final OrderCommandHandler commandHandler;
 
     @PostMapping
-    public Result<Long> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+    public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         List<CreateOrderCommand.CreateOrderItem> items = request.getItems().stream()
                 .map(i -> CreateOrderCommand.CreateOrderItem.builder()
                         .productId(i.getProductId())
@@ -42,7 +42,7 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/cancel")
-    public Result<Void> cancelOrder(@PathVariable Long id, @RequestParam(required = false) String reason) {
+    public Result<Void> cancelOrder(@PathVariable String id, @RequestParam(required = false) String reason) {
         CancelOrderCommand command = CancelOrderCommand.builder()
                 .orderId(id)
                 .reason(reason)
@@ -52,7 +52,7 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/pay")
-    public Result<Void> payOrder(@PathVariable Long id) {
+    public Result<Void> payOrder(@PathVariable String id) {
         PayOrderCommand command = PayOrderCommand.builder()
                 .orderId(id)
                 .build();
@@ -61,7 +61,7 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/ship")
-    public Result<Void> shipOrder(@PathVariable Long id) {
+    public Result<Void> shipOrder(@PathVariable String id) {
         ShipOrderCommand command = ShipOrderCommand.builder()
                 .orderId(id)
                 .build();
@@ -70,7 +70,7 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/receive")
-    public Result<Void> confirmReceipt(@PathVariable Long id) {
+    public Result<Void> confirmReceipt(@PathVariable String id) {
         ConfirmReceiptCommand command = ConfirmReceiptCommand.builder()
                 .orderId(id)
                 .build();
@@ -79,7 +79,7 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/refund")
-    public Result<Void> refundOrder(@PathVariable Long id, @RequestParam(required = false) String reason) {
+    public Result<Void> refundOrder(@PathVariable String id, @RequestParam(required = false) String reason) {
         RefundOrderCommand command = RefundOrderCommand.builder()
                 .orderId(id)
                 .reason(reason)

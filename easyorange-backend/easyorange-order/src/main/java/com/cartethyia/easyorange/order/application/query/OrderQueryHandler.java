@@ -34,31 +34,31 @@ public class OrderQueryHandler {
     private final OrderVOAssembler orderVOAssembler;
 
     @Transactional(readOnly = true)
-    public OrderVO getOrderDetail(Long orderId) {
+    public OrderVO getOrderDetail(String orderId) {
         OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId)).orElse(null);
         if (order == null) {
             return null;
         }
-        Map<Long, ProductDetail> productMap = loadProductMap(order);
+        Map<String, ProductDetail> productMap = loadProductMap(order);
         return orderVOAssembler.toOrderVO(order, productMap, true);
     }
 
     @Transactional(readOnly = true)
-    public OrderVO getOrderDetailForOwner(Long orderId) {
+    public OrderVO getOrderDetailForOwner(String orderId) {
         OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
         BizRequire.notNull(order, OrderResultCode.ORDER_NOT_FOUND);
 
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         BizRequire.requireTrue(order.buyerId().equals(userId) || order.sellerId().equals(userId),
                 OrderResultCode.ORDER_NOT_OWNER);
 
-        Map<Long, ProductDetail> productMap = loadProductMap(order);
+        Map<String, ProductDetail> productMap = loadProductMap(order);
         return orderVOAssembler.toOrderVO(order, productMap, false);
     }
 
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> handle(String orderNo, Integer status, Long buyerId, Long sellerId,
+    public PageResult<OrderVO> handle(String orderNo, Integer status, String buyerId, String sellerId,
                                        Integer pageNum, Integer pageSize) {
         int effectivePageNum = pageNum != null ? pageNum : 1;
         int effectivePageSize = pageSize != null ? pageSize : 20;
@@ -72,19 +72,19 @@ public class OrderQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getMyOrders(Integer status, Integer pageNum, Integer pageSize) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryOrdersWithCache(userId, null, status, pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
     public PageResult<OrderVO> getSoldOrders(Integer status, Integer pageNum, Integer pageSize) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryOrdersWithCache(null, userId, status, pageNum, pageSize);
     }
 
-    private PageResult<OrderVO> queryOrdersWithCache(Long buyerId, Long sellerId, Integer status,
-                                                      Integer pageNum, Integer pageSize) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, Integer status,
+                                                       Integer pageNum, Integer pageSize) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         String cacheKey = orderCachePort.buildOrderListKey(userId, status);
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
@@ -97,7 +97,7 @@ public class OrderQueryHandler {
         return result;
     }
 
-    private PageResult<OrderVO> queryOrdersByRole(Integer status, Long buyerId, Long sellerId,
+    private PageResult<OrderVO> queryOrdersByRole(Integer status, String buyerId, String sellerId,
                                                     Integer pageNum, Integer pageSize) {
         int effectivePageNum = pageNum != null ? pageNum : 1;
         int effectivePageSize = pageSize != null ? pageSize : 20;
@@ -115,17 +115,17 @@ public class OrderQueryHandler {
             return List.of();
         }
 
-        Set<Long> productIds = orders.stream()
+        Set<String> productIds = orders.stream()
                 .flatMap(o -> o.items().stream())
                 .map(OrderItemReadModel::productId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<Long, ProductDetail> productMap = loadProducts(productIds);
+        Map<String, ProductDetail> productMap = loadProducts(productIds);
         return orderVOAssembler.toOrderVOs(orders, productMap);
     }
 
-    private Map<Long, ProductDetail> loadProducts(Set<Long> productIds) {
+    private Map<String, ProductDetail> loadProducts(Set<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }
@@ -134,8 +134,8 @@ public class OrderQueryHandler {
         return orderVOAssembler.buildProductMap(products);
     }
 
-    private Map<Long, ProductDetail> loadProductMap(OrderReadModel order) {
-        Set<Long> productIds = order.items().stream()
+    private Map<String, ProductDetail> loadProductMap(OrderReadModel order) {
+        Set<String> productIds = order.items().stream()
                 .map(OrderItemReadModel::productId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());

@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.framework.entity.BaseDO;
 public class CategoryDO extends BaseDO {
 
     private String name;
-    private Long parentId;
+    private String parentId;
     private Integer level;
     private String icon;
     private Integer sortOrder;
@@ -16,7 +16,7 @@ public class CategoryDO extends BaseDO {
     public CategoryDO() {
     }
 
-    public CategoryDO(String name, Long parentId, Integer level, String icon, Integer sortOrder, Integer status) {
+    public CategoryDO(String name, String parentId, Integer level, String icon, Integer sortOrder, Integer status) {
         this.name = name;
         this.parentId = parentId;
         this.level = level;
@@ -33,11 +33,11 @@ public class CategoryDO extends BaseDO {
         this.name = name;
     }
 
-    public Long getParentId() {
+    public String getParentId() {
         return parentId;
     }
 
-    public void setParentId(Long parentId) {
+    public void setParentId(String parentId) {
         this.parentId = parentId;
     }
 
@@ -79,7 +79,7 @@ public class CategoryDO extends BaseDO {
 
     public static class Builder {
         private String name;
-        private Long parentId;
+        private String parentId;
         private Integer level;
         private String icon;
         private Integer sortOrder;
@@ -90,7 +90,7 @@ public class CategoryDO extends BaseDO {
             return this;
         }
 
-        public Builder parentId(Long parentId) {
+        public Builder parentId(String parentId) {
             this.parentId = parentId;
             return this;
         }

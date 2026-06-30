@@ -27,5 +27,5 @@ public interface OrderRepository {
 
     List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold);
 
-    List<OrderItem> findItemsByOrderId(Long orderId);
+    List<OrderItem> findItemsByOrderId(String orderId);
 }

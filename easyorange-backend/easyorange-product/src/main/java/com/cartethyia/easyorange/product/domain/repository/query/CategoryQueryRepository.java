@@ -7,13 +7,13 @@ import java.util.Map;
 
 public interface CategoryQueryRepository {
 
-    List<CategoryDO> findByParentId(Long parentId);
+    List<CategoryDO> findByParentId(String parentId);
 
     List<CategoryDO> findByLevel(Integer level);
 
     CategoryDO findByName(String name);
 
-    List<CategoryDO> findByIds(List<Long> ids);
+    List<CategoryDO> findByIds(List<String> ids);
 
-    Map<Long, Long> countProductsByCategoryIds(List<Long> categoryIds);
+    Map<String, Long> countProductsByCategoryIds(List<String> categoryIds);
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class CategoryProductCountDO {
 
-    private Long categoryId;
+    private String categoryId;
 
     private Integer productCount;
 }

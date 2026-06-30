@@ -20,7 +20,7 @@ public class CancelOrderCommand {
     /**
      * 订单ID
      */
-    private Long orderId;
+    private String orderId;
 
     /**
      * 取消原因

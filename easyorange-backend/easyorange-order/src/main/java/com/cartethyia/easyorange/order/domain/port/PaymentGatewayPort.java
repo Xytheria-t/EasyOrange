@@ -5,12 +5,12 @@ import java.util.Optional;
 
 public interface PaymentGatewayPort {
 
-    Long createPayment(CreatePaymentRequest request);
+    String createPayment(CreatePaymentRequest request);
 
-    void refundPayment(Long orderId, String reason);
+    void refundPayment(String orderId, String reason);
 
     record CreatePaymentRequest(
-            Long orderId,
+            String orderId,
             BigDecimal amount,
             Integer paymentMethod,
             String attach,

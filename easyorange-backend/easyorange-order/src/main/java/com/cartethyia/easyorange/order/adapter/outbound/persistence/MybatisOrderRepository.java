@@ -95,14 +95,14 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     }
 
     @Override
-    public List<OrderItem> findItemsByOrderId(Long orderId) {
+    public List<OrderItem> findItemsByOrderId(String orderId) {
         return orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)
         ).stream().map(converter::toOrderItem).toList();
     }
 
-    private void batchInsertItems(Long orderId, List<OrderItem> items) {
+    private void batchInsertItems(String orderId, List<OrderItem> items) {
         if (items == null || items.isEmpty()) {
             return;
         }

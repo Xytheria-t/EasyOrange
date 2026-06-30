@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ProductReportRepository {
 
-    ProductReport findById(Long id);
+    ProductReport findById(String id);
 
     List<ProductReport> findPendingReports(int pageNum, int pageSize);
 
@@ -17,11 +17,11 @@ public interface ProductReportRepository {
 
     long countByStatus(Integer status);
 
-    PageResult<ProductReport> findByReporterId(Long reporterId, int pageNum, int pageSize);
+    PageResult<ProductReport> findByReporterId(String reporterId, int pageNum, int pageSize);
 
     void save(ProductReport report);
 
     void update(ProductReport report);
 
-    boolean existsRecentReport(Long productId, Long reporterId);
+    boolean existsRecentReport(String productId, String reporterId);
 }

@@ -39,8 +39,7 @@ common/
 └── util/
     ├── BizRequire.java          # 业务断言工具
     ├── MaskUtils.java           # 数据脱敏
-    ├── FileSizeFormat.java      # 文件大小格式化
-    └── SnowflakeIdGenerator.java # 雪花ID生成器
+    └── FileSizeFormat.java      # 文件大小格式化
 ```
 
 ## 核心类型使用方式
@@ -63,8 +62,8 @@ PageResult.of(records, total, page, size)
 
 ```java
 BizRequire.notNull(user, UserResultCode.USER_NOT_FOUND);
-BizRequire.notBlank(name, UserResultCode.USERNAME_EXISTS);
-BizRequire.notEmpty(items, OrderResultCode.ORDER_STATUS_ERROR);
+BizRequire.notBlank(name, "用户名已存在");
+BizRequire.notEmpty(items, "订单资产不能为空");
 BizRequire.requireTrue(condition, ResultCode.PARAM_VALIDATION_FAILED);
 BizRequire.requireTrue(condition, "条件不满足");
 ```

@@ -10,11 +10,11 @@ import java.util.List;
 @Builder
 public class CategoryResponse {
 
-    private Long id;
+    private String id;
 
     private String name;
 
-    private Long parentId;
+    private String parentId;
 
     private Integer level;
 

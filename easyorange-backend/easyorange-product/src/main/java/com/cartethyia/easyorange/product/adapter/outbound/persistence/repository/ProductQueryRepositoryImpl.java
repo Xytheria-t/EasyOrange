@@ -56,17 +56,17 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final CategoryCachePort<CategoryReadModel> categoryCachePort;
 
     @Override
-    public PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
-                                          Integer pageNum, Integer pageSize) {
+    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
+                                           Integer pageNum, Integer pageSize) {
         return searchProducts(keyword, categoryId, status, null, null, null, null, null, pageNum, pageSize);
     }
 
     @Override
-    public PageResult<ProductReadModel> searchProducts(String keyword, Long categoryId, Integer status,
-                                          BigDecimal minPrice, BigDecimal maxPrice,
-                                          Integer conditionLevel, String sort,
-                                          Boolean hasDiscount,
-                                          Integer pageNum, Integer pageSize) {
+    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
+                                           BigDecimal minPrice, BigDecimal maxPrice,
+                                           Integer conditionLevel, String sort,
+                                           Boolean hasDiscount,
+                                           Integer pageNum, Integer pageSize) {
         Page<ProductDO> page = new Page<>(pageNum, pageSize);
 
         if (keyword != null && !keyword.isBlank()) {
@@ -78,7 +78,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
 
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
         if (categoryId != null) {
-            List<Long> categoryIds = resolveCategoryIdsWithChildren(categoryId);
+            List<String> categoryIds = resolveCategoryIdsWithChildren(categoryId);
             wrapper.in(ProductDO::getCategoryId, categoryIds);
         }
         if (status != null) {
@@ -105,8 +105,8 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         return convertToReadModelPage(productPage);
     }
 
-    private List<Long> resolveCategoryIdsWithChildren(Long categoryId) {
-        List<Long> ids = new ArrayList<>();
+    private List<String> resolveCategoryIdsWithChildren(String categoryId) {
+        List<String> ids = new ArrayList<>();
         ids.add(categoryId);
         
         List<CategoryDO> children = categoryCachePort.getCategoriesByParentId(categoryId)
@@ -124,7 +124,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public PageResult<ProductReadModel> findProductsBySellerId(Long sellerId, Integer status,
+    public PageResult<ProductReadModel> findProductsBySellerId(String sellerId, Integer status,
                                                           Integer pageNum, Integer pageSize) {
         Page<ProductDO> page = new Page<>(pageNum, pageSize);
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
@@ -139,7 +139,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public List<ProductReadModel> findProductsByIds(List<Long> ids) {
+    public List<ProductReadModel> findProductsByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
@@ -150,7 +150,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public ProductReadModel findProductById(Long id) {
+    public ProductReadModel findProductById(String id) {
         ProductDO product = productMapper.selectById(id);
         if (product == null) {
             return null;
@@ -159,7 +159,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public List<SearchHistoryReadModel> findSearchHistoryByUserId(Long userId, Integer limit) {
+    public List<SearchHistoryReadModel> findSearchHistoryByUserId(String userId, Integer limit) {
         int lim = limit != null ? limit : 20;
 
         String key = ProductCacheConstant.SEARCH_HISTORY_KEY_PREFIX + userId;
@@ -247,28 +247,28 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public List<SellerReadModel> findSellersByIds(Set<Long> sellerIds) {
+    public List<SellerReadModel> findSellersByIds(Set<String> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
             return List.of();
         }
         return productMapper.selectSellersByIds(sellerIds).stream()
-                .map(s -> new SellerReadModel(s.id(), s.username(), s.nickName(), s.avatar()))
+                .map(s -> new SellerReadModel(s.id() != null ? String.valueOf(s.id()) : null, s.username(), s.nickName(), s.avatar()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<CategoryInfo> findCategoriesByIds(List<Long> categoryIds) {
+    public List<CategoryInfo> findCategoriesByIds(List<String> categoryIds) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return List.of();
         }
         List<CategoryDO> categories = categoryMapper.selectBatchIds(categoryIds);
         return categories.stream()
-                .map(c -> new CategoryInfo(c.getId(), c.getName(), c.getParentId(), c.getLevel(), c.getSortOrder()))
+                .map(c -> new CategoryInfo(c.getId(), c.getName(), String.valueOf(c.getParentId()), c.getLevel(), c.getSortOrder()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<ProductDetailInfo> findDetailsByProductIds(List<Long> productIds) {
+    public List<ProductDetailInfo> findDetailsByProductIds(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return List.of();
         }
@@ -279,7 +279,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public List<ProductImageInfo> findImagesByProductIds(List<Long> productIds) {
+    public List<ProductImageInfo> findImagesByProductIds(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return List.of();
         }
@@ -293,7 +293,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public void saveSearchHistory(Long userId, String keyword) {
+    public void saveSearchHistory(String userId, String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return;
         }
@@ -307,7 +307,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public void clearSearchHistory(Long userId) {
+    public void clearSearchHistory(String userId) {
         String key = ProductCacheConstant.searchHistoryKey(userId);
         redisTemplate.delete(key);
 
@@ -317,7 +317,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public void deleteSearchHistoryById(Long historyId, Long userId) {
+    public void deleteSearchHistoryById(String historyId, String userId) {
         ChainWrappers.lambdaUpdateChain(searchHistoryMapper)
                 .eq(SearchHistoryDO::getId, historyId)
                 .eq(SearchHistoryDO::getUserId, userId)

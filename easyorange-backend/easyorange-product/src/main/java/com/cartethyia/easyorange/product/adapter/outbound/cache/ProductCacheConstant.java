@@ -36,7 +36,7 @@ public final class ProductCacheConstant {
         return PRODUCT_LIST_KEY + categoryId;
     }
 
-    public static String searchHistoryKey(Long userId) {
+    public static String searchHistoryKey(String userId) {
         return SEARCH_HISTORY_KEY_PREFIX + userId;
     }
 }

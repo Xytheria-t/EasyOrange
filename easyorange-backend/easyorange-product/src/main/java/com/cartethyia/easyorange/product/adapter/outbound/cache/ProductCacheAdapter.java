@@ -17,13 +17,12 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
     private final RedisBitmapBloomFilter bloomFilter;
 
     @Override
-    public ProductVO getProductCache(Long productId) {
+    public ProductVO getProductCache(String productId) {
         if (productId == null) {
             return null;
         }
 
-        String idStr = productId.toString();
-        if (!bloomFilter.mightContain(ProductCacheConstant.PRODUCT_BLOOM_KEY, idStr)) {
+        if (!bloomFilter.mightContain(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId)) {
             log.debug("action=bloom_filter_miss productId={}", productId);
             return null;
         }
@@ -37,7 +36,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
     }
 
     @Override
-    public void setProductCache(Long productId, ProductVO productVO) {
+    public void setProductCache(String productId, ProductVO productVO) {
         if (productId == null || productVO == null) {
             return;
         }
@@ -50,7 +49,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
     }
 
     @Override
-    public void evictProductCache(Long productId) {
+    public void evictProductCache(String productId) {
         if (productId == null) {
             return;
         }
@@ -62,7 +61,7 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
     }
 
     @Override
-    public void evictProductListCache(Long categoryId) {
+    public void evictProductListCache(String categoryId) {
         if (categoryId == null) {
             return;
         }
@@ -73,10 +72,10 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
         }
     }
 
-    public void addToBloomFilter(Long productId) {
+    public void addToBloomFilter(String productId) {
         if (productId == null) {
             return;
         }
-        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId.toString());
+        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId);
     }
 }

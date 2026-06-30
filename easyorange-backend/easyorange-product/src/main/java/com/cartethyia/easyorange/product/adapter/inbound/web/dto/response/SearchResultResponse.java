@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record SearchResultResponse(
-    Long id,
+    String id,
     String title,
     BigDecimal price,
     BigDecimal originalPrice,

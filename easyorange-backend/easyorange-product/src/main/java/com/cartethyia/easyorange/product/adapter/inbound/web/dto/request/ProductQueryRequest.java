@@ -13,9 +13,9 @@ import java.math.BigDecimal;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ProductQueryRequest extends PageRequest {
 
-    private Long categoryId;
+    private String categoryId;
 
-    private Long userId;
+    private String userId;
 
     private Integer status;
 

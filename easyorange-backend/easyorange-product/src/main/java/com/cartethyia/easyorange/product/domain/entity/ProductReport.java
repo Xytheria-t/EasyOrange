@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 @Getter
 public class ProductReport {
 
-    private final Long id;
-    private final Long productId;
-    private final Long reporterId;
+    private final String id;
+    private final String productId;
+    private final String reporterId;
     private final String reason;
     private final Integer reasonType;
     private final ProductReportStatus status;
@@ -20,7 +20,7 @@ public class ProductReport {
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
-    private ProductReport(Long id, Long productId, Long reporterId, String reason,
+    private ProductReport(String id, String productId, String reporterId, String reason,
                           Integer reasonType, ProductReportStatus status,
                           String remark, LocalDateTime createTime, LocalDateTime updateTime) {
         this.id = id;
@@ -34,7 +34,7 @@ public class ProductReport {
         this.updateTime = updateTime;
     }
 
-    public static ProductReport create(Long productId, Long reporterId, String reason, Integer reasonType) {
+    public static ProductReport create(String productId, String reporterId, String reason, Integer reasonType) {
         if (productId == null) {
             throw new ReportDomainException("资产ID不能为空");
         }
@@ -49,7 +49,7 @@ public class ProductReport {
                 ProductReportStatus.PENDING, null, now, now);
     }
 
-    public static ProductReport reconstitute(Long id, Long productId, Long reporterId,
+    public static ProductReport reconstitute(String id, String productId, String reporterId,
                                               String reason, ProductReportStatus status,
                                               String remark, LocalDateTime createTime,
                                               LocalDateTime updateTime, Integer reasonType) {
@@ -81,7 +81,7 @@ public class ProductReport {
         return status != null ? status.getCode() : null;
     }
 
-    public ProductReport assignId(Long id) {
+    public ProductReport assignId(String id) {
         if (this.id != null) {
             return this;
         }

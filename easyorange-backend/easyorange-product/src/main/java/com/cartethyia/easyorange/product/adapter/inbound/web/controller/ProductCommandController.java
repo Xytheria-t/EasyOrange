@@ -35,61 +35,61 @@ public class ProductCommandController {
     private final ProductViewCountService viewCountService;
 
     @PostMapping
-    public Result<Long> createProduct(@Valid @RequestBody ProductCreateRequest request) {
+    public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         return Result.success(commandService.createProduct(CreateProductCommand.from(request)));
     }
 
     @PutMapping("/{id}")
-    public Result<Void> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductUpdateRequest request) {
+    public Result<Void> updateProduct(@PathVariable String id, @Valid @RequestBody ProductUpdateRequest request) {
         commandService.updateProduct(UpdateProductCommand.from(id, request));
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteProduct(@PathVariable Long id) {
+    public Result<Void> deleteProduct(@PathVariable String id) {
         commandService.deleteProduct(DeleteProductCommand.from(id));
         return Result.success();
     }
 
     @SkipRepeatSubmit
     @PostMapping("/{id}/view")
-    public Result<Void> incrementView(@PathVariable Long id) {
+    public Result<Void> incrementView(@PathVariable String id) {
         viewCountService.incrementViewCount(id);
         return Result.success();
     }
 
     @PutMapping("/{productId}/decrement-stock")
-    public Result<Void> decrementStock(@PathVariable Long productId) {
+    public Result<Void> decrementStock(@PathVariable String productId) {
         commandService.decrementStock(new DecrementStockCommand(productId, 1));
         return Result.success();
     }
 
     @PutMapping("/{productId}/restore-stock")
-    public Result<Void> restoreStock(@PathVariable Long productId) {
+    public Result<Void> restoreStock(@PathVariable String productId) {
         commandService.restoreStock(new RestoreStockCommand(productId));
         return Result.success();
     }
 
     @PutMapping("/{productId}/mark-sold")
-    public Result<Void> markAsSold(@PathVariable Long productId) {
+    public Result<Void> markAsSold(@PathVariable String productId) {
         commandService.markAsSold(new MarkAsSoldCommand(productId));
         return Result.success();
     }
 
     @PutMapping("/{productId}/online")
-    public Result<Void> putOnline(@PathVariable Long productId) {
+    public Result<Void> putOnline(@PathVariable String productId) {
         commandService.putOnline(productId);
         return Result.success();
     }
 
     @PutMapping("/{productId}/offline")
-    public Result<Void> takeOffline(@PathVariable Long productId) {
+    public Result<Void> takeOffline(@PathVariable String productId) {
         commandService.takeOffline(productId);
         return Result.success();
     }
 
     @PutMapping("/{id}/submit")
-    public Result<Void> submitForReview(@PathVariable Long id) {
+    public Result<Void> submitForReview(@PathVariable String id) {
         commandService.submitForReview(id);
         return Result.success();
     }

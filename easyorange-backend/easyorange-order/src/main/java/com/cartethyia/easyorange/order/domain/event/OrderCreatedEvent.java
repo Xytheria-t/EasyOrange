@@ -9,13 +9,13 @@ import java.util.List;
 @Getter
 public class OrderCreatedEvent extends BaseDomainEvent {
 
-    private final Long orderId;
-    private final Long buyerId;
-    private final Long sellerId;
+    private final String orderId;
+    private final String buyerId;
+    private final String sellerId;
     private final List<OrderItemPayload> items;
     private final BigDecimal totalAmount;
 
-    public OrderCreatedEvent(Long orderId, Long buyerId, Long sellerId, List<OrderItemPayload> items, BigDecimal totalAmount) {
+    public OrderCreatedEvent(String orderId, String buyerId, String sellerId, List<OrderItemPayload> items, BigDecimal totalAmount) {
         super();
         this.orderId = orderId;
         this.buyerId = buyerId;
@@ -24,5 +24,5 @@ public class OrderCreatedEvent extends BaseDomainEvent {
         this.totalAmount = totalAmount;
     }
 
-    public record OrderItemPayload(Long productId, int quantity, BigDecimal unitPrice, BigDecimal subtotal) {}
+    public record OrderItemPayload(String productId, int quantity, BigDecimal unitPrice, BigDecimal subtotal) {}
 }

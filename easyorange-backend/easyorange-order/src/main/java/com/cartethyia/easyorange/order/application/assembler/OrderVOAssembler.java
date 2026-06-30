@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderVOAssembler {
 
-    public List<OrderVO> toOrderVOs(List<OrderReadModel> orders, Map<Long, ProductDetail> productMap) {
+    public List<OrderVO> toOrderVOs(List<OrderReadModel> orders, Map<String, ProductDetail> productMap) {
         if (orders == null || orders.isEmpty()) {
             return List.of();
         }
@@ -23,7 +23,7 @@ public class OrderVOAssembler {
                 .toList();
     }
 
-    public OrderVO toOrderVO(OrderReadModel order, Map<Long, ProductDetail> productMap, boolean maskSensitive) {
+    public OrderVO toOrderVO(OrderReadModel order, Map<String, ProductDetail> productMap, boolean maskSensitive) {
         List<OrderVO.OrderItemVO> itemVOs = order.items().stream()
                 .map(item -> {
                     ProductDetail product = productMap.get(item.productId());
@@ -67,12 +67,12 @@ public class OrderVOAssembler {
         return builder.build();
     }
 
-    public Map<Long, ProductDetail> buildProductMap(List<ProductDetail> products) {
+    public Map<String, ProductDetail> buildProductMap(List<ProductDetail> products) {
         if (products == null || products.isEmpty()) {
             return Map.of();
         }
 
-        Map<Long, ProductDetail> productMap = new HashMap<>();
+        Map<String, ProductDetail> productMap = new HashMap<>();
         products.forEach(p -> productMap.put(p.id(), p));
         return productMap;
     }

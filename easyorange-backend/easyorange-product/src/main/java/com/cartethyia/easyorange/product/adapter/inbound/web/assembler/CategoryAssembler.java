@@ -22,8 +22,9 @@ public class CategoryAssembler {
     private CategoryResponse toCategoryResponse(CategoryReadModel model) {
         return CategoryResponse.builder()
                 .id(model.id())
-                .name(model.name())
                 .parentId(model.parentId())
+                .name(model.name())
+
                 .level(model.level())
                 .icon(model.icon())
                 .sortOrder(model.sortOrder())

@@ -38,7 +38,7 @@ class OrderCacheServiceTest {
 
     private RedisOrderCacheAdapter orderCachePort;
 
-    private Long testBuyerId;
+    private String testBuyerId;
     private PageResult<OrderVO> testOrderPage;
 
     @BeforeEach
@@ -46,10 +46,10 @@ class OrderCacheServiceTest {
         orderCachePort = new RedisOrderCacheAdapter(redisTemplate);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-        testBuyerId = 999999L;
+        testBuyerId = "999999";
 
         OrderVO order1 = OrderVO.builder()
-                .id(1L)
+                .id("1")
                 .orderNo("TEST001")
                 .buyerId(testBuyerId)
                 .totalAmount(new BigDecimal("99.99"))
@@ -58,7 +58,7 @@ class OrderCacheServiceTest {
                 .build();
 
         OrderVO order2 = OrderVO.builder()
-                .id(2L)
+                .id("2")
                 .orderNo("TEST002")
                 .buyerId(testBuyerId)
                 .totalAmount(new BigDecimal("199.99"))
@@ -109,10 +109,10 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("buildOrderListKey 构建正确的缓存键")
     void testBuildOrderListKey() {
-        String keyWithStatus = orderCachePort.buildOrderListKey(123L, 1);
+        String keyWithStatus = orderCachePort.buildOrderListKey("123", 1);
         assertThat(keyWithStatus).isEqualTo("eo:order:list:123:status:1:page:1:size:10");
 
-        String keyWithoutStatus = orderCachePort.buildOrderListKey(123L, null);
+        String keyWithoutStatus = orderCachePort.buildOrderListKey("123", null);
         assertThat(keyWithoutStatus).isEqualTo("eo:order:list:123:status:all:page:1:size:10");
     }
 
@@ -131,7 +131,7 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("清除认领方订单缓存")
     void testEvictBuyerOrders() {
-        Long buyerId = 123456L;
+        String buyerId = "123456";
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictBuyerOrders(buyerId);
@@ -142,7 +142,7 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("清除资产方订单缓存")
     void testEvictSellerOrders() {
-        Long sellerId = 789012L;
+        String sellerId = "789012";
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictSellerOrders(sellerId);
@@ -153,8 +153,8 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("清除订单缓存同时清除认领方和资产方缓存")
     void testEvictOrderCache() {
-        Long buyerId = 111222L;
-        Long sellerId = 333444L;
+        String buyerId = "111222";
+        String sellerId = "333444";
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictOrderCache(buyerId, sellerId);
@@ -166,7 +166,7 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("清除订单缓存时认领方 ID 为 null")
     void testEvictOrderCacheWithNullBuyerId() {
-        Long sellerId = 555666L;
+        String sellerId = "555666";
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictOrderCache(null, sellerId);
@@ -178,7 +178,7 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("清除订单缓存时资产方 ID 为 null")
     void testEvictOrderCacheWithNullSellerId() {
-        Long buyerId = 777888L;
+        String buyerId = "777888";
         when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
         orderCachePort.evictOrderCache(buyerId, null);

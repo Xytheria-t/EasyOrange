@@ -20,5 +20,5 @@ public interface CategoryMapper extends BaseMapper<CategoryDO> {
             + "<foreach item='id' collection='categoryIds' open='(' separator=',' close=')'>#{id}</foreach> "
             + "GROUP BY category_id"
             + "</script>")
-    List<CategoryProductCountDO> countProductsByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
+    List<CategoryProductCountDO> countProductsByCategoryIds(@Param("categoryIds") List<String> categoryIds);
 }

@@ -17,5 +17,5 @@ public interface ProductDetailMapper extends BaseMapper<ProductDetailDO> {
             "#{id}" +
             "</foreach>" +
             "</script>")
-    List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<Long> productIds);
+    List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<String> productIds);
 }

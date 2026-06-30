@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.saga.SagaCompensationException;
+import com.cartethyia.easyorange.order.domain.saga.SagaException;
 import com.cartethyia.easyorange.order.domain.saga.SagaState;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +47,7 @@ public class OrderCompensationService {
             try {
                 action.compensate();
                 compensationResults.add(String.format("Step %d: SUCCESS", stepIndex));
-            } catch (SagaCompensationException e) {
+            } catch (SagaException e) {
                 compensationResults.add(String.format("Step %d: FAILED - %s", stepIndex, e.getMessage()));
                 log.error("补偿操作失败 step={}，将继续执行其他补偿", stepIndex, e);
             } catch (Exception e) {
@@ -64,7 +64,7 @@ public class OrderCompensationService {
      * 取消订单（用于补偿）
      *
      * @param orderId 订单 ID
-     * @throws SagaCompensationException 如果取消失败
+     * @throws SagaException 如果取消失败
      */
     public void cancelOrder(OrderId orderId) {
         try {
@@ -74,7 +74,7 @@ public class OrderCompensationService {
                     () -> log.warn("Saga: 订单不存在，无需补偿 orderId={}", orderId.value())
                 );
         } catch (OrderDomainException e) {
-            throw new SagaCompensationException(
+            throw new SagaException(
                 null,
                 SagaState.COMPENSATING,
                 "订单补偿失败: " + e.getMessage(),
@@ -82,7 +82,7 @@ public class OrderCompensationService {
             );
         } catch (Exception e) {
             log.error("Saga: 订单补偿失败 orderId={}", orderId.value(), e);
-            throw new SagaCompensationException(
+            throw new SagaException(
                 null,
                 SagaState.COMPENSATING,
                 "订单补偿失败",
@@ -111,6 +111,6 @@ public class OrderCompensationService {
      */
     @FunctionalInterface
     public interface CompensatingAction {
-        void compensate() throws SagaCompensationException;
+        void compensate() throws SagaException;
     }
 }

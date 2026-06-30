@@ -252,7 +252,7 @@ public class Product {
         return new ProductMarkedSoldResult(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
     }
 
-    public ProductDeletedResult delete(Long userId) {
+    public ProductDeletedResult delete(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("无权删除此资产", id, status);
         }
@@ -265,7 +265,7 @@ public class Product {
         return new ProductDeletedResult(updated, new ProductDeletedEvent(id.value(), userId));
     }
 
-    public ProductSubmittedForReviewResult submitForReview(Long userId) {
+    public ProductSubmittedForReviewResult submitForReview(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("只能提交自己的资产审核", id, status);
         }
@@ -366,7 +366,7 @@ public class Product {
         return new StockRestoredResult(updated, new StockRestoredEvent(id.value()));
     }
 
-    public Product assignId(Long id) {
+    public Product assignId(String id) {
         if (this.id != null && this.id.value() != null) {
             return this;
         }

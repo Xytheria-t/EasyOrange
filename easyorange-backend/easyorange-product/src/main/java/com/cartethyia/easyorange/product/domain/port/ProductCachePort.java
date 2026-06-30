@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.product.domain.port;
 
 public interface ProductCachePort<T> {
 
-    T getProductCache(Long productId);
+    T getProductCache(String productId);
 
-    void setProductCache(Long productId, T product);
+    void setProductCache(String productId, T product);
 
-    void evictProductCache(Long productId);
+    void evictProductCache(String productId);
 
-    void evictProductListCache(Long categoryId);
+    void evictProductListCache(String categoryId);
 }

@@ -16,7 +16,7 @@ public class CreateProductReportHandler {
     private final ProductReportRepository productReportRepository;
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleReport(Long productId, Long reporterId, String reason, Integer reasonType) {
+    public void handleReport(String productId, String reporterId, String reason, Integer reasonType) {
         if (!ReportReasonType.isValidCode(reasonType)) {
             throw BusinessException.of("无效的举报类型");
         }

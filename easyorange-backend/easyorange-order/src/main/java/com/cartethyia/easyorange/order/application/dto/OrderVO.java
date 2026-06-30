@@ -11,11 +11,11 @@ import java.util.List;
 
 public class OrderVO {
 
-    private Long id;
+    private String id;
     private String orderNo;
-    private Long buyerId;
+    private String buyerId;
     private String buyerUsername;
-    private Long sellerId;
+    private String sellerId;
     private String sellerUsername;
     private List<OrderItemVO> items;
     private BigDecimal totalAmount;
@@ -28,11 +28,11 @@ public class OrderVO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    public Long getId() { return id; }
+    public String getId() { return id; }
     public String getOrderNo() { return orderNo; }
-    public Long getBuyerId() { return buyerId; }
+    public String getBuyerId() { return buyerId; }
     public String getBuyerUsername() { return buyerUsername; }
-    public Long getSellerId() { return sellerId; }
+    public String getSellerId() { return sellerId; }
     public String getSellerUsername() { return sellerUsername; }
     public List<OrderItemVO> getItems() { return items; }
     public BigDecimal getTotalAmount() { return totalAmount; }
@@ -48,11 +48,11 @@ public class OrderVO {
     public static OrderVOBuilder builder() { return new OrderVOBuilder(); }
 
     public static class OrderVOBuilder {
-        private Long id;
+        private String id;
         private String orderNo;
-        private Long buyerId;
+        private String buyerId;
         private String buyerUsername;
-        private Long sellerId;
+        private String sellerId;
         private String sellerUsername;
         private List<OrderItemVO> items;
         private BigDecimal totalAmount;
@@ -65,11 +65,11 @@ public class OrderVO {
         private LocalDateTime createTime;
         private LocalDateTime updateTime;
 
-        public OrderVOBuilder id(Long id) { this.id = id; return this; }
+        public OrderVOBuilder id(String id) { this.id = id; return this; }
         public OrderVOBuilder orderNo(String orderNo) { this.orderNo = orderNo; return this; }
-        public OrderVOBuilder buyerId(Long buyerId) { this.buyerId = buyerId; return this; }
+        public OrderVOBuilder buyerId(String buyerId) { this.buyerId = buyerId; return this; }
         public OrderVOBuilder buyerUsername(String buyerUsername) { this.buyerUsername = buyerUsername; return this; }
-        public OrderVOBuilder sellerId(Long sellerId) { this.sellerId = sellerId; return this; }
+        public OrderVOBuilder sellerId(String sellerId) { this.sellerId = sellerId; return this; }
         public OrderVOBuilder sellerUsername(String sellerUsername) { this.sellerUsername = sellerUsername; return this; }
         public OrderVOBuilder items(List<OrderItemVO> items) { this.items = items; return this; }
         public OrderVOBuilder totalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; return this; }
@@ -109,8 +109,8 @@ public class OrderVO {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class OrderItemVO {
-        private Long itemId;
-        private Long productId;
+        private String itemId;
+        private String productId;
         private String productName;
         private String productImage;
         private BigDecimal unitPrice;

@@ -32,7 +32,7 @@ class ProductCacheAdapterTest {
 
     private ProductVO testProductVO;
 
-    private static final Long PRODUCT_ID = 1L;
+    private static final String PRODUCT_ID = "1";
 
     @BeforeEach
     void setUp() {
@@ -123,7 +123,7 @@ class ProductCacheAdapterTest {
     void evictProductListCache_shouldDelete() {
         doNothing().when(multiLevelCache).evictL2(anyString());
 
-        cacheAdapter.evictProductListCache(1L);
+        cacheAdapter.evictProductListCache("1");
 
         verify(multiLevelCache).evictL2(ProductCacheConstant.listKey(1L));
     }

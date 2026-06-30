@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.framework.entity.BaseDO;
 @TableName("eo_product_image")
 public class ProductImageDO extends BaseDO {
 
-    private Long productId;
+    private String productId;
     private String imageUrl;
     private Integer sortOrder;
     private Integer isMain;
@@ -14,18 +14,18 @@ public class ProductImageDO extends BaseDO {
     public ProductImageDO() {
     }
 
-    public ProductImageDO(Long productId, String imageUrl, Integer sortOrder, Integer isMain) {
+    public ProductImageDO(String productId, String imageUrl, Integer sortOrder, Integer isMain) {
         this.productId = productId;
         this.imageUrl = imageUrl;
         this.sortOrder = sortOrder;
         this.isMain = isMain;
     }
 
-    public Long getProductId() {
+    public String getProductId() {
         return productId;
     }
 
-    public void setProductId(Long productId) {
+    public void setProductId(String productId) {
         this.productId = productId;
     }
 
@@ -58,12 +58,12 @@ public class ProductImageDO extends BaseDO {
     }
 
     public static class Builder {
-        private Long productId;
+        private String productId;
         private String imageUrl;
         private Integer sortOrder;
         private Integer isMain;
 
-        public Builder productId(Long productId) {
+        public Builder productId(String productId) {
             this.productId = productId;
             return this;
         }

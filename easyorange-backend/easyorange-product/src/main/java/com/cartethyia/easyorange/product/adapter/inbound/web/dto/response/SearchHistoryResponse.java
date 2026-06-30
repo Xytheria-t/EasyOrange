@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SearchHistoryResponse {
 
-    private Long id;
+    private String id;
 
     private String keyword;
 

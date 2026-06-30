@@ -5,11 +5,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProductReadModel(
-    Long id,
-    Long sellerId,
+    String id,
+    String sellerId,
     String username,
     String userAvatar,
-    Long categoryId,
+    String categoryId,
     String categoryName,
     String title,
     String description,

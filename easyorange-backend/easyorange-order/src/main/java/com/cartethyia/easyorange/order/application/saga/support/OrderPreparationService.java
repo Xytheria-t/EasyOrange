@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.order.application.saga.support;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
+import com.cartethyia.easyorange.framework.idgen.IdGenerator;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
@@ -31,7 +31,7 @@ public class OrderPreparationService {
 
     private final ProductInventoryPort productInventoryPort;
     private final ProductQueryPort productQueryPort;
-    private final SnowflakeIdGenerator snowflakeIdGenerator;
+    private final IdGenerator idGenerator;
 
     /**
      * 准备订单项数据
@@ -41,15 +41,15 @@ public class OrderPreparationService {
      * @return 准备结果
      * @throws OrderDomainException 如果资产不存在、已下架或库存不足
      */
-    public PreparationResult prepareOrderItems(List<OrderItemRequest> items, Long buyerId) {
+    public PreparationResult prepareOrderItems(List<OrderItemRequest> items, String buyerId) {
         // 获取商品快照并校验
         List<ItemPreparation> preparations = prepareAndValidateItems(items);
 
         // 获取资产方 ID（所有资产必须来自同一资产方）
-        Long sellerId = validateAndGetSellerId(preparations, buyerId);
+        String sellerId = validateAndGetSellerId(preparations, buyerId);
 
         // 批量获取资产详情
-        Map<Long, ProductDetail> productDetailMap = loadProductDetails(preparations);
+        Map<String, ProductDetail> productDetailMap = loadProductDetails(preparations);
 
         // 构建订单项
         List<OrderItem> orderItems = buildOrderItems(preparations, productDetailMap);
@@ -77,8 +77,8 @@ public class OrderPreparationService {
     /**
      * 校验资产方 ID 并返回
      */
-    private Long validateAndGetSellerId(List<ItemPreparation> preparations, Long buyerId) {
-        Long sellerId = preparations.getFirst().snapshot().sellerId();
+    private String validateAndGetSellerId(List<ItemPreparation> preparations, String buyerId) {
+        String sellerId = preparations.getFirst().snapshot().sellerId();
         BizRequire.requireTrue(!Objects.equals(sellerId, buyerId), "不能认领自己的资产");
 
         // 校验所有资产来自同一资产方
@@ -92,8 +92,8 @@ public class OrderPreparationService {
     /**
      * 批量加载资产详情
      */
-    private Map<Long, ProductDetail> loadProductDetails(List<ItemPreparation> preparations) {
-        List<Long> productIds = preparations.stream()
+    private Map<String, ProductDetail> loadProductDetails(List<ItemPreparation> preparations) {
+        List<String> productIds = preparations.stream()
             .map(p -> p.snapshot().productId())
             .toList();
 
@@ -106,7 +106,7 @@ public class OrderPreparationService {
      * 构建订单项
      */
     private List<OrderItem> buildOrderItems(List<ItemPreparation> preparations,
-                                             Map<Long, ProductDetail> productDetailMap) {
+                                              Map<String, ProductDetail> productDetailMap) {
         return preparations.stream()
             .map(prep -> buildOrderItem(prep, productDetailMap))
             .toList();
@@ -115,7 +115,7 @@ public class OrderPreparationService {
     /**
      * 构建单个订单项
      */
-    private OrderItem buildOrderItem(ItemPreparation prep, Map<Long, ProductDetail> productDetailMap) {
+    private OrderItem buildOrderItem(ItemPreparation prep, Map<String, ProductDetail> productDetailMap) {
         Money unitPrice = Money.of(prep.snapshot().price());
         Money subtotal = unitPrice.multiply(prep.quantity());
 
@@ -127,7 +127,7 @@ public class OrderPreparationService {
         String conditionLevel = detail != null && detail.conditionLevel() != null ? detail.conditionLevel() : "";
 
         return OrderItem.builder()
-            .id(snowflakeIdGenerator.nextId())
+            .id(idGenerator.generateId())
             .productId(ProductId.of(prep.snapshot().productId()))
             .snapshot(com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot.builder()
                 .productId(prep.snapshot().productId())
@@ -160,7 +160,7 @@ public class OrderPreparationService {
     /**
      * 订单项请求
      */
-    public record OrderItemRequest(Long productId, int quantity) {}
+    public record OrderItemRequest(String productId, int quantity) {}
 
     /**
      * 资产准备结果
@@ -170,5 +170,5 @@ public class OrderPreparationService {
     /**
      * 准备结果
      */
-    public record PreparationResult(Long sellerId, List<OrderItem> orderItems) {}
+    public record PreparationResult(String sellerId, List<OrderItem> orderItems) {}
 }

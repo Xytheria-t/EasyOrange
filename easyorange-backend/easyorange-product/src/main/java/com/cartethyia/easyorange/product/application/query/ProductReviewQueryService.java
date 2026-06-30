@@ -33,7 +33,7 @@ public class ProductReviewQueryService {
     private final SellerInfoPort sellerInfoPort;
 
     @Transactional(readOnly = true)
-    public PageResult<ProductReviewVO> listReviews(Long productId, Integer pageNum, Integer pageSize) {
+    public PageResult<ProductReviewVO> listReviews(String productId, Integer pageNum, Integer pageSize) {
         PageRequest normalized = PageRequest.builder()
                 .pageNum(pageNum != null ? pageNum : 1)
                 .pageSize(pageSize != null ? pageSize : 10)
@@ -52,7 +52,7 @@ public class ProductReviewQueryService {
             return PageResult.empty(normalized.getPageNum(), normalized.getPageSize());
         }
 
-        Map<Long, SellerInfo> userMap = resolveUsers(reviewPage.getRecords());
+        Map<String, SellerInfo> userMap = resolveUsers(reviewPage.getRecords());
 
         List<ProductReviewVO> vos = reviewPage.getRecords().stream()
                 .map(r -> toReviewVO(r, userMap))
@@ -62,7 +62,7 @@ public class ProductReviewQueryService {
     }
 
     @Transactional(readOnly = true)
-    public ReviewStatsVO getReviewStats(Long productId) {
+    public ReviewStatsVO getReviewStats(String productId) {
         LambdaQueryWrapper<ProductReviewDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ProductReviewDO::getProductId, productId)
                 .eq(ProductReviewDO::getStatus, 1);
@@ -102,8 +102,8 @@ public class ProductReviewQueryService {
                 .build();
     }
 
-    private Map<Long, SellerInfo> resolveUsers(List<ProductReviewDO> reviews) {
-        Set<Long> userIds = reviews.stream()
+    private Map<String, SellerInfo> resolveUsers(List<ProductReviewDO> reviews) {
+        Set<String> userIds = reviews.stream()
                 .map(ProductReviewDO::getUserId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
@@ -115,7 +115,7 @@ public class ProductReviewQueryService {
         return sellerInfoPort.getSellerInfos(userIds);
     }
 
-    private ProductReviewVO toReviewVO(ProductReviewDO review, Map<Long, SellerInfo> userMap) {
+    private ProductReviewVO toReviewVO(ProductReviewDO review, Map<String, SellerInfo> userMap) {
         SellerInfo user = userMap.get(review.getUserId());
         return ProductReviewVO.builder()
                 .id(review.getId())

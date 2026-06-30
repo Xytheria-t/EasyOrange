@@ -66,7 +66,7 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
     }
 
     @Override
-    public List<OrderItemReadModel> findItemsByOrderId(Long orderId) {
+    public List<OrderItemReadModel> findItemsByOrderId(String orderId) {
         return orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)

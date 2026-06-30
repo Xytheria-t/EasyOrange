@@ -20,11 +20,11 @@ class OrderVOAssemblerTest {
 
     private final OrderVOAssembler assembler = new OrderVOAssembler();
 
-    private static final Long ORDER_ID = 100L;
+    private static final String ORDER_ID = "100";
     private static final String ORDER_NO = "ORD100";
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
-    private static final Long PRODUCT_ID = 200L;
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
+    private static final String PRODUCT_ID = "200";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
     private static final Integer STATUS = 0;
     private static final String STATUS_DESC = "待付款";
@@ -43,7 +43,7 @@ class OrderVOAssemblerTest {
     private static final List<String> PRODUCT_IMAGES = List.of("http://example.com/img1.jpg");
 
     private static List<OrderItemReadModel> testItems() {
-        return List.of(new OrderItemReadModel(1L, PRODUCT_ID, "{}", AMOUNT, 1, AMOUNT));
+        return List.of(new OrderItemReadModel("1", PRODUCT_ID, "{}", AMOUNT, 1, AMOUNT));
     }
 
     private OrderReadModel createOrder() {
@@ -69,7 +69,7 @@ class OrderVOAssemblerTest {
         void toOrderVO_withMaskSensitive_shouldMapAllFields() {
             OrderReadModel order = createOrder();
             ProductDetail product = createProductDetail();
-            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
+            Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
             OrderVO vo = assembler.toOrderVO(order, productMap, true);
 
@@ -103,7 +103,7 @@ class OrderVOAssemblerTest {
         @DisplayName("应正确映射所有字段（非脱敏模式）")
         void toOrderVO_withoutMaskSensitive_shouldMapAllFields() {
             OrderReadModel order = createOrder();
-            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, createProductDetail());
+            Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, createProductDetail());
 
             OrderVO vo = assembler.toOrderVO(order, productMap, false);
 
@@ -131,7 +131,7 @@ class OrderVOAssemblerTest {
         void toOrderVO_withProductNoImages_shouldSetTitleOnly() {
             OrderReadModel order = createOrder();
             ProductDetail product = new ProductDetail(PRODUCT_ID, PRODUCT_TITLE, PRODUCT_PRICE, PRODUCT_STATUS, List.of(), null, null);
-            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
+            Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product);
 
             OrderVO vo = assembler.toOrderVO(order, productMap, true);
 
@@ -170,22 +170,22 @@ class OrderVOAssemblerTest {
         void toOrderVOs_withMultipleOrders_shouldMapAll() {
             OrderReadModel order1 = createOrder();
             OrderReadModel order2 = new OrderReadModel(
-                    101L, "ORD101", 3L, 4L,
-                    List.of(new OrderItemReadModel(2L, 201L, "{}", new BigDecimal("49.99"), 1, new BigDecimal("49.99"))),
+                    "101", "ORD101", "3", "4",
+                    List.of(new OrderItemReadModel("2", "201", "{}", new BigDecimal("49.99"), 1, new BigDecimal("49.99"))),
                     new BigDecimal("49.99"),
                     1, "已付款", 1, "上海市浦东新区", "13900139000", "备注2", null, null,
                     LocalDateTime.now(), LocalDateTime.now()
             );
 
             ProductDetail product1 = createProductDetail();
-            ProductDetail product2 = new ProductDetail(201L, "商品2", new BigDecimal("49.99"), 1, List.of("img2.jpg"), null, null);
-            Map<Long, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, 201L, product2);
+            ProductDetail product2 = new ProductDetail("201", "商品2", new BigDecimal("49.99"), 1, List.of("img2.jpg"), null, null);
+            Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, "201", product2);
 
             List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap);
 
             assertThat(vos).hasSize(2);
             assertThat(vos.get(0).getId()).isEqualTo(ORDER_ID);
-            assertThat(vos.get(1).getId()).isEqualTo(101L);
+            assertThat(vos.get(1).getId()).isEqualTo("101");
             assertThat(vos.get(1).getTotalAmount()).isEqualByComparingTo(new BigDecimal("49.99"));
         }
 
@@ -209,14 +209,14 @@ class OrderVOAssemblerTest {
         @Test
         @DisplayName("应正确构建商品映射")
         void buildProductMap_shouldMapById() {
-            ProductDetail p1 = new ProductDetail(1L, "商品1", BigDecimal.TEN, 1, List.of(), null, null);
-            ProductDetail p2 = new ProductDetail(2L, "商品2", BigDecimal.valueOf(20), 1, List.of(), null, null);
+            ProductDetail p1 = new ProductDetail("1", "商品1", BigDecimal.TEN, 1, List.of(), null, null);
+            ProductDetail p2 = new ProductDetail("2", "商品2", BigDecimal.valueOf(20), 1, List.of(), null, null);
 
-            Map<Long, ProductDetail> map = assembler.buildProductMap(List.of(p1, p2));
+            Map<String, ProductDetail> map = assembler.buildProductMap(List.of(p1, p2));
 
             assertThat(map).hasSize(2);
-            assertThat(map.get(1L).title()).isEqualTo("商品1");
-            assertThat(map.get(2L).title()).isEqualTo("商品2");
+            assertThat(map.get("1").title()).isEqualTo("商品1");
+            assertThat(map.get("2").title()).isEqualTo("商品2");
         }
 
         @Test

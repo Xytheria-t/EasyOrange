@@ -42,10 +42,10 @@ class OrderAutoConfirmTaskTest {
     @InjectMocks
     private OrderAutoConfirmTask orderAutoConfirmTask;
 
-    private static final Long ORDER_ID_1 = 100L;
-    private static final Long ORDER_ID_2 = 101L;
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
+    private static final String ORDER_ID_1 = "100";
+    private static final String ORDER_ID_2 = "101";
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
 
     private OrderAggregate shippedOrder1;
     private OrderAggregate shippedOrder2;
@@ -56,7 +56,7 @@ class OrderAutoConfirmTaskTest {
         shippedOrder2 = buildShippedOrder(ORDER_ID_2);
     }
 
-    private OrderAggregate buildShippedOrder(Long orderId) {
+    private OrderAggregate buildShippedOrder(String orderId) {
         return OrderAggregate.fromRaw(
                 orderId, "ORD" + orderId,
                 BUYER_ID, SELLER_ID,
@@ -82,7 +82,7 @@ class OrderAutoConfirmTaskTest {
 
             verify(orderRepository, times(2)).update(any(OrderAggregate.class));
             verify(domainEventPublisher, times(2)).publish(any(OrderCompletedEvent.class));
-            verify(orderCachePort, times(2)).evictOrderCache(anyLong(), anyLong());
+            verify(orderCachePort, times(2)).evictOrderCache(anyString(), anyString());
         }
 
         @Test
@@ -96,7 +96,7 @@ class OrderAutoConfirmTaskTest {
 
             verify(orderRepository, never()).update(any());
             verify(domainEventPublisher, never()).publish(any());
-            verify(orderCachePort, never()).evictOrderCache(anyLong(), anyLong());
+            verify(orderCachePort, never()).evictOrderCache(anyString(), anyString());
         }
 
         @Test
@@ -116,7 +116,7 @@ class OrderAutoConfirmTaskTest {
             verify(orderRepository, times(2)).update(any(OrderAggregate.class));
             // Only the second succeeded past update
             verify(domainEventPublisher, times(1)).publish(any(OrderCompletedEvent.class));
-            verify(orderCachePort, times(1)).evictOrderCache(anyLong(), anyLong());
+            verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());
         }
 
         @Test

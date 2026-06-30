@@ -15,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateProductCommand {
 
-    private Long categoryId;
+    private String categoryId;
     private String name;
     private BigDecimal price;
     private BigDecimal originalPrice;

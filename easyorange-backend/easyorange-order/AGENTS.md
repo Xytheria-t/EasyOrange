@@ -70,10 +70,7 @@ order/
 │   ├── saga/                                 # Saga 支持类型（纯领域）
 │   │   ├── SagaRepository.java            # Saga 仓储接口
 │   │   ├── SagaState.java, SagaStatus.java
-│   │   ├── SagaException.java              # Saga 异常基类
-│   │   ├── SagaSerializationException.java # 序列化异常
-│   │   ├── SagaCompensationException.java  # 补偿异常
-│   │   ├── SagaLockAcquisitionException.java # 锁获取异常
+│   │   ├── SagaException.java              # Saga 异常（含 sagaId/state 字段，涵盖锁获取/序列化/补偿场景）
 │   │   ├── PaymentGatewayAdapterException.java    # 支付网关异常
 │   │   └── OrderCreationException.java
 │   ├── valueobject/

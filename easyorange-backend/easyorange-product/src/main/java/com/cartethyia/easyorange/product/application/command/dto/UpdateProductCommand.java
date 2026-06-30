@@ -15,8 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 public class UpdateProductCommand {
 
-    private Long id;
-    private Long categoryId;
+    private String id;
+    private String categoryId;
     private String name;
     private BigDecimal price;
     private BigDecimal originalPrice;
@@ -27,7 +27,7 @@ public class UpdateProductCommand {
     private String description;
     private List<String> imageUrls;
 
-    public static UpdateProductCommand from(Long id, ProductUpdateRequest request) {
+    public static UpdateProductCommand from(String id, ProductUpdateRequest request) {
         return UpdateProductCommand.builder()
                 .id(id)
                 .categoryId(request.getCategoryId())

@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 public class ProductReadModelAssembler {
 
     public ProductVO toProductVO(Product product,
-                                  Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
-                                  Map<Long, ProductQueryRepository.CategoryInfo> categoryMap,
-                                  Map<Long, ProductQueryRepository.ProductDetailInfo> detailMap,
-                                  Map<Long, SellerReadModel> sellerMap) {
+                                  Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
+                                  Map<String, ProductQueryRepository.CategoryInfo> categoryMap,
+                                  Map<String, ProductQueryRepository.ProductDetailInfo> detailMap,
+                                  Map<String, SellerReadModel> sellerMap) {
         ProductVO.ProductVOBuilder builder = ProductVO.builder()
                 .id(product.getId().value())
                 .sellerId(product.getSellerId().value())

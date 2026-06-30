@@ -23,7 +23,7 @@ public class GetReportDetailHandler {
     private final ProductMapper productMapper;
 
     @Transactional(readOnly = true)
-    public ProductReportDetailResponse handle(Long reportId, Long currentUserId) {
+    public ProductReportDetailResponse handle(String reportId, String currentUserId) {
         ProductReport report = productReportRepository.findById(reportId);
         BizRequire.notNull(report, "举报记录不存在");
 

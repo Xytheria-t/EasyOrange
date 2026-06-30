@@ -19,10 +19,10 @@ import java.time.LocalDateTime;
 @TableName("eo_order")
 public class OrderDO extends BaseDO {
 
-    private Long id;
+    private String id;
     private String orderNo;
-    private Long buyerId;
-    private Long sellerId;
+    private String buyerId;
+    private String sellerId;
     private BigDecimal totalAmount;
     private Integer status;
     private Integer paymentStatus;

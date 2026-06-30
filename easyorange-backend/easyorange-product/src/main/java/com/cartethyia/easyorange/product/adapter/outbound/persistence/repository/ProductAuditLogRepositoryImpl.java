@@ -22,7 +22,7 @@ public class ProductAuditLogRepositoryImpl implements ProductAuditLogRepository 
     }
 
     @Override
-    public List<ProductAuditLog> findByProductId(Long productId) {
+    public List<ProductAuditLog> findByProductId(String productId) {
         List<ProductAuditLogDO> logs = productAuditLogMapper.selectByProductId(productId);
         return logs.stream().map(this::toDomainEntity).toList();
     }

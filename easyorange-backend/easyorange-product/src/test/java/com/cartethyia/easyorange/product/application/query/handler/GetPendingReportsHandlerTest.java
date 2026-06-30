@@ -33,10 +33,10 @@ class GetPendingReportsHandlerTest {
     @Test
     @DisplayName("获取待处理举报列表应返回分页结果")
     void handle_shouldReturnPendingReports() {
-        ProductReport report1 = ProductReport.create(1L, 2L, "假货", 1);
-        report1 = report1.assignId(100L);
-        ProductReport report2 = ProductReport.create(3L, 4L, "侵权", 2);
-        report2 = report2.assignId(101L);
+        ProductReport report1 = ProductReport.create("1", "2", "假货", 1);
+        report1 = report1.assignId("100");
+        ProductReport report2 = ProductReport.create("3", "4", "侵权", 2);
+        report2 = report2.assignId("101");
 
         when(productReportRepository.findPendingReports(1, 20)).thenReturn(List.of(report1, report2));
         when(productReportRepository.countPendingReports()).thenReturn(2L);
@@ -46,7 +46,7 @@ class GetPendingReportsHandlerTest {
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(2);
         assertThat(result.total()).isEqualTo(2L);
-        assertThat(result.records().get(0).getId()).isEqualTo(100L);
+        assertThat(result.records().get(0).getId()).isEqualTo("100");
         assertThat(result.records().get(0).getReason()).isEqualTo("假货");
         assertThat(result.records().get(0).getStatus()).isEqualTo(0);
     }

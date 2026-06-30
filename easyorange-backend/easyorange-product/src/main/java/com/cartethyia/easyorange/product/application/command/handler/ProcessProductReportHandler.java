@@ -12,12 +12,12 @@ public class ProcessProductReportHandler {
     private final ProductReportDomainService productReportDomainService;
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleApprove(Long reportId) {
+    public void handleApprove(String reportId) {
         productReportDomainService.processReport(reportId, true);
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleReject(Long reportId) {
+    public void handleReject(String reportId) {
         productReportDomainService.processReport(reportId, false);
     }
 }

@@ -2,13 +2,12 @@ package com.cartethyia.easyorange.order.domain.valueobject;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
 
-public record ProductId(Long value) {
+public record ProductId(String value) {
     public ProductId {
-        BizRequire.notNull(value, "资产ID不能为空");
-        BizRequire.requireTrue(value > 0, "资产ID必须大于0");
+        BizRequire.notBlank(value, "资产ID不能为空");
     }
 
-    public static ProductId of(Long value) {
+    public static ProductId of(String value) {
         return new ProductId(value);
     }
 }

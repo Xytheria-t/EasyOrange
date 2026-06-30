@@ -148,7 +148,7 @@ public class OrderAggregate {
     public static OrderCreatedResult createOrder(UserId buyerId, UserId sellerId,
                                                   List<OrderItem> items,
                                                   Address address, Phone phone, String remark,
-                                                  Long orderId) {
+                                                   String orderId) {
         BizRequire.requireTrue(!java.util.Objects.equals(buyerId.value(), sellerId.value()), "不能认领自己的资产");
         BizRequire.notEmpty(items, "订单资产不能为空");
 
@@ -197,12 +197,12 @@ public class OrderAggregate {
     /**
      * 从持久层原始数据重建聚合根（不含行项）。
      *
-     * @see #fromRaw(Long, String, Long, Long, List, BigDecimal, Integer, Integer, String, String, String, String, LocalDateTime)
+     * @see #fromRaw(String, String, String, String, List, BigDecimal, Integer, Integer, String, String, String, String, LocalDateTime)
      */
-    public static OrderAggregate fromRaw(Long id, String orderNo, Long buyerId, Long sellerId,
-                                          BigDecimal amount, Integer status, Integer paymentStatus,
-                                          String address, String phone, String remark,
-                                          String cancelReason, LocalDateTime cancelTime) {
+    public static OrderAggregate fromRaw(String id, String orderNo, String buyerId, String sellerId,
+                                           BigDecimal amount, Integer status, Integer paymentStatus,
+                                           String address, String phone, String remark,
+                                           String cancelReason, LocalDateTime cancelTime) {
         return fromRaw(id, orderNo, buyerId, sellerId, List.of(),
                 amount, status, paymentStatus, address, phone,
                 remark, cancelReason, cancelTime);
@@ -211,11 +211,11 @@ public class OrderAggregate {
     /**
      * 从持久层原始数据重建聚合根（含行项）。
      */
-    public static OrderAggregate fromRaw(Long id, String orderNo, Long buyerId, Long sellerId,
-                                          List<OrderItem> items, BigDecimal totalAmount,
-                                          Integer status, Integer paymentStatus,
-                                          String address, String phone, String remark,
-                                          String cancelReason, LocalDateTime cancelTime) {
+    public static OrderAggregate fromRaw(String id, String orderNo, String buyerId, String sellerId,
+                                           List<OrderItem> items, BigDecimal totalAmount,
+                                           Integer status, Integer paymentStatus,
+                                           String address, String phone, String remark,
+                                           String cancelReason, LocalDateTime cancelTime) {
         return new OrderAggregate(
                 OrderId.of(id), OrderNo.of(orderNo), UserId.of(buyerId), UserId.of(sellerId),
                 items != null ? items : List.of(), Money.of(totalAmount), OrderStatus.fromCode(status),
@@ -278,7 +278,7 @@ public class OrderAggregate {
     public OrderCancelledResult cancel(String reason) {
         BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
         OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
-        List<Long> productIds = extractProductIds();
+        List<String> productIds = extractProductIds();
         return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));
     }
 
@@ -292,7 +292,7 @@ public class OrderAggregate {
             throw new OrderStatusException(id.value(), "强制取消", status);
         }
         OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
-        List<Long> productIds = extractProductIds();
+        List<String> productIds = extractProductIds();
         return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));
     }
 
@@ -311,7 +311,7 @@ public class OrderAggregate {
     public OrderCompletedResult confirmReceipt() {
         BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
         OrderAggregate updated = withStatus(OrderStatus.COMPLETED, paymentStatus);
-        List<Long> productIds = extractProductIds();
+        List<String> productIds = extractProductIds();
         return new OrderCompletedResult(updated, new OrderCompletedEvent(id.value(), productIds));
     }
 
@@ -321,7 +321,7 @@ public class OrderAggregate {
     public OrderRefundedResult refund(String reason) {
         BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
         OrderAggregate updated = withStatusAndReason(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason);
-        List<Long> productIds = extractProductIds();
+        List<String> productIds = extractProductIds();
         return new OrderRefundedResult(updated, new OrderRefundedEvent(id.value(), productIds, reason));
     }
 
@@ -342,7 +342,7 @@ public class OrderAggregate {
                 address, phone, remark, reason, LocalDateTime.now());
     }
 
-    private List<Long> extractProductIds() {
+    private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();
     }
 

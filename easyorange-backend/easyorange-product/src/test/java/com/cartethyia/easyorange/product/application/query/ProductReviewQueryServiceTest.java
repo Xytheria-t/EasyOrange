@@ -47,9 +47,9 @@ class ProductReviewQueryServiceTest {
         queryService = new ProductReviewQueryService(reviewMapper, sellerInfoPort);
 
         reviewDO = new ProductReviewDO();
-        reviewDO.setId(100L);
-        reviewDO.setProductId(10L);
-        reviewDO.setUserId(1L);
+        reviewDO.setId("100");
+        reviewDO.setProductId("10");
+        reviewDO.setUserId("1");
         reviewDO.setRating(5);
         reviewDO.setContent("非常好");
         reviewDO.setLikes(3);
@@ -66,17 +66,17 @@ class ProductReviewQueryServiceTest {
         page.setTotal(1);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
         when(sellerInfoPort.getSellerInfos(anySet())).thenReturn(Map.of(
-                1L, new SellerInfo(1L, "认领方", null, "http://avatar.jpg")
+                "1", new SellerInfo("1", "认领方", null, "http://avatar.jpg")
         ));
 
-        PageResult<ProductReviewVO> result = queryService.listReviews(10L, 1, 10);
+        PageResult<ProductReviewVO> result = queryService.listReviews("10", 1, 10);
 
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
         assertThat(result.total()).isEqualTo(1);
         ProductReviewVO vo = result.records().get(0);
-        assertThat(vo.getId()).isEqualTo(100L);
-        assertThat(vo.getProductId()).isEqualTo(10L);
+        assertThat(vo.getId()).isEqualTo("100");
+        assertThat(vo.getProductId()).isEqualTo("10");
         assertThat(vo.getRating()).isEqualTo(5);
         assertThat(vo.getContent()).isEqualTo("非常好");
         assertThat(vo.getLikes()).isEqualTo(3);
@@ -93,7 +93,7 @@ class ProductReviewQueryServiceTest {
         page.setTotal(0);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
 
-        PageResult<ProductReviewVO> result = queryService.listReviews(10L, 1, 10);
+        PageResult<ProductReviewVO> result = queryService.listReviews("10", 1, 10);
 
         assertThat(result.records()).isEmpty();
         assertThat(result.total()).isZero();
@@ -110,7 +110,7 @@ class ProductReviewQueryServiceTest {
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
         when(sellerInfoPort.getSellerInfos(anySet())).thenReturn(Map.of());
 
-        PageResult<ProductReviewVO> result = queryService.listReviews(10L, 1, 10);
+        PageResult<ProductReviewVO> result = queryService.listReviews("10", 1, 10);
 
         assertThat(result.records().get(0).getUsername()).isEqualTo("未知用户");
         assertThat(result.records().get(0).getUserAvatar()).isNull();
@@ -120,20 +120,20 @@ class ProductReviewQueryServiceTest {
     @DisplayName("获取评价统计信息应正确计算")
     void getReviewStats_shouldCalculateCorrectly() {
         ProductReviewDO review2 = new ProductReviewDO();
-        review2.setProductId(10L);
+        review2.setProductId("10");
         review2.setRating(4);
         review2.setStatus(1);
         ProductReviewDO review3 = new ProductReviewDO();
-        review3.setProductId(10L);
+        review3.setProductId("10");
         review3.setRating(5);
         review3.setStatus(1);
 
         when(reviewMapper.selectList(any(LambdaQueryWrapper.class)))
                 .thenReturn(List.of(reviewDO, review2, review3));
 
-        ReviewStatsVO stats = queryService.getReviewStats(10L);
+        ReviewStatsVO stats = queryService.getReviewStats("10");
 
-        assertThat(stats.getProductId()).isEqualTo(10L);
+        assertThat(stats.getProductId()).isEqualTo("10");
         assertThat(stats.getTotalCount()).isEqualTo(3);
         assertThat(stats.getAverageRating()).isEqualByComparingTo(BigDecimal.valueOf(4.7));
         assertThat(stats.getRatingDistribution())
@@ -149,9 +149,9 @@ class ProductReviewQueryServiceTest {
     void getReviewStats_withNoReviews_shouldReturnZeroStats() {
         when(reviewMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
-        ReviewStatsVO stats = queryService.getReviewStats(10L);
+        ReviewStatsVO stats = queryService.getReviewStats("10");
 
-        assertThat(stats.getProductId()).isEqualTo(10L);
+        assertThat(stats.getProductId()).isEqualTo("10");
         assertThat(stats.getTotalCount()).isZero();
         assertThat(stats.getAverageRating()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(stats.getRatingDistribution())
@@ -171,7 +171,7 @@ class ProductReviewQueryServiceTest {
         page.setTotal(0);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
 
-        queryService.listReviews(10L, 2, 20);
+        queryService.listReviews("10", 2, 20);
 
         ArgumentCaptor<Page<ProductReviewDO>> pageCaptor = ArgumentCaptor.forClass(Page.class);
         verify(reviewMapper).selectPage(pageCaptor.capture(), any());

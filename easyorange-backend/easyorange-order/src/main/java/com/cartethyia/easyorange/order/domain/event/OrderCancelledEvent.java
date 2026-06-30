@@ -8,11 +8,11 @@ import java.util.List;
 @Getter
 public class OrderCancelledEvent extends BaseDomainEvent {
 
-    private final Long orderId;
-    private final List<Long> productIds;
+    private final String orderId;
+    private final List<String> productIds;
     private final String reason;
 
-    public OrderCancelledEvent(Long orderId, List<Long> productIds, String reason) {
+    public OrderCancelledEvent(String orderId, List<String> productIds, String reason) {
         super();
         this.orderId = orderId;
         this.productIds = productIds;

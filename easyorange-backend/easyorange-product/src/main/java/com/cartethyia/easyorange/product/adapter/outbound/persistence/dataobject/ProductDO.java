@@ -9,8 +9,8 @@ import java.math.BigDecimal;
 @TableName("eo_product")
 public class ProductDO extends BaseDO {
 
-    private Long userId;
-    private Long categoryId;
+    private String userId;
+    private String categoryId;
     private String name;
     private BigDecimal price;
     private BigDecimal originalPrice;
@@ -29,7 +29,7 @@ public class ProductDO extends BaseDO {
     public ProductDO() {
     }
 
-    public ProductDO(Long userId, Long categoryId, String name, BigDecimal price, BigDecimal originalPrice,
+    public ProductDO(String userId, String categoryId, String name, BigDecimal price, BigDecimal originalPrice,
                    Integer stock, Integer version, Integer status, Integer viewCount,
                    Integer conditionLevel, String location, String contactMethod,
                    String tags, String searchText, java.time.LocalDateTime priceUpdateTime) {
@@ -50,19 +50,19 @@ public class ProductDO extends BaseDO {
         this.priceUpdateTime = priceUpdateTime;
     }
 
-    public Long getUserId() {
+    public String getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(String userId) {
         this.userId = userId;
     }
 
-    public Long getCategoryId() {
+    public String getCategoryId() {
         return categoryId;
     }
 
-    public void setCategoryId(Long categoryId) {
+    public void setCategoryId(String categoryId) {
         this.categoryId = categoryId;
     }
 
@@ -175,9 +175,9 @@ public class ProductDO extends BaseDO {
     }
 
     public static class Builder {
-        private Long id;
-        private Long userId;
-        private Long categoryId;
+        private String id;
+        private String userId;
+        private String categoryId;
         private String name;
         private BigDecimal price;
         private BigDecimal originalPrice;
@@ -192,17 +192,17 @@ public class ProductDO extends BaseDO {
         private String searchText;
         private java.time.LocalDateTime priceUpdateTime;
 
-        public Builder id(Long id) {
+        public Builder id(String id) {
             this.id = id;
             return this;
         }
 
-        public Builder userId(Long userId) {
+        public Builder userId(String userId) {
             this.userId = userId;
             return this;
         }
 
-        public Builder categoryId(Long categoryId) {
+        public Builder categoryId(String categoryId) {
             this.categoryId = categoryId;
             return this;
         }

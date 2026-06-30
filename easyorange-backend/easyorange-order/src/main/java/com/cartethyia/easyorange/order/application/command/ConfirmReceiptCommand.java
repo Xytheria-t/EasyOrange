@@ -20,5 +20,5 @@ public class ConfirmReceiptCommand {
     /**
      * 订单ID
      */
-    private Long orderId;
+    private String orderId;
 }

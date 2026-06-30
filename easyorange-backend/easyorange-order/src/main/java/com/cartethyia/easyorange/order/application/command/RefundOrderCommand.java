@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RefundOrderCommand {
 
-    private Long orderId;
+    private String orderId;
 
     private String reason;
 }

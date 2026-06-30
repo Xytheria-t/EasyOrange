@@ -145,7 +145,7 @@ public class CreateOrderSaga {
             sagaStatus = sagaCoordinator.incrementRetry(sagaStatus);
 
             execute(command);
-        } catch (SagaSerializationException e) {
+        } catch (SagaException e) {
             log.error("Saga 重试失败 sagaId={}，反序列化失败", sagaId, e);
             sagaCoordinator.recordError(sagaStatus, e.getMessage());
             throw new OrderDomainException("Saga 重试失败: payload 反序列化错误", e);

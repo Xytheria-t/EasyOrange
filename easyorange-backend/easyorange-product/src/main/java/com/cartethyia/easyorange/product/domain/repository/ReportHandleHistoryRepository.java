@@ -8,5 +8,5 @@ public interface ReportHandleHistoryRepository {
 
     void save(ReportHandleHistory history);
 
-    List<ReportHandleHistory> findByReportId(Long reportId);
+    List<ReportHandleHistory> findByReportId(String reportId);
 }

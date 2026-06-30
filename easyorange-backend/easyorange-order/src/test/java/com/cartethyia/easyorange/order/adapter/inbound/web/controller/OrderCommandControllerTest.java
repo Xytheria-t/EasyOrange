@@ -44,7 +44,7 @@ class OrderCommandControllerTest {
     @MockitoBean
     private OrderQueryHandler queryHandler;
 
-    private static final Long ORDER_ID = 100L;
+    private static final String ORDER_ID = "100";
     private static final String ORDER_NO = "ORD100";
 
     @Nested

@@ -7,13 +7,13 @@ public interface CategoryCachePort<T> {
 
     List<T> getCategoriesByLevel(Integer level);
 
-    List<T> getCategoriesByParentId(Long parentId);
+    List<T> getCategoriesByParentId(String parentId);
 
-    Optional<T> getCategoryById(Long id);
+    Optional<T> getCategoryById(String id);
 
     void evictAll();
 
     void evictByLevel(Integer level);
 
-    void evictByParentId(Long parentId);
+    void evictByParentId(String parentId);
 }

@@ -13,9 +13,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class ProductQuery {
 
-    private Long id;
-    private Long userId;
-    private Long categoryId;
+    private String id;
+    private String userId;
+    private String categoryId;
     private Integer status;
     private String keyword;
     private Integer conditionLevel;

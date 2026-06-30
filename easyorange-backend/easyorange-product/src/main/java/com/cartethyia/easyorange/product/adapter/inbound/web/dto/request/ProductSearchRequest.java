@@ -14,9 +14,9 @@ public class ProductSearchRequest extends PageRequest {
 
     private String keyword;
 
-    private Long categoryId;
+    private String categoryId;
 
-    private Long userId;
+    private String userId;
 
     private Integer status;
 

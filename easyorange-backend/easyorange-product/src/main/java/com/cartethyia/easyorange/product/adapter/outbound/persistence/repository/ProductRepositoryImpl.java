@@ -62,7 +62,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        List<Long> idValues = ids.stream().map(ProductId::value).collect(Collectors.toList());
+        List<String> idValues = ids.stream().map(ProductId::value).collect(Collectors.toList());
         List<ProductDO> productDOs = productMapper.selectBatchIds(idValues);
         if (productDOs.isEmpty()) {
             return List.of();
@@ -83,15 +83,15 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private List<Product> batchConvertProducts(List<ProductDO> productDOs) {
-        List<Long> productIds = productDOs.stream()
+        List<String> productIds = productDOs.stream()
                 .map(ProductDO::getId)
                 .collect(Collectors.toList());
 
-        Map<Long, ProductDetailDO> detailMap = productDetailMapper
+        Map<String, ProductDetailDO> detailMap = productDetailMapper
                 .selectDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, b) -> a));
 
-        Map<Long, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
+        Map<String, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
                 .in(ProductImageDO::getProductId, productIds)
                 .orderByAsc(ProductImageDO::getSortOrder)
                 .list().stream().collect(Collectors.groupingBy(ProductImageDO::getProductId));
@@ -148,7 +148,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private void updateImagesDifferentially(Product product) {
-        Long productId = product.getId().value();
+        String productId = product.getId().value();
 
         List<ProductImageDO> existingImages = ChainWrappers.lambdaQueryChain(productImageMapper)
                 .eq(ProductImageDO::getProductId, productId)

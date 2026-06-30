@@ -38,11 +38,11 @@ public class ProductEventConsumer {
 
     @RabbitHandler
     public void onProductCreated(ProductCreatedEvent event) {
-        Long productId = event.getProductId();
+        String productId = event.getProductId();
         log.info("event=ProductCreated productId={} userId={} name={} categoryId={}",
                 productId, event.getUserId(), event.getName(), event.getCategoryId());
 
-        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId.toString());
+        bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId);
         evictListCache(event.getCategoryId());
         notificationPort.ifPresent(port -> safeCall(() -> port.notifyProductCreated(productId, event.getUserId()), "notifyProductCreated", productId));
         searchIndexPort.ifPresent(port -> safeCall(() -> port.indexProduct(productId), "indexProduct", productId));
@@ -50,7 +50,7 @@ public class ProductEventConsumer {
 
     @RabbitHandler
     public void onProductUpdated(ProductUpdatedEvent event) {
-        Long productId = event.getProductId();
+        String productId = event.getProductId();
         log.info("event=ProductUpdated productId={} userId={} categoryId={}", productId, event.getUserId(), event.getCategoryId());
         evictListCache(event.getCategoryId());
         searchIndexPort.ifPresent(port -> safeCall(() -> port.updateProductIndex(productId), "updateProductIndex", productId));
@@ -58,7 +58,7 @@ public class ProductEventConsumer {
 
     @RabbitHandler
     public void onProductDeleted(ProductDeletedEvent event) {
-        Long productId = event.getProductId();
+        String productId = event.getProductId();
         log.info("event=ProductDeleted productId={} userId={}", productId, event.getUserId());
         productCachePort.evictProductCache(productId);
         searchIndexPort.ifPresent(port -> safeCall(() -> port.removeProductIndex(productId), "removeProductIndex", productId));
@@ -66,7 +66,7 @@ public class ProductEventConsumer {
 
     @RabbitHandler
     public void onProductMarkedSold(ProductMarkedSoldEvent event) {
-        Long productId = event.getProductId();
+        String productId = event.getProductId();
         log.info("event=ProductMarkedSold productId={} sellerId={}", productId, event.getSellerId());
         productCachePort.evictProductCache(productId);
         notificationPort.ifPresent(port -> safeCall(() -> port.notifyProductMarkedSold(productId, event.getSellerId()), "notifyProductMarkedSold", productId));
@@ -75,26 +75,26 @@ public class ProductEventConsumer {
 
     @RabbitHandler
     public void onStockDecreased(StockDecreasedEvent event) {
-        Long productId = event.getProductId();
+        String productId = event.getProductId();
         log.info("event=StockDecreased productId={} quantity={}", productId, event.getQuantity());
         checkLowStock(productId);
     }
 
     @RabbitHandler
     public void onStockRestored(StockRestoredEvent event) {
-        Long productId = event.getProductId();
+        String productId = event.getProductId();
         log.info("event=StockRestored productId={} quantity={}", productId, event.getQuantity());
         productCachePort.evictProductCache(productId);
         searchIndexPort.ifPresent(port -> safeCall(() -> port.updateProductIndex(productId), "updateProductIndex", productId));
     }
 
-    private void evictListCache(Long categoryId) {
+    private void evictListCache(String categoryId) {
         if (categoryId != null) {
             productCachePort.evictProductListCache(categoryId);
         }
     }
 
-    private void checkLowStock(Long productId) {
+    private void checkLowStock(String productId) {
         try {
             ProductReadModel readModel = productQueryService.getProductReadModel(productId);
             if (readModel != null && readModel.stock() != null && readModel.stock() <= LOW_STOCK_THRESHOLD) {
@@ -111,7 +111,7 @@ public class ProductEventConsumer {
         void run() throws Exception;
     }
 
-    private static void safeCall(SafeAction action, String actionName, Long productId) {
+    private static void safeCall(SafeAction action, String actionName, String productId) {
         try {
             action.run();
             log.debug("action={} success productId={}", actionName, productId);

@@ -8,14 +8,14 @@ import java.time.LocalDateTime;
 @Getter
 public class ReportProcessedEvent extends BaseDomainEvent {
 
-    private final Long reportId;
-    private final Long reporterId;
-    private final Long productId;
+    private final String reportId;
+    private final String reporterId;
+    private final String productId;
     private final boolean approved;
     private final String remark;
     private final LocalDateTime processedTime;
 
-    public ReportProcessedEvent(Long reportId, Long reporterId, Long productId,
+    public ReportProcessedEvent(String reportId, String reporterId, String productId,
                                 boolean approved, String remark, LocalDateTime processedTime) {
         super();
         this.reportId = reportId;
@@ -27,9 +27,9 @@ public class ReportProcessedEvent extends BaseDomainEvent {
     }
 
     // Record-style accessors for backward compatibility
-    public Long reportId() { return reportId; }
-    public Long reporterId() { return reporterId; }
-    public Long productId() { return productId; }
+    public String reportId() { return reportId; }
+    public String reporterId() { return reporterId; }
+    public String productId() { return productId; }
     public boolean approved() { return approved; }
     public String remark() { return remark; }
     public LocalDateTime processedTime() { return processedTime; }

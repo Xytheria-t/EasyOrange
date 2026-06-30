@@ -10,5 +10,5 @@ import java.util.List;
 @Mapper
 public interface ProductAuditLogMapper extends BaseMapper<ProductAuditLogDO> {
 
-    List<ProductAuditLogDO> selectByProductId(@Param("productId") Long productId);
+    List<ProductAuditLogDO> selectByProductId(@Param("productId") String productId);
 }

@@ -50,7 +50,7 @@ public class ProductSearchController {
     }
 
     @DeleteMapping("/history/{historyId}")
-    public Result<Void> deleteSearchHistory(@PathVariable Long historyId) {
+    public Result<Void> deleteSearchHistory(@PathVariable String historyId) {
         searchHandler.deleteSearchHistory(historyId);
         return Result.success();
     }

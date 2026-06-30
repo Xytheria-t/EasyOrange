@@ -15,7 +15,7 @@ import java.util.List;
 public class ProductCreateRequest {
 
     @NotNull(message = "分类 ID 不能为空")
-    private Long categoryId;
+    private String categoryId;
 
     @NotBlank(message = "商品名称不能为空")
     @Size(max = 200, message = "商品名称不能超过 200 个字符")

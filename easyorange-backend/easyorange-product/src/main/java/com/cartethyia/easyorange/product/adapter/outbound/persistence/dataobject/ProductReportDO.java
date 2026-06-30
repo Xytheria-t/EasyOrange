@@ -16,9 +16,9 @@ import lombok.experimental.SuperBuilder;
 @TableName("eo_product_report")
 public class ProductReportDO extends BaseDO {
 
-    private Long productId;
+    private String productId;
 
-    private Long reporterId;
+    private String reporterId;
 
     private String reason;
 

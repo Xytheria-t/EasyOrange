@@ -30,7 +30,7 @@ public class OrderQuery {
     /**
      * 资产方ID
      */
-    private Long sellerId;
+    private String sellerId;
 
     /**
      * 订单状态

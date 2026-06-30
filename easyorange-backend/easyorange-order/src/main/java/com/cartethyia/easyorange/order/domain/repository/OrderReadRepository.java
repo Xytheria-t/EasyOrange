@@ -17,5 +17,5 @@ public interface OrderReadRepository {
 
     long countByStatus(Integer status);
 
-    List<OrderItemReadModel> findItemsByOrderId(Long orderId);
+    List<OrderItemReadModel> findItemsByOrderId(String orderId);
 }

@@ -23,7 +23,7 @@ public class ProductViewCountService {
     private static final String VIEW_COUNT_KEY = "eo:product:views:pending";
     private static final String VIEW_COUNT_LOCK = "eo:product:views:lock";
 
-    public void incrementViewCount(Long productId) {
+    public void incrementViewCount(String productId) {
         if (productId == null) {
             return;
         }
@@ -49,10 +49,10 @@ public class ProductViewCountService {
                 return;
             }
 
-            Map<Long, Integer> viewCountMap = new HashMap<>();
+            Map<String, Integer> viewCountMap = new HashMap<>();
             for (Map.Entry<Object, Object> entry : pendingViews.entrySet()) {
                 try {
-                    Long productId = Long.parseLong(String.valueOf(entry.getKey()));
+                    String productId = String.valueOf(entry.getKey());
                     Integer count = Integer.parseInt(String.valueOf(entry.getValue()));
                     viewCountMap.put(productId, count);
                 } catch (NumberFormatException e) {

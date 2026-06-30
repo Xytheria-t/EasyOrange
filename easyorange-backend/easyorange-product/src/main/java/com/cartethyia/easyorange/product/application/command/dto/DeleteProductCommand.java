@@ -11,9 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DeleteProductCommand {
 
-    private Long id;
+    private String id;
 
-    public static DeleteProductCommand from(Long id) {
+    public static DeleteProductCommand from(String id) {
         return DeleteProductCommand.builder().id(id).build();
     }
 }

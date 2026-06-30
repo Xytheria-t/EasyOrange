@@ -105,13 +105,13 @@ public class SagaCoordinator {
      * @param targetType 目标类型
      * @param <T>        类型参数
      * @return 反序列化后的对象
-     * @throws SagaSerializationException 如果反序列化失败
+     * @throws SagaException 如果反序列化失败
      */
     public <T> T deserializePayload(String sagaId, String payload, Class<T> targetType) {
         try {
             return objectMapper.readValue(payload, targetType);
         } catch (Exception e) {
-            throw new SagaSerializationException(sagaId, "反序列化 Saga payload 失败", e);
+            throw new SagaException(sagaId, SagaState.PENDING, "反序列化 Saga payload 失败", e);
         }
     }
 

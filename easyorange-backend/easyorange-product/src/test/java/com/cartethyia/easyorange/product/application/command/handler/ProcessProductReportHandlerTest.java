@@ -27,16 +27,16 @@ class ProcessProductReportHandlerTest {
     @Test
     @DisplayName("批准举报应委托给领域服务")
     void handleApprove_shouldDelegateToDomainService() {
-        handler.handleApprove(100L);
+        handler.handleApprove("100");
 
-        verify(productReportDomainService).processReport(100L, true);
+        verify(productReportDomainService).processReport("100", true);
     }
 
     @Test
     @DisplayName("驳回举报应委托给领域服务")
     void handleReject_shouldDelegateToDomainService() {
-        handler.handleReject(100L);
+        handler.handleReject("100");
 
-        verify(productReportDomainService).processReport(100L, false);
+        verify(productReportDomainService).processReport("100", false);
     }
 }

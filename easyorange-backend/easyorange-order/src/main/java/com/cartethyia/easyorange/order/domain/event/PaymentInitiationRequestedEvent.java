@@ -8,16 +8,16 @@ import java.math.BigDecimal;
 @Getter
 public class PaymentInitiationRequestedEvent extends BaseDomainEvent {
 
-    private final Long orderId;
-    private final Long buyerId;
+    private final String orderId;
+    private final String buyerId;
     private final BigDecimal amount;
     private final Integer paymentMethod;
     private final String attach;
     private final String description;
 
     public PaymentInitiationRequestedEvent(
-            Long orderId,
-            Long buyerId,
+            String orderId,
+            String buyerId,
             BigDecimal amount,
             Integer paymentMethod,
             String attach,

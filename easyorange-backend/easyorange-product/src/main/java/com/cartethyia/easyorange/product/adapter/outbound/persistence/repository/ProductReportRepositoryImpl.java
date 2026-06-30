@@ -21,7 +21,7 @@ public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMap
     }
 
     @Override
-    public ProductReport findById(Long id) {
+    public ProductReport findById(String id) {
         ProductReportDO reportDO = mapper.selectById(id);
         return convertToDomain(reportDO);
     }
@@ -71,7 +71,7 @@ public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMap
     }
 
     @Override
-    public PageResult<ProductReport> findByReporterId(Long reporterId, int pageNum, int pageSize) {
+    public PageResult<ProductReport> findByReporterId(String reporterId, int pageNum, int pageSize) {
         Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
         Page<ProductReportDO> resultPage = lambdaQuery()
                 .eq(ProductReportDO::getReporterId, reporterId)
@@ -97,7 +97,7 @@ public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMap
     }
 
     @Override
-    public boolean existsRecentReport(Long productId, Long reporterId) {
+    public boolean existsRecentReport(String productId, String reporterId) {
         return lambdaQuery()
                 .eq(ProductReportDO::getProductId, productId)
                 .eq(ProductReportDO::getReporterId, reporterId)

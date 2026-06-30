@@ -54,8 +54,8 @@ class ProductCommandServiceTest {
         commandService = new ProductCommandService(productRepository, productCachePort, domainEventPublisher, productAuditLogRepository);
 
         ProductCreatedResult created = Product.create(
-                com.cartethyia.easyorange.product.domain.valueobject.SellerId.of(1L),
-                com.cartethyia.easyorange.product.domain.valueobject.CategoryId.of(2L),
+                com.cartethyia.easyorange.product.domain.valueobject.SellerId.of("1"),
+                com.cartethyia.easyorange.product.domain.valueobject.CategoryId.of("2"),
                 com.cartethyia.easyorange.product.domain.valueobject.ProductTitle.of("测试商品"),
                 com.cartethyia.easyorange.common.domain.Money.of(new BigDecimal("100")),
                 null,
@@ -66,7 +66,7 @@ class ProductCommandServiceTest {
                 com.cartethyia.easyorange.product.domain.valueobject.ProductDescription.of("描述"),
                 com.cartethyia.easyorange.product.domain.valueobject.ImageSet.of(java.util.List.of("http://img/1.jpg"))
         );
-        existingProduct = created.product().assignId(1L);
+        existingProduct = created.product().assignId("1");
         existingProduct = existingProduct.putOnline();
     }
 
@@ -77,11 +77,11 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
                 Product p = invocation.getArgument(0);
-                return p.assignId(42L);
+                return p.assignId("42");
             });
 
             CreateProductCommand command = CreateProductCommand.builder()
-                    .categoryId(2L)
+                    .categoryId("2")
                     .name("测试商品")
                     .price(new BigDecimal("100"))
                     .stock(10)
@@ -92,9 +92,9 @@ class ProductCommandServiceTest {
                     .imageUrls(java.util.List.of("http://img/1.jpg"))
                     .build();
 
-            Long productId = commandService.createProduct(command);
+            String productId = commandService.createProduct(command);
 
-            assertThat(productId).isEqualTo(42L);
+            assertThat(productId).isEqualTo("42");
             verify(productRepository).save(any(Product.class));
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
         } finally {
@@ -110,14 +110,14 @@ class ProductCommandServiceTest {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
             UpdateProductCommand command = UpdateProductCommand.builder()
-                    .id(1L)
+                    .id("1")
                     .name("新名称")
                     .price(new BigDecimal("200"))
                     .build();
 
             commandService.updateProduct(command);
 
-            verify(productCachePort).evictProductCache(1L);
+            verify(productCachePort).evictProductCache("1");
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
@@ -132,7 +132,7 @@ class ProductCommandServiceTest {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.empty());
 
             UpdateProductCommand command = UpdateProductCommand.builder()
-                    .id(999L)
+                    .id("999")
                     .name("新名称")
                     .build();
 
@@ -150,9 +150,9 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
-            commandService.decrementStock(new DecrementStockCommand(1L, 1));
+            commandService.decrementStock(new DecrementStockCommand("1", 1));
 
-            verify(productCachePort).evictProductCache(1L);
+            verify(productCachePort).evictProductCache("1");
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
@@ -166,9 +166,9 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
-            commandService.markAsSold(new MarkAsSoldCommand(1L));
+            commandService.markAsSold(new MarkAsSoldCommand("1"));
 
-            verify(productCachePort).evictProductCache(1L);
+            verify(productCachePort).evictProductCache("1");
             verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
