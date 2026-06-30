@@ -5,11 +5,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProductDetailInfo(
-    Long id,
-    Long sellerId,
+    String id,
+    String sellerId,
     String username,
     String userAvatar,
-    Long categoryId,
+    String categoryId,
     String categoryName,
     String title,
     String description,
@@ -33,11 +33,11 @@ public record ProductDetailInfo(
     }
 
     public static class Builder {
-        private Long id;
-        private Long sellerId;
+        private String id;
+        private String sellerId;
         private String username;
         private String userAvatar;
-        private Long categoryId;
+        private String categoryId;
         private String categoryName;
         private String title;
         private String description;
@@ -56,11 +56,11 @@ public record ProductDetailInfo(
         private LocalDateTime createTime;
         private LocalDateTime updateTime;
 
-        public Builder id(Long id) { this.id = id; return this; }
-        public Builder sellerId(Long sellerId) { this.sellerId = sellerId; return this; }
+        public Builder id(String id) { this.id = id; return this; }
+        public Builder sellerId(String sellerId) { this.sellerId = sellerId; return this; }
         public Builder username(String username) { this.username = username; return this; }
         public Builder userAvatar(String userAvatar) { this.userAvatar = userAvatar; return this; }
-        public Builder categoryId(Long categoryId) { this.categoryId = categoryId; return this; }
+        public Builder categoryId(String categoryId) { this.categoryId = categoryId; return this; }
         public Builder categoryName(String categoryName) { this.categoryName = categoryName; return this; }
         public Builder title(String title) { this.title = title; return this; }
         public Builder description(String description) { this.description = description; return this; }

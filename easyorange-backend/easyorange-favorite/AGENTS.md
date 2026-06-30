@@ -52,17 +52,18 @@ favorite/
 
 ```java
 public class Favorite {
-    private final Long id;
-    private final Long userId;
-    private final Long productId;
+    private final String id;
+    private final String userId;
+    private final String productId;
     private final LocalDateTime createTime;
 
-    public static Favorite create(Long userId, Long productId) { ... }
-    public static Favorite reconstitute(Long id, Long userId, Long productId, LocalDateTime createTime) { ... }
+    public static Favorite create(String userId, String productId) { ... }
+    public static Favorite reconstitute(String id, String userId, String productId, LocalDateTime createTime) { ... }
 }
 ```
 
 - 不可变设计，通过静态工厂方法创建
+- `id`、`userId`、`productId` 均为 String (UUID v7)
 - `create()` 用于新建，`reconstitute()` 用于从持久化重建
 
 ## 事务规范

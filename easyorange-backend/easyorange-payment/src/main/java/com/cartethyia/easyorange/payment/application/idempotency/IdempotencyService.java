@@ -26,7 +26,7 @@ public class IdempotencyService {
     private static final int EXPIRY_HOURS = 24;
 
     @Transactional
-    public <T> Optional<T> process(String idempotencyKey, Long userId, Object request, 
+    public <T> Optional<T> process(String idempotencyKey, String userId, Object request, 
                                      IdempotentOperation<T> operation) throws Exception {
         
         String requestHash = hashRequest(request);

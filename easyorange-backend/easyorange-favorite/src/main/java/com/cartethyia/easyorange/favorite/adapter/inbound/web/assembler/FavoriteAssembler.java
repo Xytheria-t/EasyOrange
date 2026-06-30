@@ -29,7 +29,7 @@ public class FavoriteAssembler {
             return PageResult.empty(pageNum, pageSize);
         }
 
-        List<Long> productIds = favorites.stream()
+        List<String> productIds = favorites.stream()
                 .map(Favorite::getProductId)
                 .collect(Collectors.toList());
 
@@ -38,19 +38,19 @@ public class FavoriteAssembler {
             return PageResult.empty(pageNum, pageSize);
         }
 
-        Set<Long> sellerIds = products.stream()
+        Set<String> sellerIds = products.stream()
                 .map(ProductInfo::sellerId)
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
 
-        Map<Long, SellerInfo> sellerMap = productInfoPort.findSellersByIds(sellerIds);
+        Map<String, SellerInfo> sellerMap = productInfoPort.findSellersByIds(sellerIds);
 
         List<ProductDetailInfo> productDetailInfos = productInfoPort.assembleProductDetails(products, sellerMap);
 
-        Map<Long, ProductDetailInfo> productDetailMap = productDetailInfos.stream()
+        Map<String, ProductDetailInfo> productDetailMap = productDetailInfos.stream()
                 .collect(Collectors.toMap(ProductDetailInfo::id, p -> p, (a, b) -> a));
 
-        Map<Long, Favorite> favoriteByProductId = favorites.stream()
+        Map<String, Favorite> favoriteByProductId = favorites.stream()
                 .collect(Collectors.toMap(Favorite::getProductId, f -> f, (a, b) -> a));
 
         List<FavoriteResponse> responses = productIds.stream()

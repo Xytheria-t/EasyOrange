@@ -14,15 +14,15 @@ import com.cartethyia.easyorange.message.constant.MessageConstant;
  */
 public class OfflineMessageAggregate {
 
-    private final Long id;
-    private final Long userId;
-    private final Long messageId;
+    private final String id;
+    private final String userId;
+    private final String messageId;
     private final String pushChannel;
     private final Integer pushStatus;
     private final Integer retryCount;
     private final Integer maxRetryCount;
 
-    private OfflineMessageAggregate(Long id, Long userId, Long messageId, String pushChannel,
+    private OfflineMessageAggregate(String id, String userId, String messageId, String pushChannel,
                                      Integer pushStatus, Integer retryCount, Integer maxRetryCount) {
         this.id = id;
         this.userId = userId;
@@ -35,9 +35,9 @@ public class OfflineMessageAggregate {
 
     // ==================== Getters ====================
 
-    public Long id() { return id; }
-    public Long userId() { return userId; }
-    public Long messageId() { return messageId; }
+    public String id() { return id; }
+    public String userId() { return userId; }
+    public String messageId() { return messageId; }
     public String pushChannel() { return pushChannel; }
     public Integer pushStatus() { return pushStatus; }
     public Integer retryCount() { return retryCount; }
@@ -48,7 +48,7 @@ public class OfflineMessageAggregate {
     /**
      * 创建离线消息（默认 PENDING 状态）
      */
-    public static OfflineMessageAggregate create(Long userId, Long messageId, String pushChannel) {
+    public static OfflineMessageAggregate create(String userId, String messageId, String pushChannel) {
         return new OfflineMessageAggregate(
                 null, userId, messageId, pushChannel,
                 MessageConstant.PUSH_STATUS_PENDING,
@@ -62,7 +62,7 @@ public class OfflineMessageAggregate {
     /**
      * 从持久层原始数据重建聚合根
      */
-    public static OfflineMessageAggregate fromRaw(Long id, Long userId, Long messageId,
+    public static OfflineMessageAggregate fromRaw(String id, String userId, String messageId,
                                                     String pushChannel, Integer pushStatus,
                                                     Integer retryCount, Integer maxRetryCount) {
         return new OfflineMessageAggregate(id, userId, messageId, pushChannel,

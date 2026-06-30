@@ -73,7 +73,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     }
 
     @Override
-    public Map<Long, List<OrderItemInfo>> getOrderItems(List<Long> orderIds) {
+    public Map<String, List<OrderItemInfo>> getOrderItems(List<String> orderIds) {
         if (orderIds == null || orderIds.isEmpty()) {
             return Map.of();
         }
@@ -88,7 +88,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     }
 
     @Override
-    public Map<Long, ProductInfo> getProducts(List<Long> productIds) {
+    public Map<String, ProductInfo> getProducts(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }

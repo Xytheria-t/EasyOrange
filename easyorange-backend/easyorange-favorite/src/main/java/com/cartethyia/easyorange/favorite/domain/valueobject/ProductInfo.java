@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record ProductInfo(
-    Long id,
-    Long sellerId,
-    Long categoryId,
+    String id,
+    String sellerId,
+    String categoryId,
     String title,
     String description,
     BigDecimal price,

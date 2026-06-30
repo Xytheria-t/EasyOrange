@@ -239,11 +239,11 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
 
     private ProductReadModel toReadModel(ProductDocument doc) {
         return new ProductReadModel(
-                doc.getId() != null ? Long.parseLong(doc.getId()) : null,
-                doc.getUserId(),
+                doc.getId(),
+                doc.getUserId() != null ? doc.getUserId().toString() : null,
                 null,                                    // username
                 null,                                    // userAvatar
-                null,                                    // categoryId (Long — stored as Integer in ES)
+                doc.getCategoryId(),                     // categoryId
                 doc.getCategoryName(),
                 doc.getName(),                           // title
                 doc.getDescription(),

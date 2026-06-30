@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public class PaymentFailedEvent extends BaseDomainEvent {
 
-    private final Long paymentId;
+    private final String paymentId;
     private final String reason;
 
-    public PaymentFailedEvent(Long paymentId, String reason) {
+    public PaymentFailedEvent(String paymentId, String reason) {
         super();
         this.paymentId = paymentId;
         this.reason = reason;

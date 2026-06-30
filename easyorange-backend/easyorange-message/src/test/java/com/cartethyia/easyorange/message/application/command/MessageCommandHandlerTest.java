@@ -34,7 +34,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -67,9 +66,9 @@ class MessageCommandHandlerTest {
     @InjectMocks
     private MessageCommandHandler commandHandler;
 
-    private static final Long USER_ID = 1L;
-    private static final Long RECEIVER_ID = 2L;
-    private static final Long MESSAGE_ID = 100L;
+    private static final String USER_ID = "1";
+    private static final String RECEIVER_ID = "2";
+    private static final String MESSAGE_ID = "100";
 
     @BeforeEach
     void setUp() {
@@ -103,10 +102,10 @@ class MessageCommandHandlerTest {
                     .content("hello")
                     .build();
 
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
-            when(routingService.decideRoute(anyLong())).thenReturn(decision);
+            when(routingService.decideRoute(anyString())).thenReturn(decision);
 
             MessageAggregate savedAggregate = MessageAggregate.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
@@ -137,7 +136,7 @@ class MessageCommandHandlerTest {
                     .content("hello")
                     .build();
 
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(false);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -161,11 +160,11 @@ class MessageCommandHandlerTest {
                     .content("包含敏感词示例")
                     .build();
 
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
             when(sensitiveWordFilterService.filter("标题")).thenReturn("标题");
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
-            when(routingService.decideRoute(anyLong())).thenReturn(decision);
+            when(routingService.decideRoute(anyString())).thenReturn(decision);
 
             MessageAggregate savedAggregate = MessageAggregate.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "包含***",
@@ -201,7 +200,7 @@ class MessageCommandHandlerTest {
                     .build();
 
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
-            when(routingService.decideRoute(anyLong())).thenReturn(decision);
+            when(routingService.decideRoute(anyString())).thenReturn(decision);
 
             MessageAggregate savedAggregate = MessageAggregate.fromRaw(
                     MESSAGE_ID, null, RECEIVER_ID, 1, "系统通知", "您的商品已审核通过",
@@ -213,7 +212,7 @@ class MessageCommandHandlerTest {
 
             verify(messageRepository).save(any(MessageAggregate.class));
             verify(domainEventPublisher).publish(any(MessageSentEvent.class));
-            verify(offlineMessageStoreService).storeIfOffline(anyLong(), any(), anyString(), eq(true));
+            verify(offlineMessageStoreService).storeIfOffline(anyString(), any(), anyString(), eq(true));
             verify(webSocketNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
     }
@@ -271,7 +270,7 @@ class MessageCommandHandlerTest {
             MessageAggregate aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(999L);
+            TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(BusinessException.class);
@@ -289,22 +288,22 @@ class MessageCommandHandlerTest {
         @DisplayName("批量标记已读成功")
         void handle_markAsReadBatch_success() {
             MarkAsReadBatchCommand command = MarkAsReadBatchCommand.builder()
-                    .messageIds(new ArrayList<>(List.of(MESSAGE_ID, 101L, 102L)))
+                    .messageIds(new ArrayList<>(List.of(MESSAGE_ID, "101", "102")))
                     .build();
 
             MessageAggregate msg1 = createTestMessage();
             MessageAggregate msg2 = MessageAggregate.fromRaw(
-                    101L, USER_ID, RECEIVER_ID, 2, "标题", "hello",
+                    "101", USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     MessageStatus.UNREAD.getCode(), null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
             MessageAggregate msg3 = MessageAggregate.fromRaw(
-                    102L, USER_ID, RECEIVER_ID, 2, "标题", "hello",
+                    "102", USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     MessageStatus.UNREAD.getCode(), null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
-            when(messageRepository.findById(101L)).thenReturn(Optional.of(msg2));
-            when(messageRepository.findById(102L)).thenReturn(Optional.of(msg3));
+            when(messageRepository.findById("101")).thenReturn(Optional.of(msg2));
+            when(messageRepository.findById("102")).thenReturn(Optional.of(msg3));
 
             TestSecurityUtil.setSecurityContext(RECEIVER_ID);
             try {
@@ -320,12 +319,12 @@ class MessageCommandHandlerTest {
         @DisplayName("批量标记时跳过不存在的消息")
         void handle_markAsReadBatch_skipNotFound() {
             MarkAsReadBatchCommand command = MarkAsReadBatchCommand.builder()
-                    .messageIds(new ArrayList<>(List.of(MESSAGE_ID, 999L)))
+                    .messageIds(new ArrayList<>(List.of(MESSAGE_ID, "999")))
                     .build();
 
             MessageAggregate msg1 = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
-            when(messageRepository.findById(999L)).thenReturn(Optional.empty());
+            when(messageRepository.findById("999")).thenReturn(Optional.empty());
 
             TestSecurityUtil.setSecurityContext(RECEIVER_ID);
             try {
@@ -417,12 +416,12 @@ class MessageCommandHandlerTest {
             MessageAggregate aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(999L);
+            TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                         .isInstanceOf(BusinessException.class);
 
-                verify(messageRepository, never()).delete(anyLong());
+                verify(messageRepository, never()).delete(anyString());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

@@ -31,7 +31,7 @@ public class LocalAvatarFileStorage implements AvatarFilePort {
     private final FileService fileService;
 
     @Override
-    public String upload(byte[] content, String contentType, String originalFilename, Long userId) {
+    public String upload(byte[] content, String contentType, String originalFilename, String userId) {
         MultipartFile multipartFile = new ByteArrayMultipartFile(content, contentType, originalFilename);
         UploadFileVO result = fileService.uploadFile(multipartFile, AVATAR_BUSINESS_TYPE, userId);
         return result.getFileUrl();

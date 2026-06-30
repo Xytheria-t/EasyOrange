@@ -11,5 +11,5 @@ public interface MessageSubscriptionService {
 
     void updateSubscription(SubscriptionRequest request);
 
-    boolean isSubscribed(Long userId, String messageType, String pushChannel);
+    boolean isSubscribed(String userId, String messageType, String pushChannel);
 }

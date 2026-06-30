@@ -24,7 +24,7 @@ public class OfflineMessageStoreService {
      * @param pushChannel the channel through which the message would be pushed
      * @param isOnline    whether the user is currently online
      */
-    public void storeIfOffline(Long userId, Long messageId, String pushChannel, boolean isOnline) {
+    public void storeIfOffline(String userId, String messageId, String pushChannel, boolean isOnline) {
         if (!isOnline) {
             OfflineMessageAggregate offlineMessage = OfflineMessageAggregate.create(userId, messageId, pushChannel);
             offlineMessageRepository.save(offlineMessage);

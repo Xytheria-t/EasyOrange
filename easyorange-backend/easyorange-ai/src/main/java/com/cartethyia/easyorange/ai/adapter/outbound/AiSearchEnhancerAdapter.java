@@ -109,7 +109,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         CompletableFuture<String> intentFuture = CompletableFuture.supplyAsync(
             () -> llmPort.generateText(INTENT_SYSTEM_PROMPT, keyword), executor);
 
-        CompletableFuture<Map<Long, List<String>>> tagsFuture = CompletableFuture.supplyAsync(
+        CompletableFuture<Map<String, List<String>>> tagsFuture = CompletableFuture.supplyAsync(
             () -> productTagger.tagProducts(top5), executor);
 
         String marketContext = buildMarketContext(top5);
@@ -153,7 +153,9 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         }
 
         String intentExplanation = intentFuture.getNow(null);
-        Map<Long, List<String>> productTags = tagsFuture.getNow(Map.of());
+        Map<String, List<String>> productTags = tagsFuture.getNow(Map.of());
+
+
         String marketAnalysis = marketFuture.getNow(null);
         List<String> suggestedQuestions = questionsFuture.getNow(List.of());
 
@@ -200,12 +202,12 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
     private Optional<AiEnhancement> collectPartialResults(
             CompletableFuture<String> intentFuture,
-            CompletableFuture<Map<Long, List<String>>> tagsFuture,
+            CompletableFuture<Map<String, List<String>>> tagsFuture,
             CompletableFuture<String> marketFuture,
             CompletableFuture<List<String>> questionsFuture) {
 
         String intentExplanation = getOrNull(intentFuture);
-        Map<Long, List<String>> productTags = getOrDefault(tagsFuture, Map.of());
+        Map<String, List<String>> productTags = getOrDefault(tagsFuture, Map.of());
         String marketAnalysis = getOrNull(marketFuture);
         List<String> suggestedQuestions = getOrDefault(questionsFuture, List.of());
 

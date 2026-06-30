@@ -12,9 +12,9 @@ public interface MessageTemplateRepository {
 
     void update(MessageTemplateAggregate template);
 
-    void deleteByIds(Long[] templateIds);
+    void deleteByIds(String[] templateIds);
 
     List<MessageTemplateAggregate> findByCondition(MessageTemplateAggregate condition);
 
-    boolean existsByCodeExcludingId(String templateCode, Long excludeId);
+    boolean existsByCodeExcludingId(String templateCode, String excludeId);
 }

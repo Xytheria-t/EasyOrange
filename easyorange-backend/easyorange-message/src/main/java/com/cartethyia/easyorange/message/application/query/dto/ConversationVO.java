@@ -13,15 +13,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ConversationVO {
 
-    private Long id;
+    private String id;
 
-    private Long senderId;
+    private String senderId;
 
     private String senderName;
 
     private String senderAvatar;
 
-    private Long receiverId;
+    private String receiverId;
 
     private String receiverName;
 

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 public class CreatePaymentRequest {
 
     @NotNull(message = "订单 ID 不能为空")
-    private Long orderId;
+    private String orderId;
 
     @NotNull(message = "支付金额不能为空")
     @DecimalMin(value = "0.01", message = "支付金额必须大于0")

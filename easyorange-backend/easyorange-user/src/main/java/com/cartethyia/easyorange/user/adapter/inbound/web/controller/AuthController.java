@@ -27,7 +27,7 @@ public class AuthController {
     private final UserAssembler userAssembler;
 
     @PostMapping("/register")
-    public Result<Long> register(@Valid @RequestBody RegisterRequest request) {
+    public Result<String> register(@Valid @RequestBody RegisterRequest request) {
         return Result.success(authAppService.register(request.username(), request.password()));
     }
 

@@ -20,7 +20,7 @@ public class IdempotencyKeyPO extends BaseDO {
 
     private String idempotencyKey;
 
-    private Long userId;
+    private String userId;
 
     private String requestHash;
 

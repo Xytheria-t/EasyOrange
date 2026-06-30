@@ -7,11 +7,11 @@ import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 
 public interface MessageQueryRepository {
 
-    MessageAggregate findById(Long id);
+    MessageAggregate findById(String id);
 
-    PageResult<MessageAggregate> findByReceiverId(QueryMessageRequest request, Long userId);
+    PageResult<MessageAggregate> findByReceiverId(QueryMessageRequest request, String userId);
 
-    PageResult<MessageAggregate> findUnreadByReceiverId(QueryMessageRequest request, Long userId);
+    PageResult<MessageAggregate> findUnreadByReceiverId(QueryMessageRequest request, String userId);
 
-    UnreadCountVO countUnreadByReceiverId(Long userId);
+    UnreadCountVO countUnreadByReceiverId(String userId);
 }

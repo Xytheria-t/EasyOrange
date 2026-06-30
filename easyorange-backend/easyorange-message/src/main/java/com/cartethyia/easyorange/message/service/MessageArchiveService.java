@@ -62,7 +62,7 @@ public class MessageArchiveService {
                 totalArchived += messagesToArchive.size();
                 batchCount++;
 
-                List<Long> idsToDelete = messagesToArchive.stream()
+                List<String> idsToDelete = messagesToArchive.stream()
                         .map(Message::getId)
                         .toList();
                 deleteByIds(idsToDelete);
@@ -122,7 +122,7 @@ public class MessageArchiveService {
         namedParameterJdbcTemplate.batchUpdate(sql, batchParams);
     }
 
-    private void deleteByIds(List<Long> ids) {
+    private void deleteByIds(List<String> ids) {
         if (ids.isEmpty()) {
             return;
         }

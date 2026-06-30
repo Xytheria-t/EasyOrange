@@ -18,7 +18,7 @@ import java.util.Objects;
 @Builder(toBuilder = true)
 public class User {
 
-    private final Long id;
+    private final String id;
     private final Credentials credentials;
     private final UserType userType;
     private final UserStatus status;
@@ -41,7 +41,7 @@ public class User {
             .build();
     }
 
-    public User assignId(Long id) {
+    public User assignId(String id) {
         Objects.requireNonNull(id, "用户ID不能为空");
 
         return this.toBuilder()
@@ -49,7 +49,7 @@ public class User {
             .build();
     }
 
-    public User updateContactInfo(String email, String phone, Long operatorId) {
+    public User updateContactInfo(String email, String phone, String operatorId) {
         ContactInfo updated = this.contactInfo;
 
         if (isPresent(email)) {
@@ -65,7 +65,7 @@ public class User {
             .build();
     }
 
-    public User updatePersonalInfo(String realName, String nickName, Sex sex, String studentId, Long operatorId) {
+    public User updatePersonalInfo(String realName, String nickName, Sex sex, String studentId, String operatorId) {
         PersonalInfo updated = this.personalInfo;
 
         if (isPresent(realName)) {
@@ -87,7 +87,7 @@ public class User {
             .build();
     }
 
-    public User changeAvatar(String avatarUrl, Long operatorId) {
+    public User changeAvatar(String avatarUrl, String operatorId) {
         Objects.requireNonNull(avatarUrl, "头像地址不能为空");
 
         return this.toBuilder()
@@ -96,7 +96,7 @@ public class User {
             .build();
     }
 
-    public User changePassword(String encodedNewPassword, Long operatorId) {
+    public User changePassword(String encodedNewPassword, String operatorId) {
         Objects.requireNonNull(encodedNewPassword, "新密码不能为空");
 
         return this.toBuilder()
@@ -124,7 +124,7 @@ public class User {
         return this.status == UserStatus.NORMAL;
     }
 
-    private AuditInfo updateAuditInfo(Long operatorId) {
+    private AuditInfo updateAuditInfo(String operatorId) {
         if (this.auditInfo == null) {
             return operatorId != null ? AuditInfo.create(operatorId) : null;
         }

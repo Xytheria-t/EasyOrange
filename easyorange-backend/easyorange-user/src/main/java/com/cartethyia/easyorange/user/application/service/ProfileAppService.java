@@ -23,7 +23,7 @@ public class ProfileAppService {
 
     @Transactional(readOnly = true)
     public User getCurrentUser() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
     }
@@ -38,7 +38,7 @@ public class ProfileAppService {
         validateUniqueFieldsIfChanged(email, phone, studentId, currentUser);
 
         User updatedUser = currentUser;
-        Long operatorId = currentUser.getId();
+        String operatorId = currentUser.getId();
 
         boolean contactChanged = (email != null && !email.isBlank())
             || (phone != null && !phone.isBlank());
@@ -120,7 +120,7 @@ public class ProfileAppService {
     }
 
     private User getCurrentUserOrThrow() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
     }

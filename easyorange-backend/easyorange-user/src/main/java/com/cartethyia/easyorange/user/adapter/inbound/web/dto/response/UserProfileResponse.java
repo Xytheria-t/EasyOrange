@@ -17,7 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class UserProfileResponse implements CommonUserFields {
 
-    private Long userId;
+    private String userId;
 
     private String username;
 

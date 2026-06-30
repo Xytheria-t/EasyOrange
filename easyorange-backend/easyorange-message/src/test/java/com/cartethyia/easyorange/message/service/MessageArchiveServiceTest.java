@@ -76,10 +76,10 @@ class MessageArchiveServiceTest {
         @Test
         @DisplayName("有待归档消息时归档并删除原记录")
         void archiveOldMessages_hasMessages_archivesAndDeletes() {
-            Message msg1 = Message.builder().id(1L).senderId(1L).receiverId(2L).type(1)
+            Message msg1 = Message.builder().id("1").senderId("1").receiverId("2").type(1)
                     .title("title").content("content").isRead(0)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
-            Message msg2 = Message.builder().id(2L).senderId(1L).receiverId(2L).type(1)
+            Message msg2 = Message.builder().id("2").senderId("1").receiverId("2").type(1)
                     .title("title2").content("content2").isRead(1)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1, msg2), List.of());
@@ -88,7 +88,7 @@ class MessageArchiveServiceTest {
 
             verify(messageMapper, times(2)).selectList(any());
             verify(namedParameterJdbcTemplate).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
-            verify(messageMapper).deleteBatchIds(List.of(1L, 2L));
+            verify(messageMapper).deleteBatchIds(List.of("1", "2"));
         }
 
         @Test
@@ -106,10 +106,10 @@ class MessageArchiveServiceTest {
         @Test
         @DisplayName("多批次归档时循环处理")
         void archiveOldMessages_multipleBatches_processesAll() {
-            Message msg1 = Message.builder().id(1L).senderId(1L).receiverId(2L).type(1)
+            Message msg1 = Message.builder().id("1").senderId("1").receiverId("2").type(1)
                     .title("t").content("c").isRead(0)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
-            Message msg2 = Message.builder().id(2L).senderId(1L).receiverId(2L).type(1)
+            Message msg2 = Message.builder().id("2").senderId("1").receiverId("2").type(1)
                     .title("t2").content("c2").isRead(1)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1), List.of(msg2), List.of());

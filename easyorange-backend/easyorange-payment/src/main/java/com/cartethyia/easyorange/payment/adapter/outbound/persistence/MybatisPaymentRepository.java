@@ -6,7 +6,8 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.exception.OptimisticLockException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import org.springframework.stereotype.Repository;
@@ -36,12 +37,12 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
         int rows = mapper.updateById(po);
 
         if (rows == 0) {
-            throw OptimisticLockException.concurrentUpdate(aggregate.id());
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_FAILED, "并发更新冲突，支付记录已被其他事务修改: paymentId=" + aggregate.id());
         }
     }
 
     @Override
-    public Optional<PaymentAggregate> findById(Long id) {
+    public Optional<PaymentAggregate> findById(String id) {
         return Optional.ofNullable(mapper.selectById(id)).map(paymentDataMapper::toAggregate);
     }
 
@@ -52,13 +53,13 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public Optional<PaymentAggregate> findByOrderId(Long orderId) {
+    public Optional<PaymentAggregate> findByOrderId(String orderId) {
         return Optional.ofNullable(lambdaQuery().eq(PaymentPO::getOrderId, orderId).one())
                 .map(paymentDataMapper::toAggregate);
     }
 
     @Override
-    public Optional<PaymentAggregate> findAggregateById(Long id) {
+    public Optional<PaymentAggregate> findAggregateById(String id) {
         return findById(id);
     }
 
@@ -68,12 +69,12 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public Optional<PaymentAggregate> findAggregateByOrderId(Long orderId) {
+    public Optional<PaymentAggregate> findAggregateByOrderId(String orderId) {
         return findByOrderId(orderId);
     }
 
     @Override
-    public List<PaymentAggregate> findByUserIdAndStatus(Long userId, Integer status, int pageNum, int pageSize) {
+    public List<PaymentAggregate> findByUserIdAndStatus(String userId, Integer status, int pageNum, int pageSize) {
         Page<PaymentPO> page = lambdaQuery()
                 .eq(userId != null, PaymentPO::getUserId, userId)
                 .eq(status != null, PaymentPO::getStatus, status)
@@ -83,7 +84,7 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public long countByUserIdAndStatus(Long userId, Integer status) {
+    public long countByUserIdAndStatus(String userId, Integer status) {
         return lambdaQuery()
                 .eq(userId != null, PaymentPO::getUserId, userId)
                 .eq(status != null, PaymentPO::getStatus, status)

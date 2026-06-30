@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -29,7 +29,7 @@ class RateLimiterServiceTest {
     @InjectMocks
     private RateLimiterService rateLimiterService;
 
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
 
     @Nested
     @DisplayName("allowSendMessage")
@@ -171,7 +171,7 @@ class RateLimiterServiceTest {
         @Test
         @DisplayName("消息限流 key 正确格式化")
         void allowSendMessage_correctKeyFormat() {
-            Long userId = 12345L;
+            String userId = "12345";
             when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(null);
 
             rateLimiterService.allowSendMessage(userId);

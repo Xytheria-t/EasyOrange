@@ -19,15 +19,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class MessageVO {
 
-    private Long id;
+    private String id;
 
-    private Long senderId;
+    private String senderId;
 
     private String senderName;
 
     private String senderAvatar;
 
-    private Long receiverId;
+    private String receiverId;
 
     private String receiverName;
 
@@ -43,7 +43,7 @@ public class MessageVO {
 
     private String readDesc;
 
-    private Long businessId;
+    private String businessId;
 
     private LocalDateTime createTime;
 

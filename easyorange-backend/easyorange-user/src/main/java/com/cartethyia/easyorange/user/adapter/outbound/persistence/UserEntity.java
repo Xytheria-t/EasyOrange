@@ -25,8 +25,8 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 public class UserEntity extends BaseDO {
 
-    @TableId(value = "user_id", type = IdType.ASSIGN_ID)
-    private Long id;
+    @TableId(value = "user_id", type = IdType.INPUT)
+    private String id;
 
     @TableField("username")
     private String username;

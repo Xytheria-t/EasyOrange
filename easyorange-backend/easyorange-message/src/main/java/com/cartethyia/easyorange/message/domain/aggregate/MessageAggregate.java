@@ -26,22 +26,22 @@ import java.time.LocalDateTime;
  */
 public class MessageAggregate {
 
-    private final Long id;
-    private final Long senderId;
-    private final Long receiverId;
+    private final String id;
+    private final String senderId;
+    private final String receiverId;
     private final Integer type;
     private final String title;
     private final String content;
     private final Integer isRead;
     private final LocalDateTime readTime;
-    private final Long businessId;
+    private final String businessId;
     private final String msgStatus;
     private final LocalDateTime recalledAt;
     private final LocalDateTime createTime;
 
-    private MessageAggregate(Long id, Long senderId, Long receiverId, Integer type,
+    private MessageAggregate(String id, String senderId, String receiverId, Integer type,
                              String title, String content, Integer isRead, LocalDateTime readTime,
-                             Long businessId, String msgStatus, LocalDateTime recalledAt,
+                             String businessId, String msgStatus, LocalDateTime recalledAt,
                              LocalDateTime createTime) {
         this.id = id;
         this.senderId = senderId;
@@ -59,15 +59,15 @@ public class MessageAggregate {
 
     // ==================== Getters ====================
 
-    public Long id() { return id; }
-    public Long senderId() { return senderId; }
-    public Long receiverId() { return receiverId; }
+    public String id() { return id; }
+    public String senderId() { return senderId; }
+    public String receiverId() { return receiverId; }
     public Integer type() { return type; }
     public String title() { return title; }
     public String content() { return content; }
     public Integer isRead() { return isRead; }
     public LocalDateTime readTime() { return readTime; }
-    public Long businessId() { return businessId; }
+    public String businessId() { return businessId; }
     public String msgStatus() { return msgStatus; }
     public LocalDateTime recalledAt() { return recalledAt; }
     public LocalDateTime createTime() { return createTime; }
@@ -77,8 +77,8 @@ public class MessageAggregate {
     /**
      * 创建普通消息
      */
-    public static MessageCreateResult create(Long senderId, Long receiverId, Integer type,
-                                              String title, String content, Long businessId) {
+    public static MessageCreateResult create(String senderId, String receiverId, Integer type,
+                                              String title, String content, String businessId) {
         MessageAggregate aggregate = new MessageAggregate(
                 null, senderId, receiverId, type,
                 escapeHtml(title), escapeHtml(content),
@@ -91,8 +91,8 @@ public class MessageAggregate {
     /**
      * 创建系统消息
      */
-    public static MessageCreateResult createSystem(Long receiverId, String title,
-                                                    String content, Long businessId) {
+    public static MessageCreateResult createSystem(String receiverId, String title,
+                                                    String content, String businessId) {
         MessageAggregate aggregate = new MessageAggregate(
                 null, null, receiverId, MessageType.SYSTEM.getCode(),
                 escapeHtml(title), escapeHtml(content),
@@ -107,9 +107,9 @@ public class MessageAggregate {
     /**
      * 从持久层原始数据重建聚合根
      */
-    public static MessageAggregate fromRaw(Long id, Long senderId, Long receiverId, Integer type,
+    public static MessageAggregate fromRaw(String id, String senderId, String receiverId, Integer type,
                                             String title, String content, Integer isRead,
-                                            LocalDateTime readTime, Long businessId,
+                                            LocalDateTime readTime, String businessId,
                                             String msgStatus, LocalDateTime recalledAt,
                                             LocalDateTime createTime) {
         return new MessageAggregate(id, senderId, receiverId, type,
@@ -123,11 +123,11 @@ public class MessageAggregate {
         return MessageStatus.UNREAD.getCode().equals(this.isRead);
     }
 
-    public boolean isOwnedBy(Long userId) {
+    public boolean isOwnedBy(String userId) {
         return this.receiverId != null && this.receiverId.equals(userId);
     }
 
-    public boolean isSender(Long userId) {
+    public boolean isSender(String userId) {
         return this.senderId != null && this.senderId.equals(userId);
     }
 
@@ -146,7 +146,7 @@ public class MessageAggregate {
      * @return 包含更新后聚合根和领域事件的结果；如果已读则返回 null
      * @throws UnauthorizedOperationException 如果 userId 不是接收者
      */
-    public MessageReadResult read(Long userId) {
+    public MessageReadResult read(String userId) {
         if (!this.receiverId.equals(userId)) {
             throw new UnauthorizedOperationException("Only receiver can read this message");
         }
@@ -168,7 +168,7 @@ public class MessageAggregate {
      * @throws UnauthorizedOperationException 如果 operatorId 不是发送者
      * @throws MessageDomainException         如果消息已撤回或超过 2 分钟
      */
-    public MessageRecallResult recall(Long operatorId, String conversationId) {
+    public MessageRecallResult recall(String operatorId, String conversationId) {
         if (!this.senderId.equals(operatorId)) {
             throw new UnauthorizedOperationException("不能撤回他人的消息");
         }
@@ -194,7 +194,7 @@ public class MessageAggregate {
      * @return 领域事件
      * @throws UnauthorizedOperationException 如果 userId 不是接收者
      */
-    public MessageDeletedEvent delete(Long userId) {
+    public MessageDeletedEvent delete(String userId) {
         if (!this.receiverId.equals(userId)) {
             throw new UnauthorizedOperationException("Not authorized to delete");
         }

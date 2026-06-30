@@ -27,9 +27,9 @@ class OfflineMessageServiceTest {
     @InjectMocks
     private OfflineMessageServiceImpl offlineMessageService;
 
-    private static final Long USER_ID = 1L;
-    private static final Long MESSAGE_ID = 100L;
-    private static final Long OFFLINE_MESSAGE_ID = 50L;
+    private static final String USER_ID = "1";
+    private static final String MESSAGE_ID = "100";
+    private static final String OFFLINE_MESSAGE_ID = "50";
     private static final String PUSH_CHANNEL = "WEBSOCKET";
 
     @Nested

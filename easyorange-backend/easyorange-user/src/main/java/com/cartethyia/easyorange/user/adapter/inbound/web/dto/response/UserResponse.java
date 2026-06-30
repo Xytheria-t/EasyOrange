@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UserResponse implements CommonUserFields {
 
-    private Long userId;
+    private String userId;
 
     private String username;
 

@@ -19,7 +19,7 @@ public class SellerInfoAdapter implements SellerInfoPort {
     private final UserRepository userRepository;
 
     @Override
-    public Optional<SellerInfo> getSellerInfo(Long sellerId) {
+    public Optional<SellerInfo> getSellerInfo(String sellerId) {
         if (sellerId == null) {
             return Optional.empty();
         }
@@ -28,7 +28,7 @@ public class SellerInfoAdapter implements SellerInfoPort {
     }
 
     @Override
-    public Map<Long, SellerInfo> getSellerInfos(Collection<Long> sellerIds) {
+    public Map<String, SellerInfo> getSellerInfos(Collection<String> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
             return Map.of();
         }

@@ -39,11 +39,11 @@ class ConversationQueryHandlerTest {
     @InjectMocks
     private ConversationQueryHandler handler;
 
-    private static final Long CURRENT_USER_ID = 1L;
-    private static final Long OTHER_USER_ID = 2L;
-    private static final Long THIRD_USER_ID = 3L;
+    private static final String CURRENT_USER_ID = "1";
+    private static final String OTHER_USER_ID = "2";
+    private static final String THIRD_USER_ID = "3";
 
-    private Message createMessage(Long senderId, Long receiverId, String content, Long id) {
+    private Message createMessage(String senderId, String receiverId, String content, String id) {
         return Message.builder()
                 .id(id)
                 .senderId(senderId)
@@ -63,8 +63,8 @@ class ConversationQueryHandlerTest {
         @Test
         @DisplayName("返回两个用户之间的消息")
         void getConversation_returnsMessages() {
-            Message msg1 = createMessage(CURRENT_USER_ID, OTHER_USER_ID, "你好", 1L);
-            Message msg2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "嗨", 2L);
+            Message msg1 = createMessage(CURRENT_USER_ID, OTHER_USER_ID, "你好", "1");
+            Message msg2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "嗨", "2");
 
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1, msg2));
             when(userInfoPort.getUserInfoMap(any(Set.class)))
@@ -109,9 +109,9 @@ class ConversationQueryHandlerTest {
         @Test
         @DisplayName("返回会话列表，按最新消息分组")
         void getConversations_returnsGroupedList() {
-            Message msgWithUser2 = createMessage(CURRENT_USER_ID, OTHER_USER_ID, "最后一条给2", 3L);
-            Message msgFromUser2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "消息from2", 2L);
-            Message msgWithUser3 = createMessage(THIRD_USER_ID, CURRENT_USER_ID, "消息from3", 1L);
+            Message msgWithUser2 = createMessage(CURRENT_USER_ID, OTHER_USER_ID, "最后一条给2", "3");
+            Message msgFromUser2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "消息from2", "2");
+            Message msgWithUser3 = createMessage(THIRD_USER_ID, CURRENT_USER_ID, "消息from3", "1");
 
             when(messageMapper.selectList(any())).thenReturn(List.of(msgWithUser2, msgFromUser2, msgWithUser3));
             when(userInfoPort.getUserInfoMap(any(Set.class)))

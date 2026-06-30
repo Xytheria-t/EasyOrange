@@ -35,8 +35,8 @@ class FavoriteServiceTest {
 
     private FavoriteService favoriteService;
 
-    private static final Long TEST_USER_ID = 1001L;
-    private static final Long TEST_PRODUCT_ID = 2001L;
+    private static final String TEST_USER_ID = "1001";
+    private static final String TEST_PRODUCT_ID = "2001";
 
     @BeforeEach
     void setUp() {
@@ -105,13 +105,13 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("移除收藏成功")
     void removeFavorite_success() {
-        Favorite favorite = Favorite.reconstitute(1L, TEST_USER_ID, TEST_PRODUCT_ID, null);
+        Favorite favorite = Favorite.reconstitute("1", TEST_USER_ID, TEST_PRODUCT_ID, null);
         when(favoriteRepository.findByUserIdAndProductId(TEST_USER_ID, TEST_PRODUCT_ID))
                 .thenReturn(Optional.of(favorite));
 
         favoriteService.removeFavorite(TEST_PRODUCT_ID);
 
-        verify(favoriteRepository).removeById(1L);
+        verify(favoriteRepository).removeById("1");
     }
 
     @Test
@@ -130,10 +130,10 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("批量移除收藏成功")
     void removeManyFavorites_success() {
-        List<Long> favoriteIds = List.of(1L, 2L, 3L);
-        Favorite favorite1 = Favorite.reconstitute(1L, TEST_USER_ID, 2001L, null);
-        Favorite favorite2 = Favorite.reconstitute(2L, TEST_USER_ID, 2002L, null);
-        Favorite favorite3 = Favorite.reconstitute(3L, TEST_USER_ID, 2003L, null);
+        List<String> favoriteIds = List.of("1", "2", "3");
+        Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
+        Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", null);
+        Favorite favorite3 = Favorite.reconstitute("3", TEST_USER_ID, "2003", null);
         
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(favorite1, favorite2, favorite3));
         when(favoriteRepository.removeByIds(favoriteIds)).thenReturn(3);
@@ -156,9 +156,9 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("批量移除收藏 - 包含他人收藏时抛出异常")
     void removeManyFavorites_containsOtherUserFavorite() {
-        List<Long> favoriteIds = List.of(1L, 2L);
-        Favorite ownFavorite = Favorite.reconstitute(1L, TEST_USER_ID, 2001L, null);
-        Favorite otherUserFavorite = Favorite.reconstitute(2L, 9999L, 2002L, null);
+        List<String> favoriteIds = List.of("1", "2");
+        Favorite ownFavorite = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
+        Favorite otherUserFavorite = Favorite.reconstitute("2", "9999", "2002", null);
         
         when(favoriteRepository.findByIds(favoriteIds)).thenReturn(List.of(ownFavorite, otherUserFavorite));
 
@@ -172,8 +172,8 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("查询用户收藏列表")
     void queryFavorites_success() {
-        Favorite favorite1 = Favorite.reconstitute(1L, TEST_USER_ID, 2001L, null);
-        Favorite favorite2 = Favorite.reconstitute(2L, TEST_USER_ID, 2002L, null);
+        Favorite favorite1 = Favorite.reconstitute("1", TEST_USER_ID, "2001", null);
+        Favorite favorite2 = Favorite.reconstitute("2", TEST_USER_ID, "2002", null);
 
         when(favoriteRepository.countByUserId(TEST_USER_ID)).thenReturn(2L);
         when(favoriteRepository.findByUserId(eq(TEST_USER_ID), eq(0L), eq(10L)))
@@ -184,10 +184,10 @@ class FavoriteServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.total()).isEqualTo(2L);
         assertThat(result.records()).hasSize(2);
-        assertThat(result.records().get(0).getId()).isEqualTo(1L);
-        assertThat(result.records().get(0).getProductId()).isEqualTo(2001L);
-        assertThat(result.records().get(1).getId()).isEqualTo(2L);
-        assertThat(result.records().get(1).getProductId()).isEqualTo(2002L);
+        assertThat(result.records().get(0).getId()).isEqualTo("1");
+        assertThat(result.records().get(0).getProductId()).isEqualTo("2001");
+        assertThat(result.records().get(1).getId()).isEqualTo("2");
+        assertThat(result.records().get(1).getProductId()).isEqualTo("2002");
     }
 
     @Test
@@ -207,9 +207,9 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("检查用户是否收藏指定商品 - 已收藏")
     void isFavorited_true() {
-        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, 2001L)).thenReturn(true);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001")).thenReturn(true);
 
-        boolean result = favoriteService.isFavorited(2001L);
+        boolean result = favoriteService.isFavorited("2001");
 
         assertThat(result).isTrue();
     }
@@ -217,9 +217,9 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("检查用户是否收藏指定商品 - 未收藏")
     void isFavorited_false() {
-        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, 2001L)).thenReturn(false);
+        when(favoriteRepository.existsByUserIdAndProductId(TEST_USER_ID, "2001")).thenReturn(false);
 
-        boolean result = favoriteService.isFavorited(2001L);
+        boolean result = favoriteService.isFavorited("2001");
 
         assertThat(result).isFalse();
     }
@@ -237,22 +237,22 @@ class FavoriteServiceTest {
     @Test
     @DisplayName("批量检查收藏状态")
     void batchCheckFavorited_success() {
-        List<Long> productIds = List.of(2001L, 2002L, 2003L);
+        List<String> productIds = List.of("2001", "2002", "2003");
         when(favoriteRepository.findFavoritedProductIds(TEST_USER_ID, productIds))
-                .thenReturn(Set.of(2001L, 2003L));
+                .thenReturn(Set.of("2001", "2003"));
 
-        Map<Long, Boolean> result = favoriteService.batchCheckFavorited(productIds);
+        Map<String, Boolean> result = favoriteService.batchCheckFavorited(productIds);
 
         assertThat(result).hasSize(3);
-        assertThat(result.get(2001L)).isTrue();
-        assertThat(result.get(2002L)).isFalse();
-        assertThat(result.get(2003L)).isTrue();
+        assertThat(result.get("2001")).isTrue();
+        assertThat(result.get("2002")).isFalse();
+        assertThat(result.get("2003")).isTrue();
     }
 
     @Test
     @DisplayName("批量检查收藏状态 - 空列表")
     void batchCheckFavorited_emptyList() {
-        Map<Long, Boolean> result = favoriteService.batchCheckFavorited(List.of());
+        Map<String, Boolean> result = favoriteService.batchCheckFavorited(List.of());
 
         assertThat(result).isEmpty();
         verify(favoriteRepository, never()).findFavoritedProductIds(any(), any());

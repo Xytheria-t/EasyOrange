@@ -37,7 +37,7 @@ public class MessageCommandController {
     }
 
     @PutMapping("/{id}/read")
-    public Result<Void> markAsRead(@PathVariable Long id) {
+    public Result<Void> markAsRead(@PathVariable String id) {
         commandHandler.handle(MarkAsReadCommand.builder().messageId(id).build());
         return Result.success();
     }
@@ -49,7 +49,7 @@ public class MessageCommandController {
     }
 
     @PutMapping("/read")
-    public Result<Void> markAsReadBatch(@RequestBody List<Long> ids) {
+    public Result<Void> markAsReadBatch(@RequestBody List<String> ids) {
         commandHandler.handle(MarkAsReadBatchCommand.builder().messageIds(ids).build());
         return Result.success();
     }
@@ -64,13 +64,13 @@ public class MessageCommandController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteMessage(@PathVariable Long id) {
+    public Result<Void> deleteMessage(@PathVariable String id) {
         commandHandler.handle(DeleteMessageCommand.builder().messageId(id).build());
         return Result.success();
     }
 
     @PutMapping("/{id}/recall")
-    public Result<Void> recallMessage(@PathVariable Long id) {
+    public Result<Void> recallMessage(@PathVariable String id) {
         commandHandler.handle(RecallMessageCommand.builder()
                 .messageId(id)
                 .operatorId(com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow())
@@ -81,7 +81,7 @@ public class MessageCommandController {
     @PostMapping("/typing")
     public Result<Void> typing(@RequestBody java.util.Map<String, String> body) {
         String conversationId = body.get("conversationId");
-        Long targetUserId = body.get("targetUserId") != null ? Long.valueOf(body.get("targetUserId")) : null;
+        String targetUserId = body.get("targetUserId");
         typingIndicatorService.setTyping(conversationId, com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow());
         return Result.success();
     }

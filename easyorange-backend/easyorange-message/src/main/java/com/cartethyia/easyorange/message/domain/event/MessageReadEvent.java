@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public class MessageReadEvent extends BaseDomainEvent {
 
-    private final Long messageId;
-    private final Long readerId;
+    private final String messageId;
+    private final String readerId;
 
-    public MessageReadEvent(Long messageId, Long readerId) {
+    public MessageReadEvent(String messageId, String readerId) {
         super();
         this.messageId = messageId;
         this.readerId = readerId;

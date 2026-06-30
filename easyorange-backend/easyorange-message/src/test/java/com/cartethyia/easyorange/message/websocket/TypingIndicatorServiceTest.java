@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -33,8 +33,8 @@ class TypingIndicatorServiceTest {
     private TypingIndicatorService typingIndicatorService;
 
     private static final String CONVERSATION_ID = "conv_1_2";
-    private static final Long USER_ID = 1L;
-    private static final Long OTHER_USER_ID = 2L;
+    private static final String USER_ID = "1";
+    private static final String OTHER_USER_ID = "2";
 
     @Nested
     @DisplayName("setTyping")
@@ -84,7 +84,7 @@ class TypingIndicatorServiceTest {
         void setTyping_correctKeyFormat() {
             when(redisTemplate.opsForValue()).thenReturn(valueOperations);
 
-            typingIndicatorService.setTyping("conv_99_100", 99L);
+            typingIndicatorService.setTyping("conv_99_100", "99");
 
             verify(valueOperations).set(eq("chat:typing:conv_99_100:99"), anyString(), anyLong(), any(TimeUnit.class));
         }
@@ -103,7 +103,7 @@ class TypingIndicatorServiceTest {
             );
             when(redisTemplate.keys(anyString())).thenReturn(keys);
 
-            Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
             assertThat(result)
                     .hasSize(1)
@@ -115,7 +115,7 @@ class TypingIndicatorServiceTest {
         void getTypingUsers_noKeys_returnsEmpty() {
             when(redisTemplate.keys(anyString())).thenReturn(Set.of());
 
-            Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
             assertThat(result).isEmpty();
         }
@@ -125,7 +125,7 @@ class TypingIndicatorServiceTest {
         void getTypingUsers_nullKeys_returnsEmpty() {
             when(redisTemplate.keys(anyString())).thenReturn(null);
 
-            Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
             assertThat(result).isEmpty();
         }
@@ -133,7 +133,7 @@ class TypingIndicatorServiceTest {
         @Test
         @DisplayName("conversationId 为 null 时返回空集合")
         void getTypingUsers_nullConversationId_returnsEmpty() {
-            Set<Long> result = typingIndicatorService.getTypingUsers(null, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(null, USER_ID);
 
             assertThat(result).isEmpty();
             verify(redisTemplate, never()).keys(anyString());
@@ -157,21 +157,21 @@ class TypingIndicatorServiceTest {
             );
             when(redisTemplate.keys(anyString())).thenReturn(keys);
 
-            Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
             assertThat(result).isEmpty();
         }
 
         @Test
-        @DisplayName("跳过格式错误的 key")
+        @DisplayName("跳过格式错误的 key（少于3段）")
         void getTypingUsers_skipsMalformedKeys() {
             Set<String> keys = Set.of(
-                    "invalid:key:format",
+                    "invalid-key",
                     "chat:typing:" + CONVERSATION_ID + ":" + OTHER_USER_ID
             );
             when(redisTemplate.keys(anyString())).thenReturn(keys);
 
-            Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
             assertThat(result)
                     .hasSize(1)
@@ -179,16 +179,18 @@ class TypingIndicatorServiceTest {
         }
 
         @Test
-        @DisplayName("解析用户 ID 失败时跳过")
-        void getTypingUsers_skipsNonNumericUserId() {
+        @DisplayName("字符串用户 ID 也被视为有效")
+        void getTypingUsers_acceptsNonNumericUserId() {
             Set<String> keys = Set.of(
                     "chat:typing:" + CONVERSATION_ID + ":abc"
             );
             when(redisTemplate.keys(anyString())).thenReturn(keys);
 
-            Set<Long> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
+            Set<String> result = typingIndicatorService.getTypingUsers(CONVERSATION_ID, USER_ID);
 
-            assertThat(result).isEmpty();
+            assertThat(result)
+                    .hasSize(1)
+                    .containsExactly("abc");
         }
     }
 
@@ -231,7 +233,7 @@ class TypingIndicatorServiceTest {
         @Test
         @DisplayName("删除时 key 格式正确")
         void removeTyping_correctKeyFormat() {
-            typingIndicatorService.removeTyping("conv_99_100", 99L);
+            typingIndicatorService.removeTyping("conv_99_100", "99");
 
             verify(redisTemplate).delete("chat:typing:conv_99_100:99");
         }

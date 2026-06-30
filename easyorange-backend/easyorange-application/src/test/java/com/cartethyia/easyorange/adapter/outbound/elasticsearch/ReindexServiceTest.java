@@ -47,8 +47,8 @@ class ReindexServiceTest {
     void reindexAll_shouldRecreateIndexAndIndexProducts() {
         when(indexOps.exists()).thenReturn(true);
 
-        ProductDO product1 = ProductDO.builder().id(100L).name("商品1").build();
-        ProductDO product2 = ProductDO.builder().id(200L).name("商品2").build();
+        ProductDO product1 = ProductDO.builder().id("100").name("商品1").build();
+        ProductDO product2 = ProductDO.builder().id("200").name("商品2").build();
         List<ProductDO> products = List.of(product1, product2);
         when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(products);
 

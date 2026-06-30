@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MarkAsReadCommand {
 
-    private Long messageId;
+    private String messageId;
 }

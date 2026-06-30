@@ -7,13 +7,13 @@ import java.util.Optional;
 
 public interface PaymentQueryRepositoryPort {
 
-    Optional<PaymentAggregate> findAggregateById(Long id);
+    Optional<PaymentAggregate> findAggregateById(String id);
 
     Optional<PaymentAggregate> findAggregateByPaymentNo(String paymentNo);
 
-    Optional<PaymentAggregate> findAggregateByOrderId(Long orderId);
+    Optional<PaymentAggregate> findAggregateByOrderId(String orderId);
 
-    List<PaymentAggregate> findByUserIdAndStatus(Long userId, Integer status, int pageNum, int pageSize);
+    List<PaymentAggregate> findByUserIdAndStatus(String userId, Integer status, int pageNum, int pageSize);
 
-    long countByUserIdAndStatus(Long userId, Integer status);
+    long countByUserIdAndStatus(String userId, Integer status);
 }

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class MessageSubscriptionVO {
 
-    private Long id;
+    private String id;
 
     private String messageType;
 

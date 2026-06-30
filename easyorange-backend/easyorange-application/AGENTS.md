@@ -90,7 +90,7 @@ easyorange-application
 | `application.yaml` | 基础配置 | 数据源、Redis、MyBatis-Plus、线程池 |
 | `application-dev.yaml` | 开发环境 | 小连接池、详细日志、JWT 开发密钥 |
 | `application-prod.yaml` | 生产环境 | 大连接池、SSL、Swagger 关闭、优雅停机 |
-| `application-test.yaml` | 测试环境 | Testcontainers 配置 |
+| `application-test.yaml` | 测试环境 | 测试环境配置（Testcontainers 已移除） |
 
 ### 关键配置项
 
@@ -99,7 +99,7 @@ easyorange-application
 - `rate-limit-filter` — 限流+防重 Filter 配置（规则列表、防重间隔、方法匹配）
 - `easyorange.thread-pool` — 线程池配置
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
-- `easyorange.idgen.*` — Snowflake 分布式 ID 生成器（`enabled`、`data-center-id`）
+- `easyorange.idgen.*` — ID 生成器配置（UUID v7 为默认 `@Primary`；Snowflake 备选需 `enabled=true`）
 - `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
 - `http-client.*` — HTTP 客户端超时和协议版本
 

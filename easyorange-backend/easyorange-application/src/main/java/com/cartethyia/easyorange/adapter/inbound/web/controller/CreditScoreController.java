@@ -20,18 +20,18 @@ public class CreditScoreController {
 
     @GetMapping("/me")
     public Result<CreditScoreResult> getMyCredit() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return Result.success(creditScoringService.getCreditScore(userId));
     }
 
     @GetMapping("/{userId}")
-    public Result<CreditScoreResult> getUserCredit(@PathVariable Long userId) {
+    public Result<CreditScoreResult> getUserCredit(@PathVariable String userId) {
         return Result.success(creditScoringService.getCreditScore(userId));
     }
 
     @PostMapping("/recalculate")
     public Result<Void> recalculateScore() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         creditScoringService.recalculateScore(userId);
         return Result.success();
     }

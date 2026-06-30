@@ -8,21 +8,21 @@ import java.util.Optional;
 
 public interface MessageRepository {
 
-    Optional<MessageAggregate> findById(Long id);
+    Optional<MessageAggregate> findById(String id);
 
-    List<MessageAggregate> findByReceiverId(Long receiverId, int limit);
+    List<MessageAggregate> findByReceiverId(String receiverId, int limit);
 
-    List<MessageAggregate> findByReceiverIdAndReadStatus(Long receiverId, ReadStatus readStatus, int limit);
+    List<MessageAggregate> findByReceiverIdAndReadStatus(String receiverId, ReadStatus readStatus, int limit);
 
-    long countUnreadByReceiverId(Long receiverId);
+    long countUnreadByReceiverId(String receiverId);
 
     MessageAggregate save(MessageAggregate message);
 
     void update(MessageAggregate message);
 
-    void delete(Long id);
+    void delete(String id);
 
-    void markAllAsRead(Long receiverId);
+    void markAllAsRead(String receiverId);
 
-    void markAsReadByType(Long receiverId, Integer type);
+    void markAsReadByType(String receiverId, Integer type);
 }

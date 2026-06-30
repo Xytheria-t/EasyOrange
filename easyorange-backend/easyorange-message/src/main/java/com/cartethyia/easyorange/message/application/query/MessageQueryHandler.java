@@ -33,8 +33,8 @@ public class MessageQueryHandler {
     private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
-    public MessageVO getMessageDetail(Long messageId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public MessageVO getMessageDetail(String messageId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         MessageAggregate aggregate = queryRepository.findById(messageId);
         if (aggregate == null) {
@@ -48,26 +48,26 @@ public class MessageQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         PageResult<MessageAggregate> messagePage = queryRepository.findByReceiverId(request, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         PageResult<MessageAggregate> messagePage = queryRepository.findUnreadByReceiverId(request, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public UnreadCountVO getUnreadCount() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryRepository.countUnreadByReceiverId(userId);
     }
 
     private PageResult<MessageVO> toMessageVOPage(PageResult<MessageAggregate> messagePage) {
-        Map<Long, String> usernameMap = resolveUsernames(
+        Map<String, String> usernameMap = resolveUsernames(
                 messagePage.records().stream().collect(Collectors.toSet()));
 
         List<MessageVO> voList = messagePage.records().stream()
@@ -78,8 +78,8 @@ public class MessageQueryHandler {
                 messagePage.current(), messagePage.size());
     }
 
-    private Map<Long, String> resolveUsernames(Set<MessageAggregate> aggregates) {
-        Set<Long> userIds = aggregates.stream()
+    private Map<String, String> resolveUsernames(Set<MessageAggregate> aggregates) {
+        Set<String> userIds = aggregates.stream()
                 .flatMap(m -> java.util.stream.Stream.of(m.senderId(), m.receiverId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
@@ -88,15 +88,14 @@ public class MessageQueryHandler {
             return Map.of();
         }
 
-        return userInfoPort.getUserInfoMap(userIds).entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> e.getValue().username(),
-                        (a, b) -> a
-                ));
+        Map<String, String> result = new java.util.HashMap<>();
+        for (var entry : userInfoPort.getUserInfoMap(userIds).entrySet()) {
+            result.put(entry.getKey(), entry.getValue().username());
+        }
+        return result;
     }
 
-    private MessageVO toMessageVO(MessageAggregate aggregate, Map<Long, String> usernameMap) {
+    private MessageVO toMessageVO(MessageAggregate aggregate, Map<String, String> usernameMap) {
         MessageVO.MessageVOBuilder builder = MessageVO.builder()
                 .id(aggregate.id())
                 .senderId(aggregate.senderId())

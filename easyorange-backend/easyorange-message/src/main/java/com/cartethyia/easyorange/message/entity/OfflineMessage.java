@@ -16,8 +16,8 @@ import java.time.LocalDateTime;
 @TableName("eo_offline_message")
 public class OfflineMessage extends BaseDO {
 
-    private Long userId;
-    private Long messageId;
+    private String userId;
+    private String messageId;
     private String pushChannel;
     private Integer pushStatus;
     private LocalDateTime pushTime;
@@ -25,8 +25,8 @@ public class OfflineMessage extends BaseDO {
     private Integer maxRetryCount;
     private LocalDateTime lastRetryTime;
 
-    public Long getUserId() { return userId; }
-    public Long getMessageId() { return messageId; }
+    public String getUserId() { return userId; }
+    public String getMessageId() { return messageId; }
     public String getPushChannel() { return pushChannel; }
     public Integer getPushStatus() { return pushStatus; }
     public LocalDateTime getPushTime() { return pushTime; }

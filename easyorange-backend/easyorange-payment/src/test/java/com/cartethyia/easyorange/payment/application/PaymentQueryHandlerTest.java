@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
@@ -30,9 +30,9 @@ class PaymentQueryHandlerTest {
     @InjectMocks
     private PaymentQueryHandler queryHandler;
 
-    private PaymentAggregate createTestAggregate(Long id, String paymentNo, PaymentStatus status) {
+    private PaymentAggregate createTestAggregate(String id, String paymentNo, PaymentStatus status) {
         return PaymentAggregate.reconstruct(
-                id, paymentNo, 2001L, 3001L,
+                id, paymentNo, "2001", "3001",
                 new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                 status, null, null, null, null, null, null, 0
         );
@@ -45,12 +45,12 @@ class PaymentQueryHandlerTest {
         @Test
         @DisplayName("查询支付记录成功")
         void getById_found() {
-            PaymentAggregate aggregate = createTestAggregate(1001L, "PAY123", PaymentStatus.SUCCESS);
-            when(paymentQueryRepository.findAggregateById(1001L)).thenReturn(Optional.of(aggregate));
+            PaymentAggregate aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
+            when(paymentQueryRepository.findAggregateById("1001")).thenReturn(Optional.of(aggregate));
 
-            PaymentAggregate result = queryHandler.getPaymentById(1001L);
+            PaymentAggregate result = queryHandler.getPaymentById("1001");
 
-            assertThat(result.id()).isEqualTo(1001L);
+            assertThat(result.id()).isEqualTo("1001");
             assertThat(result.paymentNo()).isEqualTo("PAY123");
             assertThat(result.status()).isEqualTo(PaymentStatus.SUCCESS);
         }
@@ -58,10 +58,10 @@ class PaymentQueryHandlerTest {
         @Test
         @DisplayName("支付记录不存在抛出异常")
         void getById_notFound() {
-            when(paymentQueryRepository.findAggregateById(9999L)).thenReturn(Optional.empty());
+            when(paymentQueryRepository.findAggregateById("9999")).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> queryHandler.getPaymentById(9999L))
-                    .isInstanceOf(PaymentNotFoundException.class);
+            assertThatThrownBy(() -> queryHandler.getPaymentById("9999"))
+                    .isInstanceOf(PaymentDomainException.class);
         }
     }
 
@@ -72,12 +72,12 @@ class PaymentQueryHandlerTest {
         @Test
         @DisplayName("按订单ID查询支付记录成功")
         void getByOrderId_found() {
-            PaymentAggregate aggregate = createTestAggregate(1001L, "PAY123", PaymentStatus.PENDING);
-            when(paymentQueryRepository.findAggregateByOrderId(2001L)).thenReturn(Optional.of(aggregate));
+            PaymentAggregate aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
+            when(paymentQueryRepository.findAggregateByOrderId("2001")).thenReturn(Optional.of(aggregate));
 
-            PaymentAggregate result = queryHandler.getPaymentByOrderId(2001L);
+            PaymentAggregate result = queryHandler.getPaymentByOrderId("2001");
 
-            assertThat(result.orderId()).isEqualTo(2001L);
+            assertThat(result.orderId()).isEqualTo("2001");
         }
     }
 }

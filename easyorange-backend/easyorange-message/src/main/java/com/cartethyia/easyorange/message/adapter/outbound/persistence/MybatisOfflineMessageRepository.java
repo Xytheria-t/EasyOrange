@@ -29,7 +29,7 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     }
 
     @Override
-    public List<OfflineMessageAggregate> findPendingByUserId(Long userId) {
+    public List<OfflineMessageAggregate> findPendingByUserId(String userId) {
         return messageDataMapper.toOfflineAggregateList(
                 lambdaQuery()
                         .eq(OfflineMessage::getUserId, userId)
@@ -43,7 +43,7 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     }
 
     @Override
-    public void markAsPushed(Long offlineMessageId) {
+    public void markAsPushed(String offlineMessageId) {
         lambdaUpdate()
                 .eq(OfflineMessage::getId, offlineMessageId)
                 .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PUSHED)
@@ -52,7 +52,7 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     }
 
     @Override
-    public void markAsFailed(Long offlineMessageId) {
+    public void markAsFailed(String offlineMessageId) {
         lambdaUpdate()
                 .eq(OfflineMessage::getId, offlineMessageId)
                 .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_FAILED)
@@ -60,7 +60,7 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     }
 
     @Override
-    public void incrementRetryCount(Long offlineMessageId) {
+    public void incrementRetryCount(String offlineMessageId) {
         lambdaUpdate()
                 .eq(OfflineMessage::getId, offlineMessageId)
                 .setSql("retry_count = retry_count + 1")

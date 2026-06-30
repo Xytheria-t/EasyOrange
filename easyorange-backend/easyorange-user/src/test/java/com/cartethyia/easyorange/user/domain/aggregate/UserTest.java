@@ -61,12 +61,12 @@ class UserTest {
         @DisplayName("应更新密码和密码修改时间")
         void shouldUpdatePasswordAndPwdUpdateDate() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "oldEncodedPassword"))
                 .loginInfo(LoginInfo.empty())
                 .build();
 
-            User updatedUser = user.changePassword("newEncodedPassword", 1L);
+            User updatedUser = user.changePassword("newEncodedPassword", "1");
 
             assertThat(updatedUser.getPassword()).isEqualTo("newEncodedPassword");
             assertThat(updatedUser.getLoginInfo()).isNotNull();
@@ -77,13 +77,13 @@ class UserTest {
         @DisplayName("多次修改密码应覆盖旧密码")
         void shouldOverridePreviousPassword() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "firstPassword"))
                 .loginInfo(LoginInfo.empty())
                 .build();
 
-            User secondUser = user.changePassword("secondPassword", 1L);
-            User thirdUser = secondUser.changePassword("thirdPassword", 1L);
+            User secondUser = user.changePassword("secondPassword", "1");
+            User thirdUser = secondUser.changePassword("thirdPassword", "1");
 
             assertThat(thirdUser.getPassword()).isEqualTo("thirdPassword");
         }
@@ -92,12 +92,12 @@ class UserTest {
         @DisplayName("密码为空应抛出异常")
         void shouldThrowWhenPasswordIsNull() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "oldPassword"))
                 .loginInfo(LoginInfo.empty())
                 .build();
 
-            assertThatThrownBy(() -> user.changePassword(null, 1L))
+            assertThatThrownBy(() -> user.changePassword(null, "1"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("新密码");
         }
@@ -111,7 +111,7 @@ class UserTest {
         @DisplayName("应更新登录IP和登录时间")
         void shouldUpdateLoginIpAndLoginDate() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .loginInfo(LoginInfo.empty())
                 .build();
@@ -127,7 +127,7 @@ class UserTest {
         @DisplayName("多次更新应覆盖之前的登录信息")
         void shouldOverridePreviousLoginInfo() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .loginInfo(LoginInfo.empty())
                 .build();
@@ -147,14 +147,14 @@ class UserTest {
         @DisplayName("应更新邮箱、手机、性别和学号")
         void shouldUpdateEmailPhoneSexAndStudentId() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .contactInfo(ContactInfo.empty())
                 .personalInfo(PersonalInfo.empty())
                 .build();
 
-            User updatedUser = user.updateContactInfo("new@example.com", "13999999999", 1L)
-                .updatePersonalInfo(null, null, Sex.FEMALE, "2024001", 1L);
+            User updatedUser = user.updateContactInfo("new@example.com", "13999999999", "1")
+                .updatePersonalInfo(null, null, Sex.FEMALE, "2024001", "1");
 
             assertThat(updatedUser.getContactInfo().email()).isEqualTo("new@example.com");
             assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13999999999");
@@ -169,13 +169,13 @@ class UserTest {
             ContactInfo contactInfo = new ContactInfo("old@example.com", "13812345678");
             PersonalInfo personalInfo = ImmutablePersonalInfo.builder().build();
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .contactInfo(contactInfo)
                 .personalInfo(personalInfo)
                 .build();
 
-            User updatedUser = user.updateContactInfo("", "", 1L);
+            User updatedUser = user.updateContactInfo("", "", "1");
 
             assertThat(updatedUser.getContactInfo().email()).isEqualTo("old@example.com");
             assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13812345678");
@@ -191,12 +191,12 @@ class UserTest {
         void shouldUpdateAvatarUrl() {
             PersonalInfo personalInfo = ImmutablePersonalInfo.builder().avatar("/avatar/old.png").build();
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .personalInfo(personalInfo)
                 .build();
 
-            User updatedUser = user.changeAvatar("/avatar/new.png", 1L);
+            User updatedUser = user.changeAvatar("/avatar/new.png", "1");
 
             assertThat(updatedUser.getPersonalInfo().avatar()).isEqualTo("/avatar/new.png");
             assertThat(updatedUser.getAuditInfo()).isNotNull();
@@ -206,12 +206,12 @@ class UserTest {
         @DisplayName("头像URL为空应抛出异常")
         void shouldThrowWhenAvatarUrlIsNull() {
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .personalInfo(PersonalInfo.empty())
                 .build();
 
-            assertThatThrownBy(() -> user.changeAvatar(null, 1L))
+            assertThatThrownBy(() -> user.changeAvatar(null, "1"))
                 .isInstanceOf(NullPointerException.class)
                 .hasMessageContaining("头像地址");
         }
@@ -258,10 +258,10 @@ class UserTest {
                 .avatar("/avatar/test.png")
                 .build();
             LoginInfo loginInfo = new LoginInfo("192.168.1.1", null, null);
-            AuditInfo auditInfo = AuditInfo.create(1L);
+            AuditInfo auditInfo = AuditInfo.create("1");
 
             User user = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "encodedPassword"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
@@ -271,7 +271,7 @@ class UserTest {
                 .auditInfo(auditInfo)
                 .build();
 
-            assertThat(user.getId()).isEqualTo(1L);
+            assertThat(user.getId()).isEqualTo("1");
             assertThat(user.getUsername()).isEqualTo("testuser");
             assertThat(user.getPassword()).isEqualTo("encodedPassword");
             assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
@@ -296,9 +296,9 @@ class UserTest {
                 .credentials(new Credentials("testuser", "password"))
                 .build();
 
-            User updatedUser = user.assignId(42L);
+            User updatedUser = user.assignId("42");
 
-            assertThat(updatedUser.getId()).isEqualTo(42L);
+            assertThat(updatedUser.getId()).isEqualTo("42");
         }
 
         @Test
@@ -324,7 +324,7 @@ class UserTest {
             ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
             PersonalInfo personalInfo = ImmutablePersonalInfo.builder().nickName("nickname").build();
             User original = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)

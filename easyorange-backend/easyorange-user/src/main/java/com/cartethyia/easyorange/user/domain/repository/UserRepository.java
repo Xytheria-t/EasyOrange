@@ -10,9 +10,9 @@ public interface UserRepository {
 
     // ========== Query methods ==========
 
-    Optional<User> findById(Long id);
+    Optional<User> findById(String id);
 
-    List<User> findAllByIds(Collection<Long> ids);
+    List<User> findAllByIds(Collection<String> ids);
 
     Optional<User> findByEmail(String email);
 
@@ -30,9 +30,9 @@ public interface UserRepository {
 
     void update(User user);
 
-    void updateLoginInfo(Long userId, String loginIp);
+    void updateLoginInfo(String userId, String loginIp);
 
-    void deleteById(Long id);
+    void deleteById(String id);
 
     // ========== Aggregate methods ==========
 

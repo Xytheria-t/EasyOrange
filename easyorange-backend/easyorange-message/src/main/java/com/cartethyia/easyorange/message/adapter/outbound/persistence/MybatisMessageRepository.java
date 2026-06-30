@@ -23,13 +23,13 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public Optional<MessageAggregate> findById(Long id) {
+    public Optional<MessageAggregate> findById(String id) {
         Message entity = mapper.selectById(id);
         return Optional.ofNullable(messageDataMapper.toAggregate(entity));
     }
 
     @Override
-    public List<MessageAggregate> findByReceiverId(Long receiverId, int limit) {
+    public List<MessageAggregate> findByReceiverId(String receiverId, int limit) {
         return messageDataMapper.toAggregateList(
                 lambdaQuery()
                         .eq(Message::getReceiverId, receiverId)
@@ -40,7 +40,7 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public List<MessageAggregate> findByReceiverIdAndReadStatus(Long receiverId, ReadStatus readStatus, int limit) {
+    public List<MessageAggregate> findByReceiverIdAndReadStatus(String receiverId, ReadStatus readStatus, int limit) {
         return messageDataMapper.toAggregateList(
                 lambdaQuery()
                         .eq(Message::getReceiverId, receiverId)
@@ -52,7 +52,7 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public long countUnreadByReceiverId(Long receiverId) {
+    public long countUnreadByReceiverId(String receiverId) {
         return lambdaQuery()
                 .eq(Message::getReceiverId, receiverId)
                 .eq(Message::getIsRead, MessageStatus.UNREAD.getCode())
@@ -72,12 +72,12 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(String id) {
         mapper.deleteById(id);
     }
 
     @Override
-    public void markAllAsRead(Long receiverId) {
+    public void markAllAsRead(String receiverId) {
         lambdaUpdate()
                 .eq(Message::getReceiverId, receiverId)
                 .eq(Message::getIsRead, MessageStatus.UNREAD.getCode())
@@ -86,7 +86,7 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public void markAsReadByType(Long receiverId, Integer type) {
+    public void markAsReadByType(String receiverId, Integer type) {
         lambdaUpdate()
                 .eq(Message::getReceiverId, receiverId)
                 .eq(Message::getType, type)

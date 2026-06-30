@@ -3,7 +3,8 @@ package com.cartethyia.easyorange.payment.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,26 +19,26 @@ public class PaymentQueryHandler {
 
     private final PaymentQueryRepositoryPort paymentQueryRepository;
 
-    public PaymentAggregate getPaymentById(Long paymentId) {
+    public PaymentAggregate getPaymentById(String paymentId) {
         return paymentQueryRepository.findAggregateById(paymentId)
-                .orElseThrow(PaymentNotFoundException::of);
+                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
     }
 
-    public PaymentAggregate getPaymentByOrderId(Long orderId) {
+    public PaymentAggregate getPaymentByOrderId(String orderId) {
         return paymentQueryRepository.findAggregateByOrderId(orderId)
-                .orElseThrow(PaymentNotFoundException::of);
+                .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
     }
 
     public PageResult<PaymentAggregate> getMyPayments(Integer status, Integer pageNum, Integer pageSize) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryPaymentsInternal(userId, status, pageNum, pageSize);
     }
 
-    public PageResult<PaymentAggregate> queryPayments(Long userId, Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<PaymentAggregate> queryPayments(String userId, Integer status, Integer pageNum, Integer pageSize) {
         return queryPaymentsInternal(userId, status, pageNum, pageSize);
     }
 
-    private PageResult<PaymentAggregate> queryPaymentsInternal(Long userId, Integer status, Integer pageNum, Integer pageSize) {
+    private PageResult<PaymentAggregate> queryPaymentsInternal(String userId, Integer status, Integer pageNum, Integer pageSize) {
         int effectivePageNum = pageNum != null ? pageNum : 1;
         int effectivePageSize = pageSize != null ? pageSize : 20;
 

@@ -22,10 +22,10 @@ public class ProductDocument {
     @Id
     private String id;
 
-    private Long userId;
+    private String userId;
     private String name;
     private String description;
-    private Integer categoryId;
+    private String categoryId;
     private String categoryName;
 
     @Field(type = FieldType.Double)

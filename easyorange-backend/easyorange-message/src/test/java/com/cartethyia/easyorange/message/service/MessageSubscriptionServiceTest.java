@@ -31,7 +31,7 @@ class MessageSubscriptionServiceTest {
     @InjectMocks
     private MessageSubscriptionServiceImpl subscriptionService;
 
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
 
     @Nested
     @DisplayName("getMySubscriptions")

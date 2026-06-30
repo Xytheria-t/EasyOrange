@@ -21,7 +21,7 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
     private final UserMapper userMapper;
 
     @Override
-    public UserInfo getUserInfo(Long userId) {
+    public UserInfo getUserInfo(String userId) {
         UserEntity user = userMapper.selectById(userId);
         if (user == null) {
             return null;
@@ -30,7 +30,7 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
     }
 
     @Override
-    public Map<Long, UserInfo> getUserInfos(List<Long> userIds) {
+    public Map<String, UserInfo> getUserInfos(List<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Map.of();
         }

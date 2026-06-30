@@ -37,13 +37,13 @@ class PaymentCommandAssemblerTest {
         @DisplayName("正确转换 CreatePaymentRequest 到 CreatePaymentCommand")
         void toCreateCommand_convertsCorrectly() {
             CreatePaymentRequest request = new CreatePaymentRequest();
-            request.setOrderId(1001L);
+            request.setOrderId("1001");
             request.setPaymentMethod(1);
             request.setPayPassword("123456");
 
-            CreatePaymentCommand command = mapper.toCreateCommand(request, 2001L);
+            CreatePaymentCommand command = mapper.toCreateCommand(request, "2001");
 
-            assertThat(command.getOrderId()).isEqualTo(1001L);
+            assertThat(command.getOrderId()).isEqualTo("1001");
             assertThat(command.getPaymentMethod()).isEqualTo(1);
             assertThat(command.getAttach()).isNull();
         }
@@ -78,13 +78,13 @@ class PaymentCommandAssemblerTest {
         @DisplayName("正确转换 RefundRequest 到 RefundPaymentCommand")
         void toRefundCommand_convertsCorrectly() {
             RefundRequest request = new RefundRequest();
-            request.setPaymentId(1001L);
+            request.setPaymentId("1001");
             request.setRefundAmount(new BigDecimal("50.00"));
             request.setRefundReason("测试退款");
 
-            RefundPaymentCommand command = mapper.toRefundCommand(2001L, request);
+            RefundPaymentCommand command = mapper.toRefundCommand("2001", request);
 
-            assertThat(command.getPaymentId()).isEqualTo(2001L);
+            assertThat(command.getPaymentId()).isEqualTo("2001");
             assertThat(command.getRefundAmount()).isEqualByComparingTo(new BigDecimal("50.00"));
             assertThat(command.getRefundReason()).isEqualTo("测试退款");
         }
@@ -97,9 +97,9 @@ class PaymentCommandAssemblerTest {
         @Test
         @DisplayName("正确转换 paymentId 到 ClosePaymentCommand")
         void toCloseCommand_convertsCorrectly() {
-            ClosePaymentCommand command = mapper.toCloseCommand(1001L);
+            ClosePaymentCommand command = mapper.toCloseCommand("1001");
 
-            assertThat(command.getPaymentId()).isEqualTo(1001L);
+            assertThat(command.getPaymentId()).isEqualTo("1001");
         }
     }
 }

@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class MockPaymentRequest {
 
     @NotNull(message = "支付ID不能为空")
-    private Long paymentId;
+    private String paymentId;
 
     private String paymentNo;
 

@@ -20,7 +20,7 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
     }
 
     @Override
-    public List<MessageSubscriptionAggregate> findByUserId(Long userId) {
+    public List<MessageSubscriptionAggregate> findByUserId(String userId) {
         return messageDataMapper.toSubscriptionAggregateList(
                 lambdaQuery()
                         .eq(MessageSubscription::getUserId, userId)
@@ -29,7 +29,7 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
     }
 
     @Override
-    public MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel) {
+    public MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(String userId, String messageType, String pushChannel) {
         MessageSubscription entity = lambdaQuery()
                 .eq(MessageSubscription::getUserId, userId)
                 .eq(MessageSubscription::getMessageType, messageType)
@@ -51,7 +51,7 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
     }
 
     @Override
-    public boolean existsEnabled(Long userId, String messageType, String pushChannel) {
+    public boolean existsEnabled(String userId, String messageType, String pushChannel) {
         Long count = lambdaQuery()
                 .eq(MessageSubscription::getUserId, userId)
                 .eq(MessageSubscription::getMessageType, messageType)

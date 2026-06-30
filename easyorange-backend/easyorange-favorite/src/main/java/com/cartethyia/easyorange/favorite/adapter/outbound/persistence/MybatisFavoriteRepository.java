@@ -19,12 +19,12 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     @Override
-    public Optional<Favorite> findById(Long id) {
+    public Optional<Favorite> findById(String id) {
         return Optional.ofNullable(mapper.selectById(id)).map(this::toDomain);
     }
 
     @Override
-    public List<Favorite> findByIds(List<Long> ids) {
+    public List<Favorite> findByIds(List<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
@@ -34,7 +34,7 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     @Override
-    public Optional<Favorite> findByUserIdAndProductId(Long userId, Long productId) {
+    public Optional<Favorite> findByUserIdAndProductId(String userId, String productId) {
         return Optional.ofNullable(lambdaQuery()
                         .eq(FavoriteDO::getUserId, userId)
                         .eq(FavoriteDO::getProductId, productId)
@@ -44,7 +44,7 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     @Override
-    public List<Favorite> findByUserId(Long userId, long offset, long limit) {
+    public List<Favorite> findByUserId(String userId, long offset, long limit) {
         long pageNum = offset / limit + 1;
         List<FavoriteDO> dataObjects = lambdaQuery()
                 .eq(FavoriteDO::getUserId, userId)
@@ -56,7 +56,7 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     @Override
-    public long countByUserId(Long userId) {
+    public long countByUserId(String userId) {
         return lambdaQuery()
                 .eq(FavoriteDO::getUserId, userId)
                 .eq(FavoriteDO::getDelFlag, 0)
@@ -80,17 +80,17 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     @Override
-    public void removeById(Long id) {
+    public void removeById(String id) {
         mapper.deleteById(id);
     }
 
     @Override
-    public int removeByIds(List<Long> ids) {
+    public int removeByIds(List<String> ids) {
         return mapper.deleteByIds(ids);
     }
 
     @Override
-    public boolean existsByUserIdAndProductId(Long userId, Long productId) {
+    public boolean existsByUserIdAndProductId(String userId, String productId) {
         return lambdaQuery()
                 .eq(FavoriteDO::getUserId, userId)
                 .eq(FavoriteDO::getProductId, productId)
@@ -99,7 +99,7 @@ public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, Fa
     }
 
     @Override
-    public Set<Long> findFavoritedProductIds(Long userId, List<Long> productIds) {
+    public Set<String> findFavoritedProductIds(String userId, List<String> productIds) {
         List<FavoriteDO> dataObjects = lambdaQuery()
                 .eq(FavoriteDO::getUserId, userId)
                 .in(FavoriteDO::getProductId, productIds)

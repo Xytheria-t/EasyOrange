@@ -16,7 +16,7 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
     private final ProductQueryService productQueryService;
 
     @Override
-    public Optional<ProductDetail> getProductById(Long productId) {
+    public Optional<ProductDetail> getProductById(String productId) {
         try {
             ProductVO product = productQueryService.getProductById(productId);
             return Optional.ofNullable(product)
@@ -27,7 +27,7 @@ public class OrderProductQueryAdapter implements ProductQueryPort {
     }
 
     @Override
-    public List<ProductDetail> getProductsByIds(List<Long> productIds) {
+    public List<ProductDetail> getProductsByIds(List<String> productIds) {
         List<ProductVO> products = productQueryService.getProductsByIds(productIds);
         if (products == null) {
             return List.of();

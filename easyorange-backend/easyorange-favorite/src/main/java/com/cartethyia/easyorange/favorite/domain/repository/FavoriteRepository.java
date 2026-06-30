@@ -8,23 +8,23 @@ import java.util.Set;
 
 public interface FavoriteRepository {
 
-    Optional<Favorite> findById(Long id);
+    Optional<Favorite> findById(String id);
 
-    List<Favorite> findByIds(List<Long> ids);
+    List<Favorite> findByIds(List<String> ids);
 
-    Optional<Favorite> findByUserIdAndProductId(Long userId, Long productId);
+    Optional<Favorite> findByUserIdAndProductId(String userId, String productId);
 
-    List<Favorite> findByUserId(Long userId, long offset, long limit);
+    List<Favorite> findByUserId(String userId, long offset, long limit);
 
-    long countByUserId(Long userId);
+    long countByUserId(String userId);
 
     Favorite save(Favorite favorite);
 
-    void removeById(Long id);
+    void removeById(String id);
 
-    int removeByIds(List<Long> ids);
+    int removeByIds(List<String> ids);
 
-    boolean existsByUserIdAndProductId(Long userId, Long productId);
+    boolean existsByUserIdAndProductId(String userId, String productId);
 
-    Set<Long> findFavoritedProductIds(Long userId, List<Long> productIds);
+    Set<String> findFavoritedProductIds(String userId, List<String> productIds);
 }

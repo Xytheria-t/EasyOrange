@@ -29,7 +29,7 @@ public class ChatWebSocketHandler {
 
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload WsMessage payload, Principal principal) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         if (!rateLimiterService.allowSendMessage(userId)) {
             messagingTemplate.convertAndSendToUser(
@@ -65,7 +65,7 @@ public class ChatWebSocketHandler {
 
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload WsMessage payload, Principal principal) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         typingService.setTyping(payload.getConversationId(), userId);
 
@@ -77,7 +77,7 @@ public class ChatWebSocketHandler {
         log.debug("action=typing_indicator conversationId={} userId={}", payload.getConversationId(), userId);
     }
 
-    public void broadcastRecallEvent(String conversationId, Long messageId, Long operatorId) {
+    public void broadcastRecallEvent(String conversationId, String messageId, String operatorId) {
         String recallDest = "/topic/chat/" + conversationId + "/recall";
         Map<String, Object> recallPayload = Map.of(
                 "messageId", String.valueOf(messageId),

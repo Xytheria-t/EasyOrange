@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SendMessageCommand {
 
-    private Long receiverId;
+    private String receiverId;
 
     private Integer type;
 
@@ -24,7 +24,7 @@ public class SendMessageCommand {
     @Size(max = 2000)
     private String content;
 
-    private Long businessId;
+    private String businessId;
 
     private String conversationId;
 }

@@ -27,22 +27,22 @@ public class ProductSearchIndexAdapter implements ProductSearchIndexPort {
     private final ProductDetailMapper productDetailMapper;
 
     @Override
-    public void indexProduct(Long productId) {
+    public void indexProduct(String productId) {
         updateSearchText(productId);
     }
 
     @Override
-    public void updateProductIndex(Long productId) {
+    public void updateProductIndex(String productId) {
         updateSearchText(productId);
     }
 
     @Override
-    public void removeProductIndex(Long productId) {
+    public void removeProductIndex(String productId) {
         productMapper.updateSearchText(productId, null);
         log.debug("Cleared search_text for productId={}", productId);
     }
 
-    private void updateSearchText(Long productId) {
+    private void updateSearchText(String productId) {
         try {
             ProductDO product = productMapper.selectById(productId);
             if (product == null) {

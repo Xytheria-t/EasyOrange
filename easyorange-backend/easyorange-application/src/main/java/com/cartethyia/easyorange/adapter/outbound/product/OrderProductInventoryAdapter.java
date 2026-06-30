@@ -20,7 +20,7 @@ public class OrderProductInventoryAdapter implements ProductInventoryPort {
     private final ProductCommandService productCommandService;
 
     @Override
-    public Optional<ProductSnapshot> getSnapshot(Long productId) {
+    public Optional<ProductSnapshot> getSnapshot(String productId) {
         return productSnapshotPort.getOrderableSnapshot(ProductId.of(productId))
                 .map(snapshot -> new ProductSnapshot(
                         snapshot.productId().value(),
@@ -33,18 +33,18 @@ public class OrderProductInventoryAdapter implements ProductInventoryPort {
     }
 
     @Override
-    public boolean decreaseStock(Long productId) {
+    public boolean decreaseStock(String productId) {
         productCommandService.decrementStock(new DecrementStockCommand(productId, 1));
         return true;
     }
 
     @Override
-    public void restoreStock(Long productId) {
+    public void restoreStock(String productId) {
         productCommandService.restoreStock(new RestoreStockCommand(productId));
     }
 
     @Override
-    public void markAsSold(Long productId) {
+    public void markAsSold(String productId) {
         productCommandService.markAsSold(new MarkAsSoldCommand(productId));
     }
 }

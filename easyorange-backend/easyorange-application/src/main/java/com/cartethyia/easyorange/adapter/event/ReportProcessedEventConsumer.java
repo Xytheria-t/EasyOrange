@@ -31,10 +31,10 @@ public class ReportProcessedEventConsumer {
             String content = buildNotificationContent(event);
 
             SendSystemMessageCommand command = SendSystemMessageCommand.builder()
-                    .receiverId(event.reporterId())
+                    .receiverId(String.valueOf(event.reporterId()))
                     .title(title)
                     .content(content)
-                    .businessId(event.productId())
+                    .businessId(String.valueOf(event.productId()))
                     .build();
 
             messageCommandHandler.handle(command);

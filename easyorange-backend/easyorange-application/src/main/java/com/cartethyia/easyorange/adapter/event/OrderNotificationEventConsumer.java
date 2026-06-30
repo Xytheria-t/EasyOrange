@@ -62,7 +62,7 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            Long buyerId = getBuyerId(event.getOrderId());
+            String buyerId = getBuyerId(event.getOrderId());
             if (buyerId == null) {
                 log.warn("订单不存在，跳过支付通知: orderId={}", event.getOrderId());
                 return;
@@ -88,7 +88,7 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            Long buyerId = getBuyerId(event.getOrderId());
+            String buyerId = getBuyerId(event.getOrderId());
             if (buyerId == null) {
                 log.warn("订单不存在，跳过发货通知: orderId={}", event.getOrderId());
                 return;
@@ -114,7 +114,7 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            Long buyerId = getBuyerId(event.getOrderId());
+            String buyerId = getBuyerId(event.getOrderId());
             if (buyerId == null) {
                 log.warn("订单不存在，跳过完成通知: orderId={}", event.getOrderId());
                 return;
@@ -140,7 +140,7 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            Long buyerId = getBuyerId(event.getOrderId());
+            String buyerId = getBuyerId(event.getOrderId());
             if (buyerId == null) {
                 log.warn("订单不存在，跳过取消通知: orderId={}", event.getOrderId());
                 return;
@@ -166,7 +166,7 @@ public class OrderNotificationEventConsumer {
         }
 
         try {
-            Long buyerId = getBuyerId(event.getOrderId());
+            String buyerId = getBuyerId(event.getOrderId());
             if (buyerId == null) {
                 log.warn("订单不存在，跳过退款通知: orderId={}", event.getOrderId());
                 return;
@@ -191,7 +191,7 @@ public class OrderNotificationEventConsumer {
         return idempotencyChecker.tryMark(eventType, eventId);
     }
 
-    private Long getBuyerId(Long orderId) {
+    private String getBuyerId(String orderId) {
         if (orderId == null) {
             return null;
         }

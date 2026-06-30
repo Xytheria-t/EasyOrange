@@ -43,7 +43,7 @@ class ProfileAppServiceTest {
 
     private ProfileAppService profileAppService;
 
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
     private static final String USERNAME = "testuser";
     private static final String EMAIL = "test@example.com";
     private static final String PHONE = "13812345678";

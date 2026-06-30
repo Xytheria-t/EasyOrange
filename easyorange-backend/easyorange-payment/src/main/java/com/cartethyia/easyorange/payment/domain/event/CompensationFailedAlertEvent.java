@@ -10,12 +10,12 @@ import lombok.Getter;
 @Getter
 public class CompensationFailedAlertEvent extends BaseDomainEvent {
 
-    private final Long paymentId;
+    private final String paymentId;
     private final String operationType; // "pay" 或 "refund"
     private final String errorMessage;
     private final String failureDetails;
 
-    public CompensationFailedAlertEvent(Long paymentId, String operationType, String errorMessage, String failureDetails) {
+    public CompensationFailedAlertEvent(String paymentId, String operationType, String errorMessage, String failureDetails) {
         super();
         this.paymentId = paymentId;
         this.operationType = operationType;

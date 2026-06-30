@@ -49,10 +49,10 @@ class OrderNotificationEventConsumerTest {
     @InjectMocks
     private OrderNotificationEventConsumer consumer;
 
-    private static final Long ORDER_ID = 100L;
-    private static final Long PRODUCT_ID = 200L;
-    private static final Long BUYER_ID = 1L;
-    private static final Long SELLER_ID = 2L;
+    private static final String ORDER_ID = "100";
+    private static final String PRODUCT_ID = "200";
+    private static final String BUYER_ID = "1";
+    private static final String SELLER_ID = "2";
 
     private OrderReadModel orderReadModel;
 

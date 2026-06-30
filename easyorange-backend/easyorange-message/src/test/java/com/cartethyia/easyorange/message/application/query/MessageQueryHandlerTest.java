@@ -28,7 +28,6 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,9 +43,9 @@ class MessageQueryHandlerTest {
     @InjectMocks
     private MessageQueryHandler queryHandler;
 
-    private static final Long USER_ID = 1L;
-    private static final Long SENDER_ID = 2L;
-    private static final Long MESSAGE_ID = 100L;
+    private static final String USER_ID = "1";
+    private static final String SENDER_ID = "2";
+    private static final String MESSAGE_ID = "100";
 
     private MessageAggregate createTestMessage() {
         return MessageAggregate.fromRaw(
@@ -102,7 +101,7 @@ class MessageQueryHandlerTest {
             MessageAggregate aggregate = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
 
-            TestSecurityUtil.setSecurityContext(999L);
+            TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> queryHandler.getMessageDetail(MESSAGE_ID))
                         .isInstanceOf(BusinessException.class);
@@ -122,7 +121,7 @@ class MessageQueryHandlerTest {
             QueryMessageRequest request = new QueryMessageRequest();
             MessageAggregate aggregate = createTestMessage();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyLong())).thenReturn(pageResult);
+            when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyString())).thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any(Set.class)))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
@@ -143,7 +142,7 @@ class MessageQueryHandlerTest {
         void getMyMessages_empty_returnsEmptyPage() {
             QueryMessageRequest request = new QueryMessageRequest();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(), 0L, 1, 20);
-            when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyLong())).thenReturn(pageResult);
+            when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyString())).thenReturn(pageResult);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -167,7 +166,7 @@ class MessageQueryHandlerTest {
             QueryMessageRequest request = new QueryMessageRequest();
             MessageAggregate aggregate = createTestMessage();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findUnreadByReceiverId(any(QueryMessageRequest.class), anyLong())).thenReturn(pageResult);
+            when(queryRepository.findUnreadByReceiverId(any(QueryMessageRequest.class), anyString())).thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any(Set.class)))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
@@ -195,7 +194,7 @@ class MessageQueryHandlerTest {
                     .systemCount(2L)
                     .chatCount(3L)
                     .build();
-            when(queryRepository.countUnreadByReceiverId(anyLong())).thenReturn(countVO);
+            when(queryRepository.countUnreadByReceiverId(anyString())).thenReturn(countVO);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {

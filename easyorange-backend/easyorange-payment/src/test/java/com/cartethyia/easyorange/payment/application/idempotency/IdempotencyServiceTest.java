@@ -38,7 +38,7 @@ class IdempotencyServiceTest {
     private ArgumentCaptor<IdempotencyKey> keyCaptor;
 
     private static final String TEST_KEY = "test-idempotency-key";
-    private static final Long TEST_USER_ID = 1001L;
+    private static final String TEST_USER_ID = "1001";
     private static final String TEST_REQUEST_HASH = "abc123hash";
 
     @Nested
@@ -99,7 +99,7 @@ class IdempotencyServiceTest {
         @DisplayName("用户不匹配时抛出异常")
         void process_userMismatch_throws() throws Exception {
             IdempotencyKey existingKey = IdempotencyKey.of(
-                    TEST_KEY, 9999L, TEST_REQUEST_HASH,
+                    TEST_KEY, "9999", TEST_REQUEST_HASH,
                     IdempotencyKey.STATUS_PENDING, LocalDateTime.now().plusHours(24)
             );
             when(objectMapper.writeValueAsString(any())).thenReturn("{}");

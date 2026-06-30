@@ -11,8 +11,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SendSystemMessageCommand {
 
-    private Long receiverId;
+    private String receiverId;
     private String title;
     private String content;
-    private Long businessId;
+    private String businessId;
 }

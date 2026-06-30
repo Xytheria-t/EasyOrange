@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ConversationListVO {
 
-    private Long targetUserId;
+    private String targetUserId;
 
     private String targetUserName;
 

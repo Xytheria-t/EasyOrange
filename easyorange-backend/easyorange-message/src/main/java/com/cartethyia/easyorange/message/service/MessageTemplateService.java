@@ -20,7 +20,7 @@ public interface MessageTemplateService {
 
     void updateTemplate(MessageTemplateAggregate template);
 
-    void deleteTemplateByIds(Long[] templateIds);
+    void deleteTemplateByIds(String[] templateIds);
 
     boolean checkTemplateCodeUnique(MessageTemplateAggregate template);
 

@@ -24,7 +24,7 @@ public class PaymentCommandController {
 
     @PostMapping
     public Result<PaymentResponse> createPayment(@Valid @RequestBody CreatePaymentRequest request) {
-        Long paymentId = commandHandler.handle(paymentCommandMapper.toCreateCommand(request, null));
+        String paymentId = commandHandler.handle(paymentCommandMapper.toCreateCommand(request, null));
         PaymentResponse response = PaymentResponse.builder().id(paymentId).build();
         return Result.success(response);
     }
@@ -37,13 +37,13 @@ public class PaymentCommandController {
     }
 
     @PostMapping("/{id}/refund")
-    public Result<Void> refund(@PathVariable Long id, @Valid @RequestBody RefundRequest request) {
+    public Result<Void> refund(@PathVariable String id, @Valid @RequestBody RefundRequest request) {
         commandHandler.handle(paymentCommandMapper.toRefundCommand(id, request));
         return Result.success();
     }
 
     @PostMapping("/{id}/close")
-    public Result<Void> close(@PathVariable Long id) {
+    public Result<Void> close(@PathVariable String id) {
         commandHandler.handle(paymentCommandMapper.toCloseCommand(id));
         return Result.success();
     }

@@ -15,7 +15,7 @@ public class WebSocketNotifier {
     private final SimpMessagingTemplate messagingTemplate;
     private final SimpUserRegistry userRegistry;
 
-    public void sendMessage(Long userId, WsMessage message) {
+    public void sendMessage(String userId, WsMessage message) {
         try {
             messagingTemplate.convertAndSendToUser(
                     userId.toString(),
@@ -27,7 +27,7 @@ public class WebSocketNotifier {
         }
     }
 
-    public void sendNotification(Long userId, Object notification) {
+    public void sendNotification(String userId, Object notification) {
         try {
             messagingTemplate.convertAndSendToUser(
                     userId.toString(),
@@ -47,7 +47,7 @@ public class WebSocketNotifier {
         }
     }
 
-    public boolean isUserOnline(Long userId) {
+    public boolean isUserOnline(String userId) {
         return userRegistry.getUser(userId.toString()) != null;
     }
 }

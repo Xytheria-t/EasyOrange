@@ -29,12 +29,12 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
     }
 
     @Override
-    public MessageAggregate findById(Long id) {
+    public MessageAggregate findById(String id) {
         return messageDataMapper.toAggregate(mapper.selectById(id));
     }
 
     @Override
-    public PageResult<MessageAggregate> findByReceiverId(QueryMessageRequest request, Long userId) {
+    public PageResult<MessageAggregate> findByReceiverId(QueryMessageRequest request, String userId) {
         PageRequest normalized = request.normalized();
         Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
         var wrapper = lambdaQuery();
@@ -54,7 +54,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
     }
 
     @Override
-    public PageResult<MessageAggregate> findUnreadByReceiverId(QueryMessageRequest request, Long userId) {
+    public PageResult<MessageAggregate> findUnreadByReceiverId(QueryMessageRequest request, String userId) {
         PageRequest normalized = request.normalized();
         Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
         var wrapper = lambdaQuery();
@@ -72,7 +72,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
     }
 
     @Override
-    public UnreadCountVO countUnreadByReceiverId(Long userId) {
+    public UnreadCountVO countUnreadByReceiverId(String userId) {
         List<Map<String, Object>> counts = mapper.countUnreadByType(userId, MessageStatus.UNREAD.getCode());
 
         Map<Integer, Long> countMap = counts.stream()

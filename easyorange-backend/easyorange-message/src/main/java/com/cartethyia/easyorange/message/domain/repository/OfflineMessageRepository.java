@@ -8,11 +8,11 @@ public interface OfflineMessageRepository {
 
     OfflineMessageAggregate save(OfflineMessageAggregate message);
 
-    List<OfflineMessageAggregate> findPendingByUserId(Long userId);
+    List<OfflineMessageAggregate> findPendingByUserId(String userId);
 
-    void markAsPushed(Long offlineMessageId);
+    void markAsPushed(String offlineMessageId);
 
-    void markAsFailed(Long offlineMessageId);
+    void markAsFailed(String offlineMessageId);
 
-    void incrementRetryCount(Long offlineMessageId);
+    void incrementRetryCount(String offlineMessageId);
 }

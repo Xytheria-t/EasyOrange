@@ -6,13 +6,13 @@ import java.util.List;
 
 public interface MessageSubscriptionRepository {
 
-    List<MessageSubscriptionAggregate> findByUserId(Long userId);
+    List<MessageSubscriptionAggregate> findByUserId(String userId);
 
-    MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(Long userId, String messageType, String pushChannel);
+    MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(String userId, String messageType, String pushChannel);
 
     MessageSubscriptionAggregate save(MessageSubscriptionAggregate subscription);
 
     void update(MessageSubscriptionAggregate subscription);
 
-    boolean existsEnabled(Long userId, String messageType, String pushChannel);
+    boolean existsEnabled(String userId, String messageType, String pushChannel);
 }

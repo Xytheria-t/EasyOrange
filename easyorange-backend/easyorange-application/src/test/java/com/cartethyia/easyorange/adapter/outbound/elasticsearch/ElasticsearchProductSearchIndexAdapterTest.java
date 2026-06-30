@@ -54,9 +54,9 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("buildDocument 应映射所有字段")
     void buildDocument_shouldMapAllFields() {
         ProductDO product = ProductDO.builder()
-                .id(100L)
-                .userId(200L)
-                .categoryId(300L)
+                .id("100")
+                .userId("200")
+                .categoryId("300")
                 .name("测试商品")
                 .price(new BigDecimal("99.99"))
                 .originalPrice(new BigDecimal("199.99"))
@@ -68,23 +68,23 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .tags("tag1,tag2,tag3")
                 .build();
 
-        ProductDetailDO detail = new ProductDetailDO(100L, "商品描述");
-        when(productDetailMapper.selectById(100L)).thenReturn(detail);
+        ProductDetailDO detail = new ProductDetailDO("100", "商品描述");
+        when(productDetailMapper.selectById("100")).thenReturn(detail);
 
-        ProductImageDO mainImage = new ProductImageDO(100L, "http://example.com/main.jpg", 1, 1);
-        ProductImageDO otherImage = new ProductImageDO(100L, "http://example.com/other.jpg", 2, 0);
+        ProductImageDO mainImage = new ProductImageDO("100", "http://example.com/main.jpg", 1, 1);
+        ProductImageDO otherImage = new ProductImageDO("100", "http://example.com/other.jpg", 2, 0);
         when(productImageMapper.selectList(any())).thenReturn(List.of(mainImage, otherImage));
 
-        CategoryDO category = new CategoryDO("手机", 0L, 1, "icon.png", 1, 1);
-        when(categoryMapper.selectById(300L)).thenReturn(category);
+        CategoryDO category = new CategoryDO("手机", "0", 1, "icon.png", 1, 1);
+        when(categoryMapper.selectById("300")).thenReturn(category);
 
         ProductDocument doc = adapter.buildDocument(product);
 
         assertThat(doc.getId()).isEqualTo("100");
-        assertThat(doc.getUserId()).isEqualTo(200L);
+        assertThat(doc.getUserId()).isEqualTo("200");
         assertThat(doc.getName()).isEqualTo("测试商品");
         assertThat(doc.getDescription()).isEqualTo("商品描述");
-        assertThat(doc.getCategoryId()).isEqualTo(300);
+        assertThat(doc.getCategoryId()).isEqualTo("300");
         assertThat(doc.getCategoryName()).isEqualTo("手机");
         assertThat(doc.getPrice()).isEqualTo(99.99);
         assertThat(doc.getOriginalPrice()).isEqualTo(199.99);
@@ -103,16 +103,16 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("无图片时应处理为 null/空")
     void buildDocument_shouldHandleNoImages() {
         ProductDO product = ProductDO.builder()
-                .id(100L)
-                .userId(200L)
-                .categoryId(300L)
+                .id("100")
+                .userId("200")
+                .categoryId("300")
                 .name("测试商品")
                 .price(new BigDecimal("99.99"))
                 .build();
 
-        when(productDetailMapper.selectById(100L)).thenReturn(null);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
         when(productImageMapper.selectList(any())).thenReturn(List.of());
-        when(categoryMapper.selectById(300L)).thenReturn(null);
+        when(categoryMapper.selectById("300")).thenReturn(null);
 
         ProductDocument doc = adapter.buildDocument(product);
 
@@ -126,14 +126,14 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("空标签应返回空列表")
     void buildDocument_shouldHandleBlankTags() {
         ProductDO product = ProductDO.builder()
-                .id(100L)
-                .userId(200L)
+                .id("100")
+                .userId("200")
                 .name("测试")
                 .price(new BigDecimal("10"))
                 .tags("")
                 .build();
 
-        when(productDetailMapper.selectById(100L)).thenReturn(null);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
         when(productImageMapper.selectList(any())).thenReturn(List.of());
 
         ProductDocument doc = adapter.buildDocument(product);
@@ -145,16 +145,16 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("主图应取 isMain=1 的图片")
     void buildDocument_shouldPickMainImageByFlag() {
         ProductDO product = ProductDO.builder()
-                .id(100L)
-                .userId(200L)
+                .id("100")
+                .userId("200")
                 .name("测试")
                 .price(new BigDecimal("10"))
                 .build();
 
-        when(productDetailMapper.selectById(100L)).thenReturn(null);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
         when(productImageMapper.selectList(any())).thenReturn(List.of(
-                new ProductImageDO(100L, "http://example.com/img1.jpg", 1, 0),
-                new ProductImageDO(100L, "http://example.com/img2.jpg", 2, 1)
+                new ProductImageDO("100", "http://example.com/img1.jpg", 1, 0),
+                new ProductImageDO("100", "http://example.com/img2.jpg", 2, 1)
         ));
 
         ProductDocument doc = adapter.buildDocument(product);
@@ -166,15 +166,15 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("无主图标记时应取第一张图片")
     void buildDocument_shouldFallbackToFirstImage() {
         ProductDO product = ProductDO.builder()
-                .id(100L)
-                .userId(200L)
+                .id("100")
+                .userId("200")
                 .name("测试")
                 .price(new BigDecimal("10"))
                 .build();
 
-        when(productDetailMapper.selectById(100L)).thenReturn(null);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
         when(productImageMapper.selectList(any())).thenReturn(List.of(
-                new ProductImageDO(100L, "http://example.com/first.jpg", 1, 0)
+                new ProductImageDO("100", "http://example.com/first.jpg", 1, 0)
         ));
 
         ProductDocument doc = adapter.buildDocument(product);
@@ -186,19 +186,19 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @DisplayName("indexProduct 应构建并保存文档")
     void indexProduct_shouldBuildDocumentAndSave() {
         ProductDO product = ProductDO.builder()
-                .id(100L)
-                .userId(200L)
-                .categoryId(300L)
+                .id("100")
+                .userId("200")
+                .categoryId("300")
                 .name("测试商品")
                 .price(new BigDecimal("99.99"))
                 .build();
 
-        when(productMapper.selectById(100L)).thenReturn(product);
-        when(productDetailMapper.selectById(100L)).thenReturn(null);
+        when(productMapper.selectById("100")).thenReturn(product);
+        when(productDetailMapper.selectById("100")).thenReturn(null);
         when(productImageMapper.selectList(any())).thenReturn(List.of());
-        when(categoryMapper.selectById(300L)).thenReturn(null);
+        when(categoryMapper.selectById("300")).thenReturn(null);
 
-        adapter.indexProduct(100L);
+        adapter.indexProduct("100");
 
         verify(elasticsearchOperations).save(any(ProductDocument.class));
     }
@@ -206,9 +206,9 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @Test
     @DisplayName("不存在的商品应跳过索引")
     void indexProduct_shouldSkipWhenProductNotFound() {
-        when(productMapper.selectById(999L)).thenReturn(null);
+        when(productMapper.selectById("999")).thenReturn(null);
 
-        adapter.indexProduct(999L);
+        adapter.indexProduct("999");
 
         verify(elasticsearchOperations, never()).save(any(ProductDocument.class));
     }
@@ -216,7 +216,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
     @Test
     @DisplayName("removeProductIndex 应删除文档")
     void removeProductIndex_shouldDeleteDocument() {
-        adapter.removeProductIndex(100L);
+        adapter.removeProductIndex("100");
 
         verify(elasticsearchOperations).delete("100", ProductDocument.class);
     }

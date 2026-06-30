@@ -18,7 +18,7 @@ public class TypingIndicatorService {
 
     private final RedisTemplate<String, String> redisTemplate;
 
-    public void setTyping(String conversationId, Long userId) {
+    public void setTyping(String conversationId, String userId) {
         if (conversationId == null || userId == null) {
             return;
         }
@@ -26,7 +26,7 @@ public class TypingIndicatorService {
         redisTemplate.opsForValue().set(key, "1", TYPING_TTL_SECONDS, TimeUnit.SECONDS);
     }
 
-    public Set<Long> getTypingUsers(String conversationId, Long excludeUserId) {
+    public Set<String> getTypingUsers(String conversationId, String excludeUserId) {
         if (conversationId == null) {
             return Set.of();
         }
@@ -39,22 +39,17 @@ public class TypingIndicatorService {
                 .map(k -> {
                     String[] parts = k.split(":");
                     // key = "chat:typing:{conversationId}:{userId}", userId is always the last part
-                    return parts.length >= 3 ? parseUserIdSafely(parts[parts.length - 1]) : null;
+                    return parts.length >= 3 ? parts[parts.length - 1] : null;
                 })
                 .filter(id -> id != null && !id.equals(excludeUserId))
                 .collect(java.util.stream.Collectors.toSet());
     }
 
-    private Long parseUserIdSafely(String value) {
-        try {
-            return Long.valueOf(value);
-        } catch (NumberFormatException e) {
-            log.warn("action=parse_user_id_failed value={}", value);
-            return null;
-        }
+    private String parseUserIdSafely(String value) {
+        return value;
     }
 
-    public void removeTyping(String conversationId, Long userId) {
+    public void removeTyping(String conversationId, String userId) {
         if (conversationId == null || userId == null) {
             return;
         }

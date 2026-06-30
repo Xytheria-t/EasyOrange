@@ -24,7 +24,7 @@ public class CreditScoringService {
     private static final int SCORE_MAX = 200;
 
     @Transactional(readOnly = true)
-    public CreditScoreResult getCreditScore(Long userId) {
+    public CreditScoreResult getCreditScore(String userId) {
         String sql = """
                 SELECT credit_score, level, total_trades, completed_trades,
                        cancelled_trades, total_reports, confirmed_reports,
@@ -33,33 +33,34 @@ public class CreditScoringService {
                 WHERE user_id = ?
                 """;
 
-        return Optional.ofNullable(
-                jdbcTemplate.query(sql, rs -> {
-                    if (rs.next()) {
-                        return new CreditScoreResult(
-                                userId,
-                                rs.getInt("credit_score"),
-                                rs.getString("level"),
-                                rs.getInt("total_trades"),
+        org.springframework.jdbc.core.ResultSetExtractor<CreditScoreResult> extractor = rs -> {
+            if (rs.next()) {
+                return new CreditScoreResult(
+                        userId,
+                        rs.getInt("credit_score"),
+                        rs.getString("level"),
+                        rs.getInt("total_trades"),
+                        rs.getInt("completed_trades"),
+                        rs.getInt("cancelled_trades"),
+                        rs.getInt("total_reports"),
+                        rs.getInt("confirmed_reports"),
+                        rs.getDouble("review_avg_rating"),
+                        calculateCompletionRate(
                                 rs.getInt("completed_trades"),
-                                rs.getInt("cancelled_trades"),
-                                rs.getInt("total_reports"),
-                                rs.getInt("confirmed_reports"),
-                                rs.getDouble("review_avg_rating"),
-                                calculateCompletionRate(
-                                        rs.getInt("completed_trades"),
-                                        rs.getInt("total_trades")
-                                ),
-                                rs.getObject("last_updated", LocalDateTime.class)
-                        );
-                    }
-                    return null;
-                }, userId)
+                                rs.getInt("total_trades")
+                        ),
+                        rs.getObject("last_updated", LocalDateTime.class)
+                );
+            }
+            return null;
+        };
+        return Optional.ofNullable(
+                jdbcTemplate.query(sql, extractor, userId)
         ).orElseGet(this::createDefaultCredit);
     }
 
     @Transactional
-    public CreditScoreResult recalculateScore(Long userId) {
+    public CreditScoreResult recalculateScore(String userId) {
         var tradeStats = queryTradeStats(userId);
         var reportStats = queryReportStats(userId);
         var reviewStats = queryReviewStats(userId);
@@ -113,7 +114,7 @@ public class CreditScoringService {
         return "BLACKLIST";
     }
 
-    private TradeStats queryTradeStats(Long userId) {
+    private TradeStats queryTradeStats(String userId) {
         String sql = """
                 SELECT
                     COUNT(*) AS total_trades,
@@ -135,7 +136,7 @@ public class CreditScoringService {
         }, userId, userId);
     }
 
-    private ReportStats queryReportStats(Long userId) {
+    private ReportStats queryReportStats(String userId) {
         String sql = """
                 SELECT
                     COUNT(*) AS total_reports,
@@ -155,7 +156,7 @@ public class CreditScoringService {
         }, userId);
     }
 
-    private ReviewStats queryReviewStats(Long userId) {
+    private ReviewStats queryReviewStats(String userId) {
         String sql = """
                 SELECT COALESCE(AVG(r.rating), 0.0) AS avg_rating
                 FROM eo_product_review r
@@ -172,7 +173,7 @@ public class CreditScoringService {
         }, userId);
     }
 
-    private void upsertCredit(Long userId, int creditScore, String level,
+    private void upsertCredit(String userId, int creditScore, String level,
                               int totalTrades, int completedTrades, int cancelledTrades,
                               int totalReports, int confirmedReports, Double avgRating) {
         String sql = """

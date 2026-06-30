@@ -10,5 +10,5 @@ import java.util.List;
 @Setter
 public class BatchCheckRequest {
     @NotEmpty(message = "商品ID列表不能为空")
-    private List<Long> productIds;
+    private List<String> productIds;
 }

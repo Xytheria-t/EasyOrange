@@ -28,13 +28,13 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     // ========== Query methods ==========
 
     @Override
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(String id) {
         return Optional.ofNullable(mapper.selectById(id))
             .map(entityMapper::toDomain);
     }
 
     @Override
-    public List<User> findAllByIds(Collection<Long> ids) {
+    public List<User> findAllByIds(Collection<String> ids) {
         return findAllByIn(UserEntity::getId, ids).stream()
             .map(entityMapper::toDomain)
             .toList();
@@ -87,7 +87,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
         if (rows == 0) {
             throw new IllegalStateException("用户保存失败");
         }
-        return user.assignId(entity.getId());
+        return user.assignId(String.valueOf(entity.getId()));
     }
 
     @Override
@@ -102,7 +102,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void updateLoginInfo(Long userId, String loginIp) {
+    public void updateLoginInfo(String userId, String loginIp) {
         boolean updated = lambdaUpdate()
             .eq(UserEntity::getId, userId)
             .set(UserEntity::getLoginDate, LocalDateTime.now())
@@ -114,7 +114,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     }
 
     @Override
-    public void deleteById(Long id) {
+    public void deleteById(String id) {
         mapper.deleteById(id);
     }
 

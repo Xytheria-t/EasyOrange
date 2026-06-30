@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ClosePaymentCommand {
 
-    private Long paymentId;
+    private String paymentId;
 }

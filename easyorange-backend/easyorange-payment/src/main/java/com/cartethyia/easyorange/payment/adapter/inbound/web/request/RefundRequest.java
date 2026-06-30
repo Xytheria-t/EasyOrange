@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 public class RefundRequest {
 
     @NotNull(message = "支付 ID 不能为空")
-    private Long paymentId;
+    private String paymentId;
 
     private BigDecimal refundAmount;
 

@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FavoriteResponse {
-    private Long id;
-    private Long productId;
+    private String id;
+    private String productId;
     private ProductDetailInfo product;
     private LocalDateTime createTime;
 }

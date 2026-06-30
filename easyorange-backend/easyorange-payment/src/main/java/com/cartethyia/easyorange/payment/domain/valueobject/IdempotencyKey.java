@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public record IdempotencyKey(
         String key,
-        Long userId,
+        String userId,
         String requestHash,
         String responseData,
         String status,
@@ -15,7 +15,7 @@ public record IdempotencyKey(
     public static final String STATUS_COMPLETED = "COMPLETED";
     public static final String STATUS_FAILED = "FAILED";
 
-    public static IdempotencyKey of(String key, Long userId, String requestHash, String status, LocalDateTime expiresAt) {
+    public static IdempotencyKey of(String key, String userId, String requestHash, String status, LocalDateTime expiresAt) {
         return new IdempotencyKey(key, userId, requestHash, null, status, expiresAt);
     }
 }

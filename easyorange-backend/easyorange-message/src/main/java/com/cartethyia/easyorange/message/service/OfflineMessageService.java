@@ -6,13 +6,13 @@ import java.util.List;
 
 public interface OfflineMessageService {
 
-    void saveOfflineMessage(Long userId, Long messageId, String pushChannel);
+    void saveOfflineMessage(String userId, String messageId, String pushChannel);
 
-    List<OfflineMessageAggregate> getPendingMessages(Long userId);
+    List<OfflineMessageAggregate> getPendingMessages(String userId);
 
-    void markAsPushed(Long offlineMessageId);
+    void markAsPushed(String offlineMessageId);
 
-    void markAsFailed(Long offlineMessageId);
+    void markAsFailed(String offlineMessageId);
 
-    void incrementRetryCount(Long offlineMessageId);
+    void incrementRetryCount(String offlineMessageId);
 }

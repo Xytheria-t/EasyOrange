@@ -13,5 +13,5 @@ import java.util.List;
 @AllArgsConstructor
 public class MarkAsReadBatchCommand {
 
-    private List<Long> messageIds;
+    private List<String> messageIds;
 }

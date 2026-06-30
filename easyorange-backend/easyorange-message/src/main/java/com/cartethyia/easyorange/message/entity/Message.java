@@ -16,26 +16,26 @@ import java.time.LocalDateTime;
 @TableName("eo_message")
 public class Message extends BaseDO {
 
-    private Long senderId;
-    private Long receiverId;
+    private String senderId;
+    private String receiverId;
     private Integer type;
     private String title;
     private String content;
     private Integer isRead;
     private LocalDateTime readTime;
-    private Long businessId;
-    private Long conversationId;
+    private String businessId;
+    private String conversationId;
     private String msgStatus;
     private LocalDateTime recalledAt;
 
-    public Long getSenderId() { return senderId; }
-    public Long getReceiverId() { return receiverId; }
+    public String getSenderId() { return senderId; }
+    public String getReceiverId() { return receiverId; }
     public Integer getType() { return type; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
     public Integer getIsRead() { return isRead; }
-    public Long getBusinessId() { return businessId; }
-    public Long getConversationId() { return conversationId; }
+    public String getBusinessId() { return businessId; }
+    public String getConversationId() { return conversationId; }
     public LocalDateTime getReadTime() { return readTime; }
     public String getMsgStatus() { return msgStatus; }
     public LocalDateTime getRecalledAt() { return recalledAt; }

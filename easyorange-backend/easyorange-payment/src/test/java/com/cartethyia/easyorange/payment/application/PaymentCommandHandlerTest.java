@@ -1,12 +1,13 @@
 package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.exception.PaymentNotFoundException;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
@@ -45,6 +46,9 @@ class PaymentCommandHandlerTest {
     @Mock
     private PaymentGatewayPort paymentGateway;
 
+    @Mock
+    private IdGenerator idGenerator;
+
     @InjectMocks
     private PaymentCommandHandler commandHandler;
 
@@ -55,10 +59,10 @@ class PaymentCommandHandlerTest {
 
     @BeforeEach
     void setUp() {
-        TestSecurityUtil.setSecurityContext(3001L);
+        TestSecurityUtil.setSecurityContext("3001");
 
         testAggregate = PaymentAggregate.reconstruct(
-                1001L, "PAY123", 2001L, 3001L,
+                "1001", "PAY123", "2001", "3001",
                 new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                 PaymentStatus.PENDING, null, null, null, null, null, null, 0
         );
@@ -77,17 +81,19 @@ class PaymentCommandHandlerTest {
         @DisplayName("创建支付成功")
         void handle_createPayment_success() {
             CreatePaymentCommand command = CreatePaymentCommand.builder()
-                    .orderId(2001L)
+                    .orderId("2001")
                     .amount(new BigDecimal("100.00"))
                     .paymentMethod(1)
                     .attach("test")
                     .build();
 
-            Long paymentId = commandHandler.handle(command);
+            when(idGenerator.generateId()).thenReturn("1001");
+
+            String paymentId = commandHandler.handle(command);
 
             assertThat(paymentId).isNotNull();
             verify(paymentRepository).save(aggregateCaptor.capture());
-            assertThat(aggregateCaptor.getValue().orderId()).isEqualTo(2001L);
+            assertThat(aggregateCaptor.getValue().orderId()).isEqualTo("2001");
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.PENDING);
             verify(domainEventPublisher).publish(any());
         }
@@ -102,9 +108,9 @@ class PaymentCommandHandlerTest {
         void preparePayPhase1_success() {
             when(paymentRepository.findByPaymentNo("PAY123")).thenReturn(Optional.of(testAggregate));
 
-            Long paymentId = commandHandler.preparePayPhase1("PAY123");
+            String paymentId = commandHandler.preparePayPhase1("PAY123");
 
-            assertThat(paymentId).isEqualTo(1001L);
+            assertThat(paymentId).isEqualTo("1001");
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.PAYING);
         }
@@ -113,13 +119,13 @@ class PaymentCommandHandlerTest {
         @DisplayName("支付成功 - 阶段2确认")
         void confirmPayPhase2_success() {
             PaymentAggregate payingAggregate = PaymentAggregate.reconstruct(
-                    1001L, "PAY123", 2001L, 3001L,
+                    "1001", "PAY123", "2001", "3001",
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                     PaymentStatus.PAYING, null, null, null, null, null, null, 0
             );
-            when(paymentRepository.findById(1001L)).thenReturn(Optional.of(payingAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
 
-            commandHandler.confirmPayPhase2(1001L, PaymentResult.success("TXN_123"));
+            commandHandler.confirmPayPhase2("1001", PaymentResult.success("TXN_123"));
 
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.SUCCESS);
@@ -132,7 +138,7 @@ class PaymentCommandHandlerTest {
             when(paymentRepository.findByPaymentNo("NOT_EXIST")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> commandHandler.preparePayPhase1("NOT_EXIST"))
-                    .isInstanceOf(PaymentNotFoundException.class);
+                    .isInstanceOf(PaymentDomainException.class);
         }
     }
 
@@ -144,15 +150,15 @@ class PaymentCommandHandlerTest {
         @DisplayName("退款预处理成功")
         void prepareRefundPhase1_success() {
             PaymentAggregate paidAggregate = PaymentAggregate.reconstruct(
-                    1001L, "PAY123", 2001L, 3001L,
+                    "1001", "PAY123", "2001", "3001",
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                     PaymentStatus.SUCCESS, null, null, null, null, null, null, 0
             );
-            when(paymentRepository.findById(1001L)).thenReturn(Optional.of(paidAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(paidAggregate));
 
-            Long paymentId = commandHandler.prepareRefundPhase1(1001L, new BigDecimal("100.00"));
+            String paymentId = commandHandler.prepareRefundPhase1("1001", new BigDecimal("100.00"));
 
-            assertThat(paymentId).isEqualTo(1001L);
+            assertThat(paymentId).isEqualTo("1001");
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.REFUNDING);
         }
@@ -161,13 +167,13 @@ class PaymentCommandHandlerTest {
         @DisplayName("退款确认成功")
         void confirmRefundPhase2_success() {
             PaymentAggregate refundingAggregate = PaymentAggregate.reconstruct(
-                    1001L, "PAY123", 2001L, 3001L,
+                    "1001", "PAY123", "2001", "3001",
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                     PaymentStatus.REFUNDING, null, null, null, null, null, null, 0
             );
-            when(paymentRepository.findById(1001L)).thenReturn(Optional.of(refundingAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
 
-            commandHandler.confirmRefundPhase2(1001L, RefundResult.success("REF_123"), new BigDecimal("100.00"));
+            commandHandler.confirmRefundPhase2("1001", RefundResult.success("REF_123"), new BigDecimal("100.00"));
 
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.REFUNDED);
@@ -183,13 +189,13 @@ class PaymentCommandHandlerTest {
         @DisplayName("PAYING 状态回退到 PENDING")
         void rollbackPayStatus_success() {
             PaymentAggregate payingAggregate = PaymentAggregate.reconstruct(
-                    1001L, "PAY123", 2001L, 3001L,
+                    "1001", "PAY123", "2001", "3001",
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                     PaymentStatus.PAYING, null, null, null, null, null, null, 0
             );
-            when(paymentRepository.findById(1001L)).thenReturn(Optional.of(payingAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
 
-            commandHandler.rollbackPayStatus(1001L);
+            commandHandler.rollbackPayStatus("1001");
 
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.PENDING);
@@ -204,13 +210,13 @@ class PaymentCommandHandlerTest {
         @DisplayName("REFUNDING 状态回退到 SUCCESS")
         void rollbackRefundStatus_success() {
             PaymentAggregate refundingAggregate = PaymentAggregate.reconstruct(
-                    1001L, "PAY123", 2001L, 3001L,
+                    "1001", "PAY123", "2001", "3001",
                     new BigDecimal("100.00"), BigDecimal.ZERO, 1,
                     PaymentStatus.REFUNDING, null, null, null, null, null, null, 0
             );
-            when(paymentRepository.findById(1001L)).thenReturn(Optional.of(refundingAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
 
-            commandHandler.rollbackRefundStatus(1001L);
+            commandHandler.rollbackRefundStatus("1001");
 
             verify(paymentRepository).update(aggregateCaptor.capture());
             assertThat(aggregateCaptor.getValue().status()).isEqualTo(PaymentStatus.SUCCESS);
@@ -224,10 +230,10 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("关闭支付成功并发布事件")
         void handle_close_success() {
-            when(paymentRepository.findById(1001L)).thenReturn(Optional.of(testAggregate));
+            when(paymentRepository.findById("1001")).thenReturn(Optional.of(testAggregate));
 
             ClosePaymentCommand command = ClosePaymentCommand.builder()
-                    .paymentId(1001L)
+                    .paymentId("1001")
                     .build();
 
             commandHandler.handle(command);
@@ -240,14 +246,14 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("支付记录不存在抛出异常")
         void handle_close_notFound() {
-            when(paymentRepository.findById(9999L)).thenReturn(Optional.empty());
+            when(paymentRepository.findById("9999")).thenReturn(Optional.empty());
 
             ClosePaymentCommand command = ClosePaymentCommand.builder()
-                    .paymentId(9999L)
+                    .paymentId("9999")
                     .build();
 
             assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(PaymentNotFoundException.class);
+                    .isInstanceOf(PaymentDomainException.class);
         }
     }
 }

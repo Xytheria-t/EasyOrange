@@ -44,7 +44,7 @@ class AuthAppServiceTest {
 
     private AuthAppService service;
 
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
     private static final String USERNAME = "testuser";
     private static final String PHONE = "13812345678";
 
@@ -69,16 +69,16 @@ class AuthAppServiceTest {
             String password = "Password123";
 
             User savedUser = User.builder()
-                .id(100L)
+                .id("100")
                 .credentials(new Credentials(username, "encodedPassword"))
                 .personalInfo(null)
                 .build();
             when(registrationService.registerNewUser(username, password))
                 .thenReturn(savedUser);
 
-            Long result = service.register(username, password);
+            String result = service.register(username, password);
 
-            assertThat(result).isEqualTo(100L);
+            assertThat(result).isEqualTo("100");
             verify(registrationService).registerNewUser(username, password);
         }
     }

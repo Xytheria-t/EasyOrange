@@ -81,14 +81,8 @@ payment/
 │   │   ├── PaymentMethod.java
 │   │   └── PaymentResultCode.java
 │   └── exception/
-│       ├── PaymentDomainException.java
-│       ├── PaymentNotFoundException.java
-│       ├── PaymentInvalidStatusException.java
-│       ├── PaymentGatewayException.java
-│       ├── OptimisticLockException.java
-│       ├── RefundNotAllowedException.java
-│       ├── CallbackSignInvalidException.java
-│       └── SagaCompensationFailedException.java  # Saga 补偿失败异常
+│       ├── PaymentDomainException.java     # 统一支付异常（含 of()工厂方法，覆盖 notFound/invalidStatus/gateway 等场景）
+│       └── SagaCompensationFailedException.java  # Saga 补偿失败异常（含 CompensationFailure 列表）
 └── constant/
     └── PaymentConstant.java
 ```

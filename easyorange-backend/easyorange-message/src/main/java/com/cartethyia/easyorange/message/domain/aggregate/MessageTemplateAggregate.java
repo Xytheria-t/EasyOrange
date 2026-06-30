@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.message.constant.MessageConstant;
  */
 public class MessageTemplateAggregate {
 
-    private final Long id;
+    private final String id;
     private final String templateCode;
     private final String templateName;
     private final String templateType;
@@ -23,7 +23,7 @@ public class MessageTemplateAggregate {
     private final Integer status;
     private final String remark;
 
-    private MessageTemplateAggregate(Long id, String templateCode, String templateName,
+    private MessageTemplateAggregate(String id, String templateCode, String templateName,
                                       String templateType, String title, String content,
                                       String variables, Integer status, String remark) {
         this.id = id;
@@ -39,7 +39,7 @@ public class MessageTemplateAggregate {
 
     // ==================== Getters ====================
 
-    public Long id() { return id; }
+    public String id() { return id; }
     public String templateCode() { return templateCode; }
     public String templateName() { return templateName; }
     public String templateType() { return templateType; }
@@ -67,7 +67,7 @@ public class MessageTemplateAggregate {
     /**
      * 从持久层原始数据重建聚合根
      */
-    public static MessageTemplateAggregate fromRaw(Long id, String templateCode, String templateName,
+    public static MessageTemplateAggregate fromRaw(String id, String templateCode, String templateName,
                                                      String templateType, String title, String content,
                                                      String variables, Integer status, String remark) {
         return new MessageTemplateAggregate(id, templateCode, templateName,

@@ -15,7 +15,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
     private final MessageCommandHandler messageCommandHandler;
 
     @Override
-    public void notifyProductCreated(Long productId, Long userId) {
+    public void notifyProductCreated(String productId, String userId) {
         try {
             SendSystemMessageCommand command = SendSystemMessageCommand.builder()
                     .receiverId(userId)
@@ -31,7 +31,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
     }
 
     @Override
-    public void notifyProductMarkedSold(Long productId, Long userId) {
+    public void notifyProductMarkedSold(String productId, String userId) {
         try {
             SendSystemMessageCommand command = SendSystemMessageCommand.builder()
                     .receiverId(userId)
@@ -47,7 +47,7 @@ public class ProductNotificationAdapter implements ProductNotificationPort {
     }
 
     @Override
-    public void notifyLowStock(Long productId, Long sellerId, int currentStock) {
+    public void notifyLowStock(String productId, String sellerId, int currentStock) {
         try {
             SendSystemMessageCommand command = SendSystemMessageCommand.builder()
                     .receiverId(sellerId)

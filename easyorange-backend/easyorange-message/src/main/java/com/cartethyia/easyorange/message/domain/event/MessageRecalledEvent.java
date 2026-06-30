@@ -8,12 +8,12 @@ import java.time.LocalDateTime;
 @Getter
 public class MessageRecalledEvent extends BaseDomainEvent {
 
-    private final Long messageId;
+    private final String messageId;
     private final String conversationId;
-    private final Long operatorId;
+    private final String operatorId;
     private final LocalDateTime recalledAt;
 
-    public MessageRecalledEvent(Long messageId, String conversationId, Long operatorId, LocalDateTime recalledAt) {
+    public MessageRecalledEvent(String messageId, String conversationId, String operatorId, LocalDateTime recalledAt) {
         super();
         this.messageId = messageId;
         this.conversationId = conversationId;

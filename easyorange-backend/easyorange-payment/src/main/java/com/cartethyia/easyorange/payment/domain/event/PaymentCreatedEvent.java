@@ -8,14 +8,14 @@ import java.math.BigDecimal;
 @Getter
 public class PaymentCreatedEvent extends BaseDomainEvent {
 
-    private final Long paymentId;
+    private final String paymentId;
     private final String paymentNo;
-    private final Long orderId;
-    private final Long userId;
+    private final String orderId;
+    private final String userId;
     private final BigDecimal amount;
     private final Integer paymentMethod;
 
-    public PaymentCreatedEvent(Long paymentId, String paymentNo, Long orderId, Long userId,
+    public PaymentCreatedEvent(String paymentId, String paymentNo, String orderId, String userId,
                                BigDecimal amount, Integer paymentMethod) {
         super();
         this.paymentId = paymentId;

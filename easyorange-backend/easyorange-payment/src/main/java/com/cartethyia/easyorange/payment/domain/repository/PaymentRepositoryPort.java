@@ -10,9 +10,9 @@ public interface PaymentRepositoryPort {
 
     void update(PaymentAggregate aggregate);
 
-    Optional<PaymentAggregate> findById(Long id);
+    Optional<PaymentAggregate> findById(String id);
 
     Optional<PaymentAggregate> findByPaymentNo(String paymentNo);
 
-    Optional<PaymentAggregate> findByOrderId(Long orderId);
+    Optional<PaymentAggregate> findByOrderId(String orderId);
 }

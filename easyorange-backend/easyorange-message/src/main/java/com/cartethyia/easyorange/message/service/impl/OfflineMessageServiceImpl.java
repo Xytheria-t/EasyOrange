@@ -16,31 +16,31 @@ public class OfflineMessageServiceImpl implements OfflineMessageService {
     private final OfflineMessageRepository offlineMessageRepository;
 
     @Override
-    public void saveOfflineMessage(Long userId, Long messageId, String pushChannel) {
+    public void saveOfflineMessage(String userId, String messageId, String pushChannel) {
         OfflineMessageAggregate offlineMessage = OfflineMessageAggregate.create(userId, messageId, pushChannel);
         offlineMessageRepository.save(offlineMessage);
     }
 
     @Override
-    public List<OfflineMessageAggregate> getPendingMessages(Long userId) {
+    public List<OfflineMessageAggregate> getPendingMessages(String userId) {
         return offlineMessageRepository.findPendingByUserId(userId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void markAsPushed(Long offlineMessageId) {
+    public void markAsPushed(String offlineMessageId) {
         offlineMessageRepository.markAsPushed(offlineMessageId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void markAsFailed(Long offlineMessageId) {
+    public void markAsFailed(String offlineMessageId) {
         offlineMessageRepository.markAsFailed(offlineMessageId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void incrementRetryCount(Long offlineMessageId) {
+    public void incrementRetryCount(String offlineMessageId) {
         offlineMessageRepository.incrementRetryCount(offlineMessageId);
     }
 }

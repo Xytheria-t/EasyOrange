@@ -6,12 +6,12 @@ import lombok.Getter;
 @Getter
 public class MessageSentEvent extends BaseDomainEvent {
 
-    private final Long messageId;
-    private final Long senderId;
-    private final Long receiverId;
+    private final String messageId;
+    private final String senderId;
+    private final String receiverId;
     private final Integer type;
 
-    public MessageSentEvent(Long messageId, Long senderId, Long receiverId, Integer type) {
+    public MessageSentEvent(String messageId, String senderId, String receiverId, Integer type) {
         super();
         this.messageId = messageId;
         this.senderId = senderId;

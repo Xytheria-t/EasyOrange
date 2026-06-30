@@ -21,11 +21,11 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WsMessage {
 
-    private Long id;
+    private String id;
 
-    private Long senderId;
+    private String senderId;
 
-    private Long receiverId;
+    private String receiverId;
 
     private String senderName;
 
@@ -35,11 +35,11 @@ public class WsMessage {
 
     private String content;
 
-    private Long businessId;
+    private String businessId;
 
     private LocalDateTime createTime;
 
     private String conversationId;
 
-    private Long targetUserId;
+    private String targetUserId;
 }

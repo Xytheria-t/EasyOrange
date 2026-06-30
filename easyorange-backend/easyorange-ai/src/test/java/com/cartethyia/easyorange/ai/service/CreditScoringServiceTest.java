@@ -43,7 +43,7 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("用户存在时返回信用分")
         void getCreditScore_userExists() throws Exception {
-            Long userId = 1L;
+            String userId = "1";
             ResultSet rs = mock(ResultSet.class);
             when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class), eq(userId)))
                     .thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
@@ -71,7 +71,7 @@ class CreditScoringServiceTest {
         @Test
         @DisplayName("用户不存在时返回默认信用分")
         void getCreditScore_userNotExists() {
-            Long userId = 99L;
+            String userId = "99";
 
             when(jdbcTemplate.query(anyString(), any(ResultSetExtractor.class), eq(userId)))
                     .thenReturn(null);
@@ -90,7 +90,7 @@ class CreditScoringServiceTest {
     @DisplayName("recalculateScore")
     class RecalculateScoreTests {
 
-        private final Long userId = 1L;
+        private final String userId = "1";
 
         @Test
         @DisplayName("正常交易数据 — 计算正确")
@@ -241,12 +241,12 @@ class CreditScoringServiceTest {
             if (isTradeQuery) {
                 lenient().when(jdbcTemplate.query(
                         argThat(sql -> sql != null && sql.contains(table)),
-                        any(ResultSetExtractor.class), anyLong(), anyLong()
+                        any(ResultSetExtractor.class), anyString(), anyString()
                 )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
             } else {
                 lenient().when(jdbcTemplate.query(
                         argThat(sql -> sql != null && sql.contains(table)),
-                        any(ResultSetExtractor.class), anyLong()
+                        any(ResultSetExtractor.class), anyString()
                 )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
             }
         }
@@ -256,7 +256,7 @@ class CreditScoringServiceTest {
             when(rs.next()).thenReturn(false);
             lenient().when(jdbcTemplate.query(
                     argThat(sql -> sql != null && sql.contains("eo_product_review")),
-                    any(ResultSetExtractor.class), anyLong()
+                    any(ResultSetExtractor.class), anyString()
             )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(rs));
         }
     }
@@ -333,23 +333,23 @@ class CreditScoringServiceTest {
 
             lenient().when(jdbcTemplate.query(
                     argThat(sql -> sql != null && sql.contains("eo_order")),
-                    any(ResultSetExtractor.class), anyLong(), anyLong()
+                    any(ResultSetExtractor.class), anyString(), anyString()
             )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(tradeRs));
 
             lenient().when(jdbcTemplate.query(
                     argThat(sql -> sql != null && sql.contains("eo_product_report")),
-                    any(ResultSetExtractor.class), anyLong()
+                    any(ResultSetExtractor.class), anyString()
             )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(reportRs));
 
             lenient().when(jdbcTemplate.query(
                     argThat(sql -> sql != null && sql.contains("eo_product_review")),
-                    any(ResultSetExtractor.class), anyLong()
+                    any(ResultSetExtractor.class), anyString()
             )).thenAnswer(inv -> ((ResultSetExtractor<?>) inv.getArgument(1)).extractData(reviewRs));
 
             lenient().when(jdbcTemplate.update(anyString(), any(), any(), any(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(1);
 
-            return service.recalculateScore(1L);
+            return service.recalculateScore("1");
         }
     }
 

@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.dto;
 import java.time.LocalDateTime;
 
 public record CreditScoreResult(
-        Long userId,
+        String userId,
         int creditScore,
         String level,
         int totalTrades,

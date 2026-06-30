@@ -86,7 +86,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     }
 
     @Override
-    public void deleteTemplateByIds(Long[] templateIds) {
+    public void deleteTemplateByIds(String[] templateIds) {
         messageTemplateRepository.deleteByIds(templateIds);
     }
 

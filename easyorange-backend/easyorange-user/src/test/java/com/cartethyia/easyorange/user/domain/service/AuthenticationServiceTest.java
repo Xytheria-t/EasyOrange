@@ -49,7 +49,7 @@ class AuthenticationServiceTest {
     private static final String PASSWORD = "Password123";
     private static final String CLIENT_IP = "192.168.1.1";
     private static final String ENCODED_PW = "$2a$10$encoded";
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
     private static final String PHONE = "13812345678";
     private static final String VERIFY_CODE = "123456";
 

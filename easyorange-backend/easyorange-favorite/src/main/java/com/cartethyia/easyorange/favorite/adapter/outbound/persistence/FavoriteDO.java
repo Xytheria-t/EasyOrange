@@ -12,12 +12,12 @@ import lombok.experimental.SuperBuilder;
 @Setter
 public class FavoriteDO extends BaseDO {
 
-    private Long userId;
-    private Long productId;
+    private String userId;
+    private String productId;
 
     public FavoriteDO() {}
 
-    public FavoriteDO(Long userId, Long productId) {
+    public FavoriteDO(String userId, String productId) {
         this.userId = userId;
         this.productId = productId;
     }

@@ -6,9 +6,9 @@ import lombok.Getter;
 @Getter
 public class PaymentClosedEvent extends BaseDomainEvent {
 
-    private final Long paymentId;
+    private final String paymentId;
 
-    public PaymentClosedEvent(Long paymentId) {
+    public PaymentClosedEvent(String paymentId) {
         super();
         this.paymentId = paymentId;
     }

@@ -10,5 +10,5 @@ import java.util.List;
 @Setter
 public class BatchRemoveRequest {
     @NotEmpty(message = "收藏ID列表不能为空")
-    private List<Long> ids;
+    private List<String> ids;
 }

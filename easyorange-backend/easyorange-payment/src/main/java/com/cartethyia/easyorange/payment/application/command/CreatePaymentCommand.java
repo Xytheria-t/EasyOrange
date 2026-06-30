@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class CreatePaymentCommand {
 
-    private Long orderId;
+    private String orderId;
     private BigDecimal amount;
     private Integer paymentMethod;
     private String payPassword;

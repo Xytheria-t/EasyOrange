@@ -34,13 +34,13 @@ public class FavoriteController {
     }
 
     @PostMapping("/{productId}")
-    public Result<Void> addFavorite(@PathVariable Long productId) {
+    public Result<Void> addFavorite(@PathVariable String productId) {
         favoriteService.addFavorite(productId);
         return Result.success();
     }
 
     @DeleteMapping("/{productId}")
-    public Result<Void> removeFavorite(@PathVariable Long productId) {
+    public Result<Void> removeFavorite(@PathVariable String productId) {
         favoriteService.removeFavorite(productId);
         return Result.success();
     }
@@ -52,7 +52,7 @@ public class FavoriteController {
     }
 
     @GetMapping("/check/{productId}")
-    public Result<Boolean> checkIsFavorited(@PathVariable Long productId) {
+    public Result<Boolean> checkIsFavorited(@PathVariable String productId) {
         return Result.success(favoriteService.isFavorited(productId));
     }
 
@@ -62,7 +62,7 @@ public class FavoriteController {
     }
 
     @PostMapping("/batch-check")
-    public Result<Map<Long, Boolean>> batchCheckFavorited(@Valid @RequestBody BatchCheckRequest request) {
+    public Result<Map<String, Boolean>> batchCheckFavorited(@Valid @RequestBody BatchCheckRequest request) {
         return Result.success(favoriteService.batchCheckFavorited(request.getProductIds()));
     }
 }

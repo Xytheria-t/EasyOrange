@@ -19,7 +19,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
     private final UserRepository userRepository;
 
     @Override
-    public Optional<UserInfo> getUserInfo(Long userId) {
+    public Optional<UserInfo> getUserInfo(String userId) {
         if (userId == null) {
             return Optional.empty();
         }
@@ -28,7 +28,7 @@ public class MessageUserInfoAdapter implements UserInfoPort {
     }
 
     @Override
-    public Map<Long, UserInfo> getUserInfoMap(Collection<Long> userIds) {
+    public Map<String, UserInfo> getUserInfoMap(Collection<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return Map.of();
         }

@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class MessageNotFoundException extends MessageDomainException {
 
-    public MessageNotFoundException(Long messageId) {
+    public MessageNotFoundException(String messageId) {
         super(MessageResultCode.MESSAGE_NOT_FOUND, "消息不存在: id=" + messageId);
     }
 }

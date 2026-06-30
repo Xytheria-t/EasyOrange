@@ -10,13 +10,13 @@ import java.util.Set;
 
 public interface ProductInfoPort {
 
-    boolean productExists(Long productId);
+    boolean productExists(String productId);
 
-    boolean isOwnProduct(Long userId, Long productId);
+    boolean isOwnProduct(String userId, String productId);
 
-    List<ProductInfo> findProductsByIds(List<Long> productIds);
+    List<ProductInfo> findProductsByIds(List<String> productIds);
 
-    Map<Long, SellerInfo> findSellersByIds(Set<Long> sellerIds);
+    Map<String, SellerInfo> findSellersByIds(Set<String> sellerIds);
 
-    List<ProductDetailInfo> assembleProductDetails(List<ProductInfo> products, Map<Long, SellerInfo> sellerMap);
+    List<ProductDetailInfo> assembleProductDetails(List<ProductInfo> products, Map<String, SellerInfo> sellerMap);
 }

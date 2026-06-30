@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface UserInfoPort {
 
-    Optional<UserInfo> getUserInfo(Long userId);
+    Optional<UserInfo> getUserInfo(String userId);
 
-    Map<Long, UserInfo> getUserInfoMap(Collection<Long> userIds);
+    Map<String, UserInfo> getUserInfoMap(Collection<String> userIds);
 }

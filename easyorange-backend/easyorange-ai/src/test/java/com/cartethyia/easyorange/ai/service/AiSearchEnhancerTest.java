@@ -50,9 +50,9 @@ class AiSearchEnhancerTest {
         enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisCacheProvider);
     }
 
-    private ProductReadModel product(Long id, String title, BigDecimal price) {
+    private ProductReadModel product(String id, String title, BigDecimal price) {
         return new ProductReadModel(
-                id, 1L, null, null, null, null,
+                id, "1", null, null, null, null,
                 title, null, price, price.multiply(BigDecimal.valueOf(2)),
                 null, null, null, null, null, null,
                 null, null, List.of("img.jpg"), null, null, null
@@ -69,7 +69,7 @@ class AiSearchEnhancerTest {
             when(nlDetector.isNaturalLanguage("MacBook")).thenReturn(false);
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
-                    "MacBook", List.of(product(1L, "MacBook", BigDecimal.valueOf(8000))));
+                    "MacBook", List.of(product("1", "MacBook", BigDecimal.valueOf(8000))));
 
             assertThat(result).isEmpty();
             verifyNoInteractions(llmPort, productTagger, redisCache);
@@ -111,7 +111,7 @@ class AiSearchEnhancerTest {
             when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(cached);
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
-                    "找便宜手机", List.of(product(1L, "手机", BigDecimal.valueOf(1500))));
+                    "找便宜手机", List.of(product("1", "手机", BigDecimal.valueOf(1500))));
 
             assertThat(result).isPresent().get().isEqualTo(cached);
             verifyNoInteractions(llmPort, productTagger);
@@ -123,11 +123,11 @@ class AiSearchEnhancerTest {
             when(redisCacheProvider.getIfAvailable()).thenReturn(null);
             enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisCacheProvider);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
-            when(productTagger.tagProducts(anyList())).thenReturn(Map.of(1L, List.of()));
+            when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(llmPort.generateText(anyString(), anyString())).thenReturn("想找电脑");
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
-                    "找电脑", List.of(product(1L, "笔记本", BigDecimal.valueOf(4000))));
+                    "找电脑", List.of(product("1", "笔记本", BigDecimal.valueOf(4000))));
 
             assertThat(result).isPresent();
             verify(llmPort, atLeastOnce()).generateText(anyString(), anyString());
@@ -146,7 +146,7 @@ class AiSearchEnhancerTest {
             when(llmPort.generateText(contains("导购助手"), eq("推荐个5000的笔记本")))
                     .thenReturn("想找5000元左右的笔记本电脑");
             when(productTagger.tagProducts(anyList()))
-                    .thenReturn(Map.of(1L, List.of("💰超值")));
+                    .thenReturn(Map.of("1", List.of("💰超值")));
             when(llmPort.generateText(contains("市场分析"), anyString()))
                     .thenReturn("当前在管笔记本均价约4800元，性价比不错");
             when(llmPort.generateText(contains("追问"), eq("推荐个5000的笔记本")))
@@ -154,13 +154,13 @@ class AiSearchEnhancerTest {
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
                     "推荐个5000的笔记本",
-                    List.of(product(1L, "MacBook Air M1", BigDecimal.valueOf(4200)))
+                    List.of(product("1", "MacBook Air M1", BigDecimal.valueOf(4200)))
             );
 
             assertThat(result).isPresent();
             AiEnhancement enhancement = result.get();
             assertThat(enhancement.intentExplanation()).isEqualTo("想找5000元左右的笔记本电脑");
-            assertThat(enhancement.productTags()).containsKey(1L);
+            assertThat(enhancement.productTags()).containsKey("1");
             assertThat(enhancement.marketAnalysis()).isEqualTo("当前在管笔记本均价约4800元，性价比不错");
             assertThat(enhancement.suggestedQuestions())
                     .hasSize(2)
@@ -175,13 +175,13 @@ class AiSearchEnhancerTest {
             when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(null);
             when(llmPort.generateText(anyString(), anyString())).thenReturn(null);
             when(productTagger.tagProducts(anyList()))
-                    .thenReturn(Map.of(1L, List.of("💰超值", "📸实拍")));
+                    .thenReturn(Map.of("1", List.of("💰超值", "📸实拍")));
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
-                    "找个手机", List.of(product(1L, "iPhone", BigDecimal.valueOf(2500))));
+                    "找个手机", List.of(product("1", "iPhone", BigDecimal.valueOf(2500))));
 
             assertThat(result).isPresent();
-            assertThat(result.get().productTags()).containsKey(1L);
+            assertThat(result.get().productTags()).containsKey("1");
             assertThat(result.get().intentExplanation()).isNull();
         }
 
@@ -194,7 +194,7 @@ class AiSearchEnhancerTest {
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of());
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
-                    "随便看看", List.of(product(1L, "商品A", BigDecimal.valueOf(100))));
+                    "随便看看", List.of(product("1", "商品A", BigDecimal.valueOf(100))));
 
             assertThat(result).isEmpty();
             verify(redisCache, never()).set(anyString(), any(), anyLong(), any());
@@ -213,13 +213,13 @@ class AiSearchEnhancerTest {
             when(llmPort.generateText(anyString(), anyString()))
                     .thenThrow(new RuntimeException("API timeout"));
             when(productTagger.tagProducts(anyList()))
-                    .thenReturn(Map.of(1L, List.of("⭐信用优")));
+                    .thenReturn(Map.of("1", List.of("⭐信用优")));
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
-                    "找东西", List.of(product(1L, "商品X", BigDecimal.valueOf(999))));
+                    "找东西", List.of(product("1", "商品X", BigDecimal.valueOf(999))));
 
             assertThat(result).isPresent();
-            assertThat(result.get().productTags()).containsKey(1L);
+            assertThat(result.get().productTags()).containsKey("1");
             assertThat(result.get().intentExplanation()).isNull();
         }
     }

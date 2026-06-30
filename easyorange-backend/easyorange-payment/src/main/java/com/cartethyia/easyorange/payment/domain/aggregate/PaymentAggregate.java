@@ -8,8 +8,8 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
-import com.cartethyia.easyorange.payment.domain.exception.PaymentInvalidStatusException;
-import com.cartethyia.easyorange.payment.domain.exception.RefundNotAllowedException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
 import com.cartethyia.easyorange.payment.domain.specification.PaymentSpecification;
@@ -20,10 +20,10 @@ import java.time.LocalDateTime;
 
 public class PaymentAggregate {
 
-    private final Long id;
+    private final String id;
     private final String paymentNo;
-    private final Long orderId;
-    private final Long userId;
+    private final String orderId;
+    private final String userId;
     private final Money amount;
     private final Money refundedAmount;
     private final Integer paymentMethod;
@@ -36,7 +36,7 @@ public class PaymentAggregate {
     private final LocalDateTime updateTime;
     private final int version;
 
-    private PaymentAggregate(Long id, String paymentNo, Long orderId, Long userId,
+    private PaymentAggregate(String id, String paymentNo, String orderId, String userId,
                              Money amount, Money refundedAmount, Integer paymentMethod,
                              PaymentStatus status, String transactionId, String refundReason,
                              LocalDateTime refundTime, String attach,
@@ -60,7 +60,7 @@ public class PaymentAggregate {
 
     // ==================== Factory ====================
 
-    public static PaymentCreatedResult create(Long paymentId, Long orderId, Long userId, BigDecimal amount,
+    public static PaymentCreatedResult create(String paymentId, String orderId, String userId, BigDecimal amount,
                                               Integer paymentMethod, String attach) {
         BizRequire.notNull(paymentId, "支付ID不能为空");
         BizRequire.notNull(orderId, "订单ID不能为空");
@@ -69,7 +69,7 @@ public class PaymentAggregate {
         BizRequire.requireTrue(amount.compareTo(BigDecimal.ZERO) > 0, "支付金额必须大于0");
         BizRequire.notNull(paymentMethod, "支付方式不能为空");
 
-        String paymentNo = "PAY" + paymentId;
+        String paymentNo = "PAY" + paymentId.hashCode();
         Money paymentAmount = Money.of(amount);
 
         PaymentAggregate aggregate = new PaymentAggregate(
@@ -88,7 +88,7 @@ public class PaymentAggregate {
 
     // ==================== Reconstruction ====================
 
-    public static PaymentAggregate reconstruct(Long id, String paymentNo, Long orderId, Long userId,
+    public static PaymentAggregate reconstruct(String id, String paymentNo, String orderId, String userId,
                                                 BigDecimal amount, BigDecimal refundedAmount, Integer paymentMethod,
                                                 PaymentStatus status, String transactionId, String refundReason,
                                                 LocalDateTime refundTime, String attach,
@@ -132,7 +132,7 @@ public class PaymentAggregate {
      */
     public PayPreparedResult preparePay() {
         if (!canPay()) {
-            throw PaymentInvalidStatusException.of("当前状态不允许支付: " + this.status);
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许支付: " + this.status);
         }
         PaymentAggregate updated = withStatus(PaymentStatus.PAYING, nextVersion());
         return new PayPreparedResult(updated);
@@ -143,7 +143,7 @@ public class PaymentAggregate {
      */
     public PayConfirmedResult confirmPay(PaymentResult result) {
         if (!canConfirmPay()) {
-            throw PaymentInvalidStatusException.of("只有支付中状态可以确认支付结果");
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以确认支付结果");
         }
         if (result.isSuccess()) {
             PaymentAggregate updated = withSuccess(result.getTransactionId());
@@ -159,7 +159,7 @@ public class PaymentAggregate {
      */
     public CancelPayResult cancelPay() {
         if (!PaymentStatus.PAYING.equals(this.status)) {
-            throw PaymentInvalidStatusException.of("只有支付中状态可以取消支付");
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以取消支付");
         }
         PaymentAggregate updated = withStatus(PaymentStatus.PENDING, nextVersion());
         return new CancelPayResult(updated);
@@ -170,7 +170,7 @@ public class PaymentAggregate {
      */
     public RefundPreparedResult prepareRefund(BigDecimal refundAmount) {
         if (!canRefund()) {
-            throw RefundNotAllowedException.of("当前状态不允许退款: " + this.status);
+            throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
         }
         validateRefundAmount(refundAmount);
         PaymentAggregate updated = withStatus(PaymentStatus.REFUNDING, nextVersion());
@@ -182,12 +182,12 @@ public class PaymentAggregate {
      */
     public RefundConfirmedResult confirmRefund(RefundResult result, BigDecimal refundAmount) {
         if (!canConfirmRefund()) {
-            throw PaymentInvalidStatusException.of("只有退款中状态可以确认退款结果");
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以确认退款结果");
         }
         validateRefundAmount(refundAmount);
 
         if (!result.isSuccess()) {
-            throw RefundNotAllowedException.of(result.getErrorMessage() != null ? result.getErrorMessage() : "退款失败");
+            throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, result.getErrorMessage() != null ? result.getErrorMessage() : "退款失败");
         }
 
         Money refundMoney = Money.of(refundAmount);
@@ -210,7 +210,7 @@ public class PaymentAggregate {
      */
     public CancelRefundResult cancelRefund() {
         if (!PaymentStatus.REFUNDING.equals(this.status)) {
-            throw PaymentInvalidStatusException.of("只有退款中状态可以取消退款");
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以取消退款");
         }
         PaymentAggregate updated = withStatus(PaymentStatus.SUCCESS, nextVersion());
         return new CancelRefundResult(updated);
@@ -221,7 +221,7 @@ public class PaymentAggregate {
      */
     public DirectRefundResult directRefund(String refundReason) {
         if (!canRefund()) {
-            throw RefundNotAllowedException.of("当前状态不允许退款: " + this.status);
+            throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
         }
         PaymentAggregate updated = withRefundResult(
                 PaymentStatus.REFUNDED, this.amount, refundReason, LocalDateTime.now(), nextVersion()
@@ -234,7 +234,7 @@ public class PaymentAggregate {
      */
     public FailedResult fail(String reason) {
         if (!canFail()) {
-            throw PaymentInvalidStatusException.of("只有待支付状态可以标记为失败");
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有待支付状态可以标记为失败");
         }
         PaymentAggregate updated = withStatus(PaymentStatus.FAILED, nextVersion());
         return new FailedResult(updated, new PaymentFailedEvent(this.id, reason));
@@ -245,7 +245,7 @@ public class PaymentAggregate {
      */
     public ClosedResult close() {
         if (!canClose()) {
-            throw PaymentInvalidStatusException.of("当前状态不允许关闭: " + this.status);
+            throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许关闭: " + this.status);
         }
         PaymentAggregate updated = withStatus(PaymentStatus.CLOSED, nextVersion());
         return new ClosedResult(updated, new PaymentClosedEvent(this.id));
@@ -291,11 +291,11 @@ public class PaymentAggregate {
     private void validateRefundAmount(BigDecimal refundAmount) {
         Money refundMoney = Money.of(refundAmount);
         if (!refundMoney.isLessThanOrEqual(this.amount)) {
-            throw RefundNotAllowedException.of("退款金额不能超过支付金额");
+            throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "退款金额不能超过支付金额");
         }
         Money totalRefunded = this.refundedAmount.add(refundMoney);
         if (totalRefunded.isGreaterThan(this.amount)) {
-            throw RefundNotAllowedException.of("累计退款金额不能超过支付金额");
+            throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "累计退款金额不能超过支付金额");
         }
     }
 
@@ -305,10 +305,10 @@ public class PaymentAggregate {
 
     // ==================== Getters ====================
 
-    public Long id() { return id; }
+    public String id() { return id; }
     public String paymentNo() { return paymentNo; }
-    public Long orderId() { return orderId; }
-    public Long userId() { return userId; }
+    public String orderId() { return orderId; }
+    public String userId() { return userId; }
     public BigDecimal amount() { return amount.value(); }
     public BigDecimal refundedAmount() { return refundedAmount.value(); }
     public Integer paymentMethod() { return paymentMethod; }

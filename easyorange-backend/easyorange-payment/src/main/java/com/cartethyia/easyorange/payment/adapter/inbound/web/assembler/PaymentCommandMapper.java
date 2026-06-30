@@ -12,7 +12,7 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface PaymentCommandMapper {
 
-    default CreatePaymentCommand toCreateCommand(CreatePaymentRequest request, Long userId) {
+    default CreatePaymentCommand toCreateCommand(CreatePaymentRequest request, String userId) {
         return CreatePaymentCommand.builder()
                 .orderId(request.getOrderId())
                 .amount(request.getAmount())
@@ -24,7 +24,7 @@ public interface PaymentCommandMapper {
 
     PayCommand toPayCommand(PaymentCallback callback);
 
-    default RefundPaymentCommand toRefundCommand(Long paymentId, RefundRequest request) {
+    default RefundPaymentCommand toRefundCommand(String paymentId, RefundRequest request) {
         return RefundPaymentCommand.builder()
                 .paymentId(paymentId)
                 .refundAmount(request.getRefundAmount())
@@ -32,7 +32,7 @@ public interface PaymentCommandMapper {
                 .build();
     }
 
-    default ClosePaymentCommand toCloseCommand(Long paymentId) {
+    default ClosePaymentCommand toCloseCommand(String paymentId) {
         return ClosePaymentCommand.builder()
                 .paymentId(paymentId)
                 .build();

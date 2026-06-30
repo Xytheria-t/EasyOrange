@@ -67,7 +67,7 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
     }
 
     @Override
-    public ProductDetail getProductDetail(Long productId) {
+    public ProductDetail getProductDetail(String productId) {
         ProductDO product = productMapper.selectById(productId);
         if (product == null || product.getDelFlag() != 0) {
             return null;
@@ -97,7 +97,7 @@ public class AdminProductQueryAdapter implements AdminProductQueryPort {
     }
 
     @Override
-    public Map<Long, List<String>> getProductImages(List<Long> productIds) {
+    public Map<String, List<String>> getProductImages(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }

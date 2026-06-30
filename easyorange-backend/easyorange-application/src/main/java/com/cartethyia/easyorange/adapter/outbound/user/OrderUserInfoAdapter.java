@@ -15,7 +15,7 @@ public class OrderUserInfoAdapter implements UserInfoPort {
     private final UserRepository userRepository;
 
     @Override
-    public Optional<UserInfo> getUserInfo(Long userId) {
+    public Optional<UserInfo> getUserInfo(String userId) {
         return userRepository.findById(userId)
                 .map(user -> new UserInfo(
                         user.getId(),

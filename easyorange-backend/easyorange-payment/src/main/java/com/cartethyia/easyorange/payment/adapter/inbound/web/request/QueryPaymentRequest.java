@@ -16,9 +16,9 @@ public class QueryPaymentRequest extends PageRequest {
 
     private String paymentNo;
 
-    private Long orderId;
+    private String orderId;
 
-    private Long userId;
+    private String userId;
 
     private Integer status;
 

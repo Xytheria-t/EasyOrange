@@ -11,13 +11,13 @@ package com.cartethyia.easyorange.message.domain.aggregate;
  */
 public class MessageSubscriptionAggregate {
 
-    private final Long id;
-    private final Long userId;
+    private final String id;
+    private final String userId;
     private final String messageType;
     private final String pushChannel;
     private final Boolean enabled;
 
-    private MessageSubscriptionAggregate(Long id, Long userId, String messageType,
+    private MessageSubscriptionAggregate(String id, String userId, String messageType,
                                           String pushChannel, Boolean enabled) {
         this.id = id;
         this.userId = userId;
@@ -28,8 +28,8 @@ public class MessageSubscriptionAggregate {
 
     // ==================== Getters ====================
 
-    public Long id() { return id; }
-    public Long userId() { return userId; }
+    public String id() { return id; }
+    public String userId() { return userId; }
     public String messageType() { return messageType; }
     public String pushChannel() { return pushChannel; }
     public Boolean enabled() { return enabled; }
@@ -39,7 +39,7 @@ public class MessageSubscriptionAggregate {
     /**
      * 创建消息订阅
      */
-    public static MessageSubscriptionAggregate create(Long userId, String messageType,
+    public static MessageSubscriptionAggregate create(String userId, String messageType,
                                                        String pushChannel, Boolean enabled) {
         return new MessageSubscriptionAggregate(null, userId, messageType, pushChannel, enabled);
     }
@@ -49,7 +49,7 @@ public class MessageSubscriptionAggregate {
     /**
      * 从持久层原始数据重建聚合根
      */
-    public static MessageSubscriptionAggregate fromRaw(Long id, Long userId, String messageType,
+    public static MessageSubscriptionAggregate fromRaw(String id, String userId, String messageType,
                                                         String pushChannel, Boolean enabled) {
         return new MessageSubscriptionAggregate(id, userId, messageType, pushChannel, enabled);
     }

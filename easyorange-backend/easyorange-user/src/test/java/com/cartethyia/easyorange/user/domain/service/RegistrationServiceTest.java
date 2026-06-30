@@ -52,7 +52,7 @@ class RegistrationServiceTest {
             when(passwordEncoder.encode(PASSWORD)).thenReturn("$2a$10$encoded");
 
             User savedUser = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials(USERNAME, "$2a$10$encoded"))
                 .personalInfo(ImmutablePersonalInfo.builder().nickName(USERNAME).build())
                 .build();
@@ -61,7 +61,7 @@ class RegistrationServiceTest {
             User result = service.registerNewUser(USERNAME, PASSWORD);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getId()).isEqualTo("1");
             verify(userRepository).findByUsername(USERNAME);
             verify(passwordEncoder).encode(PASSWORD);
             verify(userRepository).save(any(User.class));
@@ -71,7 +71,7 @@ class RegistrationServiceTest {
         @DisplayName("用户名已存在时抛出异常")
         void usernameAlreadyExists() {
             User existingUser = User.builder()
-                .id(99L)
+                .id("99")
                 .credentials(new Credentials(USERNAME, "existing"))
                 .build();
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(existingUser));

@@ -6,10 +6,10 @@ import lombok.Getter;
 @Getter
 public class MessageDeletedEvent extends BaseDomainEvent {
 
-    private final Long messageId;
-    private final Long deleterId;
+    private final String messageId;
+    private final String deleterId;
 
-    public MessageDeletedEvent(Long messageId, Long deleterId) {
+    public MessageDeletedEvent(String messageId, String deleterId) {
         super();
         this.messageId = messageId;
         this.deleterId = deleterId;

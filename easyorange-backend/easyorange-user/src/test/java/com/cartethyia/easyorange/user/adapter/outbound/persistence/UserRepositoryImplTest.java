@@ -60,7 +60,7 @@ class UserRepositoryImplTest {
 
     private UserEntity buildTestEntity() {
         return UserEntity.builder()
-            .id(1L)
+            .id("1")
             .username("testuser")
             .password("$2a$10$encoded")
             .userType(UserType.NORMAL)
@@ -82,7 +82,7 @@ class UserRepositoryImplTest {
 
     private User buildTestDomainUser() {
         return User.builder()
-            .id(1L)
+            .id("1")
             .credentials(new Credentials("testuser", "$2a$10$encoded"))
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
@@ -110,14 +110,14 @@ class UserRepositoryImplTest {
         @DisplayName("应返回领域用户")
         void shouldReturnDomainUser() {
             UserEntity entity = buildTestEntity();
-            when(userMapper.selectById(1L)).thenReturn(entity);
+            when(userMapper.selectById("1")).thenReturn(entity);
             when(entityMapper.toDomain(entity)).thenReturn(buildTestDomainUser());
 
-            Optional<User> result = userRepository.findById(1L);
+            Optional<User> result = userRepository.findById("1");
 
             assertThat(result).isPresent();
             User user = result.get();
-            assertThat(user.getId()).isEqualTo(1L);
+            assertThat(user.getId()).isEqualTo("1");
             assertThat(user.getUsername()).isEqualTo("testuser");
             assertThat(user.getPassword()).isEqualTo("$2a$10$encoded");
             assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
@@ -129,9 +129,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("用户不存在时应返回 empty")
         void shouldReturnEmptyWhenNotFound() {
-            when(userMapper.selectById(999L)).thenReturn(null);
+            when(userMapper.selectById("999")).thenReturn(null);
 
-            Optional<User> result = userRepository.findById(999L);
+            Optional<User> result = userRepository.findById("999");
 
             assertThat(result).isEmpty();
         }
@@ -185,14 +185,14 @@ class UserRepositoryImplTest {
                 .build());
             doAnswer(invocation -> {
                 UserEntity e = invocation.getArgument(0);
-                e.setId(1L);
+                e.setId("1");
                 return 1;
             }).when(userMapper).insert(any(UserEntity.class));
 
             User result = userRepository.save(domainUser);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo(1L);
+            assertThat(result.getId()).isEqualTo("1");
             verify(userMapper).insert(any(UserEntity.class));
         }
     }
@@ -205,12 +205,12 @@ class UserRepositoryImplTest {
         @DisplayName("应委托给 mapper 更新")
         void shouldDelegateToMapper() {
             User domainUser = User.builder()
-                .id(1L)
+                .id("1")
                 .credentials(new Credentials("testuser", "password"))
                 .contactInfo(new ContactInfo("updated@example.com", null))
                 .build();
             when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
-                .id(1L)
+                .id("1")
                 .username("testuser")
                 .password("password")
                 .email("updated@example.com")
@@ -226,11 +226,11 @@ class UserRepositoryImplTest {
         @DisplayName("更新失败时应返回 false")
         void shouldReturnFalseWhenUpdateFails() {
             User domainUser = User.builder()
-                .id(999L)
+                .id("999")
                 .credentials(new Credentials("testuser", "password"))
                 .build();
             when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
-                .id(999L)
+                .id("999")
                 .username("testuser")
                 .password("password")
                 .build());
@@ -250,7 +250,7 @@ class UserRepositoryImplTest {
         void shouldUpdateLoginInfoWithWrapper() {
             when(userMapper.update(isNull(), any())).thenReturn(1);
 
-            userRepository.updateLoginInfo(1L, "192.168.1.1");
+            userRepository.updateLoginInfo("1", "192.168.1.1");
 
             verify(userMapper).update(isNull(), any());
         }
@@ -263,9 +263,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应委托给 mapper 删除")
         void shouldDelegateToMapper() {
-            userRepository.deleteById(1L);
+            userRepository.deleteById("1");
 
-            verify(userMapper).deleteById(1L);
+            verify(userMapper).deleteById("1");
         }
     }
 

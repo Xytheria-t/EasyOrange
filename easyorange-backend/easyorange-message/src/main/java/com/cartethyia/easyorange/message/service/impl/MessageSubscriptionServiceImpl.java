@@ -21,7 +21,7 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
 
     @Override
     public List<MessageSubscriptionVO> getMySubscriptions() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return messageSubscriptionRepository.findByUserId(userId)
                 .stream()
                 .map(sub -> MessageSubscriptionVO.builder()
@@ -36,7 +36,7 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void updateSubscription(SubscriptionRequest request) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         MessageSubscriptionAggregate existing = messageSubscriptionRepository.findByUserIdAndTypeAndChannel(
                 userId, request.getMessageType(), request.getPushChannel());
@@ -55,7 +55,7 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
 
     @Override
     @Transactional(readOnly = true)
-    public boolean isSubscribed(Long userId, String messageType, String pushChannel) {
+    public boolean isSubscribed(String userId, String messageType, String pushChannel) {
         return messageSubscriptionRepository.existsEnabled(userId, messageType, pushChannel);
     }
 }

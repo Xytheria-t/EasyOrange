@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.security;
 
-import com.cartethyia.easyorange.payment.domain.exception.CallbackSignInvalidException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,7 +34,7 @@ public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort 
 
         if (sign == null || sign.isBlank()) {
             log.warn("回调签名缺失 paymentNo={}", paymentNo);
-            throw CallbackSignInvalidException.of();
+            throw PaymentDomainException.of(PaymentResultCode.CALLBACK_SIGN_INVALID);
         }
 
         String data = paymentNo + "|" + transactionId;
@@ -41,7 +42,7 @@ public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort 
 
         if (!expectedSign.equals(sign)) {
             log.warn("回调签名验证失败 paymentNo={}", paymentNo);
-            throw CallbackSignInvalidException.of();
+            throw PaymentDomainException.of(PaymentResultCode.CALLBACK_SIGN_INVALID);
         }
     }
 

@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class RecallMessageCommand {
 
-    private Long messageId;
-    private Long operatorId;
+    private String messageId;
+    private String operatorId;
 }

@@ -14,15 +14,15 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PaymentResponse {
 
-    private Long id;
+    private String id;
 
     private String paymentNo;
 
-    private Long orderId;
+    private String orderId;
 
     private String orderNo;
 
-    private Long userId;
+    private String userId;
 
     private String username;
 

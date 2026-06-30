@@ -28,7 +28,7 @@ public class MessageRoutingService {
      * @param receiverId the ID of the target user
      * @return a RouteDecision containing whether the user is online and their active subscriptions
      */
-    public RouteDecision decideRoute(Long receiverId) {
+    public RouteDecision decideRoute(String receiverId) {
         boolean isOnline = sessionManager.isUserOnline(receiverId);
         List<MessageSubscriptionAggregate> subscriptions = subscriptionRepository.findByUserId(receiverId);
         return new RouteDecision(isOnline, subscriptions);

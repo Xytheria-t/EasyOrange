@@ -24,18 +24,18 @@ public class ProductTagger {
     private static final String TAG_IMAGE = "📸实拍";
     private static final String TAG_CREDIT = "⭐信用优";
 
-    public Map<Long, List<String>> tagProducts(List<ProductReadModel> products) {
+    public Map<String, List<String>> tagProducts(List<ProductReadModel> products) {
         if (products == null || products.isEmpty()) {
             return Map.of();
         }
 
-        Set<Long> sellerIds = products.stream()
+        Set<String> sellerIds = products.stream()
                 .map(ProductReadModel::sellerId)
                 .collect(Collectors.toSet());
 
-        Map<Long, Integer> creditScores = creditScoreFetcher.fetchCreditScores(sellerIds);
+        Map<String, Integer> creditScores = creditScoreFetcher.fetchCreditScores(sellerIds);
 
-        Map<Long, List<String>> tags = new HashMap<>(products.size());
+        Map<String, List<String>> tags = new HashMap<>(products.size());
         for (var product : products) {
             List<String> productTags = new ArrayList<>(4);
             tagDiscount(product, productTags);
@@ -67,7 +67,7 @@ public class ProductTagger {
         }
     }
 
-    private void tagCredit(ProductReadModel product, Map<Long, Integer> creditScores, List<String> productTags) {
+    private void tagCredit(ProductReadModel product, Map<String, Integer> creditScores, List<String> productTags) {
         try {
             Integer score = creditScores.get(product.sellerId());
             if (score != null && score >= CREDIT_THRESHOLD) {

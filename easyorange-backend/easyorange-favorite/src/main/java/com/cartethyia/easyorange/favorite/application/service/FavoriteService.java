@@ -29,8 +29,8 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void addFavorite(Long productId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void addFavorite(String productId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         BizRequire.requireTrue(productInfoPort.productExists(productId), "商品不存在");
         BizRequire.requireTrue(!productInfoPort.isOwnProduct(userId, productId), "不能收藏自己的商品");
@@ -44,8 +44,8 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void removeFavorite(Long productId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void removeFavorite(String productId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         Favorite favorite = favoriteRepository.findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> BusinessException.of("未收藏过该商品"));
@@ -55,8 +55,8 @@ public class FavoriteService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void removeManyFavorites(List<Long> ids) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public void removeManyFavorites(List<String> ids) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         if (ids == null || ids.isEmpty()) {
             return;
@@ -70,7 +70,7 @@ public class FavoriteService {
 
     @Transactional(readOnly = true)
     public PageResult<Favorite> queryFavorites(int pageNum, int pageSize) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         long offset = (pageNum - 1L) * pageSize;
         long total = favoriteRepository.countByUserId(userId);
@@ -80,24 +80,24 @@ public class FavoriteService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isFavorited(Long productId) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public boolean isFavorited(String productId) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return favoriteRepository.existsByUserIdAndProductId(userId, productId);
     }
 
     @Transactional(readOnly = true)
     public long getFavoriteCount() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return favoriteRepository.countByUserId(userId);
     }
 
     @Transactional(readOnly = true)
-    public Map<Long, Boolean> batchCheckFavorited(List<Long> productIds) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public Map<String, Boolean> batchCheckFavorited(List<String> productIds) {
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }
-        Set<Long> favoritedIds = favoriteRepository.findFavoritedProductIds(userId, productIds);
+        Set<String> favoritedIds = favoriteRepository.findFavoritedProductIds(userId, productIds);
         return productIds.stream()
                 .collect(Collectors.toMap(pid -> pid, favoritedIds::contains, (a, b) -> a, LinkedHashMap::new));
     }

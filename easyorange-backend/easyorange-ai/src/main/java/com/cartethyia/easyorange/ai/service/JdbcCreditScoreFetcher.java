@@ -18,19 +18,19 @@ public class JdbcCreditScoreFetcher implements CreditScoreFetcher {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public Map<Long, Integer> fetchCreditScores(Collection<Long> sellerIds) {
+    public Map<String, Integer> fetchCreditScores(Collection<String> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
             return Map.of();
         }
 
-        Map<Long, Integer> result = new ConcurrentHashMap<>(sellerIds.size());
+        Map<String, Integer> result = new ConcurrentHashMap<>(sellerIds.size());
         String sql = "SELECT user_id, credit_score FROM eo_user_credit WHERE user_id IN (" +
                 String.join(",", Collections.nCopies(sellerIds.size(), "?")) + ")";
 
         try {
             jdbcTemplate.query(sql,
-                    (RowCallbackHandler) rs -> result.put(rs.getLong("user_id"), rs.getInt("credit_score")),
-                    sellerIds.toArray()
+                    (RowCallbackHandler) rs -> result.put(rs.getString("user_id"), rs.getInt("credit_score")),
+                    sellerIds.toArray(new String[0])
             );
         } catch (Exception e) {
             log.warn("Batch credit score fetch failed, falling back to individual lookup", e);
@@ -39,9 +39,9 @@ public class JdbcCreditScoreFetcher implements CreditScoreFetcher {
         return result;
     }
 
-    private Map<Long, Integer> fallbackIndividualLookup(Collection<Long> sellerIds) {
-        Map<Long, Integer> result = new HashMap<>();
-        for (Long sellerId : sellerIds) {
+    private Map<String, Integer> fallbackIndividualLookup(Collection<String> sellerIds) {
+        Map<String, Integer> result = new HashMap<>();
+        for (String sellerId : sellerIds) {
             try {
                 var creditResult = creditScoringService.getCreditScore(sellerId);
                 if (creditResult != null) {

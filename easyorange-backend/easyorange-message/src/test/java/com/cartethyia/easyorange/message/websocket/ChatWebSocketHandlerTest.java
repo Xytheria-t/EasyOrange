@@ -23,7 +23,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -53,8 +53,8 @@ class ChatWebSocketHandlerTest {
     @Captor
     private ArgumentCaptor<Map<String, Object>> mapCaptor;
 
-    private static final Long USER_ID = 1L;
-    private static final Long RECEIVER_ID = 2L;
+    private static final String USER_ID = "1";
+    private static final String RECEIVER_ID = "2";
     private static final String CONVERSATION_ID = "conv_1_2";
 
     private Principal principal;
@@ -79,7 +79,7 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("正常发送聊天消息")
         void handleChatMessage_normal_sendsMessage() {
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -113,7 +113,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("发送消息时 title 为 null 使用默认空字符串")
         void handleChatMessage_nullTitle_usesDefault() {
             wsMessage.setTitle(null);
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -130,7 +130,7 @@ class ChatWebSocketHandlerTest {
         @DisplayName("发送消息时 type 为 null 使用默认值 0")
         void handleChatMessage_nullType_usesDefault() {
             wsMessage.setType(null);
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -146,15 +146,15 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("发送消息时 businessId 传递正确")
         void handleChatMessage_withBusinessId_passesCorrectly() {
-            wsMessage.setBusinessId(999L);
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            wsMessage.setBusinessId("999");
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().getBusinessId()).isEqualTo(999L);
+                assertThat(commandCaptor.getValue().getBusinessId()).isEqualTo("999");
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -163,7 +163,7 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("发送消息被限流时发送错误通知并返回")
         void handleChatMessage_rateLimited_sendsError() {
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(false);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -185,7 +185,7 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("发送消息时未读通知包含正确字段")
         void handleChatMessage_unreadNotification_containsCorrectFields() {
-            when(rateLimiterService.allowSendMessage(anyLong())).thenReturn(true);
+            when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -275,7 +275,7 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("广播撤回事件包含正确字段")
         void broadcastRecallEvent_containsCorrectFields() {
-            Long messageId = 100L;
+            String messageId = "100";
             LocalDateTime before = LocalDateTime.now();
 
             handler.broadcastRecallEvent(CONVERSATION_ID, messageId, USER_ID);
@@ -297,7 +297,7 @@ class ChatWebSocketHandlerTest {
         @Test
         @DisplayName("广播撤回事件到正确的主题")
         void broadcastRecallEvent_correctTopic() {
-            handler.broadcastRecallEvent(CONVERSATION_ID, 100L, USER_ID);
+            handler.broadcastRecallEvent(CONVERSATION_ID, "100", USER_ID);
 
             verify(messagingTemplate).convertAndSend(
                     eq("/topic/chat/" + CONVERSATION_ID + "/recall"),

@@ -23,19 +23,19 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
     private final ProductQueryRepository productQueryRepository;
 
     @Override
-    public boolean productExists(Long productId) {
+    public boolean productExists(String productId) {
         return productRepository.findById(ProductId.of(productId)).isPresent();
     }
 
     @Override
-    public boolean isOwnProduct(Long userId, Long productId) {
+    public boolean isOwnProduct(String userId, String productId) {
         return productRepository.findById(ProductId.of(productId))
                 .map(p -> p.getSellerId().value().equals(userId))
                 .orElse(false);
     }
 
     @Override
-    public List<ProductInfo> findProductsByIds(List<Long> productIds) {
+    public List<ProductInfo> findProductsByIds(List<String> productIds) {
         List<ProductReadModel> products = productQueryRepository.findProductsByIds(productIds);
         return products.stream()
                 .map(this::toProductInfo)
@@ -43,7 +43,7 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
     }
 
     @Override
-    public Map<Long, SellerInfo> findSellersByIds(Set<Long> sellerIds) {
+    public Map<String, SellerInfo> findSellersByIds(Set<String> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) {
             return Map.of();
         }
@@ -57,12 +57,12 @@ public class FavoriteProductInfoAdapter implements ProductInfoPort {
 
     @Override
     public List<ProductDetailInfo> assembleProductDetails(List<ProductInfo> products,
-                                                           Map<Long, SellerInfo> sellerMap) {
-        List<Long> productIds = products.stream()
+                                                           Map<String, SellerInfo> sellerMap) {
+        List<String> productIds = products.stream()
                 .map(ProductInfo::id)
                 .collect(Collectors.toList());
 
-        Map<Long, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
+        Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct = productQueryRepository
                 .findImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductQueryRepository.ProductImageInfo::productId));
 

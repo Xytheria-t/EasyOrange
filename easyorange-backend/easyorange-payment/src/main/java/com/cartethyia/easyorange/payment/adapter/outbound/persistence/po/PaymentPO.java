@@ -21,9 +21,9 @@ public class PaymentPO extends BaseDO {
 
     private String paymentNo;
 
-    private Long orderId;
+    private String orderId;
 
-    private Long userId;
+    private String userId;
 
     private BigDecimal amount;
 

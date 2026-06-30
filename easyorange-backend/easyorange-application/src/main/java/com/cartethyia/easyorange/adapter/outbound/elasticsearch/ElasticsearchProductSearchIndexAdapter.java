@@ -41,18 +41,18 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     private final ElasticsearchOperations elasticsearchOperations;
 
     @Override
-    public void indexProduct(Long productId) {
+    public void indexProduct(String productId) {
         saveDocument(productId);
     }
 
     @Override
-    public void updateProductIndex(Long productId) {
+    public void updateProductIndex(String productId) {
         saveDocument(productId);
     }
 
     @Override
-    public void removeProductIndex(Long productId) {
-        elasticsearchOperations.delete(String.valueOf(productId), ProductDocument.class);
+    public void removeProductIndex(String productId) {
+        elasticsearchOperations.delete(productId, ProductDocument.class);
         log.debug("Deleted ES document for productId={}", productId);
     }
 
@@ -72,7 +72,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
      *
      * @param productId 商品 ID
      */
-    private void saveDocument(Long productId) {
+    private void saveDocument(String productId) {
         try {
             ProductDO product = productMapper.selectById(productId);
             if (product == null) {
@@ -100,7 +100,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
      * @return ES 文档对象
      */
     ProductDocument buildDocument(ProductDO product) {
-        Long productId = product.getId();
+        String productId = product.getId();
 
         ProductDetailDO detail = productDetailMapper.selectById(productId);
 
@@ -122,10 +122,10 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
 
     /** 使用预加载的数据构建文档（批量操作使用，消除 N+1 查询） */
     private ProductDocument buildDocument(ProductDO product,
-                                          Map<Long, ProductDetailDO> detailMap,
-                                          Map<Long, List<ProductImageDO>> imagesByProduct,
-                                          Map<Long, CategoryDO> categoryMap) {
-        Long productId = product.getId();
+                                          Map<String, ProductDetailDO> detailMap,
+                                          Map<String, List<ProductImageDO>> imagesByProduct,
+                                          Map<String, CategoryDO> categoryMap) {
+        String productId = product.getId();
 
         ProductDetailDO detail = detailMap.get(productId);
         List<ProductImageDO> imageList = imagesByProduct.getOrDefault(productId, List.of());
@@ -143,10 +143,10 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
 
     /** 核心文档构建逻辑（无数据库查询） */
     private ProductDocument buildDocument(ProductDO product,
-                                          ProductDetailDO detail,
-                                          List<ProductImageDO> imageList,
-                                          String categoryName) {
-        Long productId = product.getId();
+                                           ProductDetailDO detail,
+                                           List<ProductImageDO> imageList,
+                                           String categoryName) {
+        String productId = product.getId();
 
         String mainImage = null;
         List<String> imageUrls = List.of();
@@ -169,11 +169,11 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 : List.of();
 
         return ProductDocument.builder()
-                .id(String.valueOf(productId))
+                .id(productId)
                 .userId(product.getUserId())
                 .name(product.getName())
                 .description(detail != null ? detail.getDescription() : null)
-                .categoryId(product.getCategoryId() != null ? product.getCategoryId().intValue() : null)
+                .categoryId(product.getCategoryId())
                 .categoryName(categoryName)
                 .price(product.getPrice() != null ? product.getPrice().doubleValue() : null)
                 .originalPrice(product.getOriginalPrice() != null ? product.getOriginalPrice().doubleValue() : null)
@@ -194,7 +194,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
      * 批量索引商品到 ES。
      * 先批量加载所有关联数据到内存 Map，再逐条构建 document 并批量保存，消除 N+1 查询问题。
      */
-    public void indexProducts(List<Long> productIds) {
+    public void indexProducts(List<String> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return;
         }
@@ -210,29 +210,29 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
     }
 
     /** 批量加载所有关联数据到内存 Map，再逐条构建 document */
-    private List<ProductDocument> loadDocumentsBulk(List<Long> productIds) {
+    private List<ProductDocument> loadDocumentsBulk(List<String> productIds) {
         List<ProductDO> products = productMapper.selectBatchIds(productIds);
         if (products.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, ProductDetailDO> detailMap = productDetailMapper
+        Map<String, ProductDetailDO> detailMap = productDetailMapper
                 .selectDetailsByProductIds(productIds)
                 .stream()
                 .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, b) -> a));
 
-        Map<Long, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
+        Map<String, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
                 .in(ProductImageDO::getProductId, productIds)
                 .orderByAsc(ProductImageDO::getSortOrder)
                 .list()
                 .stream()
                 .collect(Collectors.groupingBy(ProductImageDO::getProductId));
 
-        Set<Long> categoryIds = products.stream()
+        Set<String> categoryIds = products.stream()
                 .map(ProductDO::getCategoryId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        Map<Long, CategoryDO> categoryMap = categoryIds.isEmpty() ? Map.of()
+        Map<String, CategoryDO> categoryMap = categoryIds.isEmpty() ? Map.of()
                 : categoryMapper.selectBatchIds(categoryIds)
                         .stream()
                         .collect(Collectors.toMap(CategoryDO::getId, c -> c, (a, b) -> a));

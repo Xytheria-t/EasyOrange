@@ -23,19 +23,19 @@ public class PaymentQueryController {
     private final PaymentViewAssembler paymentViewAssembler;
 
     @GetMapping("/{id}")
-    public Result<PaymentResponse> getById(@PathVariable Long id) {
+    public Result<PaymentResponse> getById(@PathVariable String id) {
         PaymentAggregate aggregate = queryHandler.getPaymentById(id);
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/orders/{orderId}")
-    public Result<PaymentResponse> getByOrderId(@PathVariable Long orderId) {
+    public Result<PaymentResponse> getByOrderId(@PathVariable String orderId) {
         PaymentAggregate aggregate = queryHandler.getPaymentByOrderId(orderId);
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/{id}/status")
-    public Result<PaymentStatusResponse> getStatus(@PathVariable Long id) {
+    public Result<PaymentStatusResponse> getStatus(@PathVariable String id) {
         PaymentAggregate aggregate = queryHandler.getPaymentById(id);
         return Result.success(new PaymentStatusResponse(
                 aggregate.status().getDesc(),

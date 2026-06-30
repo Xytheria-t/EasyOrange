@@ -63,10 +63,10 @@ class ElasticsearchProductSearchQueryAdapterTest {
     void search_shouldReturnMappedResults() {
         ProductDocument doc = ProductDocument.builder()
                 .id("100")
-                .userId(200L)
+                .userId("200")
                 .name("测试商品")
                 .description("商品描述")
-                .categoryId(300)
+                .categoryId("300")
                 .categoryName("手机")
                 .price(99.99)
                 .originalPrice(199.99)
@@ -100,8 +100,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
         assertThat(result.records()).hasSize(1);
 
         var record = result.records().get(0);
-        assertThat(record.id()).isEqualTo(100L);
-        assertThat(record.sellerId()).isEqualTo(200L);
+        assertThat(record.id()).isEqualTo("100");
+        assertThat(record.sellerId()).isEqualTo("200");
         assertThat(record.title()).isEqualTo("测试商品");
         assertThat(record.description()).isEqualTo("商品描述");
         assertThat(record.categoryName()).isEqualTo("手机");
@@ -131,7 +131,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         when(elasticsearchOperations.search(queryCaptor.capture(), eq(ProductDocument.class)))
                 .thenReturn(searchHits);
 
-        ProductSearchQuery query = new ProductSearchQuery("手机", 300L, null, null, null, null, null, 1, 20, null, false);
+        ProductSearchQuery query = new ProductSearchQuery("手机", "300", null, null, null, null, null, 1, 20, null, false);
         adapter.search(query);
 
         StringQuery capturedQuery = queryCaptor.getValue();

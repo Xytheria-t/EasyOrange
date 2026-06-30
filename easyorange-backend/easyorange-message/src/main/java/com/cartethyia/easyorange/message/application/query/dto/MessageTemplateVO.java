@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Data
 public class MessageTemplateVO {
 
-    private Long id;
+    private String id;
 
     private String templateCode;
 

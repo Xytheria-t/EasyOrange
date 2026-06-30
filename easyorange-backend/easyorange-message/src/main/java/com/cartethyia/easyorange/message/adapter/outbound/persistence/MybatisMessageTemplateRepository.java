@@ -43,7 +43,7 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
     }
 
     @Override
-    public void deleteByIds(Long[] templateIds) {
+    public void deleteByIds(String[] templateIds) {
         mapper.deleteBatchIds(Arrays.asList(templateIds));
     }
 
@@ -69,7 +69,7 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
     }
 
     @Override
-    public boolean existsByCodeExcludingId(String templateCode, Long excludeId) {
+    public boolean existsByCodeExcludingId(String templateCode, String excludeId) {
         Long count = lambdaQuery()
                 .eq(MessageTemplate::getTemplateCode, templateCode)
                 .ne(excludeId != null, MessageTemplate::getId, excludeId)

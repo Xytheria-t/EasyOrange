@@ -28,7 +28,7 @@ public class MessageQueryController {
     }
 
     @GetMapping("/{id}")
-    public Result<MessageVO> getMessageDetail(@PathVariable Long id) {
+    public Result<MessageVO> getMessageDetail(@PathVariable String id) {
         return Result.success(queryHandler.getMessageDetail(id));
     }
 
@@ -48,7 +48,7 @@ public class MessageQueryController {
     }
 
     @GetMapping("/conversation/{userId}")
-    public Result<List<ConversationVO>> getConversation(@PathVariable Long userId) {
+    public Result<List<ConversationVO>> getConversation(@PathVariable String userId) {
         return Result.success(conversationQueryHandler.getConversation(userId));
     }
 }

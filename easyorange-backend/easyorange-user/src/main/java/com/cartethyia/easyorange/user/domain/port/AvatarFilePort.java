@@ -22,7 +22,7 @@ public interface AvatarFilePort {
      * @param userId 用户ID
      * @return 头像访问URL
      */
-    String upload(byte[] content, String contentType, String originalFilename, Long userId);
+    String upload(byte[] content, String contentType, String originalFilename, String userId);
 
     /**
      * 删除头像（如果存在）

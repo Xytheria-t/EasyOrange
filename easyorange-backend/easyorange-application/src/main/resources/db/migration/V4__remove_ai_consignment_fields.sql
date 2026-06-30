@@ -6,12 +6,12 @@
 -- Database: MySQL 8.0
 -- ===================================================================
 
--- 删除 AI 托管寄售字段（如果存在）
-ALTER TABLE eo_product
-    DROP COLUMN IF EXISTS floor_price,
-    DROP COLUMN IF EXISTS consignment_mode,
-    DROP COLUMN IF EXISTS listed_at,
-    DROP COLUMN IF EXISTS current_price_level;
+-- 删除 AI 托管寄售字段
+ALTER TABLE `eo_product`
+    DROP COLUMN `floor_price`,
+    DROP COLUMN `consignment_mode`,
+    DROP COLUMN `listed_at`,
+    DROP COLUMN `current_price_level`;
 
 -- 删除 AI 托管商品查询索引
-DROP INDEX IF EXISTS idx_product_ai_managed ON eo_product;
+DROP INDEX `idx_product_ai_managed` ON `eo_product`;

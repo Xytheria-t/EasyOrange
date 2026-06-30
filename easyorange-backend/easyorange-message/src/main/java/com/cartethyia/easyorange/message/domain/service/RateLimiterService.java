@@ -40,7 +40,7 @@ public class RateLimiterService {
      * @param userId the ID of the user attempting to send a message
      * @return true if the message is allowed, false if the rate limit is exceeded
      */
-    public boolean allowSendMessage(Long userId) {
+    public boolean allowSendMessage(String userId) {
         String key = MESSAGE_RATE_KEY.formatted(userId);
 
         try {
@@ -75,7 +75,7 @@ public class RateLimiterService {
      * @param userId the ID of the user sending the typing indicator
      * @return true if the typing indicator is allowed, false if throttled
      */
-    public boolean allowTyping(Long userId) {
+    public boolean allowTyping(String userId) {
         String key = TYPING_RATE_KEY.formatted(userId);
 
         try {

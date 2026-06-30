@@ -29,8 +29,8 @@ public class ConversationQueryHandler {
     private final UserInfoPort userInfoPort;
 
     @Transactional(readOnly = true)
-    public List<ConversationVO> getConversation(Long otherUserId) {
-        Long currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    public List<ConversationVO> getConversation(String otherUserId) {
+        String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         List<Message> messages = ChainWrappers.lambdaQueryChain(messageMapper)
                 .and(w -> w
@@ -46,14 +46,14 @@ public class ConversationQueryHandler {
             return List.of();
         }
 
-        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(Set.of(currentUserId, otherUserId));
+        Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(Set.of(currentUserId, otherUserId));
 
         return messages.stream()
                 .map(msg -> toConversationVO(msg, userMap))
                 .toList();
     }
 
-    private ConversationVO toConversationVO(Message message, Map<Long, UserInfo> userMap) {
+    private ConversationVO toConversationVO(Message message, Map<String, UserInfo> userMap) {
         UserInfo sender = userMap.get(message.getSenderId());
         UserInfo receiver = userMap.get(message.getReceiverId());
 
@@ -73,7 +73,7 @@ public class ConversationQueryHandler {
 
     @Transactional(readOnly = true)
     public List<ConversationListVO> getConversations() {
-        Long currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         List<Message> messages = ChainWrappers.lambdaQueryChain(messageMapper)
                 .and(w -> w
@@ -89,18 +89,18 @@ public class ConversationQueryHandler {
             return List.of();
         }
 
-        Map<Long, Message> latestByUser = new LinkedHashMap<>();
-        Map<Long, Integer> unreadCounts = new HashMap<>();
+        Map<String, Message> latestByUser = new LinkedHashMap<>();
+        Map<String, Integer> unreadCounts = new HashMap<>();
 
         for (Message msg : messages) {
-            Long otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
+            String otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
             latestByUser.putIfAbsent(otherUserId, msg);
             if (msg.getReceiverId().equals(currentUserId) && MessageStatus.UNREAD.getCode().equals(msg.getIsRead())) {
                 unreadCounts.merge(otherUserId, 1, Integer::sum);
             }
         }
 
-        Map<Long, UserInfo> userMap = userInfoPort.getUserInfoMap(latestByUser.keySet());
+        Map<String, UserInfo> userMap = userInfoPort.getUserInfoMap(latestByUser.keySet());
         userMap.put(currentUserId, userMap.get(currentUserId));
 
         return latestByUser.entrySet().stream()
@@ -108,8 +108,8 @@ public class ConversationQueryHandler {
                 .toList();
     }
 
-    private ConversationListVO buildConversationListVO(Long targetUserId, Message latestMsg,
-                                                        Map<Long, UserInfo> userMap, Map<Long, Integer> unreadCounts) {
+    private ConversationListVO buildConversationListVO(String targetUserId, Message latestMsg,
+                                                        Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
         UserInfo targetUser = userMap.get(targetUserId);
         return ConversationListVO.builder()
                 .targetUserId(targetUserId)

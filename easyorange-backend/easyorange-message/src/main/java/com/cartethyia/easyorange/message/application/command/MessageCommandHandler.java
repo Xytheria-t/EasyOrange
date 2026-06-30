@@ -41,7 +41,7 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendMessageCommand command) {
-        Long senderId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String senderId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         if (!rateLimiterService.allowSendMessage(senderId)) {
             throw new MessageDomainException("发送过于频繁，请稍后再试");
@@ -107,7 +107,7 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
@@ -131,9 +131,9 @@ public class MessageCommandHandler {
         BizRequire.notEmpty(command.getMessageIds(), "消息ID列表不能为空");
         BizRequire.requireTrue(command.getMessageIds() != null && !command.getMessageIds().contains(null), "消息ID不能为null");
 
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        for (Long messageId : command.getMessageIds()) {
+        for (String messageId : command.getMessageIds()) {
             try {
                 MessageAggregate aggregate = messageRepository.findById(messageId).orElse(null);
                 if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
@@ -153,27 +153,31 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handleMarkAllAsRead() {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         messageRepository.markAllAsRead(userId);
         log.info("action=mark_all_read userId={}", userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handleMarkAsReadByType(Integer type) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         messageRepository.markAsReadByType(userId, type);
         log.info("action=mark_type_read userId={} type={}", userId, type);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(RecallMessageCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
 
-        long minId = Math.min(aggregate.senderId(), aggregate.receiverId());
-        long maxId = Math.max(aggregate.senderId(), aggregate.receiverId());
+        String minId = aggregate.senderId() != null && aggregate.receiverId() != null
+                ? (aggregate.senderId().compareTo(aggregate.receiverId()) < 0 ? aggregate.senderId() : aggregate.receiverId())
+                : "";
+        String maxId = aggregate.senderId() != null && aggregate.receiverId() != null
+                ? (aggregate.senderId().compareTo(aggregate.receiverId()) < 0 ? aggregate.receiverId() : aggregate.senderId())
+                : "";
         String conversationId = "conv_" + minId + "_" + maxId;
         MessageRecallResult recallResult = aggregate.recall(userId, conversationId);
         messageRepository.update(recallResult.aggregate());
@@ -184,7 +188,7 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(DeleteMessageCommand command) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));

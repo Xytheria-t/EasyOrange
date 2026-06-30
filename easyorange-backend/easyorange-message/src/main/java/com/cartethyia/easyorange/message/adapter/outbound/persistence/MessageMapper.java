@@ -15,5 +15,5 @@ public interface MessageMapper extends BaseMapper<Message> {
     @Select("SELECT type AS `type`, COUNT(*) AS `count` FROM eo_message " +
             "WHERE receiver_id = #{userId} AND is_read = #{unreadCode} AND del_flag = 0 " +
             "GROUP BY type")
-    List<Map<String, Object>> countUnreadByType(@Param("userId") Long userId, @Param("unreadCode") Integer unreadCode);
+    List<Map<String, Object>> countUnreadByType(@Param("userId") String userId, @Param("unreadCode") Integer unreadCode);
 }

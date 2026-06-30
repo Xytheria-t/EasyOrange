@@ -29,7 +29,7 @@ class MessageRoutingServiceTest {
     @InjectMocks
     private MessageRoutingService routingService;
 
-    private static final Long USER_ID = 1L;
+    private static final String USER_ID = "1";
 
     @Nested
     @DisplayName("decideRoute")

@@ -19,19 +19,18 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
     private final PaymentRepositoryPort paymentRepository;
 
     @Override
-    public Long createPayment(CreatePaymentRequest request) {
-        CreatePaymentCommand command = new CreatePaymentCommand(
-                request.orderId(),
-                request.amount(),
-                request.paymentMethod(),
-                request.attach(),
-                request.description()
-        );
+    public String createPayment(CreatePaymentRequest request) {
+        CreatePaymentCommand command = CreatePaymentCommand.builder()
+                .orderId(request.orderId())
+                .amount(request.amount())
+                .paymentMethod(request.paymentMethod())
+                .attach(request.attach())
+                .build();
         return paymentCommandHandler.handle(command);
     }
 
     @Override
-    public void refundPayment(Long orderId, String reason) {
+    public void refundPayment(String orderId, String reason) {
         PaymentAggregate payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
 

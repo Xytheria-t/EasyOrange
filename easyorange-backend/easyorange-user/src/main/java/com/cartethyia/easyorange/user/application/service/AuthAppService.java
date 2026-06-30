@@ -27,7 +27,7 @@ public class AuthAppService {
     private final SmsCodePort smsCodePort;
 
     @Transactional(rollbackFor = Exception.class)
-    public Long register(String username, String password) {
+    public String register(String username, String password) {
         return registrationService.registerNewUser(username, password).getId();
     }
 
@@ -63,7 +63,7 @@ public class AuthAppService {
 
     @Transactional(rollbackFor = Exception.class)
     public void changePassword(String verifyCode, String newPassword) {
-        Long userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         User user = userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
         authenticationService.resetPassword(user.getContactInfo().phone(), verifyCode, newPassword);

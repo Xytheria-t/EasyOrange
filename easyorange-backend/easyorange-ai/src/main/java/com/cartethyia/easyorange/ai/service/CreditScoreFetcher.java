@@ -5,5 +5,5 @@ import java.util.Map;
 
 public interface CreditScoreFetcher {
 
-    Map<Long, Integer> fetchCreditScores(Collection<Long> sellerIds);
+    Map<String, Integer> fetchCreditScores(Collection<String> sellerIds);
 }

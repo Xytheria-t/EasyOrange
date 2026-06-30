@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class RefundPaymentCommand {
 
-    private Long paymentId;
+    private String paymentId;
     private BigDecimal refundAmount;
     private String refundReason;
 }
