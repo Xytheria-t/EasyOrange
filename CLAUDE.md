@@ -125,6 +125,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - 测试覆盖率目标 ≥ 80%
 - **多模块构建**: 修改子模块后启动前必须先执行 `mvn clean install -Dmaven.test.skip=true`，确保子模块 JAR 安装到本地仓库，否则 DevTools 运行时会 ClassNotFoundException
 - **前端CSS导入**: 共享组件（如 ProductCard）使用的样式CSS必须在组件文件自身 import，禁止仅依赖页面级导入。首页通过 React.lazy 懒加载 section 组件时，页面级CSS不会随组件chunk加载，导致首次渲染无样式
+- **前端组件库**: C 端表单/按钮统一使用 shadcn/ui（Button / Input / Label / Checkbox / Switch / Select / Textarea / RadioGroup），禁止保留原生 `<button>` / `<input>` / `<textarea>` / `<select>`；导入统一走 `@/components/ui`；颜色/边框硬编码应提取为 `src/styles/tokens.css` 变量，CSS reset 必须置于 `@layer base` 避免覆盖 Tailwind utilities
 - **重依赖懒加载**: 体积 > 100KB 的第三方库（如 recharts、dayjs、monaco-editor、xlsx、@tiptap/*）必须 (1) 在 `vite.config.ts` 的 `manualChunks` 中分配独立 `vendor-*` chunk (2) 组件用 `React.lazy` + `Suspense` 包装，禁止静态 import 到业务页面。参考实现：`src/admin/pages/dashboard/charts/lazyCharts.tsx`。违反会导致非相关路由首屏下载 300KB+ 死代码
 - **管理端弹窗/抽屉必须使用 Portal**: `src/admin/` 下所有 Modal、Drawer、确认框等弹出层组件**必须**通过 `createPortal(..., document.body)` 挂载到 `<body>` 节点。原因：`.admin-sidebar` 和 `.admin-header` 使用了 `backdrop-filter: blur()`，这会创建新的包含块（containing block），导致 `position: fixed` 的定位基准从视口变为被偏移的祖先元素，弹窗居中失效且底部截断。Portal 直接挂载 body 可彻底绕过此问题。居中方式统一用 `position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%)`
 - **管理端弹窗内容溢出处理**: 所有 Portal 弹窗容器必须设置 `maxHeight: 'calc(100vh - 2rem)'` + `display: flex; flexDirection: column; overflow: hidden`，内容区域设置 `flex: 1; overflowY: auto; minHeight: 0`。确保超长内容可滚动，header/footer 固定可见
@@ -132,7 +133,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
 - **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
 - **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则 C 端 Header/导航栏会在管理页面显示
-- **Snowflake ID 序列化**: 所有 `Long` 类型主键（orderId, userId, productId 等）在 JSON 响应中必须序列化为字符串，禁止以数字形式返回。后端同时配置 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper` 的 `ToStringSerializer`（`JacksonConfig.longToStringModule()` + `longToStringJackson3Module()`）。前端（C 端和管理端）TypeScript 中所有实体 ID 字段类型为 `string`（非 `number`），防止 JavaScript 精度丢失
+- **UUID v7 ID**: 全库 ID 已从 Snowflake (Long) 迁移至 UUID v7 (RFC 9562, String)。后端所有实体 ID 原生为 `String` 类型，无需 Jackson 序列化配置。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端 TypeScript 中所有实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。迁移脚本 `V5__change_all_ids_to_varchar.sql` 已执行。
 - **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
 - **管理员角色判断**: 判断用户是否为管理员必须使用 `ADMIN_USER_TYPE` 常量（位于 `src/constants/app.ts`），禁止硬编码 `'00'`。使用处包括 `AdminMenuEntry`、`useAdminGuard` 等
 - **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能

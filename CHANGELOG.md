@@ -4,6 +4,29 @@
 
 ## [unreleased]
 
+### 2026-06-30 — 移除前端深色模式切换代码
+
+- **refactor(frontend)**: 移除 `ProfilePreferences` 中的主题外观卡片（浅色/深色/自动切换 UI）及关联 CSS
+- **cleanup**: 清理 `tokens.css` 中残留的 `--glass-bg-dark` 变量；更新 `profile/codemap.md` 描述
+
+### 2026-06-30 — 前端组件库收尾、可访问性与代码整洁度修复
+
+- **refactor(frontend)**: `shadcn-button.tsx` 重命名为标准 `button.tsx`，全项目导入统一为 `@/components/ui/button`；`Button` 组件支持 `isLoading` / `loadingText`，修复 `asChild` 子元素渲染异常
+- **refactor(frontend)**: 完成剩余原生表单控件迁移 — `EditProductPage` / `PublishPage` 类别与成色改为 shadcn `<Select>`；`CategoryManagePage` 排序输入改为 `<Input>`、状态切换改为 `<RadioGroup>`；`FavoritesPage` 复选框改为 `<Checkbox>`
+- **fix(frontend)**: Checkbox 边框可见性修复 — 默认边框从 `border-border` 改为 `--border-control` token（`rgba(42,37,32,0.35)`），解决登录/注册/协议勾选框几乎不可见的问题
+- **fix(frontend)**: 修复 `ProductDetailDrawer` / `ProductDetailPage` 中重复的 `@/components/ui` 导入；`InputProps` / `TextareaProps` 由空接口改为 type alias，消除 `no-empty-object-type` 报错
+- **fix(a11y)**: 为 `CategoryManagePage` 和 `SearchPage` 中可点击的自定义选项/标签添加 `role="button"`、`tabIndex` 与 `onKeyDown` 键盘支持，满足 jsx-a11y 规范
+- **chore(frontend)**: 全量运行 `eslint --fix`，自动修复 39 个 curly 风格错误；手动清理 3 处 `console.error` 调试残留，生产代码不再输出 console
+- **test**: 前端 `typecheck` + `lint:check`（0 errors，75 warnings）+ `test`（100 测试文件 / 953 用例）+ `build` 全部通过
+
+### 2026-06-29 — 前端 shadcn/ui 组件化迁移与 CSS 清理
+
+- **refactor(frontend)**: 全面迁移到 shadcn/ui 组件库 — 原生 `<button>` → `<Button>`、`<input>` → `<Input>`、`<textarea>` → `<Textarea>`、`<select>` → 保留原生（测试兼容性）、checkbox → `<Checkbox>`、switch → `<Switch>`、label → `<Label>`
+- **refactor(frontend)**: 清理大量废弃 CSS — 从 `src/styles/main.css` 移除约 200 行未使用规则（`.glass-input`、`.auth-btn`、`.form-input`、`.checkbox-custom`、`.switch-slider` 等）；从 `src/admin/styles/admin.css` 移除约 220 行（`.admin-btn`、`.admin-card`、`.admin-table`、`.admin-input`、`.admin-select`、`.admin-badge` 等）；删除未引用的 `src/admin/styles/admin-pages.css`
+- **fix(css)**: 修复 `global.css` 中未分层的基础 reset 规则（`* { padding: 0 }`、`button { border: none }` 等）覆盖 Tailwind utilities 的问题 — 将所有 reset 规则移入 `@layer base`，解决登录/注册界面输入框 padding 失效和 checkbox 边框不可见问题
+- **fix(frontend)**: `FilterSidebar` 分类/条件筛选原生 checkbox 替换为 shadcn `<Checkbox>`；`ProfilePreferences` 开关替换为 shadcn `<Switch>`；`ChatInputBar` / `PublishPage` textarea 替换为 shadcn `<Textarea>`；管理后台表单控件全部统一为 shadcn 组件
+- **test**: 前端 typecheck + 100 测试文件 / 953 用例全部通过 + build 通过
+
 ### 2026-06-25 — 副标敲定:"砍业务,撑架构"
 
 - **refactor(brand)**: 副标从"业务是容器,架构才是主角"精炼为 6 字对仗版 "**砍业务,撑架构**"。长版副标"业务做减法,架构做加法"作为展开说明保留

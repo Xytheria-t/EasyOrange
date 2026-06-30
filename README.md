@@ -43,14 +43,14 @@
 | **实时通信** | STOMP over WebSocket + JWT 认证 + 离线消息重推 |
 | **数据库** | MySQL 8.4 + Flyway 迁移 + 16 张业务表 + 完整种子数据 |
 | **测试** | JUnit 5 + Mockito + AssertJ + ArchUnit 架构守卫 |
-| **前端** | React 19 + TypeScript + Vite 8 + Zustand 5 + React Query 5 + 管理端暖橙指挥中心设计系统 |
+| **前端** | React 19 + TypeScript + Vite 8 + Zustand 5 + React Query 5 + shadcn/ui + 管理端暖橙指挥中心设计系统 |
 
 ## 技术栈
 
 | 层 | 技术 |
 |---|------|
 | **后端** | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16, Spring Security + JWT |
-| **前端** | React 19, TypeScript 5, Vite 8, TanStack Query 5, Zustand 5, Tailwind CSS 4 |
+| **前端** | React 19, TypeScript 5, Vite 8, TanStack Query 5, Zustand 5, Tailwind CSS 4, shadcn/ui |
 | **数据库** | MySQL 8.4, Redis 7.4, Elasticsearch 8 (可选) |
 | **消息队列** | RabbitMQ 3.13 (Spring AMQP 4.0.x) |
 | **AI** | DeepSeek (文本), 通义千问 VL (视觉) |
@@ -135,7 +135,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + ESLint/Prettier
-- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (945 用例)
+- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (953 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南

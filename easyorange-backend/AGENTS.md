@@ -131,7 +131,7 @@ PageResult.of(records, total, page, size)
 
 | 操作类型 | 返回值 | 说明 | 示例 |
 |---------|--------|------|------|
-| **创建** (create/register/add) | `Long` (ID) | 客户端需要获取新资源标识；服务端生成 Snowflake ID | `createProduct()`, `register()`, `createReview()` |
+| **创建** (create/register/add) | `String` (ID) | 客户端需要获取新资源标识；服务端通过 `IdGenerator`（UUID v7）生成 | `createProduct()`, `register()`, `createReview()` |
 | **命令/更新/删除** (update/delete/remove/handle/put/take/mark/submit/cancel/process) | `void` | 命令不返回值；前端通过 React Query 的 `invalidateQueries` 重新拉取最新数据 | `updateProduct()`, `deleteProduct()`, `addFavorite()`, `handleReport()`, `putOnline()` |
 | **批量操作** 可能返回结果 DTO（如 `BatchAuditResultResponse`），因需要聚合成功率/失败信息
 
@@ -141,8 +141,8 @@ PageResult.of(records, total, page, size)
 
 ```java
 public class BaseDO {
-    @TableId(type = IdType.ASSIGN_ID)
-    private Long id;
+    @TableId(type = IdType.INPUT)
+    private String id;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
@@ -159,7 +159,7 @@ public class BaseDO {
 | 类型 | 工具 | 范围 |
 |------|------|------|
 | 单元测试 | JUnit 5, Mockito | 领域模型、值对象、领域服务 |
-| 集成测试 | Testcontainers (MySQL + Redis) | Repository、Cache、事件发布 |
+| 集成测试 | — | 已移除（WSL2 Docker 兼容性限制，全量改为单元测试） |
 | 架构测试 | ArchUnit | DDD 分层合规、包依赖规则 |
 | 控制器测试 | MockMvc | API 端点 |
 | 覆盖率报告 | JaCoCo 0.8.12 | `prepare-package` 阶段生成报告 (`jacoco:report`)，门禁移到了 CI 层 |
@@ -223,7 +223,7 @@ return Result.success(authAppService.register(request.username(), request.passwo
 return Result.success(queryService.getProductById(id));
 
 // ❌ 避免
-Long userId = authAppService.register(request.username(), request.password());
+String userId = authAppService.register(request.username(), request.password());
 return Result.success(userId);
 ```
 
@@ -244,10 +244,6 @@ MyBatis-Plus **无内置** `UUID` TypeHandler，PO 含 UUID 字段时 insert 报
 
 Spring Boot 4.0 迁移到 `org.springframework.boot.webmvc.test` 包。规则：① 新 import 路径；② 无 `@SpringBootConfiguration` 的模块在 test 下创建空 `@SpringBootApplication` 类；③ `@ComponentScan` 限于 web controller 包，否则拉入 persistence 类导致切片失败。参考 `easyorange-order` 的 `OrderTestApplication`。
 
-### framework 模块集成测试
-
-`RedisCacheImplIntegrationTest`、`RabbitMQDomainEventPublisherIT` 使用 Testcontainers，标注 `@Tag("integration")`。`surefire excludedGroups=integration`，默认 skips；执行用 `-DexcludedGroups=""`。
-
 ### Port/Adapter / MapStruct IntelliJ 误报
 
 IntelliJ 将 domain port 接口也识别为 Spring Bean，与 `@Component` Adapter 冲突。**修复**：Adapter 实现类加 `@Primary`。
@@ -258,7 +254,7 @@ IntelliJ 将 domain port 接口也识别为 Spring Bean，与 `@Component` Adapt
 
 `CategoryMapper.countProductsByCategoryIds` 曾使用 `IN (${ids})` 拼接逗号分隔字符串，存在 SQL 注入风险且阻止查询计划缓存。
 
-**已修复（2026-05-25）**：改用 `<script>` + `<foreach item='id' collection='categoryIds' ...>#{id}</foreach>` + `List<Long>` 参数类型。
+**已修复（2026-05-25，2026-06-29 改 List<String>）**：改用 `<script>` + `<foreach item='id' collection='categoryIds' ...>#{id}</foreach>` + 参数类型（Long→String 迁移后为 `List<String>`）。
 
 **注意**：新增 Mapper 的 IN 列表查询必须使用 `<foreach>` + `#{}` 参数化方式，禁止 `String` 类型的括号内 JSON/CSV 拼接。
 

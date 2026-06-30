@@ -20,7 +20,7 @@
 @Getter
 @Builder(toBuilder = true)
 public class User {
-    private final Long id;
+    private final String id;
     private final Credentials credentials;       // username + encodedPassword
     private final UserType userType;
     private final UserStatus status;
@@ -45,7 +45,7 @@ public class User {
             .build();
     }
 
-    public User changePassword(String encodedNewPassword, Long operatorId) {
+    public User changePassword(String encodedNewPassword, String operatorId) {
         Objects.requireNonNull(encodedNewPassword, "password must not be null");
         return this.toBuilder()
             .credentials(this.credentials.changePassword(encodedNewPassword))
@@ -97,10 +97,11 @@ public record ContactInfo(String email, String phone) {
 - **与应用层区分**：领域服务处理纯业务规则，应用层处理用例编排和事务管理
 
 ```java
-public class AuthenticationService {
-    public void validateRegistration(User user, List<User> existingUsers) {
+// 领域服务：纯业务规则，使用通用业务异常携带模块错误码
+public class RegistrationService {
+    public void validateUniqueContactInfo(User user, List<User> existingUsers) {
         if (existingUsers.stream().anyMatch(u -> u.getContactInfo().phone().equals(user.getContactInfo().phone()))) {
-            throw new UserDomainException("手机号已注册");
+            throw BusinessException.of(UserResultCode.PHONE_EXISTS);
         }
     }
 }
@@ -117,9 +118,9 @@ public class AuthenticationService {
 ```java
 // domain/repository/UserRepository.java
 public interface UserRepository {
-    Optional<User> findById(Long id);
+    Optional<User> findById(String id);
     User save(User user);
-    void deleteById(Long id);
+    void deleteById(String id);
     Optional<User> findByUsername(String username);
 }
 
@@ -172,25 +173,25 @@ RuntimeException
 ├── BaseBusinessException (common, 业务异常基类)
 │   ├── code: String          # 错误码
 │   └── message: String       # 错误消息
-│   ├── BusinessException (common, 通用业务异常)
+│   ├── BusinessException (common, 通用业务异常，几乎所有模块通过 `of(ResultCode)` 使用)
 │   ├── ParamValidationException (common, 参数校验异常)
 │   ├── FileException (common, 文件异常, 构造器 protected, 使用 `FileException.of(...)`)
-│   ├── UserDomainException (user 模块, 领域层专用)
-│   ├── OrderDomainException (order 模块)
-│   ├── PaymentDomainException (payment 模块)
-│   └── ... 其他模块异常
+│   ├── OrderDomainException (order 模块, 统一领域异常)
+│   ├── PaymentDomainException (payment 模块, 统一领域异常)
+│   └── ... 其他模块领域异常（推荐统一，而非多叶子类）
 ```
 
 **划分原则：**
 - `BaseBusinessException` — 所有业务异常的基类，提供统一的 code + message（HTTP 状态码由 `GlobalExceptionHandler` 按错误码前缀映射）
 - `BusinessException` — 通用业务异常，用于不需要自定义子类的场景
 - 各模块异常 — 继承 `BaseBusinessException`，通过模块专属 `ResultCode` 区分具体业务场景（禁止回退到全局 `B0002`）
-- 领域层异常（如 `UserDomainException`）— 领域层专用，不含任何框架依赖
+- 领域层异常（如 `OrderDomainException`、`PaymentDomainException`）— 领域层专用，不含任何框架依赖
+- 无自定义异常类的模块（如 user、favorite）— 直接使用 `BusinessException.of(ModuleResultCode.XXX)`，无需定义子类
 
 ### 异常传播路径
 
 ```
-领域层 (throw UserDomainException)
+领域层 (throw OrderDomainException / BusinessException.of(...))
   → 应用层 (无需 catch，事务自动回滚)
     → 适配层 (GlobalExceptionHandler 拦截)
       → HTTP 响应 (JSON: { "code": "VALIDATE_FAILED", "message": "用户不存在" })
@@ -204,14 +205,20 @@ RuntimeException
 4. **RPC 异常映射** `[演进]`：跨模块 Feign 调用时，调用方需 catch FeignException 并转换为自己的业务异常，防止外部异常类型泄漏
 
 ```java
-// 领域层异常（不含任何框架引用，纯 JDK）
-public class UserDomainException extends RuntimeException {
-    public UserDomainException(String message) {
-        super(message);
+// 领域层异常（继承 BaseBusinessException，含统一错误码）
+public class OrderDomainException extends BaseBusinessException {
+    public static OrderDomainException of(IResultCode resultCode) {
+        return new OrderDomainException(resultCode.getCode(), resultCode.getMessage());
+    }
+    public static OrderDomainException of(IResultCode resultCode, String message) {
+        return new OrderDomainException(resultCode.getCode(), message);
+    }
+    private OrderDomainException(String code, String message) {
+        super(code, message);
     }
 }
 
-// 应用层/适配层使用通用业务异常
+// 应用层/适配层使用通用业务异常（无自定义异常类的模块）
 throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 ```
 
@@ -228,7 +235,7 @@ throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
 public class UserInfoAdapter implements UserInfoPort {
     private final UserRepository userRepository;
 
-    public UserInfoResponse getUserInfo(Long userId) {
+    public UserInfoResponse getUserInfo(String userId) {
         return userRepository.findById(userId)
             .map(this::toUserInfoResponse)
             .orElseThrow(() -> new OrderDomainException("用户不存在"));
@@ -291,7 +298,7 @@ public class UserInfoAdapter implements UserInfoPort {
 |---------|---------|------|----------|
 | 单元测试 | 领域层（聚合根、值对象、领域服务） | JUnit 5 + AssertJ | 90%+ |
 | 单元测试 | 应用层（应用服务，Mock 端口） | JUnit 5 + Mockito | 80%+ |
-| 集成测试 | 仓储实现（真实数据库） | Testcontainers + JUnit 5 | 80%+ |
+| 集成测试 | — | 已移除（WSL2 Docker 兼容性限制） | — |
 | 集成测试 | Controller（MockMvc） | Spring Boot Test + MockMvc | 关键路径 100% |
 | 架构测试 | DDD 分层规则、包依赖关系 | 自定义 ArchitectureRulesTest | 核心规则 100% |
 
