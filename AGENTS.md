@@ -19,7 +19,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈 **DDD + CQRS + Saga + 事�
 | **搜索引擎** | Elasticsearch 8.17.3 (IK 中文分词器) |
 | **认证** | JWT (Access + Refresh Token) |
 | **迁移** | Flyway 11.15.0 |
-| **部署** | Docker, docker-compose |
+| **部署** | Docker, docker-compose, compose.yaml (@ServiceConnection) |
 
 ## 数据库表清单
 
@@ -245,9 +245,11 @@ cd easyorange-backend && ./mvnw clean package -DskipTests
 # OWASP 依赖安全检查
 ./mvnw org.owasp:dependency-check-maven:check
 
-# 启动开发环境 (MySQL + Redis + 可选 ES)
-docker-compose up -d
-docker compose up -d elasticsearch   # 启用 ES 搜索（需先构建镜像: docker compose build elasticsearch）
+# 启动开发环境 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)
+docker compose -f compose.yaml up -d
+
+# 可选: ES 搜索 (需先构建镜像: docker compose build elasticsearch)
+docker compose up -d elasticsearch
 
 # 启动后端（⚠️ 不要单独用 spring-boot:run -pl，会从本地仓库加载依赖模块旧 JAR）
 # 正确方式：先打包所有依赖模块，再 java -jar

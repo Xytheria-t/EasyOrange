@@ -56,7 +56,7 @@
 | **AI** | DeepSeek (文本), 通义千问 VL (视觉) |
 | **认证** | JWT (Access + Refresh Token) |
 | **迁移** | Flyway 11.15.0 |
-| **部署** | Docker, docker-compose |
+| **部署** | Docker, docker-compose, compose.yaml (@ServiceConnection) |
 
 ## 快速开始
 
@@ -72,8 +72,8 @@
 # 1. 克隆
 git clone https://gitee.com/cartethyia_XLS/easy-orange.git && cd easy-orange
 
-# 2. 启动基础设施 (MySQL + Redis)
-docker-compose up -d
+# 2. 启动基础设施 (MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13)
+docker compose -f compose.yaml up -d
 
 # 3. 安装依赖并启动
 ./mvnw install -DskipTests          # 后端
@@ -106,8 +106,8 @@ cd .. && ./mvnw spring-boot:run -pl easyorange-application  # 后端 :8080
 ## Docker 部署
 
 ```bash
-docker-compose up -d           # 启动全部服务
-docker compose up -d elasticsearch  # 可选: ES 搜索
+docker compose -f compose.yaml up -d       # 启动全部服务 (MySQL/Redis/RabbitMQ)
+docker compose up -d elasticsearch        # 可选: ES 搜索 (需先构建镜像)
 ```
 
 前端容器化:
@@ -134,7 +134,7 @@ easy-orange/
 
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
-- 代码风格: Google Java Style + ESLint/Prettier
+- 代码风格: Google Java Style + Biome (前端, 替代 ESLint + Prettier)
 - 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (953 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 

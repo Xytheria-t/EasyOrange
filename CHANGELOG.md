@@ -4,6 +4,17 @@
 
 ## [unreleased]
 
+### 2026-07-01 — 四阶段现代化路线图（虚拟线程/ProblemDetail/Biome/可观测性/容器化）
+
+- **feat(infra)**: 启用 Virtual Threads（`spring.threads.virtual.enabled=true`），dev profile 关闭防止调试冲突
+- **refactor(api)**: GlobalExceptionHandler 返回 RFC 9457 ProblemDetail 标准错误格式，替代自定义 Result 包装
+- **chore(build)**: 新增 OpenRewrite Maven 插件，支持自动化 Spring Boot / Java 版本迁移
+- **refactor(frontend)**: Biome 统一 lint + format，替代 ESLint + Prettier；删除 `eslint.config.js` + `.prettierrc`；全项目 Biome 格式化
+- **feat(observability)**: JSON 结构化日志（prod 用 LogstashEncoder），Micrometer Tracing (Brave) 集成 + Actuator 端点增强
+- **feat(infra)**: 新增 `compose.yaml` 开发环境 Docker Compose（MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13 + 健康检查），Spring Boot 4 `@ServiceConnection` 自动配置
+- **feat(build)**: 新增 GraalVM native-maven-plugin，支持 AOT 编译为原生可执行文件（可选）
+- **fix(frontend)**: 修正 Biome 自动将 `Promise<void[]>` 误改为 `Promise<undefined[]>` 的回归
+
 ### 2026-07-01 — Nginx 现代化安全响应头整合
 
 - **feat(infra)**: 新增 `security-headers.conf` 统一管理安全响应头 — CSP (`default-src 'self'` + `style-src 'unsafe-inline'` + `img-src data: blob:`)、X-Content-Type-Options、X-Frame-Options、Referrer-Policy、Permissions-Policy；删除已废弃的 X-XSS-Protection；所有 location 块通过 `include` 继承，消除不一致

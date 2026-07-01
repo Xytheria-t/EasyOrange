@@ -17,7 +17,7 @@
 | **图标** | Lucide React | 图标库 |
 | **测试** | Vitest + Testing Library | 单元/组件测试（100 文件, 952 测试） |
 | | Playwright | E2E 测试 |
-| **质量** | ESLint + Prettier + jsx-a11y | 代码规范与可访问性检查 |
+| **质量** | Biome + jsx-a11y | 统一 lint + format（替代 ESLint + Prettier） |
 
 ## 项目结构
 
