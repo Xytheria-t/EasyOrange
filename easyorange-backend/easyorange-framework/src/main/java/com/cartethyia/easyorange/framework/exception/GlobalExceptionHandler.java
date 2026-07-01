@@ -4,12 +4,12 @@ import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
-import com.cartethyia.easyorange.common.result.Result;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -33,8 +33,9 @@ import static org.springframework.http.HttpStatus.*;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Result<Void>> handle(Exception e) {
+    public ResponseEntity<ProblemDetail> handle(Exception e) {
         return switch (e) {
             case ParamValidationException p -> {
                 log.warn("action=validate_error, errors={}", p.getFieldErrors());
@@ -42,9 +43,12 @@ public class GlobalExceptionHandler {
             }
             case BaseBusinessException b -> {
                 log.warn("业务异常[code={}, type={}]: {}", b.getCode(), b.getClass().getSimpleName(), b.getMessage());
-                yield response(resolveHttpStatus(b.getCode()), b.getCode(), b.getMessage());
+                var status = resolveHttpStatus(b.getCode());
+                var pd = ProblemDetail.forStatusAndDetail(status, b.getMessage());
+                pd.setProperty("errorCode", b.getCode());
+                yield ResponseEntity.status(status).body(pd);
             }
-            case AccessDeniedException _ -> response(FORBIDDEN, ResultCode.FORBIDDEN);
+            case AccessDeniedException _ -> forbidden();
             case HttpRequestMethodNotSupportedException _ -> response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
             case MethodArgumentNotValidException _, BindException _ ->
                     handleBindingErrors(getBindingResult(e));
@@ -87,7 +91,7 @@ public class GlobalExceptionHandler {
         };
     }
 
-    private ResponseEntity<Result<Void>> handleBindingErrors(BindingResult br) {
+    private ResponseEntity<ProblemDetail> handleBindingErrors(BindingResult br) {
         var msg = extractAllErrors(br);
         log.warn("action=validation_error, msg={}", msg);
         return badRequest(msg);
@@ -111,16 +115,30 @@ public class GlobalExceptionHandler {
         return fieldPart + "; " + globalPart;
     }
 
-    private static <T> ResponseEntity<Result<T>> response(HttpStatus status, IResultCode code) {
-        return ResponseEntity.status(status).body(Result.error(code));
+    private static ResponseEntity<ProblemDetail> response(HttpStatus status) {
+        return ResponseEntity.status(status).body(ProblemDetail.forStatus(status));
     }
 
-    private static <T> ResponseEntity<Result<T>> response(HttpStatus status, String code, String msg) {
-        return ResponseEntity.status(status).body(Result.error(code, msg));
+    private static ResponseEntity<ProblemDetail> response(HttpStatus status, IResultCode code) {
+        var pd = ProblemDetail.forStatusAndDetail(status, code.getMessage());
+        pd.setProperty("errorCode", code.getCode());
+        return ResponseEntity.status(status).body(pd);
     }
 
-    private static <T> ResponseEntity<Result<T>> badRequest(String msg) {
-        return ResponseEntity.status(BAD_REQUEST).body(Result.error(ResultCode.VALIDATE_FAILED, msg));
+    private static ResponseEntity<ProblemDetail> response(HttpStatus status, String code, String msg) {
+        var pd = ProblemDetail.forStatusAndDetail(status, msg);
+        pd.setProperty("errorCode", code);
+        return ResponseEntity.status(status).body(pd);
+    }
+
+    private static ResponseEntity<ProblemDetail> badRequest(String msg) {
+        var pd = ProblemDetail.forStatusAndDetail(BAD_REQUEST, msg);
+        pd.setProperty("errorCode", ResultCode.VALIDATE_FAILED.getCode());
+        return ResponseEntity.status(BAD_REQUEST).body(pd);
+    }
+
+    private static ResponseEntity<ProblemDetail> forbidden() {
+        return ResponseEntity.status(FORBIDDEN).body(ProblemDetail.forStatus(FORBIDDEN));
     }
 
     private static HttpStatus resolveHttpStatus(String errorCode) {

@@ -4,6 +4,11 @@
 
 ## [unreleased]
 
+### 2026-07-01 — Nginx 现代化安全响应头整合
+
+- **feat(infra)**: 新增 `security-headers.conf` 统一管理安全响应头 — CSP (`default-src 'self'` + `style-src 'unsafe-inline'` + `img-src data: blob:`)、X-Content-Type-Options、X-Frame-Options、Referrer-Policy、Permissions-Policy；删除已废弃的 X-XSS-Protection；所有 location 块通过 `include` 继承，消除不一致
+- **refactor(infra)**: nginx.conf 安全头从重复散落改为 `security-headers.conf` 片段统一 include；HSTS 仅保留于 HTTPS server block；Dockerfile 同步复制新文件
+
 ### 2026-06-30 — 移除前端深色模式切换代码
 
 - **refactor(frontend)**: 移除 `ProfilePreferences` 中的主题外观卡片（浅色/深色/自动切换 UI）及关联 CSS

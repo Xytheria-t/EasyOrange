@@ -3,11 +3,11 @@ package com.cartethyia.easyorange.framework.exception;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.common.result.Result;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,12 +26,13 @@ class GlobalExceptionHandlerTest {
         void handleBaseBusinessException_returnsBadRequest() {
             BaseBusinessException ex = new TestBusinessException("测试业务异常");
 
-            ResponseEntity<Result<Void>> response = handler.handle(ex);
+            ResponseEntity<ProblemDetail> response = handler.handle(ex);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
             assertThat(response.getBody()).isNotNull();
-            assertThat(response.getBody().code()).isEqualTo("TEST_CODE");
-            assertThat(response.getBody().message()).isEqualTo("测试业务异常");
+            assertThat(response.getBody().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+            assertThat(response.getBody().getDetail()).isEqualTo("测试业务异常");
+            assertThat(response.getBody().getProperties()).containsEntry("errorCode", "TEST_CODE");
         }
 
     }
@@ -45,10 +46,11 @@ class GlobalExceptionHandlerTest {
         void handleBusinessException_stillWorks() {
             BusinessException ex = BusinessException.of(ResultCode.BUSINESS_ERROR, "业务错误");
 
-            ResponseEntity<Result<Void>> response = handler.handle(ex);
+            ResponseEntity<ProblemDetail> response = handler.handle(ex);
 
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-            assertThat(response.getBody().code()).isEqualTo(ResultCode.BUSINESS_ERROR.getCode());
+            assertThat(response.getBody().getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+            assertThat(response.getBody().getProperties()).containsEntry("errorCode", ResultCode.BUSINESS_ERROR.getCode());
         }
     }
 

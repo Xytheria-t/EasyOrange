@@ -70,6 +70,10 @@ spring:
         max-concurrent-consumers: 5
         default-requeue-rejected: false
 
+  threads:
+    virtual:
+      enabled: false
+
 # -------------------------------------------------------------------
 # 日志配置 - 开发环境
 # -------------------------------------------------------------------
