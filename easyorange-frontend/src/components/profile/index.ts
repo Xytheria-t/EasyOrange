@@ -1,6 +1,6 @@
-export { ProfileSidebar } from './ProfileSidebar'
-export { ProfileOverview } from './ProfileOverview'
-export { ProfileActivity } from './ProfileActivity'
-export { ProfileSecurity } from './ProfileSecurity'
-export { ProfilePreferences } from './ProfilePreferences'
-export { PasswordModal } from './PasswordModal'
+export { PasswordModal } from './PasswordModal';
+export { ProfileActivity } from './ProfileActivity';
+export { ProfileOverview } from './ProfileOverview';
+export { ProfilePreferences } from './ProfilePreferences';
+export { ProfileSecurity } from './ProfileSecurity';
+export { ProfileSidebar } from './ProfileSidebar';

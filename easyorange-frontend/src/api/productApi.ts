@@ -2,7 +2,16 @@
  * @fileoverview 商品 API 模块
  */
 
-import type { PageResult, Category, RawProduct, ProductQueryParams, CreateProductRequest, UpdateProductRequest, ProductSearchResult, ProductSearchParams } from '@/types';
+import type {
+    Category,
+    CreateProductRequest,
+    PageResult,
+    ProductQueryParams,
+    ProductSearchParams,
+    ProductSearchResult,
+    RawProduct,
+    UpdateProductRequest,
+} from '@/types';
 import { request } from './core/request';
 
 export const productApi = {
@@ -10,7 +19,7 @@ export const productApi = {
         return request<PageResult<RawProduct>>('/products', {
             method: 'GET',
             params: params as Record<string, unknown>,
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -21,32 +30,32 @@ export const productApi = {
     createProduct(data: CreateProductRequest) {
         return request<string>('/products', {
             method: 'POST',
-            body: data
+            body: data,
         });
     },
 
     updateProduct(id: string, data: UpdateProductRequest) {
         return request<string>(`/products/${id}`, {
             method: 'PUT',
-            body: data
+            body: data,
         });
     },
 
     deleteProduct(id: string) {
         return request<void>(`/products/${id}`, {
-            method: 'DELETE'
+            method: 'DELETE',
         });
     },
 
     goOnline(id: string) {
         return request<void>(`/products/${id}/online`, {
-            method: 'PUT'
+            method: 'PUT',
         });
     },
 
     goOffline(id: string) {
         return request<void>(`/products/${id}/offline`, {
-            method: 'PUT'
+            method: 'PUT',
         });
     },
 
@@ -54,7 +63,7 @@ export const productApi = {
         return request<Category[]>('/products/categories', {
             method: 'GET',
             params: parentId != null ? { parentId } : undefined,
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -66,7 +75,7 @@ export const productApi = {
         return request<ProductSearchResult>('/products/search', {
             method: 'GET',
             params: params as Record<string, unknown>,
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -74,7 +83,7 @@ export const productApi = {
         return request<string[]>('/products/search/suggestions', {
             method: 'GET',
             params: { keyword },
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -82,7 +91,7 @@ export const productApi = {
         return request<Array<{ keyword: string; searchCount: number }>>('/products/search/hot', {
             method: 'GET',
             params: limit != null ? { limit } : undefined,
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -90,7 +99,7 @@ export const productApi = {
         return request<RawProduct[]>('/products/batch', {
             method: 'POST',
             body: ids,
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -101,13 +110,13 @@ export const productApi = {
     incrementView(id: string) {
         return request<void>(`/products/${id}/view`, {
             method: 'POST',
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
     submitForReview(id: string) {
         return request<void>(`/products/${id}/submit`, {
-            method: 'PUT'
+            method: 'PUT',
         });
     },
 
@@ -116,5 +125,5 @@ export const productApi = {
             method: 'GET',
             params: params as Record<string, unknown>,
         });
-    }
+    },
 };

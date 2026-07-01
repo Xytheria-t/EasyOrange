@@ -1,7 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { userApi } from '@/api/userApi';
+import { logout as sessionLogout, setSession } from '@/features/auth/session';
 import { useAuthStore } from '@/store';
-import { setSession, logout as sessionLogout } from '@/features/auth/session';
 import type { LoginRequest, RegisterRequest, User } from '@/types';
 
 const AUTH_KEYS = {
@@ -35,7 +35,7 @@ export function useLogin() {
             const response = await userApi.login(data);
             return response.data;
         },
-        onSuccess: (data) => {
+        onSuccess: data => {
             if (data?.token && data?.user) {
                 setSession(data.token, data.user as User, data.refreshToken);
                 queryClient.setQueryData(AUTH_KEYS.user(), data.user);

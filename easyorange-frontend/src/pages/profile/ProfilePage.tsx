@@ -1,262 +1,270 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useCurrentUser, useLogout } from '@/hooks'
-import { userApi } from '@/api/userApi'
-import { favoriteApi } from '@/api/favoriteApi'
-import { orderApi } from '@/api/orderApi'
-import { productApi } from '@/api/productApi'
-import { messageApi } from '@/api/messageApi'
-import { useQueryClient } from '@tanstack/react-query'
-import { useUIStore } from '@/store/uiStore'
-import { errorHandler } from '@/utils/errorHandler'
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { favoriteApi } from '@/api/favoriteApi';
+import { messageApi } from '@/api/messageApi';
+import { orderApi } from '@/api/orderApi';
+import { productApi } from '@/api/productApi';
+import { userApi } from '@/api/userApi';
 import {
-  ProfileSidebar,
-  ProfileOverview,
-  ProfileActivity,
-  ProfileSecurity,
-  ProfilePreferences,
-  PasswordModal,
-} from '@/components/profile'
-import '@/styles/main.css'
-import './profile.css'
+    PasswordModal,
+    ProfileActivity,
+    ProfileOverview,
+    ProfilePreferences,
+    ProfileSecurity,
+    ProfileSidebar,
+} from '@/components/profile';
+import { useCurrentUser, useLogout } from '@/hooks';
+import { useUIStore } from '@/store/uiStore';
+import { errorHandler } from '@/utils/errorHandler';
+import '@/styles/main.css';
+import './profile.css';
 
-type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId'
-type TabType = 'overview' | 'activity' | 'security' | 'preferences'
+type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
+type TabType = 'overview' | 'activity' | 'security' | 'preferences';
 
 function ProfilePage() {
-  const { data: user, isLoading } = useCurrentUser()
-  const logout = useLogout()
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const addToast = useUIStore((s) => s.addToast)
+    const { data: user, isLoading } = useCurrentUser();
+    const logout = useLogout();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const addToast = useUIStore(s => s.addToast);
 
-  const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [editingField, setEditingField] = useState<EditableField | null>(null)
-  const [editValue, setEditValue] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({ verifyCode: '', newPassword: '', confirmPassword: '' })
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
-  const [countdown, setCountdown] = useState(0)
-  const [animateIn, setAnimateIn] = useState(false)
-  const [favoriteCount, setFavoriteCount] = useState(0)
-  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const [orderCount, setOrderCount] = useState(0)
-  const [productCount, setProductCount] = useState(0)
-  const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [editingField, setEditingField] = useState<EditableField | null>(null);
+    const [editValue, setEditValue] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({ verifyCode: '', newPassword: '', confirmPassword: '' });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [countdown, setCountdown] = useState(0);
+    const [animateIn, setAnimateIn] = useState(false);
+    const [favoriteCount, setFavoriteCount] = useState(0);
+    const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [orderCount, setOrderCount] = useState(0);
+    const [productCount, setProductCount] = useState(0);
+    const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setAnimateIn(true), 100)
-    return () => clearTimeout(timer)
-  }, [])
+    useEffect(() => {
+        const timer = setTimeout(() => setAnimateIn(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
 
-  useEffect(() => {
-    favoriteApi.getCount()
-      .then((res) => setFavoriteCount(res.data ?? 0))
-      .catch(() => {})
-  }, [])
+    useEffect(() => {
+        favoriteApi
+            .getCount()
+            .then(res => setFavoriteCount(res.data ?? 0))
+            .catch(() => {});
+    }, []);
 
-  useEffect(() => {
-    orderApi.getMyOrders({ pageNum: 1, pageSize: 1 })
-      .then((res) => setOrderCount(res.data?.total ?? 0))
-      .catch(() => {})
-  }, [])
+    useEffect(() => {
+        orderApi
+            .getMyOrders({ pageNum: 1, pageSize: 1 })
+            .then(res => setOrderCount(res.data?.total ?? 0))
+            .catch(() => {});
+    }, []);
 
-  useEffect(() => {
-    productApi.getMyProducts({ pageNum: 1, pageSize: 1 })
-      .then((res) => setProductCount(res.data?.total ?? 0))
-      .catch(() => {})
-  }, [])
+    useEffect(() => {
+        productApi
+            .getMyProducts({ pageNum: 1, pageSize: 1 })
+            .then(res => setProductCount(res.data?.total ?? 0))
+            .catch(() => {});
+    }, []);
 
-  useEffect(() => {
-    messageApi.getConversations()
-      .then((res) => {
-        const totalUnread = res.data?.reduce((sum, conv) => sum + conv.unreadCount, 0) ?? 0
-        setUnreadMessageCount(totalUnread)
-      })
-      .catch(() => {})
-  }, [])
+    useEffect(() => {
+        messageApi
+            .getConversations()
+            .then(res => {
+                const totalUnread = res.data?.reduce((sum, conv) => sum + conv.unreadCount, 0) ?? 0;
+                setUnreadMessageCount(totalUnread);
+            })
+            .catch(() => {});
+    }, []);
 
-  useEffect(() => {
-    return () => {
-      if (countdownRef.current) {
-        clearInterval(countdownRef.current)
-      }
-    }
-  }, [])
+    useEffect(() => {
+        return () => {
+            if (countdownRef.current) {
+                clearInterval(countdownRef.current);
+            }
+        };
+    }, []);
 
-  const startCountdown = useCallback(() => {
-    setCountdown(60)
-    countdownRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          if (countdownRef.current) {
-            clearInterval(countdownRef.current)
-            countdownRef.current = null
-          }
-          return 0
+    const startCountdown = useCallback(() => {
+        setCountdown(60);
+        countdownRef.current = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    if (countdownRef.current) {
+                        clearInterval(countdownRef.current);
+                        countdownRef.current = null;
+                    }
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    }, []);
+
+    const handleEdit = useCallback((field: EditableField, currentValue: string) => {
+        setEditingField(field);
+        setEditValue(currentValue || '');
+    }, []);
+
+    const handleSave = useCallback(async () => {
+        if (!editingField) {
+            return;
         }
-        return prev - 1
-      })
-    }, 1000)
-  }, [])
+        setIsSaving(true);
+        try {
+            const data: Record<string, unknown> = {};
+            data[editingField] = editValue;
+            await userApi.updateProfile(
+                data as { nickname?: string; email?: string; phone?: string; realName?: string; studentId?: string }
+            );
+            await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] });
+            setEditingField(null);
+            addToast({ type: 'success', message: '更新成功' });
+        } catch (err) {
+            const msg = errorHandler.handle(err as Error);
+            addToast({ type: 'error', message: msg });
+        } finally {
+            setIsSaving(false);
+        }
+    }, [editingField, editValue, queryClient, addToast]);
 
-  const handleEdit = useCallback((field: EditableField, currentValue: string) => {
-    setEditingField(field)
-    setEditValue(currentValue || '')
-  }, [])
+    const handleCancelEdit = useCallback(() => {
+        setEditingField(null);
+        setEditValue('');
+    }, []);
 
-  const handleSave = useCallback(async () => {
-    if (!editingField) {return}
-    setIsSaving(true)
-    try {
-      const data: Record<string, unknown> = {}
-      data[editingField] = editValue
-      await userApi.updateProfile(data as { nickname?: string; email?: string; phone?: string; realName?: string; studentId?: string })
-      await queryClient.invalidateQueries({ queryKey: ['auth', 'user'] })
-      setEditingField(null)
-      addToast({ type: 'success', message: '更新成功' })
-    } catch (err) {
-      const msg = errorHandler.handle(err as Error)
-      addToast({ type: 'error', message: msg })
-    } finally {
-      setIsSaving(false)
+    const handleSendCode = useCallback(async () => {
+        const phone = user?.phone;
+        if (!phone) {
+            addToast({ type: 'warning', message: '未绑定手机号，无法修改密码' });
+            return;
+        }
+        try {
+            await userApi.sendSmsCode(phone);
+            startCountdown();
+            addToast({ type: 'success', message: '验证码已发送' });
+        } catch (err) {
+            const msg = errorHandler.handle(err as Error);
+            addToast({ type: 'error', message: msg });
+        }
+    }, [user, addToast, startCountdown]);
+
+    const handleChangePassword = useCallback(async () => {
+        if (!passwordForm.verifyCode || !passwordForm.newPassword) {
+            addToast({ type: 'warning', message: '请填写完整信息' });
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            addToast({ type: 'warning', message: '两次输入的新密码不一致' });
+            return;
+        }
+        setIsChangingPassword(true);
+        try {
+            await userApi.changePassword({
+                verifyCode: passwordForm.verifyCode,
+                newPassword: passwordForm.newPassword,
+            });
+            setShowPasswordModal(false);
+            setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' });
+            addToast({ type: 'success', message: '密码修改成功，请重新登录' });
+            logout();
+            navigate('/login');
+        } catch (err) {
+            const msg = errorHandler.handle(err as Error);
+            addToast({ type: 'error', message: msg });
+        } finally {
+            setIsChangingPassword(false);
+        }
+    }, [passwordForm, addToast, logout, navigate]);
+
+    const handleLogout = useCallback(async () => {
+        await logout();
+        addToast({ type: 'success', message: '已退出登录' });
+        navigate('/');
+    }, [logout, navigate, addToast]);
+
+    if (isLoading) {
+        return (
+            <div className="profile-body">
+                <div className="profile-main">
+                    <div className="loading-container">
+                        <div className="loading-spinner-lg"></div>
+                        <p className="loading-text">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
-  }, [editingField, editValue, queryClient, addToast])
 
-  const handleCancelEdit = useCallback(() => {
-    setEditingField(null)
-    setEditValue('')
-  }, [])
-
-  const handleSendCode = useCallback(async () => {
-    const phone = user?.phone
-    if (!phone) {
-      addToast({ type: 'warning', message: '未绑定手机号，无法修改密码' })
-      return
-    }
-    try {
-      await userApi.sendSmsCode(phone)
-      startCountdown()
-      addToast({ type: 'success', message: '验证码已发送' })
-    } catch (err) {
-      const msg = errorHandler.handle(err as Error)
-      addToast({ type: 'error', message: msg })
-    }
-  }, [user, addToast, startCountdown])
-
-  const handleChangePassword = useCallback(async () => {
-    if (!passwordForm.verifyCode || !passwordForm.newPassword) {
-      addToast({ type: 'warning', message: '请填写完整信息' })
-      return
-    }
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      addToast({ type: 'warning', message: '两次输入的新密码不一致' })
-      return
-    }
-    setIsChangingPassword(true)
-    try {
-      await userApi.changePassword({
-        verifyCode: passwordForm.verifyCode,
-        newPassword: passwordForm.newPassword
-      })
-      setShowPasswordModal(false)
-      setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' })
-      addToast({ type: 'success', message: '密码修改成功，请重新登录' })
-      logout()
-      navigate('/login')
-    } catch (err) {
-      const msg = errorHandler.handle(err as Error)
-      addToast({ type: 'error', message: msg })
-    } finally {
-      setIsChangingPassword(false)
-    }
-  }, [passwordForm, addToast, logout, navigate])
-
-  const handleLogout = useCallback(async () => {
-    await logout()
-    addToast({ type: 'success', message: '已退出登录' })
-    navigate('/')
-  }, [logout, navigate, addToast])
-
-  if (isLoading) {
     return (
-      <div className="profile-body">
-        <div className="profile-main">
-          <div className="loading-container">
-            <div className="loading-spinner-lg"></div>
-            <p className="loading-text">加载中...</p>
-          </div>
+        <div className="profile-body">
+            <div className="ambient-bg">
+                <div className="gradient-orb orb-1"></div>
+                <div className="gradient-orb orb-2"></div>
+                <div className="gradient-orb orb-3"></div>
+                <div className="noise-overlay"></div>
+            </div>
+
+            <div className="profile-main">
+                <div className="profile-grid">
+                    <ProfileSidebar
+                        user={user}
+                        activeTab={activeTab}
+                        onTabChange={setActiveTab}
+                        onLogout={handleLogout}
+                        animateIn={animateIn}
+                    />
+
+                    <main className={`profile-content ${animateIn ? 'animate-in-delayed' : ''}`}>
+                        {activeTab === 'overview' && (
+                            <ProfileOverview
+                                user={user}
+                                favoriteCount={favoriteCount}
+                                orderCount={orderCount}
+                                productCount={productCount}
+                                unreadMessageCount={unreadMessageCount}
+                                editingField={editingField}
+                                editValue={editValue}
+                                isSaving={isSaving}
+                                onEdit={handleEdit}
+                                onSave={handleSave}
+                                onCancel={handleCancelEdit}
+                                onEditValueChange={setEditValue}
+                            />
+                        )}
+                        {activeTab === 'activity' && <ProfileActivity />}
+                        {activeTab === 'security' && (
+                            <ProfileSecurity
+                                user={user}
+                                onEdit={handleEdit}
+                                onShowPasswordModal={() => setShowPasswordModal(true)}
+                            />
+                        )}
+                        {activeTab === 'preferences' && <ProfilePreferences />}
+                    </main>
+                </div>
+            </div>
+
+            <PasswordModal
+                show={showPasswordModal}
+                form={passwordForm}
+                isLoading={isChangingPassword}
+                countdown={countdown}
+                phone={user?.phone ?? ''}
+                onFormChange={setPasswordForm}
+                onClose={() => {
+                    setShowPasswordModal(false);
+                    setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' });
+                }}
+                onSubmit={handleChangePassword}
+                onSendCode={handleSendCode}
+            />
         </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="profile-body">
-      <div className="ambient-bg">
-        <div className="gradient-orb orb-1"></div>
-        <div className="gradient-orb orb-2"></div>
-        <div className="gradient-orb orb-3"></div>
-        <div className="noise-overlay"></div>
-      </div>
-
-      <div className="profile-main">
-        <div className="profile-grid">
-          <ProfileSidebar
-            user={user}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onLogout={handleLogout}
-            animateIn={animateIn}
-          />
-
-          <main className={`profile-content ${animateIn ? 'animate-in-delayed' : ''}`}>
-            {activeTab === 'overview' && (
-              <ProfileOverview
-                user={user}
-                favoriteCount={favoriteCount}
-                orderCount={orderCount}
-                productCount={productCount}
-                unreadMessageCount={unreadMessageCount}
-                editingField={editingField}
-                editValue={editValue}
-                isSaving={isSaving}
-                onEdit={handleEdit}
-                onSave={handleSave}
-                onCancel={handleCancelEdit}
-                onEditValueChange={setEditValue}
-              />
-            )}
-            {activeTab === 'activity' && <ProfileActivity />}
-            {activeTab === 'security' && (
-              <ProfileSecurity
-                user={user}
-                onEdit={handleEdit}
-                onShowPasswordModal={() => setShowPasswordModal(true)}
-              />
-            )}
-            {activeTab === 'preferences' && <ProfilePreferences />}
-          </main>
-        </div>
-      </div>
-
-      <PasswordModal
-        show={showPasswordModal}
-        form={passwordForm}
-        isLoading={isChangingPassword}
-        countdown={countdown}
-        phone={user?.phone ?? ''}
-        onFormChange={setPasswordForm}
-        onClose={() => {
-          setShowPasswordModal(false)
-          setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' })
-        }}
-        onSubmit={handleChangePassword}
-        onSendCode={handleSendCode}
-      />
-    </div>
-  )
+    );
 }
 
-export default ProfilePage
+export default ProfilePage;

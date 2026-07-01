@@ -1,2 +1,2 @@
-export { default as UserManagePage } from './UserManagePage';
 export { UserDetailModal } from './UserDetailModal';
+export { default as UserManagePage } from './UserManagePage';

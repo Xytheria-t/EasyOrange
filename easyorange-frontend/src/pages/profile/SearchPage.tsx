@@ -1,29 +1,45 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-    Search, X, TrendingUp, ArrowLeft, Clock, Sparkles, PackageSearch,
-    Zap, ShoppingBag, Smartphone, BookOpen, Home, Gift,
-    Dumbbell, Flame, Star, ChevronRight, History, Trash2
+    ArrowLeft,
+    BookOpen,
+    ChevronRight,
+    Clock,
+    Dumbbell,
+    Flame,
+    Gift,
+    History,
+    Home,
+    PackageSearch,
+    Search,
+    ShoppingBag,
+    Smartphone,
+    Sparkles,
+    Star,
+    Trash2,
+    TrendingUp,
+    X,
+    Zap,
 } from 'lucide-react';
-import { useProductSearch, useSearchSuggestions, useHotKeywords, useCategories } from '@/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ProductCard } from '@/components/product/ProductCard';
 import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
-import { debounce } from '@/utils';
-import type { ProductSearchParams } from '@/types/product';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { useCategories, useHotKeywords, useProductSearch, useSearchSuggestions } from '@/hooks';
+import type { ProductSearchParams } from '@/types/product';
+import { debounce } from '@/utils';
 import '@/styles/main.css';
 import './search.css';
 
 const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
-    '电子数码': { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
-    '书籍教材': { icon: BookOpen, color: '#10B981', bg: '#ECFDF5' },
-    '服饰鞋包': { icon: ShoppingBag, color: '#EC4899', bg: '#FDF2F8' },
-    '生活用品': { icon: Home, color: '#F59E0B', bg: '#FFFBEB' },
-    '运动健身': { icon: Dumbbell, color: '#EF4444', bg: '#FEF2F2' },
-    '虚拟物品': { icon: Gift, color: '#8B5CF6', bg: '#F5F3FF' },
+    电子数码: { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
+    书籍教材: { icon: BookOpen, color: '#10B981', bg: '#ECFDF5' },
+    服饰鞋包: { icon: ShoppingBag, color: '#EC4899', bg: '#FDF2F8' },
+    生活用品: { icon: Home, color: '#F59E0B', bg: '#FFFBEB' },
+    运动健身: { icon: Dumbbell, color: '#EF4444', bg: '#FEF2F2' },
+    虚拟物品: { icon: Gift, color: '#8B5CF6', bg: '#F5F3FF' },
 };
 
 const DEFAULT_CATEGORY_ICON = { icon: Gift, color: '#F97316', bg: '#FFF7ED' };
@@ -70,8 +86,12 @@ function SearchPage() {
         }
         if (filters.price) {
             const [min, max] = filters.price.split('_');
-            if (min) {params.minPrice = Number(min);}
-            if (max) {params.maxPrice = Number(max);}
+            if (min) {
+                params.minPrice = Number(min);
+            }
+            if (max) {
+                params.maxPrice = Number(max);
+            }
         }
         if (aiEnabled) {
             params.aiEnhanced = true;
@@ -98,7 +118,10 @@ function SearchPage() {
 
     // 防抖处理搜索输入，避免频繁请求建议
     const debouncedSetKeyword = useMemo(
-        () => debounce((value: unknown) => { setDebouncedKeyword(value as string); }, 300),
+        () =>
+            debounce((value: unknown) => {
+                setDebouncedKeyword(value as string);
+            }, 300),
         []
     );
 
@@ -107,7 +130,9 @@ function SearchPage() {
     }, []);
 
     const addToHistory = useCallback((kw: string) => {
-        if (!kw.trim()) {return;}
+        if (!kw.trim()) {
+            return;
+        }
         setSearchHistory(prev => {
             const filtered = prev.filter(h => h !== kw);
             const next = [kw, ...filtered].slice(0, 10);
@@ -130,27 +155,33 @@ function SearchPage() {
         localStorage.removeItem('eo_search_history');
     }, []);
 
-    const handleSubmit = useCallback((e: React.FormEvent) => {
-        e.preventDefault();
-        const trimmed = keyword.trim();
-        if (trimmed) {
-            setSubmittedKeyword(trimmed);
-            setShowSuggestions(false);
-            addToHistory(trimmed);
-        }
-    }, [keyword, addToHistory]);
+    const handleSubmit = useCallback(
+        (e: React.FormEvent) => {
+            e.preventDefault();
+            const trimmed = keyword.trim();
+            if (trimmed) {
+                setSubmittedKeyword(trimmed);
+                setShowSuggestions(false);
+                addToHistory(trimmed);
+            }
+        },
+        [keyword, addToHistory]
+    );
 
     const handleAiToggle = useCallback(() => {
         setAiEnabled(prev => !prev);
     }, []);
 
-    const handleAiQuestionClick = useCallback((question: string) => {
-        setKeyword(question);
-        setDebouncedKeyword(question);
-        setSubmittedKeyword(question);
-        addToHistory(question);
-        inputRef.current?.focus();
-    }, [addToHistory]);
+    const handleAiQuestionClick = useCallback(
+        (question: string) => {
+            setKeyword(question);
+            setDebouncedKeyword(question);
+            setSubmittedKeyword(question);
+            addToHistory(question);
+            inputRef.current?.focus();
+        },
+        [addToHistory]
+    );
 
     const handleSuggestionClick = (suggestion: string) => {
         setKeyword(suggestion);
@@ -179,12 +210,15 @@ function SearchPage() {
         inputRef.current?.focus();
     };
 
-    const handleKeywordChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setKeyword(value);
-        setShowSuggestions(true);
-        debouncedSetKeyword(value);
-    }, [debouncedSetKeyword]);
+    const handleKeywordChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            const value = e.target.value;
+            setKeyword(value);
+            setShowSuggestions(true);
+            debouncedSetKeyword(value);
+        },
+        [debouncedSetKeyword]
+    );
 
     const handleMouseMove = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -201,7 +235,8 @@ function SearchPage() {
 
     const searchVirtualizer = useVirtualizer({
         count: Math.ceil(products.length / 2),
-        getScrollElement: () => (typeof window !== 'undefined' ? window.document.documentElement : null) as HTMLElement | null,
+        getScrollElement: () =>
+            (typeof window !== 'undefined' ? window.document.documentElement : null) as HTMLElement | null,
         estimateSize: () => 520,
         overscan: 3,
     });
@@ -236,11 +271,18 @@ function SearchPage() {
                                 className="search-input-field"
                             />
                             {keyword && (
-                                <Button type="button" variant="ghost" size="icon" onClick={handleClear} className="search-clear-btn">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={handleClear}
+                                    className="search-clear-btn"
+                                >
                                     <X size={12} />
                                 </Button>
                             )}
-                            <Button type="button"
+                            <Button
+                                type="button"
                                 variant="ghost"
                                 size="icon"
                                 className={`search-ai-btn ${aiEnabled ? 'ai-enabled' : ''}`}
@@ -291,7 +333,12 @@ function SearchPage() {
                                                 <History size={14} />
                                             </div>
                                             <h3 className="search-top-card-title">最近搜索</h3>
-                                            <Button variant="ghost" size="sm" className="search-top-card-action" onClick={clearHistory}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="search-top-card-action"
+                                                onClick={clearHistory}
+                                            >
                                                 <Trash2 size={12} />
                                                 <span>清空</span>
                                             </Button>
@@ -304,7 +351,12 @@ function SearchPage() {
                                                     tabIndex={0}
                                                     className="search-history-tag"
                                                     onClick={() => handleHotKeywordClick(item)}
-                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleHotKeywordClick(item); } }}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            handleHotKeywordClick(item);
+                                                        }
+                                                    }}
                                                 >
                                                     <Clock size={10} />
                                                     <span>{item}</span>
@@ -313,7 +365,7 @@ function SearchPage() {
                                                         variant="ghost"
                                                         size="icon"
                                                         className="search-history-remove"
-                                                        onClick={(e) => removeFromHistory(item, e)}
+                                                        onClick={e => removeFromHistory(item, e)}
                                                         aria-label={`删除搜索记录 ${item}`}
                                                     >
                                                         <X size={8} />
@@ -413,7 +465,12 @@ function SearchPage() {
                                             variant="ghost"
                                             className="search-category-card whitespace-normal"
                                             onClick={() => handleCategoryClick(cat.id)}
-                                            style={{ '--cat-color': iconConfig.color, '--cat-bg': iconConfig.bg } as React.CSSProperties}
+                                            style={
+                                                {
+                                                    '--cat-color': iconConfig.color,
+                                                    '--cat-bg': iconConfig.bg,
+                                                } as React.CSSProperties
+                                            }
                                         >
                                             <div className="search-category-icon">
                                                 <IconComponent size={20} />
@@ -434,7 +491,7 @@ function SearchPage() {
                                 <h3 className="search-section-title-compact">发现资产</h3>
                             </div>
                             <div className="search-trending-cards">
-                                {TRENDING_TOPICS.map((topic) => (
+                                {TRENDING_TOPICS.map(topic => (
                                     <div
                                         key={topic.title}
                                         className="search-trending-card"
@@ -501,19 +558,12 @@ function SearchPage() {
 
                         {facets.length > 0 && (
                             <div className="px-0.5">
-                                <FacetFilter
-                                    facets={facets}
-                                    filters={filters}
-                                    onFilterChange={handleFilterChange}
-                                />
+                                <FacetFilter facets={facets} filters={filters} onFilterChange={handleFilterChange} />
                             </div>
                         )}
 
                         {aiEnhancement && (
-                            <AiSearchPanel
-                                enhancement={aiEnhancement}
-                                onQuestionClick={handleAiQuestionClick}
-                            />
+                            <AiSearchPanel enhancement={aiEnhancement} onQuestionClick={handleAiQuestionClick} />
                         )}
 
                         {isSearching && (
@@ -524,8 +574,15 @@ function SearchPage() {
                         )}
 
                         {hasResults && !isSearching && (
-                            <div ref={searchResultsParentRef} style={{ position: 'relative', height: `${searchVirtualizer.getTotalSize()}px`, width: '100%' }}>
-                                {searchVirtualizer.getVirtualItems().map((virtualRow) => {
+                            <div
+                                ref={searchResultsParentRef}
+                                style={{
+                                    position: 'relative',
+                                    height: `${searchVirtualizer.getTotalSize()}px`,
+                                    width: '100%',
+                                }}
+                            >
+                                {searchVirtualizer.getVirtualItems().map(virtualRow => {
                                     const startIdx = virtualRow.index * 2;
                                     const rowProducts = products.slice(startIdx, startIdx + 2);
                                     return (
@@ -564,9 +621,7 @@ function SearchPage() {
                                     <PackageSearch size={40} />
                                 </div>
                                 <h3 className="search-no-results-title">未找到相关商品</h3>
-                                <p className="search-no-results-desc">
-                                    试试其他关键词，或浏览下面的热门商品
-                                </p>
+                                <p className="search-no-results-desc">试试其他关键词，或浏览下面的热门商品</p>
                                 {hotKeywords && hotKeywords.length > 0 && (
                                     <div className="search-no-results-hints">
                                         <span className="search-hint-label">试试搜索：</span>

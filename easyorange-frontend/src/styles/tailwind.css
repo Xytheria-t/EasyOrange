@@ -57,15 +57,15 @@
 }
 
 @layer base {
-  html {
-    @apply antialiased;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+    html {
+        @apply antialiased;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
 
-  /* Focus ring consistent with the warm orange design system */
-  * {
-    @apply border-border;
-  }
+    /* Focus ring consistent with the warm orange design system */
+    * {
+        @apply border-border;
+    }
 }

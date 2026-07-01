@@ -1,108 +1,108 @@
 // Existing project components (kept for backwards compatibility)
-export { Image, preloadImage, preloadImages, clearImageCache } from './Image';
-export { GlobalLoading } from './Loading';
-export { ToastContainer } from './Toast';
-export { default as ScrollProgressBar } from './ScrollProgressBar';
 
+export { Avatar, AvatarFallback, AvatarImage } from './avatar';
+export { Badge, badgeVariants } from './badge';
 // shadcn/ui components (styled to match EasyOrange design system)
 export { Button as ShadcnButton, buttonVariants } from './button';
 export {
-  Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogClose,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from './card';
+export { Checkbox } from './checkbox';
+export {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogOverlay,
+    DialogPortal,
+    DialogTitle,
+    DialogTrigger,
 } from './dialog';
 export {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuCheckboxItem,
-  DropdownMenuRadioItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuGroup,
-  DropdownMenuPortal,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuRadioGroup,
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
 } from './dropdown-menu';
-export {
-  Select,
-  SelectGroup,
-  SelectValue,
-  SelectTrigger,
-  SelectContent,
-  SelectLabel,
-  SelectItem,
-  SelectSeparator,
-  SelectScrollUpButton,
-  SelectScrollDownButton,
-} from './select';
-export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
-export {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from './tooltip';
-export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor } from './popover';
-export { Badge, badgeVariants } from './badge';
-export { Skeleton } from './skeleton';
-export { Separator } from './separator';
-export { Label } from './label';
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from './card';
+export { clearImageCache, Image, preloadImage, preloadImages } from './Image';
 export { Input } from './input';
+export { GlobalLoading } from './Loading';
+export { Label } from './label';
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
+export { RadioGroup, RadioGroupItem } from './radio-group';
+export { default as ScrollProgressBar } from './ScrollProgressBar';
+export {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectLabel,
+    SelectScrollDownButton,
+    SelectScrollUpButton,
+    SelectSeparator,
+    SelectTrigger,
+    SelectValue,
+} from './select';
+export { Separator } from './separator';
+export {
+    Sheet,
+    SheetClose,
+    SheetContent,
+    SheetDescription,
+    SheetFooter,
+    SheetHeader,
+    SheetOverlay,
+    SheetPortal,
+    SheetTitle,
+    SheetTrigger,
+} from './sheet';
+export { Skeleton } from './skeleton';
+export { Switch } from './switch';
+export { ToastContainer } from './Toast';
+export {
+    Table,
+    TableBody,
+    TableCaption,
+    TableCell,
+    TableFooter,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from './table';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 export { Textarea } from './textarea';
 export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
-} from './table';
-export { Avatar, AvatarImage, AvatarFallback } from './avatar';
-export {
-  Sheet,
-  SheetPortal,
-  SheetOverlay,
-  SheetTrigger,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
-  SheetDescription,
-} from './sheet';
-export { Switch } from './switch';
-export { Checkbox } from './checkbox';
-export { RadioGroup, RadioGroupItem } from './radio-group';
-export {
-  type ToastProps,
-  type ToastActionElement,
-  ToastProvider,
-  ToastViewport,
-  Toast,
-  ToastTitle,
-  ToastDescription,
-  ToastClose,
-  ToastAction,
+    Toast,
+    ToastAction,
+    type ToastActionElement,
+    ToastClose,
+    ToastDescription,
+    type ToastProps,
+    ToastProvider,
+    ToastTitle,
+    ToastViewport,
 } from './toast-primitive';
+export {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from './tooltip';

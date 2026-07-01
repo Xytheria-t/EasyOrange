@@ -13,12 +13,7 @@ export const MAX_FILE_SIZE: number = 5 * 1024 * 1024;
 export const AUTO_SAVE_INTERVAL = 30000;
 
 /** 允许的图片类型 */
-export const ALLOWED_IMAGE_TYPES: readonly string[] = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp'
-] as const;
+export const ALLOWED_IMAGE_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 
 /** 图片类型错误提示 */
 export const IMAGE_TYPE_ERROR = '只支持 JPG、PNG、GIF、WEBP 格式的图片';

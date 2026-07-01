@@ -25,67 +25,67 @@ export const routes: Record<RouteName, RouteConfig> = {
         path: '/',
         title: '首页',
         navKey: 'home',
-        requiresAuth: false
+        requiresAuth: false,
     },
     products: {
         path: '/products',
         title: '商品',
         navKey: 'products',
-        requiresAuth: false
+        requiresAuth: false,
     },
     publish: {
         path: '/publish',
         title: '提交资产',
-        requiresAuth: true
+        requiresAuth: true,
     },
     search: {
         path: '/search',
         title: '搜索',
-        requiresAuth: false
+        requiresAuth: false,
     },
     profile: {
         path: '/profile',
         title: '个人中心',
-        requiresAuth: true
+        requiresAuth: true,
     },
     favorites: {
         path: '/favorites',
         title: '我的收藏',
-        requiresAuth: true
+        requiresAuth: true,
     },
     messages: {
         path: '/messages',
         title: '消息',
-        requiresAuth: true
+        requiresAuth: true,
     },
     orders: {
         path: '/orders',
         title: '我的订单',
-        requiresAuth: true
+        requiresAuth: true,
     },
     orderDetail: {
         path: '/orders/:id',
         title: '订单详情',
-        requiresAuth: true
+        requiresAuth: true,
     },
     payment: {
         path: '/payment',
         title: '收银台',
-        requiresAuth: true
+        requiresAuth: true,
     },
     paymentResult: {
         path: '/payment/result',
         title: '支付结果',
-        requiresAuth: true
+        requiresAuth: true,
     },
     notifications: {
         path: '/notifications',
         title: '通知中心',
-        requiresAuth: true
+        requiresAuth: true,
     },
     credit: {
         path: '/credit',
         title: '我的信用',
-        requiresAuth: true
-    }
+        requiresAuth: true,
+    },
 };

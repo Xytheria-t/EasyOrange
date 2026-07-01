@@ -3,17 +3,17 @@
  * @version 2.0.0
  */
 
-import {
-    MAX_IMAGES,
-    MAX_FILE_SIZE,
-    ALLOWED_IMAGE_TYPES,
-    IMAGE_TYPE_ERROR,
-    FILE_SIZE_ERROR,
-    MAX_IMAGES_ERROR
-} from '../constants';
-import { errorHandler } from '@/utils/errorHandler';
-import { isSuccessCode } from '@/types';
 import { getStoredToken } from '@/features/auth/session';
+import { isSuccessCode } from '@/types';
+import { errorHandler } from '@/utils/errorHandler';
+import {
+    ALLOWED_IMAGE_TYPES,
+    FILE_SIZE_ERROR,
+    IMAGE_TYPE_ERROR,
+    MAX_FILE_SIZE,
+    MAX_IMAGES,
+    MAX_IMAGES_ERROR,
+} from '../constants';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -73,7 +73,7 @@ export class ImageUploader {
             fileInput: null,
             previewContainer: null,
             previewList: null,
-            imageError: null
+            imageError: null,
         };
         this.initElements();
     }
@@ -87,7 +87,7 @@ export class ImageUploader {
             fileInput: document.getElementById('fileInput') as HTMLInputElement | null,
             previewContainer: document.getElementById('previewContainer'),
             previewList: document.getElementById('previewList'),
-            imageError: document.getElementById('imageError')
+            imageError: document.getElementById('imageError'),
         };
         this.bindEvents();
     }
@@ -203,7 +203,7 @@ export class ImageUploader {
                 file: file,
                 url: e.target?.result as string,
                 uploaded: false,
-                serverUrl: null
+                serverUrl: null,
             };
 
             this.images.push(imageData);
@@ -219,7 +219,9 @@ export class ImageUploader {
      * 渲染图片预览
      */
     private renderPreviews(): void {
-        if (!this.elements.previewList) {return;}
+        if (!this.elements.previewList) {
+            return;
+        }
 
         this.elements.previewList.innerHTML = '';
 
@@ -341,7 +343,9 @@ export class ImageUploader {
     private handleImageDrop(e: DragEvent, targetId: number): void {
         e.preventDefault();
 
-        if (!this.draggedItem || this.draggedItem === targetId) {return;}
+        if (!this.draggedItem || this.draggedItem === targetId) {
+            return;
+        }
 
         const draggedIndex = this.images.findIndex(img => img.id === this.draggedItem);
         const targetIndex = this.images.findIndex(img => img.id === targetId);
@@ -381,8 +385,8 @@ export class ImageUploader {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'Authorization': `Bearer ${getStoredToken()}`
-                        }
+                            Authorization: `Bearer ${getStoredToken()}`,
+                        },
                     });
 
                     const result = await response.json();

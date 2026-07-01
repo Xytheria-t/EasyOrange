@@ -12,7 +12,9 @@ export const addRequestInterceptor = (interceptor: RequestInterceptor): (() => v
     requestInterceptors.push(interceptor);
     return () => {
         const index = requestInterceptors.indexOf(interceptor);
-        if (index > -1) {requestInterceptors.splice(index, 1);}
+        if (index > -1) {
+            requestInterceptors.splice(index, 1);
+        }
     };
 };
 
@@ -20,7 +22,9 @@ export const addResponseInterceptor = (interceptor: ResponseInterceptor): (() =>
     responseInterceptors.push(interceptor);
     return () => {
         const index = responseInterceptors.indexOf(interceptor);
-        if (index > -1) {responseInterceptors.splice(index, 1);}
+        if (index > -1) {
+            responseInterceptors.splice(index, 1);
+        }
     };
 };
 

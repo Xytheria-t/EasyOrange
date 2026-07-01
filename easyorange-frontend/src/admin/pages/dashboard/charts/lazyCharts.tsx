@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import type { TrendItem, TopProductItem } from '../../../types/admin';
+import type { TopProductItem, TrendItem } from '../../../types/admin';
 
 const TrendChart = lazy(() => import('./TrendChart'));
 const TopProductsChart = lazy(() => import('./TopProductsChart'));
@@ -46,4 +46,4 @@ export function LazyTopProductsChart(props: TopProductsChartProps) {
     );
 }
 
-export type { TrendChartProps, TopProductsChartProps };
+export type { TopProductsChartProps, TrendChartProps };

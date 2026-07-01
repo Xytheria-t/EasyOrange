@@ -3,328 +3,328 @@ export type UserStatus = string;
 export type ProductStatus = number;
 
 export interface AdminUser {
-  userId: string;
-  username: string;
-  nickname: string | null;
-  avatar: string | null;
-  email: string | null;
-  phone: string | null;
-  studentId: string | null;
-  realName: string | null;
-  userType: string | null;
-  userTypeDesc: string | null;
-  status: string | null;
-  statusDesc: string | null;
-  loginIp: string | null;
-  loginDate: string | null;
-  createTime: string | null;
-  updateTime: string | null;
+    userId: string;
+    username: string;
+    nickname: string | null;
+    avatar: string | null;
+    email: string | null;
+    phone: string | null;
+    studentId: string | null;
+    realName: string | null;
+    userType: string | null;
+    userTypeDesc: string | null;
+    status: string | null;
+    statusDesc: string | null;
+    loginIp: string | null;
+    loginDate: string | null;
+    createTime: string | null;
+    updateTime: string | null;
 }
 
 export interface DashboardStats {
-  totalUsers: number;
-  todayNewUsers: number;
-  totalProducts: number;
-  pendingProducts: number;
-  totalOrders: number;
-  todayOrders: number;
-  totalRevenue: number;
-  pendingReports: number;
+    totalUsers: number;
+    todayNewUsers: number;
+    totalProducts: number;
+    pendingProducts: number;
+    totalOrders: number;
+    todayOrders: number;
+    totalRevenue: number;
+    pendingReports: number;
 }
 
 export interface PendingReportItem {
-  id: string;
-  productId: string;
-  productName: string | null;
-  reason: string | null;
-  reporterName: string | null;
-  createTime: string | null;
+    id: string;
+    productId: string;
+    productName: string | null;
+    reason: string | null;
+    reporterName: string | null;
+    createTime: string | null;
 }
 
 export interface PendingItems {
-  pendingReports: number;
-  pendingOrders: number;
-  pendingProducts: number;
-  recentReports: PendingReportItem[];
+    pendingReports: number;
+    pendingOrders: number;
+    pendingProducts: number;
+    recentReports: PendingReportItem[];
 }
 
 export interface RecentUser {
-  userId: string;
-  username: string;
-  nickname: string | null;
-  avatar: string | null;
-  email: string | null;
-  phone: string | null;
-  userType: string | null;
-  userTypeDesc: string | null;
-  status: string | null;
-  statusDesc: string | null;
-  createTime: string | null;
+    userId: string;
+    username: string;
+    nickname: string | null;
+    avatar: string | null;
+    email: string | null;
+    phone: string | null;
+    userType: string | null;
+    userTypeDesc: string | null;
+    status: string | null;
+    statusDesc: string | null;
+    createTime: string | null;
 }
 
 export interface RecentProduct {
-  productId: string;
-  name: string;
-  price: number | null;
-  mainImage: string | null;
-  status: number | null;
-  statusDesc: string | null;
-  sellerId: string | null;
-  sellerName: string | null;
-  categoryName: string | null;
-  viewCount: number | null;
-  createTime: string | null;
+    productId: string;
+    name: string;
+    price: number | null;
+    mainImage: string | null;
+    status: number | null;
+    statusDesc: string | null;
+    sellerId: string | null;
+    sellerName: string | null;
+    categoryName: string | null;
+    viewCount: number | null;
+    createTime: string | null;
 }
 
 export interface AdminProduct {
-  productId: string;
-  name: string;
-  description: string | null;
-  price: number | null;
-  originalPrice: number | null;
-  stock: number | null;
-  status: number | null;
-  statusDesc: string | null;
-  conditionLevel: number | null;
-  location: string | null;
-  contactMethod: string | null;
-  images: string[];
-  mainImage: string | null;
-  categoryId: string | null;
-  categoryName: string | null;
-  sellerId: string | null;
-  sellerName: string | null;
-  sellerAvatar: string | null;
-  viewCount: number | null;
-  createTime: string | null;
-  updateTime: string | null;
+    productId: string;
+    name: string;
+    description: string | null;
+    price: number | null;
+    originalPrice: number | null;
+    stock: number | null;
+    status: number | null;
+    statusDesc: string | null;
+    conditionLevel: number | null;
+    location: string | null;
+    contactMethod: string | null;
+    images: string[];
+    mainImage: string | null;
+    categoryId: string | null;
+    categoryName: string | null;
+    sellerId: string | null;
+    sellerName: string | null;
+    sellerAvatar: string | null;
+    viewCount: number | null;
+    createTime: string | null;
+    updateTime: string | null;
 }
 
 export interface AdminUserQuery {
-  pageNum: number;
-  pageSize: number;
-  keyword?: string;
-  userType?: string;
-  status?: string;
-  startTime?: string;
-  endTime?: string;
+    pageNum: number;
+    pageSize: number;
+    keyword?: string;
+    userType?: string;
+    status?: string;
+    startTime?: string;
+    endTime?: string;
 }
 
 export interface AdminProductQuery {
-  pageNum: number;
-  pageSize: number;
-  keyword?: string;
-  categoryId?: string;
-  status?: number;
-  sellerId?: string;
-  startTime?: string;
-  endTime?: string;
+    pageNum: number;
+    pageSize: number;
+    keyword?: string;
+    categoryId?: string;
+    status?: number;
+    sellerId?: string;
+    startTime?: string;
+    endTime?: string;
 }
 
 export interface UpdateStatusRequest {
-  status: number;
-  reason?: string;
+    status: number;
+    reason?: string;
 }
 
 export interface PageData<T> {
-  records: T[];
-  total: number;
-  current: number;
-  size: number;
-  pages: number;
+    records: T[];
+    total: number;
+    current: number;
+    size: number;
+    pages: number;
 }
 
 export interface ActionResponse {
-  isSuccess: boolean;
-  message: string;
+    isSuccess: boolean;
+    message: string;
 }
 
 // ==================== Order Types ====================
 
 export interface AdminOrderItem {
-  itemId: string;
-  productId: string;
-  productName: string;
-  productImage: string;
-  unitPrice: number;
-  quantity: number;
-  subtotal: number;
+    itemId: string;
+    productId: string;
+    productName: string;
+    productImage: string;
+    unitPrice: number;
+    quantity: number;
+    subtotal: number;
 }
 
 export interface AdminOrder {
-  orderId: string;
-  orderNo: string;
-  buyerId: string;
-  buyerName: string;
-  sellerId: string;
-  sellerName: string;
-  items: AdminOrderItem[];
-  totalAmount: number;
-  singleItem: boolean;
-  status: number;
-  statusDesc: string;
-  paymentStatus: number;
-  paymentStatusDesc: string;
-  createTime: string | null;
+    orderId: string;
+    orderNo: string;
+    buyerId: string;
+    buyerName: string;
+    sellerId: string;
+    sellerName: string;
+    items: AdminOrderItem[];
+    totalAmount: number;
+    singleItem: boolean;
+    status: number;
+    statusDesc: string;
+    paymentStatus: number;
+    paymentStatusDesc: string;
+    createTime: string | null;
 }
 
 export interface AdminOrderDetail {
-  orderId: string;
-  orderNo: string;
-  buyer: OrderParticipant;
-  seller: OrderParticipant;
-  items: AdminOrderDetailItem[];
-  totalAmount: number;
-  singleItem: boolean;
-  status: number;
-  statusDesc: string;
-  paymentStatus: number;
-  paymentNo: string | null;
-  paidAmount: number | null;
-  refundedAmount: number | null;
-  shippingAddress: ShippingAddress | null;
-  remark: string | null;
-  cancelReason: string | null;
-  createTime: string | null;
-  payTime: string | null;
-  updateTime: string | null;
-  cancelTime: string | null;
+    orderId: string;
+    orderNo: string;
+    buyer: OrderParticipant;
+    seller: OrderParticipant;
+    items: AdminOrderDetailItem[];
+    totalAmount: number;
+    singleItem: boolean;
+    status: number;
+    statusDesc: string;
+    paymentStatus: number;
+    paymentNo: string | null;
+    paidAmount: number | null;
+    refundedAmount: number | null;
+    shippingAddress: ShippingAddress | null;
+    remark: string | null;
+    cancelReason: string | null;
+    createTime: string | null;
+    payTime: string | null;
+    updateTime: string | null;
+    cancelTime: string | null;
 }
 
 export interface AdminOrderDetailItem {
-  itemId: string;
-  productId: string;
-  productName: string;
-  productImage: string;
-  unitPrice: number;
-  quantity: number;
-  subtotal: number;
+    itemId: string;
+    productId: string;
+    productName: string;
+    productImage: string;
+    unitPrice: number;
+    quantity: number;
+    subtotal: number;
 }
 
 export interface OrderParticipant {
-  userId: string;
-  nickname: string;
-  avatar: string | null;
-  phone: string | null;
+    userId: string;
+    nickname: string;
+    avatar: string | null;
+    phone: string | null;
 }
 
 export interface OrderProductInfo {
-  productId: string;
-  name: string;
-  mainImage: string | null;
-  price: number;
+    productId: string;
+    name: string;
+    mainImage: string | null;
+    price: number;
 }
 
 export interface ShippingAddress {
-  receiverName: string;
-  phone: string;
-  detailAddress: string;
+    receiverName: string;
+    phone: string;
+    detailAddress: string;
 }
 
 export interface AdminOrderQuery {
-  pageNum: number;
-  pageSize: number;
-  orderNo?: string;
-  buyerId?: string;
-  sellerId?: string;
-  status?: number;
-  paymentStatus?: number;
-  startTime?: string;
-  endTime?: string;
+    pageNum: number;
+    pageSize: number;
+    orderNo?: string;
+    buyerId?: string;
+    sellerId?: string;
+    status?: number;
+    paymentStatus?: number;
+    startTime?: string;
+    endTime?: string;
 }
 
 export interface OrderInterventionRequest {
-  reason: string;
+    reason: string;
 }
 
 export interface OrderStatsResponse {
-  totalOrders: number;
-  todayOrders: number;
-  pendingPayment: number;
-  toShip: number;
-  toReceive: number;
-  completed: number;
-  cancelled: number;
-  refunded: number;
-  totalRevenue: number;
-  todayRevenue: number;
+    totalOrders: number;
+    todayOrders: number;
+    pendingPayment: number;
+    toShip: number;
+    toReceive: number;
+    completed: number;
+    cancelled: number;
+    refunded: number;
+    totalRevenue: number;
+    todayRevenue: number;
 }
 
 // ==================== Report Types ====================
 
 export interface AdminReport {
-  reportId: string;
-  productId: string;
-  productName: string | null;
-  productImage: string | null;
-  reporterId: string;
-  reporterName: string;
-  reason: string;
-  status: number;
-  statusDesc: string;
-  handleResult: string | null;
-  handleRemark: string | null;
-  createTime: string | null;
-  handleTime: string | null;
+    reportId: string;
+    productId: string;
+    productName: string | null;
+    productImage: string | null;
+    reporterId: string;
+    reporterName: string;
+    reason: string;
+    status: number;
+    statusDesc: string;
+    handleResult: string | null;
+    handleRemark: string | null;
+    createTime: string | null;
+    handleTime: string | null;
 }
 
 export interface AdminReportQuery {
-  pageNum: number;
-  pageSize: number;
-  status?: number;
-  type?: number;
-  keyword?: string;
-  startTime?: string;
-  endTime?: string;
+    pageNum: number;
+    pageSize: number;
+    status?: number;
+    type?: number;
+    keyword?: string;
+    startTime?: string;
+    endTime?: string;
 }
 
 export interface ReportHandleRequest {
-  action: 'resolve' | 'dismiss';
-  remark?: string;
+    action: 'resolve' | 'dismiss';
+    remark?: string;
 }
 
 export interface ReportStatsResponse {
-  totalReports: number;
-  pendingReports: number;
-  resolvedReports: number;
-  dismissedReports: number;
+    totalReports: number;
+    pendingReports: number;
+    resolvedReports: number;
+    dismissedReports: number;
 }
 
 // ==================== Category Types ====================
 
 export interface CategoryResponse {
-  categoryId: string;
-  name: string;
-  parentId: string | null;
-  parentName: string | null;
-  level: number;
-  sortOrder: number;
-  status: number;
-  productCount: number;
-  createTime: string | null;
-  updateTime: string | null;
+    categoryId: string;
+    name: string;
+    parentId: string | null;
+    parentName: string | null;
+    level: number;
+    sortOrder: number;
+    status: number;
+    productCount: number;
+    createTime: string | null;
+    updateTime: string | null;
 }
 
 export interface CategoryTreeResponse {
-  categoryId: string;
-  name: string;
-  level: number;
-  sortOrder: number;
-  status: number;
-  children: CategoryTreeResponse[];
+    categoryId: string;
+    name: string;
+    level: number;
+    sortOrder: number;
+    status: number;
+    children: CategoryTreeResponse[];
 }
 
 export interface CategoryCreateRequest {
-  name: string;
-  parentId?: string;
-  sortOrder?: number;
+    name: string;
+    parentId?: string;
+    sortOrder?: number;
 }
 
 export interface CategoryUpdateRequest {
-  name?: string;
-  parentId?: string;
-  sortOrder?: number;
-  status?: number;
+    name?: string;
+    parentId?: string;
+    sortOrder?: number;
+    status?: number;
 }
 
 // ==================== Audit & User Operation Types ====================
@@ -333,121 +333,121 @@ export type AuditAction = 1 | 2 | 3;
 export type AuditDimension = 'basic' | 'compliance' | 'image' | 'price';
 
 export interface BatchAuditRequest {
-  items: {
-    productId: string;
-    action: 1 | 2;
-    reason?: string;
-    dimensions?: AuditDimension[];
-  }[];
+    items: {
+        productId: string;
+        action: 1 | 2;
+        reason?: string;
+        dimensions?: AuditDimension[];
+    }[];
 }
 
 export interface ProductAuditRequest {
-  action: 1 | 2;
-  reason?: string;
-  dimensions?: AuditDimension[];
-  remark?: string;
+    action: 1 | 2;
+    reason?: string;
+    dimensions?: AuditDimension[];
+    remark?: string;
 }
 
 export interface TrendItem {
-  month: string;
-  users: number;
-  products: number;
-  orders: number;
+    month: string;
+    users: number;
+    products: number;
+    orders: number;
 }
 
 export interface ActivityItem {
-  time: string;
-  text: string;
-  type: 'user' | 'product' | 'order' | 'report';
+    time: string;
+    text: string;
+    type: 'user' | 'product' | 'order' | 'report';
 }
 
 export interface AuditLogResponse {
-  id: string;
-  productId: string;
-  operatorId: string;
-  operatorName: string;
-  action: AuditAction;
-  actionDesc: string;
-  reason: string | null;
-  dimensions: AuditDimension[];
-  beforeStatus: number;
-  beforeStatusDesc: string;
-  afterStatus: number;
-  afterStatusDesc: string;
-  remark: string | null;
-  createTime: string;
+    id: string;
+    productId: string;
+    operatorId: string;
+    operatorName: string;
+    action: AuditAction;
+    actionDesc: string;
+    reason: string | null;
+    dimensions: AuditDimension[];
+    beforeStatus: number;
+    beforeStatusDesc: string;
+    afterStatus: number;
+    afterStatusDesc: string;
+    remark: string | null;
+    createTime: string;
 }
 
 export interface UserRoleRequest {
-  role: string;
+    role: string;
 }
 
 export interface ResetPasswordRequest {
-  newPassword: string;
+    newPassword: string;
 }
 
 export interface UserUnlockRequest {
-  reason?: string;
+    reason?: string;
 }
 
 // ==================== AI Review Types ====================
 
 export interface AiReviewResult {
-  isApproved: boolean;
-  suggestedActionDesc: string;
-  confidenceScore: number;
-  riskFlags: string[];
-  reasoning: string;
+    isApproved: boolean;
+    suggestedActionDesc: string;
+    confidenceScore: number;
+    riskFlags: string[];
+    reasoning: string;
 }
 
 // ==================== Review Types ====================
 
 export interface AdminReview {
-  reviewId: string;
-  productId: string;
-  productName: string | null;
-  userId: string;
-  username: string | null;
-  userAvatar: string | null;
-  rating: number;
-  content: string;
-  replyContent: string | null;
-  likes: number;
-  status: number;
-  createTime: string | null;
-  updateTime: string | null;
+    reviewId: string;
+    productId: string;
+    productName: string | null;
+    userId: string;
+    username: string | null;
+    userAvatar: string | null;
+    rating: number;
+    content: string;
+    replyContent: string | null;
+    likes: number;
+    status: number;
+    createTime: string | null;
+    updateTime: string | null;
 }
 
 export interface AdminReviewQuery {
-  pageNum: number;
-  pageSize: number;
-  productId?: string;
-  userId?: string;
-  rating?: number;
-  status?: number;
-  keyword?: string;
-  startTime?: string;
-  endTime?: string;
+    pageNum: number;
+    pageSize: number;
+    productId?: string;
+    userId?: string;
+    rating?: number;
+    status?: number;
+    keyword?: string;
+    startTime?: string;
+    endTime?: string;
 }
 
 export interface AdminReviewDeleteRequest {
-  reason: string;
+    reason: string;
 }
 
 // ==================== Dashboard Chart Types ====================
 
 export interface UserActivityItem {
-  dayOfWeek: number;
-  hour: number;
-  count: number;
+    dayOfWeek: number;
+    hour: number;
+    count: number;
 }
 
 export interface TopProductItem {
-  productId: string;
-  name: string;
-  viewCount: number;
-  price: number;
-  mainImage: string | null;
-  status: number;
-  statusDesc: string;
+    productId: string;
+    name: string;
+    viewCount: number;
+    price: number;
+    mainImage: string | null;
+    status: number;
+    statusDesc: string;
 }

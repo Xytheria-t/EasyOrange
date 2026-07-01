@@ -1,110 +1,109 @@
-import { describe, it, expect } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { http, HttpResponse } from 'msw';
-import { server } from '@/testUtils/mocks/server';
-import { useProductSearch, useSearchSuggestions, useHotKeywords } from './useSearch';
+import { renderHook, waitFor } from '@testing-library/react';
+import { HttpResponse, http } from 'msw';
 import type { ReactNode } from 'react';
+import { describe, expect, it } from 'vitest';
+import { server } from '@/testUtils/mocks/server';
+import { useHotKeywords, useProductSearch, useSearchSuggestions } from './useSearch';
 
 const testQc = new QueryClient({
-  defaultOptions: { queries: { retry: false, gcTime: 0 } },
+    defaultOptions: { queries: { retry: false, gcTime: 0 } },
 });
 
 function Wrapper({ children }: { children: ReactNode }) {
-  return <QueryClientProvider client={testQc}>{children}</QueryClientProvider>;
+    return <QueryClientProvider client={testQc}>{children}</QueryClientProvider>;
 }
 
-
 describe('useProductSearch', () => {
-  it('returns search results', async () => {
-    server.use(
-      http.get('/api/products/search', () => {
-        return HttpResponse.json({
-          code: 'A0000',
-          message: 'success',
-          data: {
-            records: [],
-            total: 0,
-            current: 1,
-            size: 20,
-            pages: 0,
-            facets: [],
-          },
-          timestamp: Date.now(),
+    it('returns search results', async () => {
+        server.use(
+            http.get('/api/products/search', () => {
+                return HttpResponse.json({
+                    code: 'A0000',
+                    message: 'success',
+                    data: {
+                        records: [],
+                        total: 0,
+                        current: 1,
+                        size: 20,
+                        pages: 0,
+                        facets: [],
+                    },
+                    timestamp: Date.now(),
+                });
+            })
+        );
+
+        const { result } = renderHook(() => useProductSearch({ keyword: '手机' }), {
+            wrapper: Wrapper,
         });
-      }),
-    );
 
-    const { result } = renderHook(() => useProductSearch({ keyword: '手机' }), {
-      wrapper: Wrapper,
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+        expect(result.current.products).toEqual([]);
     });
 
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(result.current.products).toEqual([]);
-  });
+    it('is not enabled when keyword is empty', () => {
+        const { result } = renderHook(() => useProductSearch({ keyword: '  ' }), {
+            wrapper: Wrapper,
+        });
 
-  it('is not enabled when keyword is empty', () => {
-    const { result } = renderHook(() => useProductSearch({ keyword: '  ' }), {
-      wrapper: Wrapper,
+        expect(result.current.isLoading).toBe(false);
     });
-
-    expect(result.current.isLoading).toBe(false);
-  });
 });
 
 describe('useSearchSuggestions', () => {
-  it('returns suggestions', async () => {
-    server.use(
-      http.get('/api/products/search/suggestions', () => {
-        return HttpResponse.json({
-          code: 'A0000',
-          message: 'success',
-          data: ['手机', '手机壳', '手机膜'],
-          timestamp: Date.now(),
+    it('returns suggestions', async () => {
+        server.use(
+            http.get('/api/products/search/suggestions', () => {
+                return HttpResponse.json({
+                    code: 'A0000',
+                    message: 'success',
+                    data: ['手机', '手机壳', '手机膜'],
+                    timestamp: Date.now(),
+                });
+            })
+        );
+
+        const { result } = renderHook(() => useSearchSuggestions('手机'), {
+            wrapper: Wrapper,
         });
-      }),
-    );
 
-    const { result } = renderHook(() => useSearchSuggestions('手机'), {
-      wrapper: Wrapper,
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.data).toEqual(['手机', '手机壳', '手机膜']);
     });
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(['手机', '手机壳', '手机膜']);
-  });
+    it('is not enabled for short keyword (< 2 chars)', () => {
+        const { result } = renderHook(() => useSearchSuggestions('手'), {
+            wrapper: Wrapper,
+        });
 
-  it('is not enabled for short keyword (< 2 chars)', () => {
-    const { result } = renderHook(() => useSearchSuggestions('手'), {
-      wrapper: Wrapper,
+        expect(result.current.data).toBeUndefined();
     });
-
-    expect(result.current.data).toBeUndefined();
-  });
 });
 
 describe('useHotKeywords', () => {
-  it('returns hot keywords', async () => {
-    server.use(
-      http.get('/api/products/search/hot', () => {
-        return HttpResponse.json({
-          code: 'A0000',
-          message: 'success',
-          data: [
-            { keyword: '手机', searchCount: 100 },
-            { keyword: '电脑', searchCount: 80 },
-          ],
-          timestamp: Date.now(),
+    it('returns hot keywords', async () => {
+        server.use(
+            http.get('/api/products/search/hot', () => {
+                return HttpResponse.json({
+                    code: 'A0000',
+                    message: 'success',
+                    data: [
+                        { keyword: '手机', searchCount: 100 },
+                        { keyword: '电脑', searchCount: 80 },
+                    ],
+                    timestamp: Date.now(),
+                });
+            })
+        );
+
+        const { result } = renderHook(() => useHotKeywords(5), {
+            wrapper: Wrapper,
         });
-      }),
-    );
 
-    const { result } = renderHook(() => useHotKeywords(5), {
-      wrapper: Wrapper,
+        await waitFor(() => expect(result.current.isSuccess).toBe(true));
+        expect(result.current.data).toHaveLength(2);
+        expect((result.current.data as { keyword: string; searchCount: number }[])[0].keyword).toBe('手机');
+        expect((result.current.data as { keyword: string; searchCount: number }[])[0].searchCount).toBe(100);
     });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toHaveLength(2);
-    expect((result.current.data as { keyword: string; searchCount: number }[])[0].keyword).toBe('手机');
-    expect((result.current.data as { keyword: string; searchCount: number }[])[0].searchCount).toBe(100);
-  });
 });

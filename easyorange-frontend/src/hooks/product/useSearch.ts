@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { productApi } from '@/api/productApi';
-import type { ProductSearchParams, ProductSearchResult, AiEnhancement, Product } from '@/types/product';
+import type { AiEnhancement, Product, ProductSearchParams, ProductSearchResult } from '@/types/product';
 
 export interface UseProductSearchResult {
     products: Product[];

@@ -1,3 +1,3 @@
-export * from './product';
-export * from './order';
 export * from './app';
+export * from './order';
+export * from './product';

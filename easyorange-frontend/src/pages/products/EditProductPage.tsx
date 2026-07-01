@@ -1,24 +1,32 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Camera, X, Loader2, ArrowLeft, Package, Tag, MapPin, FileText, Settings, Trash2, AlertTriangle, Sparkles, Brain } from 'lucide-react';
-import { useProduct, useUpdateProduct, useDeleteProduct, useCategories } from '@/hooks';
-import { uploadFile } from '@/api/uploadApi';
-import { compressImage } from '@/utils/imageCompress';
-import { CONDITION_LABEL_MAP } from '@/constants';
-import { ConfirmModal } from '@/admin/components/ConfirmModal';
-import { Button } from '@/components/ui/button';
-import { Input, Label } from '@/components/ui';
-import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { publishSchema, type PublishFormData } from '@/schemas/publishSchema';
+    AlertTriangle,
+    ArrowLeft,
+    Brain,
+    Camera,
+    FileText,
+    Loader2,
+    MapPin,
+    Package,
+    Settings,
+    Sparkles,
+    Tag,
+    Trash2,
+    X,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ConfirmModal } from '@/admin/components/ConfirmModal';
+import { uploadFile } from '@/api/uploadApi';
+import { Input, Label } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { CONDITION_LABEL_MAP } from '@/constants';
+import { useCategories, useDeleteProduct, useProduct, useUpdateProduct } from '@/hooks';
+import { type PublishFormData, publishSchema } from '@/schemas/publishSchema';
+import { compressImage } from '@/utils/imageCompress';
 import './edit-product.css';
 
 function EditProductPage() {
@@ -78,13 +86,21 @@ function EditProductPage() {
 
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (!files) {return;}
+        if (!files) {
+            return;
+        }
 
         for (const file of Array.from(files)) {
             const currentImages = watch('imageUrls');
-            if (currentImages.length >= 9) {break;}
-            if (!file.type.startsWith('image/')) {continue;}
-            if (file.size > 10 * 1024 * 1024) {continue;}
+            if (currentImages.length >= 9) {
+                break;
+            }
+            if (!file.type.startsWith('image/')) {
+                continue;
+            }
+            if (file.size > 10 * 1024 * 1024) {
+                continue;
+            }
 
             const index = currentImages.length;
             setUploadingIndex(index);
@@ -107,10 +123,14 @@ function EditProductPage() {
     };
 
     const handleImageUrlRemove = (index: number) => {
-        setValue('imageUrls', watch('imageUrls').filter((_, i) => i !== index), { shouldValidate: true });
+        setValue(
+            'imageUrls',
+            watch('imageUrls').filter((_, i) => i !== index),
+            { shouldValidate: true }
+        );
     };
 
-    const onSubmit = rhfHandleSubmit(async (data) => {
+    const onSubmit = rhfHandleSubmit(async data => {
         try {
             await updateProduct.mutateAsync({
                 name: data.name.trim(),
@@ -287,11 +307,15 @@ function EditProductPage() {
                                     placeholder="请输入商品名称"
                                     {...register('name')}
                                 />
-                                {formState.errors.name?.message && <span className="edit-error-text">{formState.errors.name.message}</span>}
+                                {formState.errors.name?.message && (
+                                    <span className="edit-error-text">{formState.errors.name.message}</span>
+                                )}
                             </div>
 
                             <div className="edit-field-group">
-                                <Label className="edit-field-label" htmlFor="edit-product-desc">商品描述</Label>
+                                <Label className="edit-field-label" htmlFor="edit-product-desc">
+                                    商品描述
+                                </Label>
                                 <Textarea
                                     id="edit-product-desc"
                                     rows={4}
@@ -328,10 +352,14 @@ function EditProductPage() {
                                         placeholder="0.00"
                                         {...register('price')}
                                     />
-                                    {formState.errors.price?.message && <span className="edit-error-text">{formState.errors.price.message}</span>}
+                                    {formState.errors.price?.message && (
+                                        <span className="edit-error-text">{formState.errors.price.message}</span>
+                                    )}
                                 </div>
                                 <div className="edit-field-group">
-                                    <Label className="edit-field-label" htmlFor="edit-product-original-price">原价 (¥)</Label>
+                                    <Label className="edit-field-label" htmlFor="edit-product-original-price">
+                                        原价 (¥)
+                                    </Label>
                                     <Input
                                         id="edit-product-original-price"
                                         type="number"
@@ -355,21 +383,30 @@ function EditProductPage() {
                                         render={({ field }) => (
                                             <Select
                                                 value={field.value || '__empty__'}
-                                                onValueChange={(value) => field.onChange(value === '__empty__' ? '' : value)}
+                                                onValueChange={value =>
+                                                    field.onChange(value === '__empty__' ? '' : value)
+                                                }
                                             >
-                                                <SelectTrigger id="edit-product-category" className={`edit-select ${formState.errors.categoryId?.message ? 'has-error' : ''}`}>
+                                                <SelectTrigger
+                                                    id="edit-product-category"
+                                                    className={`edit-select ${formState.errors.categoryId?.message ? 'has-error' : ''}`}
+                                                >
                                                     <SelectValue placeholder="请选择类别" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="__empty__">请选择类别</SelectItem>
                                                     {categories?.map(cat => (
-                                                        <SelectItem key={cat.id} value={String(cat.id)}>{cat.name}</SelectItem>
+                                                        <SelectItem key={cat.id} value={String(cat.id)}>
+                                                            {cat.name}
+                                                        </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         )}
                                     />
-                                    {formState.errors.categoryId?.message && <span className="edit-error-text">{formState.errors.categoryId.message}</span>}
+                                    {formState.errors.categoryId?.message && (
+                                        <span className="edit-error-text">{formState.errors.categoryId.message}</span>
+                                    )}
                                 </div>
                                 <div className="edit-field-group">
                                     <Label className="edit-field-label" htmlFor="edit-product-condition">
@@ -381,21 +418,32 @@ function EditProductPage() {
                                         render={({ field }) => (
                                             <Select
                                                 value={field.value || '__empty__'}
-                                                onValueChange={(value) => field.onChange(value === '__empty__' ? '' : value)}
+                                                onValueChange={value =>
+                                                    field.onChange(value === '__empty__' ? '' : value)
+                                                }
                                             >
-                                                <SelectTrigger id="edit-product-condition" className={`edit-select ${formState.errors.conditionLevel?.message ? 'has-error' : ''}`}>
+                                                <SelectTrigger
+                                                    id="edit-product-condition"
+                                                    className={`edit-select ${formState.errors.conditionLevel?.message ? 'has-error' : ''}`}
+                                                >
                                                     <SelectValue placeholder="请选择" />
                                                 </SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="__empty__">请选择</SelectItem>
                                                     {Object.entries(CONDITION_LABEL_MAP).map(([code, label]) => (
-                                                        <SelectItem key={code} value={code}>{label}</SelectItem>
+                                                        <SelectItem key={code} value={code}>
+                                                            {label}
+                                                        </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         )}
                                     />
-                                    {formState.errors.conditionLevel?.message && <span className="edit-error-text">{formState.errors.conditionLevel.message}</span>}
+                                    {formState.errors.conditionLevel?.message && (
+                                        <span className="edit-error-text">
+                                            {formState.errors.conditionLevel.message}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -413,7 +461,9 @@ function EditProductPage() {
                         <div className="edit-form-fields">
                             <div className="edit-field-row">
                                 <div className="edit-field-group">
-                                    <Label className="edit-field-label" htmlFor="edit-product-stock">库存数量</Label>
+                                    <Label className="edit-field-label" htmlFor="edit-product-stock">
+                                        库存数量
+                                    </Label>
                                     <Input
                                         id="edit-product-stock"
                                         type="number"
@@ -423,7 +473,9 @@ function EditProductPage() {
                                     />
                                 </div>
                                 <div className="edit-field-group">
-                                    <Label className="edit-field-label" htmlFor="edit-product-contact">联系方式</Label>
+                                    <Label className="edit-field-label" htmlFor="edit-product-contact">
+                                        联系方式
+                                    </Label>
                                     <Input
                                         id="edit-product-contact"
                                         type="text"
@@ -475,7 +527,11 @@ function EditProductPage() {
                         <span>危险操作</span>
                     </div>
                     <p>删除商品后数据将无法恢复，请谨慎操作</p>
-                    <Button variant="destructive" className="edit-delete-btn" onClick={() => setShowDeleteConfirm(true)}>
+                    <Button
+                        variant="destructive"
+                        className="edit-delete-btn"
+                        onClick={() => setShowDeleteConfirm(true)}
+                    >
                         <Trash2 size={16} />
                         删除商品
                     </Button>

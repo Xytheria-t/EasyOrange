@@ -1,14 +1,14 @@
 export { ErrorBoundary } from './feedback';
-export { ProductCard, FilterSidebar, ToolsPlaza } from './product';
 export { Header, Layout, MinimalLayout } from './layout';
-export { Image, GlobalLoading, ToastContainer, ScrollProgressBar } from './ui';
+export { FilterSidebar, ProductCard, ToolsPlaza } from './product';
+export * from './profile';
 export {
-    HeroSection,
-    CategoriesSection,
-    ProductsSection,
     AIFeaturesSection,
     AIRecommendSection,
-    Footer,
     BackgroundEffects,
+    CategoriesSection,
+    Footer,
+    HeroSection,
+    ProductsSection,
 } from './sections';
-export * from './profile';
+export { GlobalLoading, Image, ScrollProgressBar, ToastContainer } from './ui';

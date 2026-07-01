@@ -7,25 +7,25 @@
 
 :root {
     /* Primary palette - Warm Orange */
-    --primary-50: #FFF7ED;
-    --primary-100: #FFEDD5;
-    --primary-200: #FED7AA;
-    --primary-300: #FDBA74;
-    --primary-400: #FB923C;
-    --primary-500: #F97316;
-    --primary-600: #EA580C;
-    --primary-700: #C2410C;
-    --primary-800: #9A3412;
-    --primary-900: #7C2D12;
+    --primary-50: #fff7ed;
+    --primary-100: #ffedd5;
+    --primary-200: #fed7aa;
+    --primary-300: #fdba74;
+    --primary-400: #fb923c;
+    --primary-500: #f97316;
+    --primary-600: #ea580c;
+    --primary-700: #c2410c;
+    --primary-800: #9a3412;
+    --primary-900: #7c2d12;
 
     /* Pink/Rose palette - Soft transition */
-    --rose-50: #FFF1F2;
-    --rose-100: #FFE4E6;
-    --rose-200: #FECDD3;
-    --rose-300: #FDA4AF;
-    --rose-400: #FB7185;
-    --rose-500: #F43F5E;
-    --rose-600: #E11D48;
+    --rose-50: #fff1f2;
+    --rose-100: #ffe4e6;
+    --rose-200: #fecdd3;
+    --rose-300: #fda4af;
+    --rose-400: #fb7185;
+    --rose-500: #f43f5e;
+    --rose-600: #e11d48;
 
     /* Accent aliases */
     --accent-300: var(--rose-300);
@@ -34,22 +34,22 @@
     --accent-600: var(--rose-600);
 
     /* Purple palette - Gradient endpoint #C39BD3 */
-    --purple-50: #FAF5FF;
-    --purple-100: #F3E8FF;
-    --purple-200: #E9D5FF;
-    --purple-300: #D8B4FE;
-    --purple-400: #C39BD3;
-    --purple-500: #AF7AC5;
-    --purple-600: #9333EA;
+    --purple-50: #faf5ff;
+    --purple-100: #f3e8ff;
+    --purple-200: #e9d5ff;
+    --purple-300: #d8b4fe;
+    --purple-400: #c39bd3;
+    --purple-500: #af7ac5;
+    --purple-600: #9333ea;
 
     /* Gold accent for warmth */
-    --gold-300: #FCD34D;
-    --gold-400: #FBBF24;
-    --gold-500: #F59E0B;
+    --gold-300: #fcd34d;
+    --gold-400: #fbbf24;
+    --gold-500: #f59e0b;
 
     /* Matcha Green for freshness */
-    --emerald-400: #34D399;
-    --emerald-500: #10B981;
+    --emerald-400: #34d399;
+    --emerald-500: #10b981;
 
     /* Plum Purple - Unified with purple palette */
     --plum-400: var(--purple-400);
@@ -57,48 +57,48 @@
     --plum-600: var(--purple-600);
 
     /* Warm neutral */
-    --warm-50: #FDF6E3;
-    --warm-100: #FAF0DC;
-    --warm-200: #F5E6D3;
+    --warm-50: #fdf6e3;
+    --warm-100: #faf0dc;
+    --warm-200: #f5e6d3;
 
     /* Blue - minimal use */
-    --blue-50: #EFF6FF;
-    --blue-500: #3B82F6;
+    --blue-50: #eff6ff;
+    --blue-500: #3b82f6;
 
     /* Semantic colors */
-    --success: #10B981;
-    --success-light: #D1FAE5;
-    --warning: #F59E0B;
-    --warning-light: #FEF3C7;
-    --error: #F43F5E;
-    --error-light: #FFE4E6;
-    --info: #3B82F6;
-    --info-light: #DBEAFE;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --error: #f43f5e;
+    --error-light: #ffe4e6;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
 
     /* Neutral scale - Warmer */
-    --white: #FFFFFF;
-    --gray-25: #FEFEFE;
-    --gray-50: #FAF8F5;
-    --gray-100: #F5F3F0;
-    --gray-200: #E8E4E0;
-    --gray-300: #D6D0C8;
-    --gray-400: #A8A098;
+    --white: #ffffff;
+    --gray-25: #fefefe;
+    --gray-50: #faf8f5;
+    --gray-100: #f5f3f0;
+    --gray-200: #e8e4e0;
+    --gray-300: #d6d0c8;
+    --gray-400: #a8a098;
     --gray-500: #787068;
-    --gray-600: #5C544C;
-    --gray-700: #433D36;
-    --gray-800: #2A2520;
-    --gray-900: #1A1612;
-    --gray-950: #0D0B09;
+    --gray-600: #5c544c;
+    --gray-700: #433d36;
+    --gray-800: #2a2520;
+    --gray-900: #1a1612;
+    --gray-950: #0d0b09;
 
     /* Text colors - Warm tint with orange-pink harmony */
-    --text-primary: #1E1A16;
-    --text-secondary: #5A524A;
-    --text-tertiary: #8B7E72;
-    --text-inverse: #FFFFFF;
-    --text-heading: #1A1612;
-    --text-accent: #C2410C;
-    --text-warm: #A67C52;
-    --text-rose: #B76E79;
+    --text-primary: #1e1a16;
+    --text-secondary: #5a524a;
+    --text-tertiary: #8b7e72;
+    --text-inverse: #ffffff;
+    --text-heading: #1a1612;
+    --text-accent: #c2410c;
+    --text-warm: #a67c52;
+    --text-rose: #b76e79;
 
     /* Borders */
     --border-light: rgba(42, 37, 32, 0.05);
@@ -134,11 +134,11 @@
        ============================================================ */
 
     /* Primary gradient - Orange to Pink-Purple */
-    --gradient-primary: linear-gradient(135deg, #F97316 0%, #FB7185 50%, #C39BD3 100%);
-    --gradient-primary-soft: linear-gradient(135deg, #F97316 0%, #FDA4AF 60%, #C39BD3 100%);
+    --gradient-primary: linear-gradient(135deg, #f97316 0%, #fb7185 50%, #c39bd3 100%);
+    --gradient-primary-soft: linear-gradient(135deg, #f97316 0%, #fda4af 60%, #c39bd3 100%);
 
     /* Hero gradient - Full diffusion spectrum */
-    --gradient-hero: linear-gradient(135deg, #EA580C 0%, #F97316 20%, #FB7185 45%, #C39BD3 70%, #D8B4FE 100%);
+    --gradient-hero: linear-gradient(135deg, #ea580c 0%, #f97316 20%, #fb7185 45%, #c39bd3 70%, #d8b4fe 100%);
 
     /* Diffusion gradients - Soft and ethereal */
     --gradient-diffusion-1: radial-gradient(ellipse at 20% 30%, rgba(249, 115, 22, 0.15) 0%, transparent 50%);
@@ -148,8 +148,18 @@
     --gradient-diffusion-5: radial-gradient(ellipse at 30% 80%, rgba(195, 155, 211, 0.1) 0%, transparent 45%);
 
     /* Warm subtle backgrounds */
-    --gradient-warm: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(251, 113, 133, 0.06) 50%, rgba(195, 155, 211, 0.05) 100%);
-    --gradient-subtle: linear-gradient(135deg, rgba(249, 115, 22, 0.06) 0%, rgba(251, 113, 133, 0.04) 45%, rgba(195, 155, 211, 0.03) 100%);
+    --gradient-warm: linear-gradient(
+        135deg,
+        rgba(249, 115, 22, 0.08) 0%,
+        rgba(251, 113, 133, 0.06) 50%,
+        rgba(195, 155, 211, 0.05) 100%
+    );
+    --gradient-subtle: linear-gradient(
+        135deg,
+        rgba(249, 115, 22, 0.06) 0%,
+        rgba(251, 113, 133, 0.04) 45%,
+        rgba(195, 155, 211, 0.03) 100%
+    );
 
     /* Mesh gradients - Multi-point diffusion */
     --gradient-mesh-1: radial-gradient(ellipse at 0% 0%, rgba(249, 115, 22, 0.12) 0%, transparent 50%);
@@ -157,35 +167,37 @@
     --gradient-mesh-3: radial-gradient(ellipse at 50% 50%, rgba(251, 113, 133, 0.06) 0%, transparent 60%);
 
     /* Aurora flowing effect */
-    --gradient-aurora: conic-gradient(from 180deg at 50% 50%,
+    --gradient-aurora: conic-gradient(
+        from 180deg at 50% 50%,
         rgba(249, 115, 22, 0.08),
         rgba(251, 113, 133, 0.06),
         rgba(195, 155, 211, 0.08),
         rgba(251, 191, 36, 0.04),
-        rgba(249, 115, 22, 0.08));
+        rgba(249, 115, 22, 0.08)
+    );
 
     /* Shine effect */
     --gradient-shine: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.4) 50%, transparent 70%);
 
     /* Luxury gold gradient */
-    --gradient-luxury: linear-gradient(135deg, #9A3412 0%, #C2410C 25%, #F97316 50%, #FBBF24 75%, #F59E0B 100%);
+    --gradient-luxury: linear-gradient(135deg, #9a3412 0%, #c2410c 25%, #f97316 50%, #fbbf24 75%, #f59e0b 100%);
 
     /* Rose gold gradient */
-    --gradient-rose-gold: linear-gradient(135deg, #B76E79 0%, #E8B4B8 40%, #F5D5CB 70%, #FBBF24 100%);
+    --gradient-rose-gold: linear-gradient(135deg, #b76e79 0%, #e8b4b8 40%, #f5d5cb 70%, #fbbf24 100%);
 
     /* Deep gradient */
-    --gradient-deep: linear-gradient(135deg, #1A1612 0%, #2A2520 30%, #433D36 60%, #9A3412 100%);
+    --gradient-deep: linear-gradient(135deg, #1a1612 0%, #2a2520 30%, #433d36 60%, #9a3412 100%);
 
     /* Pink-Purple soft gradient */
-    --gradient-pink-purple: linear-gradient(135deg, #FB7185 0%, #C39BD3 50%, #D8B4FE 100%);
+    --gradient-pink-purple: linear-gradient(135deg, #fb7185 0%, #c39bd3 50%, #d8b4fe 100%);
 
     /* Orange glow gradient */
-    --gradient-orange-glow: linear-gradient(135deg, #F97316 0%, #FB923C 50%, #FDA4AF 100%);
+    --gradient-orange-glow: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fda4af 100%);
 
     /* Text gradient - Orange to Pink-Purple for headings/labels */
-    --gradient-text-primary: linear-gradient(135deg, #EA580C 0%, #F97316 30%, #FB7185 60%, #C39BD3 100%);
-    --gradient-text-soft: linear-gradient(135deg, #C2410C 0%, #F97316 40%, #C39BD3 100%);
-    --gradient-text-warm: linear-gradient(90deg, #9A3412 0%, #C2410C 35%, #F97316 70%, #FB7185 100%);
+    --gradient-text-primary: linear-gradient(135deg, #ea580c 0%, #f97316 30%, #fb7185 60%, #c39bd3 100%);
+    --gradient-text-soft: linear-gradient(135deg, #c2410c 0%, #f97316 40%, #c39bd3 100%);
+    --gradient-text-warm: linear-gradient(90deg, #9a3412 0%, #c2410c 35%, #f97316 70%, #fb7185 100%);
 
     /* Transitions - Ultra smooth */
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -209,12 +221,13 @@
     --radius-full: 9999px;
 
     /* Typography - Premium & Cohesive Font System */
-    --font-sans: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'Hiragino Sans GB', sans-serif;
-    --font-display: 'Playfair Display', 'Noto Serif SC', 'LXGW WenKai', 'Source Han Serif CN', 'Songti SC', serif;
-    --font-serif: 'Noto Serif SC', 'Playfair Display', 'Source Han Serif CN', 'Songti SC', serif;
-    --font-price: 'Cormorant Garamond', 'Playfair Display', 'Noto Serif SC', serif;
-    --font-mono: 'Fira Code', 'Noto Sans Mono', 'Consolas', 'Monaco', monospace;
-    --font-accent: 'LXGW WenKai', 'Noto Serif SC', 'Playfair Display', serif;
+    --font-sans:
+        "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "WenQuanYi Micro Hei", "Hiragino Sans GB", sans-serif;
+    --font-display: "Playfair Display", "Noto Serif SC", "LXGW WenKai", "Source Han Serif CN", "Songti SC", serif;
+    --font-serif: "Noto Serif SC", "Playfair Display", "Source Han Serif CN", "Songti SC", serif;
+    --font-price: "Cormorant Garamond", "Playfair Display", "Noto Serif SC", serif;
+    --font-mono: "Fira Code", "Noto Sans Mono", "Consolas", "Monaco", monospace;
+    --font-accent: "LXGW WenKai", "Noto Serif SC", "Playfair Display", serif;
 
     /* Typography Scale */
     --text-display-xl: clamp(3.5rem, 8vw, 6rem);

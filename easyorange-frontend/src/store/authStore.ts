@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { User } from '@/types';
 
 interface AuthState {
@@ -14,31 +14,33 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
     persist(
-        (set) => ({
+        set => ({
             user: null,
             token: null,
             refreshToken: null,
 
-            setUser: (user) => set({ user }),
+            setUser: user => set({ user }),
 
-            setToken: (token) => set({ token }),
+            setToken: token => set({ token }),
 
-            login: (user, token, refreshToken) => set({
-                user,
-                token,
-                refreshToken,
-            }),
+            login: (user, token, refreshToken) =>
+                set({
+                    user,
+                    token,
+                    refreshToken,
+                }),
 
-            logout: () => set({
-                user: null,
-                token: null,
-                refreshToken: null,
-            }),
+            logout: () =>
+                set({
+                    user: null,
+                    token: null,
+                    refreshToken: null,
+                }),
         }),
         {
             name: 'auth-storage',
             storage: createJSONStorage(() => sessionStorage),
-            partialize: (state) => ({
+            partialize: state => ({
                 token: state.token,
                 refreshToken: state.refreshToken,
                 user: state.user,
@@ -48,4 +50,4 @@ export const useAuthStore = create<AuthState>()(
 );
 
 /** 是否已认证（派生状态，从 token 存在性判断） */
-export const useIsAuthenticated = () => useAuthStore((state) => !!state.token);
+export const useIsAuthenticated = () => useAuthStore(state => !!state.token);

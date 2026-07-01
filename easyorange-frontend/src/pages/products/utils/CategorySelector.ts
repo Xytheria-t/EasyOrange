@@ -53,7 +53,7 @@ export class CategorySelector {
             level3Options: null,
             selectedCategoryId: null,
             categoryError: null,
-            selectedCategoryDisplay: null
+            selectedCategoryDisplay: null,
         };
         this.initElements();
     }
@@ -71,7 +71,7 @@ export class CategorySelector {
             level3Options: document.getElementById('level3Options'),
             selectedCategoryId: document.getElementById('selectedCategoryId') as HTMLInputElement | null,
             categoryError: document.getElementById('categoryError'),
-            selectedCategoryDisplay: document.getElementById('selectedCategoryDisplay')
+            selectedCategoryDisplay: document.getElementById('selectedCategoryDisplay'),
         };
     }
 
@@ -91,7 +91,7 @@ export class CategorySelector {
             const response = await api.product.getCategoryTree();
 
             if (response) {
-                this.categories = (response as { data?: Category[] }).data || response as Category[];
+                this.categories = (response as { data?: Category[] }).data || (response as Category[]);
                 this.renderLevel(1, this.categories);
                 this.showLoading(false);
                 return true;
@@ -116,7 +116,9 @@ export class CategorySelector {
      */
     private showLoading(show: boolean): void {
         const level1Options = this.elements.level1Options;
-        if (!level1Options) {return;}
+        if (!level1Options) {
+            return;
+        }
 
         if (show) {
             level1Options.innerHTML = '';
@@ -141,7 +143,9 @@ export class CategorySelector {
      */
     private showError(message: string): void {
         const level1Options = this.elements.level1Options;
-        if (!level1Options) {return;}
+        if (!level1Options) {
+            return;
+        }
 
         level1Options.innerHTML = '';
         const errorDiv = document.createElement('div');
@@ -171,8 +175,12 @@ export class CategorySelector {
      * @param categories - 分类数据
      */
     private renderLevel(level: 1 | 2 | 3, categories: Category[]): void {
-        const optionsContainer = this.elements[`level${level}Options` as keyof CategorySelectorElements] as HTMLElement | null;
-        if (!optionsContainer) {return;}
+        const optionsContainer = this.elements[
+            `level${level}Options` as keyof CategorySelectorElements
+        ] as HTMLElement | null;
+        if (!optionsContainer) {
+            return;
+        }
 
         optionsContainer.innerHTML = '';
 
@@ -210,7 +218,9 @@ export class CategorySelector {
      * @param category - 分类数据
      */
     private selectCategory(level: 1 | 2 | 3, category: Category): void {
-        const optionsContainer = this.elements[`level${level}Options` as keyof CategorySelectorElements] as HTMLElement | null;
+        const optionsContainer = this.elements[
+            `level${level}Options` as keyof CategorySelectorElements
+        ] as HTMLElement | null;
         const options = optionsContainer?.querySelectorAll('.cascade-option');
 
         options?.forEach(opt => opt.classList.remove('selected'));
@@ -270,11 +280,7 @@ export class CategorySelector {
      * @param path - 当前路径
      * @returns 分类路径字符串
      */
-    private getCategoryPath(
-        categoryId: string,
-        categories: Category[] = this.categories,
-        path = ''
-    ): string | null {
+    private getCategoryPath(categoryId: string, categories: Category[] = this.categories, path = ''): string | null {
         for (const category of categories) {
             const currentPath = path ? `${path} > ${category.name}` : category.name;
             if (category.id === categoryId) {
@@ -282,7 +288,9 @@ export class CategorySelector {
             }
             if (category.children && category.children.length > 0) {
                 const found = this.getCategoryPath(categoryId, category.children, currentPath);
-                if (found) {return found;}
+                if (found) {
+                    return found;
+                }
             }
         }
         return null;

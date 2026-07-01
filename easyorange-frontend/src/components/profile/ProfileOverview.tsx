@@ -1,329 +1,376 @@
 /**
  * ProfileOverview 组件
- * 
+ *
  * 注意：以下数据为占位数据，待后续实现真实数据获取：
  * - 本月交易额（¥12,580）及趋势（+23.5%）
  * - 商品浏览量（1,234）及趋势（+15.2%）
  * - 平均评分（4.9）
  * - AI交易助手建议（最佳发布时间、价格建议、热门品类）
  * - 会员等级（黄金会员）
- * 
+ *
  * 已实现真实数据：
  * - 订单数、发布数、消息数、收藏数
  */
-import { useNavigate } from 'react-router-dom'
-import {
-  User, Mail, Phone, Calendar, Check, Pencil, X,
-  GraduationCap, BadgeCheck, Heart, ShoppingBag, MessageSquare, Package,
-  TrendingUp, Shield, ChevronRight, Sparkles,
-  Award, Eye, Star, Target, Lightbulb, Brain
-} from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui'
-import type { User as UserType } from '@/types'
 
-type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId'
+import {
+    Award,
+    BadgeCheck,
+    Brain,
+    Calendar,
+    Check,
+    ChevronRight,
+    Eye,
+    GraduationCap,
+    Heart,
+    Lightbulb,
+    Mail,
+    MessageSquare,
+    Package,
+    Pencil,
+    Phone,
+    Shield,
+    ShoppingBag,
+    Sparkles,
+    Star,
+    Target,
+    TrendingUp,
+    User,
+    X,
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Input } from '@/components/ui';
+import { Button } from '@/components/ui/button';
+import type { User as UserType } from '@/types';
+
+type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
 
 interface ProfileOverviewProps {
-  user: UserType | undefined
-  favoriteCount: number
-  orderCount: number
-  productCount: number
-  unreadMessageCount: number
-  editingField: EditableField | null
-  editValue: string
-  isSaving: boolean
-  onEdit: (field: EditableField, value: string) => void
-  onSave: () => void
-  onCancel: () => void
-  onEditValueChange: (value: string) => void
+    user: UserType | undefined;
+    favoriteCount: number;
+    orderCount: number;
+    productCount: number;
+    unreadMessageCount: number;
+    editingField: EditableField | null;
+    editValue: string;
+    isSaving: boolean;
+    onEdit: (field: EditableField, value: string) => void;
+    onSave: () => void;
+    onCancel: () => void;
+    onEditValueChange: (value: string) => void;
 }
 
 export function ProfileOverview({
-  user,
-  favoriteCount,
-  orderCount,
-  productCount,
-  unreadMessageCount,
-  editingField,
-  editValue,
-  isSaving,
-  onEdit,
-  onSave,
-  onCancel,
-  onEditValueChange,
+    user,
+    favoriteCount,
+    orderCount,
+    productCount,
+    unreadMessageCount,
+    editingField,
+    editValue,
+    isSaving,
+    onEdit,
+    onSave,
+    onCancel,
+    onEditValueChange,
 }: ProfileOverviewProps) {
-  const navigate = useNavigate()
+    const navigate = useNavigate();
 
-  const editableFields: { key: EditableField; label: string; value?: string | null; icon: typeof User }[] = [
-    { key: 'nickname', label: '昵称', value: user?.nickname, icon: Sparkles },
-    { key: 'realName', label: '真实姓名', value: user?.realName, icon: User },
-    { key: 'studentId', label: '学号', value: user?.studentId, icon: GraduationCap },
-    { key: 'email', label: '邮箱', value: user?.email, icon: Mail },
-    { key: 'phone', label: '手机', value: user?.phone, icon: Phone },
-  ]
+    const editableFields: { key: EditableField; label: string; value?: string | null; icon: typeof User }[] = [
+        { key: 'nickname', label: '昵称', value: user?.nickname, icon: Sparkles },
+        { key: 'realName', label: '真实姓名', value: user?.realName, icon: User },
+        { key: 'studentId', label: '学号', value: user?.studentId, icon: GraduationCap },
+        { key: 'email', label: '邮箱', value: user?.email, icon: Mail },
+        { key: 'phone', label: '手机', value: user?.phone, icon: Phone },
+    ];
 
-  const readonlyFields = [
-    { key: 'username', label: '用户名', value: user?.username, icon: BadgeCheck },
-    { key: 'createTime', label: '注册时间', value: user?.createTime, icon: Calendar },
-  ]
+    const readonlyFields = [
+        { key: 'username', label: '用户名', value: user?.username, icon: BadgeCheck },
+        { key: 'createTime', label: '注册时间', value: user?.createTime, icon: Calendar },
+    ];
 
-  const quickActions = [
-    { label: '我的收藏', icon: Heart, count: favoriteCount, path: '/favorites', color: 'rose' },
-    { label: '我的订单', icon: ShoppingBag, count: orderCount, path: '/orders', color: 'blue' },
-    { label: '我的发布', icon: Package, count: productCount, path: '/products?seller=me', color: 'orange' },
-    { label: '消息中心', icon: MessageSquare, count: unreadMessageCount, path: '/messages', color: 'green' },
-  ]
+    const quickActions = [
+        { label: '我的收藏', icon: Heart, count: favoriteCount, path: '/favorites', color: 'rose' },
+        { label: '我的订单', icon: ShoppingBag, count: orderCount, path: '/orders', color: 'blue' },
+        { label: '我的发布', icon: Package, count: productCount, path: '/products?seller=me', color: 'orange' },
+        { label: '消息中心', icon: MessageSquare, count: unreadMessageCount, path: '/messages', color: 'green' },
+    ];
 
-  return (
-    <div className="content-section active">
-      <div className="section-header">
-        <div className="header-title">
-          <h2>数据概览</h2>
-          <p className="header-subtitle">实时追踪你的智能托管数据</p>
-        </div>
-        <div className="header-actions">
-          <Button variant="ghost" onClick={() => navigate('/orders')}>
-            <ShoppingBag size={16} />
-            查看订单
-          </Button>
-        </div>
-      </div>
-
-      <div className="metrics-grid">
-        <div className="metric-card primary">
-          <div className="metric-bg"></div>
-          <div className="metric-content">
-            <div className="metric-top">
-              <div className="metric-icon">
-                <TrendingUp size={18} />
-              </div>
-              <span className="metric-trend up">
-                <TrendingUp size={10} />
-                +23.5%
-              </span>
-            </div>
-            <div className="metric-data">
-              <span className="metric-value">¥12,580</span>
-              <span className="metric-label">本月交易额</span>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-content">
-            <div className="metric-top">
-              <div className="metric-icon blue">
-                <Eye size={18} />
-              </div>
-              <span className="metric-trend up">
-                <TrendingUp size={10} />
-                +15.2%
-              </span>
-            </div>
-            <div className="metric-data">
-              <span className="metric-value">1,234</span>
-              <span className="metric-label">商品浏览</span>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-content">
-            <div className="metric-top">
-              <div className="metric-icon purple">
-                <Heart size={18} />
-              </div>
-              <span className="metric-trend up">
-                <TrendingUp size={10} />
-                +8.7%
-              </span>
-            </div>
-            <div className="metric-data">
-              <span className="metric-value">{favoriteCount}</span>
-              <span className="metric-label">收藏商品</span>
-            </div>
-          </div>
-        </div>
-        <div className="metric-card">
-          <div className="metric-content">
-            <div className="metric-top">
-              <div className="metric-icon orange">
-                <Star size={18} />
-              </div>
-              <span className="metric-trend flat">
-                持平
-              </span>
-            </div>
-            <div className="metric-data">
-              <span className="metric-value">4.9</span>
-              <span className="metric-label">平均评分</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="ai-assistant-section">
-        <div className="ai-assistant-header">
-          <div className="ai-assistant-title">
-            <div className="ai-icon-wrapper">
-              <Brain size={20} />
-            </div>
-            <div>
-              <h3>AI交易助手</h3>
-              <p>智能分析你的交易习惯，提供个性化建议</p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="ai-refresh-btn">
-            <Sparkles size={14} />
-            刷新建议
-          </Button>
-        </div>
-        <div className="ai-insights-grid">
-          <div className="ai-insight-card highlight">
-            <div className="insight-icon">
-              <Target size={18} />
-            </div>
-            <div className="insight-content">
-              <span className="insight-label">最佳发布时间</span>
-              <span className="insight-value">周三、周五晚 20:00-22:00</span>
-              <span className="insight-desc">根据你的历史数据，此时段浏览量最高</span>
-            </div>
-          </div>
-          <div className="ai-insight-card">
-            <div className="insight-icon green">
-              <TrendingUp size={18} />
-            </div>
-            <div className="insight-content">
-              <span className="insight-label">价格建议</span>
-              <span className="insight-value">定价略低于市场均价5-10%</span>
-              <span className="insight-desc">可提高成交速度约30%</span>
-            </div>
-          </div>
-          <div className="ai-insight-card">
-            <div className="insight-icon purple">
-              <Lightbulb size={18} />
-            </div>
-            <div className="insight-content">
-              <span className="insight-label">热门品类</span>
-              <span className="insight-value">数码产品、教材资料</span>
-              <span className="insight-desc">平台需求最旺盛的托管品类</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="quick-actions">
-        <h3 className="section-subtitle">快捷入口</h3>
-        <div className="action-cards">
-          {quickActions.map((action) => {
-            const Icon = action.icon
-            return (
-              <Button
-                key={action.label}
-                variant="ghost"
-                className="action-card"
-                onClick={() => navigate(action.path)}
-              >
-                <div className={`action-icon ${action.color}`}>
-                  <Icon size={22} />
+    return (
+        <div className="content-section active">
+            <div className="section-header">
+                <div className="header-title">
+                    <h2>数据概览</h2>
+                    <p className="header-subtitle">实时追踪你的智能托管数据</p>
                 </div>
-                <div className="action-content">
-                  <span className="action-title">{action.label}</span>
-                  <span className="action-count">{action.count} 条记录</span>
-                </div>
-                <ChevronRight size={20} className="action-arrow" />
-              </Button>
-            )
-          })}
-        </div>
-      </div>
-
-      <div className="info-cards">
-        <div className="info-card-large">
-          <div className="card-header">
-            <h3>个人信息</h3>
-          </div>
-          <div className="info-list">
-            {readonlyFields.map(({ key, label, value, icon: Icon }) => (
-              <div className="info-row" key={key}>
-                <div className="info-label">
-                  <Icon size={18} />
-                  {label}
-                </div>
-                <span className="info-value">{value || '未设置'}</span>
-              </div>
-            ))}
-            {editableFields.map(({ key, label, value, icon: Icon }) => (
-              <div className="info-row" key={key}>
-                <div className="info-label">
-                  <Icon size={18} />
-                  {label}
-                </div>
-                {editingField === key ? (
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flex: 1, justifyContent: 'flex-end' }}>
-                    <Input
-                      style={{ padding: '0.375rem 0.75rem', fontSize: '0.875rem', maxWidth: 200 }}
-                      value={editValue}
-                      onChange={(e) => onEditValueChange(e.target.value)}
-                      autoFocus
-                      onKeyDown={(e) => { if (e.key === 'Enter') {onSave();} if (e.key === 'Escape') {onCancel()} }}
-                    />
-                    <Button variant="ghost" size="icon" className="profile-action-btn profile-action-save" onClick={onSave} disabled={isSaving}>
-                      <Check size={14} />
+                <div className="header-actions">
+                    <Button variant="ghost" onClick={() => navigate('/orders')}>
+                        <ShoppingBag size={16} />
+                        查看订单
                     </Button>
-                    <Button variant="ghost" size="icon" className="profile-action-btn profile-action-cancel" onClick={onCancel}>
-                      <X size={14} />
-                    </Button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span className="info-value" style={{ color: value ? 'var(--profile-ink)' : 'var(--profile-ink-soft)' }}>
-                      {value || '未设置'}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="profile-edit-btn"
-                      onClick={() => onEdit(key, value || '')}
-                      style={{ opacity: 0.6 }}
-                    >
-                      <Pencil size={12} />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+                </div>
+            </div>
 
-        <div className="info-card-large">
-          <div className="card-header">
-            <h3>账号状态</h3>
-          </div>
-          <div className="info-list">
-            <div className="info-row">
-              <div className="info-label">
-                <Shield size={18} />
-                账号状态
-              </div>
-              <span className="status-badge active">正常</span>
+            <div className="metrics-grid">
+                <div className="metric-card primary">
+                    <div className="metric-bg"></div>
+                    <div className="metric-content">
+                        <div className="metric-top">
+                            <div className="metric-icon">
+                                <TrendingUp size={18} />
+                            </div>
+                            <span className="metric-trend up">
+                                <TrendingUp size={10} />
+                                +23.5%
+                            </span>
+                        </div>
+                        <div className="metric-data">
+                            <span className="metric-value">¥12,580</span>
+                            <span className="metric-label">本月交易额</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="metric-card">
+                    <div className="metric-content">
+                        <div className="metric-top">
+                            <div className="metric-icon blue">
+                                <Eye size={18} />
+                            </div>
+                            <span className="metric-trend up">
+                                <TrendingUp size={10} />
+                                +15.2%
+                            </span>
+                        </div>
+                        <div className="metric-data">
+                            <span className="metric-value">1,234</span>
+                            <span className="metric-label">商品浏览</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="metric-card">
+                    <div className="metric-content">
+                        <div className="metric-top">
+                            <div className="metric-icon purple">
+                                <Heart size={18} />
+                            </div>
+                            <span className="metric-trend up">
+                                <TrendingUp size={10} />
+                                +8.7%
+                            </span>
+                        </div>
+                        <div className="metric-data">
+                            <span className="metric-value">{favoriteCount}</span>
+                            <span className="metric-label">收藏商品</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="metric-card">
+                    <div className="metric-content">
+                        <div className="metric-top">
+                            <div className="metric-icon orange">
+                                <Star size={18} />
+                            </div>
+                            <span className="metric-trend flat">持平</span>
+                        </div>
+                        <div className="metric-data">
+                            <span className="metric-value">4.9</span>
+                            <span className="metric-label">平均评分</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="info-row">
-              <div className="info-label">
-                <Award size={18} />
-                会员等级
-              </div>
-              <span className="info-value">黄金会员</span>
+
+            <div className="ai-assistant-section">
+                <div className="ai-assistant-header">
+                    <div className="ai-assistant-title">
+                        <div className="ai-icon-wrapper">
+                            <Brain size={20} />
+                        </div>
+                        <div>
+                            <h3>AI交易助手</h3>
+                            <p>智能分析你的交易习惯，提供个性化建议</p>
+                        </div>
+                    </div>
+                    <Button variant="outline" size="sm" className="ai-refresh-btn">
+                        <Sparkles size={14} />
+                        刷新建议
+                    </Button>
+                </div>
+                <div className="ai-insights-grid">
+                    <div className="ai-insight-card highlight">
+                        <div className="insight-icon">
+                            <Target size={18} />
+                        </div>
+                        <div className="insight-content">
+                            <span className="insight-label">最佳发布时间</span>
+                            <span className="insight-value">周三、周五晚 20:00-22:00</span>
+                            <span className="insight-desc">根据你的历史数据，此时段浏览量最高</span>
+                        </div>
+                    </div>
+                    <div className="ai-insight-card">
+                        <div className="insight-icon green">
+                            <TrendingUp size={18} />
+                        </div>
+                        <div className="insight-content">
+                            <span className="insight-label">价格建议</span>
+                            <span className="insight-value">定价略低于市场均价5-10%</span>
+                            <span className="insight-desc">可提高成交速度约30%</span>
+                        </div>
+                    </div>
+                    <div className="ai-insight-card">
+                        <div className="insight-icon purple">
+                            <Lightbulb size={18} />
+                        </div>
+                        <div className="insight-content">
+                            <span className="insight-label">热门品类</span>
+                            <span className="insight-value">数码产品、教材资料</span>
+                            <span className="insight-desc">平台需求最旺盛的托管品类</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="info-row">
-              <div className="info-label">
-                <span style={{ fontSize: 18 }}>🕐</span>
-                最后登录
-              </div>
-              <span className="info-value">刚刚</span>
+
+            <div className="quick-actions">
+                <h3 className="section-subtitle">快捷入口</h3>
+                <div className="action-cards">
+                    {quickActions.map(action => {
+                        const Icon = action.icon;
+                        return (
+                            <Button
+                                key={action.label}
+                                variant="ghost"
+                                className="action-card"
+                                onClick={() => navigate(action.path)}
+                            >
+                                <div className={`action-icon ${action.color}`}>
+                                    <Icon size={22} />
+                                </div>
+                                <div className="action-content">
+                                    <span className="action-title">{action.label}</span>
+                                    <span className="action-count">{action.count} 条记录</span>
+                                </div>
+                                <ChevronRight size={20} className="action-arrow" />
+                            </Button>
+                        );
+                    })}
+                </div>
             </div>
-          </div>
+
+            <div className="info-cards">
+                <div className="info-card-large">
+                    <div className="card-header">
+                        <h3>个人信息</h3>
+                    </div>
+                    <div className="info-list">
+                        {readonlyFields.map(({ key, label, value, icon: Icon }) => (
+                            <div className="info-row" key={key}>
+                                <div className="info-label">
+                                    <Icon size={18} />
+                                    {label}
+                                </div>
+                                <span className="info-value">{value || '未设置'}</span>
+                            </div>
+                        ))}
+                        {editableFields.map(({ key, label, value, icon: Icon }) => (
+                            <div className="info-row" key={key}>
+                                <div className="info-label">
+                                    <Icon size={18} />
+                                    {label}
+                                </div>
+                                {editingField === key ? (
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            gap: '0.5rem',
+                                            alignItems: 'center',
+                                            flex: 1,
+                                            justifyContent: 'flex-end',
+                                        }}
+                                    >
+                                        <Input
+                                            style={{ padding: '0.375rem 0.75rem', fontSize: '0.875rem', maxWidth: 200 }}
+                                            value={editValue}
+                                            onChange={e => onEditValueChange(e.target.value)}
+                                            autoFocus
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') {
+                                                    onSave();
+                                                }
+                                                if (e.key === 'Escape') {
+                                                    onCancel();
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="profile-action-btn profile-action-save"
+                                            onClick={onSave}
+                                            disabled={isSaving}
+                                        >
+                                            <Check size={14} />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="profile-action-btn profile-action-cancel"
+                                            onClick={onCancel}
+                                        >
+                                            <X size={14} />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span
+                                            className="info-value"
+                                            style={{ color: value ? 'var(--profile-ink)' : 'var(--profile-ink-soft)' }}
+                                        >
+                                            {value || '未设置'}
+                                        </span>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="profile-edit-btn"
+                                            onClick={() => onEdit(key, value || '')}
+                                            style={{ opacity: 0.6 }}
+                                        >
+                                            <Pencil size={12} />
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="info-card-large">
+                    <div className="card-header">
+                        <h3>账号状态</h3>
+                    </div>
+                    <div className="info-list">
+                        <div className="info-row">
+                            <div className="info-label">
+                                <Shield size={18} />
+                                账号状态
+                            </div>
+                            <span className="status-badge active">正常</span>
+                        </div>
+                        <div className="info-row">
+                            <div className="info-label">
+                                <Award size={18} />
+                                会员等级
+                            </div>
+                            <span className="info-value">黄金会员</span>
+                        </div>
+                        <div className="info-row">
+                            <div className="info-label">
+                                <span style={{ fontSize: 18 }}>🕐</span>
+                                最后登录
+                            </div>
+                            <span className="info-value">刚刚</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  )
+    );
 }

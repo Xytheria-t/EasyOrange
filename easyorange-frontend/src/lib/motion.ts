@@ -21,7 +21,7 @@ const REVEAL_SELECTORS = [
     '.recent-history',
     '.history-item',
     '.footer-main',
-    '.footer-bottom'
+    '.footer-bottom',
 ].join(', ');
 
 export class MotionController {
@@ -31,7 +31,9 @@ export class MotionController {
     private reduceMotionMedia: MediaQueryList | null = null;
 
     init(): void {
-        if (this.initialized) {return;}
+        if (this.initialized) {
+            return;
+        }
 
         this.reduceMotionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
         document.documentElement.classList.add('motion-enabled');
@@ -66,17 +68,22 @@ export class MotionController {
             return;
         }
 
-        this.revealObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) {return;}
-                const element = entry.target as HTMLElement;
-                this.reveal(element);
-                this.revealObserver?.unobserve(element);
-            });
-        }, {
-            rootMargin: '0px 0px -8% 0px',
-            threshold: 0.12
-        });
+        this.revealObserver = new IntersectionObserver(
+            entries => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+                    const element = entry.target as HTMLElement;
+                    this.reveal(element);
+                    this.revealObserver?.unobserve(element);
+                });
+            },
+            {
+                rootMargin: '0px 0px -8% 0px',
+                threshold: 0.12,
+            }
+        );
 
         this.refresh(document);
         this.initMutationObserver();
@@ -85,17 +92,23 @@ export class MotionController {
     private initMutationObserver(): void {
         let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-        this.mutationObserver = new MutationObserver((mutations) => {
+        this.mutationObserver = new MutationObserver(mutations => {
             const hasElementChanges = mutations.some(mutation =>
                 Array.from(mutation.addedNodes).some(node => node instanceof HTMLElement)
             );
-            if (!hasElementChanges) {return;}
+            if (!hasElementChanges) {
+                return;
+            }
 
-            if (debounceTimer) {clearTimeout(debounceTimer);}
+            if (debounceTimer) {
+                clearTimeout(debounceTimer);
+            }
             debounceTimer = setTimeout(() => {
                 mutations.forEach(mutation => {
                     mutation.addedNodes.forEach(node => {
-                        if (!(node instanceof HTMLElement)) {return;}
+                        if (!(node instanceof HTMLElement)) {
+                            return;
+                        }
                         this.refresh(node);
                     });
                 });
@@ -105,7 +118,7 @@ export class MotionController {
         const targetNode = document.querySelector('#root') || document.body;
         this.mutationObserver.observe(targetNode, {
             childList: true,
-            subtree: true
+            subtree: true,
         });
     }
 
@@ -124,7 +137,9 @@ export class MotionController {
     }
 
     private prepareTarget(element: HTMLElement, index: number): void {
-        if (element.dataset.motionReady === 'true') {return;}
+        if (element.dataset.motionReady === 'true') {
+            return;
+        }
 
         const prefersReducedMotion = this.reduceMotionMedia?.matches ?? false;
 
@@ -148,11 +163,19 @@ export class MotionController {
     }
 
     private getVariant(element: HTMLElement): RevealVariant {
-        if (element.matches('.product-card, .category-card, .profile-note-card, .signature-chip, .market-panel-signal, .curator-note-card, .curator-profile-card, .curator-stats-card, .recent-history, .history-item')) {
+        if (
+            element.matches(
+                '.product-card, .category-card, .profile-note-card, .signature-chip, .market-panel-signal, .curator-note-card, .curator-profile-card, .curator-stats-card, .recent-history, .history-item'
+            )
+        ) {
             return 'card';
         }
 
-        if (element.matches('.footer-main, .footer-bottom, .products-filter, .products-toolbar, .products-more, .active-filters, .section-header, .market-hero')) {
+        if (
+            element.matches(
+                '.footer-main, .footer-bottom, .products-filter, .products-toolbar, .products-more, .active-filters, .section-header, .market-hero'
+            )
+        ) {
             return 'soft';
         }
 

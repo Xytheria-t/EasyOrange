@@ -14,7 +14,7 @@ export const uploadFile = async (file: File) => {
     return request<UploadResponse>('/file/upload', {
         method: 'POST',
         body: formData,
-        headers: {}
+        headers: {},
     });
 };
 
@@ -25,11 +25,11 @@ export const uploadFiles = async (files: File[]) => {
     return request<UploadResponse[]>('/file/uploads', {
         method: 'POST',
         body: formData,
-        headers: {}
+        headers: {},
     });
 };
 
 export const uploadApi = {
     uploadFile,
-    uploadFiles
+    uploadFiles,
 };

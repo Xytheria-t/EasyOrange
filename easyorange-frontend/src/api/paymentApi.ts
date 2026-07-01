@@ -1,5 +1,5 @@
-import { request } from './core/request';
 import type { PageResult, PaymentMethod } from '@/types';
+import { request } from './core/request';
 
 export interface PaymentInfo {
     id: string;
@@ -35,7 +35,7 @@ export const paymentApi = {
     createPayment(data: CreatePaymentRequest) {
         return request<PaymentResponse>('/payments', {
             method: 'POST',
-            body: data
+            body: data,
         });
     },
 
@@ -46,7 +46,7 @@ export const paymentApi = {
     getMyPayments(params?: Record<string, unknown>) {
         return request<PageResult<PaymentInfo>>('/payments/my', {
             method: 'GET',
-            params
+            params,
         });
     },
 
@@ -60,13 +60,13 @@ export const paymentApi = {
 
     refundPayment(id: string) {
         return request(`/payments/${id}/refund`, {
-            method: 'POST'
+            method: 'POST',
         });
     },
 
     closePayment(id: string) {
         return request(`/payments/${id}/close`, {
-            method: 'POST'
+            method: 'POST',
         });
-    }
+    },
 };

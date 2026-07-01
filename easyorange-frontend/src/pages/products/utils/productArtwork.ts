@@ -4,22 +4,22 @@ const ARTWORK_PALETTES = [
         secondary: '#FFF2E5',
         tertiary: '#F3E6D8',
         accent: '#1F6D5C',
-        deep: '#3A2718'
+        deep: '#3A2718',
     },
     {
         primary: '#D96A2A',
         secondary: '#FCEBDE',
         tertiary: '#EFE4D9',
         accent: '#5A7B6C',
-        deep: '#332419'
+        deep: '#332419',
     },
     {
         primary: '#B85C34',
         secondary: '#FAE9DF',
         tertiary: '#EEE4DB',
         accent: '#2D6A5C',
-        deep: '#34221A'
-    }
+        deep: '#34221A',
+    },
 ];
 
 export function getCuratedPlaceholderImage(seed: number, label = 'EasyOrange'): string {

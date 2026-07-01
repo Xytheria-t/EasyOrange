@@ -3,7 +3,7 @@
  * @description 提供消息相关的工具函数
  */
 
-import type { ChatMessage, ChatMessageType, ChatMessageStatus, RawChatMessage } from '@/types';
+import type { ChatMessage, ChatMessageStatus, ChatMessageType, RawChatMessage } from '@/types';
 
 export function normalizeChatMessage(raw: RawChatMessage): ChatMessage {
     return {

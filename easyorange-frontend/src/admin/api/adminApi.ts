@@ -1,269 +1,269 @@
 import { request } from '@/api/core/request';
 import type {
-  ActivityItem,
-  DashboardStats,
-  PendingItems,
-  RecentUser,
-  RecentProduct,
-  AdminUser,
-  AdminProduct,
-  AdminUserQuery,
-  AdminProductQuery,
-  TrendItem,
-  TopProductItem,
-  UpdateStatusRequest,
-  PageData,
-  AdminOrder,
-  AdminOrderDetail,
-  AdminOrderQuery,
-  OrderInterventionRequest,
-  OrderStatsResponse,
-  AdminReport,
-  AdminReportQuery,
-  ReportHandleRequest,
-  ReportStatsResponse,
-  CategoryResponse,
-  CategoryTreeResponse,
-  CategoryCreateRequest,
-  CategoryUpdateRequest,
-  BatchAuditRequest,
-  ProductAuditRequest,
-  AuditLogResponse,
-  AiReviewResult,
-  UserRoleRequest,
-  ResetPasswordRequest,
-  UserUnlockRequest,
-  AdminReview,
-  AdminReviewQuery,
-  AdminReviewDeleteRequest,
-  UserActivityItem,
+    ActivityItem,
+    AdminOrder,
+    AdminOrderDetail,
+    AdminOrderQuery,
+    AdminProduct,
+    AdminProductQuery,
+    AdminReport,
+    AdminReportQuery,
+    AdminReview,
+    AdminReviewDeleteRequest,
+    AdminReviewQuery,
+    AdminUser,
+    AdminUserQuery,
+    AiReviewResult,
+    AuditLogResponse,
+    BatchAuditRequest,
+    CategoryCreateRequest,
+    CategoryResponse,
+    CategoryTreeResponse,
+    CategoryUpdateRequest,
+    DashboardStats,
+    OrderInterventionRequest,
+    OrderStatsResponse,
+    PageData,
+    PendingItems,
+    ProductAuditRequest,
+    RecentProduct,
+    RecentUser,
+    ReportHandleRequest,
+    ReportStatsResponse,
+    ResetPasswordRequest,
+    TopProductItem,
+    TrendItem,
+    UpdateStatusRequest,
+    UserActivityItem,
+    UserRoleRequest,
+    UserUnlockRequest,
 } from '../types/admin';
 
 const ADMIN_API_PREFIX = '/admin';
 
 export const adminApi = {
-  getDashboardStats() {
-    return request<DashboardStats>(`${ADMIN_API_PREFIX}/dashboard/stats`);
-  },
+    getDashboardStats() {
+        return request<DashboardStats>(`${ADMIN_API_PREFIX}/dashboard/stats`);
+    },
 
-  getPendingItems() {
-    return request<PendingItems>(`${ADMIN_API_PREFIX}/dashboard/pending`);
-  },
+    getPendingItems() {
+        return request<PendingItems>(`${ADMIN_API_PREFIX}/dashboard/pending`);
+    },
 
-  getRecentUsers(limit = 5) {
-    return request<RecentUser[]>(`${ADMIN_API_PREFIX}/dashboard/recent-users`, {
-      params: { limit }
-    });
-  },
+    getRecentUsers(limit = 5) {
+        return request<RecentUser[]>(`${ADMIN_API_PREFIX}/dashboard/recent-users`, {
+            params: { limit },
+        });
+    },
 
-  getRecentProducts(limit = 5) {
-    return request<RecentProduct[]>(`${ADMIN_API_PREFIX}/dashboard/recent-products`, {
-      params: { limit }
-    });
-  },
+    getRecentProducts(limit = 5) {
+        return request<RecentProduct[]>(`${ADMIN_API_PREFIX}/dashboard/recent-products`, {
+            params: { limit },
+        });
+    },
 
-  getTrend() {
-    return request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
-  },
+    getTrend() {
+        return request<TrendItem[]>(`${ADMIN_API_PREFIX}/dashboard/trend`);
+    },
 
-  getActivity() {
-    return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
-  },
+    getActivity() {
+        return request<ActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/activity`);
+    },
 
-  getUserActivityHeatmap() {
-    return request<UserActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/user-activity-heatmap`);
-  },
+    getUserActivityHeatmap() {
+        return request<UserActivityItem[]>(`${ADMIN_API_PREFIX}/dashboard/user-activity-heatmap`);
+    },
 
-  getTopProducts(limit = 10) {
-    return request<TopProductItem[]>(`${ADMIN_API_PREFIX}/dashboard/top-products`, {
-      params: { limit }
-    });
-  },
+    getTopProducts(limit = 10) {
+        return request<TopProductItem[]>(`${ADMIN_API_PREFIX}/dashboard/top-products`, {
+            params: { limit },
+        });
+    },
 
-  getUsers(params: AdminUserQuery) {
-    return request<PageData<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
-      params: { ...params }
-    });
-  },
+    getUsers(params: AdminUserQuery) {
+        return request<PageData<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
+            params: { ...params },
+        });
+    },
 
-  getUserById(id: number) {
-    return request<AdminUser>(`${ADMIN_API_PREFIX}/users/${id}`);
-  },
+    getUserById(id: number) {
+        return request<AdminUser>(`${ADMIN_API_PREFIX}/users/${id}`);
+    },
 
-  updateUserStatus(id: number, data: UpdateStatusRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/users/${id}/status`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    updateUserStatus(id: number, data: UpdateStatusRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/status`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  resetPassword(id: number, data: ResetPasswordRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/users/${id}/reset-password`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    resetPassword(id: number, data: ResetPasswordRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/reset-password`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  unlockUser(id: number, data: UserUnlockRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/users/${id}/unlock`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    unlockUser(id: number, data: UserUnlockRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/unlock`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  updateUserRole(id: number, data: UserRoleRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/users/${id}/role`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    updateUserRole(id: number, data: UserRoleRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/users/${id}/role`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  getProducts(params: AdminProductQuery) {
-    return request<PageData<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
-      params: { ...params }
-    });
-  },
+    getProducts(params: AdminProductQuery) {
+        return request<PageData<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
+            params: { ...params },
+        });
+    },
 
-  getProductById(id: number) {
-    return request<AdminProduct>(`${ADMIN_API_PREFIX}/products/${id}`);
-  },
+    getProductById(id: number) {
+        return request<AdminProduct>(`${ADMIN_API_PREFIX}/products/${id}`);
+    },
 
-  updateProductStatus(id: number, data: UpdateStatusRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/products/${id}/status`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    updateProductStatus(id: number, data: UpdateStatusRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/products/${id}/status`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  auditProduct(id: number, data: ProductAuditRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/products/${id}/audit`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    auditProduct(id: number, data: ProductAuditRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/products/${id}/audit`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  batchAuditProducts(data: BatchAuditRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/products/batch-audit`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    batchAuditProducts(data: BatchAuditRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/products/batch-audit`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  getAuditLogs(id: number) {
-    return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
-  },
+    getAuditLogs(id: number) {
+        return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
+    },
 
-  aiReviewProduct(id: number) {
-    return request<AiReviewResult>(`${ADMIN_API_PREFIX}/products/${id}/ai-review`);
-  },
+    aiReviewProduct(id: number) {
+        return request<AiReviewResult>(`${ADMIN_API_PREFIX}/products/${id}/ai-review`);
+    },
 
-  getOrders(params: AdminOrderQuery) {
-    return request<PageData<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
-      params: { ...params }
-    });
-  },
+    getOrders(params: AdminOrderQuery) {
+        return request<PageData<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
+            params: { ...params },
+        });
+    },
 
-  getOrderById(id: number) {
-    return request<AdminOrderDetail>(`${ADMIN_API_PREFIX}/orders/${id}`);
-  },
+    getOrderById(id: number) {
+        return request<AdminOrderDetail>(`${ADMIN_API_PREFIX}/orders/${id}`);
+    },
 
-  getOrderStats() {
-    return request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
-  },
+    getOrderStats() {
+        return request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
+    },
 
-  cancelOrder(id: number, data: OrderInterventionRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/cancel`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    cancelOrder(id: number, data: OrderInterventionRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/cancel`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  forceCompleteOrder(id: number, data: OrderInterventionRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/force-complete`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    forceCompleteOrder(id: number, data: OrderInterventionRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/force-complete`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  refundOrder(id: number, data: OrderInterventionRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/refund`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    refundOrder(id: number, data: OrderInterventionRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/refund`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  getCategories() {
-    return request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories`);
-  },
+    getCategories() {
+        return request<CategoryResponse[]>(`${ADMIN_API_PREFIX}/categories`);
+    },
 
-  getCategoryTree() {
-    return request<CategoryTreeResponse[]>(`${ADMIN_API_PREFIX}/categories/tree`);
-  },
+    getCategoryTree() {
+        return request<CategoryTreeResponse[]>(`${ADMIN_API_PREFIX}/categories/tree`);
+    },
 
-  createCategory(data: CategoryCreateRequest) {
-    return request<number>(`${ADMIN_API_PREFIX}/categories`, {
-      method: 'POST',
-      body: data
-    });
-  },
+    createCategory(data: CategoryCreateRequest) {
+        return request<number>(`${ADMIN_API_PREFIX}/categories`, {
+            method: 'POST',
+            body: data,
+        });
+    },
 
-  updateCategory(id: number, data: CategoryUpdateRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    updateCategory(id: number, data: CategoryUpdateRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  updateCategoryStatus(id: number, status: number) {
-    return request<void>(`${ADMIN_API_PREFIX}/categories/${id}/status`, {
-      method: 'PUT',
-      params: { status }
-    });
-  },
+    updateCategoryStatus(id: number, status: number) {
+        return request<void>(`${ADMIN_API_PREFIX}/categories/${id}/status`, {
+            method: 'PUT',
+            params: { status },
+        });
+    },
 
-  deleteCategory(id: number) {
-    return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
-      method: 'DELETE'
-    });
-  },
+    deleteCategory(id: number) {
+        return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
+            method: 'DELETE',
+        });
+    },
 
-  getReports(params: AdminReportQuery) {
-    return request<PageData<AdminReport>>(`${ADMIN_API_PREFIX}/reports`, {
-      params: { ...params }
-    });
-  },
+    getReports(params: AdminReportQuery) {
+        return request<PageData<AdminReport>>(`${ADMIN_API_PREFIX}/reports`, {
+            params: { ...params },
+        });
+    },
 
-  getReportById(id: number) {
-    return request<AdminReport>(`${ADMIN_API_PREFIX}/reports/${id}`);
-  },
+    getReportById(id: number) {
+        return request<AdminReport>(`${ADMIN_API_PREFIX}/reports/${id}`);
+    },
 
-  getReportStats() {
-    return request<ReportStatsResponse>(`${ADMIN_API_PREFIX}/reports/stats`);
-  },
+    getReportStats() {
+        return request<ReportStatsResponse>(`${ADMIN_API_PREFIX}/reports/stats`);
+    },
 
-  handleReport(id: number, data: ReportHandleRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/reports/${id}/handle`, {
-      method: 'PUT',
-      body: data
-    });
-  },
+    handleReport(id: number, data: ReportHandleRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/reports/${id}/handle`, {
+            method: 'PUT',
+            body: data,
+        });
+    },
 
-  // ==================== Review Management ====================
+    // ==================== Review Management ====================
 
-  getReviews(params: AdminReviewQuery) {
-    return request<PageData<AdminReview>>(`${ADMIN_API_PREFIX}/reviews`, {
-      params: { ...params }
-    });
-  },
+    getReviews(params: AdminReviewQuery) {
+        return request<PageData<AdminReview>>(`${ADMIN_API_PREFIX}/reviews`, {
+            params: { ...params },
+        });
+    },
 
-  getReviewById(id: string) {
-    return request<AdminReview>(`${ADMIN_API_PREFIX}/reviews/${id}`);
-  },
+    getReviewById(id: string) {
+        return request<AdminReview>(`${ADMIN_API_PREFIX}/reviews/${id}`);
+    },
 
-  deleteReview(id: string, data: AdminReviewDeleteRequest) {
-    return request<void>(`${ADMIN_API_PREFIX}/reviews/${id}`, {
-      method: 'DELETE',
-      body: data
-    });
-  },
+    deleteReview(id: string, data: AdminReviewDeleteRequest) {
+        return request<void>(`${ADMIN_API_PREFIX}/reviews/${id}`, {
+            method: 'DELETE',
+            body: data,
+        });
+    },
 };

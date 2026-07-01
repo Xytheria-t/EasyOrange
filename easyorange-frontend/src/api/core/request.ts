@@ -1,8 +1,14 @@
-import { isSuccessCode, type ApiCode, type Result, type RequestOptions } from '@/types';
-import { refreshAccessToken, getStoredToken, handleUnauthorized } from '@/features/auth/session';
+import { getStoredToken, handleUnauthorized, refreshAccessToken } from '@/features/auth/session';
+import { type ApiCode, isSuccessCode, type RequestOptions, type Result } from '@/types';
+import { clearCache, getCacheKey, getFromCache, setToCache } from './cache';
+import {
+    addRequestInterceptor,
+    addResponseInterceptor,
+    applyRequestInterceptors,
+    applyResponseInterceptors,
+    type RequestConfig,
+} from './interceptors';
 import { requestManager } from './requestManager';
-import { getCacheKey, getFromCache, setToCache, clearCache } from './cache';
-import { applyRequestInterceptors, applyResponseInterceptors, addRequestInterceptor, addResponseInterceptor, type RequestConfig } from './interceptors';
 
 const API_BASE_URL = '/api';
 const DEFAULT_TIMEOUT = 10000;
@@ -28,9 +34,9 @@ const escapeHtml = (str: string): string => {
         '<': '&lt;',
         '>': '&gt;',
         '"': '&quot;',
-        "'": '&#39;'
+        "'": '&#39;',
     };
-    return str.replace(/[&<>"']/g, (ch) => htmlEscapes[ch]);
+    return str.replace(/[&<>"']/g, ch => htmlEscapes[ch]);
 };
 
 const parseError = async (response: Response): Promise<ApiClientError> => {
@@ -38,8 +44,14 @@ const parseError = async (response: Response): Promise<ApiClientError> => {
     let details: unknown = null;
 
     try {
-        const body = await response.json() as { message?: string; msg?: string; data?: unknown; errors?: unknown; code?: string | number };
-        
+        const body = (await response.json()) as {
+            message?: string;
+            msg?: string;
+            data?: unknown;
+            errors?: unknown;
+            code?: string | number;
+        };
+
         if (body?.message || body?.msg) {
             message = escapeHtml(String(body.message ?? body.msg));
         }
@@ -63,15 +75,20 @@ const isRetryable = (status: ApiCode): boolean => {
 };
 
 const buildQueryParams = (params: Record<string, unknown>): string => {
-    const filtered = Object.entries(params)
-        .filter(([, v]) => v !== null && v !== undefined && v !== '');
-    if (filtered.length === 0) {return '';}
-    return `?${  new URLSearchParams(
-        filtered.map(([k, v]) => [k, String(v)])
-    ).toString()}`;
+    const filtered = Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== '');
+    if (filtered.length === 0) {
+        return '';
+    }
+    return `?${new URLSearchParams(filtered.map(([k, v]) => [k, String(v)])).toString()}`;
 };
 
-const PUBLIC_ENDPOINTS = new Set(['/auth/login', '/auth/logout', '/auth/register', '/auth/password/reset', '/auth/sms-code']);
+const PUBLIC_ENDPOINTS = new Set([
+    '/auth/login',
+    '/auth/logout',
+    '/auth/register',
+    '/auth/password/reset',
+    '/auth/sms-code',
+]);
 
 const shouldHandleUnauthorized = (endpoint: string, skipAuth: boolean): boolean => {
     if (skipAuth) {
@@ -93,7 +110,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
         cache = false,
         signal,
         dedupe = true,
-        skipAuth = false
+        skipAuth = false,
     } = options;
 
     const queryString = params ? buildQueryParams(params) : '';
@@ -116,8 +133,8 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
         method,
         headers: {
             'X-Client-Type': String(CLIENT_TYPE),
-            ...headers
-        }
+            ...headers,
+        },
     };
 
     if (body && method !== 'GET') {
@@ -134,7 +151,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
     if (!skipAuth) {
         const token = getStoredToken();
         if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+            config.headers.Authorization = `Bearer ${token}`;
         }
     }
 
@@ -181,7 +198,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
                             authRefreshAttempts++;
                             const newToken = await refreshAccessToken();
                             if (newToken) {
-                                config.headers['Authorization'] = `Bearer ${newToken}`;
+                                config.headers.Authorization = `Bearer ${newToken}`;
                                 continue;
                             }
                         }
@@ -190,7 +207,7 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
                     throw await parseError(processedResponse);
                 }
 
-                const data = await processedResponse.json() as Result<T>;
+                const data = (await processedResponse.json()) as Result<T>;
 
                 if (cache && method === 'GET' && data && isSuccessCode(data.code)) {
                     setToCache(cacheKey, data);
@@ -201,18 +218,18 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
                 }
 
                 return data;
-
             } catch (error) {
                 lastError = error as Error;
 
-                const shouldRetry = attempt < retries &&
+                const shouldRetry =
+                    attempt < retries &&
                     error instanceof ApiClientError &&
                     isRetryable(error.status) &&
                     !controller.signal.aborted;
 
                 if (shouldRetry) {
                     attempt++;
-                    const delay = RETRY_DELAY_BASE * Math.pow(2, attempt - 1);
+                    const delay = RETRY_DELAY_BASE * 2 ** (attempt - 1);
                     await new Promise(resolve => setTimeout(resolve, delay));
                 } else {
                     break;
@@ -240,10 +257,10 @@ async function request<T = unknown>(endpoint: string, options: RequestOptions = 
 export {
     API_BASE_URL,
     ApiClientError,
-    request,
-    clearCache,
     addRequestInterceptor,
     addResponseInterceptor,
     buildQueryParams,
-    requestManager
+    clearCache,
+    request,
+    requestManager,
 };

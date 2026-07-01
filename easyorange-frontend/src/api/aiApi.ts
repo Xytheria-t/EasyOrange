@@ -1,5 +1,5 @@
-import { request } from './core/request';
 import type { RawProduct } from '@/types';
+import { request } from './core/request';
 
 export interface PricingSuggestion {
     suggestedPrice: number;
@@ -79,35 +79,35 @@ export const aiApi = {
     suggestPrice(params: PriceSuggestionParams) {
         return request<PricingSuggestion>('/ai/pricing', {
             method: 'POST',
-            body: params
+            body: params,
         });
     },
 
     autoListing(imageUrls: string[]) {
         return request<AutoListingResult>('/ai/auto-listing', {
             method: 'POST',
-            body: imageUrls
+            body: imageUrls,
         });
     },
 
     semanticSearch(params: { keyword: string; pageNum?: number; pageSize?: number }) {
         return request<SemanticSearchResult>('/ai/semantic-search', {
             method: 'GET',
-            params: params as Record<string, unknown>
+            params: params as Record<string, unknown>,
         });
     },
 
     answerQuestion(data: QaRequest) {
         return request<QaResponse>('/ai/qa', {
             method: 'POST',
-            body: data
+            body: data,
         });
     },
 
     generateCopy(params: CopyGenerationParams) {
         return request<CopyGenerationResult>('/ai/generate-copy', {
             method: 'POST',
-            body: params
+            body: params,
         });
-    }
+    },
 };

@@ -3,8 +3,8 @@
  * @description 提供商品相关的工具函数
  */
 
-import type { Product, RawProduct } from '@/types';
 import { PRODUCT_STATUS_CODE } from '@/constants';
+import type { Product, RawProduct } from '@/types';
 
 export function normalizeProduct(raw: RawProduct): Product {
     const status = raw.status ?? 1;
@@ -35,10 +35,7 @@ export function normalizeProduct(raw: RawProduct): Product {
     };
 }
 
-export function calculateDiscount(
-    currentPrice: number,
-    originalPrice?: number | null
-): number | null {
+export function calculateDiscount(currentPrice: number, originalPrice?: number | null): number | null {
     if (!originalPrice || originalPrice <= 0 || currentPrice >= originalPrice) {
         return null;
     }
@@ -47,11 +44,11 @@ export function calculateDiscount(
 
 export function getConditionNameFromString(condition: string): string {
     const conditionMap: Record<string, string> = {
-        'NEW': '全新',
-        'LIKE_NEW': '几乎全新',
-        'GOOD': '良好',
-        'FAIR': '一般',
-        'POOR': '较差'
+        NEW: '全新',
+        LIKE_NEW: '几乎全新',
+        GOOD: '良好',
+        FAIR: '一般',
+        POOR: '较差',
     };
     return conditionMap[condition] || condition;
 }

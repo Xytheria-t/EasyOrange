@@ -16,13 +16,13 @@ export function useAiQa() {
             const response = await aiApi.answerQuestion(request);
             const item: QaHistoryItem = {
                 question: request.question,
-                answer: response.data
+                answer: response.data,
             };
             setQaHistory(prev => [...prev, item]);
         } catch {
             const errorItem: QaHistoryItem = {
                 question: request.question,
-                answer: { answer: '抱歉，AI 暂时无法回答，请稍后重试。', hasConfidence: false }
+                answer: { answer: '抱歉，AI 暂时无法回答，请稍后重试。', hasConfidence: false },
             };
             setQaHistory(prev => [...prev, errorItem]);
         } finally {

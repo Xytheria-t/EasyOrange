@@ -52,7 +52,7 @@ export class FormValidator {
             priceError: null,
             stockError: null,
             locationError: null,
-            contactError: null
+            contactError: null,
         };
     }
 
@@ -73,7 +73,7 @@ export class FormValidator {
             priceError: document.getElementById('priceError'),
             stockError: document.getElementById('stockError'),
             locationError: document.getElementById('locationError'),
-            contactError: document.getElementById('contactError')
+            contactError: document.getElementById('contactError'),
         };
     }
 
@@ -277,7 +277,7 @@ export class FormValidator {
             name: 'productName',
             desc: 'productDescription',
             location: 'location',
-            contact: 'contactMethod'
+            contact: 'contactMethod',
         };
         return this.elements[fieldMap[field]] as HTMLInputElement | HTMLTextAreaElement | null;
     }
@@ -311,7 +311,7 @@ export class FormValidator {
             this.validatePrice(),
             this.validateStock(),
             this.validateLocation(),
-            this.validateContact()
+            this.validateContact(),
         ];
 
         return results.every(r => r);

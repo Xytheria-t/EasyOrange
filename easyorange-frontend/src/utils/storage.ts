@@ -10,8 +10,10 @@ export interface StorageItem<T = unknown> {
 const storage = {
     get<T = unknown>(key: string, defaultValue: T | null = null): T | null {
         const item = localStorage.getItem(key);
-        if (!item) {return defaultValue;}
-        
+        if (!item) {
+            return defaultValue;
+        }
+
         try {
             const parsed = JSON.parse(item) as StorageItem<T>;
             if (parsed.expireAt && Date.now() > parsed.expireAt) {
@@ -31,7 +33,7 @@ const storage = {
     set<T>(key: string, value: T, ttlMs?: number): void {
         const item: StorageItem<T> = {
             value,
-            expireAt: ttlMs ? Date.now() + ttlMs : undefined
+            expireAt: ttlMs ? Date.now() + ttlMs : undefined,
         };
         localStorage.setItem(key, JSON.stringify(item));
     },
@@ -42,7 +44,7 @@ const storage = {
 
     clear(): void {
         localStorage.clear();
-    }
+    },
 };
 
 const StorageUtils = {
@@ -50,7 +52,7 @@ const StorageUtils = {
     has: storage.has,
     set: storage.set,
     remove: storage.remove,
-    clear: storage.clear
+    clear: storage.clear,
 };
 
-export { storage, StorageUtils };
+export { StorageUtils, storage };

@@ -1,4 +1,4 @@
-import { Sparkles, TrendingUp, HelpCircle, Target } from 'lucide-react';
+import { HelpCircle, Sparkles, Target, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AiEnhancement } from '@/types/product';
 

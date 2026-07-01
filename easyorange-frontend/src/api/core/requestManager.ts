@@ -15,7 +15,9 @@ export const requestManager = {
 
     isDuplicate(key: string): boolean {
         const pending = this.pendingRequests.get(key);
-        if (!pending) {return false;}
+        if (!pending) {
+            return false;
+        }
         return Date.now() - pending.timestamp < this.dedupeWindow;
     },
 
@@ -40,7 +42,7 @@ export const requestManager = {
     },
 
     cancelAll(reason = '所有请求已取消'): void {
-        this.pendingRequests.forEach((pending) => {
+        this.pendingRequests.forEach(pending => {
             pending.controller?.abort(reason);
         });
         this.pendingRequests.clear();
@@ -54,5 +56,5 @@ export const requestManager = {
                 this.pendingRequests.delete(key);
             }
         });
-    }
+    },
 };

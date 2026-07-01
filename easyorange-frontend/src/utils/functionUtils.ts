@@ -17,12 +17,18 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 
     const debounced = function (this: unknown, ...args: Parameters<T>) {
         const callNow = isImmediate && !timeoutId;
-        if (timeoutId) {clearTimeout(timeoutId);}
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
         timeoutId = setTimeout(() => {
             timeoutId = null;
-            if (!isImmediate) {func.apply(this, args);}
+            if (!isImmediate) {
+                func.apply(this, args);
+            }
         }, delay);
-        if (callNow) {func.apply(this, args);}
+        if (callNow) {
+            func.apply(this, args);
+        }
     };
 
     debounced.cancel = () => {

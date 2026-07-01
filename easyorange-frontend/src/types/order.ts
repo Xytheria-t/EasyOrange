@@ -1,10 +1,4 @@
-export type OrderStatus =
-    | 'PENDING_PAYMENT'
-    | 'PAID'
-    | 'SHIPPED'
-    | 'COMPLETED'
-    | 'CANCELLED'
-    | 'REFUNDED';
+export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED' | 'REFUNDED';
 
 export type PaymentMethod = 'WECHAT' | 'ALIPAY' | 'CAMPUS_CARD' | 'CASH';
 

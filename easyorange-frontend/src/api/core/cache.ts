@@ -7,7 +7,10 @@ interface CacheItem<T = unknown> {
 
 const requestCache = new Map<string, CacheItem>();
 
-export const getCacheKey = (endpoint: string, options?: { body?: unknown; params?: Record<string, unknown> }): string => {
+export const getCacheKey = (
+    endpoint: string,
+    options?: { body?: unknown; params?: Record<string, unknown> }
+): string => {
     const body = options?.body ? JSON.stringify(options.body) : '';
     const params = options?.params ? JSON.stringify(options.params) : '';
     return `${endpoint}:${body}:${params}`;
@@ -15,7 +18,9 @@ export const getCacheKey = (endpoint: string, options?: { body?: unknown; params
 
 export const getFromCache = <T>(key: string): T | null => {
     const cached = requestCache.get(key);
-    if (!cached) {return null;}
+    if (!cached) {
+        return null;
+    }
     if (Date.now() > cached.expireAt) {
         requestCache.delete(key);
         return null;

@@ -41,7 +41,7 @@ export class DraftManager {
     save(data: DraftData): void {
         const draft: DraftData = {
             ...data,
-            savedAt: new Date().toISOString()
+            savedAt: new Date().toISOString(),
         };
         storage.set(this.storageKey, draft);
     }

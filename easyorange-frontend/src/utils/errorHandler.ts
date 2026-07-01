@@ -3,7 +3,16 @@
  * @description 提供统一的错误处理和友好提示功能
  */
 
-export type ErrorTypeValue = 'network' | 'api' | 'validation' | 'auth' | 'permission' | 'not_found' | 'server' | 'timeout' | 'unknown';
+export type ErrorTypeValue =
+    | 'network'
+    | 'api'
+    | 'validation'
+    | 'auth'
+    | 'permission'
+    | 'not_found'
+    | 'server'
+    | 'timeout'
+    | 'unknown';
 export type ErrorSeverityValue = 'low' | 'medium' | 'high' | 'fatal';
 
 const httpErrorMessages: Record<number, string> = {
@@ -42,7 +51,7 @@ const errorHandler = {
         }
 
         if (error instanceof Error) {
-            const errorObj = error as unknown as Record<string, unknown>
+            const errorObj = error as unknown as Record<string, unknown>;
             const status = errorObj.status as number | string | undefined;
 
             if (error.message && !error.message.includes('HTTP error')) {
@@ -76,26 +85,36 @@ const errorHandler = {
 
     handleApiError(error: unknown, status?: number): string {
         if (!status) {
-            status = typeof error === 'object' && error !== null && 'status' in error
-                ? (error as { status?: number }).status
-                : undefined;
+            status =
+                typeof error === 'object' && error !== null && 'status' in error
+                    ? (error as { status?: number }).status
+                    : undefined;
         }
 
         let type: ErrorTypeValue = 'api';
-        if (status === 401) {type = 'auth';}
-        else if (status === 403) {type = 'permission';}
-        else if (status === 404) {type = 'not_found';}
-        else if (status && status >= 500) {type = 'server';}
-        else if (status === 0) {type = 'network';}
+        if (status === 401) {
+            type = 'auth';
+        } else if (status === 403) {
+            type = 'permission';
+        } else if (status === 404) {
+            type = 'not_found';
+        } else if (status && status >= 500) {
+            type = 'server';
+        } else if (status === 0) {
+            type = 'network';
+        }
 
         let message = this.handle(error, type);
 
         if (!message || message.includes('HTTP error')) {
-            message = status !== undefined ? (httpErrorMessages[status] ?? fallbackTypeMessages[type]) : fallbackTypeMessages[type];
+            message =
+                status !== undefined
+                    ? (httpErrorMessages[status] ?? fallbackTypeMessages[type])
+                    : fallbackTypeMessages[type];
         }
 
         return message;
-    }
+    },
 };
 
 export { errorHandler };

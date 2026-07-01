@@ -41,13 +41,13 @@ class RefreshCoordinator {
 
     /** 等待正在进行的刷新完成 */
     waitForRefresh(): Promise<string | null> {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.pendingCallbacks.push(resolve);
         });
     }
 
     notifyPending(token: string): void {
-        this.pendingCallbacks.forEach((cb) => cb(token));
+        this.pendingCallbacks.forEach(cb => cb(token));
         this.pendingCallbacks = [];
     }
 
@@ -65,10 +65,7 @@ class RefreshCoordinator {
     }
 
     isWithinGracePeriod(): boolean {
-        return (
-            this.lastLoginTimestamp > 0 &&
-            Date.now() - this.lastLoginTimestamp < LOGIN_GRACE_PERIOD_MS
-        );
+        return this.lastLoginTimestamp > 0 && Date.now() - this.lastLoginTimestamp < LOGIN_GRACE_PERIOD_MS;
     }
 
     isUnauthorizedRedirectInFlight(): boolean {
@@ -93,7 +90,7 @@ function emitSessionChange(reason?: AuthSessionClearReason): void {
                 token: store.token,
                 reason,
             },
-        }),
+        })
     );
 }
 
@@ -138,11 +135,7 @@ export async function refreshAccessToken(): Promise<string | null> {
         const user = useAuthStore.getState().user;
 
         // 更新 store（Zustand 是唯一数据源）
-        useAuthStore.getState().login(
-            user ?? EMPTY_USER_FALLBACK,
-            accessToken,
-            newRefreshToken,
-        );
+        useAuthStore.getState().login(user ?? EMPTY_USER_FALLBACK, accessToken, newRefreshToken);
 
         refreshCoordinator.notifyPending(accessToken);
         emitSessionChange();
@@ -155,11 +148,7 @@ export async function refreshAccessToken(): Promise<string | null> {
     }
 }
 
-export function setSession(
-    token: string,
-    user: import('@/types').User,
-    refreshToken: string,
-): void {
+export function setSession(token: string, user: import('@/types').User, refreshToken: string): void {
     useAuthStore.getState().login(user, token, refreshToken);
     refreshCoordinator.markLogin();
     emitSessionChange();
@@ -196,13 +185,8 @@ export function handleUnauthorized(): void {
     clearSession('unauthorized');
 
     const currentPath = `${window.location.pathname}${window.location.search}`;
-    const redirectQuery =
-        currentPath && currentPath !== '/'
-            ? { redirect: currentPath }
-            : undefined;
-    const loginPath = redirectQuery
-        ? `/login?redirect=${encodeURIComponent(redirectQuery.redirect)}`
-        : '/login';
+    const redirectQuery = currentPath && currentPath !== '/' ? { redirect: currentPath } : undefined;
+    const loginPath = redirectQuery ? `/login?redirect=${encodeURIComponent(redirectQuery.redirect)}` : '/login';
     window.location.href = loginPath;
 }
 
@@ -218,7 +202,9 @@ function isTokenExpired(token: string): boolean {
 /** 启动时调用，清除可能残留的过期或不完整状态 */
 export function initAuth(): void {
     const store = useAuthStore.getState();
-    if (!store.token) {return;}
+    if (!store.token) {
+        return;
+    }
     if (!store.refreshToken || isTokenExpired(store.token)) {
         store.logout();
     }

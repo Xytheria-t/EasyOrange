@@ -23,7 +23,7 @@ RUN apk add --no-cache curl tzdata && \
 COPY --from=builder /build/dist /usr/share/nginx/html
 
 # 复制 nginx 配置
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf security-headers.conf /etc/nginx/
 
 # 创建缓存目录
 RUN mkdir -p /var/cache/nginx/images && \

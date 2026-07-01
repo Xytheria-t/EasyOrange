@@ -1,17 +1,12 @@
+import type { LoginRequest, LoginResponse, RegisterRequest, User } from '@/types';
 import { request } from './core/request';
-import type {
-    LoginRequest,
-    RegisterRequest,
-    LoginResponse,
-    User
-} from '@/types';
 
 export const userApi = {
     login(data: LoginRequest) {
         return request<LoginResponse>('/auth/login', {
             method: 'POST',
             body: { identifier: data.account, password: data.password, clientType: 'web' },
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
@@ -19,28 +14,28 @@ export const userApi = {
         return request<number>('/auth/register', {
             method: 'POST',
             body: data,
-            skipAuth: true
+            skipAuth: true,
         });
     },
 
     refreshToken(refreshToken: string) {
         return request<string>('/auth/refresh', {
             method: 'POST',
-            body: { refreshToken }
+            body: { refreshToken },
         });
     },
 
     sendSmsCode(phone: string) {
         return request<void>('/auth/sms-code', {
             method: 'POST',
-            params: { phone }
+            params: { phone },
         });
     },
 
     forgotPassword(data: { phone: string; verifyCode: string; newPassword: string }) {
         return request<void>('/auth/password/reset', {
             method: 'POST',
-            body: data
+            body: data,
         });
     },
 
@@ -48,17 +43,24 @@ export const userApi = {
         return request<User>('/users/me');
     },
 
-    updateProfile(data: { nickname?: string; email?: string; phone?: string; gender?: number; realName?: string; studentId?: string }) {
+    updateProfile(data: {
+        nickname?: string;
+        email?: string;
+        phone?: string;
+        gender?: number;
+        realName?: string;
+        studentId?: string;
+    }) {
         return request<User>('/users/me', {
             method: 'PUT',
-            body: data
+            body: data,
         });
     },
 
     changePassword(data: { verifyCode: string; newPassword: string }) {
         return request<void>('/auth/password/change', {
             method: 'PUT',
-            body: data
+            body: data,
         });
     },
 
@@ -68,7 +70,7 @@ export const userApi = {
         return request<User>('/users/avatar', {
             method: 'POST',
             body: formData,
-            headers: {}
+            headers: {},
         });
-    }
+    },
 };

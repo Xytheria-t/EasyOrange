@@ -5,9 +5,9 @@ import { MinimalLayout } from '@/components/layout/MinimalLayout';
 import { getStoredToken } from '@/features/auth/session';
 
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
-  </div>
+    <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
+    </div>
 );
 
 const HomePage = lazy(() => import('@/pages/home/HomePage'));
@@ -33,136 +33,57 @@ const NotFoundPage = lazy(() => import('@/pages/errors/NotFoundPage'));
 const AdminRoutes = lazy(() => import('@/admin/AdminRoutes').then(m => ({ default: m.AdminRoutes })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
-  const token = getStoredToken();
-  return token ? <>{children}</> : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    const location = useLocation();
+    const token = getStoredToken();
+    return token ? children : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
 };
 
 const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType>) => (
-  <Suspense fallback={<LoadingFallback />}>
-    <Component />
-  </Suspense>
+    <Suspense fallback={<LoadingFallback />}>
+        <Component />
+    </Suspense>
 );
 
 export const router = createBrowserRouter(
-  createRoutesFromElements(
-    <>
-      <Route path="/" element={<Layout />}>
-        <Route index element={withSuspense(HomePage)} />
-      </Route>
-      <Route path="/" element={<MinimalLayout />}>
-        <Route path="products" element={withSuspense(ProductsPage)} />
-        <Route path="products/:id" element={withSuspense(ProductDetailPage)} />
-        <Route path="search" element={withSuspense(SearchPage)} />
-        <Route
-          path="products/:id/edit"
-          element={
-            <ProtectedRoute>
-              {withSuspense(EditProductPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route path="login" element={withSuspense(LoginPage)} />
-        <Route path="forgot-password" element={withSuspense(ForgotPasswordPage)} />
-        <Route
-          path="profile"
-          element={
-            <ProtectedRoute>
-              {withSuspense(ProfilePage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="favorites"
-          element={
-            <ProtectedRoute>
-              {withSuspense(FavoritesPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="messages"
-          element={
-            <ProtectedRoute>
-              {withSuspense(MessagesPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="messages/:targetUserId"
-          element={
-            <ProtectedRoute>
-              {withSuspense(ChatWindowPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="orders"
-          element={
-            <ProtectedRoute>
-              {withSuspense(OrdersPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="orders/:id"
-          element={
-            <ProtectedRoute>
-              {withSuspense(OrderDetailPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="payment"
-          element={
-            <ProtectedRoute>
-              {withSuspense(PaymentPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="payment/result"
-          element={
-            <ProtectedRoute>
-              {withSuspense(PaymentResultPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="publish"
-          element={
-            <ProtectedRoute>
-              {withSuspense(PublishPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="my-products"
-          element={
-            <ProtectedRoute>
-              {withSuspense(MyProductsPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="notifications"
-          element={
-            <ProtectedRoute>
-              {withSuspense(NotificationsPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="credit"
-          element={
-            <ProtectedRoute>
-              {withSuspense(CreditPage)}
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={withSuspense(NotFoundPage)} />
-      </Route>
-      <Route path="admin/*" element={withSuspense(AdminRoutes)} />
-    </>
-  )
+    createRoutesFromElements(
+        <>
+            <Route path="/" element={<Layout />}>
+                <Route index element={withSuspense(HomePage)} />
+            </Route>
+            <Route path="/" element={<MinimalLayout />}>
+                <Route path="products" element={withSuspense(ProductsPage)} />
+                <Route path="products/:id" element={withSuspense(ProductDetailPage)} />
+                <Route path="search" element={withSuspense(SearchPage)} />
+                <Route
+                    path="products/:id/edit"
+                    element={<ProtectedRoute>{withSuspense(EditProductPage)}</ProtectedRoute>}
+                />
+                <Route path="login" element={withSuspense(LoginPage)} />
+                <Route path="forgot-password" element={withSuspense(ForgotPasswordPage)} />
+                <Route path="profile" element={<ProtectedRoute>{withSuspense(ProfilePage)}</ProtectedRoute>} />
+                <Route path="favorites" element={<ProtectedRoute>{withSuspense(FavoritesPage)}</ProtectedRoute>} />
+                <Route path="messages" element={<ProtectedRoute>{withSuspense(MessagesPage)}</ProtectedRoute>} />
+                <Route
+                    path="messages/:targetUserId"
+                    element={<ProtectedRoute>{withSuspense(ChatWindowPage)}</ProtectedRoute>}
+                />
+                <Route path="orders" element={<ProtectedRoute>{withSuspense(OrdersPage)}</ProtectedRoute>} />
+                <Route path="orders/:id" element={<ProtectedRoute>{withSuspense(OrderDetailPage)}</ProtectedRoute>} />
+                <Route path="payment" element={<ProtectedRoute>{withSuspense(PaymentPage)}</ProtectedRoute>} />
+                <Route
+                    path="payment/result"
+                    element={<ProtectedRoute>{withSuspense(PaymentResultPage)}</ProtectedRoute>}
+                />
+                <Route path="publish" element={<ProtectedRoute>{withSuspense(PublishPage)}</ProtectedRoute>} />
+                <Route path="my-products" element={<ProtectedRoute>{withSuspense(MyProductsPage)}</ProtectedRoute>} />
+                <Route
+                    path="notifications"
+                    element={<ProtectedRoute>{withSuspense(NotificationsPage)}</ProtectedRoute>}
+                />
+                <Route path="credit" element={<ProtectedRoute>{withSuspense(CreditPage)}</ProtectedRoute>} />
+                <Route path="*" element={withSuspense(NotFoundPage)} />
+            </Route>
+            <Route path="admin/*" element={withSuspense(AdminRoutes)} />
+        </>
+    )
 );

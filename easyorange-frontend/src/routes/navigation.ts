@@ -1,6 +1,6 @@
-import { routes, type RouteName } from './config';
-import { router } from './index';
 import { useAuthStore } from '@/store/authStore';
+import { type RouteName, routes } from './config';
+import { router } from './index';
 
 export type QueryValue = string | number | boolean | null | undefined;
 
@@ -38,7 +38,7 @@ export const navigation = {
 
         if (route.requiresAuth && !isLoggedIn()) {
             const loginUrl = buildUrl('/login', {
-                redirect: targetUrl
+                redirect: targetUrl,
             });
             router.navigate(loginUrl);
             return;
@@ -68,7 +68,7 @@ export const navigation = {
         }
 
         const loginUrl = buildUrl('/login', {
-            redirect: currentFullPath()
+            redirect: currentFullPath(),
         });
         router.navigate(loginUrl, { replace: true });
         return false;
@@ -86,10 +86,8 @@ export const navigation = {
         });
 
         const queryString = params.toString();
-        const url = queryString
-            ? `${window.location.pathname}?${queryString}`
-            : window.location.pathname;
+        const url = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
 
         router.navigate(url, { replace: mode === 'replace' });
-    }
+    },
 };

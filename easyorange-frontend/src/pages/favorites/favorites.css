@@ -7,8 +7,7 @@
 .favorites-body {
     position: relative;
     min-height: 100vh;
-    background:
-        linear-gradient(180deg, #FFF8F0 0%, #FAF8F5 25%, #FFFFFF 55%, #FAF8F5 80%, #FFF5ED 100%);
+    background: linear-gradient(180deg, #fff8f0 0%, #faf8f5 25%, #ffffff 55%, #faf8f5 80%, #fff5ed 100%);
     overflow-x: hidden;
 }
 
@@ -67,9 +66,16 @@
 }
 
 @keyframes ambientFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(25px, -20px) scale(1.04); }
-    66% { transform: translate(-15px, 15px) scale(0.96); }
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(25px, -20px) scale(1.04);
+    }
+    66% {
+        transform: translate(-15px, 15px) scale(0.96);
+    }
 }
 
 /* ============ MAIN LAYOUT ============ */
@@ -126,8 +132,15 @@
 }
 
 @keyframes kickerPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
 }
 
 .favorites-title {
@@ -195,7 +208,7 @@
     transition: all var(--transition-fast);
     border: 1.5px solid rgba(239, 68, 68, 0.25);
     background: rgba(239, 68, 68, 0.04);
-    color: #DC2626;
+    color: #dc2626;
     letter-spacing: 0.01em;
     height: auto;
     min-height: unset;
@@ -242,15 +255,33 @@
     animation: favCardIn 0.5s var(--ease-out) both;
 }
 
-.fav-card:nth-child(1) { animation-delay: 0.03s; }
-.fav-card:nth-child(2) { animation-delay: 0.06s; }
-.fav-card:nth-child(3) { animation-delay: 0.09s; }
-.fav-card:nth-child(4) { animation-delay: 0.12s; }
-.fav-card:nth-child(5) { animation-delay: 0.15s; }
-.fav-card:nth-child(6) { animation-delay: 0.18s; }
-.fav-card:nth-child(7) { animation-delay: 0.21s; }
-.fav-card:nth-child(8) { animation-delay: 0.24s; }
-.fav-card:nth-child(9) { animation-delay: 0.27s; }
+.fav-card:nth-child(1) {
+    animation-delay: 0.03s;
+}
+.fav-card:nth-child(2) {
+    animation-delay: 0.06s;
+}
+.fav-card:nth-child(3) {
+    animation-delay: 0.09s;
+}
+.fav-card:nth-child(4) {
+    animation-delay: 0.12s;
+}
+.fav-card:nth-child(5) {
+    animation-delay: 0.15s;
+}
+.fav-card:nth-child(6) {
+    animation-delay: 0.18s;
+}
+.fav-card:nth-child(7) {
+    animation-delay: 0.21s;
+}
+.fav-card:nth-child(8) {
+    animation-delay: 0.24s;
+}
+.fav-card:nth-child(9) {
+    animation-delay: 0.27s;
+}
 
 @keyframes favCardIn {
     from {
@@ -287,7 +318,7 @@
 }
 
 .fav-card-image::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, transparent 50%, rgba(11, 15, 27, 0.35) 100%);
@@ -352,7 +383,7 @@
 }
 
 .fav-card-checkbox input:checked + label::after {
-    content: '';
+    content: "";
     width: 7px;
     height: 11px;
     border: solid var(--white);
@@ -402,11 +433,21 @@
 }
 
 @keyframes heartBreak {
-    0% { transform: scale(1); }
-    25% { transform: scale(1.3); }
-    50% { transform: scale(0.85); }
-    75% { transform: scale(1.1); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(1);
+    }
+    25% {
+        transform: scale(1.3);
+    }
+    50% {
+        transform: scale(0.85);
+    }
+    75% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* ============ CARD BADGES ============ */
@@ -462,8 +503,15 @@
 }
 
 @keyframes hotPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.6); }
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.4;
+        transform: scale(0.6);
+    }
 }
 
 /* ============ CARD QUICK META ============ */
@@ -667,7 +715,9 @@
 }
 
 @keyframes loadingSpin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .favorites-loading .loading-text {
@@ -779,11 +829,22 @@
 }
 
 @keyframes emptyHeartbeat {
-    0%, 100% { transform: scale(1); }
-    15% { transform: scale(1.08); }
-    30% { transform: scale(1); }
-    45% { transform: scale(1.05); }
-    60% { transform: scale(1); }
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    15% {
+        transform: scale(1.08);
+    }
+    30% {
+        transform: scale(1);
+    }
+    45% {
+        transform: scale(1.05);
+    }
+    60% {
+        transform: scale(1);
+    }
 }
 
 .favorites-empty .empty-orbit {
@@ -795,7 +856,9 @@
 }
 
 @keyframes orbitSpin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .favorites-empty .empty-sparkle {
@@ -870,7 +933,7 @@
 }
 
 .favorites-empty .explore-btn::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.25) 50%, transparent 70%);
@@ -954,7 +1017,7 @@
 }
 
 .favorites-ai-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     right: -10%;
@@ -974,7 +1037,7 @@
     width: 40px;
     height: 40px;
     border-radius: var(--radius-xl);
-    background: linear-gradient(135deg, #F97316 0%, #C39BD3 100%);
+    background: linear-gradient(135deg, #f97316 0%, #c39bd3 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1052,7 +1115,7 @@
 
 .favorites-ai-feature .feature-icon.alert {
     background: rgba(239, 68, 68, 0.1);
-    color: #DC2626;
+    color: #dc2626;
 }
 
 .favorites-ai-feature .feature-icon.recommend {
@@ -1086,7 +1149,7 @@
     justify-content: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #F97316 0%, #C39BD3 100%);
+    background: linear-gradient(135deg, #f97316 0%, #c39bd3 100%);
     color: white;
     border: none;
     border-radius: var(--radius-xl);

@@ -1,27 +1,27 @@
 import { Outlet } from 'react-router-dom';
-import { useAdminStore } from '../store';
-import { AdminSidebar } from './AdminSidebar';
-import { AdminHeader } from './AdminHeader';
-import { ToastContainer } from '@/components/ui/Toast';
 import { GlobalLoading } from '@/components/ui/Loading';
+import { ToastContainer } from '@/components/ui/Toast';
+import { useAdminStore } from '../store';
+import { AdminHeader } from './AdminHeader';
+import { AdminSidebar } from './AdminSidebar';
 import './admin-layout.css';
 
 export function AdminLayout() {
-  const { sidebarCollapsed } = useAdminStore();
+    const { sidebarCollapsed } = useAdminStore();
 
-  return (
-    <div className="admin-root admin-layout">
-      <AdminSidebar />
-      <div className="admin-layout-main">
-        <div className="admin-content-wrapper">
-          <AdminHeader />
-          <main className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-            <Outlet />
-          </main>
+    return (
+        <div className="admin-root admin-layout">
+            <AdminSidebar />
+            <div className="admin-layout-main">
+                <div className="admin-content-wrapper">
+                    <AdminHeader />
+                    <main className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+                        <Outlet />
+                    </main>
+                </div>
+            </div>
+            <ToastContainer />
+            <GlobalLoading />
         </div>
-      </div>
-      <ToastContainer />
-      <GlobalLoading />
-    </div>
-  );
+    );
 }

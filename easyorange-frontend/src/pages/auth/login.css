@@ -22,7 +22,7 @@
 .bg-gradient-mesh {
     position: absolute;
     inset: 0;
-    background: 
+    background:
         radial-gradient(ellipse at 25% 15%, rgba(249, 115, 22, 0.1) 0%, transparent 50%),
         radial-gradient(ellipse at 75% 85%, rgba(244, 63, 94, 0.08) 0%, transparent 50%),
         radial-gradient(ellipse at 50% 50%, rgba(251, 191, 36, 0.05) 0%, transparent 40%);
@@ -97,7 +97,8 @@
 }
 
 @keyframes floatOrb {
-    0%, 100% {
+    0%,
+    100% {
         transform: translate(0, 0) scale(1);
     }
     25% {
@@ -114,14 +115,15 @@
 .aurora-bg {
     position: absolute;
     inset: 0;
-    background: 
+    background:
         radial-gradient(circle at 15% 85%, rgba(249, 115, 22, 0.08) 0%, transparent 40%),
         radial-gradient(circle at 85% 15%, rgba(251, 113, 133, 0.08) 0%, transparent 40%);
     animation: auroraShift 15s ease-in-out infinite;
 }
 
 @keyframes auroraShift {
-    0%, 100% {
+    0%,
+    100% {
         opacity: 0.5;
     }
     50% {
@@ -159,7 +161,7 @@
     align-items: center;
     justify-content: center;
     padding: 3.5rem;
-    background: linear-gradient(135deg, #F97316 0%, #FB7185 50%, #C39BD3 100%);
+    background: linear-gradient(135deg, #f97316 0%, #fb7185 50%, #c39bd3 100%);
     color: var(--white);
     overflow: hidden;
 }
@@ -173,7 +175,7 @@
 .auth-page-brand-gradient {
     position: absolute;
     inset: 0;
-    background: 
+    background:
         radial-gradient(circle at 15% 85%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
         radial-gradient(circle at 85% 15%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
 }
@@ -231,7 +233,8 @@
 }
 
 @keyframes morphBlob {
-    0%, 100% {
+    0%,
+    100% {
         transform: scale(1) rotate(0deg);
     }
     25% {
@@ -262,7 +265,7 @@
 }
 
 .auth-page-brand-title {
-    font-family: var(--font-display, 'Playfair Display', serif);
+    font-family: var(--font-display, "Playfair Display", serif);
     font-size: 2.25rem;
     font-weight: 900;
     margin-bottom: 0.75rem;
@@ -421,7 +424,9 @@
     transform: scale(1.01);
     background: var(--white, #ffffff);
     border-color: var(--primary-400, #fb923c);
-    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1), 0 4px 12px rgba(249, 115, 22, 0.08);
+    box-shadow:
+        0 0 0 4px rgba(249, 115, 22, 0.1),
+        0 4px 12px rgba(249, 115, 22, 0.08);
 }
 
 .auth-page-input-icon {
@@ -488,15 +493,17 @@
 }
 
 .auth-page-checkbox-label input:checked + .auth-page-checkbox-custom {
-    background: linear-gradient(135deg, #F97316 0%, #FB7185 100%);
+    background: linear-gradient(135deg, #f97316 0%, #fb7185 100%);
     border-color: transparent;
 }
 
 .auth-page-checkbox-label input:checked + .auth-page-checkbox-custom::after {
-    content: '';
+    content: "";
     width: 12px;
     height: 12px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E")
+        center / contain no-repeat;
 }
 
 .auth-page-forgot-link {
@@ -538,7 +545,7 @@
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
     border: none;
-    background: linear-gradient(135deg, #F97316 0%, #FB7185 100%);
+    background: linear-gradient(135deg, #f97316 0%, #fb7185 100%);
     color: var(--white, #ffffff);
     box-shadow: 0 8px 20px rgba(249, 115, 22, 0.35);
     width: 100%;
@@ -550,7 +557,9 @@
 
 .auth-page-btn:hover:not(:disabled) {
     transform: translateY(-3px) scale(1.02);
-    box-shadow: 0 12px 28px rgba(249, 115, 22, 0.45), 0 4px 12px rgba(249, 115, 22, 0.2);
+    box-shadow:
+        0 12px 28px rgba(249, 115, 22, 0.45),
+        0 4px 12px rgba(249, 115, 22, 0.2);
 }
 
 .auth-page-btn:active:not(:disabled) {
@@ -587,7 +596,7 @@
 
 .auth-page-divider::before,
 .auth-page-divider::after {
-    content: '';
+    content: "";
     flex: 1;
     border-bottom: 1px solid var(--border-light, #e5e7eb);
 }
@@ -623,8 +632,8 @@
 }
 
 .social-btn--wechat:hover {
-    border-color: #07C160;
-    background: #07C160;
+    border-color: #07c160;
+    background: #07c160;
 }
 
 .social-btn--wechat:hover svg {
@@ -632,8 +641,8 @@
 }
 
 .social-btn--qq:hover {
-    border-color: #12B7F5;
-    background: #12B7F5;
+    border-color: #12b7f5;
+    background: #12b7f5;
 }
 
 .social-btn--qq:hover svg {
@@ -641,8 +650,8 @@
 }
 
 .social-btn--weibo:hover {
-    border-color: #E6162D;
-    background: #E6162D;
+    border-color: #e6162d;
+    background: #e6162d;
 }
 
 .social-btn--weibo:hover svg {
@@ -905,7 +914,9 @@
 }
 
 /* 让方法切换时字段有轻微交错感 */
-.auth-field-enter:nth-child(2) { animation-delay: 0.05s; }
+.auth-field-enter:nth-child(2) {
+    animation-delay: 0.05s;
+}
 
 /* 错误消息滑入 */
 .auth-page-error-message {
@@ -956,15 +967,20 @@
 }
 
 @keyframes footerFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* Loading 按钮状态过渡 */
 .auth-page-btn.btn-loading {
     transform: scale(0.97);
-    transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
-                opacity 0.2s ease;
+    transition:
+        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.2s ease;
 }
 
 /* 精调加载动画 - 更流畅 */
@@ -978,7 +994,9 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Tab 指示器动画 */
@@ -1034,8 +1052,12 @@
 }
 
 @keyframes dividerFade {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 /* 移动端关闭按钮悬停 */
@@ -1064,14 +1086,14 @@
     .auth-page-error-message,
     .caps-lock-warning,
     .auth-page-divider {
-        animation: none !important;
+        animation: none;
     }
 
     .glass-input:focus-within {
-        transform: none !important;
+        transform: none;
     }
 
     .auth-page-btn:hover:not(:disabled) {
-        transform: translateY(-3px) !important;
+        transform: translateY(-3px);
     }
 }

@@ -77,7 +77,8 @@ easyorange-frontend/
 ├── tailwind.config.js        # Tailwind 配置
 ├── playwright.config.ts      # E2E 测试配置
 ├── Dockerfile                # Docker 构建文件
-└── nginx.conf                # Nginx 部署配置
+├── nginx.conf                # Nginx 部署配置
+└── security-headers.conf     # Nginx 安全响应头配置 (CSP / HSTS / XFO 等)
 ```
 
 ## 快速开始

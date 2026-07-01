@@ -18,11 +18,7 @@
     inset: 0;
     z-index: 0;
     overflow: hidden;
-    background: linear-gradient(180deg,
-        #FFF8F0 0%,
-        #FFF0E4 15%,
-        #FAF8F5 40%,
-        #FFFFFF 100%);
+    background: linear-gradient(180deg, #fff8f0 0%, #fff0e4 15%, #faf8f5 40%, #ffffff 100%);
 }
 
 .search-bg-orb {
@@ -64,9 +60,16 @@
 }
 
 @keyframes searchOrbFloat {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(25px, -20px) scale(1.05); }
-    66% { transform: translate(-20px, 15px) scale(0.95); }
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(25px, -20px) scale(1.05);
+    }
+    66% {
+        transform: translate(-20px, 15px) scale(0.95);
+    }
 }
 
 /* Mesh gradient overlay */
@@ -116,7 +119,7 @@
 
 /* Subtle grid overlay */
 .search-page-bg::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background-image:
@@ -204,14 +207,16 @@
 }
 
 .search-input-premium::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    background: linear-gradient(135deg,
+    background: linear-gradient(
+        135deg,
         rgba(249, 115, 22, 0.15) 0%,
         rgba(251, 113, 133, 0.1) 40%,
-        rgba(195, 155, 211, 0.08) 100%);
+        rgba(195, 155, 211, 0.08) 100%
+    );
     opacity: 0;
     transition: opacity var(--transition-normal);
     z-index: -1;
@@ -308,15 +313,10 @@
 }
 
 .search-submit-btn::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        120deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.3) 50%,
-        transparent 100%
-    );
+    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
     transform: translateX(-100%);
     transition: transform 0.6s ease;
 }
@@ -685,7 +685,7 @@
 
 .search-history-remove:hover {
     background: rgba(239, 68, 68, 0.1);
-    color: #EF4444;
+    color: #ef4444;
 }
 
 /* ============ CATEGORIES GRID ============ */
@@ -720,7 +720,7 @@
 }
 
 .search-category-card::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: var(--cat-bg);
@@ -802,7 +802,7 @@
 }
 
 .search-trending-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     right: 0;
@@ -875,12 +875,7 @@
 .trending-card-shine {
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        120deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.4) 50%,
-        transparent 100%
-    );
+    background: linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
     transform: translateX(-100%);
     transition: transform 0.8s ease;
     pointer-events: none;
@@ -907,7 +902,7 @@
 }
 
 .search-hot-section::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     right: -20%;
@@ -945,7 +940,7 @@
 }
 
 .search-hot-tag::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     background: var(--gradient-warm);
@@ -996,15 +991,15 @@
 }
 
 .search-hot-tag-rank.rank-1 {
-    background: linear-gradient(135deg, #FFD700, #FFA500);
+    background: linear-gradient(135deg, #ffd700, #ffa500);
 }
 
 .search-hot-tag-rank.rank-2 {
-    background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+    background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
 }
 
 .search-hot-tag-rank.rank-3 {
-    background: linear-gradient(135deg, #CD7F32, #B87333);
+    background: linear-gradient(135deg, #cd7f32, #b87333);
 }
 
 /* ============ TIPS SECTION ============ */
@@ -1018,7 +1013,12 @@
     gap: 1.25rem;
     align-items: flex-start;
     padding: 1.5rem;
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.04) 0%, rgba(251, 113, 133, 0.03) 50%, rgba(195, 155, 211, 0.02) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(249, 115, 22, 0.04) 0%,
+        rgba(251, 113, 133, 0.03) 50%,
+        rgba(195, 155, 211, 0.02) 100%
+    );
     border: 1px solid rgba(249, 115, 22, 0.08);
     border-radius: var(--radius-2xl);
     transition: all var(--transition-normal);
@@ -1075,7 +1075,7 @@
 }
 
 .search-tips-list li::before {
-    content: '';
+    content: "";
     position: absolute;
     left: 0;
     top: 0.55rem;
@@ -1109,19 +1109,21 @@
 }
 
 .search-results-header::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
     width: 60%;
     height: 1px;
-    background: linear-gradient(90deg,
+    background: linear-gradient(
+        90deg,
         transparent 0%,
         rgba(249, 115, 22, 0.2) 20%,
         rgba(251, 113, 133, 0.3) 50%,
         rgba(249, 115, 22, 0.2) 80%,
-        transparent 100%);
+        transparent 100%
+    );
 }
 
 .search-results-badge {
@@ -1201,7 +1203,7 @@
 }
 
 .search-loading-spinner::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     border-radius: 50%;
@@ -1210,7 +1212,9 @@
 }
 
 @keyframes searchSpinnerRotate {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .search-loading-text {
@@ -1253,16 +1257,20 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: radial-gradient(circle,
-        rgba(249, 115, 22, 0.1) 0%,
-        rgba(251, 113, 133, 0.06) 40%,
-        transparent 70%);
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, rgba(251, 113, 133, 0.06) 40%, transparent 70%);
     animation: noResultsOrbPulse 3s ease-in-out infinite;
 }
 
 @keyframes noResultsOrbPulse {
-    0%, 100% { transform: scale(1); opacity: 0.5; }
-    50% { transform: scale(1.15); opacity: 0.8; }
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.8;
+    }
 }
 
 .search-no-results-icon svg {
@@ -1536,7 +1544,8 @@
 }
 
 @keyframes sparkle {
-    0%, 100% {
+    0%,
+    100% {
         transform: scale(1);
         opacity: 1;
     }
@@ -1562,7 +1571,7 @@
 }
 
 .search-ai-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: -50%;
     right: -20%;
@@ -1585,7 +1594,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--primary-500) 0%, #C39BD3 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, #c39bd3 100%);
     border-radius: var(--radius-xl);
     color: white;
     box-shadow: 0 4px 16px rgba(249, 115, 22, 0.3);
@@ -1644,7 +1653,7 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, var(--primary-500) 0%, #C39BD3 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, #c39bd3 100%);
     border: none;
     border-radius: var(--radius-xl);
     color: white;
@@ -1701,7 +1710,7 @@
 
 /* ============ AI SEARCH PANEL (Enhancement Results) ============ */
 .search-ai-btn.ai-enabled {
-    background: linear-gradient(135deg, var(--primary-500) 0%, #C39BD3 100%);
+    background: linear-gradient(135deg, var(--primary-500) 0%, #c39bd3 100%);
     border-color: var(--primary-400);
     color: white;
     box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
@@ -1712,7 +1721,8 @@
 }
 
 .ai-search-panel {
-    background: linear-gradient(135deg,
+    background: linear-gradient(
+        135deg,
         rgba(249, 115, 22, 0.04) 0%,
         rgba(195, 155, 211, 0.03) 50%,
         rgba(59, 130, 246, 0.02) 100%

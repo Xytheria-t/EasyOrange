@@ -1,3 +1,3 @@
-export { AdminLayout, AdminSidebar, AdminHeader } from './layout';
+export { AdminHeader, AdminLayout, AdminSidebar } from './layout';
 export { useAdminStore } from './store';
 export * from './types';
