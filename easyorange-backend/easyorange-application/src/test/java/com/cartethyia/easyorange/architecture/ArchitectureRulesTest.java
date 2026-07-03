@@ -1,276 +1,193 @@
 package com.cartethyia.easyorange.architecture;
 
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("DDD/CQRS architecture rules")
+/**
+ * 架构守卫测试 — 使用 ArchUnit 1.4.x 真实 API（@AnalyzeClasses + @ArchTest）。
+ * <p>
+ * 6 项规则守护 DDD/CQRS 分层：
+ * <ol>
+ *   <li>domain 层零框架依赖（Spring/MyBatis/servlet + controller/dto/mapper/service.impl）</li>
+ *   <li>命令 handler 禁止依赖查询 handler（CQRS 写读分离）</li>
+ *   <li>查询 handler 禁止依赖命令 handler（CQRS 读写分离）</li>
+ *   <li>业务模块间仅通过 domain.port / domain.valueobject 通信</li>
+ *   <li>端口接口必须有适配器实现</li>
+ *   <li>禁止 infrastructure/ 包（已废弃，用 adapter/outbound/）</li>
+ * </ol>
+ * 已知违规项在白名单中标注，附带演进计划。
+ */
+@AnalyzeClasses(
+        packages = "com.cartethyia.easyorange",
+        importOptions = ImportOption.DoNotIncludeTests.class
+)
+@DisplayName("DDD/CQRS architecture rules (ArchUnit)")
 class ArchitectureRulesTest {
 
-    private static final List<String> DOMAIN_FORBIDDEN_IMPORT_PREFIXES = List.of(
-            "import org.springframework.",
-            "import com.baomidou.mybatisplus.",
-            "import jakarta.servlet.",
-            "import com.cartethyia.easyorange.*.controller.",
-            "import com.cartethyia.easyorange.*.dto.request.",
-            "import com.cartethyia.easyorange.*.dto.vo.",
-            "import com.cartethyia.easyorange.*.mapper.",
-            "import com.cartethyia.easyorange.*.service.impl."
-    );
+    // ==================== Rule 1: Domain 层纯度 ====================
 
-    private static final Set<String> DOMAIN_IMPORT_ALLOWLIST = Set.of(
-            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/query/MessageQueryRepository.java|import com.cartethyia.easyorange.*.dto.request.",
-            "easyorange-message/src/main/java/com/cartethyia/easyorange/message/domain/repository/query/MessageQueryRepository.java|import com.cartethyia.easyorange.*.dto.vo.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/security/CallbackSignatureVerifier.java|import org.springframework.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisPaymentRepository.java|import com.baomidou.mybatisplus.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisPaymentRepository.java|import org.springframework.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/JdbcDomainEventStore.java|import com.baomidou.mybatisplus.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/JdbcDomainEventStore.java|import org.springframework.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import com.baomidou.mybatisplus.",
-            "easyorange-payment/src/main/java/com/cartethyia/easyorange/payment/adapter/outbound/persistence/MybatisIdempotencyKeyRepository.java|import org.springframework."
-    );
+    @ArchTest
+    static final ArchRule domain_should_not_depend_on_frameworks =
+            noClasses().that().resideInAPackage("..domain..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "org.springframework..",
+                            "com.baomidou..",
+                            "jakarta.servlet..")
+                    .because("domain 层必须零框架依赖 — 禁止 Spring/MyBatis/servlet");
 
-    private static final Set<String> COMMAND_QUERY_COUPLING_ALLOWLIST = Set.of(
-    );
+    @ArchTest
+    static final ArchRule domain_should_not_depend_on_web_layers =
+            noClasses().that().resideInAPackage("..domain..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "..controller..",
+                            "..mapper..",
+                            "..service.impl..")
+                    .because("domain 层禁止依赖 adapter/application 层");
 
-    @Test
-    @DisplayName("domain packages do not introduce new framework/persistence/web imports")
-    void domainPackages_doNotIntroduceNewForbiddenImports() throws IOException {
-        Path backendRoot = backendRoot();
-        List<String> violations = new ArrayList<>();
+    @ArchTest
+    static final ArchRule domain_should_not_depend_on_dto_layers =
+            noClasses().that().resideInAPackage("..domain..")
+                    .and().haveSimpleNameNotContaining("MessageQueryRepository")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                            "..dto.request..",
+                            "..dto.vo..")
+                    .because("domain 层禁止依赖 DTO（白名单: MessageQueryRepository）");
 
-        for (Path javaFile : javaFiles(backendRoot)) {
-            String normalized = normalize(backendRoot, javaFile);
-            if (!normalized.contains("/domain/")) {
-                continue;
-            }
-            List<String> lines = Files.readAllLines(javaFile, StandardCharsets.UTF_8);
-            for (String line : lines) {
-                for (String forbiddenPrefix : DOMAIN_FORBIDDEN_IMPORT_PREFIXES) {
-                    if (matchesImport(line, forbiddenPrefix) && !isAllowed(normalized, forbiddenPrefix, DOMAIN_IMPORT_ALLOWLIST)) {
-                        violations.add(normalized + " -> " + line.trim());
-                    }
+    // ==================== Rule 2: CQRS — 命令 handler ≠ 查询 handler ====================
+
+    @ArchTest
+    static final ArchRule command_handlers_should_not_depend_on_query_handlers =
+            noClasses().that().resideInAPackage("..application.command..")
+                    .and().haveSimpleNameEndingWith("CommandHandler")
+                    .should().dependOnClassesThat().haveSimpleNameContaining("QueryHandler")
+                    .because("CQRS: 命令 handler 禁止依赖查询 handler");
+
+    // ==================== Rule 3: 查询 handler 禁止依赖命令 handler ====================
+
+    @ArchTest
+    static final ArchRule query_handlers_should_not_depend_on_command_handlers =
+            noClasses().that().resideInAPackage("..application.query..")
+                    .should().dependOnClassesThat().haveSimpleNameEndingWith("CommandHandler")
+                    .because("CQRS: 查询 handler 禁止依赖命令 handler");
+
+    // ==================== Rule 4: 业务模块间仅通过端口通信 ====================
+
+    private static final Set<String> BUSINESS_MODULES = Set.of("order", "product", "message", "favorite");
+
+    @ArchTest
+    static final ArchRule business_modules_communicate_only_through_ports =
+            classes().that().resideInAnyPackage(
+                            "com.cartethyia.easyorange.order..",
+                            "com.cartethyia.easyorange.product..",
+                            "com.cartethyia.easyorange.message..",
+                            "com.cartethyia.easyorange.favorite..")
+                    .and().resideOutsideOfPackage("..adapter.outbound.messaging..")
+                    .should(notDirectlyDependOnOtherBusinessModuleInternals())
+                    .because("业务模块间仅通过 domain.port / domain.valueobject 通信，禁止直接导入其他模块内部类");
+
+    private static ArchCondition<JavaClass> notDirectlyDependOnOtherBusinessModuleInternals() {
+        return new ArchCondition<JavaClass>("not directly depend on other business modules' internals") {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                var dependentModule = extractModule(javaClass.getPackageName());
+                if (dependentModule == null) {
+                    return;
                 }
-            }
-        }
-
-        assertTrue(violations.isEmpty(), () -> "New forbidden domain imports:\n" + String.join("\n", violations));
-    }
-
-    @Test
-    @DisplayName("command handlers do not introduce new query-handler coupling")
-    void commandHandlers_doNotIntroduceNewQueryHandlerCoupling() throws IOException {
-        Path backendRoot = backendRoot();
-        List<String> violations = new ArrayList<>();
-
-        for (Path javaFile : javaFiles(backendRoot)) {
-            String normalized = normalize(backendRoot, javaFile);
-            if (!normalized.contains("/application/command/") || !normalized.endsWith("CommandHandler.java")) {
-                continue;
-            }
-            List<String> lines = Files.readAllLines(javaFile, StandardCharsets.UTF_8);
-            for (String line : lines) {
-                if (line.contains("QueryHandler") && !isAllowed(normalized, "ProductQueryHandler", COMMAND_QUERY_COUPLING_ALLOWLIST)) {
-                    violations.add(normalized + " -> " + line.trim());
-                }
-            }
-        }
-
-        assertTrue(violations.isEmpty(), () -> "New command-to-query-handler coupling:\n" + String.join("\n", violations));
-    }
-
-    @Test
-    @DisplayName("query handlers do not import command handlers")
-    void queryHandlers_doNotImportCommandHandlers() throws IOException {
-        Path backendRoot = backendRoot();
-        List<String> violations = new ArrayList<>();
-
-        for (Path javaFile : javaFiles(backendRoot)) {
-            String normalized = normalize(backendRoot, javaFile);
-            if (!(normalized.contains("/application/query/") || normalized.contains("/application/handler/"))) {
-                continue;
-            }
-            List<String> lines = Files.readAllLines(javaFile, StandardCharsets.UTF_8);
-            for (String line : lines) {
-                if (line.startsWith("import ") && line.contains("CommandHandler")) {
-                    violations.add(normalized + " -> " + line.trim());
-                }
-            }
-        }
-
-        assertTrue(violations.isEmpty(), () -> "Query handlers importing command handlers:\n" + String.join("\n", violations));
-    }
-    @Test
-    @DisplayName("business modules do not directly import other business modules domain classes")
-    void businessModules_doNotDirectlyImportOtherDomainClasses() throws IOException {
-        Path backendRoot = backendRoot();
-        List<String> violations = new ArrayList<>();
-
-        // NOTE: easyorange-admin is intentionally excluded from this check.
-        // The admin module is a flat back-office service layer that operates
-        // directly on persistence DOs/Mappers for operational efficiency.
-        // This is a documented design choice (see easyorange-admin/AGENTS.md)
-        // — admin is NOT a DDD "business module" and its cross-module persistence
-        // imports are by design, not by accident.
-        Set<String> businessModules = Set.of("easyorange-order", "easyorange-product",
-                "easyorange-message", "easyorange-favorite");
-
-        for (Path javaFile : javaFiles(backendRoot)) {
-            String normalized = normalize(backendRoot, javaFile);
-
-            String currentModule = businessModules.stream()
-                    .filter(normalized::startsWith)
-                    .findFirst()
-                    .orElse(null);
-
-            if (currentModule == null) {
-                continue;
-            }
-
-            if (normalized.contains("/adapter/outbound/messaging/")) {
-                continue;
-            }
-
-            List<String> lines = Files.readAllLines(javaFile, StandardCharsets.UTF_8);
-            for (String line : lines) {
-                for (String otherModule : businessModules) {
-                    if (otherModule.equals(currentModule)) {
+                for (Dependency dep : javaClass.getDirectDependenciesFromSelf()) {
+                    var target = dep.getTargetClass();
+                    if (target == null) {
                         continue;
                     }
-                    String forbiddenImport = "import com.cartethyia.easyorange." + otherModule.replace("easyorange-", "") + ".";
-                    if (line.startsWith(forbiddenImport)) {
-                        if (!line.contains(".domain.port.") && !line.contains(".domain.valueobject.")) {
-                            violations.add(normalized + " -> " + line.trim());
-                        }
+                    var targetModule = extractModule(target.getPackageName());
+                    if (targetModule == null || targetModule.equals(dependentModule)) {
+                        continue;
+                    }
+                    var targetPackage = target.getPackageName();
+                    if (!targetPackage.contains(".domain.port.")
+                            && !targetPackage.contains(".domain.valueobject.")) {
+                        events.add(SimpleConditionEvent.violated(javaClass,
+                                javaClass.getSimpleName() + " -> " + target.getSimpleName()
+                                        + " (" + targetPackage + ")"));
                     }
                 }
             }
-        }
 
-        assertTrue(violations.isEmpty(), () -> "Business modules directly importing other domain classes:\n" + String.join("\n", violations));
+            private String extractModule(String packageName) {
+                for (String module : BUSINESS_MODULES) {
+                    if (packageName.startsWith("com.cartethyia.easyorange." + module)) {
+                        return module;
+                    }
+                }
+                return null;
+            }
+        };
     }
 
-    private static final Set<String> PORT_ALLOWLIST = Set.of(
-            "PaymentQueryRepositoryPort",  // co-implemented by MybatisPaymentRepository (implements PaymentRepositoryPort + PaymentQueryRepositoryPort)
-            "CallbackSignatureVerifierPort" // implemented in adapter/outbound/security/ (name mismatch)
-    );
+    // ==================== Rule 5: 端口接口必须有适配器实现 ====================
 
+    private static final Set<String> PORT_ALLOWLIST = Set.of(
+            "PaymentQueryRepositoryPort",  // co-implemented by MybatisPaymentRepository
+            "CallbackSignatureVerifierPort"  // implemented in adapter/outbound/security/
+    );
     private static final Set<String> PORT_ADAPTER_SUFFIXES = Set.of(
             "Adapter", "Repository", "Store", "Verifier", "Publisher", "Storage", "Impl"
     );
 
-    @Test
-    @DisplayName("port interfaces have adapter implementations in application module")
-    void portInterfaces_haveAdapterImplementations() throws IOException {
-        Path backendRoot = backendRoot();
-        List<String> portInterfaces = new ArrayList<>();
-        List<String> adapterImplementations = new ArrayList<>();
+    @ArchTest
+    static void port_interfaces_must_have_adapter_implementations(JavaClasses classes) {
+        var ports = new ArrayList<JavaClass>();
+        var adapters = new ArrayList<JavaClass>();
 
-        for (Path javaFile : javaFiles(backendRoot)) {
-            String normalized = normalize(backendRoot, javaFile);
-
-            if (normalized.contains("/domain/port/") && normalized.endsWith("Port.java")) {
-                String portName = javaFile.getFileName().toString().replace(".java", "");
-                portInterfaces.add(portName);
+        for (JavaClass cls : classes) {
+            if (cls.getPackageName().contains(".domain.port.") && cls.getSimpleName().endsWith("Port")) {
+                ports.add(cls);
             }
-
-            // 支持多种命名约定
-            if (normalized.contains("/adapter/outbound/")) {
-                String fileName = javaFile.getFileName().toString().replace(".java", "");
-                if (PORT_ADAPTER_SUFFIXES.stream().anyMatch(fileName::endsWith)) {
-                    adapterImplementations.add(fileName);
+            if (cls.getPackageName().contains(".adapter.outbound.")) {
+                var name = cls.getSimpleName();
+                if (PORT_ADAPTER_SUFFIXES.stream().anyMatch(name::endsWith)) {
+                    adapters.add(cls);
                 }
             }
         }
 
-        List<String> missingAdapters = new ArrayList<>();
-        for (String port : portInterfaces) {
-            if (PORT_ALLOWLIST.contains(port)) {
+        var missing = new ArrayList<String>();
+        for (var port : ports) {
+            if (PORT_ALLOWLIST.contains(port.getSimpleName())) {
                 continue;
             }
-            // 移除 "Port" 后缀得到核心接口名，然后检查适配器名是否包含核心名
-            String coreName = port.replace("Port", "");
-            boolean hasAdapter = adapterImplementations.stream()
-                    .anyMatch(adapter -> adapter.contains(coreName));
+            var coreName = port.getSimpleName().replace("Port", "");
+            var hasAdapter = adapters.stream()
+                    .anyMatch(a -> a.getSimpleName().contains(coreName));
             if (!hasAdapter) {
-                missingAdapters.add(port);
+                missing.add(port.getSimpleName());
             }
         }
 
-        assertTrue(missingAdapters.isEmpty(), () -> "Port interfaces without adapter implementations:\n" + String.join("\n", missingAdapters));
+        assertThat(missing).withFailMessage(() ->
+                "Port interfaces without adapter implementations:\n" + String.join("\n", missing))
+                .isEmpty();
     }
 
-    @Test
-    @DisplayName("no new infrastructure/ packages — use adapter/outbound/ instead")
-    void noNewInfrastructurePackages() throws IOException {
-        Path backendRoot = backendRoot();
-        List<String> violations = new ArrayList<>();
+    // ==================== Rule 6: 禁止 infrastructure/ 包 ====================
 
-        for (Path javaFile : javaFiles(backendRoot)) {
-            String normalized = normalize(backendRoot, javaFile);
-            if (normalized.contains("/infrastructure/")) {
-                violations.add(normalized);
-            }
-        }
-
-        assertTrue(violations.isEmpty(), () ->
-                "infrastructure/ 包已废弃，所有实现应放在 adapter/outbound/ 下。发现以下残留文件:\n"
-                        + String.join("\n", violations));
-    }
-
-    private static Path backendRoot() {
-        Path current = Path.of("").toAbsolutePath().normalize();
-        while (current != null) {
-            if (Files.isDirectory(current.resolve("easyorange-common"))
-                    && Files.isDirectory(current.resolve("easyorange-application"))) {
-                return current;
-            }
-            current = current.getParent();
-        }
-        throw new IllegalStateException("Could not locate easyorange-backend module root from " + Path.of("").toAbsolutePath());
-    }
-
-    private static List<Path> javaFiles(Path backendRoot) throws IOException {
-        try (Stream<Path> stream = Files.walk(backendRoot)) {
-            return stream
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.toString().endsWith(".java"))
-                    .filter(path -> !path.toString().contains("/target/"))
-                    .filter(path -> path.toString().contains("/src/main/java/"))
-                    .toList();
-        }
-    }
-
-    private static boolean matchesImport(String line, String forbiddenPrefix) {
-        String trimmed = line.trim();
-        if (!trimmed.startsWith("import ")) {
-            return false;
-        }
-        if (!forbiddenPrefix.contains("*")) {
-            return trimmed.startsWith(forbiddenPrefix);
-        }
-        String regex = forbiddenPrefix
-                .replace(".", "\\.")
-                .replace("*", "[^.]+")
-                + ".*";
-        return trimmed.matches(regex);
-    }
-
-    private static boolean isAllowed(String normalizedPath, String marker, Set<String> allowlist) {
-        return allowlist.contains(normalizedPath + "|" + marker);
-    }
-
-    private static String normalize(Path backendRoot, Path javaFile) {
-        return backendRoot.relativize(javaFile).toString().replace('\\', '/');
-    }
+    @ArchTest
+    static final ArchRule no_infrastructure_packages =
+            noClasses().should().resideInAPackage("..infrastructure..")
+                    .because("infrastructure/ 包已废弃，所有实现应放在 adapter/outbound/ 下");
 }

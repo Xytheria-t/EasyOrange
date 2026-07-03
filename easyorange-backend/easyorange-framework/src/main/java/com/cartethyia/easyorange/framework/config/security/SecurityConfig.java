@@ -9,10 +9,7 @@ import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
 import com.cartethyia.easyorange.framework.web.filter.XssFilter;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
-import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -145,9 +142,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtEncoder jwtEncoder(JwtProperties properties) {
-        var jwk = new OctetSequenceKey.Builder(secretKey(properties))
-                .algorithm(JWSAlgorithm.HS256).build();
-        return new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(jwk)));
+        return NimbusJwtEncoder.withSecretKey(secretKey(properties)).build();
     }
 
     @Bean

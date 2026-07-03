@@ -274,23 +274,22 @@ public class UserInfoAdapter implements UserInfoPort {
 
 ### 当前架构测试 `[现状]`
 
-项目使用自定义的 `ArchitectureRulesTest` 守卫 DDD 分层规则：
+项目使用 ArchUnit 1.4.x（`@AnalyzeClasses` + `@ArchTest`）守卫 DDD 分层规则：
 
 | 规则 | 说明 | 执行方式 |
 |------|------|---------|
-| 领域层禁止框架导入 | `domain/` 包下不得导入 Spring/MyBatis/Servlet | 扫描源码 import 语句 |
-| Command-Query 解耦 | CommandHandler 不得依赖 QueryHandler | 扫描 import 语句 |
-| Query 不导入 Command | QueryHandler 不得导入 CommandHandler | 扫描 import 语句 |
+| 领域层零框架依赖 | `domain/` 包不得依赖 Spring/MyBatis/Servlet，不得依赖 controller/mapper/service.impl/DTO | ArchUnit `noClasses().dependOn()` |
+| CQRS 命令/查询分离 | CommandHandler 不得依赖 QueryHandler，反之亦然 | ArchUnit `noClasses().dependOn()` |
+| 业务模块间端口通信 | 业务模块间仅通过 `domain.port` / `domain.valueobject` 通信 | ArchUnit 自定义 `ArchCondition` |
+| 端口接口有适配器实现 | `domain.port.*Port` 接口必须在 `adapter.outbound` 有实现 | ArchUnit `JavaClasses` 方法测试 |
+| 禁止 infrastructure/ 包 | 已废弃，用 `adapter/outbound/` | ArchUnit `noClasses().resideInAPackage()` |
 
 **已知白名单** `[现状]`：
 
-架构测试中存在大量白名单条目，主要集中在：
-- message 模块的 `domain/repository/` 中包含 MyBatis 实现类（`MybatisMessageRepository` 等）
-- product 模块的 `domain/repository/query/` 中包含 MyBatis 依赖
-- user 模块的 `domain/enums/` 使用了 MyBatis-Plus 的 `@EnumValue`/`IEnum` 注解
-- payment 模块的 `adapter/outbound/security/` 使用了 Spring 注解
+- `MessageQueryRepository` — domain 层 DTO 依赖规则白名单（message 模块查询仓储）
+- `PaymentQueryRepositoryPort` / `CallbackSignatureVerifierPort` — 端口适配器规则白名单（co-implemented / adapter 在非标准包）
 
-> **演进目标** `[演进]`：逐步消除白名单条目，将所有违规代码迁移到正确的包结构中。优先处理 message 模块的仓储实现迁移。
+> **演进目标** `[演进]`：逐步消除白名单条目，使领域层真正纯净。
 
 ### 测试分层策略
 
@@ -300,7 +299,7 @@ public class UserInfoAdapter implements UserInfoPort {
 | 单元测试 | 应用层（应用服务，Mock 端口） | JUnit 5 + Mockito | 80%+ |
 | 集成测试 | — | 已移除（WSL2 Docker 兼容性限制） | — |
 | 集成测试 | Controller（MockMvc） | Spring Boot Test + MockMvc | 关键路径 100% |
-| 架构测试 | DDD 分层规则、包依赖关系 | 自定义 ArchitectureRulesTest | 核心规则 100% |
+| 架构测试 | DDD 分层规则、包依赖关系 | ArchUnit ArchitectureRulesTest | 核心规则 100% |
 
 ### 领域层单元测试示例
 

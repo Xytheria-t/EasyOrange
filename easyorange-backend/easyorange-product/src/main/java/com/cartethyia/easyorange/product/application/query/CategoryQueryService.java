@@ -39,7 +39,14 @@ public class CategoryQueryService {
                 .filter(Objects::nonNull)
                 .toList();
 
-        Map<String, Long> productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
+        Map<String, Long> productCountMap;
+        if (parentId == null) {
+            // 一级分类：聚合子分类的商品计数
+            productCountMap = categoryQueryRepository.countProductsByCategoryIdsWithChildren(categoryIds);
+        } else {
+            // 子分类：仅统计直接挂在该分类下的商品
+            productCountMap = categoryQueryRepository.countProductsByCategoryIds(categoryIds);
+        }
 
         return categories.stream()
                 .map(cat -> new CategoryReadModel(

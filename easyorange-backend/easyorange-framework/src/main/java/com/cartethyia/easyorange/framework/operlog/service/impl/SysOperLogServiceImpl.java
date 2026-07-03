@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.operlog.service.impl;
 
 import com.cartethyia.easyorange.framework.operlog.entity.SysOperLog;
+import com.cartethyia.easyorange.framework.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.operlog.mapper.SysOperLogMapper;
 import com.cartethyia.easyorange.framework.operlog.service.SysOperLogService;
 import lombok.RequiredArgsConstructor;
@@ -14,10 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class SysOperLogServiceImpl implements SysOperLogService {
 
     private final SysOperLogMapper operLogMapper;
+    private final IdGenerator idGenerator;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void insertOperLog(SysOperLog operLog) {
+        if (operLog.getOperId() == null) {
+            operLog.setOperId(idGenerator.generateId());
+        }
         operLogMapper.insert(operLog);
     }
 }

@@ -50,14 +50,14 @@ describe('CategoriesSection', () => {
 
     it('renders "暂无商品" for categories with zero products', () => {
         render(<CategoriesSection />);
-        expect(screen.getByText('暂无商品 件商品')).toBeInTheDocument();
+        expect(screen.getByText('暂无商品')).toBeInTheDocument();
     });
 
     it('renders "更多分类" card at the end', () => {
         render(<CategoriesSection />);
         expect(screen.getByText('更多分类')).toBeInTheDocument();
         expect(screen.getByText('探索全部分类')).toBeInTheDocument();
-        expect(screen.getByText('查看全部 → 件商品')).toBeInTheDocument();
+        expect(screen.getByText('查看全部 →')).toBeInTheDocument();
     });
 
     it('renders category descriptions', () => {

@@ -249,7 +249,7 @@ export default function HeroSection() {
                         <span className="title-glow"></span>
                     </h1>
 
-                    <p className="hero-subtitle animate-slide-up delay-1">砍业务,撑架构 · C2C 资产流转全栈架构 demo</p>
+                    <p className="hero-subtitle animate-slide-up delay-1">大模型应用工程化 · 别人调 API,我做成生产级服务</p>
 
                     <div className="hero-search animate-slide-up delay-2">
                         <form className="search-wrapper glass-card" onSubmit={handleSearchSubmit}>

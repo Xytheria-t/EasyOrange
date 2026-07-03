@@ -140,7 +140,7 @@ export default function Footer() {
                         <span className="heart-icon">💛</span>
                         Made with care for AI-driven asset stewardship
                     </p>
-                    <p className="copyright-info">© 2025-2026 EasyOrange — 砍业务,撑架构</p>
+                    <p className="copyright-info">© 2025-2026 EasyOrange — 大模型应用工程化全栈实践平台</p>
                 </div>
             </div>
         </footer>

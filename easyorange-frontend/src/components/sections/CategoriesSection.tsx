@@ -108,7 +108,7 @@ export default function CategoriesSection() {
                 id: cat.id,
                 name: cat.name,
                 desc: getCategoryDesc(cat.name),
-                count: productCount > 0 ? `${productCount.toLocaleString()}+` : '暂无商品',
+                count: productCount > 0 ? `${productCount.toLocaleString()}+ 件商品` : '暂无商品',
                 icon: config.icon,
                 gradient: config.gradient,
             };
@@ -172,7 +172,7 @@ export default function CategoriesSection() {
                             </div>
                             <h3 className="card-title">{category.name}</h3>
                             <p className="card-desc">{category.desc}</p>
-                            <span className="card-count">{category.count} 件商品</span>
+                            <span className="card-count">{category.count}</span>
                             <div className="card-arrow">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <line x1="5" y1="12" x2="19" y2="12" />

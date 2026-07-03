@@ -4,6 +4,11 @@
 
 ## [unreleased]
 
+### 2026-07-01 — 修复首页分类商品计数为 0 + 显示格式
+
+- **fix(product)**: 分类接口 `GET /api/products/categories` 一级分类 `productCount` 全为 0 的问题。根因：商品挂在二级分类，计数 SQL 只查 `category_id IN (一级分类ID)`。修复：新增 `countProductsByCategoryIdsWithChildren` SQL（LEFT JOIN `eo_category` + `COALESCE` 将子分类商品归到父分类），Service 层一级分类走新方法
+- **fix(frontend)**: `CategoriesSection` 空分类显示 "暂无商品 件商品" 语法错误。修复：移除硬编码 "件商品" 后缀，集成到 count 字符串中
+
 ### 2026-07-01 — 四阶段现代化路线图（虚拟线程/ProblemDetail/Biome/可观测性/容器化）
 
 - **feat(infra)**: 启用 Virtual Threads（`spring.threads.virtual.enabled=true`），dev profile 关闭防止调试冲突

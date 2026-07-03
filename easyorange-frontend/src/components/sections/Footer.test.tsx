@@ -10,7 +10,7 @@ describe('Footer', () => {
 
     it('renders copyright text', () => {
         render(<Footer />);
-        expect(screen.getByText('© 2025-2026 EasyOrange — 砍业务,撑架构')).toBeInTheDocument();
+        expect(screen.getByText('© 2025-2026 EasyOrange — 大模型应用工程化全栈实践平台')).toBeInTheDocument();
     });
 
     it('renders mini platform stats', () => {

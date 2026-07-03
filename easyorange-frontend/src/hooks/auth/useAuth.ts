@@ -36,8 +36,8 @@ export function useLogin() {
             return response.data;
         },
         onSuccess: data => {
-            if (data?.token && data?.user) {
-                setSession(data.token, data.user as User, data.refreshToken);
+            if (data?.accessToken && data?.user) {
+                setSession(data.accessToken, data.user as User, data.refreshToken);
                 queryClient.setQueryData(AUTH_KEYS.user(), data.user);
             }
         },

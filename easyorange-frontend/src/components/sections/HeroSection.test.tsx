@@ -110,7 +110,7 @@ describe('HeroSection', () => {
 
     it('renders the subtitle', () => {
         render(<HeroSection />);
-        expect(screen.getByText('砍业务,撑架构 · C2C 资产流转全栈架构 demo')).toBeInTheDocument();
+        expect(screen.getByText('大模型应用工程化 · 别人调 API,我做成生产级服务')).toBeInTheDocument();
     });
 
     it('renders search input', () => {

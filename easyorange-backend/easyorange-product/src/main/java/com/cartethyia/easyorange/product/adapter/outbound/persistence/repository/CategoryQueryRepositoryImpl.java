@@ -51,11 +51,21 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
 
     @Override
     public Map<String, Long> countProductsByCategoryIds(List<String> categoryIds) {
+        return doCount(categoryIds, false);
+    }
+
+    @Override
+    public Map<String, Long> countProductsByCategoryIdsWithChildren(List<String> categoryIds) {
+        return doCount(categoryIds, true);
+    }
+
+    private Map<String, Long> doCount(List<String> categoryIds, boolean withChildren) {
         if (categoryIds == null || categoryIds.isEmpty()) {
             return Map.of();
         }
-
-        List<CategoryProductCountDO> counts = mapper.countProductsByCategoryIds(categoryIds);
+        List<CategoryProductCountDO> counts = withChildren
+                ? mapper.countProductsByCategoryIdsWithChildren(categoryIds)
+                : mapper.countProductsByCategoryIds(categoryIds);
         Map<String, Long> result = new HashMap<>(counts.size());
         for (CategoryProductCountDO row : counts) {
             if (row.getCategoryId() != null && row.getProductCount() != null) {

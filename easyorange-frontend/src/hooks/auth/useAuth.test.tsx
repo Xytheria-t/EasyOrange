@@ -71,7 +71,7 @@ describe('useLogin', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { user: mockUser, token: mockToken, refreshToken: mockRefreshToken },
+                    data: { user: mockUser, accessToken: mockToken, refreshToken: mockRefreshToken },
                     timestamp: Date.now(),
                 });
             })
