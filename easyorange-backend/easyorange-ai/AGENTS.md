@@ -19,6 +19,8 @@ ai/
 │   └── dto/                        # 适配器 DTO (DeepSeekRequest, DeepSeekResponse, QwenVlRequest, QwenVlResponse)
 ├── interceptor/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
+├── metrics/
+│   └── AiMetricsService.java       # AI 链路可观测性指标 (缓存命中率/LLM延迟/Vision延迟/限流计数)
 ├── enums/
 │   └── AiCallScope.java            # 6 个枚举：PRICING/REVIEW/QA/COPY/AUTO_LISTING/SEMANTIC
 ├── service/                        # 业务服务
@@ -92,12 +94,14 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 
 ## 单元测试
 
-| 测试类 | 行数 | 覆盖场景 |
-|--------|------|---------|
-| `NaturalLanguageDetectorTest` | ~22 | null/空白/长度边界/意图词组合 |
-| `ProductTaggerTest` | ~12 | 折扣/图片/信用分/综合场景 |
-| `AiSearchEnhancerTest` | ~9 | 前置条件/缓存命中/正常流程/异常降级 |
-| `AiCallScopeTest` | ~12 | URI 映射/TTL/限流配置 |
-| `CachingLlmAdapterTest` | ~4 | 缓存禁用/embedding 不缓存 |
-| `CachingVisionAdapterTest` | ~3 | 缓存禁用/单图/多图 |
-| `AiRateLimitInterceptorTest` | ~5 | 非 AI 路径/限流/fail-open/429 |
+| 测试类 | 覆盖场景 |
+|--------|---------|
+| `NaturalLanguageDetectorTest` | null/空白/长度边界/意图词组合 |
+| `ProductTaggerTest` | 折扣/图片/信用分/综合场景 |
+| `AiSearchEnhancerTest` | 前置条件/缓存命中/正常流程/异常降级 |
+| `AiCallScopeTest` | URI 映射/TTL/限流配置 |
+| `CachingLlmAdapterTest` | 缓存禁用/embedding 不缓存/缓存命中指标 |
+| `CachingVisionAdapterTest` | 缓存禁用/单图/多图/缓存命中指标 |
+| `AiRateLimitInterceptorTest` | 非 AI 路径/限流/fail-open/429/限流指标 |
+| `DeepSeekLlmAdapterTest` | 正常调用/null 响应/空 choices/JSON 模式/延迟指标 |
+| `AiMetricsServiceTest` | 缓存 hit/miss/stale + LLM/Vision 延迟 + 限流 rejected/stale_served/fail_open + Counter 复用 |

@@ -4,6 +4,18 @@
 
 ## [unreleased]
 
+### 2026-07-05 — AI 工程化可观测性现代化
+
+- **refactor(observability)**: 用 Spring Boot 4 内置 `StructuredLogEncoder` 替换 `logstash-logback-encoder` 第三方依赖，prod profile JSON 日志零外部依赖
+- **build**: 移除 GraalVM `native-maven-plugin`（MyBatis-Plus 运行时反射不兼容 native-image，AI 项目瓶颈是 LLM 秒级延迟非 JVM 启动时间）
+- **feat(observability)**: 暴露 `/actuator/health/rabbit` RabbitMQ 健康检查端点
+- **feat(ai)**: 新增 `AiMetricsService` — AI 链路可观测性指标服务，4 类 Micrometer 指标暴露到 `/actuator/prometheus`:
+  - `easyorange.ai.cache` (Counter, tags: scope+outcome=hit/miss) — 多级缓存命中率（CachingLlmAdapter + CachingVisionAdapter）
+  - `easyorange.ai.llm.duration` (Timer, tags: scope+outcome=success/error) — LLM 调用延迟（DeepSeekLlmAdapter）
+  - `easyorange.ai.vision.duration` (Timer, tags: outcome=success/error) — Vision 调用延迟（QwenVlVisionAdapter）
+  - `easyorange.ai.ratelimit` (Counter, tags: scope+outcome=rejected/stale_served/fail_open) — 限流拒绝/降级/放行（AiRateLimitInterceptor）
+- **test**: 后端 AI 模块新增 9 测试用例（AiMetricsServiceTest），总计 113 AI 模块测试全部通过
+
 ### 2026-07-04 — 项目定位升级 + 旧文案残留全面清理
 
 - **refactor(brand)**: 项目定位从"大模型应用工程化全栈实践平台"升级为"让大模型在真实业务中稳定运行的全栈工程实践"。核心理念从拉踩式"别人调 API,我做成生产级服务"改为"调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行,才是 AI 工程化的核心命题"
@@ -25,9 +37,9 @@
 - **refactor(api)**: GlobalExceptionHandler 返回 RFC 9457 ProblemDetail 标准错误格式，替代自定义 Result 包装
 - **chore(build)**: 新增 OpenRewrite Maven 插件，支持自动化 Spring Boot / Java 版本迁移
 - **refactor(frontend)**: Biome 统一 lint + format，替代 ESLint + Prettier；删除 `eslint.config.js` + `.prettierrc`；全项目 Biome 格式化
-- **feat(observability)**: JSON 结构化日志（prod 用 LogstashEncoder），Micrometer Tracing (Brave) 集成 + Actuator 端点增强
+- **feat(observability)**: JSON 结构化日志（prod 用 StructuredLogEncoder），Micrometer Tracing (Brave) 集成 + Actuator 端点增强
 - **feat(infra)**: 新增 `compose.yaml` 开发环境 Docker Compose（MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13 + 健康检查），Spring Boot 4 `@ServiceConnection` 自动配置
-- **feat(build)**: 新增 GraalVM native-maven-plugin，支持 AOT 编译为原生可执行文件（可选）
+- **feat(build)**: 新增 GraalVM native-maven-plugin（已于 2026-07-05 移除，MyBatis-Plus 反射不兼容）
 - **fix(frontend)**: 修正 Biome 自动将 `Promise<void[]>` 误改为 `Promise<undefined[]>` 的回归
 
 ### 2026-07-01 — Nginx 现代化安全响应头整合

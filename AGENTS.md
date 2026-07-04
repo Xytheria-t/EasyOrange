@@ -62,6 +62,7 @@ EasyOrange 以 C2C 资产流转为业务载体，展示大模型从 API 调用�
 - 沟通走 `WebSocket /ws/chat` STOMP 通道（认领方与资产方直聊）
 - AI 适配器：`CachingLlmAdapter` / `CachingVisionAdapter` 是 `@Primary` 装饰器（包装 `DeepSeekLlmAdapter` / `QwenVlVisionAdapter`）实现 L1 + L2 多级缓存
 - 限流：`AiRateLimitInterceptor` 基于 Redis 令牌桶，Redis 不可用时 fail-open
+- **AI 可观测性**：`AiMetricsService` 提供 4 类 Micrometer 指标（缓存命中率 / LLM 调用延迟 / Vision 调用延迟 / 限流拒绝·降级·放行计数），暴露到 `/actuator/prometheus`
 
 ## 举报处理工作流
 
@@ -213,7 +214,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
-- **测试统计**：后端 11 模块合计 1,269 测试用例，全部通过；前端 100 测试文件/952 测试用例
+- **测试统计**：后端 11 模块合计 1,278 测试用例，全部通过；前端 100 测试文件/952 测试用例
 - **前端组件规范**：表单/按钮统一使用 shadcn/ui（Button、Input、Label、Checkbox、Switch、Select、Textarea、RadioGroup），禁止保留原生 `<button>` / `<input>` / `<textarea>` / `<select>`；导入优先走 `@/components/ui`，颜色/边框硬编码应提取到 `src/styles/tokens.css`；CSS reset 必须置于 `@layer base` 避免覆盖 Tailwind utilities；生产代码禁止 `console.log` / `console.warn` / `console.error`
 - **前端表单校验**：所有包含显式校验逻辑的表单（登录/注册/发布/密码修改等），必须使用 `react-hook-form` + `zod` + `@hookform/resolvers` 方案，禁止手写 `useState` + 自定义 `validate` 函数。Zod schema 统一放在 `src/schemas/` 目录下，`.default()` 禁止使用（默认值通过 `useForm` 的 `defaultValues` 设置以保持类型推导正确）。`reValidateMode` 统一设为 `'onChange'` 使得首次提交后输入即时清除错误。管理端搜索/筛选类简单表单（如 CategoryManagePage）无需迁移
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`
