@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.interceptor;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,16 +28,19 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final Cache<String, Object> staleCache;
+    private final AiMetricsService aiMetricsService;
 
     public AiRateLimitInterceptor(
             RedisCache redisCache,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
-            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
+            AiMetricsService aiMetricsService) {
         this.redisCache = redisCache;
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
         this.staleCache = staleCache;
+        this.aiMetricsService = aiMetricsService;
     }
 
     @Override
@@ -66,11 +70,13 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
                     Object stale = staleCache.getIfPresent(staleKey);
                     if (stale != null) {
                         log.info("Serving stale cache for rate-limited request: {}", staleKey);
+                        aiMetricsService.recordRateLimitStaleServed(scope.name());
                         writeJson(response, 200, stale);
                         return false;
                     }
                 }
 
+                aiMetricsService.recordRateLimitRejected(scope.name());
                 writeJson(response, 429,
                         Map.of("success", false, "message", "AI 服务繁忙，请稍后重试"));
                 return false;
@@ -78,6 +84,7 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         } catch (Exception e) {
             if (aiProperties.getRateLimit().isFailOpen()) {
                 log.warn("Redis unavailable, fail-open for AI rate limit", e);
+                aiMetricsService.recordRateLimitFailOpen(scope.name());
                 return true;
             }
             throw e;

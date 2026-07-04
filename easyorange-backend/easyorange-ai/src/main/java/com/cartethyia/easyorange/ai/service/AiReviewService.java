@@ -27,7 +27,7 @@ public class AiReviewService {
             List<String> imageUrls
     ) {
         String systemPrompt = """
-                你是 EasyOrange — AI 资产管理 的资产审核助手。
+                你是 EasyOrange — AI 工程化 的资产审核助手。
                 根据商品信息，判断该商品是否符合平台审核标准。
                 审核标准：
                 1. 商品信息是否完整准确

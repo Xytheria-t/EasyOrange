@@ -4,6 +4,16 @@
 
 ## [unreleased]
 
+### 2026-07-04 — 项目定位升级 + 旧文案残留全面清理
+
+- **refactor(brand)**: 项目定位从"大模型应用工程化全栈实践平台"升级为"让大模型在真实业务中稳定运行的全栈工程实践"。核心理念从拉踩式"别人调 API,我做成生产级服务"改为"调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行,才是 AI 工程化的核心命题"
+- **refactor(brand)**: "AI 资产管理"品牌名全量替换为"AI 工程化"（前端 UI + 后端 LLM prompt + 文档共 15 处）
+- **refactor(naming)**: "智能定价"统一改为"智能估值"（前端 UI + 后端 prompt + 文档共 12 处）
+- **refactor(docs)**: `AGENTS.md` / `CLAUDE.md` / `README.md` / `PRODUCT_DIRECTION.md` / `index.html` 顶部定位全部同步更新，新增"工程亮点"行（多级缓存降本 · 令牌桶限流 · 降级兜底 · RabbitMQ 事件路由 + DLQ）
+- **refactor(docs)**: 旧标语"业务是容器,架构才是主角"→"业务做减法,工程做加法";"架构才是主角"→"工程深度才是主角"
+- **fix(a11y)**: `HeroSection` / `Footer` / `AIFeaturesSection` 装饰性 SVG 添加 `aria-hidden="true"`
+- **test**: 前端 26 测试全部通过
+
 ### 2026-07-01 — 修复首页分类商品计数为 0 + 显示格式
 
 - **fix(product)**: 分类接口 `GET /api/products/categories` 一级分类 `productCount` 全为 0 的问题。根因：商品挂在二级分类，计数 SQL 只查 `category_id IN (一级分类ID)`。修复：新增 `countProductsByCategoryIdsWithChildren` SQL（LEFT JOIN `eo_category` + `COALESCE` 将子分类商品归到父分类），Service 层一级分类走新方法

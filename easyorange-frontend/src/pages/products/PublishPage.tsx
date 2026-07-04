@@ -821,7 +821,7 @@ function PublishPage() {
                                         ) : (
                                             <>
                                                 <Sparkles size={14} />
-                                                AI 智能定价
+                                                AI 智能估值
                                             </>
                                         )}
                                     </Button>

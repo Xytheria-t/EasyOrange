@@ -3,11 +3,11 @@ tags:
   - always-on
 ---
 
-# EasyOrange — 大模型应用工程化全栈实践平台
+# EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
 
-**EasyOrange** 是一个 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 大模型应用工程化全栈实践平台,**2025 年 11 月启动开发**。
+**EasyOrange** 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路。基于 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 全栈架构,**2025 年 11 月启动开发**。
 
-> 别人调 API,我把大模型做成可缓存、可限流、可降级的生产级服务。
+> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
 
 > 以 C2C 资产流转为业务载体，在真实场景中完整落地工业级架构。
 
@@ -24,7 +24,7 @@ easy-orange/
 │   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试用)
 │   │   └── domain/port/         # SmsCodePort, PasswordEncoderPort, LoginAttemptPort, AvatarFilePort (端口接口)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 资产管理)
+│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报 + AI 工程化)
 │   │   └── adapter/inbound/web/assembler/ # CategoryAssembler, ProductAssembler (DTO 转换)
 │   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
 │   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
@@ -160,7 +160,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **LoginCredential sealed interface**: 登录凭据使用 `sealed interface LoginCredential`（位于 `domain/valueobject/`），新增登录方式必须添加新的 `record` 实现（如 `Password(String identifier, String password)`、`Sms(String phone, String verifyCode)`），禁止在单个命令类中通过枚举字段区分登录方式。`*Request` DTO 通过 `toCredential()` 方法转换为密封接口子类型
 - **RabbitMQ 路由键规范**: 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。`BaseDomainEvent.eventType()` 自动从类名去除 `Event` 后缀，`RoutingKeyResolver` 再将 camelCase 转为 dot.case。新增领域事件只需创建事件类，路由键自动生效
 - **RabbitMQ 消费者模式**: 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），禁止在同一个队列上使用多个方法级 `@RabbitListener`（会导致轮询竞争）。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
-- **AI 资产管理边界**: 平台不参与议价 / 不自动调价 / 不持有底价。资产方按固定价格上架资产，平台 AI 仅在两端做辅助：资产方侧（智能估值建议 / AI 营销文案 / AI 信用画像），认领方侧（AI 智能找货 / AI 物品评估 / AI 信用画像）。**业务定位说明**：AI 能力清单是项目展示的一部分（演示 LLM/Vision 的端口抽象 + 多级缓存 + 限流降级），不是商业模式护城河。`OfferRuleEngine` / `OfferAppService` / `ProductPriceAdjustTask` / `NegotiationMessagePort` / `OrderCreationPort`（AI 自动成单 port）已删除
+- **AI 工程化边界**: 平台不参与议价 / 不自动调价 / 不持有底价。资产方按固定价格上架资产，平台 AI 仅在两端做辅助：资产方侧（智能估值建议 / AI 营销文案 / AI 信用画像），认领方侧（AI 智能找货 / AI 物品评估 / AI 信用画像）。**业务定位说明**：AI 能力清单是项目展示的一部分（演示 LLM/Vision 的端口抽象 + 多级缓存 + 限流降级），不是商业模式护城河。`OfferRuleEngine` / `OfferAppService` / `ProductPriceAdjustTask` / `NegotiationMessagePort` / `OrderCreationPort`（AI 自动成单 port）已删除
 - **RabbitMQ-only 模式**: 领域事件通过 `RabbitMQDomainEventPublisher` 发布到 `eo.domain.events` Topic Exchange。所有消费者的 `@ConditionalOnProperty(matchIfMissing=true)` 仅用于确保无 RabbitMQ 环境（开发/测试）下启动不报错，EventBus 回退模式已移除
 - **RabbitMQ Spring AMQP 4.0.x API**: `CorrelationData` 在 `org.springframework.amqp.rabbit.connection` 包（非 support）；`ReturnsCallback.returnedMessage()` 接收 `ReturnedMessage` 对象（非分散参数）；concurrency 配置使用 `concurrent-consumers` + `max-concurrent-consumers`（不支持 `"1-5"` 范围格式）
 - **ConfigurationProperties Bean 冲突**: 禁止在 `@ConfigurationProperties` 类上加 `@Component`，会导致与 `@EnableConfigurationProperties` 双重注册。如需解决冲突加 `@Primary`，并清除本地 Maven 仓库缓存 (`rm -rf ~/.m2/repository/com/cartethyia/easyorange-*`)

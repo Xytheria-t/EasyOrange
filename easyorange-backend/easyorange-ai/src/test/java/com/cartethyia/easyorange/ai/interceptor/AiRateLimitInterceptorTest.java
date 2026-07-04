@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.ai.interceptor;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -41,6 +42,9 @@ class AiRateLimitInterceptorTest {
     @Mock
     private HttpServletResponse response;
 
+    @Mock
+    private AiMetricsService aiMetricsService;
+
     private Cache<String, Object> staleCache;
     private ObjectMapper objectMapper;
     private AiRateLimitInterceptor interceptor;
@@ -49,10 +53,13 @@ class AiRateLimitInterceptorTest {
     void setUp() {
         lenient().when(aiProperties.getRateLimit()).thenReturn(rateLimitProps);
         lenient().when(rateLimitProps.isFailOpen()).thenReturn(true);
+        lenient().doNothing().when(aiMetricsService).recordRateLimitRejected(anyString());
+        lenient().doNothing().when(aiMetricsService).recordRateLimitStaleServed(anyString());
+        lenient().doNothing().when(aiMetricsService).recordRateLimitFailOpen(anyString());
 
         staleCache = Caffeine.newBuilder().build();
         objectMapper = new ObjectMapper();
-        interceptor = new AiRateLimitInterceptor(redisCache, aiProperties, objectMapper, staleCache);
+        interceptor = new AiRateLimitInterceptor(redisCache, aiProperties, objectMapper, staleCache, aiMetricsService);
     }
 
     @Test
@@ -88,6 +95,7 @@ class AiRateLimitInterceptorTest {
         boolean result = interceptor.preHandle(request, response, null);
 
         assertThat(result).isTrue();
+        verify(aiMetricsService).recordRateLimitFailOpen("REVIEW");
     }
 
     @Test
@@ -103,6 +111,7 @@ class AiRateLimitInterceptorTest {
 
         assertThat(result).isFalse();
         verify(response).setStatus(429);
+        verify(aiMetricsService).recordRateLimitRejected("REVIEW");
     }
 
     @Test

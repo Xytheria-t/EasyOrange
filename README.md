@@ -1,6 +1,6 @@
-# EasyOrange — 大模型应用工程化全栈实践平台
+# EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
 
-> 别人调 API,我把大模型做成可缓存、可限流、可降级的生产级服务。
+> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
 >
 > 以 C2C 资产流转为业务载体,完整落地 DDD 战术模式、CQRS 命令/查询分离、Saga 分布式事务、RabbitMQ 领域事件、Spring AMQP、Elasticsearch、Redis 多级缓存,以及 DeepSeek + 通义千问 VL 的多模态 AI 集成。
 >
@@ -13,9 +13,9 @@
 
 ## 项目定位
 
-**EasyOrange 是一个大模型应用工程化与分布式架构全栈实践平台。**
+**EasyOrange 是一个 AI 工程化全栈项目 — 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路。**
 
-> 别人调 API,我把大模型做成可缓存、可限流、可降级的生产级服务。
+> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
 
 项目选 C2C 资产流转作为业务载体,是因为这个场景具备:
 
@@ -27,7 +27,7 @@
 
 业务场景本身被刻意简化:**资产方按固定价格发布商品,认领方浏览下单,平台不碰货、不囤货、不经手资金,C2C 直发**。这样能确保把全部精力放在架构与工程上。
 
-> 业务是容器,架构才是主角。
+> 业务做减法,工程做加法——架构深度才是这个项目真正展示的东西。
 
 ## 技术亮点
 
@@ -150,6 +150,6 @@ MIT License — 详见 [LICENSE](LICENSE) 文件
 
 <div align="center">
 
-**EasyOrange** · DDD + CQRS + Saga + 事件驱动 + AI 多模态 全栈架构实践平台 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
+**EasyOrange** · DDD + CQRS + Saga + 事件驱动 + AI 多模态 · 让大模型在真实业务中稳定运行 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
 
 </div>

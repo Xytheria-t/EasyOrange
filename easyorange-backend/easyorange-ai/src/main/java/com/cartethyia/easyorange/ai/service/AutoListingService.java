@@ -30,7 +30,7 @@ public class AutoListingService {
             """;
 
     private static final String SYSTEM_PROMPT = """
-            你是 EasyOrange — AI 资产管理 的智能上架助手。根据视觉分析结果，
+            你是 EasyOrange — AI 工程化 的智能上架助手。根据视觉分析结果，
             生成完整的商品上架信息。请以 JSON 格式返回，包含以下字段：
             - title: 商品标题（简洁明了，含关键词）
             - description: 商品描述（详细描述商品状况、特点）

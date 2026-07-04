@@ -23,7 +23,7 @@ export function AiPricingBadge({ suggestion, onApply, isLoading }: AiPricingBadg
         <div className="ai-badge">
             <div className="ai-badge-header">
                 <Sparkles size={16} className="ai-icon" />
-                <span className="ai-badge-title">AI 智能定价建议</span>
+                <span className="ai-badge-title">AI 智能估值建议</span>
             </div>
             <div className="ai-badge-body">
                 <div className="price-suggestions">

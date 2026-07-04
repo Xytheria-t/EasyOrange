@@ -71,7 +71,7 @@
 
 | 功能 | 方法+路径 | 参数 |
 |------|----------|------|
-| 智能定价 | `POST /api/ai/pricing` | productName, description, categoryName, conditionLevel |
+| 智能估值 | `POST /api/ai/pricing` | productName, description, categoryName, conditionLevel |
 | 拍照上架 | `POST /api/ai/auto-listing` | imageFile (multipart) |
 | AI 审核 | `POST /api/ai/review` | productId |
 | 智能问答 | `POST /api/ai/qa` | productId, question |

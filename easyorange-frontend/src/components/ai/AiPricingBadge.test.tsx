@@ -21,7 +21,7 @@ describe('AiPricingBadge', () => {
 
     it('renders normal state with pricing info', () => {
         renderWithProviders(<AiPricingBadge suggestion={mockSuggestion} onApply={vi.fn()} />);
-        expect(screen.getByText('AI 智能定价建议')).toBeInTheDocument();
+        expect(screen.getByText('AI 智能估值建议')).toBeInTheDocument();
         expect(screen.getByText('¥128.50')).toBeInTheDocument();
         expect(screen.getByText('¥100.00 - ¥150.00')).toBeInTheDocument();
         expect(screen.getByText(mockSuggestion.reasoning)).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe('AiPricingBadge', () => {
 
     it('does not show pricing when loading', () => {
         renderWithProviders(<AiPricingBadge suggestion={mockSuggestion} onApply={vi.fn()} isLoading />);
-        expect(screen.queryByText('AI 智能定价建议')).not.toBeInTheDocument();
+        expect(screen.queryByText('AI 智能估值建议')).not.toBeInTheDocument();
         expect(screen.queryByText('采纳此定价')).not.toBeInTheDocument();
     });
 

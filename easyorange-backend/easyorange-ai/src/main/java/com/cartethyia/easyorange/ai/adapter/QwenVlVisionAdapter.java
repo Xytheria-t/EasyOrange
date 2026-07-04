@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.ai.adapter;
 import com.cartethyia.easyorange.ai.adapter.dto.QwenVlRequest;
 import com.cartethyia.easyorange.ai.adapter.dto.QwenVlResponse;
 import com.cartethyia.easyorange.ai.config.AiProperties;
+import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.ai.port.VisionPort;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -22,11 +22,18 @@ import java.util.Locale;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class QwenVlVisionAdapter implements VisionPort {
 
     private final RestClient qwenVlRestClient;
     private final AiProperties aiProperties;
+    private final AiMetricsService aiMetricsService;
+
+    public QwenVlVisionAdapter(RestClient qwenVlRestClient, AiProperties aiProperties,
+                               AiMetricsService aiMetricsService) {
+        this.qwenVlRestClient = qwenVlRestClient;
+        this.aiProperties = aiProperties;
+        this.aiMetricsService = aiMetricsService;
+    }
 
     private final HttpClient imageDownloadClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -40,30 +47,37 @@ public class QwenVlVisionAdapter implements VisionPort {
 
     @Override
     public String analyzeImages(List<String> imageUrls, String prompt) {
-        var contents = new java.util.ArrayList<QwenVlRequest.Content>();
-        for (String url : imageUrls) {
-            String imageDataUri = resolveImage(url);
-            contents.add(new QwenVlRequest.Content("image", null, imageDataUri));
+        var sample = aiMetricsService.startTimer();
+        try {
+            var contents = new java.util.ArrayList<QwenVlRequest.Content>();
+            for (String url : imageUrls) {
+                String imageDataUri = resolveImage(url);
+                contents.add(new QwenVlRequest.Content("image", null, imageDataUri));
+            }
+            contents.add(new QwenVlRequest.Content("text", prompt));
+
+            var message = new QwenVlRequest.Message("user", contents);
+            var input = new QwenVlRequest.Input(List.of(message));
+            var request = new QwenVlRequest(aiProperties.getQwenVl().getModel(), input);
+
+            var params = new QwenVlRequest.Parameters();
+            request.setParameters(params);
+
+            var response = qwenVlRestClient.post()
+                    .uri("/services/aigc/multimodal-generation/generation")
+                    .body(request)
+                    .retrieve()
+                    .body(QwenVlResponse.class);
+
+            String content = response != null ? response.getFirstChoiceContent() : null;
+            log.info("QwenVL analyzed images: count={}, resultLength={}", imageUrls.size(),
+                    content != null ? content.length() : 0);
+            aiMetricsService.recordVisionDuration(sample, "success");
+            return content;
+        } catch (Exception e) {
+            aiMetricsService.recordVisionDuration(sample, "error");
+            throw e;
         }
-        contents.add(new QwenVlRequest.Content("text", prompt));
-
-        var message = new QwenVlRequest.Message("user", contents);
-        var input = new QwenVlRequest.Input(List.of(message));
-        var request = new QwenVlRequest(aiProperties.getQwenVl().getModel(), input);
-
-        var params = new QwenVlRequest.Parameters();
-        request.setParameters(params);
-
-        var response = qwenVlRestClient.post()
-                .uri("/services/aigc/multimodal-generation/generation")
-                .body(request)
-                .retrieve()
-                .body(QwenVlResponse.class);
-
-        String content = response != null ? response.getFirstChoiceContent() : null;
-        log.info("QwenVL analyzed images: count={}, resultLength={}", imageUrls.size(),
-                content != null ? content.length() : 0);
-        return content;
     }
 
     /**

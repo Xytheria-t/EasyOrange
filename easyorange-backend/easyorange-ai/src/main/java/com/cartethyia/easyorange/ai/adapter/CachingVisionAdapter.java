@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.adapter;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.ai.port.VisionPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Primary
@@ -27,16 +29,19 @@ public class CachingVisionAdapter implements VisionPort {
     private final AiProperties aiProperties;
     private final Map<AiCallScope, MultiLevelCache> aiCaches;
     private final Cache<String, Object> staleCache;
+    private final AiMetricsService aiMetricsService;
 
     public CachingVisionAdapter(
             QwenVlVisionAdapter delegate,
             AiProperties aiProperties,
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
-            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
+            AiMetricsService aiMetricsService) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;
         this.staleCache = staleCache;
+        this.aiMetricsService = aiMetricsService;
     }
 
     @Override
@@ -59,8 +64,17 @@ public class CachingVisionAdapter implements VisionPort {
             return delegate.analyzeImages(imageUrls, prompt);
         }
 
-        String result = cache.get(key, String.class,
-                () -> delegate.analyzeImages(imageUrls, prompt));
+        var cacheMiss = new AtomicBoolean(false);
+        String result = cache.get(key, String.class, () -> {
+            cacheMiss.set(true);
+            return delegate.analyzeImages(imageUrls, prompt);
+        });
+
+        if (cacheMiss.get()) {
+            aiMetricsService.recordCacheMiss(scope.name());
+        } else {
+            aiMetricsService.recordCacheHit(scope.name());
+        }
 
         if (result != null) {
             staleCache.put(key, result);

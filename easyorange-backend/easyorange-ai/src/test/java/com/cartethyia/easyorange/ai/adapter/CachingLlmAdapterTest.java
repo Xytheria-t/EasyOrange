@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.adapter;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -19,6 +20,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +39,9 @@ class CachingLlmAdapterTest {
     @Mock
     private RedisCache redisCache;
 
+    @Mock
+    private AiMetricsService aiMetricsService;
+
     private Map<AiCallScope, MultiLevelCache> aiCaches;
     private Cache<String, Object> staleCache;
     private CachingLlmAdapter adapter;
@@ -45,6 +50,8 @@ class CachingLlmAdapterTest {
     void setUp() {
         lenient().when(aiProperties.getCache()).thenReturn(cacheProps);
         lenient().when(cacheProps.isEnabled()).thenReturn(true);
+        lenient().doNothing().when(aiMetricsService).recordCacheHit(anyString());
+        lenient().doNothing().when(aiMetricsService).recordCacheMiss(anyString());
 
         staleCache = Caffeine.newBuilder().build();
         aiCaches = new EnumMap<>(AiCallScope.class);
@@ -55,7 +62,7 @@ class CachingLlmAdapterTest {
             aiCaches.put(scope, mlc);
         }
 
-        adapter = new CachingLlmAdapter(delegate, aiProperties, aiCaches, staleCache);
+        adapter = new CachingLlmAdapter(delegate, aiProperties, aiCaches, staleCache, aiMetricsService);
     }
 
     @Test
@@ -102,5 +109,18 @@ class CachingLlmAdapterTest {
 
         assertThat(result).isEqualTo("{\"key\":\"value\"}");
         verify(delegate).generateTextWithJson("sys", "user");
+    }
+
+    @Test
+    @DisplayName("缓存命中时记录 cache hit 指标")
+    void cacheHitRecordsMetric() {
+        when(delegate.generateText("sys", "user")).thenReturn("result");
+        // First call: miss → caches result
+        adapter.generateText("sys", "user");
+        // Second call: hit
+        adapter.generateText("sys", "user");
+
+        verify(aiMetricsService).recordCacheHit("REVIEW");
+        verify(aiMetricsService).recordCacheMiss("REVIEW");
     }
 }

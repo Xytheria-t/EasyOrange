@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.adapter;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
+import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -15,6 +16,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Primary
@@ -25,16 +27,19 @@ public class CachingLlmAdapter implements LlmPort {
     private final AiProperties aiProperties;
     private final Map<AiCallScope, MultiLevelCache> aiCaches;
     private final Cache<String, Object> staleCache;
+    private final AiMetricsService aiMetricsService;
 
     public CachingLlmAdapter(
             DeepSeekLlmAdapter delegate,
             AiProperties aiProperties,
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
-            @Qualifier("aiStaleCache") Cache<String, Object> staleCache) {
+            @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
+            AiMetricsService aiMetricsService) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;
         this.staleCache = staleCache;
+        this.aiMetricsService = aiMetricsService;
     }
 
     @Override
@@ -69,7 +74,17 @@ public class CachingLlmAdapter implements LlmPort {
             return loader.get();
         }
 
-        String result = cache.get(key, String.class, loader::get);
+        var cacheMiss = new AtomicBoolean(false);
+        String result = cache.get(key, String.class, () -> {
+            cacheMiss.set(true);
+            return loader.get();
+        });
+
+        if (cacheMiss.get()) {
+            aiMetricsService.recordCacheMiss(scope.name());
+        } else {
+            aiMetricsService.recordCacheHit(scope.name());
+        }
 
         if (result != null) {
             staleCache.put(key, result);

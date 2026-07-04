@@ -1,12 +1,13 @@
-# EasyOrange — 大模型应用工程化全栈实践平台
+# EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
 
-> 别人调 API,我把大模型做成可缓存、可限流、可降级的生产级服务。
+> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
 
-EasyOrange 是基于 Spring Boot 4 + React 的全栈 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 架构实践平台，**2025 年 11 月启动开发**。
+EasyOrange 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路。基于 Spring Boot 4 + React 的全栈 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 架构，**2025 年 11 月启动开发**。
 
 > **品牌**：EasyOrange
-> **定位**：大模型应用工程化与分布式架构全栈实践平台
+> **定位**：AI 工程化全栈项目 — 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路
 > **业务载体**：C2C 资产流转（刻意简化：固定价格 + C2C 直发 + 平台不碰货）
+> **工程亮点**：LLM/Vision 多级缓存降本 · 令牌桶限流防滥用 · 降级兜底保可用 · RabbitMQ 事件路由 + DLQ 重试保最终一致性
 
 ## 技术栈
 
@@ -52,7 +53,7 @@ EasyOrange 是基于 Spring Boot 4 + React 的全栈 **DDD + CQRS + Saga + 事�
 >
 > **平台边界**：平台不碰货、不囤货、不经手资金，物流走资产方→认领方 C2C 直发。
 > 资产方只需发布资产、设固定价格，平台 AI 在两端做辅助决策；认领方获得 AI 找货 / 评估 / 信用画像等能力。
-> **详细机制**（智能定价 / AI 营销文案 / WebSocket 实时沟通协议）见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
+> **详细机制**（智能估值 / AI 营销文案 / WebSocket 实时沟通协议）见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
 
 **核心约定**：
 - **资产方侧 3 个决策点**：**智能估值** / **AI 营销文案** / **AI 信用画像**
@@ -196,7 +197,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 
 | 变量 | 值 | 说明 |
 |------|------|------|
-| `DEEPSEEK_API_KEY` | - | DeepSeek API 密钥（智能定价/审核/问答/Embedding） |
+| `DEEPSEEK_API_KEY` | - | DeepSeek API 密钥（智能估值/审核/问答/Embedding） |
 | `DEEPSEEK_BASE_URL` | `https://api.deepseek.com/v1` | DeepSeek API 地址 |
 | `DEEPSEEK_MODEL` | `deepseek-chat` | DeepSeek 文本模型 |
 | `QWENVL_API_KEY` | - | 通义千问 VL API 密钥（拍照上架图片识别） |

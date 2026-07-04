@@ -110,7 +110,7 @@ describe('HeroSection', () => {
 
     it('renders the subtitle', () => {
         render(<HeroSection />);
-        expect(screen.getByText('大模型应用工程化 · 别人调 API,我做成生产级服务')).toBeInTheDocument();
+        expect(screen.getByText('AI 工程化 · 调通 API 只是起点，让大模型在真实业务中稳定运行')).toBeInTheDocument();
     });
 
     it('renders search input', () => {
@@ -157,7 +157,7 @@ describe('HeroSection', () => {
 
     it('renders AI entry button', () => {
         render(<HeroSection />);
-        expect(screen.getByText('AI 资产管理')).toBeInTheDocument();
+        expect(screen.getByText('AI 工程化')).toBeInTheDocument();
         expect(screen.getByText('拍照估值 · 智能写描述 · 一键发布')).toBeInTheDocument();
     });
 

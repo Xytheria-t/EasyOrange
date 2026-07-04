@@ -26,7 +26,7 @@ EasyOrange 在 AI 工程上的**架构侧关注点**：
 
 | 决策点 | 触发时机 | 实现 | 架构侧价值 |
 |--------|---------|------|----------|
-| 1. 智能定价 | 资产方提交资产 | `AiPricingService`（ai 模块） | LLM 端口 + 缓存 + 限流 |
+| 1. 智能估值 | 资产方提交资产 | `AiPricingService`（ai 模块） | LLM 端口 + 缓存 + 限流 |
 | 2. AI 营销文案 | 上架前 | `AiCopyGenerationService` | 4 风格文案生成 + 缓存键分桶 |
 | 3. AI 信用画像（资产方） | 认领方浏览时 | `CreditScoringService` | 5 维雷达图 + 规则引擎 |
 | 4. AI 智能找货 | 认领方搜索时 | `SemanticSearchService` + `AiSearchEnhancer` | ES 聚合 + LLM 增强 + 缓存 |

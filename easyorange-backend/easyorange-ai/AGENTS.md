@@ -26,7 +26,7 @@ ai/
 │   ├── ProductTagger.java             # 商品标签引擎 (折扣/图片/信用分)
 │   ├── CreditScoreFetcher.java        # 信用分获取接口
 │   ├── JdbcCreditScoreFetcher.java    # 信用分获取实现 (批量 JDBC + 降级)
-│   ├── AiPricingService.java          # 智能定价
+│   ├── AiPricingService.java          # 智能估值
 │   ├── AiReviewService.java           # AI 审核
 │   ├── AiQaService.java               # 智能问答
 │   ├── AiCopyGenerationService.java   # 智能文案

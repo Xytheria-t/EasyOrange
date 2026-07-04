@@ -125,7 +125,7 @@ function StewardDailyReport() {
                     <div className="daily-avatar-pulse" />
                 </div>
                 <div className="daily-card-title">
-                    <h3>AI 资产管理 · 今日工作日报</h3>
+                    <h3>AI 工程化 · 今日工作日报</h3>
                     <p>2026-06-25 · 你不在的时候,AI 已经帮你做了这些事</p>
                 </div>
             </div>
@@ -133,7 +133,7 @@ function StewardDailyReport() {
             <div className="daily-card-grid">
                 <div className="daily-item">
                     <span className="daily-item-num">3</span>
-                    <span className="daily-item-label">件资产已智能定价</span>
+                    <span className="daily-item-label">件资产已智能估值</span>
                 </div>
                 <div className="daily-item-sep" />
                 <div className="daily-item">
@@ -222,10 +222,10 @@ function AIFeaturesSection() {
                 <div className="ai-features-header">
                     <div className="ai-badge">
                         <span className="ai-badge-dot" />
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                         </svg>
-                        <span>AI 资产管理</span>
+                        <span>AI 工程化</span>
                     </div>
                     <div className="ai-features-title-group">
                         <span className="ai-features-label">4 步闭环 · 双端对称</span>

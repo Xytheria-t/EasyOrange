@@ -1,4 +1,4 @@
-# EasyOrange Frontend (AI 资产管理)
+# EasyOrange Frontend (AI 工程化)
 
 > 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用（**2025 年 11 月启动**）
 
@@ -177,7 +177,7 @@ npm run preview
 - 系统通知
 
 ### AI 系统
-- **智能定价** - AI 分析市场行情给出定价建议（AiPricingBadge + useAiPricing）
+- **智能估值** - AI 分析市场行情给出估值建议（AiPricingBadge + useAiPricing）
 - **拍照上架** - 上传图片自动生成资产信息（AiPhotoCapture + useAutoListing）
 - **AI 审核** - AI 分析资产信息给出审核建议（AiReviewSuggestion + useAdminProductAudit）
 - **语义搜索** - 基于语义向量搜索相似资产（SemanticSearchToggle + useSemanticSearch）
@@ -190,13 +190,13 @@ npm run preview
 ### 开发环境 (`.env.development`)
 ```env
 VITE_API_BASE_URL=/api
-VITE_APP_TITLE=EasyOrange — AI 资产管理
+VITE_APP_TITLE=EasyOrange — AI 工程化
 ```
 
 ### 生产环境 (`.env.production`)
 ```env
 VITE_API_BASE_URL=https://api.easyorange.com
-VITE_APP_TITLE=EasyOrange — AI 资产管理
+VITE_APP_TITLE=EasyOrange — AI 工程化
 ```
 
 ## 开发规范
@@ -239,4 +239,4 @@ MIT License
 
 ---
 
-**EasyOrange** — AI 资产管理
+**EasyOrange** — AI 工程化
