@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.Payment
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import org.springframework.stereotype.Repository;
 

@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.message.domain.service;
 
 import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
-import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ class MessageRoutingServiceTest {
     private MessageSubscriptionRepository subscriptionRepository;
 
     @Mock
-    private WebSocketNotifier sessionManager;
+    private MessageNotifierPort sessionManager;
 
     @InjectMocks
     private MessageRoutingService routingService;

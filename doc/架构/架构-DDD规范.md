@@ -284,12 +284,7 @@ public class UserInfoAdapter implements UserInfoPort {
 | 端口接口有适配器实现 | `domain.port.*Port` 接口必须在 `adapter.outbound` 有实现 | ArchUnit `JavaClasses` 方法测试 |
 | 禁止 infrastructure/ 包 | 已废弃，用 `adapter/outbound/` | ArchUnit `noClasses().resideInAPackage()` |
 
-**已知白名单** `[现状]`：
-
-- `MessageQueryRepository` — domain 层 DTO 依赖规则白名单（message 模块查询仓储）
-- `PaymentQueryRepositoryPort` / `CallbackSignatureVerifierPort` — 端口适配器规则白名单（co-implemented / adapter 在非标准包）
-
-> **演进目标** `[演进]`：逐步消除白名单条目，使领域层真正纯净。
+~~**已知白名单**~~ ✅ 已全部消除（2026-07-04）：`MessageQueryRepository` 改用 domain record、`PaymentQueryRepositoryPort` 移至 `domain/port/`、`CallbackSignatureVerifierPort` 确认结构正确后移除。`PORT_ALLOWLIST` 现为空集。
 
 ### 测试分层策略
 
@@ -372,9 +367,7 @@ class AuthAppServiceTest {
 
 `domain` 包下的所有代码，**不能 import 任何 Spring、MyBatis、Redis 的 API**，只能依赖 JDK 和 `easyorange-common` 中的纯定义类（枚举、异常基类、事件基类等）。
 
-**当前例外** `[现状]`：
-- `domain/enums/` 中的枚举类使用了 MyBatis-Plus 的 `@EnumValue`/`IEnum` 注解（架构测试白名单中）
-- message 模块的 `domain/repository/` 包含了 MyBatis 实现类
+~~**当前例外**~~ ✅ 已消除（2026-07-04）：`domain/enums/` 枚举的 MyBatis-Plus 注解属于 adapter 层关注，已不在 domain 层；message 模块 MyBatis 实现已迁移至 `adapter/outbound/persistence/`。
 
 ### 2. 值对象不可变性
 

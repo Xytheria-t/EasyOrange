@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.message.websocket;
 
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
+import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class WebSocketNotifier {
+public class WebSocketNotifier implements MessageNotifierPort {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final SimpUserRegistry userRegistry;
@@ -47,6 +48,7 @@ public class WebSocketNotifier {
         }
     }
 
+    @Override
     public boolean isUserOnline(String userId) {
         return userRegistry.getUser(userId.toString()) != null;
     }

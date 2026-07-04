@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.payment.application;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

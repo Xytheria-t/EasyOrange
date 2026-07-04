@@ -72,10 +72,10 @@ payment/
 │   │   ├── PaymentGatewayPort.java          # 支付网关端口
 │   │   ├── IdempotencyKeyRepositoryPort.java # 幂等键仓储端口
 │   │   ├── CallbackSignatureVerifierPort.java # 回调签名验证端口
+│   │   ├── PaymentQueryRepositoryPort.java  # 查询仓储端口（已从 repository/ 迁入）
 │   │   ├── PaymentResult.java, RefundResult.java
 │   ├── repository/
-│   │   ├── PaymentRepositoryPort.java       # 支付仓储端口
-│   │   └── PaymentQueryRepositoryPort.java  # 查询仓储端口
+│   │   └── PaymentRepositoryPort.java       # 支付仓储端口
 │   ├── constant/
 │   │   ├── PaymentStatus.java
 │   │   ├── PaymentMethod.java

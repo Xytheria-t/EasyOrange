@@ -7,6 +7,8 @@ import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
@@ -28,6 +30,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -119,9 +122,11 @@ class MessageQueryHandlerTest {
         @DisplayName("获取我的消息列表")
         void getMyMessages_returnsPage() {
             QueryMessageRequest request = new QueryMessageRequest();
+            request.setPageNum(1);
+            request.setPageSize(20);
             MessageAggregate aggregate = createTestMessage();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyString())).thenReturn(pageResult);
+            when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any(Set.class)))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
@@ -141,8 +146,10 @@ class MessageQueryHandlerTest {
         @DisplayName("消息为空时返回空页")
         void getMyMessages_empty_returnsEmptyPage() {
             QueryMessageRequest request = new QueryMessageRequest();
+            request.setPageNum(1);
+            request.setPageSize(20);
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(), 0L, 1, 20);
-            when(queryRepository.findByReceiverId(any(QueryMessageRequest.class), anyString())).thenReturn(pageResult);
+            when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -164,9 +171,11 @@ class MessageQueryHandlerTest {
         @DisplayName("获取未读消息列表")
         void getUnreadMessages_returnsPage() {
             QueryMessageRequest request = new QueryMessageRequest();
+            request.setPageNum(1);
+            request.setPageSize(20);
             MessageAggregate aggregate = createTestMessage();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
-            when(queryRepository.findUnreadByReceiverId(any(QueryMessageRequest.class), anyString())).thenReturn(pageResult);
+            when(queryRepository.findUnreadByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any(Set.class)))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
@@ -189,12 +198,8 @@ class MessageQueryHandlerTest {
         @Test
         @DisplayName("获取未读数")
         void getUnreadCount_returnsCount() {
-            UnreadCountVO countVO = UnreadCountVO.builder()
-                    .total(5L)
-                    .systemCount(2L)
-                    .chatCount(3L)
-                    .build();
-            when(queryRepository.countUnreadByReceiverId(anyString())).thenReturn(countVO);
+            UnreadCount count = new UnreadCount(5L, 2L, 3L, 0L, 0L, 0L);
+            when(queryRepository.countUnreadByReceiverId(anyString())).thenReturn(count);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {

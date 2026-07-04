@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>端口接口必须有适配器实现</li>
  *   <li>禁止 infrastructure/ 包（已废弃，用 adapter/outbound/）</li>
  * </ol>
- * 已知违规项在白名单中标注，附带演进计划。
+ * 无白名单 — 所有规则必须严格合规。
  */
 @AnalyzeClasses(
         packages = "com.cartethyia.easyorange",
@@ -63,11 +63,10 @@ class ArchitectureRulesTest {
     @ArchTest
     static final ArchRule domain_should_not_depend_on_dto_layers =
             noClasses().that().resideInAPackage("..domain..")
-                    .and().haveSimpleNameNotContaining("MessageQueryRepository")
                     .should().dependOnClassesThat().resideInAnyPackage(
                             "..dto.request..",
                             "..dto.vo..")
-                    .because("domain 层禁止依赖 DTO（白名单: MessageQueryRepository）");
+                    .because("domain 层禁止依赖 DTO");
 
     // ==================== Rule 2: CQRS — 命令 handler ≠ 查询 handler ====================
 
@@ -141,10 +140,7 @@ class ArchitectureRulesTest {
 
     // ==================== Rule 5: 端口接口必须有适配器实现 ====================
 
-    private static final Set<String> PORT_ALLOWLIST = Set.of(
-            "PaymentQueryRepositoryPort",  // co-implemented by MybatisPaymentRepository
-            "CallbackSignatureVerifierPort"  // implemented in adapter/outbound/security/
-    );
+    private static final Set<String> PORT_ALLOWLIST = Set.of();
     private static final Set<String> PORT_ADAPTER_SUFFIXES = Set.of(
             "Adapter", "Repository", "Store", "Verifier", "Publisher", "Storage", "Impl"
     );

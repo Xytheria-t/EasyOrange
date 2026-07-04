@@ -7,6 +7,8 @@ import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
@@ -41,7 +43,7 @@ public class MessageQueryHandler {
             throw new MessageNotFoundException(messageId);
         }
 
-        BizRequire.requireTrue(java.util.Objects.equals(aggregate.receiverId(), userId), MessageResultCode.MESSAGE_NOT_OWNER);
+        BizRequire.requireTrue(Objects.equals(aggregate.receiverId(), userId), MessageResultCode.MESSAGE_NOT_OWNER);
 
         return toMessageVO(aggregate, resolveUsernames(Set.of(aggregate)));
     }
@@ -49,21 +51,31 @@ public class MessageQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        PageResult<MessageAggregate> messagePage = queryRepository.findByReceiverId(request, userId);
+        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), request.getIsRead());
+        PageResult<MessageAggregate> messagePage = queryRepository.findByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        PageResult<MessageAggregate> messagePage = queryRepository.findUnreadByReceiverId(request, userId);
+        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), request.getIsRead());
+        PageResult<MessageAggregate> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
     @Transactional(readOnly = true)
     public UnreadCountVO getUnreadCount() {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryRepository.countUnreadByReceiverId(userId);
+        UnreadCount count = queryRepository.countUnreadByReceiverId(userId);
+        return UnreadCountVO.builder()
+                .total(count.total())
+                .systemCount(count.systemCount())
+                .chatCount(count.chatCount())
+                .orderCount(count.orderCount())
+                .paymentCount(count.paymentCount())
+                .activityCount(count.activityCount())
+                .build();
     }
 
     private PageResult<MessageVO> toMessageVOPage(PageResult<MessageAggregate> messagePage) {

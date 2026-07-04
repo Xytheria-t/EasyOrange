@@ -1,15 +1,15 @@
 package com.cartethyia.easyorange.message.domain.service;
 
 import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
-import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 
 import java.util.List;
 
 public class MessageRoutingService {
 
     private final MessageSubscriptionRepository subscriptionRepository;
-    private final WebSocketNotifier sessionManager;
+    private final MessageNotifierPort sessionManager;
 
     /**
      * Constructs a message routing service with the required dependencies.
@@ -17,7 +17,7 @@ public class MessageRoutingService {
      * @param subscriptionRepository repository for looking up message subscriptions
      * @param sessionManager         WebSocket notifier for checking online status
      */
-    public MessageRoutingService(MessageSubscriptionRepository subscriptionRepository, WebSocketNotifier sessionManager) {
+    public MessageRoutingService(MessageSubscriptionRepository subscriptionRepository, MessageNotifierPort sessionManager) {
         this.subscriptionRepository = subscriptionRepository;
         this.sessionManager = sessionManager;
     }

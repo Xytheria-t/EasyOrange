@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.payment.domain.repository;
+package com.cartethyia.easyorange.payment.domain.port;
 
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 

@@ -2,16 +2,16 @@ package com.cartethyia.easyorange.message.domain.repository.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
-import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMessageRequest;
-import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
+import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
+import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 
 public interface MessageQueryRepository {
 
     MessageAggregate findById(String id);
 
-    PageResult<MessageAggregate> findByReceiverId(QueryMessageRequest request, String userId);
+    PageResult<MessageAggregate> findByReceiverId(MessageQuery query, String userId);
 
-    PageResult<MessageAggregate> findUnreadByReceiverId(QueryMessageRequest request, String userId);
+    PageResult<MessageAggregate> findUnreadByReceiverId(MessageQuery query, String userId);
 
-    UnreadCountVO countUnreadByReceiverId(String userId);
+    UnreadCount countUnreadByReceiverId(String userId);
 }

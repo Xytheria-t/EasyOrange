@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.repository.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
