@@ -56,8 +56,8 @@
                 <maxHistory>30</maxHistory>
                 <totalSizeCap>3GB</totalSizeCap>
             </rollingPolicy>
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <includeContext>false</includeContext>
+            <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+                <format>logstash</format>
                 <customFields>{"app":"${APP_NAME}","environment":"prod"}</customFields>
             </encoder>
         </appender>

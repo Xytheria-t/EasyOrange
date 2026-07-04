@@ -121,13 +121,6 @@
             <artifactId>spring-boot-starter-data-elasticsearch</artifactId>
         </dependency>
 
-        <!-- JSON 结构化日志 -->
-        <dependency>
-            <groupId>net.logstash.logback</groupId>
-            <artifactId>logstash-logback-encoder</artifactId>
-            <version>8.0</version>
-        </dependency>
-
         <!-- Micrometer Tracing (分布式追踪) -->
         <dependency>
             <groupId>io.micrometer</groupId>
