@@ -9,15 +9,8 @@ import { Image } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import { useUIStore } from '@/store/uiStore';
 import type { Favorite } from '@/types';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
-import { cn } from '@/lib/utils';
+import { PaginationBar } from '@/components/PaginationBar';
+import { usePagination } from '@/hooks/usePagination';
 import './favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -33,8 +26,7 @@ export default function FavoritesPage() {
     const queryClient = useQueryClient();
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [removingId, setRemovingId] = useState<string | null>(null);
-    const [pageNum, setPageNum] = useState(1);
-    const pageSize = 20;
+    const { pageNum, pageSize, goTo } = usePagination({ pageSize: 20 });
 
     const {
         data: favoritesData,
@@ -80,7 +72,7 @@ export default function FavoritesPage() {
 
     const favorites = favoritesData?.records ?? [];
     const total = favoritesData?.total ?? 0;
-    const totalPages = favoritesData?.pages ?? Math.ceil(total / pageSize);
+    const totalPages = favoritesData?.pages ?? 1;
 
     const toggleSelect = (id: string) => {
         setSelectedIds(prev => {
@@ -503,34 +495,7 @@ export default function FavoritesPage() {
                         })}
                     </div>
 
-                    {totalPages > 1 && (
-                        <Pagination className="favorites-pagination">
-                            <PaginationContent>
-                                <PaginationItem>
-                                    <PaginationPrevious
-                                        onClick={() => setPageNum(p => Math.max(1, p - 1))}
-                                        className={cn(pageNum <= 1 && 'pointer-events-none opacity-40')}
-                                    />
-                                </PaginationItem>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                    <PaginationItem key={p}>
-                                        <PaginationLink
-                                            isActive={p === pageNum}
-                                            onClick={() => setPageNum(p)}
-                                        >
-                                            {p}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                ))}
-                                <PaginationItem>
-                                    <PaginationNext
-                                        onClick={() => setPageNum(p => p + 1)}
-                                        className={cn(pageNum >= totalPages && 'pointer-events-none opacity-40')}
-                                    />
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
-                    )}
+                    <PaginationBar pageNum={pageNum} totalPages={totalPages} onPageChange={goTo} />
                 </div>
             </div>
         </div>

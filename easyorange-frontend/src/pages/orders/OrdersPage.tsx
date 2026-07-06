@@ -13,15 +13,8 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
-import { cn } from '@/lib/utils';
+import { PaginationBar } from '@/components/PaginationBar';
+import { usePagination } from '@/hooks/usePagination';
 import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
 import { useCancelOrder, useMyOrders, usePayOrder, useReceiveOrder } from '@/hooks';
 import { useUIStore } from '@/store';
@@ -84,8 +77,9 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
 
 function OrdersPage() {
     const [activeTab, setActiveTab] = useState('all');
-    const [pageNum, setPageNum] = useState(1);
-    const pageSize = 10;
+    const { pageNum, pageSize, goTo } = usePagination({
+        resetDeps: [activeTab],
+    });
     const navigate = useNavigate();
 
     const queryParams = useMemo(() => {
@@ -98,7 +92,7 @@ function OrdersPage() {
             baseParams.status = tab.statusCode;
         }
         return baseParams;
-    }, [activeTab, pageNum]);
+    }, [activeTab, pageNum, pageSize]);
 
     const { data, isLoading, isError, refetch } = useMyOrders(queryParams);
     const cancelOrder = useCancelOrder();
@@ -179,10 +173,7 @@ function OrdersPage() {
                         <Button
                             key={tab.id}
                             variant="ghost"
-                            onClick={() => {
-                                setActiveTab(tab.id);
-                                setPageNum(1);
-                            }}
+                            onClick={() => setActiveTab(tab.id)}
                             className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
                             style={{ animationDelay: `${index * 60}ms` }}
                         >
@@ -251,34 +242,7 @@ function OrdersPage() {
                             />
                         ))}
                     </div>
-                    {totalPages > 1 && (
-                        <Pagination className="mt-6 mb-4">
-                            <PaginationContent>
-                                <PaginationItem>
-                                    <PaginationPrevious
-                                        onClick={() => setPageNum(p => Math.max(1, p - 1))}
-                                        className={cn(pageNum <= 1 && 'pointer-events-none opacity-40')}
-                                    />
-                                </PaginationItem>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                    <PaginationItem key={p}>
-                                        <PaginationLink
-                                            isActive={p === pageNum}
-                                            onClick={() => setPageNum(p)}
-                                        >
-                                            {p}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                ))}
-                                <PaginationItem>
-                                    <PaginationNext
-                                        onClick={() => setPageNum(p => p + 1)}
-                                        className={cn(pageNum >= totalPages && 'pointer-events-none opacity-40')}
-                                    />
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
-                    )}
+                    <PaginationBar pageNum={pageNum} totalPages={totalPages} onPageChange={goTo} />
                 </>
             )}
         </div>

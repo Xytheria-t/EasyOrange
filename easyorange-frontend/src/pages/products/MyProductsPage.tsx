@@ -13,15 +13,8 @@ import {
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
-import { cn } from '@/lib/utils';
+import { PaginationBar } from '@/components/PaginationBar';
+import { usePagination } from '@/hooks/usePagination';
 import { PRODUCT_STATUS_CODE, STATUS_LABEL_MAP } from '@/constants/product';
 import { useMyProducts } from '@/hooks/product/useProducts';
 import type { Product, ProductStatus } from '@/types';
@@ -88,8 +81,9 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
 function MyProductsPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('all');
-    const [pageNum, setPageNum] = useState(1);
-    const pageSize = 10;
+    const { pageNum, pageSize, goTo } = usePagination({
+        resetDeps: [activeTab],
+    });
 
     const queryParams = useMemo(() => {
         const tab = STATUS_OPTIONS.find(t => t.id === activeTab);
@@ -101,7 +95,7 @@ function MyProductsPage() {
             pageSize,
             ...(code !== undefined ? { status: code } : {}),
         };
-    }, [activeTab, pageNum]);
+    }, [activeTab, pageNum, pageSize]);
 
     const { data, isLoading, isError, refetch } = useMyProducts(queryParams);
 
@@ -129,10 +123,7 @@ function MyProductsPage() {
                         <Button
                             key={tab.id}
                             variant="ghost"
-                            onClick={() => {
-                                setActiveTab(tab.id);
-                                setPageNum(1);
-                            }}
+                            onClick={() => setActiveTab(tab.id)}
                             className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
                             style={{ animationDelay: `${index * 60}ms` }}
                         >
@@ -204,34 +195,7 @@ function MyProductsPage() {
                             />
                         ))}
                     </div>
-                    {totalPages > 1 && (
-                        <Pagination className="mt-6 mb-4">
-                            <PaginationContent>
-                                <PaginationItem>
-                                    <PaginationPrevious
-                                        onClick={() => setPageNum(p => Math.max(1, p - 1))}
-                                        className={cn(pageNum <= 1 && 'pointer-events-none opacity-40')}
-                                    />
-                                </PaginationItem>
-                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                    <PaginationItem key={p}>
-                                        <PaginationLink
-                                            isActive={p === pageNum}
-                                            onClick={() => setPageNum(p)}
-                                        >
-                                            {p}
-                                        </PaginationLink>
-                                    </PaginationItem>
-                                ))}
-                                <PaginationItem>
-                                    <PaginationNext
-                                        onClick={() => setPageNum(p => p + 1)}
-                                        className={cn(pageNum >= totalPages && 'pointer-events-none opacity-40')}
-                                    />
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
-                    )}
+                    <PaginationBar pageNum={pageNum} totalPages={totalPages} onPageChange={goTo} />
                 </>
             )}
         </div>

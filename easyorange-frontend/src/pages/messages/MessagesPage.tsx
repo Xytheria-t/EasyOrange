@@ -1,18 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Brain, MessageCircle, RefreshCw, Send, Sparkles, Zap } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
 import { Button } from '@/components/ui/button';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from '@/components/ui/pagination';
-import { cn } from '@/lib/utils';
+import { PaginationBar } from '@/components/PaginationBar';
+import { usePagination } from '@/hooks/usePagination';
 import type { ChatSession } from '@/types';
 import './messages.css';
 
@@ -31,8 +24,7 @@ function MessagesPage() {
         staleTime: 15 * 1000,
     });
 
-    const [convPage, setConvPage] = useState(1);
-    const convPageSize = 10;
+    const { pageNum: convPage, pageSize: convPageSize, goTo: setConvPage } = usePagination({ pageSize: 10 });
 
     const totalConversationPages = Math.max(1, Math.ceil((conversations?.length ?? 0) / convPageSize));
     const paginatedConversations = useMemo(() => {
@@ -40,7 +32,7 @@ function MessagesPage() {
             return [];
         }
         return conversations.slice((convPage - 1) * convPageSize, convPage * convPageSize);
-    }, [conversations, convPage]);
+    }, [conversations, convPage, convPageSize]);
 
     if (isLoading) {
         return (
@@ -224,34 +216,7 @@ function MessagesPage() {
                         </div>
 
                         {/* Pagination for conversation list */}
-                        {totalConversationPages > 1 && (
-                            <Pagination className="py-3">
-                                <PaginationContent>
-                                    <PaginationItem>
-                                        <PaginationPrevious
-                                            onClick={() => setConvPage(p => Math.max(1, p - 1))}
-                                            className={cn(convPage <= 1 && 'pointer-events-none opacity-40')}
-                                        />
-                                    </PaginationItem>
-                                    {Array.from({ length: totalConversationPages }, (_, i) => i + 1).map(p => (
-                                        <PaginationItem key={p}>
-                                            <PaginationLink
-                                                isActive={p === convPage}
-                                                onClick={() => setConvPage(p)}
-                                            >
-                                                {p}
-                                            </PaginationLink>
-                                        </PaginationItem>
-                                    ))}
-                                    <PaginationItem>
-                                        <PaginationNext
-                                            onClick={() => setConvPage(p => p + 1)}
-                                            className={cn(convPage >= totalConversationPages && 'pointer-events-none opacity-40')}
-                                        />
-                                    </PaginationItem>
-                                </PaginationContent>
-                            </Pagination>
-                        )}
+                        <PaginationBar pageNum={convPage} totalPages={totalConversationPages} onPageChange={setConvPage} />
                     </div>
                 </div>
 
