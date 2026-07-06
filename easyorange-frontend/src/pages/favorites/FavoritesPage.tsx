@@ -9,6 +9,15 @@ import { Image } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP } from '@/constants';
 import { useUIStore } from '@/store/uiStore';
 import type { Favorite } from '@/types';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import { cn } from '@/lib/utils';
 import './favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -18,7 +27,7 @@ const CONDITION_ICONS: Record<number, string> = {
     4: '📦',
 };
 
-function FavoritesPage() {
+export default function FavoritesPage() {
     const navigate = useNavigate();
     const addToast = useUIStore(s => s.addToast);
     const queryClient = useQueryClient();
@@ -218,6 +227,7 @@ function FavoritesPage() {
                                         strokeWidth="1.5"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
+                                        aria-hidden="true"
                                     >
                                         <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                                     </svg>
@@ -347,11 +357,10 @@ function FavoritesPage() {
                             const sellerName = product.username || '匿名用户';
 
                             return (
-                                <div
+                                <button
+                                    type="button"
                                     key={fav.id}
                                     className={`fav-card${selectedIds.has(fav.id) ? ' selected' : ''}`}
-                                    role="button"
-                                    tabIndex={0}
                                     onClick={() => navigate(`/products/${product.id}`)}
                                     onKeyDown={e => e.key === 'Enter' && navigate(`/products/${product.id}`)}
                                 >
@@ -365,6 +374,7 @@ function FavoritesPage() {
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
 
+                                        {/* biome-ignore lint/a11y/useSemanticElements: wrapper div for custom checkbox overlay */ }
                                         <div
                                             className="fav-card-checkbox"
                                             role="checkbox"
@@ -394,6 +404,7 @@ function FavoritesPage() {
                                                 strokeWidth="2"
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
+                                                aria-hidden="true"
                                             >
                                                 <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                                             </svg>
@@ -487,38 +498,41 @@ function FavoritesPage() {
                                             </span>
                                         </div>
                                     </div>
-                                </div>
+                                </button>
                             );
                         })}
                     </div>
 
                     {totalPages > 1 && (
-                        <div className="favorites-pagination">
-                            <Button
-                                variant="outline"
-                                className="pagination-btn"
-                                onClick={() => setPageNum(p => Math.max(1, p - 1))}
-                                disabled={pageNum <= 1}
-                            >
-                                上一页
-                            </Button>
-                            <span className="pagination-info">
-                                {pageNum} / {totalPages}
-                            </span>
-                            <Button
-                                variant="outline"
-                                className="pagination-btn"
-                                onClick={() => setPageNum(p => Math.min(totalPages, p + 1))}
-                                disabled={pageNum >= totalPages}
-                            >
-                                下一页
-                            </Button>
-                        </div>
+                        <Pagination className="favorites-pagination">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={() => setPageNum(p => Math.max(1, p - 1))}
+                                        className={cn(pageNum <= 1 && 'pointer-events-none opacity-40')}
+                                    />
+                                </PaginationItem>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                    <PaginationItem key={p}>
+                                        <PaginationLink
+                                            isActive={p === pageNum}
+                                            onClick={() => setPageNum(p)}
+                                        >
+                                            {p}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={() => setPageNum(p => p + 1)}
+                                        className={cn(pageNum >= totalPages && 'pointer-events-none opacity-40')}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
                     )}
                 </div>
             </div>
         </div>
     );
 }
-
-export default FavoritesPage;

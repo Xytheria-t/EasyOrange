@@ -955,50 +955,6 @@
     height: 18px;
 }
 
-/* ============ PAGINATION ============ */
-.favorites-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    margin-top: 2.5rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--gray-100);
-}
-
-.favorites-pagination .pagination-btn {
-    padding: 0.5rem 1.25rem;
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--gray-200);
-    background: var(--white);
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    font-weight: 600;
-    transition: all var(--transition-fast);
-    height: auto;
-    min-height: unset;
-}
-
-.favorites-pagination .pagination-btn:hover:not(:disabled) {
-    background: var(--gradient-primary);
-    color: var(--white);
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-}
-
-.favorites-pagination .pagination-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.favorites-pagination .pagination-info {
-    font-family: var(--font-accent);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
 /* ============ AI SECTION ============ */
 .favorites-ai-section {
     margin-bottom: 2rem;
