@@ -63,10 +63,10 @@ vi.mock('../../components/ConfirmModal', () => ({
             <div data-testid="confirm-modal">
                 <div>{props.title}</div>
                 <div>{props.content}</div>
-                <button onClick={props.onConfirm} data-testid="confirm-yes">
+                <button type="button" onClick={props.onConfirm} data-testid="confirm-yes">
                     {props.confirmText}
                 </button>
-                <button onClick={props.onCancel} data-testid="confirm-no">
+                <button type="button" onClick={props.onCancel} data-testid="confirm-no">
                     {props.cancelText}
                 </button>
             </div>

@@ -6,6 +6,7 @@ const QUICK_ACTIONS = [
         path: '/admin/products?status=0',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -29,6 +30,7 @@ const QUICK_ACTIONS = [
         path: '/admin/reports',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -52,6 +54,7 @@ const QUICK_ACTIONS = [
         path: '/admin/orders',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -74,6 +77,7 @@ const QUICK_ACTIONS = [
         path: '/admin/users',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -98,6 +102,7 @@ const QUICK_ACTIONS = [
         path: '/admin/categories',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -124,6 +129,7 @@ const QUICK_ACTIONS = [
         path: '/admin/stats',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"

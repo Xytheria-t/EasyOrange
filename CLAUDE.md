@@ -3,13 +3,9 @@ tags:
   - always-on
 ---
 
-# EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
+# EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
 
-**EasyOrange** 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路。基于 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 全栈架构,**2025 年 11 月启动开发**。
-
-> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
-
-> 以 C2C 资产流转为业务载体，在真实场景中完整落地工业级架构。
+**EasyOrange** 是一个架构参考项目，完整落地 **DDD 六边形 + CQRS + Saga + 事件驱动 + AI Port/Adapter** 等模式。11 模块全解耦，1,269 测试，ArchUnit 架构守卫，CI/CD 全自动。业务载体为 C2C 资产流转（固定价格 + 直发 + 平台不碰货），**业务不是重点，工程才是核心**。**2025 年 11 月启动开发**。
 
 ## 项目结构
 
@@ -133,7 +129,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **管理端样式约定**: `src/admin/` 下所有页面和组件**必须使用内联 `style={{}}` 方式编写样式**，禁止依赖外部CSS文件。原因：`admin-layout.css` 的 `.admin-content` 容器会导致外部CSS选择器优先级冲突或样式不生效。唯一例外是 `src/admin/styles/admin.css`（侧边栏/头部布局样式），由 AdminLayout 统一 import
 - **管理端下拉菜单**: 所有 `<select>` 必须使用 `AdminSelect` 组件（位于 `src/admin/components/AdminSelect.tsx`）。原生 `<select>` 无法自定义选项样式且各浏览器渲染不一致。AdminSelect 通过 React `createPortal` 将下拉面板渲染到 `document.body`，解决父级 `backdrop-filter`/`transform` 导致的 fixed 定位失效问题
 - **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则 C 端 Header/导航栏会在管理页面显示
-- **UUID v7 ID**: 全库 ID 已从 Snowflake (Long) 迁移至 UUID v7 (RFC 9562, String)。后端所有实体 ID 原生为 `String` 类型，无需 Jackson 序列化配置。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端 TypeScript 中所有实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。迁移脚本 `V5__change_all_ids_to_varchar.sql` 已执行。
+- **UUID v7 ID**: 全库 ID 使用 UUID v7 (RFC 9562, String)，已彻底移除 Snowflake 备选代码。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端 TypeScript 中所有实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。迁移脚本 `V5__change_all_ids_to_varchar.sql` 已执行。
 - **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
 - **管理员角色判断**: 判断用户是否为管理员必须使用 `ADMIN_USER_TYPE` 常量（位于 `src/constants/app.ts`），禁止硬编码 `'00'`。使用处包括 `AdminMenuEntry`、`useAdminGuard` 等
 - **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能
@@ -152,8 +148,9 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（SubclassByteBuddyMockMaker 不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId)` + `} finally { TestSecurityUtil.clearSecurityContext(); }` 模式。工具类位于 `easyorange-framework/src/main/java/.../util/TestSecurityUtil.java`，所有模块测试通用。`clearSecurityContext()` 必须在 `finally` 块中调用，确保测试间隔离
 - **不可变集合**: 全项目统一使用 Java 9+ 不可变集合工厂方法，**禁止使用 `Collections` 工具类创建空/单元素/不可包装集合**。具体规则见 `.trae/rules/java/coding-style.md` §Immutability
-- **前端 ESLint jsx-a11y**: 所有非交互元素（div/span/article）上的点击事件必须改为语义化的 `button` 元素，或添加 `role="button"` + `tabIndex={0}` + `onKeyDown`。`label` 元素必须通过 `htmlFor` 关联表单控件或使用嵌套结构
-- **前端 ESLint curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`
+- **前端 Biome useSemanticElements**: 优先使用语义化 HTML 元素，禁止使用 `div role="button"` 替代 `<button type="button">`（Biome `lint/a11y/useSemanticElements` 会报错）。`role="group"` → `<fieldset>`，`role="region"` → `<section>`。仅限自定义复选框等无法直接使用语义元素且加 `role` 有意义的场景，用 `{/* biome-ignore lint/a11y/useSemanticElements: 原因 */}` 抑制
+- **前端 Biome noSvgWithoutTitle**: 装饰性 SVG 图标必须添加 `aria-hidden="true"`。有意义图标添加 `role="img"` + `<title>` 或 `aria-label`
+- **前端 Biome curly**: 所有 if/else/for/while 语句必须使用大括号，即使单行也要加 `{}`（Biome `lint/style/useBlockStatements` 强制执行）`
 - **前端 React Hooks**: `useEffect` 内禁止同步调用 `setState`（会触发无限循环）。使用 `useReducer` 或将状态逻辑移出 effect
 - **前端 scrollIntoView 防误触发**: 使用 `scrollIntoView` 自动滚动时，必须通过 ref 记录上一次状态（如历史记录长度），仅在数据真正新增时滚动。禁止在依赖数组仅为 props/state 的 `useEffect` 中无条件调用 `scrollIntoView`，否则组件挂载/数据初始化时会意外滚动整个页面
 - **注册昵称默认值**: 注册时 `nick_name` 默认等于 `username`，禁止引入随机昵称生成逻辑。用户后续可通过 `updatePersonalInfo` 接口自由修改昵称（`NicknameGeneratorPort`/`NicknameGenerator` 已删除）

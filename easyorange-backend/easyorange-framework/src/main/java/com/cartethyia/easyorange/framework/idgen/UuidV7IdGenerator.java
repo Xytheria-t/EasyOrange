@@ -11,7 +11,6 @@ import java.util.UUID;
  *       | 2-bit 变体(10) | 62-bit 随机
  * <p>
  * 优势：零协调、无 WorkerId 管理、时间有序、128-bit 全局唯一、纯内存生成
- * 是 Snowflake 的现代替代方案（RFC 标准）。
  */
 public class UuidV7IdGenerator implements IdGenerator {
 

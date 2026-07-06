@@ -240,7 +240,7 @@ function EditProductPage() {
                         </div>
                         <div className="edit-image-grid">
                             {vals.imageUrls.map((url, index) => (
-                                <div key={index} className={`edit-image-item ${index === 0 ? 'is-cover' : ''}`}>
+                                <div key={url} className={`edit-image-item ${index === 0 ? 'is-cover' : ''}`}>
                                     <img src={url} alt={`商品图片 ${index + 1}`} />
                                     {index === 0 && <span className="edit-cover-badge">封面</span>}
                                     <Button

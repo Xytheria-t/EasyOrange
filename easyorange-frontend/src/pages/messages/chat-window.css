@@ -282,7 +282,6 @@
 .chat-date-separator span {
     font-size: 0.6875rem;
     color: var(--text-tertiary);
-    padding: 0 1rem;
     white-space: nowrap;
     font-weight: 600;
     letter-spacing: 0.05em;

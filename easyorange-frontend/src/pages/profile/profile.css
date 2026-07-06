@@ -871,6 +871,7 @@
     gap: 0.125rem;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: general rule after specific override */
 .metric-value {
     font-family: var(--font-display);
     font-size: 1.25rem;
@@ -880,12 +881,14 @@
     line-height: 1;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: general rule after specific override */
 .metric-label {
     font-size: 0.7rem;
     color: var(--profile-ink-soft);
     font-weight: 600;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: general rule after specific override */
 .metric-trend {
     display: flex;
     align-items: center;

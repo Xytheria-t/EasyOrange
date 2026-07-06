@@ -697,10 +697,19 @@
 
 /* ============ REDUCED MOTION ============ */
 @media (prefers-reduced-motion: reduce) {
-    .messages-orb,
-    .empty-orbit,
-    .messages-kicker .kicker-dot,
+    .messages-orb {
+        animation: none;
+    }
+    /* biome-ignore lint/style/noDescendingSpecificity: reduced-motion override */
+    .empty-orbit {
+        animation: none;
+    }
+    /* biome-ignore lint/style/noDescendingSpecificity: reduced-motion override */
     .loading-spinner {
+        animation: none;
+    }
+    /* biome-ignore lint/style/noDescendingSpecificity: reduced-motion override */
+    .messages-kicker .kicker-dot {
         animation: none;
     }
 

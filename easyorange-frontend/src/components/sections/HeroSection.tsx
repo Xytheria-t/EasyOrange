@@ -249,7 +249,9 @@ export default function HeroSection() {
                         <span className="title-glow"></span>
                     </h1>
 
-                    <p className="hero-subtitle animate-slide-up delay-1">AI 工程化 · 调通 API 只是起点，让大模型在真实业务中稳定运行</p>
+                    <p className="hero-subtitle animate-slide-up delay-1">
+                        AI 工程化 · 调通 API 只是起点，让大模型在真实业务中稳定运行
+                    </p>
 
                     <div className="hero-search animate-slide-up delay-2">
                         <form className="search-wrapper glass-card" onSubmit={handleSearchSubmit}>
@@ -274,7 +276,13 @@ export default function HeroSection() {
                             />
                             <Button type="submit" className="search-btn">
                                 <span>搜索</span>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    aria-hidden="true"
+                                >
                                     <line x1="5" y1="12" x2="19" y2="12" />
                                     <polyline points="12 5 19 12 12 19" />
                                 </svg>
@@ -320,7 +328,13 @@ export default function HeroSection() {
                     <div className="hero-ai-entry animate-slide-up delay-3">
                         <Button variant="outline" className="ai-entry-btn">
                             <div className="ai-entry-icon">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    aria-hidden="true"
+                                >
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                 </svg>
                                 <div className="ai-icon-ring" />
@@ -443,7 +457,12 @@ export default function HeroSection() {
                                 <span className="float-particles"></span>
                             </div>
                         </div>
-                        <svg className="float-connections" viewBox="0 0 400 400" preserveAspectRatio="none" aria-hidden="true">
+                        <svg
+                            className="float-connections"
+                            viewBox="0 0 400 400"
+                            preserveAspectRatio="none"
+                            aria-hidden="true"
+                        >
                             <defs>
                                 <linearGradient id="lineGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" stopColor="rgba(249, 115, 22, 0.15)" />

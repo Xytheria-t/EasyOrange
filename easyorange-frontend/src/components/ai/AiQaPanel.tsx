@@ -105,9 +105,9 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
                         <p className="qa-empty-title">向 AI 询问关于商品的任何问题</p>
                         <p className="qa-empty-desc">智能助手将基于商品信息为您提供专业解答</p>
                         <div className="qa-suggested-questions">
-                            {suggestedQuestions.map((q, idx) => (
+                            {suggestedQuestions.map(q => (
                                 <Button
-                                    key={idx}
+                                    key={q}
                                     variant="outline"
                                     size="sm"
                                     className="qa-suggested-chip"
@@ -125,6 +125,7 @@ function AiQaPanel({ product, onAsk, qaHistory, isLoading }: AiQaPanelProps) {
                 ) : (
                     <div className="qa-messages">
                         {qaHistory.map((item, index) => (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: qa history items order never changes
                             <div key={index} className="qa-message-group">
                                 <div className="qa-message user-message">
                                     <div className="qa-message-avatar user-avatar">

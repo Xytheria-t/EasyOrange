@@ -12,6 +12,7 @@ const SectionSkeleton = () => (
             <div className="skeleton-title" />
             <div className="skeleton-grid">
                 {[...Array(4)].map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
                     <div key={i} className="skeleton-card">
                         <div className="skeleton-image" />
                         <div className="skeleton-text" />

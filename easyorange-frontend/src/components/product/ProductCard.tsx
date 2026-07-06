@@ -109,6 +109,7 @@ export const ProductCard = memo(
         };
 
         return (
+            // biome-ignore lint/a11y/useSemanticElements: card wrapper contains nested interactive buttons
             <div
                 ref={cardRef}
                 className="product-card-premium"

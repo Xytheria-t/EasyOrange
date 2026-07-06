@@ -201,7 +201,7 @@ export default function ProductsSection() {
                     </div>
                     <a href="/products" className="view-all-link">
                         查看全部
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <line x1="5" y1="12" x2="19" y2="12" />
                             <polyline points="12 5 19 12 12 19" />
                         </svg>
@@ -212,6 +212,7 @@ export default function ProductsSection() {
                     {isLoading ? (
                         <div className="skeleton-grid">
                             {[...Array(4)].map((_, i) => (
+                                // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list, order never changes
                                 <div key={i} className="skeleton-card">
                                     <div className="skeleton-image" />
                                     <div className="skeleton-content">
@@ -249,7 +250,7 @@ export default function ProductsSection() {
                 >
                     <Button variant="outline" size="lg" onClick={() => navigate('/products')}>
                         <span>查看更多资产</span>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <line x1="5" y1="12" x2="19" y2="12" />
                             <polyline points="12 5 19 12 12 19" />
                         </svg>

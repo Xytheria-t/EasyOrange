@@ -96,12 +96,12 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
     return (
         <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-4`}>
             <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'} flex flex-col gap-1.5`}>
-                <div
+                <button
+                    type="button"
                     className={`chat-bubble ${isOwn ? 'chat-bubble-own' : 'chat-bubble-other'} ${isRecalled ? 'chat-bubble-recalled' : ''}`}
                     onTouchStart={handleTouchStart}
                     onTouchEnd={handleTouchEnd}
                     onContextMenu={showMenu}
-                    role="button"
                     tabIndex={-1}
                     onKeyDown={() => {}}
                 >
@@ -125,7 +125,12 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                                 )}
 
                                 {message.status === 'FAILED' && (
-                                    <svg className="w-3.5 h-3.5 text-red-400" viewBox="0 0 16 16" fill="currentColor">
+                                    <svg
+                                        className="w-3.5 h-3.5 text-red-400"
+                                        viewBox="0 0 16 16"
+                                        fill="currentColor"
+                                        aria-hidden="true"
+                                    >
                                         <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.15" />
                                         <path
                                             d="M8 4v5"
@@ -145,7 +150,7 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                             </>
                         )}
                     </div>
-                </div>
+                </button>
 
                 {menuVisible && (
                     <div

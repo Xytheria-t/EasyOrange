@@ -99,7 +99,7 @@ easyorange-application
 - `rate-limit-filter` — 限流+防重 Filter 配置（规则列表、防重间隔、方法匹配）
 - `easyorange.thread-pool` — 线程池配置
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
-- `easyorange.idgen.*` — ID 生成器配置（UUID v7 为默认 `@Primary`；Snowflake 备选需 `enabled=true`）
+- ~~`easyorange.idgen.*`~~ — ID 生成器配置（已移除，UUID v7 零配置零依赖）
 - `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
 - `http-client.*` — HTTP 客户端超时和协议版本
 

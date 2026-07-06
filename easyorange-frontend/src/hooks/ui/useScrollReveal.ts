@@ -21,7 +21,9 @@ export function useScrollReveal(threshold = 0.15) {
             }
         );
 
-        revealElements.forEach(el => observer.observe(el));
+        revealElements.forEach(el => {
+            observer.observe(el);
+        });
 
         return () => observer.disconnect();
     }, [threshold]);

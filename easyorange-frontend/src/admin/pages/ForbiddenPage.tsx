@@ -69,6 +69,7 @@ function ForbiddenPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="36"
                                 height="36"
                                 viewBox="0 0 24 24"
@@ -128,6 +129,7 @@ function ForbiddenPage() {
                     }}
                 >
                     <svg
+                        aria-hidden="true"
                         width="16"
                         height="16"
                         viewBox="0 0 24 24"

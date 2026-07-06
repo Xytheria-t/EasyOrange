@@ -556,7 +556,7 @@ function ProductDetailPage() {
                             <div className="pdp-gallery-thumbs">
                                 {images.map((img, idx) => (
                                     <Button
-                                        key={idx}
+                                        key={img}
                                         variant="ghost"
                                         onClick={() => setCurrentImageIndex(idx)}
                                         className={`pdp-thumb ${idx === currentImageIndex ? 'active' : ''}`}
@@ -1175,9 +1175,9 @@ function ProductDetailPage() {
                     </div>
 
                     <div className="pdp-chat-quick-replies">
-                        {quickReplies.map((text, idx) => (
+                        {quickReplies.map(text => (
                             <Button
-                                key={idx}
+                                key={text}
                                 variant="outline"
                                 size="sm"
                                 className="pdp-chat-quick-reply"
@@ -1236,7 +1236,7 @@ function ProductDetailPage() {
                             <Label className="pdp-form-label" id="review-rating-label">
                                 评分
                             </Label>
-                            <div className="pdp-review-stars" role="group" aria-labelledby="review-rating-label">
+                            <fieldset className="pdp-review-stars" aria-labelledby="review-rating-label">
                                 {[1, 2, 3, 4, 5].map(star => (
                                     <Button
                                         key={star}
@@ -1249,7 +1249,7 @@ function ProductDetailPage() {
                                         <Star size={24} fill={star <= reviewForm.rating ? 'currentColor' : 'none'} />
                                     </Button>
                                 ))}
-                            </div>
+                            </fieldset>
                         </div>
                         <div className="pdp-form-group">
                             <Label htmlFor="review-content">评价内容</Label>

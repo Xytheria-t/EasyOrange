@@ -59,10 +59,9 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
     return (
         <>
             {isOpen && (
-                <div
+                <button
+                    type="button"
                     className="filter-overlay active"
-                    role="button"
-                    tabIndex={0}
                     onClick={onClose}
                     onKeyDown={e => e.key === 'Enter' && onClose()}
                     aria-label="关闭筛选面板"
@@ -79,7 +78,7 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                         onClick={onClose}
                         aria-label="关闭筛选面板"
                     >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <line x1="18" y1="6" x2="6" y2="18" />
                             <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
@@ -89,7 +88,13 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
                 <div className="filter-content">
                     <div className="filter-section">
                         <h4 className="filter-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                aria-hidden="true"
+                            >
                                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                             </svg>
                             商品分类
@@ -117,7 +122,13 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
 
                     <div className="filter-section">
                         <h4 className="filter-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                aria-hidden="true"
+                            >
                                 <line x1="12" y1="1" x2="12" y2="23" />
                                 <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                             </svg>
@@ -184,7 +195,13 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
 
                     <div className="filter-section">
                         <h4 className="filter-title">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                aria-hidden="true"
+                            >
                                 <circle cx="12" cy="12" r="10" />
                                 <path d="M12 6v6l4 2" />
                             </svg>

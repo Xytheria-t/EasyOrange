@@ -63,7 +63,7 @@ export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 
     return (
         <div style={{ overflowX: 'auto', padding: '0.5rem 0' }}>
-            <svg width={chartWidth} height={chartHeight} style={{ display: 'block' }}>
+            <svg aria-hidden="true" width={chartWidth} height={chartHeight} style={{ display: 'block' }}>
                 {/* Day labels */}
                 {DAY_LABELS.map((label, i) => (
                     <text
@@ -96,6 +96,7 @@ export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
                 {grid.map((row, dayIdx) =>
                     row.map((count, hour) => (
                         <rect
+                            // biome-ignore lint/suspicious/noArrayIndexKey: stable grid
                             key={`${dayIdx}-${hour}`}
                             x={padding.left + hour * (cellSize + cellGap)}
                             y={padding.top + dayIdx * (cellSize + cellGap)}

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.application.saga;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.framework.idgen.SnowflakeIdGenerator;
+import com.cartethyia.easyorange.framework.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
@@ -82,7 +82,7 @@ class CreateOrderSagaCompensationTest {
     private ProductQueryPort productQueryPort;
 
     @Mock
-    private SnowflakeIdGenerator snowflakeIdGenerator;
+    private IdGenerator idGenerator;
 
     private CreateOrderSaga saga;
 
@@ -95,9 +95,9 @@ class CreateOrderSagaCompensationTest {
         var lockManager = new DistributedLockManager(redisCache);
         var sagaCoordinator = new SagaCoordinator(sagaRepository, objectMapper);
         var compensationService = new OrderCompensationService(orderRepository, orderCachePort);
-        var preparationService = new OrderPreparationService(productInventoryPort, productQueryPort, snowflakeIdGenerator);
+        var preparationService = new OrderPreparationService(productInventoryPort, productQueryPort, idGenerator);
         var orderCreationExecutor = new OrderCreationExecutor(
-            orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, snowflakeIdGenerator
+            orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, idGenerator
         );
         saga = new CreateOrderSaga(lockManager, sagaCoordinator, compensationService, orderCreationExecutor);
 
@@ -109,7 +109,7 @@ class CreateOrderSagaCompensationTest {
 
         when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of());
-        when(snowflakeIdGenerator.generateId()).thenReturn("ORD100");
+        when(idGenerator.generateId()).thenReturn("ORD100");
     }
 
     @Test

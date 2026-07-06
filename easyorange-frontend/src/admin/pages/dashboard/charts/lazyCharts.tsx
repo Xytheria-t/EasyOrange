@@ -16,6 +16,7 @@ interface TopProductsChartProps {
 
 const ChartFallback = ({ height = 200 }: { height?: number }) => (
     <div
+        role="img"
         aria-label="图表加载中"
         className="flex items-center justify-center rounded-xl bg-white/40"
         style={{ height, color: '#B5AEA8', fontSize: '0.85rem' }}

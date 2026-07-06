@@ -111,6 +111,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                     >
                         <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#F97316,#FB923C)] text-white">
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -135,6 +136,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
                         aria-label="关闭"
                     >
                         <svg
+                            aria-hidden="true"
                             width="14"
                             height="14"
                             viewBox="0 0 24 24"

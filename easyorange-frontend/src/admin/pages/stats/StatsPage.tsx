@@ -118,6 +118,7 @@ export default function StatsPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="15"
                                 height="15"
                                 viewBox="0 0 24 24"
@@ -289,6 +290,7 @@ export default function StatsPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="16"
                                 height="16"
                                 viewBox="0 0 24 24"
@@ -438,6 +440,7 @@ export default function StatsPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                             {recentActivity.map((activity, idx) => (
                                 <div
+                                    // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                     key={idx}
                                     style={{
                                         display: 'flex',

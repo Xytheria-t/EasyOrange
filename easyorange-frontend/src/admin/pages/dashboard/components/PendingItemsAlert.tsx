@@ -93,6 +93,7 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                         }}
                     >
                         <svg
+                            aria-hidden="true"
                             width="15"
                             height="15"
                             viewBox="0 0 24 24"
@@ -144,6 +145,7 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                         {Array.from({ length: 3 }).map((_, i) => (
                             <div
+                                // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                 key={i}
                                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                             >
@@ -257,6 +259,7 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                                 >
                                     立即处理
                                     <svg
+                                        aria-hidden="true"
                                         width="14"
                                         height="14"
                                         viewBox="0 0 24 24"
@@ -351,6 +354,7 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                                 >
                                     立即处理
                                     <svg
+                                        aria-hidden="true"
                                         width="14"
                                         height="14"
                                         viewBox="0 0 24 24"
@@ -445,6 +449,7 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                                 >
                                     立即处理
                                     <svg
+                                        aria-hidden="true"
                                         width="14"
                                         height="14"
                                         viewBox="0 0 24 24"

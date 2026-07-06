@@ -74,6 +74,7 @@ const QUICK_ACTIONS = [
         path: '/admin/products?status=0',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -97,6 +98,7 @@ const QUICK_ACTIONS = [
         path: '/admin/reports',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -120,6 +122,7 @@ const QUICK_ACTIONS = [
         path: '/admin/orders',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -142,6 +145,7 @@ const QUICK_ACTIONS = [
         path: '/admin/users',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -166,6 +170,7 @@ const QUICK_ACTIONS = [
         path: '/admin/categories',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -192,6 +197,7 @@ const QUICK_ACTIONS = [
         path: '/admin/stats',
         icon: (
             <svg
+                aria-hidden="true"
                 width="18"
                 height="18"
                 viewBox="0 0 24 24"
@@ -589,6 +595,7 @@ export default function DashboardPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -664,6 +671,7 @@ export default function DashboardPage() {
                     {statsLoading ? (
                         Array.from({ length: 5 }).map((_, i) => (
                             <div
+                                // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                 key={i}
                                 style={{
                                     background: 'rgba(255,255,255,0.65)',
@@ -703,6 +711,7 @@ export default function DashboardPage() {
                                     accent="orange"
                                     icon={
                                         <svg
+                                            aria-hidden="true"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -726,6 +735,7 @@ export default function DashboardPage() {
                                     accent="rose"
                                     icon={
                                         <svg
+                                            aria-hidden="true"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -749,6 +759,7 @@ export default function DashboardPage() {
                                     accent="purple"
                                     icon={
                                         <svg
+                                            aria-hidden="true"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -772,6 +783,7 @@ export default function DashboardPage() {
                                     accent="gold"
                                     icon={
                                         <svg
+                                            aria-hidden="true"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -795,6 +807,7 @@ export default function DashboardPage() {
                                     accent="emerald"
                                     icon={
                                         <svg
+                                            aria-hidden="true"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -992,6 +1005,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -1043,6 +1057,7 @@ export default function DashboardPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                                     {Array.from({ length: 3 }).map((_, i) => (
                                         <div
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                             key={i}
                                             style={{
                                                 display: 'flex',
@@ -1161,6 +1176,7 @@ export default function DashboardPage() {
                                             >
                                                 立即处理
                                                 <svg
+                                                    aria-hidden="true"
                                                     width="14"
                                                     height="14"
                                                     viewBox="0 0 24 24"
@@ -1255,6 +1271,7 @@ export default function DashboardPage() {
                                             >
                                                 立即处理
                                                 <svg
+                                                    aria-hidden="true"
                                                     width="14"
                                                     height="14"
                                                     viewBox="0 0 24 24"
@@ -1350,6 +1367,7 @@ export default function DashboardPage() {
                                             >
                                                 立即处理
                                                 <svg
+                                                    aria-hidden="true"
                                                     width="14"
                                                     height="14"
                                                     viewBox="0 0 24 24"
@@ -1397,6 +1415,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -1436,6 +1455,7 @@ export default function DashboardPage() {
                             >
                                 查看全部
                                 <svg
+                                    aria-hidden="true"
                                     width="13"
                                     height="13"
                                     viewBox="0 0 24 24"
@@ -1454,6 +1474,7 @@ export default function DashboardPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                                     {Array.from({ length: 3 }).map((_, i) => (
                                         <div
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                             key={i}
                                             style={{
                                                 display: 'flex',
@@ -1661,6 +1682,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -1699,6 +1721,7 @@ export default function DashboardPage() {
                             >
                                 查看全部
                                 <svg
+                                    aria-hidden="true"
                                     width="13"
                                     height="13"
                                     viewBox="0 0 24 24"
@@ -1717,6 +1740,7 @@ export default function DashboardPage() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                                     {Array.from({ length: 3 }).map((_, i) => (
                                         <div
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                             key={i}
                                             style={{
                                                 display: 'flex',
@@ -1938,6 +1962,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -1974,6 +1999,7 @@ export default function DashboardPage() {
                             >
                                 详情
                                 <svg
+                                    aria-hidden="true"
                                     width="13"
                                     height="13"
                                     viewBox="0 0 24 24"
@@ -2010,6 +2036,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -2051,6 +2078,7 @@ export default function DashboardPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"

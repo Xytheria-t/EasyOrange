@@ -56,7 +56,9 @@ vi.mock('@/components/chat', () => ({
     ),
     ChatInputBar: ({ onSend }: { onSend: (content: string) => void }) => (
         <div data-testid="chat-input-bar">
-            <button onClick={() => onSend?.('hello')}>send-btn</button>
+            <button type="button" onClick={() => onSend?.('hello')}>
+                send-btn
+            </button>
         </div>
     ),
 }));

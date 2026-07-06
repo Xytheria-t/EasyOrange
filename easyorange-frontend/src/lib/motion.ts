@@ -44,7 +44,9 @@ export class MotionController {
 
     refresh(root: ParentNode = document): void {
         const targets = this.collectTargets(root);
-        targets.forEach((element, index) => this.prepareTarget(element, index));
+        targets.forEach((element, index) => {
+            this.prepareTarget(element, index);
+        });
     }
 
     destroy(): void {

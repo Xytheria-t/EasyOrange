@@ -78,7 +78,7 @@ export function Header() {
                 {/* 品牌 Logo */}
                 <Link to="/" className="floating-nav__brand" aria-label="EasyOrange首页">
                     <div className="floating-nav__logo">
-                        <svg viewBox="0 0 40 40" fill="none">
+                        <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
                             <defs>
                                 <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" stopColor="#F97316" />
@@ -181,6 +181,7 @@ export function Header() {
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
+                                aria-hidden="true"
                             >
                                 <polyline points="6 9 12 15 18 9" />
                             </svg>
@@ -193,7 +194,13 @@ export function Header() {
                                 onClick={() => setIsUserMenuOpen(false)}
                                 data-testid="menu-item-profile"
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    aria-hidden="true"
+                                >
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                     <circle cx="12" cy="7" r="4" />
                                 </svg>
@@ -204,7 +211,13 @@ export function Header() {
                                 className="floating-nav__menu-item"
                                 onClick={() => setIsUserMenuOpen(false)}
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    aria-hidden="true"
+                                >
                                     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                                 </svg>
                                 <span>我的收藏</span>
@@ -214,7 +227,13 @@ export function Header() {
                                 className="floating-nav__menu-item"
                                 onClick={() => setIsUserMenuOpen(false)}
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    aria-hidden="true"
+                                >
                                     <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
                                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                                 </svg>
@@ -226,7 +245,13 @@ export function Header() {
                                     className="floating-nav__menu-item floating-nav__menu-item--admin"
                                     onClick={() => setIsUserMenuOpen(false)}
                                 >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        aria-hidden="true"
+                                    >
                                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                                         <path d="M9 12l2 2 4-4" />
                                     </svg>
@@ -240,7 +265,13 @@ export function Header() {
                                 onClick={handleLogoutClick}
                                 data-testid="btn-logout"
                             >
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    aria-hidden="true"
+                                >
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                                     <polyline points="16 17 21 12 16 7" />
                                     <line x1="21" y1="12" x2="9" y2="12" />
@@ -253,7 +284,13 @@ export function Header() {
                     {/* 登录按钮 */}
                     {isLoggedIn ? null : (
                         <Button className="floating-nav__login-btn" onClick={handleLoginClick} data-testid="btn-login">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                aria-hidden="true"
+                            >
                                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                                 <circle cx="12" cy="7" r="4" />
                             </svg>
@@ -270,6 +307,7 @@ export function Header() {
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2.5"
+                                aria-hidden="true"
                             >
                                 <line x1="12" y1="5" x2="12" y2="19" />
                                 <line x1="5" y1="12" x2="19" y2="12" />

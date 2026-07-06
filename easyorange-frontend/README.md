@@ -1,6 +1,6 @@
-# EasyOrange Frontend (AI 工程化)
+# EasyOrange Frontend
 
-> 基于 React 19 + TypeScript + Vite 构建的现代化 SPA 应用（**2025 年 11 月启动**）
+> React 19 + TypeScript + Vite 构建的现代 SPA 应用，配套后端架构参考项目（**2025 年 11 月启动**）
 
 ## 技术栈
 
@@ -202,7 +202,7 @@ VITE_APP_TITLE=EasyOrange — AI 工程化
 ## 开发规范
 
 ### 代码风格
-- 使用 ESLint + Prettier
+- 使用 Biome 统一 lint + format（替代 ESLint + Prettier）
 - 所有函数和变量必须有类型注解
 - 优先使用 `const` 和不可变数据模式
 - 使用 async/await 处理异步逻辑

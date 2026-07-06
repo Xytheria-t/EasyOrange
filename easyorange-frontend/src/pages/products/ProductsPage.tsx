@@ -271,7 +271,11 @@ function ProductsPage() {
                     </div>
                     <div className="products-grid-premium">
                         {[...Array(10)].map((_, i) => (
-                            <div key={i} className="product-card-loading-premium">
+                            <div
+                                // biome-ignore lint/suspicious/noArrayIndexKey: stable loading skeleton
+                                key={i}
+                                className="product-card-loading-premium"
+                            >
                                 <div className="product-image-loading-premium" />
                                 <div className="product-info-loading">
                                     <div className="loading-line short" />
@@ -343,7 +347,7 @@ function ProductsPage() {
                     <div className="toolbar-actions">
                         <SemanticSearchToggle isActive={isSemanticMode} onToggle={toggleSemanticMode} />
                         <Button variant="outline" className="filter-toggle-btn" onClick={() => setIsFilterOpen(true)}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <line x1="4" y1="21" x2="4" y2="14" />
                                 <line x1="4" y1="10" x2="4" y2="3" />
                                 <line x1="12" y1="21" x2="12" y2="12" />
@@ -386,6 +390,7 @@ function ProductsPage() {
                                 {row.map((item: Product | null, colIndex: number) =>
                                     item === null ? (
                                         <div
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: stable buffer row
                                             key={`buffer-${virtualRow.index}-${colIndex}`}
                                             className="product-card-loading-premium"
                                         >
@@ -417,13 +422,13 @@ function ProductsPage() {
                     <div className="no-results-premium">
                         <div className={`no-results-icon-premium ${semanticError ? 'error' : ''}`}>
                             {semanticError ? (
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <circle cx="12" cy="12" r="10" />
                                     <line x1="12" y1="8" x2="12" y2="12" />
                                     <line x1="12" y1="16" x2="12.01" y2="16" />
                                 </svg>
                             ) : (
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                     <circle cx="11" cy="11" r="8" />
                                     <path d="M21 21l-4.35-4.35" />
                                     <path d="M8 8l6 6M14 8l-6 6" />

@@ -52,7 +52,7 @@ export function ProfileSecurity({ user, onEdit, onShowPasswordModal }: ProfileSe
             <div className="security-dashboard">
                 <div className="security-score-card">
                     <div className="score-visual">
-                        <svg className="score-ring" viewBox="0 0 120 120">
+                        <svg className="score-ring" viewBox="0 0 120 120" aria-hidden="true">
                             <defs>
                                 <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" stopColor="#ff9347" />
@@ -91,6 +91,7 @@ export function ProfileSecurity({ user, onEdit, onShowPasswordModal }: ProfileSe
                         const Icon = item.icon;
                         const isActive = item.status.includes('已');
                         return (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: static security items list, order never changes
                             <div className="setting-item" key={index}>
                                 <div className="setting-info">
                                     <div className="setting-icon">

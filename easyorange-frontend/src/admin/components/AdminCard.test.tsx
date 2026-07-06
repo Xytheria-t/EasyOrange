@@ -15,7 +15,7 @@ describe('AdminCard', () => {
     });
 
     it('renders extra content when provided', () => {
-        renderWithProviders(<AdminCard extra={<button>操作</button>}>内容</AdminCard>);
+        renderWithProviders(<AdminCard extra={<button type="button">操作</button>}>内容</AdminCard>);
         expect(screen.getByRole('button', { name: '操作' })).toBeInTheDocument();
     });
 

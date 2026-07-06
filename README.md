@@ -1,8 +1,6 @@
-# EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
+# EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
 
-> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
->
-> 以 C2C 资产流转为业务载体,完整落地 DDD 战术模式、CQRS 命令/查询分离、Saga 分布式事务、RabbitMQ 领域事件、Spring AMQP、Elasticsearch、Redis 多级缓存,以及 DeepSeek + 通义千问 VL 的多模态 AI 集成。
+> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,269 测试 + CI/CD 全自动。**业务是刻意简化的 C2C 资产流转（固定价格、平台不碰货），工程才是核心。**
 >
 > **2025 年 11 月启动开发**
 
@@ -13,21 +11,20 @@
 
 ## 项目定位
 
-**EasyOrange 是一个 AI 工程化全栈项目 — 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路。**
+**EasyOrange 是 Java 25 + Spring Boot 4 的架构参考项目 — 展示 DDD/CQRS/Saga/事件驱动/AI Port/Adapter 在模块化全栈工程中的协同落地。**
 
-> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
+项目基于 Spring Boot 4 + React 全栈，完整落地了以下架构模式：
 
-项目选 C2C 资产流转作为业务载体,是因为这个场景具备:
+| 架构模式 | 落地方式 |
+|---------|---------|
+| **DDD 六边形** | domain→application→adapter 分层，port/repository 接口隔离，ArchUnit 自动守卫 |
+| **CQRS** | product/order/payment/message 四模块读写分离，CommandHandler 禁止依赖 QueryHandler |
+| **Saga** | CreateOrderSaga 步骤化编排 + 反向补偿，持久化支持故障恢复 |
+| **事件驱动** | RabbitMQ Topic Exchange + 9 消费者 + DLQ + 指数退避，路由键自动派生 |
+| **AI Port/Adapter** | LlmPort/VisionPort 接口抽象 + @Primary 装饰器多级缓存 + 令牌桶限流 + stale 降级 |
+| **ACL 防腐层** | 7 对跨模块 Port/Adapter，Maven `<optional>true</optional>` 编译期强制隔离 |
 
-- **复杂领域模型** — 商品 / 订单 / 支付 / 消息 / 收藏 / 信用,聚合根、值对象、领域事件丰富
-- **跨模块事务** — 订单创建 → 库存锁定 → 支付 → 发货,Saga 模式天然落地
-- **实时通信需求** — 聊天 / 通知 / 信用变化,WebSocket + STOMP 协议验证
-- **AI 落地空间** — 智能估值 / 营销文案 / 智能找货 / 物品评估 / 信用画像,多模态集成充分
-- **CQRS 适用面** — 商品读多写少 + 搜索聚合,命令/查询分离收益明显
-
-业务场景本身被刻意简化:**资产方按固定价格发布商品,认领方浏览下单,平台不碰货、不囤货、不经手资金,C2C 直发**。这样能确保把全部精力放在架构与工程上。
-
-> 业务做减法,工程做加法——架构深度才是这个项目真正展示的东西。
+业务载体为 C2C 资产流转（固定价格 + C2C 直发 + 平台不碰货），业务被刻意简化，确保架构深度是项目的核心展示内容。
 
 ## 技术亮点
 
@@ -81,7 +78,7 @@ cd easyorange-frontend && npm install && npm run dev  # 前端 :5173
 cd .. && ./mvnw spring-boot:run -pl easyorange-application  # 后端 :8080
 ```
 
-> 项目支持**零配置启动**,MySQL/Redis 使用默认端口即可运行。详见 [CLAUDE.md](./CLAUDE.md) 和 [AGENTS.md](./AGENTS.md)。
+> 项目支持**零配置启动**,MySQL/Redis 使用默认端口即可运行。详见 [AGENTS.md](./AGENTS.md)。
 
 ## 后端模块划分 (11 个 Maven 模块)
 
@@ -99,9 +96,18 @@ cd .. && ./mvnw spring-boot:run -pl easyorange-application  # 后端 :8080
 | `easyorange-admin` | 管理端模块 (用户/商品/订单/分类/举报管理 API) |
 | `easyorange-application` | 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器 |
 
-## AI 能力清单
+## AI 工程化
 
-业务侧:资产方侧 3 个 AI 能力 (智能估值 / AI 营销文案 / 信用画像) + 认领方侧 3 个 AI 能力 (AI 智能找货 / AI 物品评估 / 信用画像)。**架构侧关注点**是 LLM/Vision 的端口抽象、多级缓存、限流降级、缓存装饰器,详见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
+AI 模块采用 Port/Adapter 六边形架构，核心关注点在工程化深度而非 AI 能力本身：
+
+| 工程维度 | 实现方式 |
+|---------|---------|
+| **供应商隔离** | LlmPort/VisionPort 接口抽象，DeepSeek/Qwen-VL 可互换，新增供应商只需新增 adapter |
+| **多级缓存** | `@Primary` 装饰器模式（CachingLlmAdapter 包裹 DeepSeekLlmAdapter），L1 Caffeine + L2 Redis + stale 降级 |
+| **限流降级** | Redis 令牌桶按端点独立限流（5-30 次/分），超限时优先返回 stale 缓存，Redis 不可用时 fail-open |
+| **并行容错** | 搜索增强 4 路 CompletableFuture 并行，单步骤超时/失败不影响其他步骤，5s 总超时 |
+
+详见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
 
 ## Docker 部署
 
@@ -150,6 +156,6 @@ MIT License — 详见 [LICENSE](LICENSE) 文件
 
 <div align="center">
 
-**EasyOrange** · DDD + CQRS + Saga + 事件驱动 + AI 多模态 · 让大模型在真实业务中稳定运行 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
+**EasyOrange** · Java 25 + Spring Boot 4 · DDD + CQRS + Saga + 事件驱动 + AI 多模态 · 业务做减法，工程做加法 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
 
 </div>

@@ -138,6 +138,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                     >
                         <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#F97316,#FB923C)] text-white">
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -161,6 +162,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                         aria-label="关闭"
                     >
                         <svg
+                            aria-hidden="true"
                             width="14"
                             height="14"
                             viewBox="0 0 24 24"
@@ -187,20 +189,14 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                             {/* Image gallery */}
                             {images.length > 0 && (
                                 <div className="flex flex-col gap-[0.65rem]">
-                                    <div
-                                        role="button"
-                                        tabIndex={0}
+                                    <button
+                                        type="button"
                                         className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
                                         style={{
                                             aspectRatio: '16/10',
                                             cursor: images[selectedImage] ? 'pointer' : 'default',
                                         }}
                                         onClick={() => images[selectedImage] && setPreviewImage(images[selectedImage])}
-                                        onKeyDown={e => {
-                                            if ((e.key === 'Enter' || e.key === ' ') && images[selectedImage]) {
-                                                setPreviewImage(images[selectedImage]);
-                                            }
-                                        }}
                                     >
                                         {images[selectedImage] ? (
                                             <img
@@ -211,6 +207,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                                         ) : (
                                             <div className="flex h-full items-center justify-center text-[#B5AEA8]">
                                                 <svg
+                                                    aria-hidden="true"
                                                     width="40"
                                                     height="40"
                                                     fill="none"
@@ -226,12 +223,12 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                                                 </svg>
                                             </div>
                                         )}
-                                    </div>
+                                    </button>
                                     {images.length > 1 && (
                                         <div className="flex gap-2 overflow-x-auto pb-1">
                                             {images.map((img, index) => (
                                                 <ShadcnButton
-                                                    key={index}
+                                                    key={img}
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => setSelectedImage(index)}
@@ -321,6 +318,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                             {productData.location && (
                                 <div className="flex items-center gap-[0.45rem] text-[0.85rem]">
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -363,6 +361,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                                 )}
                             >
                                 <svg
+                                    aria-hidden="true"
                                     width="14"
                                     height="14"
                                     viewBox="0 0 24 24"
@@ -401,17 +400,11 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
 
                 {/* Image preview overlay */}
                 {previewImage && (
-                    <div
-                        role="button"
-                        tabIndex={0}
+                    <button
+                        type="button"
                         className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.88)]"
                         style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                         onClick={() => setPreviewImage(null)}
-                        onKeyDown={e => {
-                            if (e.key === 'Escape' || e.key === 'Enter') {
-                                setPreviewImage(null);
-                            }
-                        }}
                     >
                         <ShadcnButton
                             variant="ghost"
@@ -421,6 +414,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                             aria-label="关闭预览"
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -438,7 +432,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                             alt="预览"
                             className="fixed left-1/2 top-1/2 max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
                         />
-                    </div>
+                    </button>
                 )}
             </DialogContent>
         </Dialog>

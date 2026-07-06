@@ -42,6 +42,7 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
             views: item.viewCount,
             price: item.price,
             fullName: item.name,
+            productId: item.productId,
         }))
         .reverse(); // reverse so top item appears at top
 
@@ -80,8 +81,12 @@ export default function TopProductsChart({ data }: TopProductsChartProps) {
                     labelFormatter={() => ''}
                 />
                 <Bar dataKey="views" radius={[0, 6, 6, 0]} maxBarSize={20}>
-                    {chartData.map((_entry, index) => (
-                        <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} fillOpacity={0.8} />
+                    {chartData.map(entry => (
+                        <Cell
+                            key={entry.productId}
+                            fill={BAR_COLORS[chartData.indexOf(entry) % BAR_COLORS.length]}
+                            fillOpacity={0.8}
+                        />
                     ))}
                 </Bar>
             </BarChart>

@@ -14,7 +14,7 @@ export function GlobalLoading() {
             <div className="relative z-10 flex flex-col items-center rounded-3xl border border-white/60 bg-white/80 px-12 py-10 shadow-xl backdrop-blur-2xl animate-in zoom-in-95 fade-in duration-500">
                 <div className="relative mb-6 flex h-20 w-20 items-center justify-center">
                     <Loader2 className="absolute h-full w-full animate-spin text-primary" strokeWidth={1.5} />
-                    <svg viewBox="0 0 48 48" fill="none" className="relative h-10 w-10">
+                    <svg viewBox="0 0 48 48" fill="none" className="relative h-10 w-10" aria-hidden="true">
                         <defs>
                             <linearGradient id="loadingLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                                 <stop offset="0%" stopColor="#F97316" />

@@ -111,7 +111,7 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
     }
 
     return (
-        <div className="w-full" role="group" aria-label="搜索结果过滤">
+        <fieldset className="w-full" aria-label="搜索结果过滤">
             {/* Mobile: stacked layout; sm+: horizontal wrapping */}
             <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-6">
                 {groups.map(group => (
@@ -171,6 +171,6 @@ export default function FacetFilter({ facets, filters, onFilterChange }: FacetFi
                     </div>
                 ))}
             </div>
-        </div>
+        </fieldset>
     );
 }

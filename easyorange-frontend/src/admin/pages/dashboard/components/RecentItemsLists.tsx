@@ -114,6 +114,7 @@ export function RecentItemsLists({
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="15"
                                 height="15"
                                 viewBox="0 0 24 24"
@@ -153,6 +154,7 @@ export function RecentItemsLists({
                     >
                         查看全部
                         <svg
+                            aria-hidden="true"
                             width="13"
                             height="13"
                             viewBox="0 0 24 24"
@@ -171,6 +173,7 @@ export function RecentItemsLists({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {Array.from({ length: 3 }).map((_, i) => (
                                 <div
+                                    // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                     key={i}
                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                 >
@@ -364,6 +367,7 @@ export function RecentItemsLists({
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="15"
                                 height="15"
                                 viewBox="0 0 24 24"
@@ -402,6 +406,7 @@ export function RecentItemsLists({
                     >
                         查看全部
                         <svg
+                            aria-hidden="true"
                             width="13"
                             height="13"
                             viewBox="0 0 24 24"
@@ -420,6 +425,7 @@ export function RecentItemsLists({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                             {Array.from({ length: 3 }).map((_, i) => (
                                 <div
+                                    // biome-ignore lint/suspicious/noArrayIndexKey: stable list
                                     key={i}
                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
                                 >

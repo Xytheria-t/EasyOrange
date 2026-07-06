@@ -206,10 +206,8 @@ export default function CategoryManagePage() {
         return (
             <div key={node.categoryId}>
                 {/* Node row */}
-                <div
-                    role="button"
-                    tabIndex={-1}
-                    onKeyDown={() => {}}
+                <button
+                    type="button"
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -219,6 +217,14 @@ export default function CategoryManagePage() {
                         borderBottom: '1px solid rgba(229,224,219,0.35)',
                         transition: 'background 0.15s ease',
                         cursor: 'default',
+                        background: 'none',
+                        color: 'inherit',
+                        font: 'inherit',
+                        width: '100%',
+                        textAlign: 'left',
+                        borderTop: 'none',
+                        borderRight: 'none',
+                        borderLeft: 'none',
                     }}
                     onMouseEnter={e => {
                         e.currentTarget.style.background = 'rgba(249,115,22,0.03)';
@@ -250,6 +256,7 @@ export default function CategoryManagePage() {
                         aria-label={isExpanded ? '折叠' : '展开'}
                     >
                         <svg
+                            aria-hidden="true"
                             width="12"
                             height="12"
                             viewBox="0 0 24 24"
@@ -377,6 +384,7 @@ export default function CategoryManagePage() {
                         >
                             {isEnabled ? (
                                 <svg
+                                    aria-hidden="true"
                                     width="15"
                                     height="15"
                                     viewBox="0 0 24 24"
@@ -391,6 +399,7 @@ export default function CategoryManagePage() {
                                 </svg>
                             ) : (
                                 <svg
+                                    aria-hidden="true"
                                     width="15"
                                     height="15"
                                     viewBox="0 0 24 24"
@@ -435,6 +444,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="15"
                                 height="15"
                                 viewBox="0 0 24 24"
@@ -478,6 +488,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="15"
                                 height="15"
                                 viewBox="0 0 24 24"
@@ -492,7 +503,7 @@ export default function CategoryManagePage() {
                             </svg>
                         </Button>
                     </div>
-                </div>
+                </button>
 
                 {/* Children */}
                 {hasChildren && isExpanded && <div>{node.children.map(child => renderTreeNode(child, depth + 1))}</div>}
@@ -565,6 +576,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -644,6 +656,7 @@ export default function CategoryManagePage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -703,6 +716,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="16"
                                 height="16"
                                 viewBox="0 0 24 24"
@@ -750,6 +764,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -783,6 +798,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -833,6 +849,7 @@ export default function CategoryManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="14"
                                 height="14"
                                 viewBox="0 0 24 24"
@@ -881,6 +898,7 @@ export default function CategoryManagePage() {
                             }}
                         />
                         <svg
+                            aria-hidden="true"
                             style={{
                                 position: 'absolute',
                                 left: '0.7rem',
@@ -957,6 +975,7 @@ export default function CategoryManagePage() {
                                 }}
                             >
                                 <svg
+                                    aria-hidden="true"
                                     width="28"
                                     height="28"
                                     viewBox="0 0 24 24"
@@ -1012,6 +1031,7 @@ export default function CategoryManagePage() {
                                 }}
                             >
                                 <svg
+                                    aria-hidden="true"
                                     width="14"
                                     height="14"
                                     viewBox="0 0 24 24"
@@ -1210,6 +1230,7 @@ export default function CategoryManagePage() {
                                 }}
                             >
                                 <svg
+                                    aria-hidden="true"
                                     width="14"
                                     height="14"
                                     viewBox="0 0 24 24"
@@ -1351,17 +1372,10 @@ export default function CategoryManagePage() {
                                 onValueChange={value => setEditStatus(Number(value))}
                                 className="flex gap-3"
                             >
-                                <div
-                                    role="button"
-                                    tabIndex={0}
+                                <button
+                                    type="button"
                                     className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-[#E5E0DB] bg-white'}`}
                                     onClick={() => setEditStatus(1)}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            setEditStatus(1);
-                                        }
-                                    }}
                                 >
                                     <RadioGroupItem value="1" id="status-enabled" />
                                     <Label
@@ -1370,18 +1384,11 @@ export default function CategoryManagePage() {
                                     >
                                         启用
                                     </Label>
-                                </div>
-                                <div
-                                    role="button"
-                                    tabIndex={0}
+                                </button>
+                                <button
+                                    type="button"
                                     className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-[#E5E0DB] bg-white'}`}
                                     onClick={() => setEditStatus(0)}
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            setEditStatus(0);
-                                        }
-                                    }}
                                 >
                                     <RadioGroupItem value="0" id="status-disabled" />
                                     <Label
@@ -1390,7 +1397,7 @@ export default function CategoryManagePage() {
                                     >
                                         禁用
                                     </Label>
-                                </div>
+                                </button>
                             </RadioGroup>
                         </div>
                     </div>

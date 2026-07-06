@@ -42,9 +42,9 @@ export function AiSearchPanel({ enhancement, onQuestionClick }: AiSearchPanelPro
                         <span>猜你想问</span>
                     </div>
                     <div className="ai-questions">
-                        {enhancement.suggestedQuestions.map((q, i) => (
+                        {enhancement.suggestedQuestions.map(q => (
                             <Button
-                                key={i}
+                                key={q}
                                 type="button"
                                 variant="outline"
                                 size="sm"

@@ -368,9 +368,8 @@ function PublishPage() {
                                 <span className="required-badge">必填</span>
                             </div>
 
-                            <div
+                            <section
                                 className={`upload-zone-v2 ${isDragging ? 'dragover' : ''} ${formState.errors.imageUrls?.message ? 'has-error' : ''}`}
-                                role="region"
                                 aria-label="图片上传区域"
                                 onDragEnter={handleDragEnter}
                                 onDragOver={handleDragEnter}
@@ -410,17 +409,15 @@ function PublishPage() {
                                 ) : (
                                     <div className="image-grid-v2">
                                         {vals.imageUrls.map((url, index) => (
-                                            <div
-                                                key={`${url}-${index}`}
+                                            <button
+                                                key={url}
+                                                type="button"
                                                 className={`image-item-v2 ${dragOverIndex === index ? 'drag-over' : ''} ${index === 0 ? 'is-cover' : ''}`}
-                                                role="button"
-                                                tabIndex={-1}
                                                 draggable
                                                 onDragStart={() => handleDragStart(index)}
                                                 onDragOver={e => handleDragOver(e, index)}
                                                 onDrop={e => handleDrop(e, index)}
                                                 onDragEnd={handleDragEnd}
-                                                onKeyDown={() => {}}
                                             >
                                                 <img src={url} alt={`资产图片 ${index + 1}`} width="120" height="120" />
                                                 {index === 0 && (
@@ -443,7 +440,7 @@ function PublishPage() {
                                                 <div className="drag-handle-v2">
                                                     <GripVertical size={14} />
                                                 </div>
-                                            </div>
+                                            </button>
                                         ))}
                                         {vals.imageUrls.length < 9 && (
                                             <Button
@@ -472,7 +469,7 @@ function PublishPage() {
                                         hasImages={vals.imageUrls.length > 0}
                                     />
                                 )}
-                            </div>
+                            </section>
                             {formState.errors.imageUrls?.message && (
                                 <div className="error-message-v2">
                                     <AlertCircle size={14} />

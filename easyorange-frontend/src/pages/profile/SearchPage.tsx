@@ -345,18 +345,11 @@ function SearchPage() {
                                         </div>
                                         <div className="search-history-tags">
                                             {searchHistory.map(item => (
-                                                <div
+                                                <button
                                                     key={item}
-                                                    role="button"
-                                                    tabIndex={0}
+                                                    type="button"
                                                     className="search-history-tag"
                                                     onClick={() => handleHotKeywordClick(item)}
-                                                    onKeyDown={e => {
-                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                            e.preventDefault();
-                                                            handleHotKeywordClick(item);
-                                                        }
-                                                    }}
                                                 >
                                                     <Clock size={10} />
                                                     <span>{item}</span>
@@ -370,7 +363,7 @@ function SearchPage() {
                                                     >
                                                         <X size={8} />
                                                     </Button>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
@@ -492,14 +485,12 @@ function SearchPage() {
                             </div>
                             <div className="search-trending-cards">
                                 {TRENDING_TOPICS.map(topic => (
-                                    <div
+                                    <button
                                         key={topic.title}
+                                        type="button"
                                         className="search-trending-card"
-                                        role="button"
-                                        tabIndex={-1}
                                         style={{ '--topic-color': topic.color } as React.CSSProperties}
                                         onMouseMove={handleMouseMove}
-                                        onKeyDown={() => {}}
                                     >
                                         <div
                                             className="trending-card-glow"
@@ -516,7 +507,7 @@ function SearchPage() {
                                             <p className="trending-card-desc">{topic.desc}</p>
                                         </div>
                                         <div className="trending-card-shine" />
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         </div>

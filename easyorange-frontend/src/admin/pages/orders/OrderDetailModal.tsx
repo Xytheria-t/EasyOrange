@@ -114,6 +114,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                     >
                         <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#FBBF24,#F97316)] text-white">
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -139,6 +140,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                         aria-label="关闭"
                     >
                         <svg
+                            aria-hidden="true"
                             width="14"
                             height="14"
                             viewBox="0 0 24 24"
@@ -201,6 +203,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                             ) : (
                                                 <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#B5AEA8]">
                                                     <svg
+                                                        aria-hidden="true"
                                                         width="22"
                                                         height="22"
                                                         fill="none"
@@ -246,6 +249,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                             ) : (
                                                 <div className="flex h-[60px] w-[60px] shrink-0 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)] text-[#B5AEA8]">
                                                     <svg
+                                                        aria-hidden="true"
                                                         width="22"
                                                         height="22"
                                                         fill="none"
@@ -315,6 +319,7 @@ export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalPro
                                 <div className="rounded-[14px] border border-[rgba(229,224,219,0.35)] bg-[linear-gradient(135deg,rgba(251,191,36,0.03),rgba(195,155,211,0.02))] px-4 py-[0.85rem]">
                                     <p className="mb-[0.45rem] flex items-center gap-[0.35rem] text-[0.78rem] font-semibold text-[#6B6460]">
                                         <svg
+                                            aria-hidden="true"
                                             width="14"
                                             height="14"
                                             fill="none"

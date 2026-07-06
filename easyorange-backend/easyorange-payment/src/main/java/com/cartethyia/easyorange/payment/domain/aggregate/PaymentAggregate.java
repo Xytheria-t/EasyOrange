@@ -290,7 +290,7 @@ public class PaymentAggregate {
 
     private void validateRefundAmount(BigDecimal refundAmount) {
         Money refundMoney = Money.of(refundAmount);
-        if (!refundMoney.isLessThanOrEqual(this.amount)) {
+        if (!refundMoney.isLessThanOrEqualTo(this.amount)) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "退款金额不能超过支付金额");
         }
         Money totalRefunded = this.refundedAmount.add(refundMoney);

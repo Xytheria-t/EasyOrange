@@ -187,7 +187,9 @@ export class ImageUploader {
             validFiles.push(file);
         }
 
-        validFiles.forEach(file => this.addImage(file));
+        validFiles.forEach(file => {
+            this.addImage(file);
+        });
     }
 
     /**

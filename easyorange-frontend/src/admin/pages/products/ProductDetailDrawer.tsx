@@ -184,6 +184,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                     >
                         <span className="inline-flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,#FB7185,#C39BD3)] text-white">
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -207,6 +208,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         aria-label="关闭"
                     >
                         <svg
+                            aria-hidden="true"
                             width="14"
                             height="14"
                             viewBox="0 0 24 24"
@@ -232,9 +234,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         <div className="flex flex-col gap-6">
                             {/* Image gallery */}
                             <div className="flex flex-col gap-3">
-                                <div
-                                    role="button"
-                                    tabIndex={product.images[selectedImage] ? 0 : -1}
+                                <button
+                                    type="button"
                                     className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
                                     style={{
                                         aspectRatio: '16/10',
@@ -244,14 +245,6 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                         product.images[selectedImage] &&
                                         setState(prev => ({ ...prev, previewImage: product.images[selectedImage] }))
                                     }
-                                    onKeyDown={e => {
-                                        if ((e.key === 'Enter' || e.key === ' ') && product.images[selectedImage]) {
-                                            setState(prev => ({
-                                                ...prev,
-                                                previewImage: product.images[selectedImage],
-                                            }));
-                                        }
-                                    }}
                                 >
                                     {product.images[selectedImage] ? (
                                         <img
@@ -262,6 +255,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                     ) : (
                                         <div className="flex h-full items-center justify-center text-[#B5AEA8]">
                                             <svg
+                                                aria-hidden="true"
                                                 width="40"
                                                 height="40"
                                                 fill="none"
@@ -282,13 +276,13 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             点击预览
                                         </div>
                                     )}
-                                </div>
+                                </button>
 
                                 {product.images.length > 1 && (
                                     <div className="flex gap-2 overflow-x-auto pb-1">
                                         {product.images.map((img, index) => (
                                             <ShadcnButton
-                                                key={index}
+                                                key={img}
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => setState(prev => ({ ...prev, selectedImage: index }))}
@@ -369,6 +363,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 <div className="flex items-center gap-6 border-y border-[rgba(229,224,219,0.4)] py-3">
                                     <div className="flex items-center gap-[0.4rem] text-[0.84rem] text-[#8B857E]">
                                         <svg
+                                            aria-hidden="true"
                                             width="15"
                                             height="15"
                                             viewBox="0 0 24 24"
@@ -481,6 +476,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                 {product.location && (
                                     <div className="flex items-center gap-[0.45rem] text-[0.85rem]">
                                         <svg
+                                            aria-hidden="true"
                                             width="15"
                                             height="15"
                                             viewBox="0 0 24 24"
@@ -585,17 +581,11 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
                 {/* Image preview overlay */}
                 {previewImage && (
-                    <div
-                        role="button"
-                        tabIndex={0}
+                    <button
+                        type="button"
                         className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.88)]"
                         style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                         onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
-                        onKeyDown={e => {
-                            if (e.key === 'Escape' || e.key === 'Enter') {
-                                setState(prev => ({ ...prev, previewImage: null }));
-                            }
-                        }}
                     >
                         <ShadcnButton
                             variant="ghost"
@@ -605,6 +595,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             aria-label="关闭预览"
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -622,7 +613,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             alt="预览"
                             className="fixed left-1/2 top-1/2 max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
                         />
-                    </div>
+                    </button>
                 )}
 
                 {/* 驳回弹窗 */}

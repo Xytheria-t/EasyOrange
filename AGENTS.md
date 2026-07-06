@@ -1,13 +1,12 @@
-# EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
+# EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
 
-> 调通 API 只是起点。缓存、限流、降级、可观测——让大模型在真实业务约束下稳定运行，才是 AI 工程化的核心命题。
+> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,269 测试 + CI/CD 全自动。**业务是刻意简化的 C2C 资产流转（固定价格、平台不碰货），工程才是核心。**
 
-EasyOrange 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路。基于 Spring Boot 4 + React 的全栈 **DDD + CQRS + Saga + 事件驱动 + AI 多模态** 架构，**2025 年 11 月启动开发**。
+EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：**DDD 六边形 + CQRS + Saga + 事件驱动 + AI 多模态**。业务载体为 C2C 固定价格资产交易（发布→AI 辅助定价/文案→审核→搜索→下单支付→WebSocket 沟通→信用评分），**2025 年 11 月启动**。
 
-> **品牌**：EasyOrange
-> **定位**：AI 工程化全栈项目 — 以 C2C 资产流转为业务载体，展示大模型从 API 调用到生产级服务的完整工程链路
-> **业务载体**：C2C 资产流转（刻意简化：固定价格 + C2C 直发 + 平台不碰货）
-> **工程亮点**：LLM/Vision 多级缓存降本 · 令牌桶限流防滥用 · 降级兜底保可用 · RabbitMQ 事件路由 + DLQ 重试保最终一致性
+> **定位**：Java 25 + Spring Boot 4 架构参考项目 — 展示 DDD/CQRS/Saga/事件驱动/AI Port/Adapter 在模块化全栈工程中的协同落地
+> **业务**：C2C 资产流转（简化场景：固定价格 + 直发 + 平台不碰货，业务不是重点）
+> **工程亮点**：DDD 六边形 + CQRS · Saga 分布式事务 · RabbitMQ 事件路由 + DLQ · LLM/Vision 多级缓存 + 限流降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,269 测试
 
 ## 技术栈
 
@@ -219,8 +218,8 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - **前端表单校验**：所有包含显式校验逻辑的表单（登录/注册/发布/密码修改等），必须使用 `react-hook-form` + `zod` + `@hookform/resolvers` 方案，禁止手写 `useState` + 自定义 `validate` 函数。Zod schema 统一放在 `src/schemas/` 目录下，`.default()` 禁止使用（默认值通过 `useForm` 的 `defaultValues` 设置以保持类型推导正确）。`reValidateMode` 统一设为 `'onChange'` 使得首次提交后输入即时清除错误。管理端搜索/筛选类简单表单（如 CategoryManagePage）无需迁移
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`
 - **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
-- **UUID v7 ID**: 全库 ID 已从 Snowflake (Long) 迁移至 UUID v7 (RFC 9562, String)。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现，`SnowflakeIdGenerator` 作为备选）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。迁移脚本：`V5__change_all_ids_to_varchar.sql`（30+ 表 BIGINT → VARCHAR(36)）。
-- **全量 Long→String 迁移**: 涉及所有模块——领域事件、值对象、DO、DTO、Port 接口、Adapter、Controller、测试文件。`SecurityContextUtil.getCurrentUserIdOrThrow()` 返回 `String`（原 Long）。`SnowflakeConfig` 重命名为 `IdGeneratorConfig`。`TestSecurityUtil.setSecurityContext()` 同时保留 `Long` 和 `String` 重载。全项目 1248 测试通过。
+- **UUID v7 ID**: 全库 ID 使用 UUID v7 (RFC 9562, String)，已彻底移除 Snowflake 备选代码。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。迁移脚本：`V5__change_all_ids_to_varchar.sql`（30+ 表 BIGINT → VARCHAR(36)）。
+- **全量 Long→String 迁移**: 涉及所有模块——领域事件、值对象、DO、DTO、Port 接口、Adapter、Controller、测试文件。`SecurityContextUtil.getCurrentUserIdOrThrow()` 返回 `String`（原 Long）。`SnowflakeConfig`/`IdGenProperties` 等 Snowflake 配置已彻底移除，仅保留 `UuidV7IdGenerator`。`TestSecurityUtil.setSecurityContext()` 同时保留 `Long` 和 `String` 重载。全项目 1248 测试通过。
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 - **零配置启动**: 项目支持零配置开发环境启动（MySQL localhost:3306, Redis localhost:6379）。新开发者只需 `./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application` 即可运行。敏感配置通过根目录 `.env.example` 模板管理，复制为 `.env` 即可（IDEA、Docker Compose 通用）
 - **.gitignore 规范**: 使用精简版 .gitignore (78行)，已忽略 AI 生成文件 (**/codemap.md, 298个)、AI 工具目录 (.slim/, .superpowers/)、前端 .env.production/.env.development、测试产物 (test-results/)

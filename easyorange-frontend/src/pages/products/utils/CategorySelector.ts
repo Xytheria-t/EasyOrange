@@ -223,7 +223,9 @@ export class CategorySelector {
         ] as HTMLElement | null;
         const options = optionsContainer?.querySelectorAll('.cascade-option');
 
-        options?.forEach(opt => opt.classList.remove('selected'));
+        options?.forEach(opt => {
+            opt.classList.remove('selected');
+        });
         const selectedOption = optionsContainer?.querySelector(`[data-id="${category.id}"]`);
         if (selectedOption) {
             selectedOption.classList.add('selected');

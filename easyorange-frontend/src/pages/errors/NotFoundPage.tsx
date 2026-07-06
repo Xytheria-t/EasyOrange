@@ -17,6 +17,7 @@ function NotFoundPage() {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
                 >
                     <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                     <polyline points="9 22 9 12 15 12 15 22" />
@@ -39,6 +40,7 @@ function NotFoundPage() {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
                 >
                     <circle cx="11" cy="11" r="8" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -61,6 +63,7 @@ function NotFoundPage() {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    aria-hidden="true"
                 >
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
                     <polyline points="17 6 23 6 23 12" />
@@ -355,6 +358,7 @@ function NotFoundPage() {
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
+                            aria-hidden="true"
                         >
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>
@@ -396,6 +400,7 @@ function NotFoundPage() {
                             strokeWidth="2.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
+                            aria-hidden="true"
                         >
                             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                             <polyline points="9 22 9 12 15 12 15 22" />
@@ -452,6 +457,7 @@ function NotFoundPage() {
                                 strokeWidth="2.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
+                                aria-hidden="true"
                             >
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg>
@@ -543,6 +549,7 @@ function NotFoundPage() {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     style={{ flexShrink: 0, transition: 'all 0.2s ease' }}
+                                    aria-hidden="true"
                                 >
                                     <path d="M5 12h14M12 5l7 7-7 7" />
                                 </svg>

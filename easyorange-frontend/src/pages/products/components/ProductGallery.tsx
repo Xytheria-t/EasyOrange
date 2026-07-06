@@ -151,7 +151,7 @@ export function ProductGallery({
                 <div className="pdp-gallery-thumbs">
                     {productImages.map((img, idx) => (
                         <Button
-                            key={idx}
+                            key={img}
                             type="button"
                             variant="ghost"
                             onClick={() => setCurrentImageIndex(idx)}

@@ -45,8 +45,8 @@ export function AiReviewSuggestion({ result, isLoading, onGetSuggestion, onApply
                     </div>
                     {result.riskFlags.length > 0 && (
                         <div className="ai-risk-flags">
-                            {result.riskFlags.map((flag, index) => (
-                                <span key={index} className="risk-flag">
+                            {result.riskFlags.map(flag => (
+                                <span key={flag} className="risk-flag">
                                     {getRiskIcon()}
                                     {flag}
                                 </span>

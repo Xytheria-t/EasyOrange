@@ -22,6 +22,7 @@ export function ProfileActivity() {
                     {activities.map((activity, index) => {
                         const Icon = activity.icon;
                         return (
+                            // biome-ignore lint/suspicious/noArrayIndexKey: static activity list, order never changes
                             <div className="activity-item" key={index}>
                                 <div className={`activity-icon ${activity.color}`}>
                                     <Icon size={20} />

@@ -63,7 +63,9 @@ export function useStompChat(): UseStompChatReturn {
         clientRef.current = client;
 
         return () => {
-            subscriptions.forEach(unsub => unsub());
+            subscriptions.forEach(unsub => {
+                unsub();
+            });
             subscriptions.clear();
             client.deactivate();
             clientRef.current = null;

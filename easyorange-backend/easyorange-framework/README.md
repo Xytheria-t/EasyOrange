@@ -11,7 +11,7 @@
 - **安全认证**：JWT 认证、密码加密、CORS 配置
 - **缓存抽象**：Redis 缓存封装（支持位图操作）、本地缓存（Caffeine）、多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联）
 - **布隆过滤器**：基于 Redis Bitmap + Lua 脚本实现的分布式布隆过滤器，用于缓存穿透防护
-- **分布式 ID**：增强版 Snowflake ID 生成器（Redis 自动注册 WorkerId、时钟回拨容忍）
+- **分布式 ID**：UUID v7 (RFC 9562) 生成器，零协调零依赖，时间有序
 - **一致性哈希**：基于 TreeMap + 虚拟节点的一致性哈希路由，用于缓存分片等场景
 - **领域事件**：事件发布与订阅机制
 - **异常处理**：全局异常处理、友好错误信息
@@ -86,8 +86,7 @@ public class Application {
 
 | 组件 | 说明 |
 |------|------|
-| `SnowflakeIdGenerator` | 增强版 Snowflake（容忍时钟回拨 10ms） |
-| `WorkerIdProvider` / `RedisWorkerIdProvider` | Redis 自动注册 WorkerId + 心跳续期 |
+| `UuidV7IdGenerator` | UUID v7 (RFC 9562)，`@Primary` 主实现，零配置 |
 | `ConsistentHashRouter` | 一致性哈希路由（200 虚拟节点/物理节点，MD5 哈希） |
 
 ### 事件组件

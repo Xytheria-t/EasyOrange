@@ -25,6 +25,7 @@ function CreditPage() {
 
     useEffect(() => {
         loadCredit();
+        // biome-ignore lint/correctness/useExhaustiveDependencies: loadCredit is defined locally and should re-run when it changes
     }, [loadCredit]);
 
     const handleRecalculate = async () => {

@@ -10,6 +10,7 @@ const navItems = [
                 label: '仪表盘',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -32,6 +33,7 @@ const navItems = [
                 label: '用户管理',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -51,6 +53,7 @@ const navItems = [
                 label: '商品审核',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -69,6 +72,7 @@ const navItems = [
                 label: '订单管理',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -88,6 +92,7 @@ const navItems = [
                 label: '举报处理',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -105,6 +110,7 @@ const navItems = [
                 label: '分类管理',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -123,6 +129,7 @@ const navItems = [
                 label: '评价管理',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -144,6 +151,7 @@ const navItems = [
                 label: '数据统计',
                 icon: (
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -177,7 +185,7 @@ export function AdminSidebar() {
             {/* Logo */}
             <div className="sidebar-logo">
                 <div className="sidebar-logo-icon">
-                    <svg fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
+                    <svg aria-hidden="true" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor">
                         <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -217,6 +225,7 @@ export function AdminSidebar() {
             <div className="sidebar-footer">
                 <Link to="/" className="sidebar-back-link" title={sidebarCollapsed ? '返回主站' : undefined}>
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"

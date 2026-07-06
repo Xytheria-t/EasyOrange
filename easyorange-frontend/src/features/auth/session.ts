@@ -47,7 +47,9 @@ class RefreshCoordinator {
     }
 
     notifyPending(token: string): void {
-        this.pendingCallbacks.forEach(cb => cb(token));
+        this.pendingCallbacks.forEach(cb => {
+            cb(token);
+        });
         this.pendingCallbacks = [];
     }
 

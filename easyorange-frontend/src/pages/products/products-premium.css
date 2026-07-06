@@ -1772,6 +1772,7 @@
     white-space: pre-wrap;
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: general rule after specific override */
 .pdp-section-header {
     display: flex;
     align-items: center;

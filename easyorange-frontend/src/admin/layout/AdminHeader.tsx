@@ -35,6 +35,7 @@ export function AdminHeader() {
                     title={sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'}
                 >
                     <svg
+                        aria-hidden="true"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -49,10 +50,9 @@ export function AdminHeader() {
             </div>
 
             <div className="header-right">
-                <div
+                <button
+                    type="button"
                     className="header-user"
-                    role="button"
-                    tabIndex={0}
                     onClick={handleLogout}
                     onKeyDown={e => e.key === 'Enter' && handleLogout()}
                     title="返回主站"
@@ -64,7 +64,7 @@ export function AdminHeader() {
                         <span className="header-user-name">{user?.nickname || user?.username || '管理员'}</span>
                         <span className="header-user-role">超级管理员</span>
                     </div>
-                </div>
+                </button>
             </div>
         </header>
     );

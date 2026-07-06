@@ -74,10 +74,8 @@ framework/
 │   ├── Node.java                 # 节点接口
 │   └── ConsistentHashRouter.java # 虚拟节点 TreeMap 路由 (MD5 哈希)
 ├── idgen/                   # 分布式 ID 生成器
-│   ├── UuidV7IdGenerator.java      # @Primary UUID v7 (RFC 9562) 主实现
-│   ├── SnowflakeIdGenerator.java   # 增强版 Snowflake (备选，时钟回拨容忍 + Redis WorkerId)
-│   ├── WorkerIdProvider.java         # 工作节点接口
-│   └── RedisWorkerIdProvider.java    # Redis 自动注册 + 心跳续期
+│   ├── IdGenerator.java              # ID 生成器接口
+│   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现
 ├── messaging/               # RabbitMQ 消息队列
 │   ├── config/                    # RabbitMQ 配置
 │   │   ├── RabbitMQConfig.java
@@ -214,21 +212,9 @@ multiLevelCache.evict("product:detail:" + id);
 
 ### 分布式 ID 生成器 (idgen/)
 
-主实现：`UuidV7IdGenerator`（`@Primary`）——纯 Java 无外部依赖，生成 RFC 9562 UUID v7（毫秒级有序 + 随机后缀）。
+`UuidV7IdGenerator`（`@Primary`）——纯 Java 无外部依赖，生成 RFC 9562 UUID v7（毫秒级有序 + 随机后缀）。
 
-备选：`SnowflakeIdGenerator`——增强版 Snowflake，通过 Redis 自动分配 WorkerId：
-
-- 支持最多 32 个工作节点 (5 bit WorkerId)
-- Redis WorkerId 自动注册 + 心跳续期防过期
-- 容忍 10ms 内时钟回拨 (等待 + 自旋)
-- 可配置 DataCenterId
-
-```properties
-# UUID v7 为默认 (`@Primary`)，无需配置即可使用
-# Snowflake 作为备选，需显式启用：
-easyorange.idgen.enabled=true
-easyorange.idgen.data-center-id=1
-```
+已移除 Snowflake 备选（`SnowflakeIdGenerator` / `WorkerIdProvider` / `RedisWorkerIdProvider`），UUID v7 零配置零依赖，无需任何配置属性即可使用。
 
 ### 一致性哈希 (hash/)
 

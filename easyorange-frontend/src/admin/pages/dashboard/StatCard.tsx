@@ -64,10 +64,8 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
     const cfg = ACCENT_CONFIG[accent];
 
     return (
-        <div
-            role="button"
-            tabIndex={-1}
-            onKeyDown={() => {}}
+        <button
+            type="button"
             style={{
                 position: 'relative',
                 background: 'rgba(255,255,255,0.72)',
@@ -79,6 +77,16 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
                 overflow: 'hidden',
                 transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
                 cursor: 'default',
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                color: 'inherit',
+                textAlign: 'left',
+                width: '100%',
+                borderTop: '1px solid rgba(255,255,255,0.7)',
+                borderRight: '1px solid rgba(255,255,255,0.7)',
+                borderBottom: '1px solid rgba(255,255,255,0.7)',
+                borderLeft: '1px solid rgba(255,255,255,0.7)',
+                backgroundImage: 'none',
             }}
             onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -187,6 +195,7 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
                         >
                             {isPositive ? (
                                 <svg
+                                    aria-hidden="true"
                                     width="11"
                                     height="11"
                                     viewBox="0 0 24 24"
@@ -200,6 +209,7 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
                                 </svg>
                             ) : (
                                 <svg
+                                    aria-hidden="true"
                                     width="11"
                                     height="11"
                                     viewBox="0 0 24 24"
@@ -251,6 +261,6 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
                     </div>
                 )}
             </div>
-        </div>
+        </button>
     );
 }
