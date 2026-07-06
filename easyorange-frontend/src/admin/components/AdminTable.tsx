@@ -1,6 +1,13 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
 import { Button } from '@/components/ui/button';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+} from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 
 export interface Column<T> {
@@ -121,6 +128,7 @@ export function AdminTable<T extends object>({
         return (
             <span className="ml-1 inline-flex flex-col leading-none">
                 <svg
+                    aria-hidden="true"
                     className="mb-[-2px] h-2.5 w-2.5 transition-colors duration-150"
                     style={{
                         color: isActive && sortState.direction === 'asc' ? '#F97316' : '#D6CEC5',
@@ -131,6 +139,7 @@ export function AdminTable<T extends object>({
                     <path d="M7 14l5-5 5 5z" />
                 </svg>
                 <svg
+                    aria-hidden="true"
                     className="h-2.5 w-2.5 transition-colors duration-150"
                     style={{
                         color: isActive && sortState.direction === 'desc' ? '#F97316' : '#D6CEC5',
@@ -249,77 +258,62 @@ export function AdminTable<T extends object>({
                         <strong className="text-[#4A4540] font-semibold">{totalPages}</strong> 页
                     </div>
 
-                    <div className="flex items-center gap-[0.35rem]">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={pagination.current <= 1}
-                            onClick={() => pagination.onChange(pagination.current - 1)}
-                            className={cn(pageButtonClass, pagination.current <= 1 && 'opacity-40 cursor-not-allowed')}
-                        >
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M15 18l-6-6 6-6" />
-                            </svg>
-                        </Button>
-
-                        {pageNumbers.map((page, index) =>
-                            page === 'ellipsis' ? (
-                                <span
-                                    key={`e-${index}`}
-                                    className="inline-flex items-center justify-center w-[34px] h-[34px] text-[0.81rem] text-[#B5AEA8]"
-                                >
-                                    ···
-                                </span>
-                            ) : (
+                    <Pagination className="w-auto">
+                        <PaginationContent>
+                            <PaginationItem>
                                 <Button
-                                    key={page}
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => pagination.onChange(page)}
-                                    className={cn(
-                                        pageButtonClass,
-                                        page === pagination.current &&
-                                            'text-white bg-[linear-gradient(135deg,#F97316,#EA580C)] shadow-[0_2px_8px_rgba(249,115,22,0.28)]'
-                                    )}
+                                    disabled={pagination.current <= 1}
+                                    onClick={() => pagination.onChange(pagination.current - 1)}
+                                    className={cn(pageButtonClass, pagination.current <= 1 && 'opacity-40 cursor-not-allowed')}
                                 >
-                                    {page}
+                                    <ChevronLeft className="h-3.5 w-3.5" />
                                 </Button>
-                            )
-                        )}
+                            </PaginationItem>
 
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={pagination.current >= totalPages}
-                            onClick={() => pagination.onChange(pagination.current + 1)}
-                            className={cn(
-                                pageButtonClass,
-                                pagination.current >= totalPages && 'opacity-40 cursor-not-allowed'
-                            )}
-                        >
-                            <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            >
-                                <path d="M9 18l6-6-6-6" />
-                            </svg>
-                        </Button>
-                    </div>
+                            {pageNumbers.map((page, index) => {
+                                if (page === 'ellipsis') {
+                                    return (
+                                    <PaginationItem
+                                        // biome-ignore lint/suspicious/noArrayIndexKey: stable list
+                                        key={`e-${index}`}
+                                    >
+                                        <PaginationEllipsis className="text-[0.81rem] text-[#B5AEA8]" />
+                                    </PaginationItem>
+                                    );
+                                }
+                                return (
+                                    <PaginationItem key={page}>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => pagination.onChange(page)}
+                                            className={cn(
+                                                pageButtonClass,
+                                                page === pagination.current &&
+                                                    'text-white bg-[linear-gradient(135deg,#F97316,#EA580C)] shadow-[0_2px_8px_rgba(249,115,22,0.28)]'
+                                            )}
+                                        >
+                                            {page}
+                                        </Button>
+                                    </PaginationItem>
+                                );
+                            })}
+
+                            <PaginationItem>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={pagination.current >= totalPages}
+                                    onClick={() => pagination.onChange(pagination.current + 1)}
+                                    className={cn(pageButtonClass, pagination.current >= totalPages && 'opacity-40 cursor-not-allowed')}
+                                >
+                                    <ChevronRight className="h-3.5 w-3.5" />
+                                </Button>
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
                 </div>
             )}
         </>
