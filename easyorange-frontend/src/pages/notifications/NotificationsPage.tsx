@@ -15,6 +15,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '@/api/notificationApi';
 import { Button } from '@/components/ui/button';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import { cn } from '@/lib/utils';
 import type { NotificationItem } from '@/types';
 import './notifications.css';
 
@@ -234,29 +243,32 @@ export default function NotificationsPage() {
 
                         {/* Pagination */}
                         {totalPages > 1 && (
-                            <div className="notifications-pagination">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="pagination-btn"
-                                    disabled={page <= 1}
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                >
-                                    上一页
-                                </Button>
-                                <span className="pagination-info">
-                                    {page} / {totalPages}
-                                </span>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="pagination-btn"
-                                    disabled={page >= totalPages}
-                                    onClick={() => setPage(p => p + 1)}
-                                >
-                                    下一页
-                                </Button>
-                            </div>
+                            <Pagination className="notifications-pagination">
+                                <PaginationContent>
+                                    <PaginationItem>
+                                        <PaginationPrevious
+                                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                                            className={cn(page <= 1 && 'pointer-events-none opacity-40')}
+                                        />
+                                    </PaginationItem>
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                        <PaginationItem key={p}>
+                                            <PaginationLink
+                                                isActive={p === page}
+                                                onClick={() => setPage(p)}
+                                            >
+                                                {p}
+                                            </PaginationLink>
+                                        </PaginationItem>
+                                    ))}
+                                    <PaginationItem>
+                                        <PaginationNext
+                                            onClick={() => setPage(p => p + 1)}
+                                            className={cn(page >= totalPages && 'pointer-events-none opacity-40')}
+                                        />
+                                    </PaginationItem>
+                                </PaginationContent>
+                            </Pagination>
                         )}
                     </>
                 )}
