@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AdminSelect } from '../../components/AdminSelect';
@@ -22,8 +23,9 @@ export default function OrderManagePage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
-    const [page, setPage] = useState(1);
-    const pageSize = 10;
+    const { pageNum: page, pageSize, goTo } = usePagination({
+        resetDeps: [keyword, statusFilter],
+    });
     const [detailOrderId, setDetailOrderId] = useState<number | null>(null);
 
     const { data, isLoading } = useAdminOrders({
@@ -35,8 +37,8 @@ export default function OrderManagePage() {
 
     const handleSearch = useCallback(() => {
         setKeyword(searchInput);
-        setPage(1);
-    }, [searchInput]);
+        goTo(1);
+    }, [searchInput, goTo]);
 
     const handleKeyPress = useCallback(
         (e: React.KeyboardEvent) => {
@@ -169,6 +171,7 @@ export default function OrderManagePage() {
                     onClick={() => setDetailOrderId(Number(record.orderId))}
                 >
                     <svg
+                        aria-hidden="true"
                         width="14"
                         height="14"
                         viewBox="0 0 24 24"
@@ -245,6 +248,7 @@ export default function OrderManagePage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -307,6 +311,7 @@ export default function OrderManagePage() {
                                     }}
                                 />
                                 <svg
+                                    aria-hidden="true"
                                     style={{
                                         position: 'absolute',
                                         left: '0.85rem',
@@ -393,6 +398,7 @@ export default function OrderManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -411,7 +417,7 @@ export default function OrderManagePage() {
                             value={statusFilter}
                             onChange={val => {
                                 setStatusFilter(val);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -442,7 +448,7 @@ export default function OrderManagePage() {
                         loading={isLoading}
                         pagination={
                             (data?.total ?? 0) > pageSize
-                                ? { current: data?.current ?? 1, pageSize, total: data?.total ?? 0, onChange: setPage }
+                                ? { current: data?.current ?? 1, pageSize, total: data?.total ?? 0, onChange: goTo }
                                 : undefined
                         }
                         emptyText="暂无订单数据"

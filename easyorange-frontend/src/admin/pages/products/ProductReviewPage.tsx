@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AdminSelect } from '../../components/AdminSelect';
@@ -36,12 +37,13 @@ const SORT_OPTIONS = [
 ];
 
 export default function ProductReviewPage() {
-    const [page, setPage] = useState(1);
-    const [pageSize] = useState(10);
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [statusFilter, setStatusFilter] = useState<number | ''>('');
     const [categoryFilter, setCategoryFilter] = useState('');
+    const { pageNum: page, pageSize, goTo } = usePagination({
+        resetDeps: [keyword, statusFilter, categoryFilter],
+    });
     const [sortBy, setSortBy] = useState('createTime');
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -59,7 +61,7 @@ export default function ProductReviewPage() {
 
     const handleSearch = () => {
         setKeyword(searchInput);
-        setPage(1);
+        goTo(1);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -236,6 +238,7 @@ export default function ProductReviewPage() {
                         }}
                     >
                         <svg
+                            aria-hidden="true"
                             width="14"
                             height="14"
                             viewBox="0 0 24 24"
@@ -253,6 +256,7 @@ export default function ProductReviewPage() {
                 ),
             },
         ],
+        // biome-ignore lint/correctness/useExhaustiveDependencies: handleViewDetail/formatTime/formatPrice are defined locally and intentionally trigger column recomputation when they change
         [handleViewDetail, formatTime, formatPrice]
     );
 
@@ -302,6 +306,7 @@ export default function ProductReviewPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -381,6 +386,7 @@ export default function ProductReviewPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -424,6 +430,7 @@ export default function ProductReviewPage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="12"
                                         height="12"
                                         viewBox="0 0 24 24"
@@ -473,6 +480,7 @@ export default function ProductReviewPage() {
                                     }}
                                 />
                                 <svg
+                                    aria-hidden="true"
                                     style={{
                                         position: 'absolute',
                                         left: '0.85rem',
@@ -561,6 +569,7 @@ export default function ProductReviewPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -579,7 +588,7 @@ export default function ProductReviewPage() {
                             value={statusFilter}
                             onChange={value => {
                                 setStatusFilter(value as number | '');
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -597,6 +606,7 @@ export default function ProductReviewPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -615,7 +625,7 @@ export default function ProductReviewPage() {
                             value={categoryFilter}
                             onChange={value => {
                                 setCategoryFilter(value);
-                                setPage(1);
+                                goTo(1);
                             }}
                             minWidth={120}
                         />
@@ -637,6 +647,7 @@ export default function ProductReviewPage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -655,7 +666,7 @@ export default function ProductReviewPage() {
                             value={sortBy}
                             onChange={value => {
                                 setSortBy(value);
-                                setPage(1);
+                                goTo(1);
                             }}
                             minWidth={120}
                         />
@@ -692,7 +703,7 @@ export default function ProductReviewPage() {
                             current: page,
                             pageSize,
                             total,
-                            onChange: setPage,
+                            onChange: goTo,
                         }}
                         onRowClick={handleViewDetail}
                         emptyText="暂无商品数据"

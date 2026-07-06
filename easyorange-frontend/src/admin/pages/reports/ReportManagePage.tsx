@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AdminSelect } from '../../components/AdminSelect';
@@ -36,13 +37,14 @@ export default function ReportManagePage() {
     const [typeFilter, setTypeFilter] = useState('');
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
-    const [page, setPage] = useState(1);
     const [confirmModal, setConfirmModal] = useState<{
         open: boolean;
         reportId: number;
         action: 'resolve' | 'dismiss';
     }>({ open: false, reportId: 0, action: 'resolve' });
-    const pageSize = 10;
+    const { pageNum: page, pageSize, goTo } = usePagination({
+        resetDeps: [keyword, statusFilter, typeFilter],
+    });
 
     const { data, isLoading } = useAdminReports({
         pageNum: page,
@@ -56,8 +58,8 @@ export default function ReportManagePage() {
 
     const handleSearch = useCallback(() => {
         setKeyword(searchInput);
-        setPage(1);
-    }, [searchInput]);
+        goTo(1);
+    }, [searchInput, goTo]);
 
     const handleKeyPress = useCallback(
         (e: React.KeyboardEvent) => {
@@ -302,6 +304,7 @@ export default function ReportManagePage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -362,6 +365,7 @@ export default function ReportManagePage() {
                                     }}
                                 />
                                 <svg
+                                    aria-hidden="true"
                                     style={{
                                         position: 'absolute',
                                         left: '0.85rem',
@@ -448,6 +452,7 @@ export default function ReportManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -466,7 +471,7 @@ export default function ReportManagePage() {
                             value={statusFilter}
                             onChange={value => {
                                 setStatusFilter(value);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -483,6 +488,7 @@ export default function ReportManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -501,7 +507,7 @@ export default function ReportManagePage() {
                             value={typeFilter}
                             onChange={value => {
                                 setTypeFilter(value);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -532,7 +538,7 @@ export default function ReportManagePage() {
                         loading={isLoading}
                         pagination={
                             data && data.total > pageSize
-                                ? { current: page, pageSize, total: data.total, onChange: setPage }
+                                ? { current: page, pageSize, total: data.total, onChange: goTo }
                                 : undefined
                         }
                         emptyText="暂无举报数据"

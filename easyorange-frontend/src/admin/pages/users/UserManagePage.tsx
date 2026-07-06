@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AdminSelect } from '../../components/AdminSelect';
@@ -30,12 +31,13 @@ const AVATAR_GRADIENTS = [
 ] as const;
 
 export default function UserManagePage() {
-    const [page, setPage] = useState(1);
-    const [pageSize] = useState(10);
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [userTypeFilter, setUserTypeFilter] = useState('');
+    const { pageNum: page, pageSize, goTo } = usePagination({
+        resetDeps: [keyword, statusFilter, userTypeFilter],
+    });
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
@@ -51,8 +53,8 @@ export default function UserManagePage() {
 
     const handleSearch = useCallback(() => {
         setKeyword(searchInput);
-        setPage(1);
-    }, [searchInput]);
+        goTo(1);
+    }, [searchInput, goTo]);
 
     const handleKeyPress = useCallback(
         (e: React.KeyboardEvent) => {
@@ -192,6 +194,7 @@ export default function UserManagePage() {
                     }}
                 >
                     <svg
+                        aria-hidden="true"
                         width="14"
                         height="14"
                         viewBox="0 0 24 24"
@@ -265,6 +268,7 @@ export default function UserManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -344,6 +348,7 @@ export default function UserManagePage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -406,6 +411,7 @@ export default function UserManagePage() {
                                     }}
                                 />
                                 <svg
+                                    aria-hidden="true"
                                     style={{
                                         position: 'absolute',
                                         left: '0.85rem',
@@ -494,6 +500,7 @@ export default function UserManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -512,7 +519,7 @@ export default function UserManagePage() {
                             value={statusFilter}
                             onChange={val => {
                                 setStatusFilter(val);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -530,6 +537,7 @@ export default function UserManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -549,7 +557,7 @@ export default function UserManagePage() {
                             value={userTypeFilter}
                             onChange={val => {
                                 setUserTypeFilter(val);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -585,7 +593,7 @@ export default function UserManagePage() {
                         rowKey="userId"
                         loading={isLoading}
                         pagination={
-                            total > pageSize ? { current: page, pageSize, total, onChange: setPage } : undefined
+                            total > pageSize ? { current: page, pageSize, total, onChange: goTo } : undefined
                         }
                         emptyText="暂无用户数据"
                     />

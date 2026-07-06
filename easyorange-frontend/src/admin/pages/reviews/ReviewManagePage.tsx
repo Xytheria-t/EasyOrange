@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AdminSelect } from '../../components/AdminSelect';
@@ -32,12 +33,13 @@ const RATING_LABELS: Record<number, { emoji: string; label: string; color: strin
 };
 
 export default function ReviewManagePage() {
-    const [page, setPage] = useState(1);
-    const [pageSize] = useState(10);
     const [statusFilter, setStatusFilter] = useState('');
     const [ratingFilter, setRatingFilter] = useState('');
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
+    const { pageNum: page, pageSize, goTo } = usePagination({
+        resetDeps: [keyword, statusFilter],
+    });
     const [deleteModal, setDeleteModal] = useState<{ open: boolean; reviewId: string; reviewContent: string }>({
         open: false,
         reviewId: '',
@@ -57,8 +59,8 @@ export default function ReviewManagePage() {
 
     const handleSearch = useCallback(() => {
         setKeyword(searchInput);
-        setPage(1);
-    }, [searchInput]);
+        goTo(1);
+    }, [searchInput, goTo]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -206,6 +208,7 @@ export default function ReviewManagePage() {
                     }}
                 >
                     <svg
+                        aria-hidden="true"
                         width="13"
                         height="13"
                         viewBox="0 0 24 24"
@@ -270,6 +273,7 @@ export default function ReviewManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="18"
                                 height="18"
                                 viewBox="0 0 24 24"
@@ -349,6 +353,7 @@ export default function ReviewManagePage() {
                                     }}
                                 >
                                     <svg
+                                        aria-hidden="true"
                                         width="15"
                                         height="15"
                                         viewBox="0 0 24 24"
@@ -408,6 +413,7 @@ export default function ReviewManagePage() {
                                     }}
                                 />
                                 <svg
+                                    aria-hidden="true"
                                     style={{
                                         position: 'absolute',
                                         left: '0.85rem',
@@ -496,6 +502,7 @@ export default function ReviewManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -514,7 +521,7 @@ export default function ReviewManagePage() {
                             value={statusFilter}
                             onChange={value => {
                                 setStatusFilter(value);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -534,6 +541,7 @@ export default function ReviewManagePage() {
                             }}
                         >
                             <svg
+                                aria-hidden="true"
                                 width="13"
                                 height="13"
                                 viewBox="0 0 24 24"
@@ -552,7 +560,7 @@ export default function ReviewManagePage() {
                             value={ratingFilter}
                             onChange={value => {
                                 setRatingFilter(value);
-                                setPage(1);
+                                goTo(1);
                             }}
                         />
                     </div>
@@ -585,7 +593,7 @@ export default function ReviewManagePage() {
                         loading={isLoading}
                         pagination={
                             data && data.total > pageSize
-                                ? { current: page, pageSize, total: data.total, onChange: setPage }
+                                ? { current: page, pageSize, total: data.total, onChange: goTo }
                                 : undefined
                         }
                         emptyText="暂无评价数据"
@@ -615,6 +623,7 @@ export default function ReviewManagePage() {
                         </div>
                         <div>
                             <label
+                                htmlFor="delete-reason-input"
                                 style={{
                                     display: 'block',
                                     fontSize: '0.82rem',
@@ -626,6 +635,7 @@ export default function ReviewManagePage() {
                                 删除原因 <span style={{ color: '#DC2626' }}>*</span>
                             </label>
                             <Input
+                                id="delete-reason-input"
                                 type="text"
                                 value={deleteReason}
                                 onChange={e => setDeleteReason(e.target.value)}
