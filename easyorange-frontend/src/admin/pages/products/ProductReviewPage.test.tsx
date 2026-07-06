@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminProduct, PageData } from '../../types/admin';
+import type { AdminProduct } from '../../types/admin';
+import type { PageResult } from '@/types';
 import ProductReviewPage from './ProductReviewPage';
 
 // ─── Mock scrollIntoView for AdminSelect portal ───
@@ -40,8 +41,12 @@ vi.mock('./ProductDetailDrawer', () => ({
         }
         return (
             <div data-testid="product-detail-drawer" data-product-id={productId}>
-                <button onClick={onClose}>关闭</button>
-                <button onClick={onSuccess}>success</button>
+                <button type="button" onClick={onClose}>
+                    关闭
+                </button>
+                <button type="button" onClick={onSuccess}>
+                    success
+                </button>
             </div>
         );
     },
@@ -56,7 +61,7 @@ vi.mock('react-router-dom', async importOriginal => {
     };
 });
 
-function createPageData(records: AdminProduct[], total: number): PageData<AdminProduct> {
+function createPageData(records: AdminProduct[], total: number): PageResult<AdminProduct> {
     return {
         records,
         total,

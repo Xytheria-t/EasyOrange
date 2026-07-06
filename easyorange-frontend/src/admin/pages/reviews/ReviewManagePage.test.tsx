@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminReview, PageData } from '../../types/admin';
+import type { AdminReview } from '../../types/admin';
+import type { PageResult } from '@/types';
 import ReviewManagePage from './ReviewManagePage';
 
 // ─── Hook mocks ───
@@ -48,7 +49,10 @@ vi.mock('../../components/AdminTable', () => ({
                     ))}
                     {!!pagination && (
                         <div data-testid="pagination">
-                            <button onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}>
+                            <button
+                                type="button"
+                                onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}
+                            >
                                 下一页
                             </button>
                         </div>
@@ -103,10 +107,15 @@ vi.mock('../../components/ConfirmModal', () => ({
             <div data-testid="confirm-modal">
                 <div>{props.title}</div>
                 <div>{props.content}</div>
-                <button onClick={props.onConfirm} disabled={props.confirmDisabled} data-testid="confirm-yes">
+                <button
+                    type="button"
+                    onClick={props.onConfirm}
+                    disabled={props.confirmDisabled}
+                    data-testid="confirm-yes"
+                >
                     {props.confirmText}
                 </button>
-                <button onClick={props.onCancel} data-testid="confirm-no">
+                <button type="button" onClick={props.onCancel} data-testid="confirm-no">
                     取消
                 </button>
             </div>
@@ -148,7 +157,7 @@ const sampleReviews: AdminReview[] = [
     },
 ];
 
-const samplePageData: PageData<AdminReview> = {
+const samplePageData: PageResult<AdminReview> = {
     records: sampleReviews,
     total: 2,
     current: 1,
@@ -158,7 +167,7 @@ const samplePageData: PageData<AdminReview> = {
 
 function setupMocks(
     overrides: Partial<{
-        data: PageData<AdminReview> | undefined;
+        data: PageResult<AdminReview> | undefined;
         isLoading: boolean;
         isError: boolean;
     }> = {}
@@ -297,7 +306,7 @@ describe('ReviewManagePage', () => {
 
     // ── Test 12: Pagination ──
     it('renders pagination when data exceeds page size', () => {
-        const multiPageData: PageData<AdminReview> = {
+        const multiPageData: PageResult<AdminReview> = {
             records: Array.from({ length: 10 }, (_, i) => ({
                 reviewId: String(i + 1),
                 productId: String(i + 10),

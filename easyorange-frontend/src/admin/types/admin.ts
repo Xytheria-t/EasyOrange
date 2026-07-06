@@ -126,14 +126,6 @@ export interface UpdateStatusRequest {
     reason?: string;
 }
 
-export interface PageData<T> {
-    records: T[];
-    total: number;
-    current: number;
-    size: number;
-    pages: number;
-}
-
 export interface ActionResponse {
     isSuccess: boolean;
     message: string;

@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminProduct, PageData } from '../../types/admin';
+import type { AdminProduct } from '../../types/admin';
+import type { PageResult } from '@/types';
 import ProductManagePage from './ProductManagePage';
 
 // ─── Hook mocks ───
@@ -37,8 +38,12 @@ vi.mock('./ProductManageDetailModal', () => ({
         }
         return (
             <div data-testid="product-detail-modal" data-product-id={productId}>
-                <button onClick={onClose}>关闭</button>
-                <button onClick={onSuccess}>success</button>
+                <button type="button" onClick={onClose}>
+                    关闭
+                </button>
+                <button type="button" onClick={onSuccess}>
+                    success
+                </button>
             </div>
         );
     },
@@ -94,7 +99,7 @@ const sampleProducts: AdminProduct[] = [
     },
 ];
 
-function createPageData(records: AdminProduct[], total: number): PageData<AdminProduct> {
+function createPageData(records: AdminProduct[], total: number): PageResult<AdminProduct> {
     return {
         records,
         total,

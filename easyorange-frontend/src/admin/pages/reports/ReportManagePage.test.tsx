@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminReport, PageData } from '../../types/admin';
+import type { AdminReport } from '../../types/admin';
+import type { PageResult } from '@/types';
 import ReportManagePage from './ReportManagePage';
 
 // ─── Hook mocks ───
@@ -48,7 +49,10 @@ vi.mock('../../components/AdminTable', () => ({
                     ))}
                     {!!pagination && (
                         <div data-testid="pagination">
-                            <button onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}>
+                            <button
+                                type="button"
+                                onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}
+                            >
                                 下一页
                             </button>
                         </div>
@@ -102,10 +106,10 @@ vi.mock('../../components/ConfirmModal', () => ({
             <div data-testid="confirm-modal">
                 <div>{props.title}</div>
                 <div>{props.content}</div>
-                <button onClick={props.onConfirm} data-testid="confirm-yes">
+                <button type="button" onClick={props.onConfirm} data-testid="confirm-yes">
                     {props.confirmText}
                 </button>
-                <button onClick={props.onCancel} data-testid="confirm-no">
+                <button type="button" onClick={props.onCancel} data-testid="confirm-no">
                     取消
                 </button>
             </div>
@@ -147,7 +151,7 @@ const sampleReports: AdminReport[] = [
     },
 ];
 
-const samplePageData: PageData<AdminReport> = {
+const samplePageData: PageResult<AdminReport> = {
     records: sampleReports,
     total: 2,
     current: 1,
@@ -157,7 +161,7 @@ const samplePageData: PageData<AdminReport> = {
 
 function setupMocks(
     overrides: Partial<{
-        data: PageData<AdminReport> | undefined;
+        data: PageResult<AdminReport> | undefined;
         isLoading: boolean;
     }> = {}
 ) {

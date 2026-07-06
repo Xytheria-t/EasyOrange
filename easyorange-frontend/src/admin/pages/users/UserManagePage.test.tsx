@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminUser, PageData } from '../../types/admin';
+import type { AdminUser } from '../../types/admin';
+import type { PageResult } from '@/types';
 import UserManagePage from './UserManagePage';
 
 // ─── Hook mocks ───
@@ -35,8 +36,10 @@ vi.mock('./UserDetailModal', () => ({
         return (
             <div data-testid="user-detail-modal" data-user-id={user.userId}>
                 <span>{user.username}</span>
-                <button onClick={onClose}>关闭</button>
-                <button onClick={() => onSave('1')} data-testid="modal-save">
+                <button type="button" onClick={onClose}>
+                    关闭
+                </button>
+                <button type="button" onClick={() => onSave('1')} data-testid="modal-save">
                     {loading ? '保存中...' : '保存修改'}
                 </button>
             </div>
@@ -71,14 +74,17 @@ vi.mock('../../components/AdminTable', () => ({
                             <span data-testid="user-username">{user.username}</span>
                             <span data-testid="user-nickname">{user.nickname}</span>
                             <span data-testid="user-email">{user.email}</span>
-                            <button data-testid="view-detail-btn" onClick={() => {}}>
+                            <button type="button" data-testid="view-detail-btn" onClick={() => {}}>
                                 详情
                             </button>
                         </div>
                     ))}
                     {!!pagination && (
                         <div data-testid="pagination">
-                            <button onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}>
+                            <button
+                                type="button"
+                                onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}
+                            >
                                 下一页
                             </button>
                         </div>
@@ -153,7 +159,7 @@ const sampleUsers: AdminUser[] = [
     },
 ];
 
-const samplePageData: PageData<AdminUser> = {
+const samplePageData: PageResult<AdminUser> = {
     records: sampleUsers,
     total: 2,
     current: 1,
@@ -163,7 +169,7 @@ const samplePageData: PageData<AdminUser> = {
 
 function setupMocks(
     overrides: Partial<{
-        data: PageData<AdminUser> | undefined;
+        data: PageResult<AdminUser> | undefined;
         isLoading: boolean;
         isError: boolean;
     }> = {}

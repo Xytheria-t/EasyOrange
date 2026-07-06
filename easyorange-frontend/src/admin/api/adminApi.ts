@@ -1,4 +1,5 @@
 import { request } from '@/api/core/request';
+import type { PageResult } from '@/types';
 import type {
     ActivityItem,
     AdminOrder,
@@ -23,7 +24,6 @@ import type {
     DashboardStats,
     OrderInterventionRequest,
     OrderStatsResponse,
-    PageData,
     PendingItems,
     ProductAuditRequest,
     RecentProduct,
@@ -81,7 +81,7 @@ export const adminApi = {
     },
 
     getUsers(params: AdminUserQuery) {
-        return request<PageData<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
+        return request<PageResult<AdminUser>>(`${ADMIN_API_PREFIX}/users`, {
             params: { ...params },
         });
     },
@@ -119,7 +119,7 @@ export const adminApi = {
     },
 
     getProducts(params: AdminProductQuery) {
-        return request<PageData<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
+        return request<PageResult<AdminProduct>>(`${ADMIN_API_PREFIX}/products`, {
             params: { ...params },
         });
     },
@@ -158,7 +158,7 @@ export const adminApi = {
     },
 
     getOrders(params: AdminOrderQuery) {
-        return request<PageData<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
+        return request<PageResult<AdminOrder>>(`${ADMIN_API_PREFIX}/orders`, {
             params: { ...params },
         });
     },
@@ -228,7 +228,7 @@ export const adminApi = {
     },
 
     getReports(params: AdminReportQuery) {
-        return request<PageData<AdminReport>>(`${ADMIN_API_PREFIX}/reports`, {
+        return request<PageResult<AdminReport>>(`${ADMIN_API_PREFIX}/reports`, {
             params: { ...params },
         });
     },
@@ -251,7 +251,7 @@ export const adminApi = {
     // ==================== Review Management ====================
 
     getReviews(params: AdminReviewQuery) {
-        return request<PageData<AdminReview>>(`${ADMIN_API_PREFIX}/reviews`, {
+        return request<PageResult<AdminReview>>(`${ADMIN_API_PREFIX}/reviews`, {
             params: { ...params },
         });
     },

@@ -1,7 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminOrder, PageData } from '../../types/admin';
+import type { AdminOrder } from '../../types/admin';
+import type { PageResult } from '@/types';
 import OrderManagePage from './OrderManagePage';
 
 // ─── Hook mocks ───
@@ -21,7 +22,9 @@ vi.mock('./OrderDetailModal', () => ({
         }
         return (
             <div data-testid="order-detail-modal" data-order-id={orderId}>
-                <button onClick={onClose}>关闭</button>
+                <button type="button" onClick={onClose}>
+                    关闭
+                </button>
             </div>
         );
     },
@@ -54,6 +57,7 @@ vi.mock('../../components/AdminTable', () => ({
                             <span data-testid="order-amount">{order.totalAmount}</span>
                             <span data-testid="order-status">{order.status}</span>
                             <button
+                                type="button"
                                 data-testid="view-detail-btn"
                                 onClick={() => {
                                     /* clicks handled in test */
@@ -65,7 +69,10 @@ vi.mock('../../components/AdminTable', () => ({
                     ))}
                     {!!pagination && (
                         <div data-testid="pagination">
-                            <button onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}>
+                            <button
+                                type="button"
+                                onClick={() => (pagination as { onChange: (p: number) => void }).onChange(2)}
+                            >
                                 下一页
                             </button>
                         </div>
@@ -101,7 +108,7 @@ vi.mock('../../components/AdminSelect', () => ({
 }));
 
 // ─── Sample data ───
-const samplePageData: PageData<AdminOrder> = {
+const samplePageData: PageResult<AdminOrder> = {
     records: [
         {
             orderId: 1,
@@ -162,7 +169,7 @@ const samplePageData: PageData<AdminOrder> = {
     pages: 1,
 };
 
-function setupMocks(overrides: Partial<{ data: PageData<AdminOrder> | undefined; isLoading: boolean }> = {}) {
+function setupMocks(overrides: Partial<{ data: PageResult<AdminOrder> | undefined; isLoading: boolean }> = {}) {
     const { data = samplePageData, isLoading = false } = overrides;
 
     mockUseAdminOrders.mockReturnValue({
@@ -259,7 +266,7 @@ describe('OrderManagePage', () => {
 
     // ── Test 9: Pagination ──
     it('triggers pagination on page change', () => {
-        const multiPageData: PageData<AdminOrder> = {
+        const multiPageData: PageResult<AdminOrder> = {
             records: Array.from({ length: 10 }, (_, i) => ({
                 orderId: i + 1,
                 orderNo: `ORD${String(i + 1).padStart(11, '0')}`,
