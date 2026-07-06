@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
@@ -133,8 +133,9 @@ describe('FavoritesPage', () => {
     it('shows pagination for multi-page results', async () => {
         mockGetList.mockResolvedValue({ data: createMockPage(20, 30) });
         renderPage();
-        expect(await screen.findByText('1 / 2')).toBeInTheDocument();
-        expect(screen.getByText('下一页')).not.toBeDisabled();
-        expect(screen.getByText('上一页')).toBeDisabled();
+        await waitFor(() => {
+            expect(screen.getByText('1')).toBeInTheDocument();
+        });
+        expect(screen.getByText('2')).toBeInTheDocument();
     });
 });

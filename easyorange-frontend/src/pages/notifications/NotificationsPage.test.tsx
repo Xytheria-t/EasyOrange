@@ -276,8 +276,9 @@ describe('NotificationsPage', () => {
         renderPage();
 
         await waitFor(() => {
-            expect(screen.getByText('1 / 2')).toBeInTheDocument();
+            expect(screen.getByText('1')).toBeInTheDocument();
         });
+        expect(screen.getByText('2')).toBeInTheDocument();
         expect(screen.getByText('上一页')).toBeInTheDocument();
         expect(screen.getByText('下一页')).toBeInTheDocument();
     });

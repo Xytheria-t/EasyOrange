@@ -254,7 +254,7 @@ describe('OrdersPage', () => {
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
         const user = userEvent.setup();
-        const card = screen.getByText('测试商品名称').closest('[role="button"]');
+        const card = screen.getByText('测试商品名称').closest('button');
         expect(card).not.toBeNull();
         await user.click(card as HTMLElement);
         expect(mockNavigate).toHaveBeenCalledWith('/orders/order-detail-1');

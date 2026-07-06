@@ -34,6 +34,7 @@ export interface SemanticSearchResult {
     total: number;
     current: number;
     size: number;
+    pages: number;
 }
 
 export interface QaRequest {
