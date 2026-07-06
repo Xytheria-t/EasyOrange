@@ -13,6 +13,15 @@ import {
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import { cn } from '@/lib/utils';
 import { PRODUCT_STATUS_CODE, STATUS_LABEL_MAP } from '@/constants/product';
 import { useMyProducts } from '@/hooks/product/useProducts';
 import type { Product, ProductStatus } from '@/types';
@@ -79,6 +88,8 @@ const STATUS_STYLE_MAP: Record<ProductStatus, { bg: string; text: string; border
 function MyProductsPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('all');
+    const [pageNum, setPageNum] = useState(1);
+    const pageSize = 10;
 
     const queryParams = useMemo(() => {
         const tab = STATUS_OPTIONS.find(t => t.id === activeTab);
@@ -86,15 +97,16 @@ function MyProductsPage() {
             ? Number(Object.entries(PRODUCT_STATUS_CODE).find(([, v]) => v === tab.status)?.[0])
             : undefined;
         return {
-            pageNum: 1,
-            pageSize: 50,
+            pageNum,
+            pageSize,
             ...(code !== undefined ? { status: code } : {}),
         };
-    }, [activeTab]);
+    }, [activeTab, pageNum]);
 
     const { data, isLoading, isError, refetch } = useMyProducts(queryParams);
 
     const products = useMemo(() => data?.records ?? [], [data]);
+    const totalPages = data?.pages ?? 1;
 
     return (
         <div className="orders-page-premium">
@@ -117,7 +129,10 @@ function MyProductsPage() {
                         <Button
                             key={tab.id}
                             variant="ghost"
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => {
+                                setActiveTab(tab.id);
+                                setPageNum(1);
+                            }}
                             className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
                             style={{ animationDelay: `${index * 60}ms` }}
                         >
@@ -177,17 +192,47 @@ function MyProductsPage() {
             )}
 
             {!isLoading && !isError && products.length > 0 && (
-                <div className="orders-list-premium">
-                    {products.map((product, index) => (
-                        <MyProductCard
-                            key={product.id}
-                            product={product}
-                            onClick={() => navigate(`/products/${product.id}`)}
-                            onEdit={() => navigate(`/products/${product.id}/edit`)}
-                            index={index}
-                        />
-                    ))}
-                </div>
+                <>
+                    <div className="orders-list-premium">
+                        {products.map((product, index) => (
+                            <MyProductCard
+                                key={product.id}
+                                product={product}
+                                onClick={() => navigate(`/products/${product.id}`)}
+                                onEdit={() => navigate(`/products/${product.id}/edit`)}
+                                index={index}
+                            />
+                        ))}
+                    </div>
+                    {totalPages > 1 && (
+                        <Pagination className="mt-6 mb-4">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={() => setPageNum(p => Math.max(1, p - 1))}
+                                        className={cn(pageNum <= 1 && 'pointer-events-none opacity-40')}
+                                    />
+                                </PaginationItem>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                    <PaginationItem key={p}>
+                                        <PaginationLink
+                                            isActive={p === pageNum}
+                                            onClick={() => setPageNum(p)}
+                                        >
+                                            {p}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={() => setPageNum(p => p + 1)}
+                                        className={cn(pageNum >= totalPages && 'pointer-events-none opacity-40')}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    )}
+                </>
             )}
         </div>
     );
@@ -229,14 +274,7 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                 </span>
             </div>
 
-            <div
-                className="order-card-body-premium"
-                role="button"
-                tabIndex={0}
-                onClick={onClick}
-                onKeyDown={e => e.key === 'Enter' && onClick()}
-                style={{ cursor: 'pointer' }}
-            >
+            <button type="button" className="order-card-body-premium" onClick={onClick} style={{ cursor: 'pointer' }}>
                 <div className="order-card-image-wrap">
                     <div className="order-card-image-glow" />
                     {product.images?.[0] ? (
@@ -256,7 +294,7 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                 </div>
 
                 <ChevronRight size={18} className="order-card-arrow-premium" />
-            </div>
+            </button>
 
             <div className="order-card-footer-premium">
                 <span className="order-card-time-premium">
@@ -265,7 +303,7 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                     {statusKey === 'PENDING_REVIEW' && '等待管理员审核'}
                     {!['DRAFT', 'REJECTED', 'PENDING_REVIEW'].includes(statusKey) && ''}
                 </span>
-                <div className="order-card-actions-premium" role="group" aria-label="商品操作">
+                <fieldset className="order-card-actions-premium" aria-label="商品操作">
                     <Button
                         variant="outline"
                         onClick={e => {
@@ -287,7 +325,7 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                         <Eye size={14} />
                         查看
                     </Button>
-                </div>
+                </fieldset>
             </div>
         </div>
     );
