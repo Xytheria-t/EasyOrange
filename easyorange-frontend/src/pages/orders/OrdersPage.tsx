@@ -13,6 +13,15 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from '@/components/ui/pagination';
+import { cn } from '@/lib/utils';
 import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
 import { useCancelOrder, useMyOrders, usePayOrder, useReceiveOrder } from '@/hooks';
 import { useUIStore } from '@/store';
@@ -75,15 +84,21 @@ const STATUS_STYLE_MAP: Record<OrderStatus, { bg: string; text: string; border: 
 
 function OrdersPage() {
     const [activeTab, setActiveTab] = useState('all');
+    const [pageNum, setPageNum] = useState(1);
+    const pageSize = 10;
     const navigate = useNavigate();
 
     const queryParams = useMemo(() => {
         const tab = STATUS_TAB_MAP.find(t => t.id === activeTab);
-        if (!tab?.statusCode && tab?.statusCode !== 0) {
-            return {};
+        const baseParams: { status?: number; pageNum?: number; pageSize?: number } = {
+            pageNum,
+            pageSize,
+        };
+        if (tab?.statusCode !== undefined) {
+            baseParams.status = tab.statusCode;
         }
-        return { status: tab.statusCode };
-    }, [activeTab]);
+        return baseParams;
+    }, [activeTab, pageNum]);
 
     const { data, isLoading, isError, refetch } = useMyOrders(queryParams);
     const cancelOrder = useCancelOrder();
@@ -92,6 +107,7 @@ function OrdersPage() {
     const addToast = useUIStore(s => s.addToast);
 
     const [cancellingId, setCancellingId] = useState<string | null>(null);
+    const totalPages = data?.pages ?? 1;
 
     const orders = data?.records ?? [];
 
@@ -163,7 +179,10 @@ function OrdersPage() {
                         <Button
                             key={tab.id}
                             variant="ghost"
-                            onClick={() => setActiveTab(tab.id)}
+                            onClick={() => {
+                                setActiveTab(tab.id);
+                                setPageNum(1);
+                            }}
                             className={`orders-tab-item ${isActive ? 'orders-tab-active' : ''}`}
                             style={{ animationDelay: `${index * 60}ms` }}
                         >
@@ -217,20 +236,50 @@ function OrdersPage() {
             )}
 
             {!isLoading && !isError && orders.length > 0 && (
-                <div className="orders-list-premium">
-                    {orders.map((order, index) => (
-                        <OrderCard
-                            key={order.id}
-                            order={order}
-                            onCancel={handleCancel}
-                            onPay={handlePay}
-                            onReceive={handleReceive}
-                            onClick={() => navigate(`/orders/${order.id}`)}
-                            isCancelling={cancellingId === order.id}
-                            index={index}
-                        />
-                    ))}
-                </div>
+                <>
+                    <div className="orders-list-premium">
+                        {orders.map((order, index) => (
+                            <OrderCard
+                                key={order.id}
+                                order={order}
+                                onCancel={handleCancel}
+                                onPay={handlePay}
+                                onReceive={handleReceive}
+                                onClick={() => navigate(`/orders/${order.id}`)}
+                                isCancelling={cancellingId === order.id}
+                                index={index}
+                            />
+                        ))}
+                    </div>
+                    {totalPages > 1 && (
+                        <Pagination className="mt-6 mb-4">
+                            <PaginationContent>
+                                <PaginationItem>
+                                    <PaginationPrevious
+                                        onClick={() => setPageNum(p => Math.max(1, p - 1))}
+                                        className={cn(pageNum <= 1 && 'pointer-events-none opacity-40')}
+                                    />
+                                </PaginationItem>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                    <PaginationItem key={p}>
+                                        <PaginationLink
+                                            isActive={p === pageNum}
+                                            onClick={() => setPageNum(p)}
+                                        >
+                                            {p}
+                                        </PaginationLink>
+                                    </PaginationItem>
+                                ))}
+                                <PaginationItem>
+                                    <PaginationNext
+                                        onClick={() => setPageNum(p => p + 1)}
+                                        className={cn(pageNum >= totalPages && 'pointer-events-none opacity-40')}
+                                    />
+                                </PaginationItem>
+                            </PaginationContent>
+                        </Pagination>
+                    )}
+                </>
             )}
         </div>
     );
@@ -256,13 +305,11 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
     const multiItemBadge = order.items && order.items.length > 1;
 
     return (
-        <div
+        <button
+            type="button"
             className="order-card-premium"
             style={{ animationDelay: `${index * 80}ms` }}
-            role="button"
-            tabIndex={0}
             onClick={onClick}
-            onKeyDown={e => e.key === 'Enter' && onClick()}
         >
             <div className="order-card-shine" />
 
@@ -313,7 +360,7 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
 
             <div className="order-card-footer-premium">
                 <span className="order-card-time-premium">{order.createTime}</span>
-                <div className="order-card-actions-premium" role="group" aria-label="订单操作">
+                <fieldset className="order-card-actions-premium" aria-label="订单操作">
                     {statusKey === 'PENDING_PAYMENT' && (
                         <>
                             <Button
@@ -339,8 +386,8 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
                             确认收货
                         </Button>
                     )}
-                </div>
+                </fieldset>
             </div>
-        </div>
+        </button>
     );
 }
