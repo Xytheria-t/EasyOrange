@@ -76,12 +76,12 @@ class OrderAggregateTest {
                     ORDER_ID
             );
 
-            assertThat(result.event().getBuyerId()).isEqualTo(BUYER_ID);
-            assertThat(result.event().getSellerId()).isEqualTo(SELLER_ID);
-            assertThat(result.event().getItems()).hasSize(1);
-            assertThat(result.event().getItems().get(0).productId()).isEqualTo(PRODUCT_ID);
-            assertThat(result.event().getTotalAmount()).isEqualByComparingTo(AMOUNT);
-            assertThat(result.event().getOrderId()).isNotNull();
+            assertThat(result.event().buyerId()).isEqualTo(BUYER_ID);
+            assertThat(result.event().sellerId()).isEqualTo(SELLER_ID);
+            assertThat(result.event().items()).hasSize(1);
+            assertThat(result.event().items().get(0).productId()).isEqualTo(PRODUCT_ID);
+            assertThat(result.event().totalAmount()).isEqualByComparingTo(AMOUNT);
+            assertThat(result.event().orderId()).isNotNull();
             assertThat(result.aggregate()).isNotNull();
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
             assertThat(result.aggregate().items()).hasSize(1);
@@ -96,8 +96,8 @@ class OrderAggregateTest {
                     ORDER_ID
             );
 
-            assertThat(result.event().getItems()).hasSize(2);
-            assertThat(result.event().getTotalAmount()).isEqualByComparingTo(new BigDecimal("199.97"));
+            assertThat(result.event().items()).hasSize(2);
+            assertThat(result.event().totalAmount()).isEqualByComparingTo(new BigDecimal("199.97"));
             assertThat(result.aggregate().totalAmount().value()).isEqualByComparingTo(new BigDecimal("199.97"));
             assertThat(result.aggregate().items()).hasSize(2);
         }
@@ -157,8 +157,8 @@ class OrderAggregateTest {
             OrderAggregate aggregate = createPendingPaymentAggregate();
             OrderAggregate.OrderPaidResult result = aggregate.pay();
 
-            assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getPaymentStatus()).isEqualTo(1);
+            assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
+            assertThat(result.event().paymentStatus()).isEqualTo(1);
             assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.PAID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PAID);
         }
@@ -190,9 +190,9 @@ class OrderAggregateTest {
             OrderAggregate aggregate = createPendingPaymentAggregate();
             OrderAggregate.OrderCancelledResult result = aggregate.cancel("不想要了");
 
-            assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getProductIds()).containsExactly(PRODUCT_ID);
-            assertThat(result.event().getReason()).isEqualTo("不想要了");
+            assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
+            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().reason()).isEqualTo("不想要了");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(result.aggregate().cancelReason()).isEqualTo("不想要了");
         }
@@ -224,7 +224,7 @@ class OrderAggregateTest {
             OrderAggregate aggregate = createPaidAggregate();
             OrderAggregate.OrderShippedResult result = aggregate.ship();
 
-            assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
+            assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.SHIPPED);
         }
 
@@ -247,8 +247,8 @@ class OrderAggregateTest {
             OrderAggregate aggregate = createShippedAggregate();
             OrderAggregate.OrderCompletedResult result = aggregate.confirmReceipt();
 
-            assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getProductIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
+            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.COMPLETED);
         }
 
@@ -271,9 +271,9 @@ class OrderAggregateTest {
             OrderAggregate aggregate = createPaidAggregate();
             OrderAggregate.OrderRefundedResult result = aggregate.refund("商品有问题");
 
-            assertThat(result.event().getOrderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().getProductIds()).containsExactly(PRODUCT_ID);
-            assertThat(result.event().getReason()).isEqualTo("商品有问题");
+            assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
+            assertThat(result.event().productIds()).containsExactly(PRODUCT_ID);
+            assertThat(result.event().reason()).isEqualTo("商品有问题");
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.REFUNDED);
             assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.REFUNDED);
         }
@@ -285,7 +285,7 @@ class OrderAggregateTest {
             OrderAggregate.OrderRefundedResult result = aggregate.refund("快递损坏");
 
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.REFUNDED);
-            assertThat(result.event().getReason()).isEqualTo("快递损坏");
+            assertThat(result.event().reason()).isEqualTo("快递损坏");
         }
 
         @Test

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.core;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ public class RabbitMQDomainEventPublisher implements DomainEventPublisher {
     private final RoutingKeyResolver routingKeyResolver;
 
     @Override
-    public void publish(BaseDomainEvent event) {
+    public void publish(DomainEvent event) {
         String routingKey = routingKeyResolver.resolve(event);
 
         try {

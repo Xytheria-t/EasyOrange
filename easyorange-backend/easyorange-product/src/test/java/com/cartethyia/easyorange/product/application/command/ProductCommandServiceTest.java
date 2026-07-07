@@ -1,7 +1,10 @@
 package com.cartethyia.easyorange.product.application.command;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
+import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
@@ -96,7 +99,7 @@ class ProductCommandServiceTest {
 
             assertThat(productId).isEqualTo("42");
             verify(productRepository).save(any(Product.class));
-            verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+            verify(domainEventPublisher).publish(any(ProductCreatedEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -118,7 +121,7 @@ class ProductCommandServiceTest {
             commandService.updateProduct(command);
 
             verify(productCachePort).evictProductCache("1");
-            verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+            verify(domainEventPublisher).publish(any(ProductUpdatedEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -153,7 +156,7 @@ class ProductCommandServiceTest {
             commandService.decrementStock(new DecrementStockCommand("1", 1));
 
             verify(productCachePort).evictProductCache("1");
-            verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+            verify(domainEventPublisher).publish(any(StockDecreasedEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -169,7 +172,7 @@ class ProductCommandServiceTest {
             commandService.markAsSold(new MarkAsSoldCommand("1"));
 
             verify(productCachePort).evictProductCache("1");
-            verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+            verify(domainEventPublisher).publish(any(ProductMarkedSoldEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }

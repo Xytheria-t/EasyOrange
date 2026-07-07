@@ -162,7 +162,7 @@ public class UserService {
 
 ```java
 // 定义事件
-public class UserCreatedEvent extends BaseDomainEvent {
+public record UserCreatedEvent(String userId, String username) implements DomainEvent {
     private final Long userId;
     
     public UserCreatedEvent(Long userId) {

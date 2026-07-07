@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.framework.messaging.core.RoutingKeyResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,8 +68,8 @@ class RoutingKeyResolverTest {
         assertThat(resolver.resolve(event)).isEqualTo("login");
     }
 
-    private static BaseDomainEvent createTestEvent(String eventType) {
-        return new BaseDomainEvent() {
+    private static DomainEvent createTestEvent(String eventType) {
+        return new DomainEvent() {
             @Override
             public String eventType() {
                 return eventType;

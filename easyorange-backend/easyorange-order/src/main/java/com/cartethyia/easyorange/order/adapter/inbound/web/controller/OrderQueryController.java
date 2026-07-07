@@ -23,24 +23,21 @@ public class OrderQueryController {
 
     @GetMapping("/my")
     public Result<PageResult<OrderVO>> getMyOrders(@Valid QueryOrderRequest request) {
-        var normalized = request.normalized();
-        return Result.success(queryHandler.getMyOrders(normalized.getStatus(),
-                normalized.getPageNum(), normalized.getPageSize()));
+        return Result.success(queryHandler.getMyOrders(request.getStatus(),
+                request.getPageNum(), request.getPageSize()));
     }
 
     @GetMapping("/sold")
     public Result<PageResult<OrderVO>> getSoldOrders(@Valid QueryOrderRequest request) {
-        var normalized = request.normalized();
-        return Result.success(queryHandler.getSoldOrders(normalized.getStatus(),
-                normalized.getPageNum(), normalized.getPageSize()));
+        return Result.success(queryHandler.getSoldOrders(request.getStatus(),
+                request.getPageNum(), request.getPageSize()));
     }
 
     @GetMapping("/list")
     public Result<PageResult<OrderVO>> queryOrders(@Valid QueryOrderRequest request) {
-        var normalized = request.normalized();
         return Result.success(queryHandler.handle(
-                normalized.getOrderNo(),
-                normalized.getStatus(), normalized.getBuyerId(), normalized.getSellerId(),
-                normalized.getPageNum(), normalized.getPageSize()));
+                request.getOrderNo(),
+                request.getStatus(), request.getBuyerId(), request.getSellerId(),
+                request.getPageNum(), request.getPageSize()));
     }
 }

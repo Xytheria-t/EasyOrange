@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.core;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,7 +15,7 @@ public class RoutingKeyResolver {
      *   StockReservationRequested → stock.reservation.requested
      *   OrderPaid → order.paid
      */
-    public String resolve(BaseDomainEvent event) {
+    public String resolve(DomainEvent event) {
         String typeName = event.eventType();
         return typeName.replaceAll("([a-z])([A-Z])", "$1.$2").toLowerCase();
     }

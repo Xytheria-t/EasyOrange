@@ -59,9 +59,9 @@ class OrderEventSubscribersTest {
 
             verify(domainEventPublisher).publish(stockEventCaptor.capture());
             StockReservationRequestedEvent captured = stockEventCaptor.getValue();
-            assertThat(captured.getOrderId()).isEqualTo(ORDER_ID);
-            assertThat(captured.getProductId()).isEqualTo(PRODUCT_ID);
-            assertThat(captured.getQuantity()).isEqualTo(1);
+            assertThat(captured.orderId()).isEqualTo(ORDER_ID);
+            assertThat(captured.productId()).isEqualTo(PRODUCT_ID);
+            assertThat(captured.quantity()).isEqualTo(1);
         }
 
         @Test

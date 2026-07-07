@@ -352,7 +352,7 @@ public class Product {
                 .stock(stock.decrease(quantity))
                 .updateTime(LocalDateTime.now())
                 .build();
-        return new StockDecreasedResult(updated, new StockDecreasedEvent(id.value()));
+        return new StockDecreasedResult(updated, StockDecreasedEvent.of(id.value()));
     }
 
     public StockRestoredResult restoreStock() {
@@ -363,7 +363,7 @@ public class Product {
                 .stock(stock.increase())
                 .updateTime(LocalDateTime.now())
                 .build();
-        return new StockRestoredResult(updated, new StockRestoredEvent(id.value()));
+        return new StockRestoredResult(updated, StockRestoredEvent.of(id.value()));
     }
 
     public Product assignId(String id) {

@@ -1,19 +1,10 @@
 package com.cartethyia.easyorange.product.domain.event;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 
-public class StockDecreasedEvent extends BaseDomainEvent {
+public record StockDecreasedEvent(String productId, int quantity) implements DomainEvent {
 
-    private final String productId;
-    private final int quantity;
-
-    public StockDecreasedEvent(String productId) {
-        super();
-        this.productId = productId;
-        this.quantity = 1;
+    public static StockDecreasedEvent of(String productId) {
+        return new StockDecreasedEvent(productId, 1);
     }
-
-    public String getProductId() { return productId; }
-    public int getQuantity() { return quantity; }
-
 }

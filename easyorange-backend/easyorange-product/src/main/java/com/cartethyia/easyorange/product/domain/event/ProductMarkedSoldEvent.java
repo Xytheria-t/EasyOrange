@@ -1,20 +1,6 @@
 package com.cartethyia.easyorange.product.domain.event;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 
-public class ProductMarkedSoldEvent extends BaseDomainEvent {
-
-    private final String productId;
-    private final String sellerId;
-
-    public ProductMarkedSoldEvent(String productId, String sellerId) {
-        super();
-        this.productId = productId;
-        this.sellerId = sellerId;
-    }
-
-    public String getProductId() { return productId; }
-
-    public String getSellerId() { return sellerId; }
-
+public record ProductMarkedSoldEvent(String productId, String sellerId) implements DomainEvent {
 }

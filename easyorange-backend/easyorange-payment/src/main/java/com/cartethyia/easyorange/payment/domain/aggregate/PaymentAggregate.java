@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
@@ -255,7 +255,7 @@ public class PaymentAggregate {
 
     public record PaymentCreatedResult(PaymentAggregate aggregate, PaymentCreatedEvent event) {}
     public record PayPreparedResult(PaymentAggregate aggregate) {}
-    public record PayConfirmedResult(PaymentAggregate aggregate, BaseDomainEvent event) {}
+    public record PayConfirmedResult(PaymentAggregate aggregate, DomainEvent event) {}
     public record CancelPayResult(PaymentAggregate aggregate) {}
     public record RefundPreparedResult(PaymentAggregate aggregate) {}
     public record RefundConfirmedResult(PaymentAggregate aggregate, PaymentRefundedEvent event) {}

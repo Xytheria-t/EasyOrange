@@ -22,7 +22,7 @@ common/
 │   ├── FileResultCode.java  # 文件操作结果码
 │   └── LimitType.java       # 限流类型
 ├── event/
-│   ├── BaseDomainEvent.java     # 领域事件基类
+│   ├── DomainEvent.java          # 领域事件接口（事件类应为此接口的 record 实现）
 │   ├── DomainEventPublisher.java # 领域事件发布接口
 ├── exception/
 │   ├── BaseBusinessException.java       # 业务异常基类
@@ -68,7 +68,7 @@ BizRequire.requireTrue(condition, ResultCode.PARAM_VALIDATION_FAILED);
 BizRequire.requireTrue(condition, "条件不满足");
 ```
 
-### BaseDomainEvent — 领域事件基类
+### DomainEvent — 领域事件接口
 
 ### 自定义注解
 

@@ -1,20 +1,9 @@
 package com.cartethyia.easyorange.order.domain.event;
 
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
-import lombok.Getter;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 
 /**
  * 订单已付款事件
  */
-@Getter
-public class OrderPaidEvent extends BaseDomainEvent {
-
-    private final String orderId;
-    private final Integer paymentStatus;
-
-    public OrderPaidEvent(String orderId, Integer paymentStatus) {
-        super();
-        this.orderId = orderId;
-        this.paymentStatus = paymentStatus;
-    }
+public record OrderPaidEvent(String orderId, Integer paymentStatus) implements DomainEvent {
 }

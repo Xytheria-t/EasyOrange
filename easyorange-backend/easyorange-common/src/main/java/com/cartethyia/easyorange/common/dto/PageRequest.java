@@ -3,18 +3,22 @@ package com.cartethyia.easyorange.common.dto;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 /**
  * 通用分页请求参数
+ * <p>
+ * 规范化（normalization）在 setter 和全参构造器中自动完成，
+ * Jackson 反序列化路径（no-args + setters）和子类 {@code super()} 路径均无需手动 normalized()。
+ * </p>
  */
-@Data
+@Getter
+@Setter
 @SuperBuilder
 @NoArgsConstructor
-@AllArgsConstructor
 public class PageRequest {
 
     private static final int DEFAULT_PAGE_NUM = 1;
@@ -34,22 +38,24 @@ public class PageRequest {
     private String sortDirection;
 
     /**
-     * 返回规范化后的新实例（不可变模式）
-     * <p>
-     * 将 null 或非法值替换为默认值，返回新的 PageRequest 实例，不修改原对象。
-     * </p>
-     *
-     * @return 规范化后的新 PageRequest 实例
+     * 全参构造器，自动规整 pageNum/pageSize（通过 setter 确保合法值）。
+     * 替代 Lombok {@code @AllArgsConstructor}，供子类 {@code super()} 调用。
      */
-    public PageRequest normalized() {
-        var normalizedPageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;
-        var normalizedPageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
-        return PageRequest.builder()
-                .pageNum(normalizedPageNum)
-                .pageSize(normalizedPageSize)
-                .sortField(this.sortField)
-                .sortDirection(this.sortDirection)
-                .build();
+    public PageRequest(Integer pageNum, Integer pageSize, String sortField, String sortDirection) {
+        setPageNum(pageNum);
+        setPageSize(pageSize);
+        this.sortField = sortField;
+        this.sortDirection = sortDirection;
+    }
+
+    // ——— Setter 级自动规整（Jackson 反序列化路径） ———
+
+    public void setPageNum(Integer pageNum) {
+        this.pageNum = (pageNum == null || pageNum < DEFAULT_PAGE_NUM) ? DEFAULT_PAGE_NUM : pageNum;
+    }
+
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = (pageSize == null || pageSize < 1) ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
     }
 
 }

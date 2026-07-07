@@ -146,7 +146,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
 ## 五、领域事件
 
-- **事件基类**：所有领域事件继承 `common` 中的 `BaseDomainEvent`（仅含 `eventId` + `occurredOn`，`eventType()` 由类名自动派生）
+- **事件接口**：所有领域事件 record 实现 `common` 中的 `DomainEvent` 接口（含 `eventType()` 默认方法，由类名消除 `Event` 后缀自动派生。Jackson 反序列化依赖 `ParameterNamesModule` + `-parameters`，无需 `@JsonCreator`）
 - **事件命名**：使用过去时态（UserRegistered、OrderPaid、PasswordChanged）
 - **事件内容**：仅包含必要 ID 和状态，不传输完整聚合
 - **事件发布**：应用服务调用 `DomainEventPublisher` 发布，框架层通过 RabbitMQ Topic Exchange 路由到各模块 `@RabbitListener` 消费者

@@ -35,11 +35,11 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
 
     @Override
     public PageResult<MessageAggregate> findByReceiverId(MessageQuery query, String userId) {
-        var normalized = PageRequest.builder()
+        var pageReq = PageRequest.builder()
                 .pageNum(query.pageNum())
                 .pageSize(query.pageSize())
                 .build();
-        Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
+        Page<Message> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
         var wrapper = lambdaQuery();
         wrapper.eq(Message::getReceiverId, userId);
 
@@ -58,11 +58,11 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
 
     @Override
     public PageResult<MessageAggregate> findUnreadByReceiverId(MessageQuery query, String userId) {
-        var normalized = PageRequest.builder()
+        var pageReq = PageRequest.builder()
                 .pageNum(query.pageNum())
                 .pageSize(query.pageSize())
                 .build();
-        Page<Message> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
+        Page<Message> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
         var wrapper = lambdaQuery();
         wrapper.eq(Message::getReceiverId, userId)
                 .eq(Message::getIsRead, MessageStatus.UNREAD.getCode());

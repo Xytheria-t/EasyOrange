@@ -2,22 +2,26 @@ package com.cartethyia.easyorange.common.util;
 
 public class MaskUtils {
 
+    private static final String MASK = "****";
+
     private MaskUtils() {}
 
     public static String maskPhone(String phone) {
         if (phone == null || phone.length() < 7) {
             return phone;
         }
-        return phone.substring(0, 3) + "****" + phone.substring(phone.length() - 4);
+        return phone.substring(0, 3) + MASK + phone.substring(phone.length() - 4);
     }
 
     public static String maskEmail(String email) {
         if (email == null) return null;
-        int at = email.indexOf('@');
+        var at = email.indexOf('@');
         if (at == -1) return email;
-        String local = email.substring(0, at);
-        if (local.length() <= 1) return "****" + email.substring(at);
-        return local.charAt(0) + "****" + email.substring(at);
+        var local = email.substring(0, at);
+        return switch (local.length()) {
+            case 0, 1 -> MASK + email.substring(at);
+            default -> local.charAt(0) + MASK + email.substring(at);
+        };
     }
 
     public static String maskIdCard(String idCard) {
@@ -31,7 +35,7 @@ public class MaskUtils {
         if (bankCard == null || bankCard.length() < 8) {
             return bankCard;
         }
-        return bankCard.substring(0, 4) + "****" + bankCard.substring(bankCard.length() - 4);
+        return bankCard.substring(0, 4) + MASK + bankCard.substring(bankCard.length() - 4);
     }
 
     public static String maskName(String name) {
@@ -40,23 +44,22 @@ public class MaskUtils {
             case 1 -> name;
             case 2 -> name.charAt(0) + "*";
             case 3 -> name.charAt(0) + "*" + name.charAt(2);
-            default -> name.substring(0, 2) + "****";
+            default -> name.substring(0, 2) + MASK;
         };
     }
 
     public static String maskAddress(String address) {
-        return maskAddress(address, null);
+        return maskAddress(address, 6);
     }
 
-    public static String maskAddress(String address, Integer visibleChars) {
+    public static String maskAddress(String address, int visibleChars) {
         if (address == null || address.isEmpty()) {
             return address;
         }
-        int visible = (visibleChars != null) ? visibleChars : 6;
-        if (address.length() <= visible) {
+        if (address.length() <= visibleChars) {
             return address;
         }
-        return address.substring(0, visible) + "***";
+        return address.substring(0, visibleChars) + "***";
     }
 
     public static String mask(String value, int keepFront, int keepEnd) {
@@ -66,6 +69,6 @@ public class MaskUtils {
         if (value.length() <= keepFront + keepEnd) {
             return value;
         }
-        return value.substring(0, keepFront) + "****" + value.substring(value.length() - keepEnd);
+        return value.substring(0, keepFront) + MASK + value.substring(value.length() - keepEnd);
     }
 }

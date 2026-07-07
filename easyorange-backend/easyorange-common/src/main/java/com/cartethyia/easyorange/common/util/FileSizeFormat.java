@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.common.util;
 
+import java.util.Locale;
+
 public final class FileSizeFormat {
 
     private static final long KB = 1024;
@@ -10,6 +12,9 @@ public final class FileSizeFormat {
     }
 
     public static String formatFileSize(long size) {
+        if (size <= 0) {
+            return "0 B";
+        }
         if (size >= GB) {
             return formatWithUnit(size, GB, "GB");
         } else if (size >= MB) {
@@ -22,6 +27,6 @@ public final class FileSizeFormat {
     }
 
     private static String formatWithUnit(long size, long unit, String unitName) {
-        return String.format("%.2f %s", size / (double) unit, unitName);
+        return String.format(Locale.ROOT, "%.2f %s", size / (double) unit, unitName);
     }
 }

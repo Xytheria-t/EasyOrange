@@ -23,25 +23,25 @@ public class PaymentMetricsConsumer {
 
     @RabbitHandler
     public void onPaymentCreated(PaymentCreatedEvent event) {
-        log.debug("Recording payment created metric: paymentId={}", event.getPaymentId());
+        log.debug("Recording payment created metric: paymentId={}", event.paymentId());
         metricsService.recordPaymentCreated();
     }
 
     @RabbitHandler
     public void onPaymentSucceeded(PaymentSucceededEvent event) {
-        log.debug("Recording payment success metric: paymentId={}", event.getPaymentId());
+        log.debug("Recording payment success metric: paymentId={}", event.paymentId());
         metricsService.recordPaymentSuccess();
     }
 
     @RabbitHandler
     public void onPaymentFailed(PaymentFailedEvent event) {
-        log.debug("Recording payment failed metric: paymentId={}", event.getPaymentId());
+        log.debug("Recording payment failed metric: paymentId={}", event.paymentId());
         metricsService.recordPaymentFailed();
     }
 
     @RabbitHandler
     public void onPaymentRefunded(PaymentRefundedEvent event) {
-        log.debug("Recording refund metric: paymentId={}", event.getPaymentId());
+        log.debug("Recording refund metric: paymentId={}", event.paymentId());
         metricsService.recordRefund();
     }
 }

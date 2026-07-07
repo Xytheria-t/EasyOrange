@@ -83,8 +83,8 @@ public class OrderCreationExecutor {
     public void createPayment(OrderCreatedEvent orderEvent, CreateOrderCommand command) {
         try {
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
-                orderEvent.getOrderId(),
-                orderEvent.getTotalAmount(),
+                orderEvent.orderId(),
+                orderEvent.totalAmount(),
                 command.getPaymentMethod() != null ? command.getPaymentMethod() : 1,
                 "ORDER",
                 "订单支付"

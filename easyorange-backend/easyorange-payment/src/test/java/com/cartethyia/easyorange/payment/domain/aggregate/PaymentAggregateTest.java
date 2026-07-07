@@ -52,12 +52,12 @@ class PaymentAggregateTest {
             );
 
             PaymentCreatedEvent event = result.event();
-            assertThat(event.getPaymentId()).isEqualTo(result.aggregate().id());
-            assertThat(event.getPaymentNo()).isEqualTo(result.aggregate().paymentNo());
-            assertThat(event.getOrderId()).isEqualTo("1001");
-            assertThat(event.getUserId()).isEqualTo("2001");
-            assertThat(event.getAmount()).isEqualByComparingTo(new BigDecimal("99.99"));
-            assertThat(event.getPaymentMethod()).isEqualTo(1);
+            assertThat(event.paymentId()).isEqualTo(result.aggregate().id());
+            assertThat(event.paymentNo()).isEqualTo(result.aggregate().paymentNo());
+            assertThat(event.orderId()).isEqualTo("1001");
+            assertThat(event.userId()).isEqualTo("2001");
+            assertThat(event.amount()).isEqualByComparingTo(new BigDecimal("99.99"));
+            assertThat(event.paymentMethod()).isEqualTo(1);
         }
 
         @Test
@@ -168,7 +168,7 @@ class PaymentAggregateTest {
             assertThat(result.aggregate().transactionId()).isEqualTo("TXN_001");
             assertThat(result.event()).isInstanceOf(PaymentSucceededEvent.class);
             PaymentSucceededEvent event = (PaymentSucceededEvent) result.event();
-            assertThat(event.getTransactionId()).isEqualTo("TXN_001");
+            assertThat(event.transactionId()).isEqualTo("TXN_001");
         }
 
         @Test
@@ -181,7 +181,7 @@ class PaymentAggregateTest {
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.FAILED);
             assertThat(result.event()).isInstanceOf(PaymentFailedEvent.class);
             PaymentFailedEvent event = (PaymentFailedEvent) result.event();
-            assertThat(event.getReason()).isEqualTo("余额不足");
+            assertThat(event.reason()).isEqualTo("余额不足");
         }
 
         @Test
@@ -295,7 +295,7 @@ class PaymentAggregateTest {
             assertThat(result.aggregate()).isNotSameAs(aggregate);
             assertThat(result.event()).isInstanceOf(PaymentFailedEvent.class);
             PaymentFailedEvent event = result.event();
-            assertThat(event.getReason()).isEqualTo("支付超时");
+            assertThat(event.reason()).isEqualTo("支付超时");
         }
 
         @Test
@@ -324,7 +324,7 @@ class PaymentAggregateTest {
             assertThat(result.aggregate()).isNotSameAs(aggregate);
             assertThat(result.event()).isInstanceOf(PaymentClosedEvent.class);
             PaymentClosedEvent event = result.event();
-            assertThat(event.getPaymentId()).isEqualTo(aggregate.id());
+            assertThat(event.paymentId()).isEqualTo(aggregate.id());
         }
 
         @Test

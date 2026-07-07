@@ -24,15 +24,15 @@ public class StockReservationEventConsumer {
     )
     public void onStockReservationRequested(StockReservationRequestedEvent event) {
         log.info("收到库存预留请求: orderId={}, productId={}, quantity={}",
-                event.getOrderId(), event.getProductId(), event.getQuantity());
+                event.orderId(), event.productId(), event.quantity());
 
         try {
-            int quantity = event.getQuantity();
-            productCommandService.decrementStock(new DecrementStockCommand(event.getProductId(), quantity));
+            int quantity = event.quantity();
+            productCommandService.decrementStock(new DecrementStockCommand(event.productId(), quantity));
 
-            log.info("库存扣减成功: productId={}, orderId={}, quantity={}", event.getProductId(), event.getOrderId(), quantity);
+            log.info("库存扣减成功: productId={}, orderId={}, quantity={}", event.productId(), event.orderId(), quantity);
         } catch (Exception e) {
-            log.error("库存扣减失败: productId={}, orderId={}", event.getProductId(), event.getOrderId(), e);
+            log.error("库存扣减失败: productId={}, orderId={}", event.productId(), event.orderId(), e);
             throw e;
         }
     }

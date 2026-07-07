@@ -22,18 +22,18 @@ public class WebSocketEventConsumer {
     )
     public void handleMessageRecalledEvent(MessageRecalledEvent event) {
         log.info("收到消息撤回事件: conversationId={}, messageId={}, operatorId={}",
-                event.getConversationId(), event.getMessageId(), event.getOperatorId());
+                event.conversationId(), event.messageId(), event.operatorId());
 
         try {
             chatWebSocketHandler.broadcastRecallEvent(
-                    event.getConversationId(),
-                    event.getMessageId(),
-                    event.getOperatorId()
+                    event.conversationId(),
+                    event.messageId(),
+                    event.operatorId()
             );
 
-            log.info("消息撤回广播成功: messageId={}", event.getMessageId());
+            log.info("消息撤回广播成功: messageId={}", event.messageId());
         } catch (Exception e) {
-            log.error("消息撤回广播失败: messageId={}", event.getMessageId(), e);
+            log.error("消息撤回广播失败: messageId={}", event.messageId(), e);
             throw e;
         }
     }

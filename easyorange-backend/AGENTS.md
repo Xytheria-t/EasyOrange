@@ -230,7 +230,7 @@ return Result.success(userId);
 命名变量仅在以下场景保留：
 - 调用与返回之间有**条件分支**或**后处理**
 - 对返回值有**多步骤转换**（如 `builder().id(x).build()` 再 wrap）
-- 变量名承载了**非显而易见的语义**（如已规范化的请求对象 `var normalized = request.normalized()` 在后续多个参数中使用）
+- 变量名承载了**非显而易见的语义**（如 `var pageReq = PageRequest.builder().pageNum(pageNum).pageSize(pageSize).build()` 在后续多个操作中使用）
 
 ## 踩坑警示
 
@@ -238,7 +238,7 @@ return Result.success(userId);
 
 MyBatis-Plus **无内置** `UUID` TypeHandler，PO 含 UUID 字段时 insert 报 `Type handler was null`。已配全局 `UuidTypeHandler`（`framework/config/database/`）+ `type-handlers-package`，新增 PO 的 UUID 字段无需额外配置。数据库列类型 `CHAR(36)`。
 
-领域事件类无 `@JsonCreator`，反序列化依赖 `ParameterNamesModule`（`framework/.../JacksonConfig.java` + `framework/pom.xml` `jackson-module-parameter-names`）。移除会导致 `InvalidDefinitionException`，新增事件类无需 Jackson 注解。
+领域事件 record 无需 `@JsonCreator`，反序列化依赖 `ParameterNamesModule`（`framework/.../JacksonConfig.java` + `framework/pom.xml` `jackson-module-parameter-names`）实现构造参数名匹配。新增事件 record 实现 `DomainEvent` 接口即可，无需任何 Jackson 注解。
 
 ### Spring Boot 4 @WebMvcTest 路径变化
 

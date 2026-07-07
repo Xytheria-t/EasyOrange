@@ -98,8 +98,8 @@ class MessageTest {
             MessageSentEvent event = aggregate.send();
 
             assertThat(event).isNotNull();
-            assertThat(event.getSenderId()).isEqualTo(SENDER_ID);
-            assertThat(event.getReceiverId()).isEqualTo(RECEIVER_ID);
+            assertThat(event.senderId()).isEqualTo(SENDER_ID);
+            assertThat(event.receiverId()).isEqualTo(RECEIVER_ID);
         }
     }
 
@@ -118,10 +118,10 @@ class MessageTest {
             MessageRecallResult result = aggregate.recall(SENDER_ID, "conv_1_2");
 
             assertThat(result.event()).isNotNull();
-            assertThat(result.event().getMessageId()).isEqualTo("100");
-            assertThat(result.event().getOperatorId()).isEqualTo(SENDER_ID);
-            assertThat(result.event().getConversationId()).isEqualTo("conv_1_2");
-            assertThat(result.event().getRecalledAt()).isNotNull();
+            assertThat(result.event().messageId()).isEqualTo("100");
+            assertThat(result.event().operatorId()).isEqualTo(SENDER_ID);
+            assertThat(result.event().conversationId()).isEqualTo("conv_1_2");
+            assertThat(result.event().recalledAt()).isNotNull();
         }
 
         @Test
@@ -174,9 +174,9 @@ class MessageTest {
             MessageRecallResult result = aggregate.recall(SENDER_ID, "conv_1_2");
 
             assertThat(result.event()).isNotNull();
-            assertThat(result.event().getMessageId()).isEqualTo("100");
-            assertThat(result.event().getOperatorId()).isEqualTo(SENDER_ID);
-            assertThat(result.event().getConversationId()).isEqualTo("conv_1_2");
+            assertThat(result.event().messageId()).isEqualTo("100");
+            assertThat(result.event().operatorId()).isEqualTo(SENDER_ID);
+            assertThat(result.event().conversationId()).isEqualTo("conv_1_2");
         }
     }
 
@@ -195,8 +195,8 @@ class MessageTest {
             MessageReadResult result = aggregate.read(RECEIVER_ID);
 
             assertThat(result).isNotNull();
-            assertThat(result.event().getMessageId()).isEqualTo("100");
-            assertThat(result.event().getReaderId()).isEqualTo(RECEIVER_ID);
+            assertThat(result.event().messageId()).isEqualTo("100");
+            assertThat(result.event().readerId()).isEqualTo(RECEIVER_ID);
             assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.READ.getCode());
             assertThat(result.aggregate().readTime()).isNotNull();
         }
@@ -243,8 +243,8 @@ class MessageTest {
             MessageDeletedEvent event = aggregate.delete(RECEIVER_ID);
 
             assertThat(event).isNotNull();
-            assertThat(event.getMessageId()).isEqualTo("100");
-            assertThat(event.getDeleterId()).isEqualTo(RECEIVER_ID);
+            assertThat(event.messageId()).isEqualTo("100");
+            assertThat(event.deleterId()).isEqualTo(RECEIVER_ID);
         }
 
         @Test

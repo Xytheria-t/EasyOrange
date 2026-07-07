@@ -34,13 +34,12 @@ public class ProductReviewQueryService {
 
     @Transactional(readOnly = true)
     public PageResult<ProductReviewVO> listReviews(String productId, Integer pageNum, Integer pageSize) {
-        PageRequest normalized = PageRequest.builder()
-                .pageNum(pageNum != null ? pageNum : 1)
-                .pageSize(pageSize != null ? pageSize : 10)
-                .build()
-                .normalized();
+        var pageReq = PageRequest.builder()
+                .pageNum(pageNum)
+                .pageSize(pageSize)
+                .build();
 
-        Page<ProductReviewDO> page = new Page<>(normalized.getPageNum(), normalized.getPageSize());
+        Page<ProductReviewDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
         LambdaQueryWrapper<ProductReviewDO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ProductReviewDO::getProductId, productId)
                 .eq(ProductReviewDO::getStatus, 1)
@@ -49,7 +48,7 @@ public class ProductReviewQueryService {
         Page<ProductReviewDO> reviewPage = reviewMapper.selectPage(page, wrapper);
 
         if (reviewPage.getRecords().isEmpty()) {
-            return PageResult.empty(normalized.getPageNum(), normalized.getPageSize());
+            return PageResult.empty(pageReq.getPageNum(), pageReq.getPageSize());
         }
 
         Map<String, SellerInfo> userMap = resolveUsers(reviewPage.getRecords());
@@ -58,7 +57,7 @@ public class ProductReviewQueryService {
                 .map(r -> toReviewVO(r, userMap))
                 .collect(Collectors.toList());
 
-        return PageResult.of(vos, reviewPage.getTotal(), normalized.getPageNum(), normalized.getPageSize());
+        return PageResult.of(vos, reviewPage.getTotal(), pageReq.getPageNum(), pageReq.getPageSize());
     }
 
     @Transactional(readOnly = true)

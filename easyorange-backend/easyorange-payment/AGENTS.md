@@ -135,7 +135,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 
 ### 添加新支付事件
 
-1. 创建事件类继承 `BaseDomainEvent`
+1. 创建事件 record 实现 `DomainEvent`
 2. 在状态转换方法中，在 Result record 的 `event()` 中返回事件
 3. Handler 通过 `domainEventPublisher.publish(result.event())` 发布
 4. 在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 注册路由键（`payment.{aggregate}.{event}`）

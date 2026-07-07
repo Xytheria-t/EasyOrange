@@ -39,8 +39,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import com.cartethyia.easyorange.common.event.BaseDomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -184,7 +184,7 @@ class AdminReportServiceTest {
 
                 verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
                 verify(reportHandleHistoryRepository).save(any(ReportHandleHistory.class));
-                verify(domainEventPublisher).publish(any(BaseDomainEvent.class));
+                verify(domainEventPublisher).publish(any(ReportProcessedEvent.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

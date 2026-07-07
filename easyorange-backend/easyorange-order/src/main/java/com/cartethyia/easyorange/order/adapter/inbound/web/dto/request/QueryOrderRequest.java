@@ -19,18 +19,4 @@ public class QueryOrderRequest extends PageRequest {
     private String buyerId;
     private String sellerId;
 
-    @Override
-    public QueryOrderRequest normalized() {
-        PageRequest base = super.normalized();
-        return QueryOrderRequest.builder()
-                .pageNum(base.getPageNum())
-                .pageSize(base.getPageSize())
-                .sortField(base.getSortField())
-                .sortDirection(base.getSortDirection())
-                .orderNo(this.orderNo)
-                .status(this.status)
-                .buyerId(this.buyerId)
-                .sellerId(this.sellerId)
-                .build();
-    }
 }

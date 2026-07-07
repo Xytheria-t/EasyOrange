@@ -23,21 +23,21 @@ public class PaymentInitiationEventConsumer {
         containerFactory = "domainEventContainerFactory"
     )
     public void onPaymentInitiationRequested(PaymentInitiationRequestedEvent event) {
-        log.info("收到支付发起请求: orderId={}, amount={}", event.getOrderId(), event.getAmount());
+        log.info("收到支付发起请求: orderId={}, amount={}", event.orderId(), event.amount());
 
         try {
             CreatePaymentCommand command = CreatePaymentCommand.builder()
-                    .orderId(event.getOrderId())
-                    .amount(event.getAmount())
-                    .paymentMethod(event.getPaymentMethod())
-                    .attach(event.getAttach())
+                    .orderId(event.orderId())
+                    .amount(event.amount())
+                    .paymentMethod(event.paymentMethod())
+                    .attach(event.attach())
                     .build();
 
             paymentCommandHandler.handle(command);
 
-            log.info("支付创建成功: orderId={}", event.getOrderId());
+            log.info("支付创建成功: orderId={}", event.orderId());
         } catch (Exception e) {
-            log.error("支付创建失败: orderId={}", event.getOrderId(), e);
+            log.error("支付创建失败: orderId={}", event.orderId(), e);
             throw e;
         }
     }

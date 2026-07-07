@@ -234,7 +234,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 ### 添加新领域事件
 
-1. 创建事件类继承 `BaseDomainEvent`
+1. 创建事件 record 实现 `DomainEvent`
 2. 在应用服务中通过 `DomainEventPublisher` 发布事件
 3. 添加事件监听器（如需，放置在 `easyorange-application/adapter/event/`）
 4. 添加测试

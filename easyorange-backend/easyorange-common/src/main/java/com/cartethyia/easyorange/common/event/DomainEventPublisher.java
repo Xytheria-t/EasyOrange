@@ -2,5 +2,5 @@ package com.cartethyia.easyorange.common.event;
 
 public interface DomainEventPublisher {
 
-    void publish(BaseDomainEvent event);
+    void publish(DomainEvent event);
 }
