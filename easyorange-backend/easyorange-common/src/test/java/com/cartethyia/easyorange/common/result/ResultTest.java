@@ -24,7 +24,7 @@ class ResultTest {
             assertTrue(result.isSuccess());
             assertEquals("A0000", result.code());
             assertNull(result.data());
-            assertNotNull(result.timestamp());
+            assertTrue(result.timestamp() > 0);
         }
 
         @Test
@@ -130,9 +130,9 @@ class ResultTest {
             Result<String> r2 = Result.success("data");
             Result<String> r3 = Result.success("data", "msg");
 
-            assertNotNull(r1.timestamp());
-            assertNotNull(r2.timestamp());
-            assertNotNull(r3.timestamp());
+            assertTrue(r1.timestamp() > 0);
+            assertTrue(r2.timestamp() > 0);
+            assertTrue(r3.timestamp() > 0);
         }
 
         @Test
@@ -143,10 +143,10 @@ class ResultTest {
             Result<Void> r3 = Result.error(ResultCode.FAIL);
             Result<Void> r4 = Result.error("C0500", "msg");
 
-            assertNotNull(r1.timestamp());
-            assertNotNull(r2.timestamp());
-            assertNotNull(r3.timestamp());
-            assertNotNull(r4.timestamp());
+            assertTrue(r1.timestamp() > 0);
+            assertTrue(r2.timestamp() > 0);
+            assertTrue(r3.timestamp() > 0);
+            assertTrue(r4.timestamp() > 0);
         }
     }
 }
