@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
 import com.cartethyia.easyorange.message.entity.OfflineMessage;

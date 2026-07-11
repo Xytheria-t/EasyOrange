@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;

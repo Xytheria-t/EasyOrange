@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;
 import com.cartethyia.easyorange.framework.web.handler.LoggingInterceptor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -13,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.nio.file.Paths;
 
 @Slf4j
-@Configuration
+@AutoConfiguration
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 

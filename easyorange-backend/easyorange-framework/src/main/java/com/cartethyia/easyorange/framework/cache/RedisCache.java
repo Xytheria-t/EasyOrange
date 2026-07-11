@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.framework.cache;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.config.properties.CacheProperties;
 import com.cartethyia.easyorange.framework.exception.CacheTypeMismatchException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisCallback;
@@ -29,8 +29,7 @@ public class RedisCache {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    @Value("${redis.key-prefix:}")
-    private String keyPrefix;
+    private final CacheProperties cacheProperties;
 
     private static final DefaultRedisScript<Long> UNLOCK_SCRIPT;
 
@@ -51,12 +50,14 @@ public class RedisCache {
 
     private String key(String raw) {
         BizRequire.notBlank(raw, "Key不能为空");
-        return keyPrefix.isEmpty() ? raw : keyPrefix + ":" + raw;
+        var prefix = cacheProperties.getKeyPrefix();
+        return prefix.isEmpty() ? raw : prefix + ":" + raw;
     }
 
     private String stripPrefix(String k) {
-        if (keyPrefix.isEmpty()) return k;
-        var p = keyPrefix + ":";
+        var prefix = cacheProperties.getKeyPrefix();
+        if (prefix.isEmpty()) return k;
+        var p = prefix + ":";
         return k.startsWith(p) ? k.substring(p.length()) : k;
     }
 

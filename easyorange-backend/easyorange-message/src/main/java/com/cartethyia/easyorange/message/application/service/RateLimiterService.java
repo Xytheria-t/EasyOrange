@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.domain.service;
+package com.cartethyia.easyorange.message.application.service;
 
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import org.slf4j.Logger;
@@ -8,6 +8,12 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 消息发送频率限制 — 应用层服务，非领域逻辑。
+ * <p>
+ * 限流是运维/操作性关注点：阈值(5条/秒)、Redis 原子操作、本地降级计数器
+ * 均不属于"消息"业务领域，故放在 application 层而非 domain 层。
+ */
 public class RateLimiterService {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimiterService.class);
@@ -23,11 +29,6 @@ public class RateLimiterService {
 
     private final AtomicInteger localCounter = new AtomicInteger(0);
 
-    /**
-     * Constructs a rate limiter service backed by Redis with a local fallback.
-     *
-     * @param redisCache Redis cache for distributed rate limiting
-     */
     public RateLimiterService(RedisCache redisCache) {
         this.redisCache = redisCache;
     }
@@ -36,9 +37,6 @@ public class RateLimiterService {
      * Checks whether the user is allowed to send a message, respecting the
      * per-user message rate limit. Falls back to a local counter if Redis is
      * unavailable.
-     *
-     * @param userId the ID of the user attempting to send a message
-     * @return true if the message is allowed, false if the rate limit is exceeded
      */
     public boolean allowSendMessage(String userId) {
         String key = MESSAGE_RATE_KEY.formatted(userId);
@@ -71,9 +69,6 @@ public class RateLimiterService {
     /**
      * Checks whether the user is allowed to send a typing indicator,
      * limited to one per 2 seconds per user.
-     *
-     * @param userId the ID of the user sending the typing indicator
-     * @return true if the typing indicator is allowed, false if throttled
      */
     public boolean allowTyping(String userId) {
         String key = TYPING_RATE_KEY.formatted(userId);

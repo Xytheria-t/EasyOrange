@@ -6,8 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInt
 import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * MyBatis-Plus 运行时插件配置（分页、乐观锁）。
@@ -25,7 +25,7 @@ import org.springframework.context.annotation.Configuration;
  * }</pre>
  */
 @Setter
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 @ConfigurationProperties(prefix = "mybatis-plus")
 public class MybatisPlusConfig {
 

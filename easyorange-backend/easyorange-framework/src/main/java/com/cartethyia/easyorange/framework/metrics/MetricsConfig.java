@@ -7,8 +7,8 @@ import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.system.FileDescriptorMetrics;
 import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
 import io.micrometer.core.instrument.binder.system.UptimeMetrics;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * Metrics 配置 — 向 MeterRegistry 注册 JVM / 系统级 MeterBinder，
@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
  * Spring Boot 自动发现 {@link io.micrometer.core.instrument.binder.MeterBinder} bean
  * 并调用 {@code bindTo(MeterRegistry)}，因此只需声明为 {@link Bean}。
  */
-@Configuration
+@AutoConfiguration
 public class MetricsConfig {
 
     @Bean

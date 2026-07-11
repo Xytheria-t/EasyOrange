@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.entity.Message;
 import com.cartethyia.easyorange.message.enums.MessageStatus;

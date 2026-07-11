@@ -5,3 +5,8 @@ com.cartethyia.easyorange.framework.config.http.RestClientConfig
 com.cartethyia.easyorange.framework.config.redis.RedisConfig
 com.cartethyia.easyorange.framework.config.database.MybatisPlusConfig
 com.cartethyia.easyorange.framework.config.redis.CacheConfig
+com.cartethyia.easyorange.framework.config.web.WebMvcConfig
+com.cartethyia.easyorange.framework.config.cache.LocalCacheConfig
+com.cartethyia.easyorange.framework.config.idgen.IdGeneratorConfig
+com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig
+com.cartethyia.easyorange.framework.metrics.MetricsConfig

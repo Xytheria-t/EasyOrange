@@ -80,8 +80,8 @@ EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：*
 ```
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
-│   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, 事件, AOP, 文件存储, 图片处理, **RabbitMQ 消息队列**)
+│   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常, BaseDO, BaseRepository, IdGenerator)
+│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, RabbitMQ, Cache, File, ID生成实现)
 │   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
 │   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
 │   │   ├── domain/port/         # SmsSenderPort, PasswordEncoderPort, LoginAttemptPort, SmsCodePort, AvatarFilePort
@@ -134,6 +134,8 @@ admin → framework, common, user (optional), product (optional), order (optiona
 ```
 
 > **状态**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。写操作通过事件驱动解耦，查询操作保留同步端口调用。
+>
+> **演进说明**：`BaseDO`、`BaseRepository`、`IdGenerator`、`ConcurrentUpdateException` 已从 `framework` 下沉至 `common` —— 业务模块依赖 `framework` 是基础设施层面的模块聚合（每个模块的 `domain/` 包不导入 framework 代码），实际 DDD 层约束由 ArchUnit 在包级别守卫。
 
 ## 已知问题
 

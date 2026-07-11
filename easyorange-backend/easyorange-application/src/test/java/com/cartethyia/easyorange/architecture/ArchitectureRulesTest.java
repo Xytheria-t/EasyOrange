@@ -48,8 +48,9 @@ class ArchitectureRulesTest {
                     .should().dependOnClassesThat().resideInAnyPackage(
                             "org.springframework..",
                             "com.baomidou..",
-                            "jakarta.servlet..")
-                    .because("domain 层必须零框架依赖 — 禁止 Spring/MyBatis/servlet");
+                            "jakarta.servlet..",
+                            "com.cartethyia.easyorange.framework..")
+                    .because("domain 层必须零框架依赖 — 禁止 Spring/MyBatis/servlet/project-framework");
 
     @ArchTest
     static final ArchRule domain_should_not_depend_on_web_layers =

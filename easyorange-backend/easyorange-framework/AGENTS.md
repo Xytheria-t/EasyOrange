@@ -48,13 +48,11 @@ framework/
 │   └── web/                      # WebMVC 配置
 │       ├── WebMvcConfig.java
 │       └── ResponseAdvice.java       # 统一响应包装
-├── entity/
-│   └── BaseDO.java               # 数据对象基类 (id, createTime, updateTime, delFlag, version)
 ├── event/                    # 领域事件基础设施
 │   └── idempotency/
 │       └── EventIdempotencyChecker.java # 事件幂等性检查
 ├── exception/
-│   ├── GlobalExceptionHandler.java   # 全局异常处理
+│   ├── GlobalExceptionHandler.java   # 全局异常处理（@RestControllerAdvice，RFC 9457 ProblemDetail）
 │   └── CacheTypeMismatchException.java
 ├── file/                     # 文件上传下载
 │   ├── adapter/inbound/web/controller/FileController.java
@@ -74,8 +72,7 @@ framework/
 │   ├── Node.java                 # 节点接口
 │   └── ConsistentHashRouter.java # 虚拟节点 TreeMap 路由 (MD5 哈希)
 ├── idgen/                   # 分布式 ID 生成器
-│   ├── IdGenerator.java              # ID 生成器接口
-│   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现
+│   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现（实现 common.idgen.IdGenerator）
 ├── messaging/               # RabbitMQ 消息队列
 │   ├── config/                    # RabbitMQ 配置
 │   │   ├── RabbitMQConfig.java
@@ -98,8 +95,8 @@ framework/
 │       ├── SysOperLogService.java
 │       └── impl/SysOperLogServiceImpl.java
 ├── outbox/                  # [已删除] Outbox 模式 — 已完成 RabbitMQ 迁移，所有事件走 Topic Exchange
-├── repository/
-│   └── BaseRepository.java       # 仓储基类 (lambdaQuery/lambdaUpdate + 常见查询模式)
+├── entity/                  # [已迁移至 common] BaseDO → common/entity/
+├── repository/              # [已迁移至 common] BaseRepository → common/repository/
 ├── auth/                    # Token 认证服务
 │   ├── TokenService.java         # Token 服务接口
 │   ├── TokenRefreshResult.java   # 刷新结果记录
@@ -212,7 +209,7 @@ multiLevelCache.evict("product:detail:" + id);
 
 ### 分布式 ID 生成器 (idgen/)
 
-`UuidV7IdGenerator`（`@Primary`）——纯 Java 无外部依赖，生成 RFC 9562 UUID v7（毫秒级有序 + 随机后缀）。
+`IdGenerator` 接口定义在 `common/idgen/`，`UuidV7IdGenerator`（`@Primary`）作为纯 Java 实现，生成 RFC 9562 UUID v7（毫秒级有序 + 随机后缀）。
 
 已移除 Snowflake 备选（`SnowflakeIdGenerator` / `WorkerIdProvider` / `RedisWorkerIdProvider`），UUID v7 零配置零依赖，无需任何配置属性即可使用。
 
@@ -230,16 +227,17 @@ RedisNode target = router.route("some-cache-key");
 
 ## 修改注意
 
+- **所有框架配置类统一使用 `@AutoConfiguration` + `AutoConfiguration.imports`**：framework 模块的所有 `@Configuration` 类必须使用 `@AutoConfiguration`（而非 `@Configuration`）并列入 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`，不依赖隐式 `@ComponentScan` 发现。新增框架配置类时须同时完成两件事：① 类上加 `@AutoConfiguration`；② 在 imports 文件中追加一行。这是框架 bean 注册的唯一入口，确保配置注册无需依赖主应用包路径
 - Security 配置变更需同步检查所有模块的接口权限
 - Redis Key 命名规范: `eo:模块:业务:标识`
 - 新增 AOP 切面需评估性能影响
-- **JacksonConfig 同时配置了 Jackson 2.x `ObjectMapper` 和 Jackson 3.x `JsonMapper`**：Spring Boot 4.0 默认使用 Jackson 3.x 作为 HTTP 消息转换器，两者都必须注册 `ToStringSerializer` 才能防止 Long 类型精度丢失。`JsonMapperBuilderCustomizer` 用于自动配置，`jsonMapper()` Bean 直接构建时也需添加模块
-- **JacksonConfig 的 ObjectMapper 注册了 ParameterNamesModule**，领域事件 record 无需 @JsonCreator 注解即可反序列化（records 的规范构造器参数名由 `-parameters` 保留，`ParameterNamesModule` 自动完成 JSON 属性到构造参数的匹配）；修改 JacksonConfig 时勿遗漏此模块
+- **JacksonConfig 统一使用 Jackson 3.x**：不再配置 Jackson 2.x `ObjectMapper`。通过 `JsonMapperBuilderCustomizer` 注册 `ToStringSerializer`（Long→String 防止 JS 精度丢失）到 Spring Boot 4 自动配置的 Jackson 3 `ObjectMapper`；同时保留 `jsonMapper()` Bean 供显式注入。两者均注册 `Long.class` 和 `long` 基本类型序列化。
+- **`ParameterNamesModule` 由 Spring Boot 4 自动配置**，领域事件 record 无需 @JsonCreator 注解即可反序列化；JacksonConfig 不再需要手动注册
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
 - **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
 - **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量
-- **RedisConfig 复用 JacksonConfig 的 ObjectMapper**：Redis 序列化使用与 HTTP 相同的 Jackson 配置（Long→String 序列化、ParameterNamesModule）。修改 JacksonConfig 时需考虑对 Redis 序列化的影响
-- **配置属性类统一使用 `@ConfigurationProperties` + `@Component` 模式**：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖
+- **RedisConfig 使用 `GenericJacksonJsonRedisSerializer`（Spring Data Redis 4.x 原生 Jackson 3 支持）**：注入 Spring Boot 自动配置的 Jackson 3 `ObjectMapper`，序列化策略与 HTTP 一致（Long→String）。不再需要 Jackson 2.x 的 `GenericJackson2JsonRedisSerializer`
+- **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类
 - **`@Component` 多构造器必须标注 `@Autowired`**：`MultiLevelCache` 和 `RedisBitmapBloomFilter` 都有多个构造器（默认参数 + 自定义参数），且无默认无参构造器。`@Component` 扫描时 Spring 无法自动选择构造器，必须在主构造器上加 `@Autowired` 明确指示。新增 `@Component` 类时有多个构造器时遵循此模式
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则
 - **`RateLimitFilter` 使用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：`HandlerMapping` 列表通过 `ObjectProvider` 延迟解析，而非构造器直接注入。原因是直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 Bean）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖。`ObjectProvider` 在请求时才解析 HandlerMapping，打破循环。修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入

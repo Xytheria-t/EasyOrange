@@ -23,6 +23,8 @@ message/
 │       ├── MybatisMessageTemplateRepository.java
 │       └── MybatisOfflineMessageRepository.java
 ├── application/                       # [DDD] 应用层 (CQRS)
+│   ├── service/
+│   │   └── RateLimiterService.java           # 消息发送频率限制（应用层运维策略）
 │   ├── command/
 │   │   ├── MessageCommandHandler.java
 │   │   ├── SendMessageCommand.java
@@ -70,7 +72,6 @@ message/
 │   ├── service/
 │   │   ├── MessageRoutingService.java        # 根据订阅偏好路由消息（在线推送/离线存储）
 │   │   ├── OfflineMessageStoreService.java   # 离线消息存储和重推
-│   │   ├── RateLimiterService.java           # 消息发送频率限制
 │   │   └── SensitiveWordFilterService.java   # 消息内容敏感词过滤
 │   ├── valueobject/
 │   │   ├── MessageContent.java

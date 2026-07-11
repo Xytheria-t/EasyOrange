@@ -205,10 +205,11 @@ spring:
       password: ${REDIS_PASSWORD:easyorange123}
       database: 0
       timeout: 5000ms
-      
-redis:
-  # Key 前缀
-  key-prefix: "easyorange"
+
+easyorange:
+  cache:
+    # Redis Key 前缀
+    key-prefix: "easyorange"
 ```
 
 ### 缓存类型转换异常
@@ -297,8 +298,9 @@ spring:
       password: ${REDIS_PASSWORD:easyorange123}
       database: 0
 
-redis:
-  key-prefix: "easyorange"
+easyorange:
+  cache:
+    key-prefix: "easyorange"
 ```
 
 ---

@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.framework.file.storage;
 
 import com.cartethyia.easyorange.common.exception.file.FileException;
+import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -20,17 +20,17 @@ public class LocalFileStorage implements FileStorage {
 
     private static final DateTimeFormatter DATE_PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
-    @Value("${file.upload.path:./upload}")
-    private String uploadPath;
-
-    @Value("${file.upload.url-prefix:/api/file/}")
-    private String urlPrefix;
+    private final FileUploadProperties fileUploadProperties;
 
     private Path basePath;
 
+    public LocalFileStorage(FileUploadProperties fileUploadProperties) {
+        this.fileUploadProperties = fileUploadProperties;
+    }
+
     @PostConstruct
     void init() {
-        this.basePath = Paths.get(uploadPath).normalize();
+        this.basePath = Paths.get(fileUploadProperties.getPath()).normalize();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public String getUrl(String identifier) {
-        return urlPrefix + identifier.replace("\\", "/");
+        return fileUploadProperties.getUrlPrefix() + identifier.replace("\\", "/");
     }
 
     @Override

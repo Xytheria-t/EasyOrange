@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.idgen;
+package com.cartethyia.easyorange.common.idgen;
 
 /**
  * 分布式 ID 生成器接口（Port 抽象）

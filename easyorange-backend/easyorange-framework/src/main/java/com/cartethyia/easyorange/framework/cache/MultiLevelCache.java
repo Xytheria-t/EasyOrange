@@ -4,13 +4,9 @@ import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
 
-@Component
 public class MultiLevelCache {
 
     private static final Logger log = LoggerFactory.getLogger(MultiLevelCache.class);
@@ -21,15 +17,14 @@ public class MultiLevelCache {
     private final long l2DefaultTimeout;
     private final TimeUnit l2DefaultUnit;
 
-    @Autowired
     public MultiLevelCache(
-            @Qualifier("l1Cache") Cache<String, Object> l1Cache,
+            Cache<String, Object> l1Cache,
             RedisCache redisCache) {
         this(l1Cache, redisCache, "mlc:", 30, TimeUnit.MINUTES);
     }
 
     public MultiLevelCache(
-            @Qualifier("l1Cache") Cache<String, Object> l1Cache,
+            Cache<String, Object> l1Cache,
             RedisCache redisCache,
             String l2KeyPrefix,
             long l2DefaultTimeout,

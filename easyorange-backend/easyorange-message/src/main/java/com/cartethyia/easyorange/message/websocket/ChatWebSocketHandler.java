@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.websocket;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendMessageCommand;
-import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
+import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.WsMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

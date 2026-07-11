@@ -238,7 +238,7 @@ return Result.success(userId);
 
 MyBatis-Plus **无内置** `UUID` TypeHandler，PO 含 UUID 字段时 insert 报 `Type handler was null`。已配全局 `UuidTypeHandler`（`framework/config/database/`）+ `type-handlers-package`，新增 PO 的 UUID 字段无需额外配置。数据库列类型 `CHAR(36)`。
 
-领域事件 record 无需 `@JsonCreator`，反序列化依赖 `ParameterNamesModule`（`framework/.../JacksonConfig.java` + `framework/pom.xml` `jackson-module-parameter-names`）实现构造参数名匹配。新增事件 record 实现 `DomainEvent` 接口即可，无需任何 Jackson 注解。
+领域事件 record 无需 `@JsonCreator`，反序列化依赖 Jackson 3 的 `ParameterNamesModule`（由 Spring Boot 4 自动配置，无需显式声明依赖）。新增事件 record 实现 `DomainEvent` 接口即可，无需任何 Jackson 注解。
 
 ### Spring Boot 4 @WebMvcTest 路径变化
 

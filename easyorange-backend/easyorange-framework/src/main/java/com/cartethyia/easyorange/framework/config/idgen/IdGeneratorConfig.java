@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.framework.config.idgen;
 
-import com.cartethyia.easyorange.framework.idgen.IdGenerator;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.idgen.UuidV7IdGenerator;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Primary;
  * <p>
  * 默认 UUID v7（RFC 9562），零协调零依赖。
  */
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 public class IdGeneratorConfig {
 
     @Primary

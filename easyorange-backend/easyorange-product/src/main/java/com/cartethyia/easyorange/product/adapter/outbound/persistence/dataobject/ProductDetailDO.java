@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.framework.entity.BaseDO;
+import com.cartethyia.easyorange.common.entity.BaseDO;
 
 @TableName("eo_product_detail")
 public class ProductDetailDO extends BaseDO {

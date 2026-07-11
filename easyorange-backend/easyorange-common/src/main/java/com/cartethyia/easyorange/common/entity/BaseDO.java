@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.framework.entity;
+package com.cartethyia.easyorange.common.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;

@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.framework.config.async;
 
 import com.cartethyia.easyorange.framework.config.properties.ThreadPoolProperties;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
@@ -12,7 +12,7 @@ import java.util.concurrent.Executor;
 /**
  * 线程池配置
  */
-@Configuration
+@AutoConfiguration
 @RequiredArgsConstructor
 public class ThreadPoolConfig {
 

@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 /**
  * 操作日志配置属性
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Component;
  */
 @Setter
 @Getter
-@Component
 @ToString
 @ConfigurationProperties(prefix = "operlog")
 public class OperLogProperties {

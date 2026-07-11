@@ -1,20 +1,24 @@
 package com.cartethyia.easyorange.framework.config.cache;
 
+import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
+import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.framework.config.properties.CacheProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-@Configuration
+@AutoConfiguration
 @RequiredArgsConstructor
 public class LocalCacheConfig {
 
     private final CacheProperties cacheProperties;
+    private final RedisCache redisCache;
 
     @Bean("imageProcessCache")
     public Cache<String, ImageProcessingCacheEntry> imageProcessCache() {
@@ -34,6 +38,11 @@ public class LocalCacheConfig {
                 .expireAfterWrite(l1Props.getExpireMinutes(), TimeUnit.MINUTES)
                 .recordStats()
                 .build();
+    }
+
+    @Bean
+    public MultiLevelCache multiLevelCache(@Qualifier("l1Cache") Cache<String, Object> l1Cache) {
+        return new MultiLevelCache(l1Cache, redisCache);
     }
 
     public record ImageProcessingCacheEntry(File file, String mimeType, String eTag) {

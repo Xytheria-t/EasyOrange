@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;

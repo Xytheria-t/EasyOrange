@@ -2,15 +2,15 @@ package com.cartethyia.easyorange.framework.config.http;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
 
-@Configuration(proxyBeanMethods = false)
+@AutoConfiguration
 public class RestClientConfig {
 
     @Bean

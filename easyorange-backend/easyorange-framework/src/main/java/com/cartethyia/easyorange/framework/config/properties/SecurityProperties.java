@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.Set;
 
 @Slf4j
 @Data
-@Component
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
 

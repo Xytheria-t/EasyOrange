@@ -21,12 +21,19 @@ common/
 │   ├── BusinessType.java    # 操作业务类型
 │   ├── FileResultCode.java  # 文件操作结果码
 │   └── LimitType.java       # 限流类型
+├── entity/
+│   └── BaseDO.java          # 数据对象基类 (id, createTime, updateTime, delFlag, version)
+├── repository/
+│   └── BaseRepository.java  # 仓储基类 (lambdaQuery/lambdaUpdate + 常见查询模式)
+├── idgen/
+│   └── IdGenerator.java     # 分布式 ID 生成器接口 (@FunctionalInterface)
 ├── event/
 │   ├── DomainEvent.java          # 领域事件接口（事件类应为此接口的 record 实现）
 │   ├── DomainEventPublisher.java # 领域事件发布接口
 ├── exception/
 │   ├── BaseBusinessException.java       # 业务异常基类
 │   ├── BusinessException.java           # 通用业务异常
+│   ├── ConcurrentUpdateException.java   # 并发更新冲突异常
 │   ├── file/
 │   │   ├── FileException.java               # 文件操作异常
 │   │   ├── FileSizeLimitExceededException.java # 文件大小超限

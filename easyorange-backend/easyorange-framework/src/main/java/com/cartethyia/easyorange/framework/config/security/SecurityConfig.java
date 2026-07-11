@@ -14,8 +14,8 @@ import com.cartethyia.easyorange.framework.web.filter.XssFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -53,7 +53,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-@Configuration
+@AutoConfiguration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor

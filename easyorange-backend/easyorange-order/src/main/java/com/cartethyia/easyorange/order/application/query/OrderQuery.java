@@ -20,12 +20,12 @@ public class OrderQuery {
     /**
      * 订单ID
      */
-    private Long id;
+    private String id;
 
     /**
      * 认领方ID
      */
-    private Long buyerId;
+    private String buyerId;
 
     /**
      * 资产方ID

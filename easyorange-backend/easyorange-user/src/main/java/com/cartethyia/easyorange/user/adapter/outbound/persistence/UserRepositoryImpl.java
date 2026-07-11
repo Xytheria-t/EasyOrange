@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.framework.exception.ConcurrentUpdateException;
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Qualifier;

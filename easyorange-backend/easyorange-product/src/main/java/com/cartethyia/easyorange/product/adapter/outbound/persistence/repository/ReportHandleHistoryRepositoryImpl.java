@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.repository;
 
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ReportHandleHistoryDO;

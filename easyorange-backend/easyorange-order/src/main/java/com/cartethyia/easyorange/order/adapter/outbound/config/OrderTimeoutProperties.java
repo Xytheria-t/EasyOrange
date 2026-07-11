@@ -2,10 +2,8 @@ package com.cartethyia.easyorange.order.adapter.outbound.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 @Data
-@Component
 @ConfigurationProperties(prefix = "order.timeout")
 public class OrderTimeoutProperties {
 

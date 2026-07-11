@@ -1,11 +1,11 @@
-package com.cartethyia.easyorange.framework.repository;
+package com.cartethyia.easyorange.common.repository;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.support.SFunction;
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.framework.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 
 import java.util.Collection;
 import java.util.List;

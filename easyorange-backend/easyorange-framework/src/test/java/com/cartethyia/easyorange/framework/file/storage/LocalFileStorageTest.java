@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.framework.file.storage;
 
+import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.file.Path;
 
@@ -18,9 +18,10 @@ class LocalFileStorageTest {
 
     @BeforeEach
     void setUp() {
-        storage = new LocalFileStorage();
-        ReflectionTestUtils.setField(storage, "uploadPath", tempDir.toString());
-        ReflectionTestUtils.setField(storage, "urlPrefix", "/api/file/");
+        var properties = new FileUploadProperties();
+        properties.setPath(tempDir.toString());
+        properties.setUrlPrefix("/api/file/");
+        storage = new LocalFileStorage(properties);
         storage.init(); // initialize @PostConstruct
     }
 

@@ -1,7 +1,6 @@
-package com.cartethyia.easyorange.message.domain.service;
+package com.cartethyia.easyorange.message.application.service;
 
 import com.cartethyia.easyorange.framework.cache.RedisCache;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

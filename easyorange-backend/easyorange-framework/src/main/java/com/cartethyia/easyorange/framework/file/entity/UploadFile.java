@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.file.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.framework.entity.BaseDO;
+import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

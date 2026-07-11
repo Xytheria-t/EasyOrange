@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundExcepti
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
 import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreService;
-import com.cartethyia.easyorange.message.domain.service.RateLimiterService;
+import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
 import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;

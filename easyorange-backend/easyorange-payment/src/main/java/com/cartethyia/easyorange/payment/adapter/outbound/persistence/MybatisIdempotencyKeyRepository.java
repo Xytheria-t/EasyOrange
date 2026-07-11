@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.IdempotencyKeyMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.IdempotencyKeyPO;
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;

@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
-import com.cartethyia.easyorange.framework.repository.BaseRepository;
+import com.cartethyia.easyorange.common.repository.BaseRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

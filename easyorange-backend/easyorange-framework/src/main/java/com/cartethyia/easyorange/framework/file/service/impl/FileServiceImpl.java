@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.entity.UploadFile;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
@@ -14,7 +15,6 @@ import com.cartethyia.easyorange.framework.file.storage.FileStorage;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -31,11 +31,11 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
     private final FileStorage fileStorage;
 
-    @Value("${file.upload.path:./upload}")
-    private String uploadPath;
+    private final FileUploadProperties fileUploadProperties;
 
-    public FileServiceImpl(FileStorage fileStorage) {
+    public FileServiceImpl(FileStorage fileStorage, FileUploadProperties fileUploadProperties) {
         this.fileStorage = fileStorage;
+        this.fileUploadProperties = fileUploadProperties;
     }
 
     @Override
@@ -163,7 +163,7 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
 
         // Only local file storage supports direct Resource download
         String relativePath = file.getStorageKey() != null ? file.getStorageKey() : file.getFilePath();
-        String fullPath = uploadPath + "/" + relativePath;
+        String fullPath = fileUploadProperties.getPath() + "/" + relativePath;
 
         if (!new java.io.File(fullPath).exists()) {
             log.error("文件不存在：fileId={}, fullPath={}", fileId, fullPath);

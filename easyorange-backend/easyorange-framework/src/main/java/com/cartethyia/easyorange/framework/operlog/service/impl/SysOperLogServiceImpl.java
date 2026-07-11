@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.framework.operlog.service.impl;
 
 import com.cartethyia.easyorange.framework.operlog.entity.SysOperLog;
-import com.cartethyia.easyorange.framework.idgen.IdGenerator;
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.operlog.mapper.SysOperLogMapper;
 import com.cartethyia.easyorange.framework.operlog.service.SysOperLogService;
 import lombok.RequiredArgsConstructor;

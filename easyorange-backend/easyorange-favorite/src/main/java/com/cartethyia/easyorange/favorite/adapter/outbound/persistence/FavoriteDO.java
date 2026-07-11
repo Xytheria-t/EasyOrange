@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.cartethyia.easyorange.framework.entity.BaseDO;
+import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;

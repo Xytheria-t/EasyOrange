@@ -3,13 +3,14 @@ package com.cartethyia.easyorange.framework.config.properties;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 
 @Getter
 @Setter
-@Component
 @ConfigurationProperties(prefix = "easyorange.cache")
 public class CacheProperties {
+
+    /** Redis 键前缀，默认为空（不添加前缀） */
+    private String keyPrefix = "";
 
     private ImageCache image = new ImageCache();
 

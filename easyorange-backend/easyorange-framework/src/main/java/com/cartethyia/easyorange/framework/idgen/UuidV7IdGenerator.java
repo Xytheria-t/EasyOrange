@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.framework.idgen;
 
+import com.cartethyia.easyorange.common.idgen.IdGenerator;
+
 import java.security.SecureRandom;
 import java.util.Random;
 import java.util.UUID;
