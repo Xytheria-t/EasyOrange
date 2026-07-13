@@ -1,8 +1,10 @@
 # EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
 
-> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,269 测试 + CI/CD 全自动。**业务是刻意简化的 C2C 资产流转（固定价格、平台不碰货），工程才是核心。**
+> **EasyOrange** — 把 LLM 工程化集成进企业级 Java 应用的全栈样板。在 C2C 资产流转的真实业务压力下，落地 DDD + CQRS + Saga + 事件驱动 + AI 多模态 6 决策点。
 >
-> **2025 年 11 月启动开发**
+> **11 模块全解耦 · 2,214 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter 隔离 + 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）。**
+>
+> 业务载体是简化的 C2C 资产流转（固定价格、平台不碰货），承载复杂度才是重点。 · 2025 年 11 月启动开发
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-ED8B00)](https://openjdk.java.net/)
@@ -11,9 +13,24 @@
 
 ## 项目定位
 
-**EasyOrange 是 Java 25 + Spring Boot 4 的架构参考项目 — 展示 DDD/CQRS/Saga/事件驱动/AI Port/Adapter 在模块化全栈工程中的协同落地。**
+**EasyOrange 是 LLM 时代企业级 Java 应用的工程化样板** —— 展示 DDD/CQRS/Saga/事件驱动 + **AI 工程化**如何在模块化全栈中协同落地。
 
-项目基于 Spring Boot 4 + React 全栈，完整落地了以下架构模式：
+> 选这个定位的判断：2025 年后企业级 Java 的难点从 "会不会 DDD" 升级到 "**LLM 怎么工程化集成进既有架构**"。
+> EasyOrange 把后者做成核心叙事 —— 6 个 AI 决策点全部走 Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理，让 AI 从 "demo 调用" 走到 "生产级工程"。
+> 业务载体（C2C 资产流转）刻意简化，是为了把架构与工程深度推到主角位置。
+
+### By the numbers — 工程深度一览
+
+| 维度 | 数据 | 含义 |
+|---|---|---|
+| 模块解耦 | 11 Maven 模块 | DDD 六边形 + 端口-适配器，全编译期隔离 |
+| 跨模块 ACL | 7 对 Port/Adapter | `<optional>true</optional>` 编译期强制 |
+| 测试守卫 | 1,269 后端 + 945 前端 = **2,214 用例** | 单元 + ArchUnit 架构守卫 |
+| 事件驱动 | 9 RabbitMQ 消费者 + DLQ | Topic Exchange + 指数退避重试 |
+| AI 工程化 | 6 决策点 + 6 工程化能力 | Port 抽象 + 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化 + Token 预算治理** |
+| 数据规模 | 30 张表 + Flyway | 完整种子数据 + 不可变 V 迁移 |
+
+### 架构模式落地
 
 | 架构模式 | 落地方式 |
 |---------|---------|
@@ -21,10 +38,135 @@
 | **CQRS** | product/order/payment/message 四模块读写分离，CommandHandler 禁止依赖 QueryHandler |
 | **Saga** | CreateOrderSaga 步骤化编排 + 反向补偿，持久化支持故障恢复 |
 | **事件驱动** | RabbitMQ Topic Exchange + 9 消费者 + DLQ + 指数退避，路由键自动派生 |
-| **AI Port/Adapter** | LlmPort/VisionPort 接口抽象 + @Primary 装饰器多级缓存 + 令牌桶限流 + stale 降级 |
+| **AI Port/Adapter** | LlmPort/VisionPort 接口抽象 + @Primary 装饰器多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）** |
 | **ACL 防腐层** | 7 对跨模块 Port/Adapter，Maven `<optional>true</optional>` 编译期强制隔离 |
 
-业务载体为 C2C 资产流转（固定价格 + C2C 直发 + 平台不碰货），业务被刻意简化，确保架构深度是项目的核心展示内容。
+业务载体为 C2C 资产流转（固定价格 + C2C 直发 + 平台不碰货），刻意简化是为了让架构与 AI 工程化深度成为主角。
+
+## 架构总览（一图看懂）
+
+### 11 模块依赖与 AI 工程化
+
+```mermaid
+graph TB
+    FE["React 19 前端"]
+    APP["easyorange-application · Spring Boot 4<br/>统一认证 + 限流 + 审计 + 异常处理"]
+
+    USER[user]
+    PROD["product<br/>+ ES 搜索"]
+    ORD["order<br/>+ Saga 编排"]
+    PAY["payment<br/>+ 幂等"]
+    MSG["message<br/>+ STOMP"]
+    FAV[favorite]
+    ADMIN[admin]
+    AI["easyorange-ai · 6 决策点<br/>Port + 多级缓存 + 限流 + AiMetrics"]
+
+    MQ[("RabbitMQ<br/>9 消费者 + DLQ")]
+    DB[("MySQL 8.4<br/>30 表")]
+    REDIS[("Redis 7.4")]
+    ES[("ES 8 可选")]
+    LLM["DeepSeek + 通义 VL"]
+
+    FE --> APP
+    APP --> USER & PROD & ORD & PAY & MSG & FAV & ADMIN & AI
+    AI --> LLM
+    PROD --> ES
+    ORD -.事件.-> MQ
+    PAY -.事件.-> MQ
+    MQ -.事件.-> PROD & PAY
+    USER & PROD & ORD & PAY --> DB
+    AI --> REDIS
+```
+
+### AI 调用流程 · Port/Adapter + 多级缓存 + 限流 + 可观测
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Controller
+    participant S as Service<br/>(ProductTagger 等)
+    participant AI as CachingLlmAdapter<br/>L1 Caffeine + L2 Redis
+    participant L as AiRateLimitInterceptor<br/>令牌桶
+    participant D as DeepSeekLlmAdapter
+    participant M as AiMetricsService
+    participant LLM as DeepSeek API
+
+    C->>S: generateTag(product)
+    S->>AI: chat(LlmRequest)
+
+    alt L1 命中
+        AI->>M: recordCacheHit(L1)
+        AI-->>S: LlmResponse
+    else L1 未命中 L2 命中
+        AI->>AI: 回填 L1
+        AI->>M: recordCacheHit(L2)
+        AI-->>S: LlmResponse
+    else 都未命中
+        AI->>L: 检查令牌桶
+        alt 限流通过
+            L->>D: chat(LlmRequest)
+            D->>LLM: POST /chat/completions
+            LLM-->>D: 响应 + usage
+            D-->>L: LlmResponse
+            L->>M: recordLatency + recordUsage
+            L-->>AI: LlmResponse
+            AI->>AI: 写入 L1 + L2
+            AI-->>S: LlmResponse
+        else 限流超限
+            L->>M: recordRateLimitRejected
+            L->>AI: stale 缓存降级
+            AI-->>S: stale LlmResponse
+        end
+    end
+```
+
+### Saga 补偿流程 · 跨模块分布式事务
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as OrderCommandController
+    participant H as OrderCommandHandler
+    participant S as CreateOrderSaga
+    participant P as DomainEventPublisher
+    participant MQ as RabbitMQ
+    participant SC as StockReservationConsumer
+    participant PC as PaymentInitiationConsumer
+    participant DB as eo_saga 表
+
+    C->>H: createOrder(cmd)
+    H->>S: execute(sagaContext)
+    S->>DB: persist(STARTED)
+    S->>P: publish(OrderCreatedEvent)
+    P->>MQ: route(order.created)
+
+    par 并行编排
+        MQ->>SC: consume
+        SC->>SC: 扣减库存
+        SC->>P: publish(StockReservedEvent)
+    and
+        MQ->>PC: consume
+        PC->>PC: 发起支付
+        PC->>P: publish(PaymentInitiatedEvent)
+    end
+
+    alt 全部成功
+        S->>DB: persist(COMPLETED)
+        S-->>H: Saga 成功
+    else 任一失败
+        S->>S: 触发反向补偿
+        S->>P: publish(CompensationEvent)
+        S->>DB: persist(COMPENSATING)
+        Note over S,MQ: 反向遍历已成功步骤<br/>每个步骤独立补偿
+        S->>DB: persist(FAILED)
+        S-->>H: Saga 失败
+    end
+
+    Note over S,DB: eo_saga 表持久化状态机<br/>故障后可 retryFailedSaga(sagaId)
+```
+
+> 详细架构文档：[doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md) — 含 11 模块依赖图 + 部署架构 + 可观测性栈
+> 技术债务清单：[doc/技术债务清单.md](doc/技术债务清单.md) — 13 条已知债务，主动承认工程判断
 
 ## 技术亮点
 
@@ -34,7 +176,7 @@
 | **CQRS** | 命令端 MyBatis-Plus 写库,查询端独立 ReadModel + 全文搜索聚合 |
 | **Saga** | 订单创建 / 取消 / 完成 / 退款 全链路分布式事务补偿 |
 | **事件驱动** | RabbitMQ Topic Exchange + 9 个消费者队列 + DLQ + 指数退避重试 |
-| **AI 集成** | DeepSeek 文本 + 通义千问 VL 多模态 + L1/L2 缓存装饰器 + 限流 + 异常降级 |
+| **AI 集成** | DeepSeek 文本 + 通义千问 VL 多模态 + L1/L2 缓存装饰器 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）** |
 | **缓存** | Redis 多级缓存 (Caffeine + Redis) + 一致性哈希 + 布隆过滤器 |
 | **搜索** | Elasticsearch 8 + IK 中文分词器 + 索引管理 + 全量重建 |
 | **实时通信** | STOMP over WebSocket + JWT 认证 + 离线消息重推 |
@@ -141,7 +283,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + Biome (前端, 替代 ESLint + Prettier)
-- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (953 用例)
+- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (945 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南

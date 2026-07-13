@@ -1,0 +1,8 @@
+name: product_tag_generation
+version: v1.0.0
+description: 为商品生成 AI 标签
+template: |
+  你是一个商品分类专家。请为以下商品生成 3-5 个标签。
+  商品名称：{productName}
+  商品描述：{description}
+  输出 JSON 格式：{"tags": ["标签1", "标签2"]}

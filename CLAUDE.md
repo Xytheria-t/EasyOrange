@@ -3,9 +3,9 @@ tags:
   - always-on
 ---
 
-# EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
+# EasyOrange — LLM 时代企业级 Java 应用工程化样板：DDD/CQRS/Saga/事件驱动/AI 工程化
 
-**EasyOrange** 是一个架构参考项目，完整落地 **DDD 六边形 + CQRS + Saga + 事件驱动 + AI Port/Adapter** 等模式。11 模块全解耦，1,269 测试，ArchUnit 架构守卫，CI/CD 全自动。业务载体为 C2C 资产流转（固定价格 + 直发 + 平台不碰货），**业务不是重点，工程才是核心**。**2025 年 11 月启动开发**。
+**EasyOrange** 是 LLM 时代企业级 Java 应用工程化样板，落地 **DDD 六边形 + CQRS + Saga + 事件驱动 + AI 工程化 7 件套**（Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理）。11 模块全解耦，2,214 测试（1,269 后端 + 945 前端），ArchUnit 架构守卫。业务载体为 C2C 资产流转，**业务载体刻意简化，承载复杂度才是重点**。**2025 年 11 月启动开发**。
 
 ## 项目结构
 
@@ -28,7 +28,7 @@ easy-orange/
 │   ├── easyorange-message/      # 消息模块 (DDD + WebSocket, Repository 已迁移)
 │   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
 │   │   └── adapter/inbound/web/assembler/ # FavoriteAssembler (DTO 转换)
-│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM + Embedding + Vision)
+│   ├── easyorange-ai/           # AI 模块 (Port/Adapter + LLM/Vision/Embedding + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算治理)
 │   ├── easyorange-admin/        # 管理端模块 (用户/商品/订单/分类/举报管理 API)
 │   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 ├── easyorange-frontend/         # React 前端

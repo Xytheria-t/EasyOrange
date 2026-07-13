@@ -21,6 +21,17 @@ ai/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
 ├── metrics/
 │   └── AiMetricsService.java       # AI 链路可观测性指标 (缓存命中率/LLM延迟/Vision延迟/限流计数)
+├── prompt/                         # Prompt 版本管理 (YAML 加载 + 渲染器)
+│   ├── PromptTemplate.java         # record 值类型 (name/version/template/variables)
+│   ├── PromptRegistry.java         # 接口 getPrompt(name, version)
+│   ├── YamlPromptRegistry.java     # @Component，启动时加载 classpath:prompts/*.yml
+│   └── PromptRenderer.java         # 静态渲染器 ({var} 替换 + quoteReplacement 安全)
+├── budget/                         # Token 预算治理 (@TokenBudget AOP)
+│   ├── TokenBudget.java            # @注解 (scenario / maxPerCall / dailyTokenLimit)
+│   ├── TokenBudgetStore.java       # 接口 + 嵌套 record TokenUsage
+│   ├── InMemoryTokenBudgetStore.java  # ConcurrentHashMap + AtomicReference 实现
+│   ├── TokenBudgetExceededException.java  # 预算超限异常 (RuntimeException)
+│   └── TokenBudgetAspect.java      # @Around("@annotation(tokenBudget)") AOP 切面
 ├── enums/
 │   └── AiCallScope.java            # 6 个枚举：PRICING/REVIEW/QA/COPY/AUTO_LISTING/SEMANTIC
 ├── service/                        # 业务服务
@@ -105,3 +116,7 @@ AiEnhancement DTO → SearchPageResponse.aiEnhancement
 | `AiRateLimitInterceptorTest` | 非 AI 路径/限流/fail-open/429/限流指标 |
 | `DeepSeekLlmAdapterTest` | 正常调用/null 响应/空 choices/JSON 模式/延迟指标 |
 | `AiMetricsServiceTest` | 缓存 hit/miss/stale + LLM/Vision 延迟 + 限流 rejected/stale_served/fail_open + Counter 复用 |
+| `PromptRendererTest` | {var} 替换 / quoteReplacement 安全 / null 边界 / 缺失变量保留 (8 测试) |
+| `YamlPromptRegistryTest` | YAML 加载 / 版本路由 / 缺失异常 / 资源解析 (7 测试) |
+| `TokenBudgetAspectTest` | 预算未超通过 / 超限抛 TokenBudgetExceededException / maxPerCall=0 跳过 / dailyLimit=0 不限 |
+| `InMemoryTokenBudgetStoreTest` | recordUsage 累加 / getTodayUsage 跨日重置 / 并发安全 |

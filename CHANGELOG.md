@@ -4,6 +4,20 @@
 
 ## [unreleased]
 
+### 2026-07-13 — LLM 时代工程化样板定位升级 + AI 工程化 7 件套闭环
+
+- **refactor(brand)**: 项目定位从"架构参考项目"升级为"LLM 时代企业级 Java 应用工程化样板"。叙事口径统一为"业务载体刻意简化，承载复杂度才是重点"，替换旧叙事"业务不是重点，工程才是核心"
+- **feat(ai)**: AI 工程化 7 件套闭环 — Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）
+- **feat(ai)**: 新增 Prompt 版本管理模块（`ai/prompt/`）— `PromptTemplate` record + `PromptRegistry` 接口 + `YamlPromptRegistry`（启动时加载 `classpath:prompts/*.yml`）+ `PromptRenderer`（`{var}` 替换 + `quoteReplacement` 安全）。15 测试通过
+- **feat(ai)**: 新增 Token 预算治理模块（`ai/budget/`）— `@TokenBudget` 注解 + `TokenBudgetAspect` AOP 切面（`@Around("@annotation(tokenBudget)")`）+ `InMemoryTokenBudgetStore`（`ConcurrentHashMap` + `AtomicReference`）+ `TokenBudgetExceededException`。11 测试通过
+- **docs**: 新增 ADR 模块（`doc/adr/`）— MADR 中文风格，含 0000 模板 + 3 条决策记录（Saga over 2PC / CQRS scope / AI Port/Adapter + 装饰器）
+- **docs**: 新增 `doc/工程指标.md`（185 行）— 28 Port 接口 / 9 RabbitListener / 830 测试方法 / 6 AI 决策点 等硬数字 + 待实测采集方案 + 面试话术
+- **docs**: 新增 `doc/技术债务清单.md`（191 行）— 13 条债务（8 接受 + 5 待评估 + 0 必须还）
+- **docs**: README.md 嵌入 3 张 Mermaid 图（架构总览 + AI 调用流程时序图 + Saga 补偿时序图），L3-L7 升级 30 秒钩子为"LLM 工程化集成进企业级 Java 应用全栈样板"
+- **docs**: PRODUCT_DIRECTION.md 6 处升级（顶部引述 / 项目定位 / 演讲故事线 / 对外宣传语 / 核心关键词加 `AI 工程化` `AiMetrics` `可观测` `stale 降级` `令牌桶限流`）
+- **docs**: CLAUDE.md / easyorange-ai/AGENTS.md / doc/集成/AI-资产管理.md 同步补 AI 工程化 7 件套描述
+- **test**: AI 模块新增 26 测试（Prompt 版本 15 + Token 预算 11），总计 2,214 测试用例（1,269 后端 + 945 前端）
+
 ### 2026-07-05 — AI 工程化可观测性现代化
 
 - **refactor(observability)**: 用 Spring Boot 4 内置 `StructuredLogEncoder` 替换 `logstash-logback-encoder` 第三方依赖，prod profile JSON 日志零外部依赖
