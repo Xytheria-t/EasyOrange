@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.order.application.command.CancelOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ConfirmReceiptCommand;
@@ -24,6 +25,7 @@ public class OrderCommandController {
     private final OrderCommandHandler commandHandler;
 
     @PostMapping
+    @Idempotent
     public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         List<CreateOrderCommand.CreateOrderItem> items = request.getItems().stream()
                 .map(i -> CreateOrderCommand.CreateOrderItem.builder()

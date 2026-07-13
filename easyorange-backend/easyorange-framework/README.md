@@ -15,7 +15,7 @@
 - **一致性哈希**：基于 TreeMap + 虚拟节点的一致性哈希路由，用于缓存分片等场景
 - **领域事件**：事件发布与订阅机制
 - **异常处理**：全局异常处理、友好错误信息
-- **AOP 增强**：限流、防重复提交、操作日志
+- **AOP 增强**：限流、防重复提交、审计日志
 - **线程池管理**：异步任务执行、线程池监控
 - **文件服务**：文件上传、存储管理
 
@@ -102,7 +102,7 @@ public class Application {
 |------|------|
 | `RateLimiterAspect` | 限流切面 |
 | `RepeatSubmitAspect` | 防重复提交切面 |
-| `OperLogAspect` | 操作日志切面 |
+| `AuditLogAspect` | 审计日志切面（@Around + Builder + @Async） |
 
 ## 使用示例
 
@@ -256,7 +256,7 @@ public class OrderController {
 - JWT 本地缓存优化（Caffeine）
 - 自定义线程池拒绝策略
 - 自定义缓存类型转换异常
-- XSS 防护可配置开关
+- 移除 `XssFilter`，改用 `Content-Security-Policy` 响应头
 
 **改进**：
 

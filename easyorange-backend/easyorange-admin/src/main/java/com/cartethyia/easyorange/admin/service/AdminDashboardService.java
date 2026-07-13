@@ -227,8 +227,8 @@ public class AdminDashboardService {
     public List<UserActivityHeatmapResponse> getUserActivityHeatmap() {
         LocalDateTime since = LocalDate.now().minusDays(30).atStartOfDay();
         List<Map<String, Object>> rows = jdbcTemplate.queryForList(
-            "SELECT DAYOFWEEK(oper_time) AS day_of_week, HOUR(oper_time) AS hour, COUNT(*) AS cnt " +
-            "FROM eo_oper_log WHERE oper_time >= ? " +
+            "SELECT DAYOFWEEK(created_at) AS day_of_week, HOUR(created_at) AS hour, COUNT(*) AS cnt " +
+            "FROM eo_audit_log WHERE created_at >= ? " +
             "GROUP BY DAYOFWEEK(oper_time), HOUR(oper_time) " +
             "ORDER BY day_of_week, hour",
             since

@@ -20,7 +20,6 @@ public class SecurityProperties {
     private List<String> allowedOrigins = new ArrayList<>();
     private String logoutUrl = "/api/auth/logout";
     private int passwordEncoderStrength = 10;
-    private boolean xssProtectionEnabled = false;
     
     /**
      * 管理员用户类型代码列表
@@ -47,8 +46,8 @@ public class SecurityProperties {
         } else if (passwordEncoderStrength > 14) {
             log.warn("⚠️ 警告：密码加密强度 {} 较高，可能影响登录性能", passwordEncoderStrength);
         }
-        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}, XSS 防护：{}, 管理员类型：{}",
-                logoutUrl, passwordEncoderStrength, xssProtectionEnabled ? "启用" : "禁用", adminUserTypes);
+        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}, 管理员类型：{}",
+                logoutUrl, passwordEncoderStrength, adminUserTypes);
     }
 
     private void validatePaths(String name, List<String> paths) {

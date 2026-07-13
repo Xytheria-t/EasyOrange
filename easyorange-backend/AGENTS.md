@@ -173,7 +173,9 @@ public class BaseDO {
 
 - DDL 脚本: `db/migration/V{N}__description.sql`
 - 开发数据: `db/dev/R__insert_dev_test_data.sql`
-- 禁止修改已执行的迁移脚本
+- 项目开发阶段的所有 V 迁移已合并为单个 `V1__init_schema.sql`（完整当前 DDL）
+- 后续 DDL 变更按递增版本号添加 `V{N+1}__description.sql`
+- **禁止修改已执行的迁移脚本**（生产环境原则；开发阶段若需重置，清库重跑即可）
 - 新增字段必须可空或有默认值
 - DDL 迁移中 DROP INDEX / ADD INDEX 使用 MySQL 8.0 原生 DDL（非阻塞 INPLACE 算法），允许生产环境在线执行
 
@@ -184,13 +186,14 @@ public class BaseDO {
 - JWT 双 Token: Access Token (短期) + Refresh Token (长期)
 - 密码: BCrypt 加密存储
 - 限流: `RateLimitFilter` 配置驱动，GET 走本地限流（默认 200次/60秒/IP），写操作走 Redis 分布式限流（默认 30次/60秒/IP），Redis 不可用时放行（fail-open）。支持 `@SkipRateLimit` 按 Controller 方法/类跳过
-- 防重: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash 防误判，Redis 不可用时放行。支持 `@SkipRepeatSubmit` 按 Controller 方法/类跳过
-- 操作日志: 约定式自动记录所有写操作 (@Order 3), 无需注解
-- XSS: `XssFilter` + `XssHttpServletRequestWrapper`
+- 防重（短时间连点防护）: `RateLimitFilter` 约定式拦截所有 POST/PUT/DELETE/PATCH（默认 3秒间隔），key 含请求体 hash，Redis 不可用时放行。支持 `@SkipRepeatSubmit` 跳过低级别防重
+- 幂等（协议级防重放）: `@Idempotent` 注解 + `IdempotencyAspect(@Order=1)`，客户端提供 `Idempotency-Key` 头（UUID），服务端缓存成功响应 24h。与 `RateLimitFilter` 的短时间防重互补——前者防连点，后者防重放。支持自定义 header 名称和 TTL
+- 审计日志: 约定式自动记录所有写操作 (@Order 3), 无需注解, 异步持久化, 敏感字段自动掩码
+- XSS: `Content-Security-Policy` 头 (`default-src 'none'`)，已废除 `X-XSS-Protection`
 - CORS: 生产环境严格白名单
 - 全局认证: `SecurityConfig` 的 `.anyRequest().authenticated()` 已拦截所有未认证请求，Controller 上无需 `@PreAuthorize("isAuthenticated()")`
 
-Filter 执行顺序: RateLimitFilter(0) → SecurityConfig.oauth2ResourceServer() (Spring Security Filter Chain) → XssFilter → OperLogAspect(AOP @Order 3)
+Filter 执行顺序: RateLimitFilter(0) → SecurityConfig.oauth2ResourceServer() (Spring Security Filter Chain) → AuditLogAspect(AOP @Order 3)
 
 JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`BearerTokenAuthenticationFilter` (Spring Security 内置) → `JwtDecoder` 验证签名 + 黑名单/强制登出检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。
 

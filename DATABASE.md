@@ -6,7 +6,7 @@
 |------|------|
 | 数据库 | MySQL 8.4 (LTS) |
 | 字符集 | utf8mb4 / utf8mb4_0900_ai_ci |
-| 主键策略 | 雪花算法（BIGINT），Saga/Event 使用 UUID。JSON 层面所有 BIGINT 主键通过 Jackson ToStringSerializer 序列化为 String，防止前端 JS 精度丢失 |
+| 主键策略 | UUID v7（VARCHAR(36)），全库所有 ID 字段统一使用 UUID v7（RFC 9562） |
 | 逻辑删除 | del_flag TINYINT（0 正常 / 2 删除） |
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
@@ -42,7 +42,7 @@
 | 消息 | eo_message_template | 消息模板 | MessageTemplate |
 | 消息 | eo_offline_message | 离线消息 | OfflineMessage |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFile |
-| 日志 | eo_oper_log | 操作日志 | SysOperLog |
+| 审计 | eo_audit_log | 审计日志 | AuditLog |
 | 事件 | eo_domain_event | 领域事件（Outbox，已废弃） | — |
 | 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
 | 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyPO |
@@ -55,8 +55,8 @@
 |------|------|--------|------|
 | create_time | DATETIME | CURRENT_TIMESTAMP | 创建时间 |
 | update_time | DATETIME | CURRENT_TIMESTAMP ON UPDATE | 更新时间 |
-| create_by | BIGINT | NULL | 创建人 ID |
-| update_by | BIGINT | NULL | 更新人 ID |
+| create_by | VARCHAR(36) | NULL | 创建人 ID |
+| update_by | VARCHAR(36) | NULL | 更新人 ID |
 | del_flag | TINYINT | 0 | 逻辑删除（0 正常 / 2 删除） |
 | version | INT | 0 | 乐观锁版本号 |
 
@@ -64,7 +64,7 @@
 
 归档表（eo_message_archive）无 del_flag / version，使用 archived_at 记录归档时间。
 
-eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 oper_id 和操作时间 oper_time。
+eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键 id 和时间字段 created_at。
 
 ---
 
@@ -74,7 +74,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| user_id | BIGINT | PK | 用户 ID |
+| user_id | VARCHAR(36) | PK | 用户 ID |
 | username | VARCHAR(30) | NOT NULL, UK | 用户账号 |
 | password | VARCHAR(100) | NOT NULL | 密码（BCrypt） |
 | user_type | VARCHAR(2) | NOT NULL DEFAULT '01' | 用户类型（01 普通 / 02 管理员） |
@@ -111,8 +111,8 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| user_id | BIGINT | NOT NULL, UK | 用户 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL, UK | 用户 ID |
 | credit_score | INT | NOT NULL DEFAULT 100 | 信用评分（0-200） |
 | level | VARCHAR(20) | NOT NULL DEFAULT 'NORMAL' | 信用等级（EXCELLENT / GOOD / NORMAL / LOW / BLACKLIST） |
 | total_trades | INT | NOT NULL DEFAULT 0 | 总交易数 |
@@ -141,9 +141,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | name | VARCHAR(50) | NOT NULL | 分类名称 |
-| parent_id | BIGINT | NOT NULL DEFAULT 0 | 父分类 ID（0=顶级） |
+| parent_id | VARCHAR(36) | NOT NULL DEFAULT 0 | 父分类 ID（0=顶级） |
 | level | TINYINT | NOT NULL DEFAULT 1 | 层级（1/2） |
 | icon | VARCHAR(255) | | 图标 |
 | sort_order | INT | NOT NULL DEFAULT 0 | 排序 |
@@ -177,9 +177,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| user_id | BIGINT | NOT NULL | 发布者 ID |
-| category_id | BIGINT | | 分类 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL | 发布者 ID |
+| category_id | VARCHAR(36) | | 分类 ID |
 | name | VARCHAR(100) | NOT NULL | 商品名称 |
 | price | DECIMAL(10,2) | NOT NULL | 售价 |
 | original_price | DECIMAL(10,2) | | 原价 |
@@ -215,7 +215,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| product_id | BIGINT | PK | 商品 ID（与 eo_product.id 1:1） |
+| product_id | VARCHAR(36) | PK | 商品 ID（与 eo_product.id 1:1） |
 | description | TEXT | | 详情描述 |
 | + 公共字段 | | | |
 
@@ -225,8 +225,8 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| product_id | BIGINT | NOT NULL | 商品 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
 | image_url | VARCHAR(500) | NOT NULL | 图片 URL |
 | sort_order | INT | NOT NULL DEFAULT 0 | 排序 |
 | is_main | TINYINT | NOT NULL DEFAULT 0 | 是否主图（0 否 / 1 是） |
@@ -242,9 +242,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| product_id | BIGINT | NOT NULL | 商品 ID |
-| operator_id | BIGINT | NOT NULL | 操作人 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
+| operator_id | VARCHAR(36) | NOT NULL | 操作人 ID |
 | operator_name | VARCHAR(50) | NOT NULL | 操作人姓名 |
 | action | TINYINT | NOT NULL | 审核动作（1 通过 / 2 拒绝 / 3 重新提交） |
 | reason | VARCHAR(500) | | 审核原因 |
@@ -268,10 +268,10 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| product_id | BIGINT | NOT NULL | 商品 ID |
-| user_id | BIGINT | NOT NULL | 评价用户 ID |
-| order_id | BIGINT | NOT NULL | 关联订单 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
+| user_id | VARCHAR(36) | NOT NULL | 评价用户 ID |
+| order_id | VARCHAR(36) | NOT NULL | 关联订单 ID |
 | rating | TINYINT | NOT NULL DEFAULT 5 | 评分（1-5） |
 | content | TEXT | NOT NULL | 评价内容 |
 | reply_content | TEXT | | 资产方回复内容 |
@@ -298,9 +298,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| product_id | BIGINT | NOT NULL | 被举报商品 ID |
-| reporter_id | BIGINT | NOT NULL | 举报人 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| product_id | VARCHAR(36) | NOT NULL | 被举报商品 ID |
+| reporter_id | VARCHAR(36) | NOT NULL | 举报人 ID |
 | reason | VARCHAR(500) | NOT NULL | 举报原因 |
 | status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 待处理 / 1 已处理 / 2 已忽略） |
 | handle_result | VARCHAR(500) | | 处理结果 |
@@ -320,9 +320,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| report_id | BIGINT | NOT NULL | 举报 ID |
-| operator_id | BIGINT | NOT NULL | 操作人 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| report_id | VARCHAR(36) | NOT NULL | 举报 ID |
+| operator_id | VARCHAR(36) | NOT NULL | 操作人 ID |
 | action | VARCHAR(30) | NOT NULL | 动作类型（IGNORE / PRODUCT_OFFLINE / WARN_SENDER / BAN_PRODUCT） |
 | remark | VARCHAR(500) | | 备注 |
 | + 公共字段 | | | |
@@ -340,9 +340,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| user_id | BIGINT | NOT NULL | 用户 ID |
-| product_id | BIGINT | NOT NULL | 商品 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
 | + 公共字段 | | | |
 
 **索引**：
@@ -359,8 +359,8 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| user_id | BIGINT | NOT NULL | 用户 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
 | keyword | VARCHAR(100) | NOT NULL | 搜索关键词 |
 | search_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 搜索时间 |
 | + 公共字段 | | | |
@@ -379,7 +379,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | keyword | VARCHAR(100) | NOT NULL, UK | 关键词 |
 | search_count | INT | NOT NULL DEFAULT 0 | 搜索次数 |
 | last_search_time | DATETIME | | 最后搜索时间 |
@@ -401,9 +401,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| order_id | BIGINT | NOT NULL | 所属订单 ID |
-| product_id | BIGINT | NOT NULL | 商品 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| order_id | VARCHAR(36) | NOT NULL | 所属订单 ID |
+| product_id | VARCHAR(36) | NOT NULL | 商品 ID |
 | product_snapshot | JSON | | 下单时商品快照 |
 | unit_price | DECIMAL(10,2) | NOT NULL | 单价 |
 | quantity | INT | NOT NULL DEFAULT 1 | 数量 |
@@ -426,10 +426,10 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | order_no | VARCHAR(64) | NOT NULL, UK | 订单号 |
-| buyer_id | BIGINT | NOT NULL | 认领方 ID |
-| seller_id | BIGINT | NOT NULL | 资产方 ID |
+| buyer_id | VARCHAR(36) | NOT NULL | 认领方 ID |
+| seller_id | VARCHAR(36) | NOT NULL | 资产方 ID |
 | total_amount | DECIMAL(10,2) | NOT NULL | 订单总金额（行项总和） |
 | status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 待付款 / 1 待发货 / 2 待收货 / 3 已完成 / 4 已取消 / 5 已退款） |
 | payment_status | TINYINT | NOT NULL DEFAULT 0 | 支付状态（0 未支付 / 1 已支付 / 2 已退款） |
@@ -465,10 +465,10 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | payment_no | VARCHAR(64) | NOT NULL, UK | 支付流水号 |
-| order_id | BIGINT | NOT NULL | 订单 ID |
-| user_id | BIGINT | NOT NULL | 用户 ID |
+| order_id | VARCHAR(36) | NOT NULL | 订单 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
 | amount | DECIMAL(10,2) | NOT NULL | 支付金额 |
 | refunded_amount | DECIMAL(10,2) | NOT NULL DEFAULT 0 | 已退款金额 |
 | payment_method | TINYINT | | 支付方式（1 微信 / 2 支付宝 / 3 余额） |
@@ -497,7 +497,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | channel_code | VARCHAR(50) | NOT NULL, UK | 渠道编码 |
 | channel_name | VARCHAR(100) | NOT NULL | 渠道名称 |
 | app_id | VARCHAR(100) | | 应用 ID |
@@ -514,16 +514,16 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| sender_id | BIGINT | | 发送者 ID（NULL=系统消息） |
-| receiver_id | BIGINT | NOT NULL | 接收者 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| sender_id | VARCHAR(36) | | 发送者 ID（NULL=系统消息） |
+| receiver_id | VARCHAR(36) | NOT NULL | 接收者 ID |
 | type | TINYINT | NOT NULL DEFAULT 0 | 消息类型（0 系统 / 1 私聊 / 2 订单） |
 | title | VARCHAR(200) | | 标题 |
 | content | TEXT | NOT NULL | 内容 |
 | is_read | TINYINT | NOT NULL DEFAULT 0 | 是否已读（0 未读 / 1 已读） |
 | read_time | DATETIME | | 已读时间 |
-| business_id | BIGINT | | 业务 ID |
-| conversation_id | BIGINT | | 会话 ID |
+| business_id | VARCHAR(36) | | 业务 ID |
+| conversation_id | VARCHAR(36) | | 会话 ID |
 | msg_status | VARCHAR(20) | NOT NULL DEFAULT 'SENT' | 消息状态（SENT / DELIVERED / READ / RECALLED） |
 | recalled_at | DATETIME | | 撤回时间 |
 | + 公共字段 | | | |
@@ -549,8 +549,8 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| user_id | BIGINT | NOT NULL | 用户 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
 | message_type | VARCHAR(50) | NOT NULL | 消息类型 |
 | push_channel | VARCHAR(50) | NOT NULL | 推送渠道 |
 | enabled | TINYINT | NOT NULL DEFAULT 1 | 是否启用 |
@@ -568,7 +568,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | template_code | VARCHAR(50) | NOT NULL, UK | 模板编码 |
 | template_name | VARCHAR(100) | NOT NULL | 模板名称 |
 | template_type | VARCHAR(50) | | 模板类型 |
@@ -587,9 +587,9 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
-| user_id | BIGINT | NOT NULL | 用户 ID |
-| message_id | BIGINT | NOT NULL | 消息 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
+| message_id | VARCHAR(36) | NOT NULL | 消息 ID |
 | push_channel | VARCHAR(50) | NOT NULL | 推送渠道 |
 | push_status | TINYINT | NOT NULL DEFAULT 0 | 推送状态（0 待推送 / 1 已推送 / 2 失败） |
 | push_time | DATETIME | | 推送时间 |
@@ -612,7 +612,7 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | file_name | VARCHAR(200) | NOT NULL | 文件名 |
 | file_path | VARCHAR(500) | NOT NULL | 存储路径 |
 | file_url | VARCHAR(500) | | 访问 URL |
@@ -620,11 +620,11 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 | file_type | VARCHAR(50) | | 扩展名 |
 | mime_type | VARCHAR(100) | | MIME 类型 |
 | md5 | VARCHAR(32) | | MD5 校验 |
-| storage_type | VARCHAR(32) | NOT NULL DEFAULT 'LOCAL' | 存储类型（LOCAL/S3/OSS，V6 新增） |
-| storage_key | VARCHAR(500) | | 存储后端标识键（V6 新增） |
+| storage_type | VARCHAR(32) | NOT NULL DEFAULT 'LOCAL' | 存储类型（LOCAL/S3/OSS） |
+| storage_key | VARCHAR(500) | | 存储后端标识键 |
 | business_type | VARCHAR(50) | | 业务类型 |
-| business_id | BIGINT | | 业务 ID |
-| uploader_id | BIGINT | | 上传者 ID |
+| business_id | VARCHAR(36) | | 业务 ID |
+| uploader_id | VARCHAR(36) | | 上传者 ID |
 | status | TINYINT | NOT NULL DEFAULT 1 | 状态（0 禁用 / 1 正常） |
 | + 公共字段 | | | |
 
@@ -632,35 +632,35 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 ---
 
-### 20. eo_oper_log — 操作日志表
+### 20. eo_audit_log — 审计日志表
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| oper_id | BIGINT | PK | 日志主键 |
+| id | VARCHAR(36) | PK | 日志主键 |
 | title | VARCHAR(50) | | 模块标题 |
 | business_type | TINYINT | NOT NULL DEFAULT 0 | 业务类型 |
 | method | VARCHAR(100) | | 方法名称 |
 | request_method | VARCHAR(10) | | 请求方式 |
 | operator_type | TINYINT | NOT NULL DEFAULT 0 | 操作类别 |
-| oper_name | VARCHAR(50) | | 操作人员 |
-| oper_url | VARCHAR(255) | | 请求 URL |
-| oper_ip | VARCHAR(128) | | 主机地址 |
+| username | VARCHAR(50) | | 操作人员 |
+| request_url | VARCHAR(255) | | 请求 URL |
+| client_ip | VARCHAR(128) | | 客户端 IP |
 | oper_location | VARCHAR(255) | | 操作地点 |
-| oper_param | TEXT | | 请求参数 |
-| json_result | TEXT | | 返回参数 |
+| request_params | TEXT | | 请求参数（敏感字段已掩码） |
+| response_data | TEXT | | 响应数据 |
 | status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 正常 / 1 异常） |
 | error_msg | VARCHAR(2000) | | 错误消息 |
-| oper_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 操作时间 |
-| cost_time | INT | NOT NULL DEFAULT 0 | 耗时（毫秒） |
+| created_at | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| duration | INT | NOT NULL DEFAULT 0 | 执行耗时（毫秒） |
 
 **索引**：
 
 | 名称 | 类型 | 列 |
 |------|------|----|
-| idx_eo_oper_log_time | KEY | oper_time |
-| idx_eo_oper_log_name_time | KEY | oper_name, oper_time DESC |
-| idx_eo_oper_log_business_time | KEY | business_type, oper_time DESC |
-| idx_eo_oper_log_status_time | KEY | status, oper_time DESC |
+| idx_created_at | KEY | created_at |
+| idx_username_created_at | KEY | username, created_at DESC |
+| idx_business_type_created_at | KEY | business_type, created_at DESC |
+| idx_status_created_at | KEY | status, created_at DESC |
 
 **注意**：此表无 del_flag / version / create_by / update_by，不继承公共字段。
 
@@ -672,10 +672,10 @@ eo_oper_log 无 del_flag / version / create_by / update_by，使用独立主键 
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | event_id | CHAR(36) | NOT NULL, UK | 事件 UUID |
 | aggregate_type | VARCHAR(100) | NOT NULL | 聚合类型 |
-| aggregate_id | BIGINT | NOT NULL | 聚合 ID |
+| aggregate_id | VARCHAR(36) | NOT NULL | 聚合 ID |
 | event_type | VARCHAR(100) | NOT NULL | 事件类型 |
 | payload | TEXT | | 事件载荷（JSON） |
 | status | VARCHAR(20) | NOT NULL DEFAULT 'PENDING' | 状态（PENDING / PUBLISHED / FAILED） |
@@ -735,9 +735,9 @@ PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
-| id | BIGINT | PK | 主键 ID |
+| id | VARCHAR(36) | PK | 主键 ID |
 | idempotency_key | VARCHAR(255) | NOT NULL, UK | 幂等性键 |
-| user_id | BIGINT | NOT NULL | 用户 ID |
+| user_id | VARCHAR(36) | NOT NULL | 用户 ID |
 | request_hash | VARCHAR(64) | NOT NULL | 请求哈希 |
 | response_data | TEXT | | 响应数据（JSON） |
 | status | VARCHAR(20) | NOT NULL DEFAULT 'PENDING' | 状态（PENDING / COMPLETED / FAILED） |
@@ -754,7 +754,7 @@ PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
 |------|------|------|
 | 主键 | PK | 自动 PRIMARY KEY |
 | 唯一索引 | uk_eo_{table}_{columns} | uk_eo_user_username |
-| 普通索引 | idx_eo_{table}_{columns} | idx_eo_product_user_time |
+| 普通索引 | idx_eo_{table}_{columns} | idx_eo_product_user_id |
 | 全文索引 | ft_eo_{table}_{column} | ft_eo_product_name |
 | CHECK 约束 | chk_eo_{table}_{column} | chk_eo_user_status |
 
@@ -762,7 +762,7 @@ PENDING ─→ ORDER_CREATED ─→ PAYMENT_CREATED ─→ COMPLETED
 
 | 场景 | 类型 | 示例 |
 |------|------|------|
-| 主键 | BIGINT | id BIGINT NOT NULL |
+| 主键 | VARCHAR(36) | id VARCHAR(36) NOT NULL |
 | 状态/标志 | TINYINT | status TINYINT NOT NULL DEFAULT 0 |
 | 金额 | DECIMAL(10,2) | price DECIMAL(10,2) NOT NULL |
 | 短文本 | VARCHAR(30-200) | username VARCHAR(30) |

@@ -60,11 +60,6 @@ class SecurityPropertiesTest {
             assertThat(properties.getPasswordEncoderStrength()).isEqualTo(10);
         }
 
-        @Test
-        @DisplayName("should have xssProtectionEnabled as false by default")
-        void xssProtectionEnabled_default_shouldBeFalse() {
-            assertThat(properties.isXssProtectionEnabled()).isFalse();
-        }
     }
 
     @Nested

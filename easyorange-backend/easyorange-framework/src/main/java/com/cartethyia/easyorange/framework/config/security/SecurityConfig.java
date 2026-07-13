@@ -7,10 +7,6 @@ import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
-import com.cartethyia.easyorange.framework.web.filter.XssFilter;
-
-
-
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -65,7 +61,6 @@ public class SecurityConfig {
     private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Content-Disposition"};
 
     private final RateLimitFilter rateLimitFilter;
-    private final XssFilter xssFilter;
     private final SecurityProperties securityProperties;
     private final ObjectMapper objectMapper;
 
@@ -97,12 +92,13 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
             )
-            .addFilterBefore(xssFilter, UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(rateLimitFilter, XssFilter.class)
+            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                 .contentTypeOptions(Customizer.withDefaults())
-                .xssProtection(HeadersConfigurer.XXssConfig::disable)
+                .contentSecurityPolicy(csp -> csp
+                    .policyDirectives("default-src 'none'; base-uri 'none'; form-action 'none'")
+                )
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
                     .maxAgeInSeconds(HSTS_MAX_AGE_SECONDS)

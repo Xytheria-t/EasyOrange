@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.cartethyia.easyorange.framework.operlog.mapper.SysOperLogMapper">
+<mapper namespace="com.cartethyia.easyorange.framework.audit.mapper.AuditLogMapper">
 
     <delete id="deleteExpiredLogs">
-        DELETE FROM eo_oper_log 
-        WHERE oper_time &lt; #{expireDate}
+        DELETE FROM eo_audit_log
+        WHERE created_at &lt; #{expireDate}
         LIMIT 1000
     </delete>
-
 
 </mapper>

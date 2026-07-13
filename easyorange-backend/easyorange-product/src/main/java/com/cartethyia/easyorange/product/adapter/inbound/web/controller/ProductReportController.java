@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -23,6 +24,7 @@ public class ProductReportController {
     private final GetReportDetailHandler getReportDetailHandler;
 
     @PostMapping("/product/{productId}")
+    @Idempotent
     public Result<Void> reportProduct(@PathVariable String productId,
                                        @Valid @RequestBody ReportRequest request) {
         String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();

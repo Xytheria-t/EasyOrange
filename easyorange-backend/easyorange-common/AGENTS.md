@@ -7,8 +7,9 @@
 ```
 common/
 ├── annotation/          # 自定义注解
-│   ├── RateLimiter.java     # 限流 (Redis + Lua 固定窗口)
-│   └── RepeatSubmit.java    # 防重复提交
+│   ├── SkipRateLimit.java      # 跳过限流（配合 RateLimitFilter 使用）
+│   ├── SkipRepeatSubmit.java   # 跳过防重提交（配合 RateLimitFilter 使用）
+│   └── Idempotent.java         # Idempotency-Key 协议级幂等（@Aspect 实现）
 ├── constant/
 │   └── CommonConstant.java  # 全局常量
 ├── dto/
@@ -79,12 +80,11 @@ BizRequire.requireTrue(condition, "条件不满足");
 
 ### 自定义注解
 
-- `@RateLimiter(count = 10, time = 60)` — 覆写默认限流参数（未标注时自动应用默认限流）
-- `@RepeatSubmit(interval = 3000)` — 覆写默认防重参数（未标注时所有 POST/PUT/DELETE/PATCH 自动防重）
 - `@SkipRateLimit` — 跳过当前方法/类的限流（`RateLimitFilter` 命中规则时检查）
-- `@SkipRepeatSubmit` — 跳过当前方法/类的防重提交（`RateLimitFilter` 写方法时检查）
+- `@SkipRepeatSubmit` — 跳过当前方法/类的防重提交（`RateLimitFilter` 写方法时自动检查）
+- `@Idempotent(headerName, ttlSeconds)` — Idempotency-Key 协议级幂等。客户端提供幂等 key 头（默认 `Idempotency-Key`），服务端缓存成功响应，相同 key 的重复请求直接返回缓存结果。`@Idempotent` 与 `@SkipRepeatSubmit` 互补：前者是 24h 协议级幂等（含响应缓存），后者是 3s 短时间防连点
 
-> 操作日志为约定式自动记录，无需注解。所有非查询类 RestController 方法自动记录。
+> 审计日志（AuditLog）为约定式自动记录，无需注解。所有非查询类 RestController 方法自动记录。
 
 ## 注意事项
 

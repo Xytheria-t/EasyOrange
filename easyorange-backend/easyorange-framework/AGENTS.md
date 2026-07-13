@@ -35,7 +35,8 @@ framework/
 │   │   ├── IdGenProperties.java
 │   │   ├── ImageProcessingProperties.java
 │   │   ├── JwtProperties.java
-│   │   ├── OperLogProperties.java
+│   │   ├── IdempotencyProperties.java  # 幂等 key 配置（前缀、默认 TTL、开关）
+│   │   ├── AuditLogProperties.java
 │   │   ├── RateLimitFilterProperties.java
 │   │   ├── SecurityProperties.java       # 安全配置（含 adminUserTypes 管理员类型）
 │   │   ├── ThreadPoolProperties.java
@@ -86,14 +87,14 @@ framework/
 ├── metrics/                 # 业务指标埋点
 │   ├── BusinessMetricsService.java
 │   └── MetricsConfig.java
-├── operlog/                 # 操作日志 (含 AOP 切面)
+├── audit/                   # 审计日志 (AOP + @Async 持久化)
 │   ├── aspect/
-│   │   └── OperLogAspect.java        # 操作日志切面 (约定式拦截所有写操作, 无需注解)
-│   ├── entity/SysOperLog.java
-│   ├── mapper/SysOperLogMapper.java
+│   │   └── AuditLogAspect.java      # 审计日志切面 (@Around + Builder 模式, 约定式拦截所有写操作)
+│   ├── entity/AuditLog.java
+│   ├── mapper/AuditLogMapper.java
 │   └── service/
-│       ├── SysOperLogService.java
-│       └── impl/SysOperLogServiceImpl.java
+│       ├── AuditLogService.java
+│       └── impl/AuditLogServiceImpl.java
 ├── outbox/                  # [已删除] Outbox 模式 — 已完成 RabbitMQ 迁移，所有事件走 Topic Exchange
 ├── entity/                  # [已迁移至 common] BaseDO → common/entity/
 ├── repository/              # [已迁移至 common] BaseRepository → common/repository/
@@ -104,19 +105,22 @@ framework/
 ├── util/                    # 纯工具函数
 │   ├── FileUtils.java            # 文件工具
 │   ├── LocalRateLimiter.java     # 本地固定窗口限流器
-│   ├── OperLogUtil.java          # 操作日志工具
+│   ├── AuditLogUtil.java         # 审计日志工具（字符串截断）
 │   ├── RequestUtil.java          # 请求工具 (自动识别代理头)
 │   ├── SecurityContextUtil.java  # 安全上下文工具
 │   └── TestSecurityUtil.java     # 测试安全上下文工具
-└── web/                     # Web 层 (过滤器 + 处理器)
+└── web/                     # Web 层 (过滤器 + 处理器 + 幂等)
     ├── filter/                    # Servlet 过滤器
     │   ├── CachedBodyHttpServletRequestWrapper.java
-    │   ├── RateLimitFilter.java            # 限流过滤器
-    │   ├── XssFilter.java                  # XSS 过滤
-    │   └── XssHttpServletRequestWrapper.java
-    └── handler/                    # 处理器
-        ├── CustomMetaObjectHandler.java    # MyBatis-Plus 自动填充
-        └── LoggingInterceptor.java         # 请求日志拦截
+    │   └── RateLimitFilter.java            # 限流 + 防连点过滤器
+    ├── handler/                    # 处理器
+    │   ├── CustomMetaObjectHandler.java    # MyBatis-Plus 自动填充
+    │   └── LoggingInterceptor.java         # 请求日志拦截
+    └── idempotency/                # Idempotency-Key 协议级幂等
+        ├── IdempotentOperation.java        # 幂等操作函数式接口
+        ├── IdempotencyService.java         # 幂等服务接口
+        ├── RedisIdempotencyService.java    # Redis 实现（SETNX + TTL，fail-open）
+        └── IdempotencyAspect.java          # @Idempotent 切面（@Order 1）
 ```
 
 ## 核心机制
@@ -225,6 +229,35 @@ RedisNode target = router.route("some-cache-key");
 
 `ResponseAdvice` 自动将 Controller 返回值包装为 `Result<T>`，无需手动包装。
 
+### Idempotency-Key 幂等 (web/idempotency/)
+
+客户端在请求头中传入 `Idempotency-Key`（UUID v4），服务端缓存成功响应结果。相同 key 的后续请求直接返回缓存，确保操作只执行一次。
+
+**实现原理**：
+1. `@Idempotent` 注解标记 Controller 方法 → `IdempotencyAspect`（`@Order(1)`）环绕拦截
+2. 从请求头提取 key → 调用 `RedisIdempotencyService.execute()`
+3. 先查 Redis 缓存（`eo:idempotency:{key}`），命中直接返回
+4. 未命中 → 执行业务操作 → 通过 `SETNX` 原子写入（防止并发覆盖）
+5. 执行异常 → 不缓存，重试可重新执行
+6. Redis 不可用 → fail-open 透传请求
+
+**与 `RateLimitFilter` 防重的关系**：
+
+| 机制 | 窗口 | 标识 | 缓存响应 | 语义 |
+|------|------|------|---------|------|
+| `RateLimitFilter` 防重 | 3s | IP + URI + body hash | ❌ | 防快速连点 |
+| `@Idempotent` 幂等 | 24h | 客户端提供的 key (UUID) | ✅ 返回相同结果 | 协议级幂等 |
+
+**部署方式**：标注在 Controller 方法上即可，不要求所有客户端使用。未传 `Idempotency-Key` 头的请求正常执行（向后兼容）。
+
+```java
+@PostMapping("/orders")
+@Idempotent
+public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
+    return Result.success(commandHandler.handle(request));
+}
+```
+
 ## 修改注意
 
 - **所有框架配置类统一使用 `@AutoConfiguration` + `AutoConfiguration.imports`**：framework 模块的所有 `@Configuration` 类必须使用 `@AutoConfiguration`（而非 `@Configuration`）并列入 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`，不依赖隐式 `@ComponentScan` 发现。新增框架配置类时须同时完成两件事：① 类上加 `@AutoConfiguration`；② 在 imports 文件中追加一行。这是框架 bean 注册的唯一入口，确保配置注册无需依赖主应用包路径
@@ -239,5 +272,6 @@ RedisNode target = router.route("some-cache-key");
 - **RedisConfig 使用 `GenericJacksonJsonRedisSerializer`（Spring Data Redis 4.x 原生 Jackson 3 支持）**：注入 Spring Boot 自动配置的 Jackson 3 `ObjectMapper`，序列化策略与 HTTP 一致（Long→String）。不再需要 Jackson 2.x 的 `GenericJackson2JsonRedisSerializer`
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类
 - **`@Component` 多构造器必须标注 `@Autowired`**：`MultiLevelCache` 和 `RedisBitmapBloomFilter` 都有多个构造器（默认参数 + 自定义参数），且无默认无参构造器。`@Component` 扫描时 Spring 无法自动选择构造器，必须在主构造器上加 `@Autowired` 明确指示。新增 `@Component` 类时有多个构造器时遵循此模式
+- **`@Idempotent` 幂等切面（`IdempotencyAspect`）**：`@Order(1)`，在 `RateLimitFilter(0)` 之后、`AuditLogAspect(3)` 之前执行。此顺序确保：① Filter 层先做快速防重；② 幂等拦截命中后不记录审计日志（避免重复日志）；③ 只有未缓存的请求会走到业务逻辑和日志记录。修改 Aspect 的 `@Order` 值时需评估这三层的影响
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则
 - **`RateLimitFilter` 使用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：`HandlerMapping` 列表通过 `ObjectProvider` 延迟解析，而非构造器直接注入。原因是直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 Bean）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖。`ObjectProvider` 在请求时才解析 HandlerMapping，打破循环。修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入

@@ -38,7 +38,7 @@
 | **缓存** | Redis 多级缓存 (Caffeine + Redis) + 一致性哈希 + 布隆过滤器 |
 | **搜索** | Elasticsearch 8 + IK 中文分词器 + 索引管理 + 全量重建 |
 | **实时通信** | STOMP over WebSocket + JWT 认证 + 离线消息重推 |
-| **数据库** | MySQL 8.4 + Flyway 迁移 + 16 张业务表 + 完整种子数据 |
+| **数据库** | MySQL 8.4 + Flyway 迁移 + 30 张表 + 完整种子数据 |
 | **测试** | JUnit 5 + Mockito + AssertJ + ArchUnit 架构守卫 |
 | **前端** | React 19 + TypeScript + Vite 8 + Zustand 5 + React Query 5 + shadcn/ui + 管理端暖橙指挥中心设计系统 |
 

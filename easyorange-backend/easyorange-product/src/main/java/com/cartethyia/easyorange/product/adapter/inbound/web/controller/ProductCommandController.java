@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
+import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
@@ -35,6 +36,7 @@ public class ProductCommandController {
     private final ProductViewCountService viewCountService;
 
     @PostMapping
+    @Idempotent
     public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         return Result.success(commandService.createProduct(CreateProductCommand.from(request)));
     }

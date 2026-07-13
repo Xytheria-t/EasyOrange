@@ -47,12 +47,10 @@ application/
 │   ├── logback-spring.xml                 # 日志配置
 │       └── db/
 │           ├── migration/                     # Flyway 迁移脚本 (V=版本, R=可重复)
-│           │   ├── V1__init_schema.sql
-│           │   ├── V2__create_eo_order_item.sql
-│           │   ├── V3__optimize_indexes_and_migrate_orders.sql
-│           │   ├── R__seed_categories.sql
-│           │   ├── R__seed_message_templates.sql
-│           │   └── R__seed_payment_config.sql
+│           │   ├── V1__init_schema.sql              # 完整 DDL（合并原 V1~V6）
+│           │   ├── R__seed_categories.sql           # 分类种子数据（含二级）
+│           │   ├── R__seed_message_templates.sql    # 消息模板种子数据
+│           │   └── R__seed_payment_config.sql       # 支付渠道配置
 │           └── dev/                           # 开发环境数据
 │               └── R__insert_dev_test_data.sql
 └── src/test/java/
@@ -114,9 +112,14 @@ easyorange-application
 
 - 版本号格式: `V{N}__description.sql` (N 为递增整数)
 - DDL 放 `db/migration/`，开发数据放 `db/dev/`
-- **禁止修改已执行的迁移脚本**
+- 项目开发阶段的所有 V 迁移已合并为单个 `V1__init_schema.sql`（当前完整 DDL）
+- 后续 DDL 变更按递增版本号添加 `V{N+1}__description.sql`
+- **禁止修改已执行的迁移脚本**（生产环境原则；开发阶段若需重置，清库重跑即可）
 - 新增字段必须可空或有默认值
 - 迁移脚本中不写业务逻辑
+
+> **清库重置**：`DROP DATABASE easyorange; CREATE DATABASE easyorange;` 后重跑即可应用新 V1。
+> 因为合并后 V1 内容变更，已执行过旧 V1~V6 的数据库需要重置。
 
 ## 架构守卫测试
 

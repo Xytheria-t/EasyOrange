@@ -46,36 +46,18 @@ security:
   # BCrypt 密码加密强度（4-31）
   password-encoder-strength: 12
   
-  # XSS 防护开关
-  xss-protection-enabled: false
 ```
 
-### XSS 防护配置说明
+### CSP 安全策略说明
 
-**默认值**：`false`（关闭）
+JSON API 后端通过 `Content-Security-Policy` 响应头实现浏览器端 XSS 防御：
 
-**适用场景**：
+- 策略：`default-src 'none'; base-uri 'none'; form-action 'none'`
+- 在 `SecurityConfig` 中硬编码（无需配置项）
+- `X-XSS-Protection` 头已禁用（主流浏览器已废弃该特性）
+- 前端 SPA 页面应自行配置适当的 CSP 策略
 
-- **纯 JSON API**：建议关闭（默认）
-  - 后端不负责 XSS 防护
-  - 前端在渲染时进行转义
-  - 保持数据原样存储
-  
-- **服务端渲染应用**：建议开启
-  - 后端负责 XSS 防护
-  - 自动转义用户输入
-  - 防止 XSS 攻击
-
-**示例配置**：
-
-```yaml
-security:
-  # 纯 JSON API - 关闭 XSS 防护
-  xss-protection-enabled: false
-  
-  # 服务端渲染应用 - 开启 XSS 防护
-  # xss-protection-enabled: true
-```
+> 去掉了 `XssFilter` + `XssHttpServletRequestWrapper` 输入层转义，因为它对 JSON body 无效且容易破坏正常业务数据。
 
 ---
 
@@ -266,7 +248,7 @@ security:
     - https://app.example.com
   logout-url: /api/auth/logout
   password-encoder-strength: 12
-  xss-protection-enabled: false
+  # CSP 由 SecurityConfig 硬编码配置，无需额外配置项
 
 # JWT 配置
 jwt:
@@ -330,7 +312,7 @@ easyorange:
 
 3. **安全建议**
    - 密码加密强度建议 12-14
-   - 纯 JSON API 关闭 XSS 防护
+   - REST API 禁用 `X-XSS-Protection`（已废弃），使用 CSP 头
    - 定期更新依赖版本
 
 ---
@@ -344,7 +326,7 @@ easyorange:
 - JWT 本地缓存优化（Caffeine）
 - 自定义线程池拒绝策略
 - 自定义缓存类型转换异常
-- XSS 防护可配置开关
+- 移除 `XssFilter`，改用 `Content-Security-Policy` 响应头
 
 **改进**：
 
