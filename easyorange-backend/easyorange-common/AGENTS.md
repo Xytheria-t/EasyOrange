@@ -23,7 +23,7 @@ common/
 │   ├── FileResultCode.java  # 文件操作结果码
 │   └── LimitType.java       # 限流类型
 ├── entity/
-│   └── BaseDO.java          # 数据对象基类 (id, createTime, updateTime, delFlag, version)
+│   └── BaseDO.java          # 数据对象基类 (id, createTime, updateTime, delFlag); @Version added selectively on concurrent DOs
 ├── repository/
 │   └── BaseRepository.java  # 仓储基类 (lambdaQuery/lambdaUpdate + 常见查询模式)
 ├── idgen/

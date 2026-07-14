@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
@@ -34,4 +35,7 @@ public class PaymentConfigPO extends BaseDO {
     private Integer status;
 
     private String remark;
+
+    @Version
+    private Integer version;
 }

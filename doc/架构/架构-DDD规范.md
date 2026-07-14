@@ -153,7 +153,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 - **路由键**：由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
 - **消费者模式**：多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发），每个消费者独占队列，失败消息路由到 DLQ + 指数退避重试
 
-`[现状]` 已从 Spring EventBus + Outbox 迁移到 RabbitMQ 单点发布模式。`RabbitMQDomainEventPublisher` 为唯一实现，通过 Topic Exchange（`eo.domain.events`）+ Quorum Queue 确保可靠投递。`@ConditionalOnProperty(matchIfMissing=true)` 保留以支持无 RabbitMQ 环境启动。
+`[现状]` 已从 Spring EventBus → RabbitMQ 直发 → Spring Modulith 三级演进。`ModulithDomainEventPublisher`（`@Primary`）通过 `ApplicationEventPublisher` 代理，Spring Modulith 在 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步发布到 `eo.domain.events` Topic Exchange。at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。`@ConditionalOnProperty(matchIfMissing=true)` 保留以支持无 RabbitMQ 环境启动。
 
 ---
 

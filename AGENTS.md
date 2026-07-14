@@ -1,12 +1,12 @@
 # EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
 
-> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,269 测试 + CI/CD 全自动。**业务是刻意简化的 C2C 资产流转（固定价格、平台不碰货），工程才是核心。**
+> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + Spring Modulith 事件发布 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,275 测试 + CI/CD 全自动。**业务是刻意简化的 C2C 资产流转（固定价格、平台不碰货），工程才是核心。**
 
 EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：**DDD 六边形 + CQRS + Saga + 事件驱动 + AI 多模态**。业务载体为 C2C 固定价格资产交易（发布→AI 辅助定价/文案→审核→搜索→下单支付→WebSocket 沟通→信用评分），**2025 年 11 月启动**。
 
 > **定位**：Java 25 + Spring Boot 4 架构参考项目 — 展示 DDD/CQRS/Saga/事件驱动/AI Port/Adapter 在模块化全栈工程中的协同落地
 > **业务**：C2C 资产流转（简化场景：固定价格 + 直发 + 平台不碰货，业务不是重点）
-> **工程亮点**：DDD 六边形 + CQRS · Saga 分布式事务 · RabbitMQ 事件路由 + DLQ · LLM/Vision 多级缓存 + 限流降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,269 测试
+> **工程亮点**：DDD 六边形 + CQRS · Saga 分布式事务 · Spring Modulith 事件发布 · RabbitMQ 事件路由 + DLQ · LLM/Vision 多级缓存 + 限流降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,275 测试
 
 ## 技术栈
 
@@ -113,7 +113,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: 应用服务调用 `DomainEventPublisher` 发布事件，框架层通过 **RabbitMQ Topic Exchange** (`eo.domain.events`) 路由到各模块 `@RabbitListener` 消费者。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 9 个事件消费者**: ProductEventConsumer, OrderNotificationEventConsumer, OrderSagaEventConsumer, StockReservationEventConsumer, PaymentInitiationEventConsumer, ProductAuditEventConsumer, ReportProcessedEventConsumer, WebSocketEventConsumer, PaymentMetricsConsumer
+5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 9 个事件消费者**: ProductEventConsumer, OrderNotificationEventConsumer, OrderSagaEventConsumer, StockReservationEventConsumer, PaymentInitiationEventConsumer, ProductAuditEventConsumer, ReportProcessedEventConsumer, WebSocketEventConsumer, PaymentMetricsConsumer
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 使用 Java 21 模式匹配 switch 在单个 `handle()` 方法内按类型分发，返回动态 HTTP 状态码（按错误码前缀自动映射：A0401→401/A0403→403/B→400/C→500/D→502）+ 业务错误码；校验类错误统一返回 400。**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底。`BusinessException` 和 `FileException` 构造器均设为 `protected`，抛业务异常时统一使用 `BusinessException.of(...)` / `FileException.of(...)` 工厂方法；子类可正常调用 `super(...)`。各模块领域异常必须使用模块专属 `ResultCode`（如 `ProductResultCode.PRODUCT_NOT_FOUND`），**禁止回退到全局 `B0002`**
@@ -215,7 +215,7 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
-- **测试统计**：后端 11 模块合计 1,278 测试用例，全部通过；前端 100 测试文件/952 测试用例
+- **测试统计**：后端 11 模块合计 1,275 测试用例，全部通过；前端 100 测试文件/952 测试用例
 - **前端组件规范**：表单/按钮统一使用 shadcn/ui（Button、Input、Label、Checkbox、Switch、Select、Textarea、RadioGroup），禁止保留原生 `<button>` / `<input>` / `<textarea>` / `<select>`；导入优先走 `@/components/ui`，颜色/边框硬编码应提取到 `src/styles/tokens.css`；CSS reset 必须置于 `@layer base` 避免覆盖 Tailwind utilities；生产代码禁止 `console.log` / `console.warn` / `console.error`
 - **前端表单校验**：所有包含显式校验逻辑的表单（登录/注册/发布/密码修改等），必须使用 `react-hook-form` + `zod` + `@hookform/resolvers` 方案，禁止手写 `useState` + 自定义 `validate` 函数。Zod schema 统一放在 `src/schemas/` 目录下，`.default()` 禁止使用（默认值通过 `useForm` 的 `defaultValues` 设置以保持类型推导正确）。`reValidateMode` 统一设为 `'onChange'` 使得首次提交后输入即时清除错误。管理端搜索/筛选类简单表单（如 CategoryManagePage）无需迁移
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`

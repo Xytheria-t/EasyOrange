@@ -275,3 +275,22 @@ easyorange:
       fail-open: true
     budget:
       enabled: true
+
+---
+# -------------------------------------------------------------------
+# Spring Modulith 事件发布注册表 (Transactional Outbox)
+# -------------------------------------------------------------------
+spring:
+  modulith:
+    events:
+      jdbc-schema-initialization:
+        enabled: false            # 由 Flyway 管理
+      republish-outstanding-events-on-restart: true
+      completion-mode: update     # 完成后更新 COMPLETION_DATE，不删除
+      externalization:
+        enabled: true
+        serialize-externalization: true
+      staleness:
+        published: PT5M           # PUBLISHED 超过 5 分钟标记为 FAILED
+        processing: PT10M         # PROCESSING 超过 10 分钟标记为 FAILED
+        check-interval: PT1M      # 每分钟检查一次

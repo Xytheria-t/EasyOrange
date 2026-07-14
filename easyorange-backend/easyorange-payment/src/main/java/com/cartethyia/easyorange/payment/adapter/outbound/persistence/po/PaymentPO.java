@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence.po;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -40,4 +41,7 @@ public class PaymentPO extends BaseDO {
     private LocalDateTime refundTime;
 
     private String attach;
+
+    @Version
+    private Integer version;
 }

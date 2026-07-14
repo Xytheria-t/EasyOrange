@@ -7,14 +7,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
-@Primary
 @RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
+@Deprecated
 public class RabbitMQDomainEventPublisher implements DomainEventPublisher {
 
     private final RabbitTemplate rabbitTemplate;

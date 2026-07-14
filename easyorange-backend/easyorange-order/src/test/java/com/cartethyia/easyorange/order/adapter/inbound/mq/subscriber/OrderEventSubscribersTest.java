@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.mq.subscriber;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.order.domain.event.*;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,9 @@ class OrderEventSubscribersTest {
         @Mock
         private ProductInventoryPort productInventoryPort;
 
+        @Mock
+        private EventIdempotencyChecker idempotencyChecker;
+
         private OrderSagaEventConsumer consumer;
 
         @Captor
@@ -45,7 +49,10 @@ class OrderEventSubscribersTest {
 
         @BeforeEach
         void setUp() {
-            consumer = new OrderSagaEventConsumer(domainEventPublisher, productInventoryPort);
+            // Allow idempotency check to pass through (fail-open: returns true when Redis unavailable)
+            when(idempotencyChecker.isDuplicate(anyString(), anyString())).thenReturn(false);
+            when(idempotencyChecker.tryMark(anyString(), anyString())).thenReturn(true);
+            consumer = new OrderSagaEventConsumer(idempotencyChecker, domainEventPublisher, productInventoryPort);
         }
 
         @Test

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.event;
 
+import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.order.domain.event.PaymentInitiationRequestedEvent;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
@@ -17,12 +18,19 @@ import org.springframework.stereotype.Component;
 public class PaymentInitiationEventConsumer {
 
     private final PaymentCommandHandler paymentCommandHandler;
+    private final EventIdempotencyChecker idempotencyChecker;
 
     @RabbitListener(
         queues = RabbitMQConfig.QUEUE_PAYMENT_INITIATION,
         containerFactory = "domainEventContainerFactory"
     )
     public void onPaymentInitiationRequested(PaymentInitiationRequestedEvent event) {
+        String eventId = "PaymentInitiation:" + event.orderId();
+        if (!tryAcquireLock("PaymentInitiation", eventId)) {
+            log.info("跳过重复的支付发起事件: {}", eventId);
+            return;
+        }
+
         log.info("收到支付发起请求: orderId={}, amount={}", event.orderId(), event.amount());
 
         try {
@@ -40,5 +48,12 @@ public class PaymentInitiationEventConsumer {
             log.error("支付创建失败: orderId={}", event.orderId(), e);
             throw e;
         }
+    }
+
+    private boolean tryAcquireLock(String eventType, String eventId) {
+        if (idempotencyChecker.isDuplicate(eventType, eventId)) {
+            return false;
+        }
+        return idempotencyChecker.tryMark(eventType, eventId);
     }
 }

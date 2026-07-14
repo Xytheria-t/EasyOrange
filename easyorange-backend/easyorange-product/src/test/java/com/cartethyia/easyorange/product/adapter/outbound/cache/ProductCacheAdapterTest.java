@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.framework.bloom.RedisBitmapBloomFilter;
+import com.cartethyia.easyorange.framework.bloom.BloomFilter;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ class ProductCacheAdapterTest {
     private MultiLevelCache multiLevelCache;
 
     @Mock
-    private RedisBitmapBloomFilter bloomFilter;
+    private BloomFilter bloomFilter;
 
     private ProductCacheAdapter cacheAdapter;
 

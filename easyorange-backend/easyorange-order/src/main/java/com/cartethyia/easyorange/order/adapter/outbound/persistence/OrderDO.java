@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,4 +32,7 @@ public class OrderDO extends BaseDO {
     private String remark;
     private String cancelReason;
     private LocalDateTime cancelTime;
+
+    @Version
+    private Integer version;
 }

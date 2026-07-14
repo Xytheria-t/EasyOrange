@@ -61,7 +61,7 @@ product、order、payment 模块使用 CQRS：
 
 ## 领域事件机制
 
-应用服务注入 `DomainEventPublisher` 发布事件，框架层通过 RabbitMQ Topic Exchange 分发：
+应用服务注入 `DomainEventPublisher` 发布事件，框架层通过 Spring Modulith + RabbitMQ Topic Exchange 分发：
 
 ```java
 // 应用服务
@@ -69,12 +69,14 @@ private final DomainEventPublisher eventPublisher;
 eventPublisher.publish(new SomeEvent(...));
 ```
 
-- `RabbitMQDomainEventPublisher`（`@Primary`）将事件发布到 `eo.domain.events` Topic Exchange
+- `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`，Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子）
+- 事务提交后，Modulith 异步从 `EVENT_PUBLICATION` 读取并发布到 `eo.domain.events` Topic Exchange
 - 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
 - 每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
 - 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发，非轮询竞争）
 - 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（9 个消费者，见根目录 AGENTS.md）
 - `@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
+- Modulith at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理
 
 ## 跨模块通信
 
@@ -147,10 +149,10 @@ public class BaseDO {
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-    @TableLogic(value = "0", delval = "2")
+    @TableLogic(value = "0", delval = "1")
     private Integer delFlag;
-    @Version
-    private Integer version;
+    // version 乐观锁不在 BaseDO 中统一声明，
+    // 按需添加到有并发写冲突风险的 DO 上（ProductDO、OrderDO、PaymentPO 等）
 }
 ```
 

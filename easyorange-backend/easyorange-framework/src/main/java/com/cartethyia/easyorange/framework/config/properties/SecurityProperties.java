@@ -7,7 +7,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 @Data
@@ -20,12 +19,6 @@ public class SecurityProperties {
     private List<String> allowedOrigins = new ArrayList<>();
     private String logoutUrl = "/api/auth/logout";
     private int passwordEncoderStrength = 10;
-    
-    /**
-     * 管理员用户类型代码列表
-     * 默认值: ["00", "02"] (超级管理员和管理员)
-     */
-    private Set<String> adminUserTypes = Set.of("00", "02");
 
     @PostConstruct
     public void validate() {
@@ -46,8 +39,8 @@ public class SecurityProperties {
         } else if (passwordEncoderStrength > 14) {
             log.warn("⚠️ 警告：密码加密强度 {} 较高，可能影响登录性能", passwordEncoderStrength);
         }
-        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}, 管理员类型：{}",
-                logoutUrl, passwordEncoderStrength, adminUserTypes);
+        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}",
+                logoutUrl, passwordEncoderStrength);
     }
 
     private void validatePaths(String name, List<String> paths) {
@@ -61,10 +54,4 @@ public class SecurityProperties {
     public List<String> getStaticPaths() { return List.copyOf(staticPaths); }
     public List<String> getAllowedOrigins() { return List.copyOf(allowedOrigins); }
     
-    /**
-     * 判断用户类型是否为管理员
-     */
-    public boolean isAdminUserType(String userType) {
-        return adminUserTypes.contains(userType);
-    }
 }

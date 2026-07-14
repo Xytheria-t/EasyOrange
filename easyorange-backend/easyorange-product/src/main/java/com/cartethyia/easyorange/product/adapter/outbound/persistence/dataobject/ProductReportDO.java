@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -27,4 +28,7 @@ public class ProductReportDO extends BaseDO {
     private Integer status;
 
     private String handleResult;
+
+    @Version
+    private Integer version;
 }

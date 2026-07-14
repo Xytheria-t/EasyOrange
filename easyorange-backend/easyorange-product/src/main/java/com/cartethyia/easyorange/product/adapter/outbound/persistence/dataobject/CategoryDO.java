@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 
 @TableName("eo_category")
@@ -12,6 +13,9 @@ public class CategoryDO extends BaseDO {
     private String icon;
     private Integer sortOrder;
     private Integer status;
+
+    @Version
+    private Integer version;
 
     public CategoryDO() {
     }
@@ -73,6 +77,14 @@ public class CategoryDO extends BaseDO {
         this.status = status;
     }
 
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -84,6 +96,7 @@ public class CategoryDO extends BaseDO {
         private String icon;
         private Integer sortOrder;
         private Integer status;
+        private Integer version;
 
         public Builder name(String name) {
             this.name = name;
@@ -112,6 +125,11 @@ public class CategoryDO extends BaseDO {
 
         public Builder status(Integer status) {
             this.status = status;
+            return this;
+        }
+
+        public Builder version(Integer version) {
+            this.version = version;
             return this;
         }
 

@@ -11,10 +11,10 @@ application/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
-│       │   │   ├── PaymentInitiationEventListener.java
-│       │   │   ├── ProductAuditEventListener.java
-│       │   │   ├── ReportProcessedEventListener.java
-│       │   │   └── StockReservationEventListener.java
+│   │   │   ├── PaymentInitiationEventConsumer.java
+│   │   │   ├── ProductAuditEventConsumer.java
+│   │   │   ├── ReportProcessedEventConsumer.java
+│   │   │   └── StockReservationEventConsumer.java
 │       │   ├── inbound/web/controller/  # Web 控制器
 │       │   │   ├── AiController.java                  # AI 服务端点
 │       │   │   ├── CreditScoreController.java         # 信用分数端点
@@ -163,17 +163,17 @@ easyorange-application
 | `ElasticsearchProductSearchIndexAdapter` | 索引写入适配器（`@ConditionalOnProperty` 激活） |
 | `ElasticsearchProductSearchQueryAdapter` | 索引查询适配器（分类/价格/成色分面聚合） |
 
-`adapter/event/` 目录存放跨模块事件监听器：
+`adapter/event/` 目录存放跨模块事件消费者（通过 Spring Modulith 的 EVENT_PUBLICATION 表持久化后异步分发到 RabbitMQ）：
 
-| 监听器 | 事件 | 功能 |
+| 消费者 | 事件 | 功能 |
 |--------|------|------|
 | `OrderNotificationEventConsumer` | `OrderCreatedEvent` 等 6 个订单事件 | 订单状态变更→站内消息通知 |
-| `PaymentInitiationEventListener` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
-| `ProductAuditEventListener` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
-| `ReportProcessedEventListener` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
-| `StockReservationEventListener` | `StockReservationRequestedEvent` | 扣减库存 |
+| `PaymentInitiationEventConsumer` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
+| `ProductAuditEventConsumer` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
+| `ReportProcessedEventConsumer` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
+| `StockReservationEventConsumer` | `StockReservationRequestedEvent` | 扣减库存 |
 
-所有事件监听器使用 `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` + `@Async("domainEventExecutor")` 模式，确保事务提交后异步处理。
+所有事件消费者使用 `@RabbitListener` + `EventIdempotencyChecker` 模式，通过 Modulith at-least-once 语义 + 幂等去重实现精确一次处理。
 
 ## 常见开发任务
 

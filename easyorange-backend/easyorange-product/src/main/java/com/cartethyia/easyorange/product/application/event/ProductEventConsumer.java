@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.event;
 
-import com.cartethyia.easyorange.framework.bloom.RedisBitmapBloomFilter;
+import com.cartethyia.easyorange.framework.bloom.BloomFilter;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
@@ -34,7 +34,7 @@ public class ProductEventConsumer {
     private final ProductQueryService productQueryService;
     private final Optional<ProductNotificationPort> notificationPort;
     private final Optional<ProductSearchIndexPort> searchIndexPort;
-    private final RedisBitmapBloomFilter bloomFilter;
+    private final BloomFilter bloomFilter;
 
     @RabbitHandler
     public void onProductCreated(ProductCreatedEvent event) {

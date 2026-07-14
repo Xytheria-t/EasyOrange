@@ -3,15 +3,12 @@ package com.cartethyia.easyorange.framework.bloom;
 import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
-import org.springframework.stereotype.Component;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Component
 public class RedisBitmapBloomFilter implements BloomFilter {
 
     private static final String BLOOM_PUT_SCRIPT = """
@@ -49,7 +46,6 @@ public class RedisBitmapBloomFilter implements BloomFilter {
     private final long bitSize;
     private final int numHashFunctions;
 
-    @Autowired
     public RedisBitmapBloomFilter(RedisCache redisCache) {
         this(redisCache, 1_000_000L, 0.01);
     }
@@ -81,10 +77,9 @@ public class RedisBitmapBloomFilter implements BloomFilter {
     }
 
     private long[] hash(String element) {
-        var hash = MURMUR3_128.hashString(element, StandardCharsets.UTF_8);
-        byte[] bytes = hash.asBytes();
-        long h1 = ByteBuffer.wrap(bytes).getLong() & Long.MAX_VALUE;
-        long h2 = ByteBuffer.wrap(bytes, 8, 8).getLong() & Long.MAX_VALUE;
+        var buf = ByteBuffer.wrap(MURMUR3_128.hashString(element, StandardCharsets.UTF_8).asBytes());
+        long h1 = buf.getLong() & Long.MAX_VALUE;
+        long h2 = buf.getLong() & Long.MAX_VALUE;
 
         long[] offsets = new long[numHashFunctions];
         for (int i = 0; i < numHashFunctions; i++) {

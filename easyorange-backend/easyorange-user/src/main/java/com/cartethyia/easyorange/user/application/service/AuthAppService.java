@@ -7,11 +7,14 @@ import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
+
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,8 +37,11 @@ public class AuthAppService {
     @Transactional(rollbackFor = Exception.class)
     public LoginContext login(LoginCredential credential) {
         User user = authenticationService.authenticate(credential, RequestUtil.getClientIp());
-        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getCode());
-        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getUserType().getCode());
+        List<String> authorities = user.getUserType().isAdmin()
+                ? List.of("ROLE_ADMIN", "ROLE_USER")
+                : List.of("ROLE_USER");
+        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), authorities);
+        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), authorities);
         return new LoginContext(user, accessToken, refreshToken);
     }
 

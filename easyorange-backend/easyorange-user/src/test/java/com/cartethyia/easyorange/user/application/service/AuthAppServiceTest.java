@@ -22,6 +22,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -101,9 +103,9 @@ class AuthAppServiceTest {
                 .build();
             when(authenticationService.authenticate(any(LoginCredential.class), anyString()))
                 .thenReturn(user);
-            when(tokenService.createAccessToken(USER_ID, USERNAME, "01"))
+            when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("access-token");
-            when(tokenService.createRefreshToken(USER_ID, USERNAME, "01"))
+            when(tokenService.createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("refresh-token");
 
             var result = service.login(credential);
@@ -112,8 +114,8 @@ class AuthAppServiceTest {
             assertThat(result.user().getId()).isEqualTo(USER_ID);
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
-            verify(tokenService).createAccessToken(USER_ID, USERNAME, "01");
-            verify(tokenService).createRefreshToken(USER_ID, USERNAME, "01");
+            verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
+            verify(tokenService).createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER"));
         }
 
         @Test
@@ -130,9 +132,9 @@ class AuthAppServiceTest {
                 .build();
             when(authenticationService.authenticate(any(LoginCredential.class), anyString()))
                 .thenReturn(user);
-            when(tokenService.createAccessToken(USER_ID, USERNAME, "01"))
+            when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("access-token");
-            when(tokenService.createRefreshToken(USER_ID, USERNAME, "01"))
+            when(tokenService.createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("refresh-token");
 
             var result = service.login(credential);
@@ -141,8 +143,8 @@ class AuthAppServiceTest {
             assertThat(result.user().getId()).isEqualTo(USER_ID);
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
-            verify(tokenService).createAccessToken(USER_ID, USERNAME, "01");
-            verify(tokenService).createRefreshToken(USER_ID, USERNAME, "01");
+            verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
+            verify(tokenService).createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER"));
         }
     }
 

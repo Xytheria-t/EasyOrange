@@ -8,7 +8,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum DelFlag {
     NORMAL("0", "未删除"),
-    DELETED("2", "已删除");
+    DELETED("1", "已删除");
 
     @JsonValue
     private final String code;

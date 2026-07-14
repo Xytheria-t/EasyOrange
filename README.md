@@ -25,7 +25,7 @@
 |---|---|---|
 | 模块解耦 | 11 Maven 模块 | DDD 六边形 + 端口-适配器，全编译期隔离 |
 | 跨模块 ACL | 7 对 Port/Adapter | `<optional>true</optional>` 编译期强制 |
-| 测试守卫 | 1,269 后端 + 945 前端 = **2,214 用例** | 单元 + ArchUnit 架构守卫 |
+| 测试守卫 | 1,275 后端 + 945 前端 = **2,220 用例** | 单元 + ArchUnit 架构守卫 |
 | 事件驱动 | 9 RabbitMQ 消费者 + DLQ | Topic Exchange + 指数退避重试 |
 | AI 工程化 | 6 决策点 + 6 工程化能力 | Port 抽象 + 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化 + Token 预算治理** |
 | 数据规模 | 30 张表 + Flyway | 完整种子数据 + 不可变 V 迁移 |
@@ -283,7 +283,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + Biome (前端, 替代 ESLint + Prettier)
-- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (945 用例)
+- 测试: 后端 JUnit 5 (1,275 用例) + 前端 Vitest/Playwright (945 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南

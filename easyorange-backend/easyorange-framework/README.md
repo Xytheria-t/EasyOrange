@@ -87,7 +87,7 @@ public class Application {
 | 组件 | 说明 |
 |------|------|
 | `UuidV7IdGenerator` | UUID v7 (RFC 9562)，`@Primary` 主实现，零配置 |
-| `ConsistentHashRouter` | 一致性哈希路由（200 虚拟节点/物理节点，MD5 哈希） |
+
 
 ### 事件组件
 

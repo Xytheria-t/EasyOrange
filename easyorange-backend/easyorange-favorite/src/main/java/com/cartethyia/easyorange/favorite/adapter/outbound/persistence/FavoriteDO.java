@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.favorite.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,6 +15,9 @@ public class FavoriteDO extends BaseDO {
 
     private String userId;
     private String productId;
+
+    @Version
+    private Integer version;
 
     public FavoriteDO() {}
 

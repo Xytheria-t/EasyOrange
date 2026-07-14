@@ -10,3 +10,5 @@ com.cartethyia.easyorange.framework.config.cache.LocalCacheConfig
 com.cartethyia.easyorange.framework.config.idgen.IdGeneratorConfig
 com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig
 com.cartethyia.easyorange.framework.metrics.MetricsConfig
+com.cartethyia.easyorange.framework.config.bloom.BloomFilterConfig
+com.cartethyia.easyorange.framework.messaging.config.EventExternalizationConfig

@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -37,7 +39,7 @@ public class TokenServiceImpl implements TokenService {
     private final JwtProperties jwtProperties;
 
     @Override
-    public String createAccessToken(String userId, String username, String userType) {
+    public String createAccessToken(String userId, String username, Collection<String> authorities) {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
                 .issuer(jwtProperties.getIssuer())
@@ -47,13 +49,13 @@ public class TokenServiceImpl implements TokenService {
                 .claim("jti", jti)
                 .claim("type", ACCESS_TOKEN_TYPE)
                 .claim("username", username != null ? username : "")
-                .claim("userType", userType != null ? userType : "")
+                .claim("authorities", authorities != null ? List.copyOf(authorities) : List.of())
                 .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
     @Override
-    public String createRefreshToken(String userId, String username, String userType) {
+    public String createRefreshToken(String userId, String username, Collection<String> authorities) {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
                 .issuer(jwtProperties.getIssuer())
@@ -63,7 +65,7 @@ public class TokenServiceImpl implements TokenService {
                 .claim("jti", jti)
                 .claim("type", REFRESH_TOKEN_TYPE)
                 .claim("username", username != null ? username : "")
-                .claim("userType", userType != null ? userType : "")
+                .claim("authorities", authorities != null ? List.copyOf(authorities) : List.of())
                 .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
@@ -118,10 +120,13 @@ public class TokenServiceImpl implements TokenService {
         invalidateToken(refreshToken);
 
         String username = jwt.getClaimAsString("username");
-        String userType = jwt.getClaimAsString("userType");
+        List<String> authorities = jwt.getClaimAsStringList("authorities");
+        if (authorities == null) {
+            authorities = List.of();
+        }
 
-        String newAccessToken = createAccessToken(userId, username, userType);
-        String newRefreshToken = createRefreshToken(userId, username, userType);
+        String newAccessToken = createAccessToken(userId, username, authorities);
+        String newRefreshToken = createRefreshToken(userId, username, authorities);
 
         return new TokenRefreshResult(newAccessToken, newRefreshToken);
     }

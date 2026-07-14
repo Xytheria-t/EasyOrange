@@ -7,7 +7,7 @@
 | 数据库 | MySQL 8.4 (LTS) |
 | 字符集 | utf8mb4 / utf8mb4_0900_ai_ci |
 | 主键策略 | UUID v7（VARCHAR(36)），全库所有 ID 字段统一使用 UUID v7（RFC 9562） |
-| 逻辑删除 | del_flag TINYINT（0 正常 / 2 删除） |
+| 逻辑删除 | del_flag TINYINT（0 正常 / 1 删除） |
 | 乐观锁 | version INT DEFAULT 0 |
 | 时间精度 | 业务表 DATETIME，基础设施表 DATETIME(3) |
 | 外键 | 无物理外键，通过应用层保证一致性 |
@@ -43,7 +43,7 @@
 | 消息 | eo_offline_message | 离线消息 | OfflineMessage |
 | 文件 | eo_upload_file | 文件上传记录 | UploadFile |
 | 审计 | eo_audit_log | 审计日志 | AuditLog |
-| 事件 | eo_domain_event | 领域事件（Outbox，已废弃） | — |
+| 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | V3 |
 | 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
 | 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyPO |
 
@@ -57,10 +57,10 @@
 | update_time | DATETIME | CURRENT_TIMESTAMP ON UPDATE | 更新时间 |
 | create_by | VARCHAR(36) | NULL | 创建人 ID |
 | update_by | VARCHAR(36) | NULL | 更新人 ID |
-| del_flag | TINYINT | 0 | 逻辑删除（0 正常 / 2 删除） |
+| del_flag | TINYINT | 0 | 逻辑删除（0 正常 / 1 删除） |
 | version | INT | 0 | 乐观锁版本号 |
 
-基础设施表（eo_domain_event / eo_saga_status / eo_idempotency_key）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
+基础设施表（eo_saga_status / eo_idempotency_key / EVENT_PUBLICATION）使用 created_at / updated_at 时间字段，精度为毫秒 DATETIME(3)。
 
 归档表（eo_message_archive）无 del_flag / version，使用 archived_at 记录归档时间。
 
@@ -666,9 +666,9 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 
 ---
 
-### 22. eo_domain_event — 领域事件表（已废弃）
+### 22. eo_domain_event — 领域事件表（已删除）
 
-> **注意**：此表在 V1 初始化时创建，用于 Outbox 模式。当前已迁移到 RabbitMQ-only 模式，此表不再写入或读取。计划在后续迁移脚本中清理。
+> **注意**：此表在 V1 初始化时创建，用于 Outbox 模式。已通过 Flyway V4 在 2026-07-14 清理（`DROP TABLE IF EXISTS eo_domain_event`）。当前使用 Spring Modulith 的 `EVENT_PUBLICATION` 表代替。
 
 | 字段 | 类型 | 约束 | 说明 |
 |------|------|------|------|
@@ -691,6 +691,8 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | idx_eo_domain_event_aggregate | KEY | aggregate_type, aggregate_id |
 | idx_eo_domain_event_status_created | KEY | status, created_at |
 | idx_eo_domain_event_event_type | KEY | event_type |
+
+**替代实现**：Spring Modulith 的 `EVENT_PUBLICATION` 表（V3 迁移脚本创建）—— ModulithDomainEventPublisher 在应用事务中写入该表，提交后异步读取并发布到 RabbitMQ，实现 at-least-once 语义。
 
 ---
 

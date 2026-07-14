@@ -47,7 +47,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 @AutoConfiguration
 @EnableWebSecurity
@@ -172,13 +172,17 @@ public class SecurityConfig {
                 throw new BadJwtException("Refresh token not allowed for API access");
             }
 
-            String userType = jwt.getClaimAsString("userType");
-            boolean isAdmin = securityProperties.isAdminUserType(userType);
-
-            List<SimpleGrantedAuthority> authorities = isAdmin
-                    ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"), new SimpleGrantedAuthority("ROLE_USER"))
-                    : List.of(new SimpleGrantedAuthority("ROLE_USER"));
-            Set<String> roles = isAdmin ? Set.of("ADMIN", "USER") : Set.of("USER");
+            List<String> authorityStrings = jwt.getClaimAsStringList("authorities");
+            if (authorityStrings == null) {
+                authorityStrings = List.of();
+            }
+            var authorities = authorityStrings.stream()
+                    .map(SimpleGrantedAuthority::new)
+                    .toList();
+            var roles = authorityStrings.stream()
+                    .filter(a -> a.startsWith("ROLE_"))
+                    .map(a -> a.substring(5))
+                    .collect(Collectors.toSet());
 
             var user = AuthUser.builder()
                     .userId(jwt.getSubject())

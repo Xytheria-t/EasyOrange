@@ -119,6 +119,18 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Spring Modulith Events API (for programmatic event externalization config) -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-events-api</artifactId>
+        </dependency>
+
+        <!-- Spring Modulith AMQP externalization (runtime-only, delegates to RabbitTemplate) -->
+        <dependency>
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-events-amqp</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
     </dependencies>
 

@@ -1,15 +1,10 @@
 package com.cartethyia.easyorange.framework.cache;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.github.benmanes.caffeine.cache.Cache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 public class MultiLevelCache {
-
-    private static final Logger log = LoggerFactory.getLogger(MultiLevelCache.class);
 
     private final Cache<String, Object> l1Cache;
     private final RedisCache redisCache;
@@ -40,21 +35,18 @@ public class MultiLevelCache {
     public <T> T get(String key, Class<T> type, CacheLoader<T> loader) {
         Object l1Value = l1Cache.getIfPresent(key);
         if (l1Value != null) {
-            log.trace("action=mlc_hit_l1 key={}", key);
             return (T) l1Value;
         }
 
         String l2Key = buildL2Key(key);
         T l2Value = redisCache.get(l2Key, type);
         if (l2Value != null) {
-            log.trace("action=mlc_hit_l2 key={}", key);
             l1Cache.put(key, l2Value);
             return l2Value;
         }
 
         T source = loader.load();
         if (source != null) {
-            log.trace("action=mlc_miss_load key={}", key);
             redisCache.set(l2Key, source, l2DefaultTimeout, l2DefaultUnit);
             l1Cache.put(key, source);
         }
@@ -74,20 +66,8 @@ public class MultiLevelCache {
         redisCache.set(buildL2Key(key), value, l2DefaultTimeout, l2DefaultUnit);
     }
 
-    public void evictL1(String key) {
-        l1Cache.invalidate(key);
-    }
-
     public void evictL2(String key) {
         redisCache.delete(buildL2Key(key));
-    }
-
-    public void clear() {
-        l1Cache.invalidateAll();
-    }
-
-    public Cache<String, Object> getL1Cache() {
-        return l1Cache;
     }
 
     private String buildL2Key(String key) {

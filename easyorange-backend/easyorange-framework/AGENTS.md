@@ -20,6 +20,8 @@ framework/
 │   │   ├── ThreadPoolConfig.java
 │   │   ├── JacksonConfig.java
 │   │   └── LoggingRejectedExecutionHandler.java
+│   ├── bloom/                    # 布隆过滤器
+│   │   └── BloomFilterConfig.java
 │   ├── cache/                    # 本地缓存 (Caffeine)
 │   │   └── LocalCacheConfig.java
 │   ├── constant/                 # 配置常量 (缓存 key 约定等)
@@ -38,7 +40,7 @@ framework/
 │   │   ├── IdempotencyProperties.java  # 幂等 key 配置（前缀、默认 TTL、开关）
 │   │   ├── AuditLogProperties.java
 │   │   ├── RateLimitFilterProperties.java
-│   │   ├── SecurityProperties.java       # 安全配置（含 adminUserTypes 管理员类型）
+│   │   ├── SecurityProperties.java       # 安全配置（ignorePaths / CORS / 密码强度）
 │   │   ├── ThreadPoolProperties.java
 │   │   └── WebMvcProperties.java
 │   ├── redis/                    # Redis 配置
@@ -69,9 +71,6 @@ framework/
 │   └── storage/
 │       ├── FileStorage.java
 │       └── LocalFileStorage.java
-├── hash/                    # 一致性哈希 (分布式路由)
-│   ├── Node.java                 # 节点接口
-│   └── ConsistentHashRouter.java # 虚拟节点 TreeMap 路由 (MD5 哈希)
 ├── idgen/                   # 分布式 ID 生成器
 │   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现（实现 common.idgen.IdGenerator）
 ├── messaging/               # RabbitMQ 消息队列
@@ -79,7 +78,8 @@ framework/
 │   │   ├── RabbitMQConfig.java
 │   │   └── RabbitMQProperties.java
 │   ├── core/                      # 核心消息发布
-│   │   ├── RabbitMQDomainEventPublisher.java
+│   │   ├── ModulithDomainEventPublisher.java  # @Primary 新发布器（代理到 ApplicationEventPublisher）
+│   │   ├── RabbitMQDomainEventPublisher.java  # [已废弃，@Deprecated] 旧发布器
 │   │   └── RoutingKeyResolver.java
 │   └── reliability/               # 可靠投递 (Confirm/Return)
 │       ├── ConfirmCallback.java
@@ -131,16 +131,18 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 1. `BearerTokenAuthenticationFilter` (Spring Security 内置) 从 `Authorization: Bearer xxx` 提取 Token
 2. 自定义 `JwtDecoder` (SecurityConfig bean) 验证签名 (Nimbus) + 黑名单检查 (Redis) + 强制登出检查 (Redis)
-3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，通过 `SecurityProperties.isAdminUserType()` 判定管理员角色，构造 `AuthUser` 并设置 `SecurityContext`
+3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，从 `"authorities"` claim 读取权限列表，构造 `AuthUser` 并设置 `SecurityContext`
 4. `TokenService.createAccessToken()` / `createRefreshToken()` 使用 `JwtEncoder` (NimbusJwtEncoder) 答发
 5. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
 6. `WebSocketAuthInterceptor` 复用 `JwtDecoder` bean 做连接握手认证
 
-> **管理员判定配置化**：管理员类型代码通过 `SecurityProperties.adminUserTypes` 配置（默认 `Set.of("00", "02")`），可在 `application.yaml` 的 `security.admin-user-types` 覆盖。
+> **管理员判定**：在 `AuthAppService.login()` 中通过 `UserType.isAdmin()` 决议 `UserType → authorities`，将 `["ROLE_ADMIN", "ROLE_USER"]` 或 `["ROLE_USER"]` 写入 JWT 的 `"authorities"` claim。资源服务器直接读取该 claim，无需重新判定。
 
 ### 领域事件发布流程
 
-业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `RabbitMQDomainEventPublisher`（`@Primary`）发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。传递时通过 `@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
+业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`。Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步读取并发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。`@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
+
+旧发布器 `RabbitMQDomainEventPublisher` 已废弃（`@Deprecated`），作为回退保留。
 
 ### Redis 缓存抽象
 
@@ -217,14 +219,6 @@ multiLevelCache.evict("product:detail:" + id);
 
 已移除 Snowflake 备选（`SnowflakeIdGenerator` / `WorkerIdProvider` / `RedisWorkerIdProvider`），UUID v7 零配置零依赖，无需任何配置属性即可使用。
 
-### 一致性哈希 (hash/)
-
-```java
-List<RedisNode> nodes = List.of(new RedisNode("node-1"), new RedisNode("node-2"));
-var router = new ConsistentHashRouter<>(nodes, 200);  // 200 虚拟节点/物理节点
-RedisNode target = router.route("some-cache-key");
-```
-
 ### 统一响应包装
 
 `ResponseAdvice` 自动将 Controller 返回值包装为 `Result<T>`，无需手动包装。
@@ -271,7 +265,6 @@ public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request
 - **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量
 - **RedisConfig 使用 `GenericJacksonJsonRedisSerializer`（Spring Data Redis 4.x 原生 Jackson 3 支持）**：注入 Spring Boot 自动配置的 Jackson 3 `ObjectMapper`，序列化策略与 HTTP 一致（Long→String）。不再需要 Jackson 2.x 的 `GenericJackson2JsonRedisSerializer`
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类
-- **`@Component` 多构造器必须标注 `@Autowired`**：`MultiLevelCache` 和 `RedisBitmapBloomFilter` 都有多个构造器（默认参数 + 自定义参数），且无默认无参构造器。`@Component` 扫描时 Spring 无法自动选择构造器，必须在主构造器上加 `@Autowired` 明确指示。新增 `@Component` 类时有多个构造器时遵循此模式
 - **`@Idempotent` 幂等切面（`IdempotencyAspect`）**：`@Order(1)`，在 `RateLimitFilter(0)` 之后、`AuditLogAspect(3)` 之前执行。此顺序确保：① Filter 层先做快速防重；② 幂等拦截命中后不记录审计日志（避免重复日志）；③ 只有未缓存的请求会走到业务逻辑和日志记录。修改 Aspect 的 `@Order` 值时需评估这三层的影响
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则
 - **`RateLimitFilter` 使用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：`HandlerMapping` 列表通过 `ObjectProvider` 延迟解析，而非构造器直接注入。原因是直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 Bean）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖。`ObjectProvider` 在请求时才解析 HandlerMapping，打破循环。修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入
