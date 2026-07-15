@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -22,66 +23,59 @@ class LocalFileStorageTest {
         properties.setPath(tempDir.toString());
         properties.setUrlPrefix("/api/file/");
         storage = new LocalFileStorage(properties);
-        storage.init(); // initialize @PostConstruct
+        storage.init();
     }
 
     @Test
     void store_shouldSaveFileAndReturnIdentifier() throws Exception {
-        byte[] content = "test image content".getBytes();
-
-        String identifier = storage.store(content, "test.jpg", "image/jpeg");
+        var content = "test image content".getBytes();
+        var identifier = storage.store(content, "test.jpg", "image/jpeg");
 
         assertNotNull(identifier);
         assertTrue(identifier.endsWith(".jpg"));
         assertTrue(identifier.contains("/"));
 
-        byte[] loaded = storage.load(identifier);
-        assertArrayEquals(content, loaded);
+        var saved = Files.readAllBytes(storage.getPath(identifier));
+        assertArrayEquals(content, saved);
     }
 
     @Test
     void store_withoutExtension_shouldDeriveFromContentType() throws Exception {
-        byte[] content = "test".getBytes();
-
-        String identifier = storage.store(content, "noext", "image/png");
-
+        var identifier = storage.store("test".getBytes(), "noext", "image/png");
         assertTrue(identifier.endsWith(".png"));
     }
 
     @Test
     void store_withUnknownContentType_shouldUseBinExtension() throws Exception {
-        byte[] content = "binary data".getBytes();
-
-        String identifier = storage.store(content, "data", "application/octet-stream");
-
+        var identifier = storage.store("binary data".getBytes(), "data", "application/octet-stream");
         assertTrue(identifier.endsWith(".bin"));
     }
 
     @Test
-    void load_withStoredFile_shouldReturnContent() throws Exception {
-        byte[] content = "hello world".getBytes();
-        String identifier = storage.store(content, "hello.txt", "text/plain");
+    void getPath_withStoredFile_shouldReturnPath() throws Exception {
+        var content = "hello world".getBytes();
+        var identifier = storage.store(content, "hello.txt", "text/plain");
 
-        byte[] loaded = storage.load(identifier);
-
-        assertArrayEquals(content, loaded);
+        var path = storage.getPath(identifier);
+        assertTrue(Files.exists(path));
+        assertArrayEquals(content, Files.readAllBytes(path));
     }
 
     @Test
-    void load_withNonExistentFile_shouldThrow() {
-        assertThrows(Exception.class, () -> storage.load("nonexistent/file.txt"));
+    void getPath_withNonExistentFile_shouldThrow() {
+        assertThrows(Exception.class, () -> storage.getPath("../etc/passwd"));
     }
 
     @Test
     void delete_shouldRemoveFile() throws Exception {
-        byte[] content = "delete me".getBytes();
-        String identifier = storage.store(content, "delete.jpg", "image/jpeg");
+        var content = "delete me".getBytes();
+        var identifier = storage.store(content, "delete.jpg", "image/jpeg");
 
-        assertNotNull(storage.load(identifier));
+        var path = storage.getPath(identifier);
+        assertTrue(Files.exists(path));
 
         storage.delete(identifier);
-
-        assertThrows(Exception.class, () -> storage.load(identifier));
+        assertFalse(Files.exists(path));
     }
 
     @Test
@@ -91,37 +85,25 @@ class LocalFileStorageTest {
 
     @Test
     void getUrl_shouldReturnPrefixedPath() {
-        String url = storage.getUrl("2026/05/17/uuid.jpg");
-        assertEquals("/api/file/2026/05/17/uuid.jpg", url);
+        assertEquals("/api/file/2026/05/17/uuid.jpg", storage.getUrl("2026/05/17/uuid.jpg"));
     }
 
     @Test
     void getUrl_shouldNormalizeBackslashes() {
-        String url = storage.getUrl("2026\\05\\17\\uuid.jpg");
-        assertEquals("/api/file/2026/05/17/uuid.jpg", url);
-    }
-
-    @Test
-    void supportsDirectUrl_shouldReturnFalse() {
-        assertFalse(storage.supportsDirectUrl());
+        assertEquals("/api/file/2026/05/17/uuid.jpg", storage.getUrl("2026\\05\\17\\uuid.jpg"));
     }
 
     @Test
     void store_generatesDateBasedDirectoryStructure() throws Exception {
-        byte[] content = "test".getBytes();
-
-        String identifier = storage.store(content, "test.jpg", "image/jpeg");
-
+        var identifier = storage.store("test".getBytes(), "test.jpg", "image/jpeg");
         assertTrue(identifier.contains("/"), "Identifier should contain date-based directory: " + identifier);
     }
 
     @Test
     void store_multipleCalls_generateDifferentIdentifiers() throws Exception {
-        byte[] content = "test".getBytes();
-
-        String id1 = storage.store(content, "test.jpg", "image/jpeg");
-        String id2 = storage.store(content, "test.jpg", "image/jpeg");
-
+        var content = "test".getBytes();
+        var id1 = storage.store(content, "test.jpg", "image/jpeg");
+        var id2 = storage.store(content, "test.jpg", "image/jpeg");
         assertNotNull(id1);
         assertNotNull(id2);
         assertNotEquals(id1, id2, "Each store should generate a unique identifier");

@@ -23,9 +23,15 @@ class JwtPropertiesTest {
     class DefaultValuesTests {
 
         @Test
-        @DisplayName("should have default secret key as empty string")
-        void secretKey_default_shouldBeEmpty() {
-            assertThat(properties.getSecretKey()).isEmpty();
+        @DisplayName("should have default private key location as empty string")
+        void privateKeyLocation_default_shouldBeEmpty() {
+            assertThat(properties.getPrivateKeyLocation()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("should have default public key location as empty string")
+        void publicKeyLocation_default_shouldBeEmpty() {
+            assertThat(properties.getPublicKeyLocation()).isEmpty();
         }
 
         @Test
@@ -64,67 +70,89 @@ class JwtPropertiesTest {
     class ValidateTests {
 
         @Test
-        @DisplayName("should throw when secret key is null")
-        void validate_withNullSecretKey_shouldThrow() {
-            properties.setSecretKey(null);
+        @DisplayName("should throw when issuer is null")
+        void validate_withNullIssuer_shouldThrow() {
+            properties.setIssuer(null);
 
             assertThatThrownBy(() -> properties.validate())
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("JWT 密钥不能为空");
+                    .hasMessageContaining("发行者");
         }
 
         @Test
-        @DisplayName("should throw when secret key is blank")
-        void validate_withBlankSecretKey_shouldThrow() {
-            properties.setSecretKey("   ");
+        @DisplayName("should throw when issuer is blank")
+        void validate_withBlankIssuer_shouldThrow() {
+            properties.setIssuer("   ");
 
             assertThatThrownBy(() -> properties.validate())
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("JWT 密钥不能为空");
+                    .hasMessageContaining("发行者");
         }
 
         @Test
-        @DisplayName("should throw when secret key is too short")
-        void validate_withShortSecretKey_shouldThrow() {
-            properties.setSecretKey("short");
+        @DisplayName("should throw when access token expiration is zero")
+        void validate_withZeroAccessTokenExpiration_shouldThrow() {
+            properties.setAccessTokenExpiration(0);
 
             assertThatThrownBy(() -> properties.validate())
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("JWT 密钥长度必须至少 32 字符");
+                    .hasMessageContaining("accessTokenExpiration");
         }
 
         @Test
-        @DisplayName("should warn but not throw for weak key")
-        void validate_withWeakKey_shouldNotThrow() {
-            properties.setSecretKey("dev-secret-key-that-is-at-least-32-characters!!");
+        @DisplayName("should throw when access token expiration is negative")
+        void validate_withNegativeAccessTokenExpiration_shouldThrow() {
+            properties.setAccessTokenExpiration(-1);
 
-            // Should not throw exception for weak key (only logs warning)
+            assertThatThrownBy(() -> properties.validate())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("accessTokenExpiration");
+        }
+
+        @Test
+        @DisplayName("should throw when refresh token expiration is zero")
+        void validate_withZeroRefreshTokenExpiration_shouldThrow() {
+            properties.setRefreshTokenExpiration(0);
+
+            assertThatThrownBy(() -> properties.validate())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("refreshTokenExpiration");
+        }
+
+        @Test
+        @DisplayName("should throw when refresh token expiration is negative")
+        void validate_withNegativeRefreshTokenExpiration_shouldThrow() {
+            properties.setRefreshTokenExpiration(-1);
+
+            assertThatThrownBy(() -> properties.validate())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("refreshTokenExpiration");
+        }
+
+        @Test
+        @DisplayName("should pass with valid configuration")
+        void validate_withValidConfig_shouldPass() {
+            properties.setIssuer("easyorange");
+            properties.setAccessTokenExpiration(30);
+            properties.setRefreshTokenExpiration(7);
+
             properties.validate();
         }
 
         @Test
-        @DisplayName("should pass with valid key")
-        void validate_withValidKey_shouldPass() {
-            properties.setSecretKey("aBcDeFgHiJkLmNoPqRsT uVwXyZ0123456789");
+        @DisplayName("should pass with empty key locations (dev auto-generate)")
+        void validate_withEmptyKeyLocations_shouldNotThrow() {
+            properties.setPrivateKeyLocation("");
+            properties.setPublicKeyLocation("");
 
-            properties.validate();
-
-            assertThat(properties.getSecretKey().length()).isGreaterThanOrEqualTo(32);
-        }
-
-        @Test
-        @DisplayName("should log warning for example key")
-        void validate_withExampleKey_shouldLogWarning() {
-            properties.setSecretKey("example-secret-key-that-is-at-least-32-bytes!!");
-
-            // Should not throw
             properties.validate();
         }
 
         @Test
-        @DisplayName("should not throw for key containing weak patterns when length is sufficient")
-        void validate_withWeakButLongKey_shouldNotThrow() {
-            properties.setSecretKey("default-secret-key-that-is-at-least-32-characters");
+        @DisplayName("should pass with configured key locations")
+        void validate_withConfiguredKeyLocations_shouldNotThrow() {
+            properties.setPrivateKeyLocation("classpath:keys/private.pem");
+            properties.setPublicKeyLocation("classpath:keys/public.pem");
 
             properties.validate();
         }

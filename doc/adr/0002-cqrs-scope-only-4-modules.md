@@ -19,7 +19,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 
 约束：
 
-- 项目是「架构展示样板」，需要展示 CQRS 的真实落地，但**业务刻意简化**（固定价格 + C2C 直发，见 `PRODUCT_DIRECTION.md`），不需要为展示而过度铺开
+- 项目是「LLM × DDD 工程化实战项目」，需要展示 CQRS 的真实落地，但**业务聚焦核心流程**（固定价格 + C2C 直发，见 `PRODUCT_DIRECTION.md`），不需要为展示而过度铺开
 - 已有 ArchUnit 架构守卫（`ArchitectureRulesTest.java`），可强制 CQRS 边界
 - 各模块的读写比差异极大：product 读多写少（搜索 / 详情 / 列表），user 几乎是对称的 CRUD
 
@@ -78,7 +78,7 @@ EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backe
 ## 备选方案（Alternatives Considered）
 
 - **全模块上 CQRS**：拒绝。user / favorite / ai 等模块读写比均衡或以调用外部 API 为主（ai 模块核心是 Port/Adapter + 装饰器，见 ADR 0003），强行套 CQRS 会引入无意义的 CommandHandler 空壳，违反 KISS / YAGNI。
-- **完全不上 CQRS**：拒绝。product 的 ES 全文搜索 + facets 聚合、order 的多维度分页查询，用单一 Service + Repository 难以承载，扩展性差；也无法在「架构展示样板」中讲清楚 CQRS。
+- **完全不上 CQRS**：拒绝。product 的 ES 全文搜索 + facets 聚合、order 的多维度分页查询，用单一 Service + Repository 难以承载，扩展性差；也无法在「LLM × DDD 工程化实战项目」中讲清楚 CQRS。
 - **只在 product 上 CQRS**：拒绝。order 的 Saga 写链路与查询分离、message 的会话/未读数查询维度独立，都有真实诉求；只做 product 会丢失这些场景的展示价值。
 - **未来扩展到 user / favorite**：暂不排除。当 user 模块的「个人主页 / 信用画像」查询维度独立演化、或 favorite 出现大流量收藏列表分页时，再评估是否新增 ADR 扩展。
 

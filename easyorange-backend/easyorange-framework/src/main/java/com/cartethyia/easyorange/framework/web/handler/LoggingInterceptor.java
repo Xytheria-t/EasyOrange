@@ -2,9 +2,7 @@ package com.cartethyia.easyorange.framework.web.handler;
 
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.config.properties.WebMvcProperties;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Timer;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +13,8 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -26,36 +24,22 @@ public class LoggingInterceptor implements HandlerInterceptor {
     private static final String START_TIME = "requestStartTime";
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
-
     private final MeterRegistry meterRegistry;
-    private final Counter requestCounter;
-    private final Timer requestTimer;
     private final List<String> skipLoggingPaths;
 
     public LoggingInterceptor(MeterRegistry meterRegistry, WebMvcProperties webMvcProperties) {
         this.meterRegistry = meterRegistry;
         this.skipLoggingPaths = webMvcProperties.getSkipLoggingPaths();
-
-        this.requestCounter = Counter.builder("http.requests.total")
-                .description("Total HTTP requests")
-                .register(meterRegistry);
-
-        this.requestTimer = Timer.builder("http.requests.duration")
-                .description("HTTP request duration")
-                .register(meterRegistry);
     }
 
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
-        String uri = getPathPattern(request);
-        if (shouldSkipLogging(uri)) {
-            return true;
-        }
+        var uri = request.getRequestURI();
+        if (shouldSkipLogging(uri)) return true;
 
-        long startTime = System.currentTimeMillis();
-        request.setAttribute(START_TIME, startTime);
+        request.setAttribute(START_TIME, System.currentTimeMillis());
 
-        String traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        var traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         MDC.put(TRACE_ID, traceId);
         MDC.put("clientIp", RequestUtil.getClientIp(request));
         MDC.put("method", request.getMethod());
@@ -67,33 +51,22 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, Exception ex) {
-        String uri = getPathPattern(request);
-        if (shouldSkipLogging(uri)) {
-            return;
-        }
+        var uri = request.getRequestURI();
+        if (shouldSkipLogging(uri)) return;
 
-        var startTime = (Long) request.getAttribute(START_TIME);
-        long costTime = System.currentTimeMillis() - startTime;
+        var costTime = System.currentTimeMillis() - (long) request.getAttribute(START_TIME);
+        var status = response.getStatus();
+        var traceId = MDC.get(TRACE_ID);
+        var method = request.getMethod();
 
-        int status = response.getStatus();
-        String traceId = MDC.get(TRACE_ID);
-        String method = request.getMethod();
-
-        requestCounter.increment();
-        requestTimer.record(costTime, TimeUnit.MILLISECONDS);
+        meterRegistry.counter("http.requests.total").increment();
 
         if (ex != null || status >= 500) {
             log.error("action=request_error traceId={} method={} uri={} status={} cost={}ms error={}",
                     traceId, method, uri, status, costTime, ex != null ? ex.getMessage() : "server_error");
-
-            meterRegistry.counter("http.requests.errors", "uri", uri, "method", method, "status", String.valueOf(status))
-                    .increment();
         } else if (status >= 400) {
             log.warn("action=request_warn traceId={} method={} uri={} status={} cost={}ms",
                     traceId, method, uri, status, costTime);
-
-            meterRegistry.counter("http.requests.errors", "uri", uri, "method", method, "status", String.valueOf(status))
-                    .increment();
         }
 
         meterRegistry.timer("http.server.request", "uri", uri, "method", method)
@@ -105,9 +78,5 @@ public class LoggingInterceptor implements HandlerInterceptor {
     private boolean shouldSkipLogging(String uri) {
         return skipLoggingPaths.stream()
                 .anyMatch(pattern -> pathMatcher.match(pattern, uri));
-    }
-
-    private String getPathPattern(HttpServletRequest request) {
-        return request.getRequestURI();
     }
 }

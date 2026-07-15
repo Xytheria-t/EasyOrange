@@ -1371,17 +1371,18 @@
 
 .visual-card {
     position: relative;
-    width: 320px;
-    padding: 1.25rem;
+    width: 340px;
+    padding: 1rem;
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(40px) saturate(1.2);
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: var(--radius-3xl);
     box-shadow:
-        0 24px 48px -12px rgba(42, 37, 32, 0.12),
-        0 12px 24px -6px rgba(249, 115, 22, 0.08),
-        0 0 0 1px rgba(255, 255, 255, 0.5),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        0 24px 48px -12px rgba(42, 37, 32, 0.10),
+        0 12px 24px -6px rgba(249, 115, 22, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.6),
+        0 0 40px -8px rgba(249, 115, 22, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95);
     overflow: hidden;
     transition:
         transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1453,7 +1454,7 @@
 .preview-image {
     border-radius: var(--radius-2xl);
     overflow: hidden;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 1 / 1;
     position: relative;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
 }
@@ -1462,7 +1463,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, transparent 60%, rgba(0, 0, 0, 0.06));
+    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.12));
     pointer-events: none;
 }
 
@@ -1555,6 +1556,49 @@
     text-decoration: line-through;
 }
 
+/* Seller info */
+.seller-info {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.5rem 0 0.25rem;
+}
+
+.seller-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.2);
+}
+
+.seller-avatar svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.seller-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.seller-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.seller-badge {
+    font-size: 0.625rem;
+    color: var(--accent-500);
+    font-weight: 500;
+    line-height: 1;
+}
+
 /* Premium glass card for floating elements - COMPACT */
 .glass-card-premium {
     background: rgba(255, 255, 255, 0.8);
@@ -1592,7 +1636,7 @@
     height: 100%;
     pointer-events: none;
     z-index: 1;
-    opacity: 0.6;
+    opacity: 0.8;
 }
 
 .connection-line {
@@ -1683,7 +1727,8 @@
 }
 
 .float-card:hover .float-icon {
-    transform: scale(1.2) rotate(-5deg);
+    transform: translateY(-2px) scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(249, 115, 22, 0.3));
 }
 
 .float-text {

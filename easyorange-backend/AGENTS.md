@@ -195,9 +195,9 @@ public class BaseDO {
 - CORS: 生产环境严格白名单
 - 全局认证: `SecurityConfig` 的 `.anyRequest().authenticated()` 已拦截所有未认证请求，Controller 上无需 `@PreAuthorize("isAuthenticated()")`
 
-Filter 执行顺序: RateLimitFilter(0) → SecurityConfig.oauth2ResourceServer() (Spring Security Filter Chain) → AuditLogAspect(AOP @Order 3)
+Filter 执行顺序: RateLimitFilter(0) → SecurityConfig.oauth2ResourceServer() (Spring Security 内置 AuthenticationFilter) → TokenRevocationFilter(Redis 黑名单 + force-logout) → AnonymousAuthenticationFilter → AuditLogAspect(AOP @Order 3)
 
-JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`BearerTokenAuthenticationFilter` (Spring Security 内置) → `JwtDecoder` 验证签名 + 黑名单/强制登出检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。
+JWT 认证由 Spring Security OAuth2 Resource Server 的 `JwtDecoder` + `JwtAuthenticationConverter` 处理，无需自定义 Servlet Filter。认证流程：`AuthenticationFilter` (Spring Security 内置，由 `oauth2ResourceServer()` 配置注入) → `JwtDecoder` 验证签名 + issuer 检查 → `JwtAuthenticationConverter` 构造 `AuthUser` 并设置 `SecurityContext`。Token 吊销检查（Redis 黑名单 + force-logout）由独立的 `TokenRevocationFilter` 在认证完成后执行，职责分离：JwtDecoder 只做密码学验证，TokenRevocationFilter 只做吊销状态检查。JWT 使用 RSA 非对称密钥（2048 位），开发环境自动生成，生产环境通过 `jwt.private-key-location` + `jwt.public-key-location` 配置 PEM 文件路径。
 
 ## 不可变集合约定
 
@@ -244,6 +244,16 @@ return Result.success(userId);
 MyBatis-Plus **无内置** `UUID` TypeHandler，PO 含 UUID 字段时 insert 报 `Type handler was null`。已配全局 `UuidTypeHandler`（`framework/config/database/`）+ `type-handlers-package`，新增 PO 的 UUID 字段无需额外配置。数据库列类型 `CHAR(36)`。
 
 领域事件 record 无需 `@JsonCreator`，反序列化依赖 Jackson 3 的 `ParameterNamesModule`（由 Spring Boot 4 自动配置，无需显式声明依赖）。新增事件 record 实现 `DomainEvent` 接口即可，无需任何 Jackson 注解。
+
+### Jackson 3 API 变更
+
+Jackson 3 相比 Jackson 2 有 API 变更，迁移时需注意：
+
+- **异常类重命名**：`JsonProcessingException` → `JacksonException`。Mock 测试或显式 catch 时需使用新类名
+- **包路径变更**：`com.fasterxml.jackson.*` → `tools.jackson.*`
+- **依赖声明**：使用 Jackson 3 的模块需显式声明 `tools.jackson.core:jackson-core` 依赖（`jackson-databind` 不自动传递）
+
+**已修复（2026-07-14）**：`easyorange-ai` 测试文件 + `easyorange-admin` 服务类已改用 `JacksonException`
 
 ### Spring Boot 4 @WebMvcTest 路径变化
 

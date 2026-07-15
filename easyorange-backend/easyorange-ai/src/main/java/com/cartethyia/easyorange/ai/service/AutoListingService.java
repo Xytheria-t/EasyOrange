@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.ai.service;
 import com.cartethyia.easyorange.ai.dto.AutoListingResult;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.port.VisionPort;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

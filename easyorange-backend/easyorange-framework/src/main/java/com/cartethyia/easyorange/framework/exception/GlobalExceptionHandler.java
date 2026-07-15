@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.common.enums.IResultCode;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.common.exception.validation.ParamValidationException;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -48,7 +47,7 @@ public class GlobalExceptionHandler {
                 pd.setProperty("errorCode", b.getCode());
                 yield ResponseEntity.status(status).body(pd);
             }
-            case AccessDeniedException _ -> forbidden();
+            case AccessDeniedException _ -> ResponseEntity.status(FORBIDDEN).body(ProblemDetail.forStatus(FORBIDDEN));
             case HttpRequestMethodNotSupportedException _ -> response(METHOD_NOT_ALLOWED, ResultCode.METHOD_NOT_ALLOWED);
             case MethodArgumentNotValidException _, BindException _ ->
                     handleBindingErrors(getBindingResult(e));
@@ -115,19 +114,9 @@ public class GlobalExceptionHandler {
         return fieldPart + "; " + globalPart;
     }
 
-    private static ResponseEntity<ProblemDetail> response(HttpStatus status) {
-        return ResponseEntity.status(status).body(ProblemDetail.forStatus(status));
-    }
-
     private static ResponseEntity<ProblemDetail> response(HttpStatus status, IResultCode code) {
         var pd = ProblemDetail.forStatusAndDetail(status, code.getMessage());
         pd.setProperty("errorCode", code.getCode());
-        return ResponseEntity.status(status).body(pd);
-    }
-
-    private static ResponseEntity<ProblemDetail> response(HttpStatus status, String code, String msg) {
-        var pd = ProblemDetail.forStatusAndDetail(status, msg);
-        pd.setProperty("errorCode", code);
         return ResponseEntity.status(status).body(pd);
     }
 
@@ -137,30 +126,23 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(BAD_REQUEST).body(pd);
     }
 
-    private static ResponseEntity<ProblemDetail> forbidden() {
-        return ResponseEntity.status(FORBIDDEN).body(ProblemDetail.forStatus(FORBIDDEN));
-    }
-
     private static HttpStatus resolveHttpStatus(String errorCode) {
         if (errorCode == null || errorCode.isEmpty()) {
             return BAD_REQUEST;
         }
-        if (errorCode.charAt(0) != 'A') {
-            return switch (errorCode.charAt(0)) {
-                case 'C' -> INTERNAL_SERVER_ERROR;
-                case 'D' -> BAD_GATEWAY;
-                default -> BAD_REQUEST;
-            };
-        }
-        // A 前缀: 从最后 3 位推导 HTTP 状态码
-        if (errorCode.length() < 5) return BAD_REQUEST;
-        return switch (errorCode.substring(errorCode.length() - 3)) {
-            case "401", "402" -> UNAUTHORIZED;
-            case "403" -> FORBIDDEN;
-            case "404" -> NOT_FOUND;
-            case "405" -> METHOD_NOT_ALLOWED;
-            case "500" -> BAD_REQUEST;
-            default -> OK;
+        return switch (errorCode.charAt(0)) {
+            case 'A' -> errorCode.length() < 5 ? BAD_REQUEST
+                    : switch (errorCode.substring(errorCode.length() - 3)) {
+                        case "401", "402" -> UNAUTHORIZED;
+                        case "403" -> FORBIDDEN;
+                        case "404" -> NOT_FOUND;
+                        case "405" -> METHOD_NOT_ALLOWED;
+                        case "500" -> BAD_REQUEST;
+                        default -> OK;
+                    };
+            case 'C' -> INTERNAL_SERVER_ERROR;
+            case 'D' -> BAD_GATEWAY;
+            default -> BAD_REQUEST;
         };
     }
 }

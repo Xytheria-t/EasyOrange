@@ -10,6 +10,10 @@
 # ===================================================================
 
 spring:
+  docker:
+    compose:
+      enabled: false  # Docker Compose 已手动启动，禁用 Spring Boot 自动管理
+
   # -------------------------------------------------------------------
   # 数据源配置 - 开发环境使用较小的连接池
   # -------------------------------------------------------------------
@@ -150,12 +154,15 @@ easyorange:
 # -------------------------------------------------------------------
 # JWT Token 配置
 # ⚠️⚠️⚠️ 严重安全警告 ⚠️⚠️⚠️
-# 以下 JWT 密钥默认值仅用于本地开发环境，绝对不可用于生产环境！
-# 生产环境必须通过环境变量 JWT_SECRET_KEY 设置强密钥（至少256位）。
-# 使用默认密钥在生产环境将导致严重的安全漏洞（令牌伪造、身份冒充等）。
+# 开发环境不配置 RSA 密钥路径时，启动时自动生成 2048 位密钥对（重启后历史 Token 失效）。
+# 生产环境必须通过环境变量 JWT_RSA_PRIVATE_KEY 和 JWT_RSA_PUBLIC_KEY 设置 PEM 文件路径。
+# 使用自动生成的密钥在生产环境将导致重启后所有 Token 失效。
 # -------------------------------------------------------------------
 jwt:
-  secret-key: ${JWT_SECRET_KEY:dev-key-change-in-prod-easyorange-at-least-32-chars}  # ⚠️ 仅限开发环境！生产环境必须设置环境变量
+  # RSA 密钥文件路径（开发环境不配置则启动时自动生成 2048 位密钥对）
+  # 生产环境必须设置，指向 PEM 格式的 RSA 密钥文件
+  private-key-location: ${JWT_RSA_PRIVATE_KEY:}
+  public-key-location: ${JWT_RSA_PUBLIC_KEY:}
   access-token-expiration: 120            # Access Token 过期时间（分钟）
   refresh-token-expiration: 7             # Refresh Token 过期时间（天）
   token-prefix: "Bearer "                 # Token 前缀

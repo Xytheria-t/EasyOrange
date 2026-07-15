@@ -24,7 +24,7 @@ INSERT INTO `eo_message_template` (
 (8,  'SELLER_PAID',      '资产方收款通知',   'order',  '认领方已付款',     '订单 ${orderNo} 认领方已付款，请尽快交付。',                                  '["orderNo"]',                    1, NOW(), NOW()),
 (9,  'PRODUCT_ONLINE',   '资产上架通知',   'system', '资产上架成功',   '你发布的资产「${productName}」已成功上架，祝早日完成流转！',                      '["productName"]',                1, NOW(), NOW()),
 (10, 'PRODUCT_OFFLINE',  '资产下架通知',   'system', '资产已下架',     '你的资产「${productName}」已下架，原因：${reason}。',                         '["productName","reason"]',      1, NOW(), NOW()),
-(11, 'USER_REGISTER',    '注册欢迎通知',   'system', '欢迎加入',       '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~',             '[]',                             1, NOW(), NOW()),
+(11, 'USER_REGISTER',    '注册欢迎通知',   'system', '欢迎加入',       '欢迎来到 EasyOrange！在这里你可以发布资产，AI 工程化能力帮你估值、写描述，快去发布你的第一件资产吧~',             '[]',                             1, NOW(), NOW()),
 (12, 'PRICE_DROP',       '降价提醒',       'system', '收藏资产降价',   '你收藏的资产「${productName}」已降价至 ${price} 元，快去看看吧！',              '["productName","price"]',       1, NOW(), NOW()),
 (13, 'AUDIT_SUCCESS',    '审核通过通知',   'audit',  '资产审核通过 🎉',   '您发布的「${productName}」已通过审核，现已上架！',                     '["productName"]',                1, NOW(), NOW()),
 (14, 'AUDIT_REJECTED',   '审核驳回通知',   'audit',  '资产审核未通过 ⚠️', '您发布的「${productName}」未通过审核。原因：${reason}。',               '["productName","reason"]',      1, NOW(), NOW())

@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
-import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 @AutoConfiguration
@@ -21,7 +20,7 @@ public class LocalCacheConfig {
     private final RedisCache redisCache;
 
     @Bean("imageProcessCache")
-    public Cache<String, ImageProcessingCacheEntry> imageProcessCache() {
+    public Cache<String, Object> imageProcessCache() {
         var imageProps = cacheProperties.getImage();
         return Caffeine.newBuilder()
                 .maximumSize(imageProps.getMaxSize())
@@ -43,8 +42,5 @@ public class LocalCacheConfig {
     @Bean
     public MultiLevelCache multiLevelCache(@Qualifier("l1Cache") Cache<String, Object> l1Cache) {
         return new MultiLevelCache(l1Cache, redisCache);
-    }
-
-    public record ImageProcessingCacheEntry(File file, String mimeType, String eTag) {
     }
 }

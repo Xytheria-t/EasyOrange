@@ -8,14 +8,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -138,37 +140,33 @@ public final class FileUtils {
     }
 
     public static void assertAllowed(MultipartFile file, Collection<String> allowedExtension) {
-        long size = file.getSize();
+        var size = file.getSize();
         if (size > DEFAULT_MAX_SIZE) {
             throw new FileSizeLimitExceededException(DEFAULT_MAX_SIZE, size);
         }
-        if (isEmptyCollection(allowedExtension)) {
+        if (allowedExtension == null || allowedExtension.isEmpty()) {
             return;
         }
-        String extension = getExtension(file);
-        if (!isAllowedExtension(extension, allowedExtension)) {
-            throw new InvalidExtensionException(new java.util.ArrayList<>(allowedExtension), extension, file.getOriginalFilename());
+        var extension = getExtension(file);
+        var allowedList = allowedExtension instanceof List<String> list
+                ? list : new ArrayList<>(allowedExtension);
+        if (!isAllowedExtension(extension, allowedList)) {
+            throw new InvalidExtensionException(allowedList, extension, file.getOriginalFilename());
         }
-        assertFileMagicNumber(file, extension, allowedExtension);
+        assertFileMagicNumber(file, extension, allowedList);
     }
 
-    private static void assertFileMagicNumber(MultipartFile file, String extension, Collection<String> allowedExtension) {
-        byte[] expectedMagic = FILE_MAGIC_NUMBERS.get(extension.toLowerCase());
-        if (expectedMagic == null) {
-            return;
-        }
-        try (InputStream is = file.getInputStream()) {
-            byte[] header = new byte[expectedMagic.length];
-            int bytesRead = is.read(header);
-            if (bytesRead < expectedMagic.length) {
-                throw new InvalidExtensionException(
-                        new java.util.ArrayList<>(allowedExtension), extension, file.getOriginalFilename());
+    private static void assertFileMagicNumber(MultipartFile file, String extension, List<String> allowedExtensions) {
+        var expectedMagic = FILE_MAGIC_NUMBERS.get(extension.toLowerCase());
+        if (expectedMagic == null) return;
+        try (var in = file.getInputStream()) {
+            var header = in.readNBytes(expectedMagic.length);
+            if (header.length < expectedMagic.length) {
+                throw new InvalidExtensionException(allowedExtensions, extension, file.getOriginalFilename());
             }
-            for (int i = 0; i < expectedMagic.length; i++) {
-                if (header[i] != expectedMagic[i]) {
-                    throw new InvalidExtensionException(
-                            new java.util.ArrayList<>(allowedExtension), extension, file.getOriginalFilename());
-                }
+            var mm = Arrays.mismatch(expectedMagic, header);
+            if (mm != -1 && mm != expectedMagic.length) {
+                throw new InvalidExtensionException(allowedExtensions, extension, file.getOriginalFilename());
             }
         } catch (IOException e) {
             throw FileException.of("文件读取失败：" + file.getOriginalFilename(), e);
@@ -176,30 +174,23 @@ public final class FileUtils {
     }
 
     public static boolean isAllowedExtension(String extension, Collection<String> allowedExtension) {
-        if (isEmptyCollection(allowedExtension)) {
+        if (allowedExtension == null || allowedExtension.isEmpty()) {
             return true;
         }
         return allowedExtension.stream()
                 .anyMatch(ext -> ext.equalsIgnoreCase(extension));
     }
 
-    private static boolean isEmptyCollection(Collection<?> collection) {
-        return collection == null || collection.isEmpty();
-    }
-
     public static String getExtension(MultipartFile file) {
-        String extension = null;
-        String filename = file.getOriginalFilename();
+        var filename = file.getOriginalFilename();
         if (filename != null && filename.contains(".")) {
-            extension = filename.substring(filename.lastIndexOf(".") + 1);
+            return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
         }
-        if (extension == null || extension.isEmpty()) {
-            String contentType = file.getContentType();
-            if (contentType != null) {
-                extension = getExtensionFromMimeType(contentType);
-            }
+        var contentType = file.getContentType();
+        if (contentType != null) {
+            return getExtensionFromMimeType(contentType);
         }
-        return extension != null ? extension.toLowerCase() : "";
+        return "";
     }
 
     private static String getExtensionFromMimeType(String contentType) {

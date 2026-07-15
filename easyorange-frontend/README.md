@@ -1,6 +1,6 @@
 # EasyOrange Frontend
 
-> React 19 + TypeScript + Vite 构建的现代 SPA 应用，配套后端架构参考项目（**2025 年 11 月启动**）
+> React 19 + TypeScript + Vite 构建的现代 SPA 应用，配套 LLM × DDD 工程化实战项目（**2025 年 11 月启动**）
 
 ## 技术栈
 

@@ -5,11 +5,11 @@ import { Image } from '@/components/ui/Image';
 import { Input } from '@/components/ui/input';
 
 const HERO_PRODUCT = {
-    image: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=800&auto=format&fit=crop',
-    tag: '热门',
-    name: 'Notion 团队版会员 剩余8个月',
-    price: '¥299',
-    originalPrice: '¥599',
+    image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop',
+    tag: '精选好物 · 99新',
+    name: 'MacBook Pro 14" M3 Pro',
+    price: '¥12,999',
+    originalPrice: '¥16,999',
 };
 
 const PLATFORM_STATS = {
@@ -250,7 +250,7 @@ export default function HeroSection() {
                     </h1>
 
                     <p className="hero-subtitle animate-slide-up delay-1">
-                        AI 工程化 · 调通 API 只是起点，让大模型在真实业务中稳定运行
+                        LLM × DDD · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化
                     </p>
 
                     <div className="hero-search animate-slide-up delay-2">
@@ -410,6 +410,25 @@ export default function HeroSection() {
                                 </div>
                                 <div className="preview-info">
                                     <span className="preview-tag">{HERO_PRODUCT.tag}</span>
+                                    <div className="seller-info">
+                                        <div className="seller-avatar">
+                                            <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                                                <circle cx="16" cy="16" r="16" fill="url(#avatarGrad)" />
+                                                <circle cx="16" cy="12" r="4" fill="rgba(255,255,255,0.8)" />
+                                                <ellipse cx="16" cy="24" rx="7" ry="5" fill="rgba(255,255,255,0.6)" />
+                                                <defs>
+                                                    <linearGradient id="avatarGrad" x1="0" y1="0" x2="32" y2="32">
+                                                        <stop offset="0%" stopColor="#ea580c" />
+                                                        <stop offset="100%" stopColor="#f97316" />
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                        </div>
+                                        <div className="seller-detail">
+                                            <span className="seller-name">极客数码</span>
+                                            <span className="seller-badge">认证卖家</span>
+                                        </div>
+                                    </div>
                                     <h4>{HERO_PRODUCT.name}</h4>
                                     <p className="preview-price">{HERO_PRODUCT.price}</p>
                                     <span className="preview-original">原价 {HERO_PRODUCT.originalPrice}</span>
@@ -426,7 +445,16 @@ export default function HeroSection() {
                         >
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
-                                <span className="float-icon">📚</span>
+                                <span className="float-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                                        <path d="M8 7h8" />
+                                        <path d="M8 11h6" />
+                                        <path d="M8 15h4" />
+                                        <circle cx="19" cy="6" r="1.5" fill="currentColor" stroke="none" />
+                                    </svg>
+                                </span>
                                 <span className="float-text">教材资料</span>
                                 <span className="float-particles"></span>
                             </div>
@@ -439,7 +467,20 @@ export default function HeroSection() {
                         >
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
-                                <span className="float-icon">💻</span>
+                                <span className="float-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <rect x="4" y="4" width="16" height="16" rx="2" />
+                                        <rect x="9" y="9" width="6" height="6" rx="1" />
+                                        <path d="M9 1v3" />
+                                        <path d="M15 1v3" />
+                                        <path d="M9 20v3" />
+                                        <path d="M15 20v3" />
+                                        <path d="M1 9h3" />
+                                        <path d="M20 9h3" />
+                                        <path d="M1 15h3" />
+                                        <path d="M20 15h3" />
+                                    </svg>
+                                </span>
                                 <span className="float-text">电子产品</span>
                                 <span className="float-particles"></span>
                             </div>
@@ -452,7 +493,17 @@ export default function HeroSection() {
                         >
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
-                                <span className="float-icon">🚴</span>
+                                <span className="float-icon">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                        <circle cx="6" cy="18" r="3" />
+                                        <circle cx="18" cy="18" r="3" />
+                                        <path d="M18 6l-3 6h-4" />
+                                        <path d="M8 18l3-6 3-6" />
+                                        <path d="M3 18h3" />
+                                        <path d="M18 18h3" />
+                                        <path d="M12 12h4" />
+                                    </svg>
+                                </span>
                                 <span className="float-text">交通工具</span>
                                 <span className="float-particles"></span>
                             </div>

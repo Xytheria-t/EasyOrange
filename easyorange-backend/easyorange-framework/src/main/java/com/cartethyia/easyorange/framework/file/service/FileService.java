@@ -1,14 +1,12 @@
 package com.cartethyia.easyorange.framework.file.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
-import com.cartethyia.easyorange.framework.file.entity.UploadFile;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-public interface FileService extends IService<UploadFile> {
+public interface FileService {
 
     UploadFileVO uploadFile(MultipartFile file, String businessType);
 

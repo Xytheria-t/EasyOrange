@@ -1,10 +1,10 @@
-# EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
+# EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> **EasyOrange** — 把 LLM 工程化集成进企业级 Java 应用的全栈样板。在 C2C 资产流转的真实业务压力下，落地 DDD + CQRS + Saga + 事件驱动 + AI 多模态 6 决策点。
+> **EasyOrange** — 在 DDD 六边形里装 LLM：可换供应商、可降级、可观测的 AI 工程化落地。
 >
-> **11 模块全解耦 · 2,214 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter 隔离 + 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）。**
+> **11 模块全解耦 · 2,221 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）· 4 ADR 架构决策记录。**
 >
-> 业务载体是简化的 C2C 资产流转（固定价格、平台不碰货），承载复杂度才是重点。 · 2025 年 11 月启动开发
+> 业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。 · 2025 年 11 月启动开发
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-ED8B00)](https://openjdk.java.net/)
@@ -13,35 +13,36 @@
 
 ## 项目定位
 
-**EasyOrange 是 LLM 时代企业级 Java 应用的工程化样板** —— 展示 DDD/CQRS/Saga/事件驱动 + **AI 工程化**如何在模块化全栈中协同落地。
+**EasyOrange — LLM × DDD 工程化实战**：在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。
 
-> 选这个定位的判断：2025 年后企业级 Java 的难点从 "会不会 DDD" 升级到 "**LLM 怎么工程化集成进既有架构**"。
-> EasyOrange 把后者做成核心叙事 —— 6 个 AI 决策点全部走 Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理，让 AI 从 "demo 调用" 走到 "生产级工程"。
-> 业务载体（C2C 资产流转）刻意简化，是为了把架构与工程深度推到主角位置。
+### 核心矛盾
 
-### By the numbers — 工程深度一览
+DDD 铁律要求 domain 层零框架依赖（不能引 Spring / 不能引 LLM SDK），但 LLM 调用昂贵且不稳定，必须有多级缓存 + 限流降级 + 可观测。EasyOrange 用 Port/Adapter + 装饰器模式解了这个矛盾：
 
-| 维度 | 数据 | 含义 |
+- `LlmPort` / `VisionPort` 接口定义在 domain 层 — 业务逻辑只依赖抽象
+- `@Primary` 装饰器（`CachingLlmAdapter` / `CachingVisionAdapter`）在 adapter 层包装具体供应商（DeepSeek / 通义千问 VL）
+- L1 Caffeine + L2 Redis 多级缓存让大部分重复估值请求不打 LLM
+- `AiRateLimitInterceptor` 令牌桶按端点独立限流，超限返回 stale 缓存而不是 429
+- `AiMetricsService` 把缓存命中率 / LLM p99 / 限流计数暴露到 Prometheus
+- Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）
+
+6 个 AI 决策点（智能估值 / AI 文案 / AI 找货 / AI 评估 / AI 信用画像 / AI 审核）全部走这套工程化链路。
+
+### 业务载体
+
+C2C 资产流转（固定价格 + 直发 + 平台不碰货）—— 业务聚焦核心流程，把复杂度留给架构与 AI 工程化。
+
+### 三个并列钩子
+
+| 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
-| 模块解耦 | 11 Maven 模块 | DDD 六边形 + 端口-适配器，全编译期隔离 |
-| 跨模块 ACL | 7 对 Port/Adapter | `<optional>true</optional>` 编译期强制 |
-| 测试守卫 | 1,275 后端 + 945 前端 = **2,220 用例** | 单元 + ArchUnit 架构守卫 |
-| 事件驱动 | 9 RabbitMQ 消费者 + DLQ | Topic Exchange + 指数退避重试 |
-| AI 工程化 | 6 决策点 + 6 工程化能力 | Port 抽象 + 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化 + Token 预算治理** |
-| 数据规模 | 30 张表 + Flyway | 完整种子数据 + 不可变 V 迁移 |
+| **架构落地** | 11 模块 / 7 对 Port-Adapter / 9 消费者+DLQ / 30 表 / 2,221 测试 | DDD/CQRS/Saga/事件驱动 在真实业务压力下的协同落地 |
+| **架构决策记录** | 4 ADR + 13 关键决策可独立讲解 | 每个架构选择都有"为什么这样选 + 拒绝了什么"的 ADR 记录 |
+| **AI 工程化** | 6 决策点 + 7 件套 | Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理 |
 
-### 架构模式落地
+> **4 个核心架构模式**：`DDD 六边形` · `CQRS` · `Saga` · `事件驱动` — 11 模块全解耦、4 模式 4 ADR。落地细节见 [doc/架构/架构-DDD规范.md](doc/架构/架构-DDD规范.md) + [doc/adr/](doc/adr/)。
 
-| 架构模式 | 落地方式 |
-|---------|---------|
-| **DDD 六边形** | domain→application→adapter 分层，port/repository 接口隔离，ArchUnit 自动守卫 |
-| **CQRS** | product/order/payment/message 四模块读写分离，CommandHandler 禁止依赖 QueryHandler |
-| **Saga** | CreateOrderSaga 步骤化编排 + 反向补偿，持久化支持故障恢复 |
-| **事件驱动** | RabbitMQ Topic Exchange + 9 消费者 + DLQ + 指数退避，路由键自动派生 |
-| **AI Port/Adapter** | LlmPort/VisionPort 接口抽象 + @Primary 装饰器多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）** |
-| **ACL 防腐层** | 7 对跨模块 Port/Adapter，Maven `<optional>true</optional>` 编译期强制隔离 |
-
-业务载体为 C2C 资产流转（固定价格 + C2C 直发 + 平台不碰货），刻意简化是为了让架构与 AI 工程化深度成为主角。
+> **By the numbers**：11 模块 / 28 Port 接口 / 9 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,221 测试 / 4 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
 
 ## 架构总览（一图看懂）
 
@@ -168,22 +169,6 @@ sequenceDiagram
 > 详细架构文档：[doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md) — 含 11 模块依赖图 + 部署架构 + 可观测性栈
 > 技术债务清单：[doc/技术债务清单.md](doc/技术债务清单.md) — 13 条已知债务，主动承认工程判断
 
-## 技术亮点
-
-| 维度 | 落地内容 |
-|---|---|
-| **架构模式** | DDD 战术模式 (聚合根 / 值对象 / 领域事件 / 端口-适配器) + 六边形架构 |
-| **CQRS** | 命令端 MyBatis-Plus 写库,查询端独立 ReadModel + 全文搜索聚合 |
-| **Saga** | 订单创建 / 取消 / 完成 / 退款 全链路分布式事务补偿 |
-| **事件驱动** | RabbitMQ Topic Exchange + 9 个消费者队列 + DLQ + 指数退避重试 |
-| **AI 集成** | DeepSeek 文本 + 通义千问 VL 多模态 + L1/L2 缓存装饰器 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + **Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）** |
-| **缓存** | Redis 多级缓存 (Caffeine + Redis) + 一致性哈希 + 布隆过滤器 |
-| **搜索** | Elasticsearch 8 + IK 中文分词器 + 索引管理 + 全量重建 |
-| **实时通信** | STOMP over WebSocket + JWT 认证 + 离线消息重推 |
-| **数据库** | MySQL 8.4 + Flyway 迁移 + 30 张表 + 完整种子数据 |
-| **测试** | JUnit 5 + Mockito + AssertJ + ArchUnit 架构守卫 |
-| **前端** | React 19 + TypeScript + Vite 8 + Zustand 5 + React Query 5 + shadcn/ui + 管理端暖橙指挥中心设计系统 |
-
 ## 技术栈
 
 | 层 | 技术 |
@@ -283,7 +268,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + Biome (前端, 替代 ESLint + Prettier)
-- 测试: 后端 JUnit 5 (1,275 用例) + 前端 Vitest/Playwright (945 用例)
+- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (952 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南
@@ -298,6 +283,6 @@ MIT License — 详见 [LICENSE](LICENSE) 文件
 
 <div align="center">
 
-**EasyOrange** · Java 25 + Spring Boot 4 · DDD + CQRS + Saga + 事件驱动 + AI 多模态 · 业务做减法，工程做加法 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
+**EasyOrange** · LLM × DDD：Java 架构工程化实战 · Java 25 + Spring Boot 4 · DDD + CQRS + Saga + 事件驱动 + AI 工程化 · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化 · [Gitee](https://gitee.com/cartethyia_XLS/easy-orange) · [更新日志](./CHANGELOG.md)
 
 </div>

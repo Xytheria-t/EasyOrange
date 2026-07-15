@@ -110,7 +110,7 @@ describe('HeroSection', () => {
 
     it('renders the subtitle', () => {
         render(<HeroSection />);
-        expect(screen.getByText('AI 工程化 · 调通 API 只是起点，让大模型在真实业务中稳定运行')).toBeInTheDocument();
+        expect(screen.getByText('LLM × DDD · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化')).toBeInTheDocument();
     });
 
     it('renders search input', () => {

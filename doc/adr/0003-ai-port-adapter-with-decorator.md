@@ -16,12 +16,12 @@ EasyOrange 在「资产方 / 认领方双端」共 6 个 AI 决策点（智能�
 
 强制约束（见 `doc/集成/AI-资产管理.md` 与 `README.md`「AI 工程化」节）：
 
-- **供应商可替换**：项目定位是架构展示样板，必须能在 DeepSeek / Qwen-VL 之外低成本切换或叠加新供应商
+- **供应商可替换**：项目定位是 LLM × DDD 工程化实战项目，必须能在 DeepSeek / Qwen-VL 之外低成本切换或叠加新供应商
 - **LLM 调用昂贵且不稳定**：必须有多级缓存 + 限流降级，否则单次调用的成本与延迟不可控
 - **可观测性是核心叙事**：项目对外宣传语明确提到「AiMetrics 可观测」，缓存命中率 / LLM 延迟 / 限流计数必须独立采集
 - **领域层零框架依赖**（DDD 铁律，见 `easyorange-backend/AGENTS.md`）：AI 调用入口不能污染 domain 层
 
-业务侧的边界（来自 `PRODUCT_DIRECTION.md` 与 `AGENTS.md`）：平台不议价、不自动调价，AI 仅做辅助决策。所以 AI 调用结果**可缓存、可降级、可观测**比「实时精准」更重要。
+业务侧的边界（来自 `PRODUCT_DIRECTION.md` 与 `AGENTS.md`）：平台不议价、不自动调价，AI 走生产级工程实践（Port/Adapter + 多级缓存 + 限流降级 + AiMetrics + Prompt 版本化 + Token 预算）。所以 AI 调用结果**可缓存、可降级、可观测**比「实时精准」更重要。
 
 6 个 AI 决策点对应不同的 `AiCallScope`（缓存分桶）：
 

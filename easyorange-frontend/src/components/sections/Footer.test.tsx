@@ -11,7 +11,7 @@ describe('Footer', () => {
     it('renders copyright text', () => {
         render(<Footer />);
         expect(
-            screen.getByText('© 2025-2026 EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践')
+            screen.getByText('© 2025-2026 EasyOrange — LLM × DDD 工程化实战项目')
         ).toBeInTheDocument();
     });
 

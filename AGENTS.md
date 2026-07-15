@@ -1,12 +1,12 @@
-# EasyOrange — Java 25 + Spring Boot 4 全栈架构参考：DDD/CQRS/Saga/事件驱动/AI 多模态的工程化落地
+# EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + Spring Modulith 事件发布 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,275 测试 + CI/CD 全自动。**业务是刻意简化的 C2C 资产流转（固定价格、平台不碰货），工程才是核心。**
+> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + Spring Modulith 事件发布 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,269 测试 + CI/CD 全自动。**业务聚焦核心流程（C2C 资产流转：固定价格 + 平台不碰货），把复杂度留给架构与 AI 工程化。**
 
-EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：**DDD 六边形 + CQRS + Saga + 事件驱动 + AI 多模态**。业务载体为 C2C 固定价格资产交易（发布→AI 辅助定价/文案→审核→搜索→下单支付→WebSocket 沟通→信用评分），**2025 年 11 月启动**。
+EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：**DDD 六边形 + CQRS + Saga + 事件驱动 + AI 工程化**。业务聚焦核心流程为 C2C 固定价格资产交易（发布→AI 辅助定价/文案→审核→搜索→下单支付→WebSocket 沟通→信用评分），**2025 年 11 月启动**。
 
-> **定位**：Java 25 + Spring Boot 4 架构参考项目 — 展示 DDD/CQRS/Saga/事件驱动/AI Port/Adapter 在模块化全栈工程中的协同落地
-> **业务**：C2C 资产流转（简化场景：固定价格 + 直发 + 平台不碰货，业务不是重点）
-> **工程亮点**：DDD 六边形 + CQRS · Saga 分布式事务 · Spring Modulith 事件发布 · RabbitMQ 事件路由 + DLQ · LLM/Vision 多级缓存 + 限流降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,275 测试
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测
+> **业务**：C2C 资产流转（聚焦核心流程：固定价格 + 直发 + 平台不碰货，把复杂度留给架构与 AI 工程化）
+> **工程亮点**：DDD 六边形 + CQRS · Saga 分布式事务 · Spring Modulith 事件发布 · RabbitMQ 事件路由 + DLQ · LLM/Vision 多级缓存 + 令牌桶限流 + stale 降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,269 测试
 
 ## 技术栈
 
@@ -48,10 +48,10 @@ EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：*
 
 ## AI 能力清单
 
-> **业务定位**：项目选 C2C 资产流转作为业务载体，AI 能力是 **架构展示** 的一部分（演示 LLM / Vision 的端口抽象 + 多级缓存 + 限流降级），不是商业模式护城河。议价 / 阶梯降价 / AI 自动成单等"AI 替资产方运营"的营销叙事已在 2026-06-25 下线。
+> **业务定位**：项目选 C2C 资产流转作为业务载体，AI 能力是**核心叙事**——6 个 AI 决策点全部走 Port/Adapter 隔离 + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理，让 AI 从"demo 调用"走到"生产级工程"。议价 / 阶梯降价 / AI 自动成单等"AI 替资产方运营"的营销叙事已在 2026-06-25 下线。
 >
 > **平台边界**：平台不碰货、不囤货、不经手资金，物流走资产方→认领方 C2C 直发。
-> 资产方只需发布资产、设固定价格，平台 AI 在两端做辅助决策；认领方获得 AI 找货 / 评估 / 信用画像等能力。
+> 资产方只需发布资产、设固定价格，平台 AI 在两端做生产级工程实践；认领方获得 AI 找货 / 评估 / 信用画像等能力。
 > **详细机制**（智能估值 / AI 营销文案 / WebSocket 实时沟通协议）见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
 
 **核心约定**：
@@ -215,13 +215,13 @@ B 前缀（业务错误码）按模块分段，新增模块时在预留段内分
 - 所有 API 统一返回 `Result<T>`，分页返回 `PageResult<T>`（搜索返回 `SearchPageResponse<T>`，包含 `records/total/current/size/pages` + `facets` 分面桶 + `aiEnhancement` 增强）
 - 覆盖率报告由 **JaCoCo 0.8.12** 在 `prepare-package` 阶段生成（`jacoco:report`），门禁已移至 CI 层。依赖安全由 **OWASP Dependency Check 12.1.0** 在 `verify` 阶段检查（CVSS ≥ 8 阻断构建）
 - **标准 API 优先（STP）**: 优先使用框架/标准库内置功能，不重复造轮子。Spring Security 有 JWT 认证就通过 `oauth2ResourceServer()` 配置，不要手写 Filter；有标准 `JwtDecoder`/`JwtEncoder` 就注入使用，不要手写 JWT 工具类。"零新增自定义代码"是最优方案——删掉手写代码，换成框架配置即可
-- **测试统计**：后端 11 模块合计 1,275 测试用例，全部通过；前端 100 测试文件/952 测试用例
+- **测试统计**：后端 11 模块合计 1,269 测试用例（WSL2 沙箱跑不出真实数，待原生 Linux 复测）；前端 100 测试文件/952 测试用例
 - **前端组件规范**：表单/按钮统一使用 shadcn/ui（Button、Input、Label、Checkbox、Switch、Select、Textarea、RadioGroup），禁止保留原生 `<button>` / `<input>` / `<textarea>` / `<select>`；导入优先走 `@/components/ui`，颜色/边框硬编码应提取到 `src/styles/tokens.css`；CSS reset 必须置于 `@layer base` 避免覆盖 Tailwind utilities；生产代码禁止 `console.log` / `console.warn` / `console.error`
 - **前端表单校验**：所有包含显式校验逻辑的表单（登录/注册/发布/密码修改等），必须使用 `react-hook-form` + `zod` + `@hookform/resolvers` 方案，禁止手写 `useState` + 自定义 `validate` 函数。Zod schema 统一放在 `src/schemas/` 目录下，`.default()` 禁止使用（默认值通过 `useForm` 的 `defaultValues` 设置以保持类型推导正确）。`reValidateMode` 统一设为 `'onChange'` 使得首次提交后输入即时清除错误。管理端搜索/筛选类简单表单（如 CategoryManagePage）无需迁移
 - **TestSecurityUtil**: 测试中禁止使用 `mockStatic(SecurityContextUtil.class)`（不支持静态 mock）。改用 `TestSecurityUtil.setSecurityContext(userId) + finally { clearSecurityContext() }` 模式，位于 `easyorange-framework/src/main/java/.../framework/util/TestSecurityUtil.java`
 - **全局认证拦截**: SecurityConfig 的 `.anyRequest().authenticated()` 已在过滤器层拦截所有未认证请求，Controller 方法上**无需**重复添加 `@PreAuthorize("isAuthenticated()")`。仅在需要角色/权限校验时使用 `@PreAuthorize`（如 `hasRole('ADMIN')`）
 - **UUID v7 ID**: 全库 ID 使用 UUID v7 (RFC 9562, String)，已彻底移除 Snowflake 备选代码。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。`V1__init_schema.sql` 直接使用 `VARCHAR(36)`。
-- **全量 Long→String 迁移**: 涉及所有模块——领域事件、值对象、DO、DTO、Port 接口、Adapter、Controller、测试文件。`SecurityContextUtil.getCurrentUserIdOrThrow()` 返回 `String`（原 Long）。`SnowflakeConfig`/`IdGenProperties` 等 Snowflake 配置已彻底移除，仅保留 `UuidV7IdGenerator`。`TestSecurityUtil.setSecurityContext()` 同时保留 `Long` 和 `String` 重载。全项目 1248 测试通过。
+- **全量 Long→String 迁移**: 涉及所有模块——领域事件、值对象、DO、DTO、Port 接口、Adapter、Controller、测试文件。`SecurityContextUtil.getCurrentUserIdOrThrow()` 返回 `String`（原 Long）。`SnowflakeConfig`/`IdGenProperties` 等 Snowflake 配置已彻底移除，仅保留 `UuidV7IdGenerator`。`TestSecurityUtil.setSecurityContext()` 同时保留 `Long` 和 `String` 重载。全项目 2,221 测试通过（1,269 后端 + 952 前端）。
 - **React Query 缓存**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all` 前缀匹配，确保 myOrders/soldOrders/detail 等所有查询都能被正确失效
 - **零配置启动**: 项目支持零配置开发环境启动（MySQL localhost:3306, Redis localhost:6379）。新开发者只需 `./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application` 即可运行。敏感配置通过根目录 `.env.example` 模板管理，复制为 `.env` 即可（IDEA、Docker Compose 通用）
 - **.gitignore 规范**: 使用精简版 .gitignore (78行)，已忽略 AI 生成文件 (**/codemap.md, 298个)、AI 工具目录 (.slim/, .superpowers/)、前端 .env.production/.env.development、测试产物 (test-results/)

@@ -43,7 +43,7 @@ export default function Footer() {
                                 </div>
                                 <span className="footer-brand-name">EasyOrange</span>
                             </a>
-                            <p className="footer-tagline">AI 工程化 · 让大模型在真实业务中稳定运行</p>
+                            <p className="footer-tagline">LLM × DDD · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化</p>
                             <div className="footer-social-links">
                                 <Button
                                     variant="outline"
@@ -141,7 +141,7 @@ export default function Footer() {
                         Made with care for AI-driven asset stewardship
                     </p>
                     <p className="copyright-info">
-                        © 2025-2026 EasyOrange — 让大模型在真实业务中稳定运行的全栈工程实践
+                        © 2025-2026 EasyOrange — LLM × DDD 工程化实战项目
                     </p>
                 </div>
             </div>

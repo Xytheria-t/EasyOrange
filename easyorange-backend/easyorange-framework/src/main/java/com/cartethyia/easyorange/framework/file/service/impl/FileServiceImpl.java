@@ -1,19 +1,17 @@
 package com.cartethyia.easyorange.framework.file.service.impl;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
-import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.config.properties.FileUploadProperties;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
 import com.cartethyia.easyorange.framework.file.entity.UploadFile;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.storage.FileStorage;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -23,20 +21,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Slf4j
 @Service
-public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> implements FileService {
+@RequiredArgsConstructor
+public class FileServiceImpl implements FileService {
 
+    private final UploadFileMapper uploadFileMapper;
     private final FileStorage fileStorage;
-
-    private final FileUploadProperties fileUploadProperties;
-
-    public FileServiceImpl(FileStorage fileStorage, FileUploadProperties fileUploadProperties) {
-        this.fileStorage = fileStorage;
-        this.fileUploadProperties = fileUploadProperties;
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -47,44 +40,35 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public UploadFileVO uploadFile(MultipartFile file, String businessType, String businessId) {
-        BizRequire.notNull(file, "上传文件不能为空");
-        BizRequire.requireTrue(!file.isEmpty(), "上传文件不能为空");
+        Objects.requireNonNull(file, "上传文件不能为空");
+        if (file.isEmpty()) throw BusinessException.of("上传文件不能为空");
 
-        String userId = SecurityContextUtil.getCurrentUserId()
+        var userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
 
         try {
-            // Validate file
             FileUtils.assertAllowed(file, FileUtils.DEFAULT_ALLOWED_EXTENSION);
-            byte[] content = file.getBytes();
+            var content = file.getBytes();
+            var storageKey = fileStorage.store(content, file.getOriginalFilename(), file.getContentType());
 
-            // Store via FileStorage
-            String storageKey = fileStorage.store(content, file.getOriginalFilename(), file.getContentType());
-            String fileUrl = fileStorage.getUrl(storageKey);
-            String md5 = FileUtils.calculateMd5(file);
+            var entity = new UploadFile();
+            entity.setFileName(file.getOriginalFilename());
+            entity.setStorageKey(storageKey);
+            entity.setFileUrl(fileStorage.getUrl(storageKey));
+            entity.setFileSize(file.getSize());
+            entity.setFileType(FileUtils.getExtension(file));
+            entity.setMimeType(file.getContentType());
+            entity.setStorageType("LOCAL");
+            entity.setBusinessType(businessType);
+            entity.setBusinessId(businessId);
+            entity.setUploaderId(userId);
+            entity.setStatus(CommonConstant.FILE_STATUS_NORMAL);
 
-            UploadFile uploadFile = UploadFile.builder()
-                    .fileName(file.getOriginalFilename())
-                    .filePath(storageKey)
-                    .fileUrl(fileUrl)
-                    .fileSize(file.getSize())
-                    .fileType(FileUtils.getExtension(file))
-                    .mimeType(file.getContentType())
-                    .md5(md5)
-                    .storageType("LOCAL")
-                    .storageKey(storageKey)
-                    .businessType(businessType)
-                    .businessId(businessId)
-                    .uploaderId(userId)
-                    .status(CommonConstant.FILE_STATUS_NORMAL)
-                    .build();
-
-            save(uploadFile);
+            uploadFileMapper.insert(entity);
 
             log.info("action=file_upload, filename={}, size={}", file.getOriginalFilename(), FileUtils.formatFileSize(file.getSize()));
-            return convertToVO(uploadFile);
+            return toVo(entity);
         } catch (IOException e) {
-            log.error("文件上传失败", e);
             throw FileException.of("文件上传失败：" + e.getMessage(), e);
         }
     }
@@ -92,100 +76,85 @@ public class FileServiceImpl extends ServiceImpl<UploadFileMapper, UploadFile> i
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<UploadFileVO> uploadFiles(List<MultipartFile> files, String businessType) {
-        BizRequire.notEmpty(files, "上传的文件列表不能为空");
-        BizRequire.requireTrue(files != null && !files.contains(null), "文件列表不能包含空元素");
-        BizRequire.notBlank(businessType, "业务类型不能为空");
-
+        Objects.requireNonNull(files, "上传的文件列表不能为空");
         return files.stream()
-                .filter(file -> !file.isEmpty())
-                .map(file -> uploadFile(file, businessType))
-                .collect(Collectors.toList());
+                .filter(f -> !f.isEmpty())
+                .map(f -> uploadFile(f, businessType))
+                .toList();
     }
 
     @Override
     public UploadFileVO getFileInfo(String fileId) {
-        UploadFile file = getById(fileId);
-        BizRequire.notNull(file, "文件不存在");
-        return convertToVO(file);
+        var entity = uploadFileMapper.selectById(fileId);
+        if (entity == null) throw BusinessException.of("文件不存在");
+        return toVo(entity);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteFile(String fileId) {
-        UploadFile file = getById(fileId);
-        BizRequire.notNull(file, "文件不存在");
+        var entity = uploadFileMapper.selectById(fileId);
+        if (entity == null) throw BusinessException.of("文件不存在");
 
-        String userId = SecurityContextUtil.getCurrentUserId()
+        var userId = SecurityContextUtil.getCurrentUserId()
                 .orElseThrow(() -> BusinessException.of("用户未登录"));
 
-        BizRequire.requireTrue(java.util.Objects.equals(file.getUploaderId(), userId), "无权限删除该文件");
-
-        // Delete from storage (use storageKey if available, fallback to filePath)
-        try {
-            String key = file.getStorageKey() != null ? file.getStorageKey() : file.getFilePath();
-            fileStorage.delete(key);
-        } catch (IOException e) {
-            log.warn("文件删除失败（存储层）：fileId={}, path={}", fileId, file.getFilePath(), e);
+        if (!Objects.equals(entity.getUploaderId(), userId)) {
+            throw BusinessException.of("无权限删除该文件");
         }
 
-        removeById(fileId);
-        log.info("action=file_delete, filename={}", file.getFileName());
+        try {
+            fileStorage.delete(entity.getStorageKey());
+        } catch (IOException e) {
+            log.warn("文件删除失败（存储层）：fileId={}", fileId, e);
+        }
+        uploadFileMapper.deleteById(fileId);
+        log.info("action=file_delete, filename={}", entity.getFileName());
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void bindBusiness(String fileId, String businessType, String businessId) {
-        UploadFile file = getById(fileId);
-        BizRequire.notNull(file, "文件不存在");
-
-        file.setBusinessType(businessType);
-        file.setBusinessId(businessId);
-        updateById(file);
+        var entity = uploadFileMapper.selectById(fileId);
+        if (entity == null) throw BusinessException.of("文件不存在");
+        entity.setBusinessType(businessType);
+        entity.setBusinessId(businessId);
+        uploadFileMapper.updateById(entity);
     }
 
     @Override
     public List<UploadFileVO> getFilesByBusiness(String businessType, String businessId) {
-        List<UploadFile> files = ChainWrappers.lambdaQueryChain(baseMapper)
-                .eq(UploadFile::getBusinessType, businessType)
-                .eq(UploadFile::getBusinessId, businessId)
-                .eq(UploadFile::getStatus, CommonConstant.FILE_STATUS_NORMAL)
-                .orderByAsc(UploadFile::getCreateTime)
-                .list();
-        return files.stream()
-                .map(this::convertToVO)
-                .collect(Collectors.toList());
+        return uploadFileMapper.selectList(
+                new LambdaQueryWrapper<UploadFile>()
+                        .eq(UploadFile::getBusinessType, businessType)
+                        .eq(UploadFile::getBusinessId, businessId)
+                        .eq(UploadFile::getStatus, CommonConstant.FILE_STATUS_NORMAL)
+                        .orderByAsc(UploadFile::getCreateTime))
+                .stream()
+                .map(FileServiceImpl::toVo)
+                .toList();
     }
 
     @Override
     public Resource downloadFile(String fileId) {
-        UploadFile file = getById(fileId);
-        BizRequire.notNull(file, "文件不存在");
+        var entity = uploadFileMapper.selectById(fileId);
+        if (entity == null) throw BusinessException.of("文件不存在");
 
-        // Only local file storage supports direct Resource download
-        String relativePath = file.getStorageKey() != null ? file.getStorageKey() : file.getFilePath();
-        String fullPath = fileUploadProperties.getPath() + "/" + relativePath;
-
-        if (!new java.io.File(fullPath).exists()) {
-            log.error("文件不存在：fileId={}, fullPath={}", fileId, fullPath);
-            throw FileException.of("文件不存在：" + file.getFileName());
+        var path = fileStorage.getPath(entity.getStorageKey());
+        if (!path.toFile().exists()) {
+            log.error("文件不存在：fileId={}", fileId);
+            throw FileException.of("文件不存在：" + entity.getFileName());
         }
-
-        log.info("action=prepare_download, fileId={}, fileName={}", fileId, file.getFileName());
-        return new FileSystemResource(fullPath);
+        log.info("action=prepare_download, fileId={}, fileName={}", fileId, entity.getFileName());
+        return new FileSystemResource(path);
     }
 
-    private UploadFileVO convertToVO(UploadFile file) {
-        return UploadFileVO.builder()
-                .id(file.getId())
-                .fileName(file.getFileName())
-                .filePath(file.getFilePath())
-                .fileUrl(file.getFileUrl())
-                .fileSize(file.getFileSize())
-                .fileType(file.getFileType())
-                .mimeType(file.getMimeType())
-                .md5(file.getMd5())
-                .storageType(file.getStorageType())
-                .storageKey(file.getStorageKey())
-                .build();
+    private static UploadFileVO toVo(UploadFile entity) {
+        return new UploadFileVO(
+                entity.getId(),
+                entity.getFileName(),
+                entity.getFileUrl(),
+                entity.getFileSize(),
+                entity.getMimeType());
     }
 }

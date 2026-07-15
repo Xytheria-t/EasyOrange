@@ -1,5 +1,8 @@
 package com.cartethyia.easyorange.ai.config;
 
+import com.cartethyia.easyorange.ai.budget.InMemoryTokenBudgetStore;
+import com.cartethyia.easyorange.ai.budget.TokenBudgetStore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +28,12 @@ public class AiConfig {
     public RestClient qwenVlRestClient(AiProperties aiProperties) {
         var props = aiProperties.getQwenVl();
         return createAiRestClient(props.getBaseUrl(), props.getApiKey(), props.getTimeout());
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(TokenBudgetStore.class)
+    public TokenBudgetStore tokenBudgetStore() {
+        return new InMemoryTokenBudgetStore();
     }
 
     private static RestClient createAiRestClient(String baseUrl, String apiKey, int timeoutMillis) {

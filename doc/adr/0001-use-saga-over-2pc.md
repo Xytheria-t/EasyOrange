@@ -21,7 +21,7 @@ EasyOrange 的 C2C 资产流转业务中，「认领方下单」是一个跨三�
 
 - **平台不经手资金**（见 `PRODUCT_DIRECTION.md`），资金流不进平台账户，支付仅是「记账 + 状态推进」
 - **C2C 直发**：平台不持有库存，库存锁定的语义是「商品下架 + 订单项关联」，不是仓储扣减
-- **可观测性优先**：项目定位是架构展示样板（`README.md`），中间态可观测比强一致更重要
+- **可观测性优先**：项目定位是 LLM × DDD 工程化实战项目（`README.md`），中间态可观测比强一致更重要
 - 已有 RabbitMQ 基础设施，无 Seata / XA Coordinator
 
 ## 决策（Decision）
@@ -59,7 +59,7 @@ PaymentInitiationRequestedEvent → PaymentInitiationEventConsumer
 
 - 无 2PC 长锁等待，下单链路 RT 友好
 - 单模块故障不会拖垮整条链路（payment 宕机时 order 仍可创建，补偿后续触发）
-- Saga 状态可查可重试，符合「架构展示样板」的可观测诉求
+- Saga 状态可查可重试，符合「LLM × DDD 工程化实战项目」的可观测诉求
 - 与现有 RabbitMQ DLQ + 指数退避机制自然衔接
 
 ### 负向后果
@@ -77,7 +77,7 @@ PaymentInitiationRequestedEvent → PaymentInitiationEventConsumer
 ## 备选方案（Alternatives Considered）
 
 - **2PC / XA（如 Seata AT 模式）**：拒绝。需要全局事务协调器，引入新中间件；跨模块 Port/Adapter 边界会被资源管理器穿透破坏；锁等待长，与 C2C 直发场景的轻平台边界冲突。
-- **TCC（Try-Confirm-Cancel）**：拒绝。每个参与模块都要实现 Try/Confirm/Cancel 三套接口，对 product / payment 模块侵入大；项目模块多但业务复杂度刻意简化（见 `PRODUCT_DIRECTION.md`），TCC 的工程成本收益不匹配。
+- **TCC（Try-Confirm-Cancel）**：拒绝。每个参与模块都要实现 Try/Confirm/Cancel 三套接口，对 product / payment 模块侵入大；项目模块多但业务聚焦核心流程（见 `PRODUCT_DIRECTION.md`），TCC 的工程成本收益不匹配。
 - **本地消息表（最终一致，无编排器）**：拒绝。订单创建是「编排式」流程（步骤有强先后与补偿依赖），纯事件链路（Choreography）会让失败路径难追踪；项目已有 Saga 状态机诉求，本地消息表更适合单发出队场景。
 - **纯事件 Choreography**：拒绝。无编排器时，订单创建的多步骤流程分散在各消费者，难以向面试/比赛场景讲清楚「整条链路在做什么」。
 

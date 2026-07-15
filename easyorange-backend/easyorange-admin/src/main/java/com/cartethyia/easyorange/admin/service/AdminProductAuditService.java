@@ -25,8 +25,8 @@ import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -253,7 +253,7 @@ public class AdminProductAuditService {
         }
         try {
             return objectMapper.writeValueAsString(dimensions);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("Failed to serialize audit dimensions to JSON", e);
             return null;
         }
@@ -266,7 +266,7 @@ public class AdminProductAuditService {
         }
         try {
             return objectMapper.readValue(json, List.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.warn("Failed to parse audit dimensions from JSON: {}", json, e);
             return List.of();
         }

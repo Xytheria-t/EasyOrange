@@ -410,7 +410,7 @@ INSERT INTO `eo_message` (
     `create_time`, `update_time`
 ) VALUES
 -- 系统消息
-(1,  NULL, 1, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 89 DAY, NULL, NULL, NOW() - INTERVAL 90 DAY, NOW()),
+(1,  NULL, 1, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange！在这里你可以发布资产，AI 工程化能力帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 89 DAY, NULL, NULL, NOW() - INTERVAL 90 DAY, NOW()),
 (2,  NULL, 3, 0, '账号注册成功', '你的账号已成功注册，快去完善个人资料吧！', 1, NOW() - INTERVAL 59 DAY, NULL, NULL, NOW() - INTERVAL 60 DAY, NOW()),
 (3,  NULL, 4, 0, '账号注册成功', '你的账号已成功注册，快去完善个人资料吧！', 1, NOW() - INTERVAL 44 DAY, NULL, NULL, NOW() - INTERVAL 45 DAY, NOW()),
 (4,  NULL, 1, 0, '商品上架提醒', '你发布的商品「iPhone 14 Pro Max 256G 暗紫色」已成功上架，祝早日售出！', 1, NOW() - INTERVAL 29 DAY, 1, NULL, NOW() - INTERVAL 30 DAY, NOW()),
@@ -519,7 +519,7 @@ INSERT INTO `eo_message_template` (
 (8, 'SELLER_PAID',        '资产方收款通知',     'order',   '认领方已付款',     '订单 ${orderNo} 认领方已付款，请尽快发货。',                                     '["orderNo"]',                     1, NOW(), NOW()),
 (9, 'PRODUCT_ONLINE',     '商品上架通知',     'system',  '商品上架成功',   '你发布的商品「${productName}」已成功上架，祝早日售出！',                       '["productName"]',                 1, NOW(), NOW()),
 (10, 'PRODUCT_OFFLINE',   '商品下架通知',     'system',  '商品已下架',     '你的商品「${productName}」已下架，原因：${reason}。',                          '["productName","reason"]',        1, NOW(), NOW()),
-(11, 'USER_REGISTER',     '注册欢迎通知',     'system',  '欢迎加入',       '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~',            '[]',                              1, NOW(), NOW()),
+(11, 'USER_REGISTER',     '注册欢迎通知',     'system',  '欢迎加入',       '欢迎来到 EasyOrange！在这里你可以发布资产，AI 工程化能力帮你估值、写描述，快去发布你的第一件资产吧~',            '[]',                              1, NOW(), NOW()),
 (12, 'PRICE_DROP',        '降价提醒',         'system',  '收藏商品降价',   '你收藏的商品「${productName}」已降价至 ${price} 元，快去看看吧！',             '["productName","price"]',         1, NOW(), NOW())
 AS new
 ON DUPLICATE KEY UPDATE
@@ -877,9 +877,9 @@ INSERT INTO `eo_message` (
     `create_time`, `update_time`
 ) VALUES
 -- 系统消息（新用户注册）
-(26, NULL, 11, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 179 DAY, NULL, NULL, NOW() - INTERVAL 180 DAY, NOW()),
-(27, NULL, 12, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 119 DAY, NULL, NULL, NOW() - INTERVAL 120 DAY, NOW()),
-(28, NULL, 17, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange AI 资产管理平台！在这里你可以把闲置资产交给 AI，让 AI 帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 13 DAY, NULL, NULL, NOW() - INTERVAL 14 DAY, NOW()),
+(26, NULL, 11, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange！在这里你可以发布资产，AI 工程化能力帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 179 DAY, NULL, NULL, NOW() - INTERVAL 180 DAY, NOW()),
+(27, NULL, 12, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange！在这里你可以发布资产，AI 工程化能力帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 119 DAY, NULL, NULL, NOW() - INTERVAL 120 DAY, NOW()),
+(28, NULL, 17, 0, '欢迎加入EasyOrange', '欢迎来到 EasyOrange！在这里你可以发布资产，AI 工程化能力帮你估值、写描述，快去发布你的第一件资产吧~', 1, NOW() - INTERVAL 13 DAY, NULL, NULL, NOW() - INTERVAL 14 DAY, NOW()),
 -- 订单消息（新订单）
 (29, NULL, 14, 2, '订单创建成功', '你已成功下单「三星 Galaxy S24 Ultra」，订单号：ORD20260206001，请尽快完成支付。', 1, NOW() - INTERVAL 12 DAY, 13, NULL, NOW() - INTERVAL 12 DAY, NOW()),
 (30, NULL, 11, 2, '收到新订单', '你的商品「三星 Galaxy S24 Ultra」有新订单，请尽快处理。订单号：ORD20260206001', 1, NOW() - INTERVAL 12 DAY, 13, NULL, NOW() - INTERVAL 12 DAY, NOW()),

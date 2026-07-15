@@ -51,10 +51,8 @@ public class LocalRateLimiter {
     }
 
     private void evictExpired() {
-        long now = System.currentTimeMillis();
-        // 清理超过 2 个窗口周期未访问的条目
-        long expiryThreshold = now - TimeUnit.SECONDS.toMillis(CLEAN_INTERVAL_SECONDS);
-        windows.entrySet().removeIf(e -> isExpired(e.getValue(), expiryThreshold, now));
+        var threshold = System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(CLEAN_INTERVAL_SECONDS);
+        windows.entrySet().removeIf(e -> e.getValue().get(0) < threshold);
     }
 
     public void clear() {

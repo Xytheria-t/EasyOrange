@@ -12,7 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
+import java.util.HexFormat;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
 @Component
@@ -21,7 +22,6 @@ public class LocalFileStorage implements FileStorage {
     private static final DateTimeFormatter DATE_PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     private final FileUploadProperties fileUploadProperties;
-
     private Path basePath;
 
     public LocalFileStorage(FileUploadProperties fileUploadProperties) {
@@ -35,48 +35,27 @@ public class LocalFileStorage implements FileStorage {
 
     @Override
     public String store(byte[] content, String originalFilename, String contentType) throws IOException {
-        String extension = extractExtension(originalFilename, contentType);
-        String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
-        String uuidName = UUID.randomUUID().toString().replace("-", "") + "." + extension;
-        String relativePath = datePath + "/" + uuidName;
-
-        Path fullPath = basePath.resolve(relativePath).normalize();
-
-        if (!fullPath.startsWith(basePath)) {
-            throw FileException.of("非法文件路径");
-        }
-
+        var extension = extractExtension(originalFilename, contentType);
+        var relativePath = "%s/%s.%s".formatted(
+                LocalDate.now().format(DATE_PATH_FORMATTER),
+                HexFormat.of().formatHex(randomBytes(16)),
+                extension);
+        var fullPath = securePath(relativePath);
         Files.createDirectories(fullPath.getParent());
         Files.write(fullPath, content);
-
         log.debug("Stored file locally: {} ({} bytes)", relativePath, content.length);
         return relativePath;
     }
 
     @Override
-    public byte[] load(String identifier) throws IOException {
-        Path fullPath = basePath.resolve(identifier).normalize();
-
-        if (!fullPath.startsWith(basePath)) {
-            throw FileException.of("非法文件路径");
-        }
-        if (!Files.exists(fullPath)) {
-            throw FileException.of("文件不存在：" + identifier);
-        }
-
-        return Files.readAllBytes(fullPath);
+    public void delete(String identifier) throws IOException {
+        Files.deleteIfExists(securePath(identifier));
+        log.debug("Deleted file: {}", identifier);
     }
 
     @Override
-    public void delete(String identifier) throws IOException {
-        Path fullPath = basePath.resolve(identifier).normalize();
-
-        if (!fullPath.startsWith(basePath)) {
-            throw FileException.of("非法文件路径");
-        }
-
-        Files.deleteIfExists(fullPath);
-        log.debug("Deleted file: {}", identifier);
+    public Path getPath(String identifier) {
+        return securePath(identifier);
     }
 
     @Override
@@ -84,17 +63,24 @@ public class LocalFileStorage implements FileStorage {
         return fileUploadProperties.getUrlPrefix() + identifier.replace("\\", "/");
     }
 
-    @Override
-    public boolean supportsDirectUrl() {
-        return false;
+    private Path securePath(String identifier) {
+        var resolved = basePath.resolve(identifier).normalize();
+        if (!resolved.startsWith(basePath)) {
+            throw FileException.of("非法文件路径");
+        }
+        return resolved;
     }
 
-    private String extractExtension(String filename, String contentType) {
+    private static byte[] randomBytes(int n) {
+        var buf = new byte[n];
+        ThreadLocalRandom.current().nextBytes(buf);
+        return buf;
+    }
+
+    private static String extractExtension(String filename, String contentType) {
         if (filename != null && filename.contains(".")) {
-            String ext = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
-            if (!ext.isEmpty()) {
-                return ext;
-            }
+            var ext = filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+            if (!ext.isEmpty()) return ext;
         }
         if (contentType != null) {
             return switch (contentType.toLowerCase()) {

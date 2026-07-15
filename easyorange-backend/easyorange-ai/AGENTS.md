@@ -29,7 +29,7 @@ ai/
 ├── budget/                         # Token 预算治理 (@TokenBudget AOP)
 │   ├── TokenBudget.java            # @注解 (scenario / maxPerCall / dailyTokenLimit)
 │   ├── TokenBudgetStore.java       # 接口 + 嵌套 record TokenUsage
-│   ├── InMemoryTokenBudgetStore.java  # ConcurrentHashMap + AtomicReference 实现
+│   ├── InMemoryTokenBudgetStore.java  # ConcurrentHashMap + AtomicReference 实现（由 AiConfig @Bean 注册，非 @Component）
 │   ├── TokenBudgetExceededException.java  # 预算超限异常 (RuntimeException)
 │   └── TokenBudgetAspect.java      # @Around("@annotation(tokenBudget)") AOP 切面
 ├── enums/
@@ -49,7 +49,7 @@ ai/
 ├── dto/                            # 业务 DTO (AiReviewRequest/Result, CopyGenerationRequest/Result, PricingRequest/Suggestion, AutoListingResult, CreditScoreResult, QaRequest/Response, SemanticSearchQuery/Result)
 ├── config/
 │   ├── AiProperties.java           # AI 配置属性 (API key, endpoint, 模型名, cache, rateLimit)
-│   ├── AiConfig.java               # AI Bean 配置 (deepseekRestClient, qwenVlRestClient)
+│   ├── AiConfig.java               # AI Bean 配置 (deepseekRestClient, qwenVlRestClient, tokenBudgetStore)
 │   ├── AiCacheConfig.java          # 6 个 MultiLevelCache Bean + 拦截器注册
 │   └── AiStaleCacheConfig.java     # Stale 缓存 (Caffeine, 24h TTL, 限流降级用)
 └── controller/                     # API 接口 (可选, 部分控制器在 easyorange-application)

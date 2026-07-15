@@ -3,18 +3,23 @@ package com.cartethyia.easyorange.framework.config.security;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
 import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
+import com.cartethyia.easyorange.framework.web.filter.TokenRevocationFilter;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -36,19 +41,27 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import tools.jackson.databind.ObjectMapper;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @AutoConfiguration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -61,6 +74,7 @@ public class SecurityConfig {
     private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Content-Disposition"};
 
     private final RateLimitFilter rateLimitFilter;
+    private final TokenRevocationFilter tokenRevocationFilter;
     private final SecurityProperties securityProperties;
     private final ObjectMapper objectMapper;
 
@@ -92,7 +106,8 @@ public class SecurityConfig {
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
             )
-            .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterBefore(rateLimitFilter, AnonymousAuthenticationFilter.class)
+            .addFilterBefore(tokenRevocationFilter, AnonymousAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
                 .contentTypeOptions(Customizer.withDefaults())
@@ -108,37 +123,44 @@ public class SecurityConfig {
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(JwtProperties properties, StringRedisTemplate redis) {
-        var nimbus = NimbusJwtDecoder.withSecretKey(secretKey(properties)).build();
-        nimbus.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
+    public KeyPair rsaKeyPair(JwtProperties properties) {
+        String privateKeyLocation = properties.getPrivateKeyLocation();
+        String publicKeyLocation = properties.getPublicKeyLocation();
 
-        return token -> {
-            Jwt jwt = nimbus.decode(token);
-
-            // Check blacklist
-            String jti = jwt.getId();
-            if (jti != null && Boolean.TRUE.equals(
-                    redis.hasKey(LoginCacheConstants.TOKEN_BLACKLIST_KEY + jti))) {
-                throw new BadJwtException("Token has been revoked");
+        if (!privateKeyLocation.isBlank() && !publicKeyLocation.isBlank()) {
+            try {
+                return readKeyPair(privateKeyLocation, publicKeyLocation);
+            } catch (Exception e) {
+                throw new RuntimeException("无法加载 RSA 密钥对，请检查 jwt.private-key-location 和 jwt.public-key-location", e);
             }
+        }
 
-            // Check force logout
-            var forceLogoutKey = LoginCacheConstants.FORCE_LOGOUT_KEY + jwt.getSubject();
-            String forceLogoutTime = redis.opsForValue().get(forceLogoutKey);
-            if (forceLogoutTime != null) {
-                Instant iat = jwt.getIssuedAt();
-                if (iat != null && iat.toEpochMilli() < Long.parseLong(forceLogoutTime)) {
-                    throw new BadJwtException("Token revoked by force logout");
-                }
-            }
-
-            return jwt;
-        };
+        // 开发环境自动生成 2048 位 RSA 密钥对
+        try {
+            var generator = KeyPairGenerator.getInstance("RSA");
+            generator.initialize(2048);
+            KeyPair keyPair = generator.generateKeyPair();
+            log.warn("RSA 密钥对已自动生成（仅限开发环境），重启后历史 Token 将失效");
+            return keyPair;
+        } catch (Exception e) {
+            throw new RuntimeException("RSA 密钥对自动生成失败", e);
+        }
     }
 
     @Bean
-    public JwtEncoder jwtEncoder(JwtProperties properties) {
-        return NimbusJwtEncoder.withSecretKey(secretKey(properties)).build();
+    public JwtDecoder jwtDecoder(KeyPair keyPair, JwtProperties properties) {
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic()).build();
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
+        return decoder;
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder(KeyPair keyPair) {
+        JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+                .privateKey((RSAPrivateKey) keyPair.getPrivate())
+                .build();
+        JWKSource jwkSource = new ImmutableJWKSet<>(new JWKSet(jwk));
+        return new NimbusJwtEncoder(jwkSource);
     }
 
     @Bean
@@ -196,9 +218,47 @@ public class SecurityConfig {
         };
     }
 
-    private static SecretKeySpec secretKey(JwtProperties properties) {
-        return new SecretKeySpec(
-                properties.getSecretKey().getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    /**
+     * 从 PEM 文件加载 RSA 密钥对。
+     * <p>
+     * 支持 file: 和 classpath: 前缀，由 Spring ResourceLoader 解析。
+     */
+    private static KeyPair readKeyPair(String privateKeyLocation, String publicKeyLocation) throws Exception {
+        var factory = KeyFactory.getInstance("RSA");
+
+        byte[] privateKeyBytes;
+        byte[] publicKeyBytes;
+
+        try (var input = new java.io.FileInputStream(privateKeyLocation)) {
+            privateKeyBytes = readAllBytes(input);
+        }
+        try (var input = new java.io.FileInputStream(publicKeyLocation)) {
+            publicKeyBytes = readAllBytes(input);
+        }
+
+        var privateKey = factory.generatePrivate(
+                new PKCS8EncodedKeySpec(decodePem(privateKeyBytes)));
+        var publicKey = factory.generatePublic(
+                new X509EncodedKeySpec(decodePem(publicKeyBytes)));
+
+        return new KeyPair(publicKey, privateKey);
     }
 
+    private static byte[] decodePem(byte[] pemBytes) {
+        var pem = new String(pemBytes, java.nio.charset.StandardCharsets.UTF_8);
+        var base64 = pem.replaceAll("-----BEGIN [A-Z ]+-----", "")
+                         .replaceAll("-----END [A-Z ]+-----", "")
+                         .replaceAll("\\s", "");
+        return Base64.getDecoder().decode(base64);
+    }
+
+    private static byte[] readAllBytes(InputStream input) throws Exception {
+        var buffer = new ByteArrayOutputStream();
+        byte[] chunk = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = input.read(chunk)) != -1) {
+            buffer.write(chunk, 0, bytesRead);
+        }
+        return buffer.toByteArray();
+    }
 }

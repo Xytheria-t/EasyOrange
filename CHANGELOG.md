@@ -4,6 +4,29 @@
 
 ## [unreleased]
 
+### 2026-07-15 — 定位差异化重审：从「企业级 Java 架构实战」到「LLM × DDD 工程化实战」
+
+- **refactor(brand)**: 项目定位从「企业级 Java 架构实战项目」演化为「**LLM × DDD 工程化实战项目**」。差异化锚点：DDD/Saga/CQRS/事件驱动是 10 份简历 9 份的标准话术，单纯堆砌清单无记忆点。改为「核心矛盾 + 解法」叙事——DDD 铁律（domain 层零框架依赖）vs LLM 调用昂贵且不稳定，Port/Adapter + 装饰器模式解了这个矛盾
+- **refactor(brand)**: 三层定位拓展落地——标题层（`LLM × DDD：Java 架构工程化实战`）/ 副标层（`在 DDD 六边形里装 LLM：可换供应商、可降级、可观测的 AI 工程化落地`）/ 30 秒钩子（核心矛盾 + 解法 + 三指标收尾）
+- **refactor(brand)**: 差异化策略三件套——①从「我用了 X」→「我为什么用 X + 我拒绝了 Y」（ADR 驱动）②从「我会 X」→「我守住了 X」（ArchUnit 守卫、编译期隔离）③AI 工程化作唯一故事锚点（不是 7 件套清单，是「核心矛盾 + 解法」故事）
+- **refactor(brand)**: 业务叙事口径从「把复杂度留给架构与工程」升级为「把复杂度留给架构与 AI 工程化」，强调 AI 工程化是核心叙事而非附属
+- **refactor(docs)**: 全量同步新定位——README.md / CLAUDE.md / AGENTS.md（根）/ PRODUCT_DIRECTION.md / easyorange-frontend/README.md / easyorange-frontend/index.html / codemap.md / easyorange-frontend/codemap.md / doc/adr/0001 / doc/adr/0002 / doc/adr/0003 / doc/工程指标.md / HeroSection.tsx + test / Footer.tsx + test
+- **test**: HeroSection 副标与 Footer tagline 同步为 `LLM × DDD · 业务聚焦核心流程，把复杂度留给架构与 AI 工程化`；Footer copyright 同步为 `© 2025-2026 EasyOrange — LLM × DDD 工程化实战项目`
+- **refactor(brand)**: README 新增「4 个核心架构模式」inline code 徽章行（`DDD 六边形` · `CQRS` · `Saga` · `事件驱动`），用现代化最简洁形式恢复 4 模式可见性，与 11 模块表 / Saga 时序图 / 三个并列钩子 / 页脚形成 5 处分布、无重复
+- **refactor(docs)**: neat-freak 清理——删除 `doc/前端分页重构设计.md`（94 行）+ `doc/前端分页重构实施计划.md`（988 行），共 1,082 行 2025-06-25 brainstorming 输出未执行规划。TypeScript 代码已自然统一为 `PageResult<T>`（grep 20 处 `PageData` 全部是测试文件函数名/变量名，类型已是 `PageResult<>`），规划已自然完成
+- **refactor(docs)**: CLAUDE.md L162 旧叙事修正——「AI 仅在两端做辅助 + AI 是项目展示的一部分」→「AI 在两端走生产级工程实践 + 6 决策点全走 7 件套」
+
+### 2026-07-14 — 项目定位重审 + 文档口径全面统一
+
+- **refactor(brand)**: 项目定位从「LLM 时代企业级 Java 应用工程化样板」重审为「**企业级 Java 架构实战项目**」。叙事口径统一为「**业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与工程**」，替换旧叙事「业务载体刻意简化，承载复杂度才是重点」（自我削弱措辞已废）
+- **refactor(brand)**: 目标受众与场景明确化——简历项目 + 面试现场（HR/面试官）+ 多岗位通用（Java 后端 / 高级架构 / AI 应用 / 全栈）。三套并列钩子：①架构落地（DDD/CQRS/Saga/事件驱动）②架构决策记录（4 ADR）③AI 工程化（7 件套）
+- **refactor(docs)**: 以 `doc/工程指标.md` 为数字单一权威来源（single source of truth），其他文档（README / PRODUCT_DIRECTION / CLAUDE.md / 前端 README 等）一律引用，禁止独立陈述数字。前端实测 952（951 通过 + 1 失败），总数 1,269 + 952 = 2,221（旧口径 2,214 已废）
+- **refactor(docs)**: 文档职责边界重划分——README 项目门面 / PRODUCT_DIRECTION 只管业务场景 / CLAUDE.md 只管 AI Agent 行为准则 / AGENTS.md 是后端编码指南 / doc/工程指标.md 是数字单一来源 / doc/adr/ 不变
+- **refactor(docs)**: PRODUCT_DIRECTION.md 整体重写（176 → 113 行），删除越界章节（技术架构 / 讲解框架 / 对外宣传语 / 核心关键词），AI 角色定位从「辅助决策 / 架构展示为主」升级为「生产级工程实践」，5 件套补全为 7 件套
+- **refactor(docs)**: 关键词统一替换——`AI 多模态` → `AI 工程化`；`工程化样板` / `全栈样板` / `全栈架构参考` → `企业级 Java 架构实战项目`；`业务载体刻意简化` / `业务不是主角` / `业务不是重点` → `业务聚焦核心流程`；`12 Maven 模块` → `11 Maven 模块`；`架构展示为主` / `辅助决策` → `生产级工程实践`；`限流降级` → `令牌桶限流 + stale 降级`
+- **refactor(docs)**: README / CLAUDE.md / AGENTS.md（根 + 后端）/ easyorange-frontend/README.md / doc/工程指标.md / doc/集成/AI-资产管理.md / doc/adr/0003-ai-port-adapter-with-decorator.md 全部同步新口径
+- **test**: 数字锚点更新——11 模块 / 7 对 Port/Adapter / 9 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,221 测试 / 4 ADR
+
 ### 2026-07-13 — LLM 时代工程化样板定位升级 + AI 工程化 7 件套闭环
 
 - **refactor(brand)**: 项目定位从"架构参考项目"升级为"LLM 时代企业级 Java 应用工程化样板"。叙事口径统一为"业务载体刻意简化，承载复杂度才是重点"，替换旧叙事"业务不是重点，工程才是核心"

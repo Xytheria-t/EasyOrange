@@ -67,8 +67,11 @@ JSON API 后端通过 `Content-Security-Policy` 响应头实现浏览器端 XSS 
 
 ```yaml
 jwt:
-  # JWT 签名密钥（必须配置）
-  secret-key: ${JWT_SECRET_KEY}
+  # RSA 私钥 PEM 文件路径（生产环境必须配置）
+  private-key-location: ${JWT_RSA_PRIVATE_KEY}
+  
+  # RSA 公钥 PEM 文件路径（生产环境必须配置）
+  public-key-location: ${JWT_RSA_PUBLIC_KEY}
   
   # JWT 签发者
   issuer: easyorange
@@ -252,7 +255,8 @@ security:
 
 # JWT 配置
 jwt:
-  secret-key: ${JWT_SECRET_KEY}
+  private-key-location: ${JWT_RSA_PRIVATE_KEY}
+  public-key-location: ${JWT_RSA_PUBLIC_KEY}
   issuer: easyorange
   access-token-expiration: 30
   refresh-token-expiration: 7
@@ -291,7 +295,8 @@ easyorange:
 
 | 变量名 | 说明 | 默认值 |
 |--------|------|--------|
-| `JWT_SECRET_KEY` | JWT 签名密钥 | - |
+| `JWT_RSA_PRIVATE_KEY` | RSA 私钥 PEM 文件路径 | - |
+| `JWT_RSA_PUBLIC_KEY` | RSA 公钥 PEM 文件路径 | - |
 | `REDIS_HOST` | Redis 主机 | localhost |
 | `REDIS_PORT` | Redis 端口 | 6379 |
 | `REDIS_PASSWORD` | Redis 密码 | easyorange123 |
@@ -303,7 +308,7 @@ easyorange:
 1. **生产环境配置**
    - 禁止使用 `*` 作为 CORS 允许的源
    - 使用环境变量管理敏感配置
-   - 定期轮换 JWT 密钥
+   - 定期轮换 JWT 密钥对（运行 `keys/generate-rsa-keypair.sh` 重新生成）
 
 2. **性能优化**
    - 根据并发量调整 JWT 本地缓存大小

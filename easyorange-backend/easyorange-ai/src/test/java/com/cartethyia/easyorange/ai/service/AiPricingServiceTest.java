@@ -2,8 +2,8 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.port.LlmPort;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -96,7 +96,7 @@ class AiPricingServiceTest {
 
             when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(invalidJson);
             when(objectMapper.readValue(invalidJson, PricingSuggestion.class))
-                    .thenThrow(JsonProcessingException.class);
+                    .thenThrow(JacksonException.class);
 
             PricingSuggestion result = service.suggestPrice(
                     "测试商品", "描述", "分类", 1, new BigDecimal("100")
