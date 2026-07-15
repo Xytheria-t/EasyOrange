@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.ArrayList;
@@ -36,9 +34,7 @@ import java.util.List;
  *     methods: [POST, PUT, DELETE, PATCH]
  * }</pre>
  */
-@Setter
-@Getter
-@ToString
+@Data
 @ConfigurationProperties(prefix = "rate-limit-filter")
 public class RateLimitFilterProperties {
 
@@ -48,9 +44,7 @@ public class RateLimitFilterProperties {
 
     private RepeatSubmitConfig repeatSubmit = new RepeatSubmitConfig();
 
-    @Setter
-    @Getter
-    @ToString
+    @Data
     public static class Rule {
 
         /**
@@ -85,9 +79,7 @@ public class RateLimitFilterProperties {
         private String message = "请求过于频繁，请稍后重试";
     }
 
-    @Setter
-    @Getter
-    @ToString
+    @Data
     public static class RepeatSubmitConfig {
 
         private boolean enabled = true;

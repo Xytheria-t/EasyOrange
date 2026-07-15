@@ -31,7 +31,6 @@ framework/
 │   ├── properties/               # 配置属性类
 │   │   ├── CacheProperties.java
 │   │   ├── FileUploadProperties.java
-│   │   ├── IdGenProperties.java
 │   │   ├── ImageProcessingProperties.java
 │   │   ├── JwtProperties.java
 │   │   ├── IdempotencyProperties.java  # 幂等 key 配置（前缀、默认 TTL、开关）
@@ -123,7 +122,7 @@ framework/
 JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthenticationFilter` 处理，无需自定义 Servlet Filter：
 
 1. `BearerTokenAuthenticationFilter` (Spring Security 内置) 从 `Authorization: Bearer xxx` 提取 Token
-2. 自定义 `JwtDecoder` (SecurityConfig bean) 验证签名 (Nimbus) + 黑名单检查 (Redis) + 强制登出检查 (Redis)
+2. `JwtDecoder` (SecurityConfig bean) 验证签名 (Nimbus) + issuer 检查；Token 吊销（黑名单 + 强制登出）由 `TokenRevocationFilter` 在认证完成后执行
 3. `JwtAuthenticationConverter` (SecurityConfig) 检查 token type (拒绝 refresh token)，从 `"authorities"` claim 读取权限列表，构造 `AuthUser` 并设置 `SecurityContext`
 4. `TokenService.createAccessToken()` / `createRefreshToken()` 使用 `JwtEncoder` (NimbusJwtEncoder) 答发
 5. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
@@ -255,7 +254,7 @@ public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request
 - **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
 - **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量
 - **RedisConfig 使用 `GenericJacksonJsonRedisSerializer`（Spring Data Redis 4.x 原生 Jackson 3 支持）**：注入 Spring Boot 自动配置的 Jackson 3 `ObjectMapper`，序列化策略与 HTTP 一致（Long→String）。不再需要 Jackson 2.x 的 `GenericJackson2JsonRedisSerializer`
-- **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类
+- **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类。推荐加 `@Validated` + Jakarta Validation 约束（`@Min`/`@NotBlank`/`@NotNull` 等）实现启动时 fail-fast 验证，替代手写 `@PostConstruct validate()`— 后者仅在需要输出警告而非错误时保留
 - **`@Idempotent` 幂等切面（`IdempotencyAspect`）**：`@Order(1)`，在 `RateLimitFilter(0)` 之后、`AuditLogAspect(3)` 之前执行。此顺序确保：① Filter 层先做快速防重；② 幂等拦截命中后不记录审计日志（避免重复日志）；③ 只有未缓存的请求会走到业务逻辑和日志记录。修改 Aspect 的 `@Order` 值时需评估这三层的影响
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则
 - **`RateLimitFilter` 使用 `ObjectProvider<List<HandlerMapping>>` 延迟注入**：`HandlerMapping` 列表通过 `ObjectProvider` 延迟解析，而非构造器直接注入。原因是直接注入 `List<HandlerMapping>` 会触发 `DelegatingWebSocketMessageBrokerConfiguration` → `WebSocketConfig` → `WebSocketAuthInterceptor` → `JwtDecoder`（`SecurityConfig` 中的 Bean）→ `SecurityConfig` → `RateLimitFilter` 的循环依赖。`ObjectProvider` 在请求时才解析 HandlerMapping，打破循环。修改 `RateLimitFilter` 构造器时不要改回 `@RequiredArgsConstructor` + `List<HandlerMapping>` 直接注入

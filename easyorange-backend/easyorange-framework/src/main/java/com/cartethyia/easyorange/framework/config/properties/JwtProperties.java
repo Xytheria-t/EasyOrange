@@ -1,9 +1,10 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * JWT 配置属性
@@ -11,7 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * @author cartethyia
  */
 @Data
-@Slf4j
+@Validated
 @ConfigurationProperties(prefix = "jwt")
 public class JwtProperties {
 
@@ -28,34 +29,18 @@ public class JwtProperties {
     /**
      * Access Token 过期时间（分钟）
      */
+    @Min(value = 1, message = "Access Token 过期时间必须为正值")
     private long accessTokenExpiration = 30;
 
     /**
      * Refresh Token 过期时间（天）
      */
+    @Min(value = 1, message = "Refresh Token 过期时间必须为正值")
     private long refreshTokenExpiration = 7;
 
     /**
      * JWT 发行者
      */
+    @NotBlank(message = "JWT 发行者 (issuer) 不能为空")
     private String issuer = "easyorange";
-
-    /**
-     * 应用启动时验证 JWT 配置
-     */
-    @PostConstruct
-    public void validate() {
-        if (issuer == null || issuer.isBlank()) {
-            throw new IllegalStateException("JWT 发行者 (issuer) 不能为空");
-        }
-        if (accessTokenExpiration <= 0) {
-            throw new IllegalStateException("JWT accessTokenExpiration 必须为正值");
-        }
-        if (refreshTokenExpiration <= 0) {
-            throw new IllegalStateException("JWT refreshTokenExpiration 必须为正值");
-        }
-        log.info("JWT 配置加载完成 - 发行者：{}, Access Token 过期时间：{}分钟, RSA 密钥：{}",
-                issuer, accessTokenExpiration,
-                !privateKeyLocation.isBlank() ? "已配置" : "自动生成（仅限开发环境）");
-    }
 }

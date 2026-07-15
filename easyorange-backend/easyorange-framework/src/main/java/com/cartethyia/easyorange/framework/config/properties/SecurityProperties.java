@@ -1,23 +1,38 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
 @Data
+@Validated
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
 
+    @NotNull
     private List<String> ignorePaths = new ArrayList<>();
+
+    @NotNull
     private List<String> productPaths = new ArrayList<>();
+
+    @NotNull
     private List<String> staticPaths = new ArrayList<>();
+
+    @NotNull
     private List<String> allowedOrigins = new ArrayList<>();
+
     private String logoutUrl = "/api/auth/logout";
+
+    @Min(4) @Max(31)
     private int passwordEncoderStrength = 10;
 
     @PostConstruct
@@ -37,10 +52,8 @@ public class SecurityProperties {
         if (passwordEncoderStrength < 10) {
             log.warn("⚠️ 警告：密码加密强度 {} 低于推荐值 10", passwordEncoderStrength);
         } else if (passwordEncoderStrength > 14) {
-            log.warn("⚠️ 警告：密码加密强度 {} 较高，可能影响登录性能", passwordEncoderStrength);
+            log.warn("⚠️ 警告：密码加密强度 {} 较高，可能登录性能受影响", passwordEncoderStrength);
         }
-        log.info("安全配置加载完成 - 登出 URL: {}, 密码加密强度：{}",
-                logoutUrl, passwordEncoderStrength);
     }
 
     private void validatePaths(String name, List<String> paths) {
@@ -50,8 +63,11 @@ public class SecurityProperties {
     }
 
     public List<String> getIgnorePaths() { return List.copyOf(ignorePaths); }
+
     public List<String> getProductPaths() { return List.copyOf(productPaths); }
+
     public List<String> getStaticPaths() { return List.copyOf(staticPaths); }
+
     public List<String> getAllowedOrigins() { return List.copyOf(allowedOrigins); }
-    
+
 }

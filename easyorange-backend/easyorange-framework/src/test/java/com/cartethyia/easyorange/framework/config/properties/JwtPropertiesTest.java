@@ -1,21 +1,37 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("JwtProperties Tests")
 class JwtPropertiesTest {
 
+    private static Validator validator;
+
     private JwtProperties properties;
+
+    @BeforeAll
+    static void initValidator() {
+        validator = Validation.buildDefaultValidatorFactory().getValidator();
+    }
 
     @BeforeEach
     void setUp() {
         properties = new JwtProperties();
+    }
+
+    private Set<ConstraintViolation<JwtProperties>> violations() {
+        return validator.validate(properties);
     }
 
     @Nested
@@ -54,95 +70,86 @@ class JwtPropertiesTest {
     }
 
     @Nested
-    @DisplayName("validate")
-    class ValidateTests {
+    @DisplayName("validation")
+    class ValidationTests {
 
         @Test
-        @DisplayName("should throw when issuer is null")
-        void validate_withNullIssuer_shouldThrow() {
+        @DisplayName("should reject null issuer")
+        void nullIssuer_shouldHaveViolation() {
             properties.setIssuer(null);
-
-            assertThatThrownBy(() -> properties.validate())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("发行者");
+            assertThat(violations())
+                    .anyMatch(v -> v.getMessage().contains("发行者"));
         }
 
         @Test
-        @DisplayName("should throw when issuer is blank")
-        void validate_withBlankIssuer_shouldThrow() {
+        @DisplayName("should reject blank issuer")
+        void blankIssuer_shouldHaveViolation() {
             properties.setIssuer("   ");
-
-            assertThatThrownBy(() -> properties.validate())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("发行者");
+            assertThat(violations())
+                    .anyMatch(v -> v.getMessage().contains("发行者"));
         }
 
         @Test
-        @DisplayName("should throw when access token expiration is zero")
-        void validate_withZeroAccessTokenExpiration_shouldThrow() {
+        @DisplayName("should reject zero access token expiration")
+        void zeroAccessTokenExpiration_shouldHaveViolation() {
             properties.setAccessTokenExpiration(0);
-
-            assertThatThrownBy(() -> properties.validate())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("accessTokenExpiration");
+            assertThat(violations())
+                    .anyMatch(v -> v.getMessage().contains("Access Token"));
         }
 
         @Test
-        @DisplayName("should throw when access token expiration is negative")
-        void validate_withNegativeAccessTokenExpiration_shouldThrow() {
+        @DisplayName("should reject negative access token expiration")
+        void negativeAccessTokenExpiration_shouldHaveViolation() {
             properties.setAccessTokenExpiration(-1);
-
-            assertThatThrownBy(() -> properties.validate())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("accessTokenExpiration");
+            assertThat(violations())
+                    .anyMatch(v -> v.getMessage().contains("Access Token"));
         }
 
         @Test
-        @DisplayName("should throw when refresh token expiration is zero")
-        void validate_withZeroRefreshTokenExpiration_shouldThrow() {
+        @DisplayName("should reject zero refresh token expiration")
+        void zeroRefreshTokenExpiration_shouldHaveViolation() {
             properties.setRefreshTokenExpiration(0);
-
-            assertThatThrownBy(() -> properties.validate())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("refreshTokenExpiration");
+            assertThat(violations())
+                    .anyMatch(v -> v.getMessage().contains("Refresh Token"));
         }
 
         @Test
-        @DisplayName("should throw when refresh token expiration is negative")
-        void validate_withNegativeRefreshTokenExpiration_shouldThrow() {
+        @DisplayName("should reject negative refresh token expiration")
+        void negativeRefreshTokenExpiration_shouldHaveViolation() {
             properties.setRefreshTokenExpiration(-1);
-
-            assertThatThrownBy(() -> properties.validate())
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("refreshTokenExpiration");
+            assertThat(violations())
+                    .anyMatch(v -> v.getMessage().contains("Refresh Token"));
         }
 
         @Test
-        @DisplayName("should pass with valid configuration")
-        void validate_withValidConfig_shouldPass() {
-            properties.setIssuer("easyorange");
-            properties.setAccessTokenExpiration(30);
-            properties.setRefreshTokenExpiration(7);
-
-            properties.validate();
+        @DisplayName("should pass with valid defaults")
+        void validDefaults_shouldHaveNoViolations() {
+            assertThat(violations()).isEmpty();
         }
 
         @Test
-        @DisplayName("should pass with empty key locations (dev auto-generate)")
-        void validate_withEmptyKeyLocations_shouldNotThrow() {
+        @DisplayName("should pass with empty key locations")
+        void emptyKeyLocations_shouldHaveNoViolations() {
             properties.setPrivateKeyLocation("");
             properties.setPublicKeyLocation("");
-
-            properties.validate();
+            assertThat(violations()).isEmpty();
         }
 
         @Test
         @DisplayName("should pass with configured key locations")
-        void validate_withConfiguredKeyLocations_shouldNotThrow() {
+        void configuredKeyLocations_shouldHaveNoViolations() {
             properties.setPrivateKeyLocation("classpath:keys/private.pem");
             properties.setPublicKeyLocation("classpath:keys/public.pem");
+            assertThat(violations()).isEmpty();
+        }
 
-            properties.validate();
+        @Test
+        @DisplayName("should pass with explicit valid values")
+        void explicitValidValues_shouldHaveNoViolations() {
+            properties.setIssuer("easyorange");
+            properties.setAccessTokenExpiration(30);
+            properties.setRefreshTokenExpiration(7);
+            assertThat(violations()).isEmpty();
         }
     }
 }

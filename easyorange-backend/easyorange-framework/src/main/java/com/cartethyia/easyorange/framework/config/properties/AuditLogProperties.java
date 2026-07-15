@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.framework.config.properties;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.LinkedHashMap;
@@ -24,9 +22,7 @@ import java.util.Map;
  *   save-response-data: false
  * }</pre>
  */
-@Setter
-@Getter
-@ToString
+@Data
 @ConfigurationProperties(prefix = "audit")
 public class AuditLogProperties {
 
@@ -70,7 +66,7 @@ public class AuditLogProperties {
      * 不记录日志的读操作方法名前缀列表
      * <p>
      * 方法名以这些前缀开头时跳过日志记录。
-     * 默认覆盖常见的查询前缀。
+     * 默认覆盖常见地查询前缀。
      * </p>
      */
     private List<String> skipPrefixes = List.of(
@@ -171,6 +167,14 @@ public class AuditLogProperties {
         map.put("recover", "恢复");
         map.put("archive", "归档");
         return map;
+    }
+
+    public Map<String, String> getModuleNames() {
+        return Map.copyOf(moduleNames);
+    }
+
+    public Map<String, String> getMethodTitles() {
+        return Map.copyOf(methodTitles);
     }
 
     /**
