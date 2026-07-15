@@ -11,7 +11,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { PRODUCT_STATUS_CODE, STATUS_LABEL_MAP } from '@/constants/product';
@@ -19,8 +19,7 @@ import { useMyProducts } from '@/hooks/product/useProducts';
 import { usePagination } from '@/hooks/usePagination';
 import type { Product, ProductStatus } from '@/types';
 
-import '../orders/payment.css';
-import './products-premium.css';
+import '../orders/orders-page.css';
 
 const STATUS_OPTIONS: { id: string; label: string; icon: typeof Package; status?: ProductStatus }[] = [
     { id: 'all', label: '全部', icon: Package },
@@ -189,7 +188,7 @@ function MyProductsPage() {
                             <MyProductCard
                                 key={product.id}
                                 product={product}
-                                onClick={() => navigate(`/products/${product.id}`)}
+                                to={`/products/${product.id}`}
                                 onEdit={() => navigate(`/products/${product.id}/edit`)}
                                 index={index}
                             />
@@ -206,12 +205,12 @@ export default MyProductsPage;
 
 interface MyProductCardProps {
     product: Product;
-    onClick: () => void;
+    to: string;
     onEdit: () => void;
     index: number;
 }
 
-function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) {
+function MyProductCard({ product, to, onEdit, index }: MyProductCardProps) {
     const statusKey = product.status;
     const statusLabel = STATUS_LABEL_MAP[statusKey] ?? statusKey;
     const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.DRAFT;
@@ -238,7 +237,7 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                 </span>
             </div>
 
-            <button type="button" className="order-card-body-premium" onClick={onClick} style={{ cursor: 'pointer' }}>
+            <Link to={to} className="order-card-body-premium" style={{ cursor: 'pointer' }}>
                 <div className="order-card-image-wrap">
                     <div className="order-card-image-glow" />
                     {product.images?.[0] ? (
@@ -258,7 +257,7 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                 </div>
 
                 <ChevronRight size={18} className="order-card-arrow-premium" />
-            </button>
+            </Link>
 
             <div className="order-card-footer-premium">
                 <span className="order-card-time-premium">
@@ -279,15 +278,11 @@ function MyProductCard({ product, onClick, onEdit, index }: MyProductCardProps) 
                         <Edit size={14} />
                         编辑
                     </Button>
-                    <Button
-                        onClick={e => {
-                            e.stopPropagation();
-                            onClick();
-                        }}
-                        className="order-btn-primary"
-                    >
-                        <Eye size={14} />
-                        查看
+                    <Button asChild className="order-btn-primary">
+                        <Link to={to}>
+                            <Eye size={14} />
+                            查看
+                        </Link>
                     </Button>
                 </fieldset>
             </div>

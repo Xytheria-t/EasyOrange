@@ -59,8 +59,9 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
     return (
         <>
             {isOpen && (
-                <button
-                    type="button"
+                <div
+                    role="button"
+                    tabIndex={0}
                     className="filter-overlay active"
                     onClick={onClose}
                     onKeyDown={e => e.key === 'Enter' && onClose()}

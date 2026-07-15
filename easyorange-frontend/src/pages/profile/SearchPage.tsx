@@ -31,7 +31,9 @@ import { useCategories, useHotKeywords, useProductSearch, useSearchSuggestions }
 import type { ProductSearchParams } from '@/types/product';
 import { debounce } from '@/utils';
 import '@/styles/main.css';
-import './search.css';
+import './search-header.css';
+import './search-content.css';
+import './search-ai.css';
 
 const CATEGORY_ICON_MAP: Record<string, { icon: typeof Smartphone; color: string; bg: string }> = {
     电子数码: { icon: Smartphone, color: '#3B82F6', bg: '#EFF6FF' },
@@ -345,11 +347,13 @@ function SearchPage() {
                                         </div>
                                         <div className="search-history-tags">
                                             {searchHistory.map(item => (
-                                                <button
+                                                <div
                                                     key={item}
-                                                    type="button"
+                                                    role="button"
+                                                    tabIndex={0}
                                                     className="search-history-tag"
                                                     onClick={() => handleHotKeywordClick(item)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleHotKeywordClick(item)}
                                                 >
                                                     <Clock size={10} />
                                                     <span>{item}</span>
@@ -363,7 +367,7 @@ function SearchPage() {
                                                     >
                                                         <X size={8} />
                                                     </Button>
-                                                </button>
+                                                </div>
                                             ))}
                                         </div>
                                     </div>
@@ -485,9 +489,8 @@ function SearchPage() {
                             </div>
                             <div className="search-trending-cards">
                                 {TRENDING_TOPICS.map(topic => (
-                                    <button
+                                    <div
                                         key={topic.title}
-                                        type="button"
                                         className="search-trending-card"
                                         style={{ '--topic-color': topic.color } as React.CSSProperties}
                                         onMouseMove={handleMouseMove}
@@ -507,7 +510,7 @@ function SearchPage() {
                                             <p className="trending-card-desc">{topic.desc}</p>
                                         </div>
                                         <div className="trending-card-shine" />
-                                    </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>

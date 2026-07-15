@@ -8,7 +8,7 @@ import { CONDITION_LABEL_MAP } from '@/constants';
 import type { Product } from '@/types';
 import { formatPrice, formatRelativeTime } from '@/utils';
 import { AiTag } from './AiTag';
-import '../../pages/products/products-premium.css';
+import '../../pages/products/product-card.css';
 
 interface ProductCardProps {
     product: Product;

@@ -189,8 +189,8 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                             {/* Image gallery */}
                             {images.length > 0 && (
                                 <div className="flex flex-col gap-[0.65rem]">
-                                    <button
-                                        type="button"
+                                    <ShadcnButton
+                                        variant="ghost"
                                         className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
                                         style={{
                                             aspectRatio: '16/10',
@@ -223,7 +223,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                                                 </svg>
                                             </div>
                                         )}
-                                    </button>
+                                    </ShadcnButton>
                                     {images.length > 1 && (
                                         <div className="flex gap-2 overflow-x-auto pb-1">
                                             {images.map((img, index) => (
@@ -400,11 +400,13 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
 
                 {/* Image preview overlay */}
                 {previewImage && (
-                    <button
-                        type="button"
+                    <div
+                        role="button"
+                        tabIndex={0}
                         className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.88)]"
                         style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                         onClick={() => setPreviewImage(null)}
+                        onKeyDown={e => e.key === 'Escape' && setPreviewImage(null)}
                     >
                         <ShadcnButton
                             variant="ghost"
@@ -432,7 +434,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                             alt="预览"
                             className="fixed left-1/2 top-1/2 max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
                         />
-                    </button>
+                    </div>
                 )}
             </DialogContent>
         </Dialog>

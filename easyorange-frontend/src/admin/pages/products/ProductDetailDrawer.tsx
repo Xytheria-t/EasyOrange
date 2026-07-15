@@ -234,8 +234,8 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                         <div className="flex flex-col gap-6">
                             {/* Image gallery */}
                             <div className="flex flex-col gap-3">
-                                <button
-                                    type="button"
+                                <ShadcnButton
+                                    variant="ghost"
                                     className="relative w-full overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#F5F2EE,#EDE8E3)]"
                                     style={{
                                         aspectRatio: '16/10',
@@ -276,7 +276,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                                             点击预览
                                         </div>
                                     )}
-                                </button>
+                                </ShadcnButton>
 
                                 {product.images.length > 1 && (
                                     <div className="flex gap-2 overflow-x-auto pb-1">
@@ -581,11 +581,13 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
 
                 {/* Image preview overlay */}
                 {previewImage && (
-                    <button
-                        type="button"
+                    <div
+                        role="button"
+                        tabIndex={0}
                         className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.88)]"
                         style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
                         onClick={() => setState(prev => ({ ...prev, previewImage: null }))}
+                        onKeyDown={e => e.key === 'Escape' && setState(prev => ({ ...prev, previewImage: null }))}
                     >
                         <ShadcnButton
                             variant="ghost"
@@ -613,7 +615,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
                             alt="预览"
                             className="fixed left-1/2 top-1/2 max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
                         />
-                    </button>
+                    </div>
                 )}
 
                 {/* 驳回弹窗 */}

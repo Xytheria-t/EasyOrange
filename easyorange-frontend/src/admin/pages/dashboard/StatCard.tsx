@@ -64,8 +64,7 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
     const cfg = ACCENT_CONFIG[accent];
 
     return (
-        <button
-            type="button"
+        <div
             style={{
                 position: 'relative',
                 background: 'rgba(255,255,255,0.72)',
@@ -76,17 +75,11 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
                 padding: '1.85rem 1.65rem',
                 overflow: 'hidden',
                 transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-                cursor: 'default',
                 fontFamily: 'inherit',
                 fontSize: 'inherit',
                 color: 'inherit',
                 textAlign: 'left',
                 width: '100%',
-                borderTop: '1px solid rgba(255,255,255,0.7)',
-                borderRight: '1px solid rgba(255,255,255,0.7)',
-                borderBottom: '1px solid rgba(255,255,255,0.7)',
-                borderLeft: '1px solid rgba(255,255,255,0.7)',
-                backgroundImage: 'none',
             }}
             onMouseEnter={e => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -261,6 +254,6 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
                     </div>
                 )}
             </div>
-        </button>
+        </div>
     );
 }

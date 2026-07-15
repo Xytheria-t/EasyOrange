@@ -11,7 +11,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { getOrderStatusFromCode, getOrderStatusLabel } from '@/constants';
@@ -19,7 +19,7 @@ import { useCancelOrder, useMyOrders, usePayOrder, useReceiveOrder } from '@/hoo
 import { usePagination } from '@/hooks/usePagination';
 import { useUIStore } from '@/store';
 import type { Order, OrderStatus } from '@/types';
-import './payment.css';
+import './orders-page.css';
 
 const STATUS_TAB_MAP: { id: string; label: string; icon: typeof Package; statusCode?: number }[] = [
     { id: 'all', label: '全部', icon: Package, statusCode: undefined },
@@ -236,7 +236,7 @@ function OrdersPage() {
                                 onCancel={handleCancel}
                                 onPay={handlePay}
                                 onReceive={handleReceive}
-                                onClick={() => navigate(`/orders/${order.id}`)}
+                                to={`/orders/${order.id}`}
                                 isCancelling={cancellingId === order.id}
                                 index={index}
                             />
@@ -256,12 +256,12 @@ interface OrderCardProps {
     onCancel: (id: string) => void;
     onPay: (id: string) => void;
     onReceive: (id: string) => void;
-    onClick: () => void;
+    to: string;
     isCancelling: boolean;
     index: number;
 }
 
-function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, index }: OrderCardProps) {
+function OrderCard({ order, onCancel, onPay, onReceive, to, isCancelling, index }: OrderCardProps) {
     const statusKey = getOrderStatusFromCode(order.status);
     const statusLabel = getOrderStatusLabel(order.status);
     const statusStyle = STATUS_STYLE_MAP[statusKey] ?? STATUS_STYLE_MAP.CANCELLED;
@@ -269,11 +269,10 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
     const multiItemBadge = order.items && order.items.length > 1;
 
     return (
-        <button
-            type="button"
+        <Link
+            to={to}
             className="order-card-premium"
             style={{ animationDelay: `${index * 80}ms` }}
-            onClick={onClick}
         >
             <div className="order-card-shine" />
 
@@ -352,6 +351,6 @@ function OrderCard({ order, onCancel, onPay, onReceive, onClick, isCancelling, i
                     )}
                 </fieldset>
             </div>
-        </button>
+        </Link>
     );
 }

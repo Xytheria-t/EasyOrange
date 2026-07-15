@@ -14,7 +14,7 @@ import { preloadImages } from '@/components/ui/Image';
 import { useCategories, useColumnCount, useFavoriteCheck, useInfiniteProducts, useSemanticSearch } from '@/hooks';
 import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
-import './products-premium.css';
+import './products-list.css';
 
 function ProductsPage() {
     const [searchParams] = useSearchParams();

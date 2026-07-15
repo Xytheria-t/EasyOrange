@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useCreatePayment, useOrderDetail, usePaymentStatus } from '@/hooks';
 import { useUIStore } from '@/store/uiStore';
 import type { PaymentMethod } from '@/types';
-import '@/styles/main.css';
+import './payment-page.css';
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string; icon: typeof CreditCard; desc: string }[] = [
     { value: 'WECHAT', label: '微信支付', icon: Smartphone, desc: '推荐使用' },

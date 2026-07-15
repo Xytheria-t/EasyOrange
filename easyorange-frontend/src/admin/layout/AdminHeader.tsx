@@ -50,11 +50,10 @@ export function AdminHeader() {
             </div>
 
             <div className="header-right">
-                <button
-                    type="button"
+                <Button
+                    variant="ghost"
                     className="header-user"
                     onClick={handleLogout}
-                    onKeyDown={e => e.key === 'Enter' && handleLogout()}
                     title="返回主站"
                 >
                     <div className="header-user-avatar">
@@ -64,7 +63,7 @@ export function AdminHeader() {
                         <span className="header-user-name">{user?.nickname || user?.username || '管理员'}</span>
                         <span className="header-user-role">超级管理员</span>
                     </div>
-                </button>
+                </Button>
             </div>
         </header>
     );

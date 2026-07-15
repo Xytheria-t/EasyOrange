@@ -18,7 +18,9 @@ import { useCurrentUser, useLogout } from '@/hooks';
 import { useUIStore } from '@/store/uiStore';
 import { errorHandler } from '@/utils/errorHandler';
 import '@/styles/main.css';
-import './profile.css';
+import './profile-sidebar.css';
+import './profile-dashboard.css';
+import './profile-modals.css';
 
 type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
 type TabType = 'overview' | 'activity' | 'security' | 'preferences';

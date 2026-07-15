@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AdminSelect } from '../../components/AdminSelect';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -206,8 +205,7 @@ export default function CategoryManagePage() {
         return (
             <div key={node.categoryId}>
                 {/* Node row */}
-                <button
-                    type="button"
+                <div
                     style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -216,15 +214,11 @@ export default function CategoryManagePage() {
                         paddingLeft,
                         borderBottom: '1px solid rgba(229,224,219,0.35)',
                         transition: 'background 0.15s ease',
-                        cursor: 'default',
                         background: 'none',
                         color: 'inherit',
                         font: 'inherit',
                         width: '100%',
                         textAlign: 'left',
-                        borderTop: 'none',
-                        borderRight: 'none',
-                        borderLeft: 'none',
                     }}
                     onMouseEnter={e => {
                         e.currentTarget.style.background = 'rgba(249,115,22,0.03)';
@@ -503,7 +497,7 @@ export default function CategoryManagePage() {
                             </svg>
                         </Button>
                     </div>
-                </button>
+                </div>
 
                 {/* Children */}
                 {hasChildren && isExpanded && <div>{node.children.map(child => renderTreeNode(child, depth + 1))}</div>}
@@ -1372,32 +1366,26 @@ export default function CategoryManagePage() {
                                 onValueChange={value => setEditStatus(Number(value))}
                                 className="flex gap-3"
                             >
-                                <button
-                                    type="button"
+                                <label
                                     className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-[#E5E0DB] bg-white'}`}
-                                    onClick={() => setEditStatus(1)}
                                 >
                                     <RadioGroupItem value="1" id="status-enabled" />
-                                    <Label
-                                        htmlFor="status-enabled"
-                                        className={`text-sm font-medium cursor-pointer ${editStatus === 1 ? 'text-emerald-600' : 'text-[#6B6460]'}`}
+                                    <span
+                                        className={`text-sm font-medium ${editStatus === 1 ? 'text-emerald-600' : 'text-[#6B6460]'}`}
                                     >
                                         启用
-                                    </Label>
-                                </button>
-                                <button
-                                    type="button"
+                                    </span>
+                                </label>
+                                <label
                                     className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-[#E5E0DB] bg-white'}`}
-                                    onClick={() => setEditStatus(0)}
                                 >
                                     <RadioGroupItem value="0" id="status-disabled" />
-                                    <Label
-                                        htmlFor="status-disabled"
-                                        className={`text-sm font-medium cursor-pointer ${editStatus === 0 ? 'text-rose-600' : 'text-[#6B6460]'}`}
+                                    <span
+                                        className={`text-sm font-medium ${editStatus === 0 ? 'text-rose-600' : 'text-[#6B6460]'}`}
                                     >
                                         禁用
-                                    </Label>
-                                </button>
+                                    </span>
+                                </label>
                             </RadioGroup>
                         </div>
                     </div>

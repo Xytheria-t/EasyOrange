@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, Bell, Brain, Clock, MapPin, RefreshCw, Sparkles, Trash2, TrendingDown, Zap } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
 import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,6 @@ const CONDITION_ICONS: Record<number, string> = {
 };
 
 export default function FavoritesPage() {
-    const navigate = useNavigate();
     const addToast = useUIStore(s => s.addToast);
     const queryClient = useQueryClient();
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -349,12 +348,10 @@ export default function FavoritesPage() {
                             const sellerName = product.username || '匿名用户';
 
                             return (
-                                <button
-                                    type="button"
+                                <Link
                                     key={fav.id}
+                                    to={`/products/${product.id}`}
                                     className={`fav-card${selectedIds.has(fav.id) ? ' selected' : ''}`}
-                                    onClick={() => navigate(`/products/${product.id}`)}
-                                    onKeyDown={e => e.key === 'Enter' && navigate(`/products/${product.id}`)}
                                 >
                                     <div className="fav-card-image">
                                         <Image
@@ -490,7 +487,7 @@ export default function FavoritesPage() {
                                             </span>
                                         </div>
                                     </div>
-                                </button>
+                                </Link>
                             );
                         })}
                     </div>

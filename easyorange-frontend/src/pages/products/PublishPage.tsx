@@ -409,9 +409,8 @@ function PublishPage() {
                                 ) : (
                                     <div className="image-grid-v2">
                                         {vals.imageUrls.map((url, index) => (
-                                            <button
+                                            <div
                                                 key={url}
-                                                type="button"
                                                 className={`image-item-v2 ${dragOverIndex === index ? 'drag-over' : ''} ${index === 0 ? 'is-cover' : ''}`}
                                                 draggable
                                                 onDragStart={() => handleDragStart(index)}
@@ -440,7 +439,7 @@ function PublishPage() {
                                                 <div className="drag-handle-v2">
                                                     <GripVertical size={14} />
                                                 </div>
-                                            </button>
+                                            </div>
                                         ))}
                                         {vals.imageUrls.length < 9 && (
                                             <Button

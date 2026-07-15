@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import './product-detail.css';
 import {
     ArrowLeft,
     ChevronRight as BreadcrumbSep,

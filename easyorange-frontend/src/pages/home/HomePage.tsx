@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import './home.css';
 import HeroSection from '@/components/sections/HeroSection';
 
 const AIFeaturesSection = lazy(() => import('@/components/sections/AIFeaturesSection'));

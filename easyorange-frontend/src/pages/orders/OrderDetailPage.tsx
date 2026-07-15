@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import './payment.css';
+import './order-detail.css';
 import {
     ArrowLeft,
     CheckCircle,
