@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { usePagination } from '@/hooks/usePagination';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -43,7 +43,11 @@ export default function ProductManagePage() {
     const [searchInput, setSearchInput] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('');
-    const { pageNum: page, pageSize, goTo } = usePagination({
+    const {
+        pageNum: page,
+        pageSize,
+        goTo,
+    } = usePagination({
         resetDeps: [keyword, statusFilter, categoryFilter],
     });
     const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -733,9 +737,7 @@ export default function ProductManagePage() {
                         data={products}
                         rowKey="productId"
                         loading={isLoading}
-                        pagination={
-                            total > pageSize ? { current: page, pageSize, total, onChange: goTo } : undefined
-                        }
+                        pagination={total > pageSize ? { current: page, pageSize, total, onChange: goTo } : undefined}
                         onRowClick={handleViewDetail}
                         emptyText="暂无商品数据"
                     />

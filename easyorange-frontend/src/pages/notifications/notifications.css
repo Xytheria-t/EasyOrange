@@ -448,5 +448,3 @@
 .notification-card:not(.unread) .notification-card-link {
     color: var(--text-tertiary, #9ca3af);
 }
-
-

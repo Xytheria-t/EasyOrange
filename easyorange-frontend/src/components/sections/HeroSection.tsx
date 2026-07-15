@@ -446,7 +446,17 @@ export default function HeroSection() {
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
                                 <span className="float-icon">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <svg
+                                        width="22"
+                                        height="22"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
                                         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
                                         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                                         <path d="M8 7h8" />
@@ -468,7 +478,17 @@ export default function HeroSection() {
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
                                 <span className="float-icon">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <svg
+                                        width="22"
+                                        height="22"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
                                         <rect x="4" y="4" width="16" height="16" rx="2" />
                                         <rect x="9" y="9" width="6" height="6" rx="1" />
                                         <path d="M9 1v3" />
@@ -494,7 +514,17 @@ export default function HeroSection() {
                             <div className="float-card-glow"></div>
                             <div className="float-card-inner">
                                 <span className="float-icon">
-                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                    <svg
+                                        width="22"
+                                        height="22"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        aria-hidden="true"
+                                    >
                                         <circle cx="6" cy="18" r="3" />
                                         <circle cx="18" cy="18" r="3" />
                                         <path d="M18 6l-3 6h-4" />

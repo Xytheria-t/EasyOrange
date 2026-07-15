@@ -10,9 +10,7 @@ describe('Footer', () => {
 
     it('renders copyright text', () => {
         render(<Footer />);
-        expect(
-            screen.getByText('© 2025-2026 EasyOrange — LLM × DDD 工程化实战项目')
-        ).toBeInTheDocument();
+        expect(screen.getByText('© 2025-2026 EasyOrange — LLM × DDD 工程化实战项目')).toBeInTheDocument();
     });
 
     it('renders mini platform stats', () => {

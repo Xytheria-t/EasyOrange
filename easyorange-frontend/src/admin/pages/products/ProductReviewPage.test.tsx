@@ -1,8 +1,8 @@
 import { fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
-import type { AdminProduct } from '../../types/admin';
 import type { PageResult } from '@/types';
+import type { AdminProduct } from '../../types/admin';
 import ProductReviewPage from './ProductReviewPage';
 
 // ─── Mock scrollIntoView for AdminSelect portal ───

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { usePagination } from '@/hooks/usePagination';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -41,7 +41,11 @@ export default function ProductReviewPage() {
     const [searchInput, setSearchInput] = useState('');
     const [statusFilter, setStatusFilter] = useState<number | ''>('');
     const [categoryFilter, setCategoryFilter] = useState('');
-    const { pageNum: page, pageSize, goTo } = usePagination({
+    const {
+        pageNum: page,
+        pageSize,
+        goTo,
+    } = usePagination({
         resetDeps: [keyword, statusFilter, categoryFilter],
     });
     const [sortBy, setSortBy] = useState('createTime');

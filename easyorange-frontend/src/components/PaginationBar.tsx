@@ -1,4 +1,3 @@
-import { cn } from '@/lib/utils';
 import {
     Pagination,
     PaginationContent,
@@ -7,6 +6,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination';
+import { cn } from '@/lib/utils';
 
 interface PaginationBarProps {
     pageNum: number;
@@ -31,10 +31,7 @@ export function PaginationBar({ pageNum, totalPages, onPageChange, className }: 
                 </PaginationItem>
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                     <PaginationItem key={p}>
-                        <PaginationLink
-                            isActive={p === pageNum}
-                            onClick={() => onPageChange(p)}
-                        >
+                        <PaginationLink isActive={p === pageNum} onClick={() => onPageChange(p)}>
                             {p}
                         </PaginationLink>
                     </PaginationItem>

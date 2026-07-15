@@ -367,6 +367,7 @@ export function preloadImages(
         format?: string;
         quality?: number;
     }
+    // biome-ignore lint/suspicious/noConfusingVoidType: side-effect preload returns void[]
 ): Promise<void[]> {
     return Promise.all(sources.map(src => preloadImage(src, options)));
 }

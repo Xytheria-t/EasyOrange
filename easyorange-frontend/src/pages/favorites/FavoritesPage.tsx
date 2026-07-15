@@ -3,14 +3,14 @@ import { ArrowRight, Bell, Brain, Clock, MapPin, RefreshCw, Sparkles, Trash2, Tr
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
+import { PaginationBar } from '@/components/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Image } from '@/components/ui/Image';
 import { CONDITION_LABEL_MAP } from '@/constants';
+import { usePagination } from '@/hooks/usePagination';
 import { useUIStore } from '@/store/uiStore';
 import type { Favorite } from '@/types';
-import { PaginationBar } from '@/components/PaginationBar';
-import { usePagination } from '@/hooks/usePagination';
 import './favorites.css';
 
 const CONDITION_ICONS: Record<number, string> = {
@@ -366,7 +366,7 @@ export default function FavoritesPage() {
                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
 
-                                        {/* biome-ignore lint/a11y/useSemanticElements: wrapper div for custom checkbox overlay */ }
+                                        {/* biome-ignore lint/a11y/useSemanticElements: wrapper div for custom checkbox overlay */}
                                         <div
                                             className="fav-card-checkbox"
                                             role="checkbox"

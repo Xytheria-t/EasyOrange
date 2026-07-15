@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { usePagination } from '@/hooks/usePagination';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -37,7 +37,11 @@ export default function ReviewManagePage() {
     const [ratingFilter, setRatingFilter] = useState('');
     const [keyword, setKeyword] = useState('');
     const [searchInput, setSearchInput] = useState('');
-    const { pageNum: page, pageSize, goTo } = usePagination({
+    const {
+        pageNum: page,
+        pageSize,
+        goTo,
+    } = usePagination({
         resetDeps: [keyword, statusFilter],
     });
     const [deleteModal, setDeleteModal] = useState<{ open: boolean; reviewId: string; reviewContent: string }>({

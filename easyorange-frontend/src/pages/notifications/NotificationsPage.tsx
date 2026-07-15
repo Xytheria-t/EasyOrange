@@ -13,8 +13,8 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { notificationApi } from '@/api/notificationApi';
-import { Button } from '@/components/ui/button';
 import { PaginationBar } from '@/components/PaginationBar';
+import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { NotificationItem } from '@/types';
 import './notifications.css';

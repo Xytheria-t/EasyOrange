@@ -2,12 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
 import { Button } from '@/components/ui/button';
-import {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-} from '@/components/ui/pagination';
+import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
 
 export interface Column<T> {
@@ -266,7 +261,10 @@ export function AdminTable<T extends object>({
                                     size="icon"
                                     disabled={pagination.current <= 1}
                                     onClick={() => pagination.onChange(pagination.current - 1)}
-                                    className={cn(pageButtonClass, pagination.current <= 1 && 'opacity-40 cursor-not-allowed')}
+                                    className={cn(
+                                        pageButtonClass,
+                                        pagination.current <= 1 && 'opacity-40 cursor-not-allowed'
+                                    )}
                                 >
                                     <ChevronLeft className="h-3.5 w-3.5" />
                                 </Button>
@@ -275,12 +273,12 @@ export function AdminTable<T extends object>({
                             {pageNumbers.map((page, index) => {
                                 if (page === 'ellipsis') {
                                     return (
-                                    <PaginationItem
-                                        // biome-ignore lint/suspicious/noArrayIndexKey: stable list
-                                        key={`e-${index}`}
-                                    >
-                                        <PaginationEllipsis className="text-[0.81rem] text-[#B5AEA8]" />
-                                    </PaginationItem>
+                                        <PaginationItem
+                                            // biome-ignore lint/suspicious/noArrayIndexKey: stable list
+                                            key={`e-${index}`}
+                                        >
+                                            <PaginationEllipsis className="text-[0.81rem] text-[#B5AEA8]" />
+                                        </PaginationItem>
                                     );
                                 }
                                 return (
@@ -307,7 +305,10 @@ export function AdminTable<T extends object>({
                                     size="icon"
                                     disabled={pagination.current >= totalPages}
                                     onClick={() => pagination.onChange(pagination.current + 1)}
-                                    className={cn(pageButtonClass, pagination.current >= totalPages && 'opacity-40 cursor-not-allowed')}
+                                    className={cn(
+                                        pageButtonClass,
+                                        pagination.current >= totalPages && 'opacity-40 cursor-not-allowed'
+                                    )}
                                 >
                                     <ChevronRight className="h-3.5 w-3.5" />
                                 </Button>

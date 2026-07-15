@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
-import { usePagination } from '@/hooks/usePagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { usePagination } from '@/hooks/usePagination';
 import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -42,7 +42,11 @@ export default function ReportManagePage() {
         reportId: number;
         action: 'resolve' | 'dismiss';
     }>({ open: false, reportId: 0, action: 'resolve' });
-    const { pageNum: page, pageSize, goTo } = usePagination({
+    const {
+        pageNum: page,
+        pageSize,
+        goTo,
+    } = usePagination({
         resetDeps: [keyword, statusFilter, typeFilter],
     });
 

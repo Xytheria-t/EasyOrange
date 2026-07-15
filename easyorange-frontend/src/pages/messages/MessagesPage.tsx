@@ -3,8 +3,8 @@ import { Brain, MessageCircle, RefreshCw, Send, Sparkles, Zap } from 'lucide-rea
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { messageApi } from '@/api/messageApi';
-import { Button } from '@/components/ui/button';
 import { PaginationBar } from '@/components/PaginationBar';
+import { Button } from '@/components/ui/button';
 import { usePagination } from '@/hooks/usePagination';
 import type { ChatSession } from '@/types';
 import './messages.css';
@@ -216,7 +216,11 @@ function MessagesPage() {
                         </div>
 
                         {/* Pagination for conversation list */}
-                        <PaginationBar pageNum={convPage} totalPages={totalConversationPages} onPageChange={setConvPage} />
+                        <PaginationBar
+                            pageNum={convPage}
+                            totalPages={totalConversationPages}
+                            onPageChange={setConvPage}
+                        />
                     </div>
                 </div>
 

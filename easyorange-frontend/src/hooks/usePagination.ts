@@ -21,17 +21,14 @@ export function usePagination(config?: UsePaginationConfig): UsePaginationReturn
 
     useEffect(() => {
         setPageNum(1);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // biome-ignore lint/correctness/useExhaustiveDependencies: dynamic reset deps from consumer
     }, config?.resetDeps ?? []);
 
     const toNext = useCallback(() => setPageNum(p => p + 1), []);
     const toPrev = useCallback(() => setPageNum(p => Math.max(1, p - 1)), []);
     const goTo = useCallback((page: number) => setPageNum(page), []);
 
-    const totalPages = useCallback(
-        (total: number) => Math.max(1, Math.ceil(total / pageSize)),
-        [pageSize]
-    );
+    const totalPages = useCallback((total: number) => Math.max(1, Math.ceil(total / pageSize)), [pageSize]);
 
     return { pageNum, pageSize, toNext, toPrev, goTo, totalPages, setPageNum };
 }

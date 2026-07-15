@@ -46,6 +46,15 @@ export { clearImageCache, Image, preloadImage, preloadImages } from './Image';
 export { Input } from './input';
 export { GlobalLoading } from './Loading';
 export { Label } from './label';
+export {
+    Pagination,
+    PaginationContent,
+    PaginationEllipsis,
+    PaginationItem,
+    PaginationLink,
+    PaginationNext,
+    PaginationPrevious,
+} from './pagination';
 export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from './popover';
 export { RadioGroup, RadioGroupItem } from './radio-group';
 export { default as ScrollProgressBar } from './ScrollProgressBar';
@@ -106,12 +115,3 @@ export {
     TooltipProvider,
     TooltipTrigger,
 } from './tooltip';
-export {
-    Pagination,
-    PaginationContent,
-    PaginationEllipsis,
-    PaginationItem,
-    PaginationLink,
-    PaginationNext,
-    PaginationPrevious,
-} from './pagination';
