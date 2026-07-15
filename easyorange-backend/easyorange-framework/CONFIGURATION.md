@@ -81,72 +81,25 @@ jwt:
   
   # Refresh Token 过期时间（天）
   refresh-token-expiration: 7
-  
-  # Token 前缀
-  token-prefix: "Bearer "
-  
-  # 自动续期阈值（分钟）
-  auto-renew-threshold-minutes: 5
-  
-  # 本地缓存配置
-  local-cache:
-    # 缓存最大容量
-    max-size: 10000
-    # 缓存过期时间（分钟）
-    expire-minutes: 5
-```
-
-### JWT 本地缓存配置说明
-
-**作用**：减少 Redis 查询次数，提升认证性能
-
-**工作原理**：
-
-1. 首次验证 token 时，查询 Redis 并缓存结果
-2. 后续验证时，先查本地缓存
-3. 缓存未命中时，再查 Redis
-4. 缓存自动过期（默认 5 分钟）
-
-**性能提升**：
-
-- 减少 Redis 查询次数约 80%
-- 降低网络延迟
-- 提升认证速度
-
-**配置建议**：
-
-```yaml
-jwt:
-  local-cache:
-    # 高并发场景
-    max-size: 20000
-    expire-minutes: 10
-    
-    # 一般场景（默认）
-    max-size: 10000
-    expire-minutes: 5
-    
-    # 低并发场景
-    max-size: 5000
-    expire-minutes: 3
-```
 
 ---
 
 ## 线程池配置
 
+> **`@Async` 行为变更**：`@Async` 使用方法 Spring Boot 自动配置的 `TaskExecutor`（配置前缀 `spring.task.execution.pool.*`，见 `application.yaml`）。自定义的 `domainEventExecutor` 和 `taskScheduler` 仍使用 `thread-pool.*` 配置。
+
 ### 基本配置
 
 ```yaml
 thread-pool:
-  # 核心线程数
-  core-pool-size: 8
+  # 核心线程数（domainEventExecutor 使用 core/2）
+  core-pool-size: 10
   
-  # 最大线程数
-  max-pool-size: 16
+  # 最大线程数（domainEventExecutor 使用 max/2）
+  max-pool-size: 20
   
-  # 队列容量
-  queue-capacity: 100
+  # 队列容量（domainEventExecutor 使用 2x）
+  queue-capacity: 500
   
   # 线程存活时间（秒）
   keep-alive-seconds: 60
@@ -260,11 +213,6 @@ jwt:
   issuer: easyorange
   access-token-expiration: 30
   refresh-token-expiration: 7
-  token-prefix: "Bearer "
-  auto-renew-threshold-minutes: 5
-  local-cache:
-    max-size: 10000
-    expire-minutes: 5
 
 # 线程池配置
 thread-pool:
@@ -311,7 +259,6 @@ easyorange:
    - 定期轮换 JWT 密钥对（运行 `keys/generate-rsa-keypair.sh` 重新生成）
 
 2. **性能优化**
-   - 根据并发量调整 JWT 本地缓存大小
    - 根据服务器性能调整线程池大小
    - 监控线程池拒绝情况
 

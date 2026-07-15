@@ -24,16 +24,6 @@ public class ThreadPoolConfig {
 
     private final ThreadPoolProperties threadPoolProperties;
 
-    @Bean("asyncExecutor")
-    public Executor asyncExecutor() {
-        return createTaskExecutor(
-                threadPoolProperties.getThreadNamePrefix(),
-                threadPoolProperties.getCorePoolSize(),
-                threadPoolProperties.getMaxPoolSize(),
-                threadPoolProperties.getQueueCapacity()
-        );
-    }
-
     @Bean("taskScheduler")
     public ThreadPoolTaskScheduler taskScheduler() {
         ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();

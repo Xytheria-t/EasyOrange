@@ -43,7 +43,7 @@ public class TokenServiceImpl implements TokenService {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
                 .issuer(jwtProperties.getIssuer())
-                .subject(userId.toString())
+                .subject(userId)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plus(jwtProperties.getAccessTokenExpiration(), ChronoUnit.MINUTES))
                 .claim("jti", jti)
@@ -59,7 +59,7 @@ public class TokenServiceImpl implements TokenService {
         var jti = UUID.randomUUID().toString().replace("-", "");
         var claims = JwtClaimsSet.builder()
                 .issuer(jwtProperties.getIssuer())
-                .subject(userId.toString())
+                .subject(userId)
                 .issuedAt(Instant.now())
                 .expiresAt(Instant.now().plus(jwtProperties.getRefreshTokenExpiration(), ChronoUnit.DAYS))
                 .claim("jti", jti)

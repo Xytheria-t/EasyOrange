@@ -367,7 +367,7 @@ export function preloadImages(
         format?: string;
         quality?: number;
     }
-): Promise<undefined[]> {
+): Promise<void[]> {
     return Promise.all(sources.map(src => preloadImage(src, options)));
 }
 

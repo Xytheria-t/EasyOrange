@@ -25,7 +25,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         var registration = registry.addInterceptor(loggingInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns(webMvcProperties.getExcludePaths().toArray(new String[0]));
+                .excludePathPatterns(webMvcProperties.getExcludePaths().toArray(String[]::new));
         if (webMvcProperties.getInterceptorOrder() != 0) {
             registration.order(webMvcProperties.getInterceptorOrder());
         }

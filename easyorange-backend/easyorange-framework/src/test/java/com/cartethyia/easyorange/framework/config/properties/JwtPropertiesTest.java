@@ -47,21 +47,9 @@ class JwtPropertiesTest {
         }
 
         @Test
-        @DisplayName("should have default token prefix 'Bearer '")
-        void tokenPrefix_default_shouldBeBearer() {
-            assertThat(properties.getTokenPrefix()).isEqualTo("Bearer ");
-        }
-
-        @Test
         @DisplayName("should have default issuer 'easyorange'")
         void issuer_default_shouldBeEasyorange() {
             assertThat(properties.getIssuer()).isEqualTo("easyorange");
-        }
-
-        @Test
-        @DisplayName("should have default auto renew threshold of 5 minutes")
-        void autoRenewThresholdMinutes_default_shouldBe5() {
-            assertThat(properties.getAutoRenewThresholdMinutes()).isEqualTo(5L);
         }
     }
 

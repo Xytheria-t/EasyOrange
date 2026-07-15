@@ -36,19 +36,9 @@ public class JwtProperties {
     private long refreshTokenExpiration = 7;
 
     /**
-     * Token 前缀
-     */
-    private String tokenPrefix = "Bearer ";
-
-    /**
      * JWT 发行者
      */
     private String issuer = "easyorange";
-
-    /**
-     * Access Token 自动续期阈值（分钟）
-     */
-    private long autoRenewThresholdMinutes = 5;
 
     /**
      * 应用启动时验证 JWT 配置

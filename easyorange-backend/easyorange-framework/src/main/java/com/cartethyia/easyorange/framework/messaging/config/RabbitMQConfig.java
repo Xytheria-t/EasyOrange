@@ -8,14 +8,16 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @AutoConfiguration
@@ -27,7 +29,7 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_NAME = "eo.domain.events";
     public static final String DLQ_EXCHANGE_NAME = "eo.dlq";
 
-    // Per-consumer queue names
+    // Per-consumer queue names (used by @RabbitListener in consumer modules)
     public static final String QUEUE_PRODUCT_CQRS = "eo.product.cqrs";
     public static final String QUEUE_ORDER_NOTIFICATION = "eo.order.notification";
     public static final String QUEUE_ORDER_SAGA = "eo.order.saga";
@@ -40,7 +42,7 @@ public class RabbitMQConfig {
 
     private final RabbitMQProperties properties;
 
-    // === Exchange ===
+    // === Exchanges ===
 
     @Bean
     public TopicExchange domainEventExchange() {
@@ -52,221 +54,45 @@ public class RabbitMQConfig {
         return new TopicExchange(DLQ_EXCHANGE_NAME, true, false);
     }
 
-    // === Queues (with DLQ arguments) ===
+    // === Topology: queues, DLQs, and bindings (single Declarables eliminates ~40 individual @Bean methods) ===
 
     @Bean
-    public Queue productCqrsQueue() {
-        return createQueue(QUEUE_PRODUCT_CQRS);
-    }
+    public Declarables domainEventTopology(TopicExchange domainEventExchange, TopicExchange dlqExchange) {
+        var declarables = new ArrayList<Declarable>();
 
-    @Bean
-    public Queue orderNotificationQueue() {
-        return createQueue(QUEUE_ORDER_NOTIFICATION);
-    }
+        record QueueSpec(String name, String... routingKeys) {}
 
-    @Bean
-    public Queue orderSagaQueue() {
-        return createQueue(QUEUE_ORDER_SAGA);
-    }
+        for (var q : List.of(
+                new QueueSpec(QUEUE_PRODUCT_CQRS, "product.#", "stock.#"),
+                new QueueSpec(QUEUE_ORDER_NOTIFICATION, "order.#"),
+                new QueueSpec(QUEUE_ORDER_SAGA, "order.created", "order.cancelled", "order.completed", "order.refunded"),
+                new QueueSpec(QUEUE_STOCK_RESERVATION, "stock.reservation.requested"),
+                new QueueSpec(QUEUE_PAYMENT_INITIATION, "payment.initiation.requested"),
+                new QueueSpec(QUEUE_AUDIT_NOTIFICATION, "product.audited"),
+                new QueueSpec(QUEUE_REPORT_NOTIFICATION, "report.#"),
+                new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
+                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#")
+        )) {
+            var queue = QueueBuilder.durable(q.name())
+                    .quorum()
+                    .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE_NAME)
+                    .withArgument("x-dead-letter-routing-key", q.name() + ".dlq")
+                    .build();
+            var dlq = QueueBuilder.durable(q.name() + ".dlq")
+                    .quorum()
+                    .build();
 
-    @Bean
-    public Queue stockReservationQueue() {
-        return createQueue(QUEUE_STOCK_RESERVATION);
-    }
+            declarables.add(queue);
+            declarables.add(dlq);
+            declarables.add(BindingBuilder.bind(dlq).to(dlqExchange).with(q.name() + ".dlq"));
 
-    @Bean
-    public Queue paymentInitiationQueue() {
-        return createQueue(QUEUE_PAYMENT_INITIATION);
-    }
+            for (var key : q.routingKeys()) {
+                declarables.add(BindingBuilder.bind(queue).to(domainEventExchange).with(key));
+            }
+        }
 
-    @Bean
-    public Queue auditNotificationQueue() {
-        return createQueue(QUEUE_AUDIT_NOTIFICATION);
-    }
-
-    @Bean
-    public Queue reportNotificationQueue() {
-        return createQueue(QUEUE_REPORT_NOTIFICATION);
-    }
-
-    @Bean
-    public Queue messageWebSocketQueue() {
-        return createQueue(QUEUE_MESSAGE_WEBSOCKET);
-    }
-
-    @Bean
-    public Queue paymentMetricsQueue() {
-        return createQueue(QUEUE_PAYMENT_METRICS);
-    }
-
-    // === DLQ Queues ===
-
-    @Bean
-    public Queue productCqrsDlq() {
-        return createDlq(QUEUE_PRODUCT_CQRS);
-    }
-
-    @Bean
-    public Queue orderNotificationDlq() {
-        return createDlq(QUEUE_ORDER_NOTIFICATION);
-    }
-
-    @Bean
-    public Queue orderSagaDlq() {
-        return createDlq(QUEUE_ORDER_SAGA);
-    }
-
-    @Bean
-    public Queue stockReservationDlq() {
-        return createDlq(QUEUE_STOCK_RESERVATION);
-    }
-
-    @Bean
-    public Queue paymentInitiationDlq() {
-        return createDlq(QUEUE_PAYMENT_INITIATION);
-    }
-
-    @Bean
-    public Queue auditNotificationDlq() {
-        return createDlq(QUEUE_AUDIT_NOTIFICATION);
-    }
-
-    @Bean
-    public Queue reportNotificationDlq() {
-        return createDlq(QUEUE_REPORT_NOTIFICATION);
-    }
-
-    @Bean
-    public Queue messageWebSocketDlq() {
-        return createDlq(QUEUE_MESSAGE_WEBSOCKET);
-    }
-
-    @Bean
-    public Queue paymentMetricsDlq() {
-        return createDlq(QUEUE_PAYMENT_METRICS);
-    }
-
-    // === DLQ Bindings ===
-
-    @Bean
-    public Binding productCqrsDlqBinding() {
-        return bindDlq(QUEUE_PRODUCT_CQRS);
-    }
-
-    @Bean
-    public Binding orderNotificationDlqBinding() {
-        return bindDlq(QUEUE_ORDER_NOTIFICATION);
-    }
-
-    @Bean
-    public Binding orderSagaDlqBinding() {
-        return bindDlq(QUEUE_ORDER_SAGA);
-    }
-
-    @Bean
-    public Binding stockReservationDlqBinding() {
-        return bindDlq(QUEUE_STOCK_RESERVATION);
-    }
-
-    @Bean
-    public Binding paymentInitiationDlqBinding() {
-        return bindDlq(QUEUE_PAYMENT_INITIATION);
-    }
-
-    @Bean
-    public Binding auditNotificationDlqBinding() {
-        return bindDlq(QUEUE_AUDIT_NOTIFICATION);
-    }
-
-    @Bean
-    public Binding reportNotificationDlqBinding() {
-        return bindDlq(QUEUE_REPORT_NOTIFICATION);
-    }
-
-    @Bean
-    public Binding messageWebSocketDlqBinding() {
-        return bindDlq(QUEUE_MESSAGE_WEBSOCKET);
-    }
-
-    @Bean
-    public Binding paymentMetricsDlqBinding() {
-        return bindDlq(QUEUE_PAYMENT_METRICS);
-    }
-
-    // === Event Bindings (queue → exchange → routing keys) ===
-
-    // Product CQRS: product lifecycle + stock events
-    @Bean
-    public Binding productCqrsProductBinding(Queue productCqrsQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(productCqrsQueue).to(domainEventExchange).with("product.#");
-    }
-
-    @Bean
-    public Binding productCqrsStockBinding(Queue productCqrsQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(productCqrsQueue).to(domainEventExchange).with("stock.#");
-    }
-
-    // Order notification: all order events
-    @Bean
-    public Binding orderNotificationBinding(Queue orderNotificationQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(orderNotificationQueue).to(domainEventExchange).with("order.#");
-    }
-
-    // Order saga: specific order lifecycle events
-    @Bean
-    public Binding orderSagaCreatedBinding(Queue orderSagaQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(orderSagaQueue).to(domainEventExchange).with("order.created");
-    }
-
-    @Bean
-    public Binding orderSagaCancelledBinding(Queue orderSagaQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(orderSagaQueue).to(domainEventExchange).with("order.cancelled");
-    }
-
-    @Bean
-    public Binding orderSagaCompletedBinding(Queue orderSagaQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(orderSagaQueue).to(domainEventExchange).with("order.completed");
-    }
-
-    @Bean
-    public Binding orderSagaRefundedBinding(Queue orderSagaQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(orderSagaQueue).to(domainEventExchange).with("order.refunded");
-    }
-
-    // Stock reservation
-    @Bean
-    public Binding stockReservationBinding(Queue stockReservationQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(stockReservationQueue).to(domainEventExchange).with("stock.reservation.requested");
-    }
-
-    // Payment initiation
-    @Bean
-    public Binding paymentInitiationBinding(Queue paymentInitiationQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(paymentInitiationQueue).to(domainEventExchange).with("payment.initiation.requested");
-    }
-
-    // Audit notification
-    @Bean
-    public Binding auditNotificationBinding(Queue auditNotificationQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(auditNotificationQueue).to(domainEventExchange).with("product.audited");
-    }
-
-    // Report notification
-    @Bean
-    public Binding reportNotificationBinding(Queue reportNotificationQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(reportNotificationQueue).to(domainEventExchange).with("report.#");
-    }
-
-    // Message websocket
-    @Bean
-    public Binding messageWebSocketBinding(Queue messageWebSocketQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(messageWebSocketQueue).to(domainEventExchange).with("message.recalled");
-    }
-
-    // Payment metrics: all payment events
-    @Bean
-    public Binding paymentMetricsBinding(Queue paymentMetricsQueue, TopicExchange domainEventExchange) {
-        return BindingBuilder.bind(paymentMetricsQueue).to(domainEventExchange).with("payment.#");
+        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings", 9);
+        return new Declarables(declarables);
     }
 
     // === Infrastructure Beans ===
@@ -278,7 +104,7 @@ public class RabbitMQConfig {
 
     @Bean
     public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter jsonMessageConverter) {
-        RabbitTemplate template = new RabbitTemplate(connectionFactory);
+        var template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(jsonMessageConverter);
         template.setMandatory(true);
         return template;
@@ -286,13 +112,14 @@ public class RabbitMQConfig {
 
     @Bean
     public RetryTemplate retryTemplate() {
-        RetryPolicy retryPolicy = RetryPolicy.builder()
-            .maxRetries(properties.getPublisher().getRetry().getMaxAttempts() - 1)
-            .delay(properties.getPublisher().getRetry().getInitialInterval())
-            .multiplier(properties.getPublisher().getRetry().getMultiplier())
-            .maxDelay(Duration.ofMillis(10000))
-            .build();
-        return new RetryTemplate(retryPolicy);
+        var cfg = properties.getPublisher().getRetry();
+        var policy = RetryPolicy.builder()
+                .maxRetries(cfg.getMaxAttempts() - 1)
+                .delay(cfg.getInitialInterval())
+                .multiplier(cfg.getMultiplier())
+                .maxDelay(Duration.ofMillis(10000))
+                .build();
+        return new RetryTemplate(policy);
     }
 
     @Bean
@@ -300,7 +127,7 @@ public class RabbitMQConfig {
             ConnectionFactory connectionFactory,
             MessageConverter jsonMessageConverter,
             RetryTemplate retryTemplate) {
-        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        var factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jsonMessageConverter);
         factory.setPrefetchCount(properties.getConsumer().getPrefetch());
@@ -309,27 +136,5 @@ public class RabbitMQConfig {
         factory.setDefaultRequeueRejected(properties.getConsumer().isDefaultRequeueRejected());
         factory.setRetryTemplate(retryTemplate);
         return factory;
-    }
-
-    // === Helper Methods ===
-
-    private Queue createQueue(String name) {
-        return QueueBuilder.durable(name)
-            .quorum()
-            .withArgument("x-dead-letter-exchange", DLQ_EXCHANGE_NAME)
-            .withArgument("x-dead-letter-routing-key", name + ".dlq")
-            .build();
-    }
-
-    private Queue createDlq(String queueName) {
-        return QueueBuilder.durable(queueName + ".dlq")
-            .quorum()
-            .build();
-    }
-
-    private Binding bindDlq(String queueName) {
-        return BindingBuilder.bind(new Queue(queueName + ".dlq"))
-            .to(new TopicExchange(DLQ_EXCHANGE_NAME))
-            .with(queueName + ".dlq");
     }
 }

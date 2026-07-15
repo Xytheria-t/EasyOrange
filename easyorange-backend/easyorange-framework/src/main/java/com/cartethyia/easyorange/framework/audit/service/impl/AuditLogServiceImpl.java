@@ -18,7 +18,7 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final IdGenerator idGenerator;
 
     @Override
-    @Async("asyncExecutor")
+    @Async
     public void insertAuditLog(AuditLog auditLog) {
         if (auditLog.getId() == null) {
             auditLog.setId(idGenerator.generateId());

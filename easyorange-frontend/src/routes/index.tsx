@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation } from 'react-router-dom';
+import { PageMeta } from '@/components/seo/PageMeta';
 import { Layout } from '@/components/layout/Layout';
 import { MinimalLayout } from '@/components/layout/MinimalLayout';
 import { getStoredToken } from '@/features/auth/session';
@@ -38,52 +39,83 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return token ? children : <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
 };
 
-const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType>) => (
+interface RouteMeta {
+    title: string;
+    description?: string;
+}
+
+const withSuspense = (Component: React.LazyExoticComponent<React.ComponentType>, meta?: RouteMeta) => (
     <Suspense fallback={<LoadingFallback />}>
+        {meta && <PageMeta title={meta.title} description={meta.description} />}
         <Component />
     </Suspense>
 );
+
+// Route title/description definitions
+const R = {
+    home:            { title: '首页', description: 'EasyOrange - C2C 资产流转平台' },
+    products:        { title: '商品', description: '浏览全部商品' },
+    productDetail:   { title: '商品详情', description: '查看商品详细信息' },
+    search:          { title: '搜索', description: '搜索商品' },
+    login:           { title: '登录', description: '登录 EasyOrange' },
+    forgotPwd:       { title: '忘记密码' },
+    profile:         { title: '个人中心' },
+    favorites:       { title: '我的收藏' },
+    messages:        { title: '消息' },
+    chat:            { title: '聊天' },
+    orders:          { title: '我的订单' },
+    orderDetail:     { title: '订单详情' },
+    payment:         { title: '收银台' },
+    paymentResult:   { title: '支付结果' },
+    publish:         { title: '提交资产' },
+    myProducts:      { title: '我的商品' },
+    editProduct:     { title: '编辑商品' },
+    notifications:   { title: '通知中心' },
+    credit:          { title: '我的信用' },
+    notFound:        { title: '404' },
+    admin:           { title: '管理后台', description: 'EasyOrange 管理控制台' },
+} as const;
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
         <>
             <Route path="/" element={<Layout />}>
-                <Route index element={withSuspense(HomePage)} />
+                <Route index element={withSuspense(HomePage, R.home)} />
             </Route>
             <Route path="/" element={<MinimalLayout />}>
-                <Route path="products" element={withSuspense(ProductsPage)} />
-                <Route path="products/:id" element={withSuspense(ProductDetailPage)} />
-                <Route path="search" element={withSuspense(SearchPage)} />
+                <Route path="products" element={withSuspense(ProductsPage, R.products)} />
+                <Route path="products/:id" element={withSuspense(ProductDetailPage, R.productDetail)} />
+                <Route path="search" element={withSuspense(SearchPage, R.search)} />
                 <Route
                     path="products/:id/edit"
-                    element={<ProtectedRoute>{withSuspense(EditProductPage)}</ProtectedRoute>}
+                    element={<ProtectedRoute>{withSuspense(EditProductPage, R.editProduct)}</ProtectedRoute>}
                 />
-                <Route path="login" element={withSuspense(LoginPage)} />
-                <Route path="forgot-password" element={withSuspense(ForgotPasswordPage)} />
-                <Route path="profile" element={<ProtectedRoute>{withSuspense(ProfilePage)}</ProtectedRoute>} />
-                <Route path="favorites" element={<ProtectedRoute>{withSuspense(FavoritesPage)}</ProtectedRoute>} />
-                <Route path="messages" element={<ProtectedRoute>{withSuspense(MessagesPage)}</ProtectedRoute>} />
+                <Route path="login" element={withSuspense(LoginPage, R.login)} />
+                <Route path="forgot-password" element={withSuspense(ForgotPasswordPage, R.forgotPwd)} />
+                <Route path="profile" element={<ProtectedRoute>{withSuspense(ProfilePage, R.profile)}</ProtectedRoute>} />
+                <Route path="favorites" element={<ProtectedRoute>{withSuspense(FavoritesPage, R.favorites)}</ProtectedRoute>} />
+                <Route path="messages" element={<ProtectedRoute>{withSuspense(MessagesPage, R.messages)}</ProtectedRoute>} />
                 <Route
                     path="messages/:targetUserId"
-                    element={<ProtectedRoute>{withSuspense(ChatWindowPage)}</ProtectedRoute>}
+                    element={<ProtectedRoute>{withSuspense(ChatWindowPage, R.chat)}</ProtectedRoute>}
                 />
-                <Route path="orders" element={<ProtectedRoute>{withSuspense(OrdersPage)}</ProtectedRoute>} />
-                <Route path="orders/:id" element={<ProtectedRoute>{withSuspense(OrderDetailPage)}</ProtectedRoute>} />
-                <Route path="payment" element={<ProtectedRoute>{withSuspense(PaymentPage)}</ProtectedRoute>} />
+                <Route path="orders" element={<ProtectedRoute>{withSuspense(OrdersPage, R.orders)}</ProtectedRoute>} />
+                <Route path="orders/:id" element={<ProtectedRoute>{withSuspense(OrderDetailPage, R.orderDetail)}</ProtectedRoute>} />
+                <Route path="payment" element={<ProtectedRoute>{withSuspense(PaymentPage, R.payment)}</ProtectedRoute>} />
                 <Route
                     path="payment/result"
-                    element={<ProtectedRoute>{withSuspense(PaymentResultPage)}</ProtectedRoute>}
+                    element={<ProtectedRoute>{withSuspense(PaymentResultPage, R.paymentResult)}</ProtectedRoute>}
                 />
-                <Route path="publish" element={<ProtectedRoute>{withSuspense(PublishPage)}</ProtectedRoute>} />
-                <Route path="my-products" element={<ProtectedRoute>{withSuspense(MyProductsPage)}</ProtectedRoute>} />
+                <Route path="publish" element={<ProtectedRoute>{withSuspense(PublishPage, R.publish)}</ProtectedRoute>} />
+                <Route path="my-products" element={<ProtectedRoute>{withSuspense(MyProductsPage, R.myProducts)}</ProtectedRoute>} />
                 <Route
                     path="notifications"
-                    element={<ProtectedRoute>{withSuspense(NotificationsPage)}</ProtectedRoute>}
+                    element={<ProtectedRoute>{withSuspense(NotificationsPage, R.notifications)}</ProtectedRoute>}
                 />
-                <Route path="credit" element={<ProtectedRoute>{withSuspense(CreditPage)}</ProtectedRoute>} />
-                <Route path="*" element={withSuspense(NotFoundPage)} />
+                <Route path="credit" element={<ProtectedRoute>{withSuspense(CreditPage, R.credit)}</ProtectedRoute>} />
+                <Route path="*" element={withSuspense(NotFoundPage, R.notFound)} />
             </Route>
-            <Route path="admin/*" element={withSuspense(AdminRoutes)} />
+            <Route path="admin/*" element={withSuspense(AdminRoutes, R.admin)} />
         </>
     )
 );

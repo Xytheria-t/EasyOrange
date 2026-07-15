@@ -9,6 +9,18 @@ spring:
     virtual:
       enabled: true
 
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 20
+        queue-capacity: 500
+        keep-alive: 60s
+      thread-name-prefix: async-
+      shutdown:
+        await-termination: true
+        await-termination-period: 60s
+
   jackson:
     date-format: yyyy-MM-dd'T'HH:mm:ss
     time-zone: Asia/Shanghai

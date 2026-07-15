@@ -7,11 +7,9 @@ import com.cartethyia.easyorange.framework.config.properties.JwtProperties;
 import com.cartethyia.easyorange.framework.config.properties.SecurityProperties;
 import com.cartethyia.easyorange.framework.web.filter.RateLimitFilter;
 import com.cartethyia.easyorange.framework.web.filter.TokenRevocationFilter;
-import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.JWKSource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +29,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.converter.RsaKeyConverters;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.oauth2.jwt.BadJwtException;
@@ -42,22 +41,20 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.header.writers.ContentSecurityPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import tools.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.security.KeyFactory;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,15 +65,21 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    // ========== Constants ==========
+
     private static final long CORS_MAX_AGE_SECONDS = 3600L;
     private static final long HSTS_MAX_AGE_SECONDS = 31536000L;
     private static final String[] CORS_ALLOWED_METHODS = {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"};
     private static final String[] CORS_EXPOSED_HEADERS = {"Authorization", "Content-Disposition"};
 
+    // ========== Dependencies ==========
+
     private final RateLimitFilter rateLimitFilter;
     private final TokenRevocationFilter tokenRevocationFilter;
     private final SecurityProperties securityProperties;
     private final ObjectMapper objectMapper;
+
+    // ========== Security Filter Chain ==========
 
     @Bean
     @Order(1)
@@ -87,13 +90,12 @@ public class SecurityConfig {
             .httpBasic(AbstractHttpConfigurer::disable)
             .cors(Customizer.withDefaults())
             .exceptionHandling(exception -> exception
-                .authenticationEntryPoint((_, response, _) -> {
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                    response.setCharacterEncoding("UTF-8");
-                    objectMapper.writeValue(response.getOutputStream(),
-                            Result.error(ResultCode.UNAUTHORIZED, "认证失败，请重新登录"));
-                })
+                .authenticationEntryPoint((_, response, _) ->
+                    writeErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED,
+                            ResultCode.UNAUTHORIZED, "认证失败，请重新登录"))
+                .accessDeniedHandler((_, response, _) ->
+                    writeErrorResponse(response, HttpServletResponse.SC_FORBIDDEN,
+                            ResultCode.FORBIDDEN, "权限不足"))
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -110,26 +112,33 @@ public class SecurityConfig {
             .addFilterBefore(tokenRevocationFilter, AnonymousAuthenticationFilter.class)
             .headers(headers -> headers
                 .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny)
-                .contentTypeOptions(Customizer.withDefaults())
-                .contentSecurityPolicy(csp -> csp
-                    .policyDirectives("default-src 'none'; base-uri 'none'; form-action 'none'")
-                )
+                .addHeaderWriter(new ContentSecurityPolicyHeaderWriter(
+                    "default-src 'none'; base-uri 'none'; form-action 'none'"))
                 .httpStrictTransportSecurity(hsts -> hsts
                     .includeSubDomains(true)
-                    .maxAgeInSeconds(HSTS_MAX_AGE_SECONDS)
-                )
+                    .maxAgeInSeconds(HSTS_MAX_AGE_SECONDS))
             )
             .build();
     }
 
+    // ========== JWT Key & Codec ==========
+
     @Bean
     public KeyPair rsaKeyPair(JwtProperties properties) {
-        String privateKeyLocation = properties.getPrivateKeyLocation();
-        String publicKeyLocation = properties.getPublicKeyLocation();
+        var privateKeyLocation = properties.getPrivateKeyLocation();
+        var publicKeyLocation = properties.getPublicKeyLocation();
 
         if (!privateKeyLocation.isBlank() && !publicKeyLocation.isBlank()) {
             try {
-                return readKeyPair(privateKeyLocation, publicKeyLocation);
+                RSAPrivateKey privateKey;
+                RSAPublicKey publicKey;
+                try (var in = Files.newInputStream(Path.of(privateKeyLocation))) {
+                    privateKey = RsaKeyConverters.pkcs8().convert(in);
+                }
+                try (var in = Files.newInputStream(Path.of(publicKeyLocation))) {
+                    publicKey = RsaKeyConverters.x509().convert(in);
+                }
+                return new KeyPair(publicKey, privateKey);
             } catch (Exception e) {
                 throw new RuntimeException("无法加载 RSA 密钥对，请检查 jwt.private-key-location 和 jwt.public-key-location", e);
             }
@@ -139,7 +148,7 @@ public class SecurityConfig {
         try {
             var generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
-            KeyPair keyPair = generator.generateKeyPair();
+            var keyPair = generator.generateKeyPair();
             log.warn("RSA 密钥对已自动生成（仅限开发环境），重启后历史 Token 将失效");
             return keyPair;
         } catch (Exception e) {
@@ -149,42 +158,54 @@ public class SecurityConfig {
 
     @Bean
     public JwtDecoder jwtDecoder(KeyPair keyPair, JwtProperties properties) {
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic()).build();
+        var decoder = NimbusJwtDecoder.withPublicKey((RSAPublicKey) keyPair.getPublic()).build();
         decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(properties.getIssuer()));
         return decoder;
     }
 
     @Bean
     public JwtEncoder jwtEncoder(KeyPair keyPair) {
-        JWK jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
+        var jwk = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
                 .privateKey((RSAPrivateKey) keyPair.getPrivate())
                 .build();
-        JWKSource jwkSource = new ImmutableJWKSet<>(new JWKSet(jwk));
-        return new NimbusJwtEncoder(jwkSource);
+        return new NimbusJwtEncoder(new ImmutableJWKSet<>(new JWKSet(jwk)));
     }
+
+    // ========== CORS ==========
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        List<String> origins = securityProperties.getAllowedOrigins();
-        boolean allowAllOrigins = origins.contains("*");
-
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(allowAllOrigins ? List.of("*") : null);
-        config.setAllowedOrigins(allowAllOrigins ? null : origins);
+        var origins = securityProperties.getAllowedOrigins();
+        var config = new CorsConfiguration();
+        if (origins.contains("*")) {
+            config.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            config.setAllowedOrigins(origins);
+        }
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of(CORS_ALLOWED_METHODS));
         config.setAllowCredentials(true);
         config.setMaxAge(CORS_MAX_AGE_SECONDS);
         config.setExposedHeaders(List.of(CORS_EXPOSED_HEADERS));
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
 
+    // ========== Password Encoding ==========
+
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(securityProperties.getPasswordEncoderStrength());
+    }
+
+    // ========== Private Helpers ==========
+
+    private void writeErrorResponse(HttpServletResponse response, int status, ResultCode code, String message) throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getOutputStream(), Result.error(code, message));
     }
 
     private Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter() {
@@ -218,47 +239,4 @@ public class SecurityConfig {
         };
     }
 
-    /**
-     * 从 PEM 文件加载 RSA 密钥对。
-     * <p>
-     * 支持 file: 和 classpath: 前缀，由 Spring ResourceLoader 解析。
-     */
-    private static KeyPair readKeyPair(String privateKeyLocation, String publicKeyLocation) throws Exception {
-        var factory = KeyFactory.getInstance("RSA");
-
-        byte[] privateKeyBytes;
-        byte[] publicKeyBytes;
-
-        try (var input = new java.io.FileInputStream(privateKeyLocation)) {
-            privateKeyBytes = readAllBytes(input);
-        }
-        try (var input = new java.io.FileInputStream(publicKeyLocation)) {
-            publicKeyBytes = readAllBytes(input);
-        }
-
-        var privateKey = factory.generatePrivate(
-                new PKCS8EncodedKeySpec(decodePem(privateKeyBytes)));
-        var publicKey = factory.generatePublic(
-                new X509EncodedKeySpec(decodePem(publicKeyBytes)));
-
-        return new KeyPair(publicKey, privateKey);
-    }
-
-    private static byte[] decodePem(byte[] pemBytes) {
-        var pem = new String(pemBytes, java.nio.charset.StandardCharsets.UTF_8);
-        var base64 = pem.replaceAll("-----BEGIN [A-Z ]+-----", "")
-                         .replaceAll("-----END [A-Z ]+-----", "")
-                         .replaceAll("\\s", "");
-        return Base64.getDecoder().decode(base64);
-    }
-
-    private static byte[] readAllBytes(InputStream input) throws Exception {
-        var buffer = new ByteArrayOutputStream();
-        byte[] chunk = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = input.read(chunk)) != -1) {
-            buffer.write(chunk, 0, bytesRead);
-        }
-        return buffer.toByteArray();
-    }
 }

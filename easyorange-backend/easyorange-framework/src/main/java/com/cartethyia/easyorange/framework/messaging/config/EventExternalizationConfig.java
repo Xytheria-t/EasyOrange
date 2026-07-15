@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
+import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,9 +13,9 @@ import org.springframework.modulith.events.RoutingTarget;
  * Configures Spring Modulith's event externalization to RabbitMQ.
  * <p>
  * All domain events implementing {@link DomainEvent} are externalized to the
- * {@code eo.domain.events} Topic Exchange. The routing key is derived from
- * the event class name using the same convention as {@link RoutingKeyResolver}:
- * CamelCase → dot.case lowercase (e.g. {@code OrderCreatedEvent} → {@code order.created}).
+ * {@value RabbitMQConfig#EXCHANGE_NAME} Topic Exchange. The routing key is derived from
+ * the event class name by convention: CamelCase → dot.case lowercase
+ * (e.g. {@code OrderCreatedEvent} → {@code order.created}).
  * <p>
  * This config is active when RabbitMQ is enabled (default). When disabled,
  * events are still persisted in the {@code EVENT_PUBLICATION} table but never
@@ -25,14 +26,12 @@ import org.springframework.modulith.events.RoutingTarget;
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class EventExternalizationConfig {
 
-    private static final String EXCHANGE_NAME = "eo.domain.events";
-
     @Bean
     EventExternalizationConfiguration eventExternalizationConfiguration() {
         return EventExternalizationConfiguration.externalizing()
                 .selectByType(DomainEvent.class)
                 .route(DomainEvent.class,
-                        event -> RoutingTarget.forTarget(EXCHANGE_NAME)
+                        event -> RoutingTarget.forTarget(RabbitMQConfig.EXCHANGE_NAME)
                                 .andKey(toRoutingKey(event)))
                 .build();
     }

@@ -99,7 +99,7 @@ easyorange-application
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
 - ~~`easyorange.idgen.*`~~ — ID 生成器配置（已移除，UUID v7 零配置零依赖）
 - `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
-- `http-client.*` — HTTP 客户端超时和协议版本
+- ~~`http-client.*`~~ — HTTP 客户端超时和协议版本（已删除，Spring Boot 4 自动配置 RestClient）
 
 ### 日志配置 (logback-spring.xml)
 

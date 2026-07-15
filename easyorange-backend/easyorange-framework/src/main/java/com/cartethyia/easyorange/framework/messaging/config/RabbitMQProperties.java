@@ -4,7 +4,6 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Primary;
 import java.time.Duration;
-import java.util.List;
 
 @Data
 @Primary
@@ -12,13 +11,10 @@ import java.util.List;
 public class RabbitMQProperties {
 
     private boolean enabled = true;
-    private String exchange = "eo.domain.events";
-    private String routingKeyPrefix = "";
 
     private PublisherConfig publisher = new PublisherConfig();
     private ConsumerConfig consumer = new ConsumerConfig();
     private DlqConfig dlq = new DlqConfig();
-    private List<QueueConfig> queues = List.of();
 
     @Data
     public static class PublisherConfig {
@@ -54,11 +50,4 @@ public class RabbitMQProperties {
         private int max = 5;
     }
 
-    @Data
-    public static class QueueConfig {
-        private String name;
-        private String routingKeys;
-        private boolean durable = true;
-        private String type = "quorum";
-    }
 }

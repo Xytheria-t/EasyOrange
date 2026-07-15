@@ -27,10 +27,7 @@ framework/
 │   ├── constant/                 # 配置常量 (缓存 key 约定等)
 │   │   └── LoginCacheConstants.java
 │   ├── database/                 # MyBatis-Plus 配置
-│   │   ├── MybatisPlusConfig.java
-│   │   └── UuidTypeHandler.java
-│   ├── http/                     # RestClient 配置
-│   │   └── RestClientConfig.java
+│   │   └── MybatisPlusConfig.java
 │   ├── properties/               # 配置属性类
 │   │   ├── CacheProperties.java
 │   │   ├── FileUploadProperties.java
@@ -73,17 +70,13 @@ framework/
 │       └── LocalFileStorage.java
 ├── idgen/                   # 分布式 ID 生成器
 │   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现（实现 common.idgen.IdGenerator）
-├── messaging/               # RabbitMQ 消息队列
+├── messaging/               # RabbitMQ 消息队列（Spring Modulith 事务发件箱 + Topic Exchange）
 │   ├── config/                    # RabbitMQ 配置
-│   │   ├── RabbitMQConfig.java
-│   │   └── RabbitMQProperties.java
-│   ├── core/                      # 核心消息发布
-│   │   ├── ModulithDomainEventPublisher.java  # @Primary 新发布器（代理到 ApplicationEventPublisher）
-│   │   ├── RabbitMQDomainEventPublisher.java  # [已废弃，@Deprecated] 旧发布器
-│   │   └── RoutingKeyResolver.java
-│   └── reliability/               # 可靠投递 (Confirm/Return)
-│       ├── ConfirmCallback.java
-│       └── ReturnCallback.java
+│   │   ├── EventExternalizationConfig.java  # Spring Modulith 事件外化（@Primary 路径）
+│   │   ├── RabbitMQConfig.java              # 交换机/队列/DLQ 拓扑（Declarables 批量声明）+ 基础设施 Bean
+│   │   └── RabbitMQProperties.java          # 配置属性绑定
+│   └── core/
+│       └── ModulithDomainEventPublisher.java # @Primary 发布器（代理到 ApplicationEventPublisher → Modulith 外化）
 ├── metrics/                 # 业务指标埋点
 │   ├── BusinessMetricsService.java
 │   └── MetricsConfig.java
@@ -141,8 +134,6 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 ### 领域事件发布流程
 
 业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`。Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步读取并发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。`@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
-
-旧发布器 `RabbitMQDomainEventPublisher` 已废弃（`@Deprecated`），作为回退保留。
 
 ### Redis 缓存抽象
 

@@ -15,6 +15,7 @@
 | **样式** | Tailwind CSS 4 + shadcn/ui | 原子化 CSS + 可复用组件库 |
 | **表单校验** | react-hook-form + Zod 4 | 类型安全表单验证 |
 | **图标** | Lucide React | 图标库 |
+| **SEO** | react-helmet-async | 路由级 meta 管理（title/description/og:title） |
 | **测试** | Vitest + Testing Library | 单元/组件测试（100 文件, 952 测试） |
 | | Playwright | E2E 测试 |
 | **质量** | Biome + jsx-a11y | 统一 lint + format（替代 ESLint + Prettier） |
@@ -43,6 +44,7 @@ easyorange-frontend/
 │   │   └── styles/           # admin.css, admin-layout.css
 │   ├── components/           # 可复用组件
 │   │   ├── layout/           # 布局组件
+│   │   ├── seo/              # SEO 组件（PageMeta — 路由级 title/description/og 标签）
 │   │   ├── ai/               # AI 组件（AiPricingBadge, AiPhotoCapture, AiReviewSuggestion, SemanticSearchToggle, AiQaPanel, AiCopyGeneration, CreditScoreCard）
 │   │   ├── sections/         # 页面区块组件
 │   │   ├── profile/          # 个人中心组件
@@ -230,6 +232,7 @@ chore: 构建/工具链相关
 - Bundle 分析（`npm run build:analyze` 输出 `dist/stats.html`，treemap 可视化定位大块）
 - 图片懒加载与压缩
 - 骨架屏加载动画
+- 页面级 meta 管理（react-helmet-async，21 路由独立 title + og:title/description）
 - TanStack Query 数据缓存
 - Tailwind CSS 原子化样式
 

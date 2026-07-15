@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
  * the event will be retried on restart (see
  * {@code spring.modulith.events.republish-outstanding-events-on-restart}).
  * <p>
- * Replaces {@link RabbitMQDomainEventPublisher} as the {@code @Primary}
- * implementation of {@link DomainEventPublisher}.
+ * This is the sole {@code @Primary} implementation of {@link DomainEventPublisher}
+ * — route-through to Modulith's externalization via {@link EventExternalizationConfig}.
  */
 @Slf4j
 @Component

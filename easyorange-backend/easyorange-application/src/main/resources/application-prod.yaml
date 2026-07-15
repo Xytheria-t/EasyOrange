@@ -87,7 +87,6 @@ jwt:
   public-key-location: ${JWT_RSA_PUBLIC_KEY}
   access-token-expiration: 60
   refresh-token-expiration: 7
-  token-prefix: "Bearer "
   issuer: easyorange
 
 # -------------------------------------------------------------------
