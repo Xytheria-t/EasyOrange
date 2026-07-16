@@ -4,8 +4,11 @@ import com.cartethyia.easyorange.user.domain.constant.UserConstant;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 
+import org.springframework.stereotype.Component;
+
 import java.util.regex.Pattern;
 
+@Component
 public class UsernameValidator implements ConstraintValidator<Username, String> {
 
     private static final Pattern PATTERN = Pattern.compile(UserConstant.USERNAME_REGEX);

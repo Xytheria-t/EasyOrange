@@ -1,53 +1,24 @@
 package com.cartethyia.easyorange.user.domain.valueobject;
 
 import com.cartethyia.easyorange.user.domain.enums.Sex;
-import org.immutables.value.Value;
+import lombok.Builder;
+import lombok.With;
 import org.jetbrains.annotations.Nullable;
 
-@Value.Immutable
-public abstract class PersonalInfo {
-    @Nullable
-    public abstract String realName();
-
-    @Nullable
-    public abstract String nickName();
-
-    @Nullable
-    public abstract Sex sex();
-
-    @Nullable
-    public abstract String studentId();
-
-    @Nullable
-    public abstract String avatar();
-
-    public PersonalInfo withRealName(String newRealName) {
-        return ImmutablePersonalInfo.builder().from(this).realName(newRealName).build();
-    }
-
-    public PersonalInfo withNickName(String newNickName) {
-        return ImmutablePersonalInfo.builder().from(this).nickName(newNickName).build();
-    }
-
-    public PersonalInfo withSex(Sex newSex) {
-        return ImmutablePersonalInfo.builder().from(this).sex(newSex).build();
-    }
-
-    public PersonalInfo withStudentId(String newStudentId) {
-        return ImmutablePersonalInfo.builder().from(this).studentId(newStudentId).build();
-    }
-
-    public PersonalInfo withAvatar(String newAvatar) {
-        return ImmutablePersonalInfo.builder().from(this).avatar(newAvatar).build();
-    }
-
-    @Value.Check
-    protected PersonalInfo validate() {
-        requireNonBlank(realName(), "realName");
-        requireNonBlank(nickName(), "nickName");
-        requireNonBlank(studentId(), "studentId");
-        requireNonBlank(avatar(), "avatar");
-        return this;
+@With
+@Builder(toBuilder = true)
+public record PersonalInfo(
+    @Nullable String realName,
+    @Nullable String nickName,
+    @Nullable Sex sex,
+    @Nullable String studentId,
+    @Nullable String avatar
+) {
+    public PersonalInfo {
+        requireNonBlank(realName, "realName");
+        requireNonBlank(nickName, "nickName");
+        requireNonBlank(studentId, "studentId");
+        requireNonBlank(avatar, "avatar");
     }
 
     private static void requireNonBlank(@Nullable String value, String fieldName) {
@@ -57,6 +28,6 @@ public abstract class PersonalInfo {
     }
 
     public static PersonalInfo empty() {
-        return ImmutablePersonalInfo.builder().build();
+        return new PersonalInfo(null, null, null, null, null);
     }
 }

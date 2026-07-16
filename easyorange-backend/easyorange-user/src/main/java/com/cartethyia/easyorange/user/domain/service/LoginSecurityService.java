@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.user.domain.service;
 
-import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
+import com.cartethyia.easyorange.user.domain.exception.AccountLockedException;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 
@@ -12,45 +12,34 @@ public class LoginSecurityService {
     private final LoginAttemptPort loginAttemptPort;
 
     /**
-     * Checks whether the login attempts for the given identifier exceed the maximum threshold.
-     *
-     * @param identifier the login identifier (username, email, or phone)
-     * @throws BusinessException if the maximum number of failed login attempts has been reached
+     * 预检 — 若账户已锁定则直接抛出 {@link AccountLockedException}。
+     * 用于密码登录场景中，在数据库查询前快速失败。
      */
-    public void checkLoginAttempts(String identifier) {
+    public void checkAndThrowIfLocked(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
-        Long attempts = loginAttemptPort.countAttempts(identifier);
-        if (attempts != null && attempts >= UserSecurityConstant.MAX_LOGIN_ATTEMPTS) {
-            throw BusinessException.of(lockedMessage(identifier));
+        long remaining = loginAttemptPort.getRemainingLockSeconds(identifier);
+        if (remaining > 0) {
+            throw AccountLockedException.of(identifier, remaining);
         }
     }
 
     /**
-     * Records a failed login attempt and locks the account if the threshold is reached.
-     *
-     * @param identifier the login identifier (username, email, or phone)
-     * @throws BusinessException if the maximum number of failed attempts is reached after incrementing
+     * 递增失败次数；若达到阈值则抛出 {@link AccountLockedException}。
      */
-    public void recordFailedAttempt(String identifier) {
+    public void incrementAndCheck(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
-        long count = loginAttemptPort.incrementAttempts(identifier, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME);
+        long count = loginAttemptPort.incrementAndGet(identifier, UserSecurityConstant.LOCK_DURATION);
         if (count >= UserSecurityConstant.MAX_LOGIN_ATTEMPTS) {
-            throw BusinessException.of(lockedMessage(identifier));
+            long remaining = loginAttemptPort.getRemainingLockSeconds(identifier);
+            throw AccountLockedException.of(identifier, remaining);
         }
     }
 
     /**
-     * Clears all recorded login attempts for the given identifier (called after a successful login).
-     *
-     * @param identifier the login identifier (username, email, or phone)
+     * 清除登录失败记录（登录成功后调用）。
      */
-    public void clearLoginAttempts(String identifier) {
+    public void clear(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
-        loginAttemptPort.clearAttempts(identifier);
-    }
-
-    private String lockedMessage(String identifier) {
-        long seconds = loginAttemptPort.getRemainingLockSeconds(identifier);
-        return "登录失败次数过多，账户已锁定，" + Math.max(1, (seconds + 59) / 60) + "分钟后可重试";
+        loginAttemptPort.clear(identifier);
     }
 }

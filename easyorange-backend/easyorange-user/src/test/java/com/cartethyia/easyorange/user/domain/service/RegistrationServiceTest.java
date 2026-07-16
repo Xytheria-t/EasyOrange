@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
-import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
+import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +54,7 @@ class RegistrationServiceTest {
             User savedUser = User.builder()
                 .id("1")
                 .credentials(new Credentials(USERNAME, "$2a$10$encoded"))
-                .personalInfo(ImmutablePersonalInfo.builder().nickName(USERNAME).build())
+                .personalInfo(PersonalInfo.builder().nickName(USERNAME).build())
                 .build();
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 

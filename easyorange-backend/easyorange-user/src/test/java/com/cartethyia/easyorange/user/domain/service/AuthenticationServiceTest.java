@@ -76,7 +76,7 @@ class AuthenticationServiceTest {
         @DisplayName("密码认证成功")
         void success() {
             User user = createNormalUser();
-            doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
+            doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
 
@@ -84,23 +84,23 @@ class AuthenticationServiceTest {
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
-            verify(loginSecurityService).checkLoginAttempts(ACCOUNT);
-            verify(loginSecurityService).clearLoginAttempts(ACCOUNT);
+            verify(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
+            verify(loginSecurityService).clear(ACCOUNT);
             verify(userRepository).update(any(User.class));
         }
 
         @Test
         @DisplayName("用户不存在时抛出异常")
         void userNotFound() {
-            doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
+            doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
-            verify(loginSecurityService).recordFailedAttempt(ACCOUNT);
-            verify(loginSecurityService, never()).clearLoginAttempts(any());
+            verify(loginSecurityService).incrementAndCheck(ACCOUNT);
+            verify(loginSecurityService, never()).clear(any());
             verify(userRepository, never()).update(any());
         }
 
@@ -108,7 +108,7 @@ class AuthenticationServiceTest {
         @DisplayName("密码错误时抛出异常")
         void wrongPassword() {
             User user = createNormalUser();
-            doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
+            doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(false);
 
@@ -116,8 +116,8 @@ class AuthenticationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
-            verify(loginSecurityService).recordFailedAttempt(ACCOUNT);
-            verify(loginSecurityService, never()).clearLoginAttempts(any());
+            verify(loginSecurityService).incrementAndCheck(ACCOUNT);
+            verify(loginSecurityService, never()).clear(any());
             verify(userRepository, never()).update(any());
         }
 
@@ -130,7 +130,7 @@ class AuthenticationServiceTest {
                 .status(UserStatus.DISABLED)
                 .loginInfo(LoginInfo.empty())
                 .build();
-            doNothing().when(loginSecurityService).checkLoginAttempts(ACCOUNT);
+            doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
 
@@ -138,8 +138,8 @@ class AuthenticationServiceTest {
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账户已被禁用");
 
-            verify(loginSecurityService, never()).recordFailedAttempt(ACCOUNT);
-            verify(loginSecurityService, never()).clearLoginAttempts(any());
+            verify(loginSecurityService, never()).incrementAndCheck(ACCOUNT);
+            verify(loginSecurityService, never()).clear(any());
             verify(userRepository, never()).update(any());
         }
     }

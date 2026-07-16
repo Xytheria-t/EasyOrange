@@ -79,7 +79,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | password | VARCHAR(100) | NOT NULL | 密码（BCrypt） |
 | user_type | VARCHAR(2) | NOT NULL DEFAULT '01' | 用户类型（01 普通 / 02 管理员） |
 | email | VARCHAR(255) | UK | 邮箱 |
-| phonenumber | VARCHAR(20) | UK | 手机号码 |
+| phone | VARCHAR(20) | UK | 手机号码 |
 | student_id | VARCHAR(20) | UK | 学号 |
 | real_name | VARCHAR(30) | | 真实姓名 |
 | nick_name | VARCHAR(30) | | 用户昵称 |
@@ -98,7 +98,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 |------|------|----|
 | uk_eo_user_username | UNIQUE | username |
 | uk_eo_user_email | UNIQUE | email |
-| uk_eo_user_phone | UNIQUE | phonenumber |
+| uk_eo_user_phone | UNIQUE | phone |
 | uk_eo_user_student_id | UNIQUE | student_id |
 | idx_eo_user_status_del | KEY | status, del_flag, create_time DESC |
 | idx_eo_user_type_status | KEY | user_type, status, del_flag |

@@ -10,7 +10,6 @@ import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
-import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
@@ -60,7 +59,7 @@ class ProfileAppServiceTest {
 
     private User buildTestUser() {
         ContactInfo contactInfo = new ContactInfo(EMAIL, PHONE);
-        PersonalInfo personalInfo = ImmutablePersonalInfo.builder()
+        PersonalInfo personalInfo = PersonalInfo.builder()
             .realName("张三")
             .nickName("小张")
             .sex(Sex.MALE)

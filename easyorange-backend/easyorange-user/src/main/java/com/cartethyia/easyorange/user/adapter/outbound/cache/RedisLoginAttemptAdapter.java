@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -15,23 +16,18 @@ public class RedisLoginAttemptAdapter implements LoginAttemptPort {
     private final RedisCache redisCache;
 
     @Override
-    public Long countAttempts(String identifier) {
-        return redisCache.get(LoginCacheConstants.buildAttemptsKey(identifier), Long.class);
-    }
-
-    @Override
-    public long incrementAttempts(String identifier, long expireMinutes) {
+    public long incrementAndGet(String identifier, Duration expireAfter) {
         String key = LoginCacheConstants.buildAttemptsKey(identifier);
         Long count = redisCache.increment(key);
         // Only set TTL on first increment — implements fixed window, not sliding
         if (count != null && count == 1) {
-            redisCache.expire(key, expireMinutes, TimeUnit.MINUTES);
+            redisCache.expire(key, expireAfter.toMinutes(), TimeUnit.MINUTES);
         }
         return count != null ? count : 0;
     }
 
     @Override
-    public void clearAttempts(String identifier) {
+    public void clear(String identifier) {
         redisCache.delete(LoginCacheConstants.buildAttemptsKey(identifier));
     }
 

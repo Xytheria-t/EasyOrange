@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
@@ -35,10 +35,10 @@ public class UserController {
 
     @PutMapping("/me")
     public Result<UserResponse> updateUserInfo(@Valid @RequestBody UpdateProfileRequest request) {
-        profileAppService.updateUserInfo(
+        var user = profileAppService.updateUserInfo(
             request.nickname(), request.email(), request.phone(),
             request.gender(), request.realName(), request.studentId());
-        return Result.success(userAssembler.toResponse(profileAppService.getCurrentUser()));
+        return Result.success(userAssembler.toResponse(user));
     }
 
     @PostMapping("/avatar")
@@ -48,7 +48,7 @@ public class UserController {
                 avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
             return Result.success(userAssembler.toResponse(profileAppService.getCurrentUser()));
         } catch (IOException e) {
-            throw BusinessException.of("头像读取失败", e);
+            throw FileException.of("头像读取失败", e);
         }
     }
 }

@@ -53,12 +53,14 @@ user/
 ├── domain/
 │   ├── aggregate/
 │   │   └── User.java                    # 用户聚合根
+│   ├── exception/
+│   │   └── AccountLockedException.java  # 登录锁定异常（含 remainingSeconds，不含 UI 文案）
 │   ├── valueobject/
 │   │   ├── AuditInfo.java               # 审计信息 (createTime, updateTime, createBy, updateBy, delFlag, version)
 │   │   ├── ContactInfo.java              # 联系方式 (email, phone)
 │   │   ├── Credentials.java              # 认证凭据 (username, encodedPassword)
 │   │   ├── LoginInfo.java                # 登录轨迹 (loginIp, loginDate, pwdUpdateDate)
-│   │   └── PersonalInfo.java             # 个人信息+展示 (Immutables @Value.Immutable)
+│   │   └── PersonalInfo.java             # 个人信息+展示 (record + @With + @Builder)
 │   ├── service/                         # 领域服务
 │   │   ├── AuthenticationService.java   # 认证 + 密码管理（完整用例，含内部持久化）
 │   │   ├── LoginSecurityService.java
@@ -86,7 +88,7 @@ user/
 
 ### 值对象模式
 
-模块内值对象采用两种实现方式：
+模块内值对象统一使用 `record`：
 
 | 值对象 | 实现方式 | 原因 |
 |--------|----------|------|
@@ -94,12 +96,12 @@ user/
 | `ContactInfo` | record | 字段少（2个），构造简单 |
 | `LoginInfo` | record | 含语义化方法（`recordLogin`, `updatePasswordTime`） |
 | `AuditInfo` | record | 含语义化方法（`update`, `markDeleted`） |
-| `PersonalInfo` | **Immutables** | 字段多（5个），需自动生成 with 方法 |
+| `PersonalInfo` | record + `@With` + `@Builder(toBuilder = true)` | 字段多（5个），用 Lombok 自动生成 `withXxx()` 和 builder |
 
-**PersonalInfo (Immutables) 使用示例**：
+**PersonalInfo 使用示例**：
 ```java
 // 构建
-PersonalInfo info = ImmutablePersonalInfo.builder()
+PersonalInfo info = PersonalInfo.builder()
     .realName("张三")
     .nickName("小张")
     .build();
@@ -191,7 +193,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 - `MockSmsCodeAdapter` — 基于 `ConcurrentHashMap` 的验证码存储和限流，重启即重置
 - `MockSmsSenderAdapter` — 日志输出，不调用第三方 API
-- `MockSmsCodeAdapter` 使用 `@Component` + `@ConditionalOnMissingBean`（组件扫描自动注册）；`MockSmsSenderAdapter` 通过 `UserDomainConfig.smsSenderPort()` 显式声明为 `@Bean`（DevTools 类加载器下组件扫描可能遗漏 JAR 中的 `@Component`）
+- `MockSmsCodeAdapter` 使用 `@Component` + `@ConditionalOnMissingBean`（组件扫描自动注册）；`MockSmsSenderAdapter` 通过 `UserDomainConfig.smsSenderPort()` 显式声明为 `@Bean`（唯一注册点，不依赖组件扫描）
 
 ## 安全要点
 
@@ -207,10 +209,10 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 1. 判断字段归属的值对象（Credentials / ContactInfo / PersonalInfo / LoginInfo / AuditInfo）或是否应留在聚合根（id, userType, status）
 2. 在对应值对象中新增字段：
    - **record 值对象**（Credentials / ContactInfo / LoginInfo / AuditInfo）：新增字段 + 紧凑构造器校验 + `withXxx()` 方法
-   - **Immutables 值对象**（PersonalInfo）：新增 `@Nullable abstract` 方法 + `withXxx()` 委托方法
+   - **PersonalInfo（record）**：在 record 组件中新增字段 + 紧凑构造器校验（`@With` 和 `@Builder` 自动适配新字段）
 3. 创建 Flyway 迁移脚本
 4. 更新 `UserEntity`（新增字段）
-5. 更新 `UserEntityMapper`（toDomain 使用 `ImmutableXxx.builder()` / from 使用 getter）
+5. 更新 `UserEntityMapper`（toDomain 方向的抽象子映射方法 / from 使用 getter + builder）
 6. 更新 `adapter/inbound/web/dto/response/UserResponse` / `UpdateProfileRequest`
 7. 更新 `adapter/inbound/web/assembler/UserAssembler`（如需 MapStruct 显式映射）
 8. 更新 `User` 聚合根的相关修改方法

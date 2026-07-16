@@ -64,11 +64,15 @@ framework/
 │   │   └── impl/
 │   │       ├── FileServiceImpl.java
 │   │       └── ImageProcessingServiceImpl.java
-│   └── storage/
-│       ├── FileStorage.java
-│       └── LocalFileStorage.java
+│   ├── storage/
+│   │   ├── FileStorage.java
+│   │   └── LocalFileStorage.java
+│   └── util/
+│       └── ByteArrayMultipartFile.java      # byte[] → MultipartFile 适配器（解耦 Servlet 容器依赖）
 ├── idgen/                   # 分布式 ID 生成器
 │   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现（实现 common.idgen.IdGenerator）
+├── mybatis/                 # MyBatis 扩展工具箱
+│   └── CodeEnumTypeHandler.java      # 通用枚举 TypeHandler 基类（按 getCode/fromCode 自动编解码）
 ├── messaging/               # RabbitMQ 消息队列（Spring Modulith 事务发件箱 + Topic Exchange）
 │   ├── config/                    # RabbitMQ 配置
 │   │   ├── EventExternalizationConfig.java  # Spring Modulith 事件外化（@Primary 路径）

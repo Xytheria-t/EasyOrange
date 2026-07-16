@@ -29,7 +29,7 @@ public class ProfileAppService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void updateUserInfo(String nickname, String email, String phone,
+    public User updateUserInfo(String nickname, String email, String phone,
                                 Integer gender, String realName, String studentId) {
         User currentUser = getCurrentUserOrThrow();
 
@@ -58,6 +58,7 @@ public class ProfileAppService {
         }
 
         userRepository.update(updatedUser);
+        return updatedUser;
     }
 
     @Transactional(rollbackFor = Exception.class)

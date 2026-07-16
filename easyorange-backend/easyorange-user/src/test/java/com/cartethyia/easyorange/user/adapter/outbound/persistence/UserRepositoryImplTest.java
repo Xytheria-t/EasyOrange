@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
-import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
@@ -87,7 +86,7 @@ class UserRepositoryImplTest {
             .userType(UserType.NORMAL)
             .status(UserStatus.NORMAL)
             .contactInfo(new ContactInfo("test@example.com", "13812345678"))
-            .personalInfo(ImmutablePersonalInfo.builder()
+            .personalInfo(PersonalInfo.builder()
                 .realName("张三")
                 .nickName("小张")
                 .sex(Sex.MALE)

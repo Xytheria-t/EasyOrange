@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
-import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.mapstruct.Mapper;
@@ -17,42 +16,21 @@ import java.util.function.Function;
     componentModel = "spring",
     nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL
 )
+@SuppressWarnings("unused")
 public interface UserEntityMapper {
 
-    @Mapping(target = "credentials", expression = "java(toCredentials(entity))")
-    @Mapping(target = "contactInfo", expression = "java(toContactInfo(entity))")
-    @Mapping(target = "personalInfo", expression = "java(toPersonalInfo(entity))")
-    @Mapping(target = "loginInfo", expression = "java(toLoginInfo(entity))")
-    @Mapping(target = "auditInfo", expression = "java(toAuditInfo(entity))")
+    @Mapping(target = "encodedPassword", source = "password")
+    Credentials toCredentials(UserEntity entity);
+
+    ContactInfo toContactInfo(UserEntity entity);
+
+    LoginInfo toLoginInfo(UserEntity entity);
+
+    AuditInfo toAuditInfo(UserEntity entity);
+
+    PersonalInfo toPersonalInfo(UserEntity entity);
+
     User toDomain(UserEntity entity);
-
-    default Credentials toCredentials(UserEntity entity) {
-        return new Credentials(entity.getUsername(), entity.getPassword());
-    }
-
-    default ContactInfo toContactInfo(UserEntity entity) {
-        return new ContactInfo(entity.getEmail(), entity.getPhone());
-    }
-
-    default PersonalInfo toPersonalInfo(UserEntity entity) {
-        return ImmutablePersonalInfo.builder()
-            .realName(entity.getRealName())
-            .nickName(entity.getNickName())
-            .sex(entity.getSex())
-            .studentId(entity.getStudentId())
-            .avatar(entity.getAvatar())
-            .build();
-    }
-
-    default LoginInfo toLoginInfo(UserEntity entity) {
-        return new LoginInfo(entity.getLoginIp(), entity.getLoginDate(), entity.getPwdUpdateDate());
-    }
-
-    default AuditInfo toAuditInfo(UserEntity entity) {
-        return new AuditInfo(entity.getCreateTime(), entity.getUpdateTime(),
-            entity.getCreateBy(), entity.getUpdateBy(),
-            entity.getDelFlag(), entity.getVersion());
-    }
 
     default UserEntity from(User user) {
         if (user == null) {
@@ -79,7 +57,7 @@ public interface UserEntityMapper {
             .createBy(safeGet(user.getAuditInfo(), AuditInfo::createBy))
             .updateBy(safeGet(user.getAuditInfo(), AuditInfo::updateBy))
             .delFlag(safeGet(user.getAuditInfo(), AuditInfo::delFlag))
-            .version(user.getAuditInfo() != null ? user.getAuditInfo().version() : 0)
+            .version(safeGet(user.getAuditInfo(), AuditInfo::version))
             .build();
     }
 

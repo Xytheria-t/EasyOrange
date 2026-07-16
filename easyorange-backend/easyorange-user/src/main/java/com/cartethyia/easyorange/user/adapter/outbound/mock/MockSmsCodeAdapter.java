@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.user.adapter.outbound.mock;
 
+import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +20,6 @@ import java.util.concurrent.ConcurrentHashMap;
 @ConditionalOnMissingBean(name = "redisSmsCodeAdapter")
 @RequiredArgsConstructor
 public class MockSmsCodeAdapter implements SmsCodePort {
-
-    private static final Logger log = LoggerFactory.getLogger(MockSmsCodeAdapter.class);
 
     private final ConcurrentHashMap<String, CodeEntry> codes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Instant> sendLimits = new ConcurrentHashMap<>();
@@ -41,14 +38,14 @@ public class MockSmsCodeAdapter implements SmsCodePort {
 
         // 每日配额检查
         long daily = dailyCounts.merge(phone, 1L, Long::sum);
-        if (daily > MAX_DAILY) {
+        if (daily > UserSecurityConstant.SMS_MAX_DAILY) {
             return false;
         }
 
         // 生成并存储验证码
         String code = SmsCodePort.generateCode();
         codes.put(phone, new CodeEntry(code, Instant.now()));
-        sendLimits.put(phone, Instant.now().plus(SEND_INTERVAL));
+        sendLimits.put(phone, Instant.now().plus(UserSecurityConstant.SMS_SEND_INTERVAL));
 
         smsSenderPort.send(phone, code);
         return true;
@@ -61,14 +58,14 @@ public class MockSmsCodeAdapter implements SmsCodePort {
         }
 
         long attempts = verifyCounts.merge(phone, 1L, Long::sum);
-        if (attempts > MAX_VERIFY_ATTEMPTS) {
+            if (attempts > UserSecurityConstant.SMS_MAX_VERIFY_ATTEMPTS) {
             codes.remove(phone);
             verifyCounts.remove(phone);
             return VerifyResult.TOO_MANY_ATTEMPTS;
         }
 
         CodeEntry entry = codes.get(phone);
-        if (entry == null || Instant.now().isAfter(entry.createdAt.plus(CODE_TTL))) {
+        if (entry == null || Instant.now().isAfter(entry.createdAt.plus(UserSecurityConstant.SMS_CODE_TTL))) {
             return VerifyResult.NOT_FOUND;
         }
         if (!entry.code.equals(code)) {

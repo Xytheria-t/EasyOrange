@@ -29,12 +29,12 @@ public class AuthenticationService {
     }
 
     private User authenticateByPassword(String identifier, String password, String clientIp) {
-        loginSecurityService.checkLoginAttempts(identifier);
+        loginSecurityService.checkAndThrowIfLocked(identifier);
 
         User user = userRepository.findByLoginIdentifier(identifier).orElse(null);
 
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            loginSecurityService.recordFailedAttempt(identifier);
+            loginSecurityService.incrementAndCheck(identifier);
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
@@ -42,7 +42,7 @@ public class AuthenticationService {
             throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
 
-        loginSecurityService.clearLoginAttempts(identifier);
+        loginSecurityService.clear(identifier);
 
         User loggedIn = user.recordLogin(clientIp);
         userRepository.update(loggedIn);

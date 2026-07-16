@@ -15,7 +15,7 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileResponse implements CommonUserFields {
+public class    UserProfileResponse implements CommonUserFields {
 
     private String userId;
 

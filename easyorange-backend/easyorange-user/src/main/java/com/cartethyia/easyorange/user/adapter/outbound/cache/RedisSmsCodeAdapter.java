@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.cache.RedisCache;
+import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import lombok.RequiredArgsConstructor;
@@ -35,14 +36,14 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
             if (daily == 1) {
                 redisCache.expire(DAILY_KEY + phone, 1, TimeUnit.DAYS);
             }
-            if (daily > MAX_DAILY) {
+            if (daily > UserSecurityConstant.SMS_MAX_DAILY) {
                 return false;
             }
         }
 
         String code = SmsCodePort.generateCode();
-        redisCache.set(CODE_KEY + phone, code, CODE_TTL.getSeconds(), TimeUnit.SECONDS);
-        redisCache.set(LIMIT_KEY + phone, "1", SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
+        redisCache.set(CODE_KEY + phone, code, UserSecurityConstant.SMS_CODE_TTL.getSeconds(), TimeUnit.SECONDS);
+        redisCache.set(LIMIT_KEY + phone, "1", UserSecurityConstant.SMS_SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
 
         smsSenderPort.send(phone, code);
         return true;
@@ -59,7 +60,7 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
             if (attempts == 1) {
                 redisCache.expire(VERIFY_KEY + phone, 10, TimeUnit.MINUTES);
             }
-            if (attempts > MAX_VERIFY_ATTEMPTS) {
+            if (attempts > UserSecurityConstant.SMS_MAX_VERIFY_ATTEMPTS) {
                 redisCache.delete(CODE_KEY + phone);
                 redisCache.delete(VERIFY_KEY + phone);
                 return VerifyResult.TOO_MANY_ATTEMPTS;

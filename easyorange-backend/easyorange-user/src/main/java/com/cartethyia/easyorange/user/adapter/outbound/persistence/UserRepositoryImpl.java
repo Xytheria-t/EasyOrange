@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
@@ -83,11 +84,8 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     @Override
     public User save(User user) {
         UserEntity entity = entityMapper.from(user);
-        int rows = mapper.insert(entity);
-        if (rows == 0) {
-            throw new IllegalStateException("用户保存失败");
-        }
-        return user.assignId(String.valueOf(entity.getId()));
+        mapper.insert(entity);
+        return user.assignId(entity.getId());
     }
 
     @Override
@@ -109,7 +107,7 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
             .set(UserEntity::getLoginIp, loginIp)
             .update();
         if (!updated) {
-            throw new ConcurrentUpdateException("更新登录信息失败，用户可能已被删除");
+            throw BusinessException.of(UserResultCode.USER_NOT_FOUND);
         }
     }
 

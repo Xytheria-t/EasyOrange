@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
+import com.cartethyia.easyorange.user.domain.exception.AccountLockedException;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
@@ -31,108 +35,102 @@ class LoginSecurityServiceTest {
     }
 
     @Nested
-    @DisplayName("checkLoginAttempts")
-    class CheckLoginAttemptsTests {
+    @DisplayName("checkAndThrowIfLocked")
+    class CheckAndThrowIfLockedTests {
 
         @Test
-        @DisplayName("未超过尝试次数时不抛出异常")
-        void belowMaxAttempts() {
-            when(loginAttemptPort.countAttempts(ACCOUNT)).thenReturn(3L);
+        @DisplayName("账户未锁定时不抛出异常")
+        void notLocked() {
+            when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(0L);
 
-            service.checkLoginAttempts(ACCOUNT);
+            assertThatCode(() -> service.checkAndThrowIfLocked(ACCOUNT))
+                .doesNotThrowAnyException();
 
-            verify(loginAttemptPort).countAttempts(ACCOUNT);
+            verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
         }
 
         @Test
-        @DisplayName("超过最大尝试次数时抛出异常")
-        void exceededMaxAttempts() {
-            when(loginAttemptPort.countAttempts(ACCOUNT)).thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
+        @DisplayName("账户锁定超过阈值时抛出 AccountLockedException")
+        void locked() {
             when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(600L);
 
-            assertThatThrownBy(() -> service.checkLoginAttempts(ACCOUNT))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("登录失败次数过多");
-        }
+            assertThatThrownBy(() -> service.checkAndThrowIfLocked(ACCOUNT))
+                .isInstanceOf(AccountLockedException.class);
 
-        @Test
-        @DisplayName("没有尝试记录时不抛出异常")
-        void noAttempts() {
-            when(loginAttemptPort.countAttempts(ACCOUNT)).thenReturn(null);
-
-            service.checkLoginAttempts(ACCOUNT);
-
-            verify(loginAttemptPort).countAttempts(ACCOUNT);
+            verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
         }
 
         @Test
         @DisplayName("登录标识为空时抛出异常")
         void blankIdentifier() {
-            assertThatThrownBy(() -> service.checkLoginAttempts(""))
+            assertThatThrownBy(() -> service.checkAndThrowIfLocked(""))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("登录标识不能为空");
 
-            verify(loginAttemptPort, never()).countAttempts(any());
+            verify(loginAttemptPort, never()).getRemainingLockSeconds(any());
         }
     }
 
     @Nested
-    @DisplayName("recordFailedAttempt")
-    class RecordFailedAttemptTests {
+    @DisplayName("incrementAndCheck")
+    class IncrementAndCheckTests {
 
         @Test
         @DisplayName("记录失败尝试未达上限时不抛出异常")
         void belowMax() {
-            when(loginAttemptPort.incrementAttempts(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME)).thenReturn(3L);
+            when(loginAttemptPort.incrementAndGet(ACCOUNT, UserSecurityConstant.LOCK_DURATION)).thenReturn(3L);
 
-            service.recordFailedAttempt(ACCOUNT);
+            assertThatCode(() -> service.incrementAndCheck(ACCOUNT))
+                .doesNotThrowAnyException();
 
-            verify(loginAttemptPort).incrementAttempts(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME);
+            verify(loginAttemptPort).incrementAndGet(ACCOUNT, UserSecurityConstant.LOCK_DURATION);
         }
 
         @Test
-        @DisplayName("达到上限时抛出锁定异常")
+        @DisplayName("达到上限时抛出 AccountLockedException")
         void reachedMax() {
-            when(loginAttemptPort.incrementAttempts(ACCOUNT, UserSecurityConstant.ATTEMPTS_EXPIRE_TIME))
+            when(loginAttemptPort.incrementAndGet(ACCOUNT, UserSecurityConstant.LOCK_DURATION))
                 .thenReturn((long) UserSecurityConstant.MAX_LOGIN_ATTEMPTS);
             when(loginAttemptPort.getRemainingLockSeconds(ACCOUNT)).thenReturn(1800L);
 
-            assertThatThrownBy(() -> service.recordFailedAttempt(ACCOUNT))
-                .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("登录失败次数过多");
+            assertThatThrownBy(() -> service.incrementAndCheck(ACCOUNT))
+                .isInstanceOf(AccountLockedException.class);
+
+            verify(loginAttemptPort).incrementAndGet(ACCOUNT, UserSecurityConstant.LOCK_DURATION);
+            verify(loginAttemptPort).getRemainingLockSeconds(ACCOUNT);
         }
 
         @Test
         @DisplayName("登录标识为空时抛出异常")
         void blankIdentifier() {
-            assertThatThrownBy(() -> service.recordFailedAttempt(""))
+            assertThatThrownBy(() -> service.incrementAndCheck(""))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("登录标识不能为空");
 
-            verify(loginAttemptPort, never()).incrementAttempts(any(), anyLong());
+            verify(loginAttemptPort, never()).incrementAndGet(any(), any(Duration.class));
         }
     }
 
     @Nested
-    @DisplayName("clearLoginAttempts")
-    class ClearLoginAttemptsTests {
+    @DisplayName("clear")
+    class ClearTests {
 
         @Test
         @DisplayName("清除登录尝试成功")
         void success() {
-            service.clearLoginAttempts(ACCOUNT);
+            service.clear(ACCOUNT);
 
-            verify(loginAttemptPort).clearAttempts(ACCOUNT);
+            verify(loginAttemptPort).clear(ACCOUNT);
         }
 
         @Test
         @DisplayName("登录标识为空时抛出异常")
         void blankIdentifier() {
-            assertThatThrownBy(() -> service.clearLoginAttempts(""))
+            assertThatThrownBy(() -> service.clear(""))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("登录标识不能为空");
 
-            verify(loginAttemptPort, never()).clearAttempts(any());
+            verify(loginAttemptPort, never()).clear(any());
         }
     }
 }

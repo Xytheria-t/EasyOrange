@@ -9,7 +9,7 @@
 
 INSERT INTO `eo_user` (
     `user_id`, `username`, `password`, `user_type`, `nick_name`,
-    `sex`, `status`, `del_flag`, `email`, `phonenumber`, `student_id`,
+    `sex`, `status`, `del_flag`, `email`, `phone`, `student_id`,
     `real_name`, `avatar`, `create_time`, `update_time`
 ) VALUES
 (1,  'testuser',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '测试用户',   0, 0, 0, 'testuser@example.com',    '13800138001', '2023001', '张三',   'https://picsum.photos/seed/avatar1/100/100',  NOW() - INTERVAL 90 DAY, NOW()),
@@ -583,7 +583,7 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO `eo_user` (
     `user_id`, `username`, `password`, `user_type`, `nick_name`,
-    `sex`, `status`, `del_flag`, `email`, `phonenumber`, `student_id`,
+    `sex`, `status`, `del_flag`, `email`, `phone`, `student_id`,
     `real_name`, `avatar`, `create_time`, `update_time`
 ) VALUES
 (11, 'huangjie',  '$2a$10$gxOyIzrDj4byMrfyopCwDOLOBdt.xlhDNjpbXDv.Au1gyApmKVDNK', '01', '黄杰学长',   1, 0, 0, 'huangjie@example.com',    '13800138011', '2021001', '黄杰', 'https://picsum.photos/seed/avatar11/100/100', NOW() - INTERVAL 180 DAY, NOW()),

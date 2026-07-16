@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
-import com.cartethyia.easyorange.user.domain.valueobject.ImmutablePersonalInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.junit.jupiter.api.DisplayName;
@@ -167,7 +166,7 @@ class UserTest {
         @DisplayName("空值不应覆盖已有字段")
         void shouldNotOverrideWithBlankValues() {
             ContactInfo contactInfo = new ContactInfo("old@example.com", "13812345678");
-            PersonalInfo personalInfo = ImmutablePersonalInfo.builder().build();
+            PersonalInfo personalInfo = PersonalInfo.builder().build();
             User user = User.builder()
                 .id("1")
                 .credentials(new Credentials("testuser", "password"))
@@ -189,7 +188,7 @@ class UserTest {
         @Test
         @DisplayName("应更新头像URL")
         void shouldUpdateAvatarUrl() {
-            PersonalInfo personalInfo = ImmutablePersonalInfo.builder().avatar("/avatar/old.png").build();
+            PersonalInfo personalInfo = PersonalInfo.builder().avatar("/avatar/old.png").build();
             User user = User.builder()
                 .id("1")
                 .credentials(new Credentials("testuser", "password"))
@@ -250,7 +249,7 @@ class UserTest {
         @DisplayName("Builder 应正确创建 User 对象")
         void shouldCreateUserCorrectly() {
             ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = ImmutablePersonalInfo.builder()
+            PersonalInfo personalInfo = PersonalInfo.builder()
                 .realName("张三")
                 .nickName("小张")
                 .sex(Sex.MALE)
@@ -322,7 +321,7 @@ class UserTest {
         @DisplayName("toBuilder 应保留所有字段")
         void shouldPreserveAllFields() {
             ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = ImmutablePersonalInfo.builder().nickName("nickname").build();
+            PersonalInfo personalInfo = PersonalInfo.builder().nickName("nickname").build();
             User original = User.builder()
                 .id("1")
                 .credentials(new Credentials("testuser", "password"))

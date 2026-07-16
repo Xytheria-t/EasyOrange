@@ -10,7 +10,6 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | Spring Boot | 4.0.3 |
 | MyBatis-Plus | 3.5.16 |
 | MapStruct | 1.6.3 |
-| Immutables | 2.10.0 |
 | Flyway | 11.15.0 |
 | Spring Security OAuth2 Resource Server | — |
 | ArchUnit | 1.4.1 |
@@ -35,7 +34,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 ├─────────────────────────────────────────────┤
 │  domain (领域层) — 纯业务逻辑，零框架依赖    │
 │  aggregate/: 聚合根                          │
-│  valueobject/: 值对象 (record / Immutables)  │
+│  valueobject/: 值对象 (record)               │
 │  event/: 领域事件                            │
 │  port/: 出站端口接口                          │
 │  repository/: 仓储接口                       │
