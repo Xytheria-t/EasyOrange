@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
-import com.cartethyia.easyorange.product.application.service.SearchHistoryBufferService;
+import com.cartethyia.easyorange.product.application.service.SearchHistoryBufferAppService;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
@@ -52,7 +52,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final SearchHistoryMapper searchHistoryMapper;
     private final HotKeywordMapper hotKeywordMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-    private final SearchHistoryBufferService searchHistoryBufferService;
+    private final SearchHistoryBufferAppService searchHistoryBufferService;
     private final CategoryCachePort<CategoryReadModel> categoryCachePort;
 
     @Override

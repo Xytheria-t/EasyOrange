@@ -64,6 +64,7 @@ public class ThreadPoolConfig {
     }
 
     private void applyCommonExecutorConfig(ThreadPoolTaskExecutor executor) {
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.setWaitForTasksToCompleteOnShutdown(WAIT_FOR_TASKS_TO_COMPLETE);
         executor.setAwaitTerminationSeconds(threadPoolProperties.getAwaitTerminationSeconds());
         executor.setRejectedExecutionHandler(new LoggingRejectedExecutionHandler(
@@ -71,6 +72,7 @@ public class ThreadPoolConfig {
     }
 
     private void applyCommonSchedulerConfig(ThreadPoolTaskScheduler scheduler) {
+        scheduler.setTaskDecorator(new MdcTaskDecorator());
         scheduler.setWaitForTasksToCompleteOnShutdown(WAIT_FOR_TASKS_TO_COMPLETE);
         scheduler.setAwaitTerminationSeconds(threadPoolProperties.getAwaitTerminationSeconds());
         scheduler.setRejectedExecutionHandler(new LoggingRejectedExecutionHandler(

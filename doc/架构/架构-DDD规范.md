@@ -473,7 +473,7 @@ public class RegistrationService {
 ### 8. CQRS 渐进式引入
 
 - **早期/简单场景**：使用传统应用服务（如 `AuthAppService`、`ProfileAppService`），同时处理读写
-- **读写模型差异大时**：拆分为 `command/handler` 和 `query/handler`
+- **读写模型差异大时**：拆分为 `command/` 和 `query/`，命令/查询参数内联为 service inner records 或用直接方法参数
 - **复杂查询场景**：Query 侧可使用物化视图、读库副本、ES 等
 - **不推荐一刀切**：简单 CRUD 场景强制 CQRS 会增加大量样板代码
 

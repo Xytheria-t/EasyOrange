@@ -23,27 +23,17 @@ public class SecurityContextUtil {
     }
 
     public static Optional<String> getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return Optional.empty();
-        }
-        return convertPrincipal(auth.getPrincipal());
+        return getAuthentication()
+                .flatMap(auth -> convertPrincipal(auth.getPrincipal()));
     }
 
     // ==================== User Context ====================
 
     public static Optional<AuthUser> getUserContext() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
-        if (auth == null || !auth.isAuthenticated()) {
-            return Optional.empty();
-        }
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof AuthUser authUser) {
-            return Optional.of(authUser);
-        }
-        return Optional.of(buildAuthUser(auth));
+        return getAuthentication().map(auth -> {
+            if (auth.getPrincipal() instanceof AuthUser u) return u;
+            return buildAuthUser(auth);
+        });
     }
 
     public static AuthUser getUserContextOrThrow() {
@@ -59,58 +49,51 @@ public class SecurityContextUtil {
 
     // ==================== Private Helpers ====================
 
+    private static Optional<Authentication> getAuthentication() {
+        return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+                .filter(Authentication::isAuthenticated);
+    }
+
     private static Optional<String> convertPrincipal(Object principal) {
-        if (principal == null) {
-            return Optional.empty();
-        }
+        if (principal == null) return Optional.empty();
         return switch (principal) {
             case Long id -> Optional.of(String.valueOf(id));
-            case AuthUser authUser -> Optional.ofNullable(authUser.userId());
+            case AuthUser user -> Optional.ofNullable(user.userId());
             case String s -> Optional.of(s);
             default -> Optional.empty();
         };
     }
 
     private static AuthUser buildAuthUser(Authentication auth) {
-        Set<String> authorities = auth.getAuthorities().stream()
-            .map(GrantedAuthority::getAuthority)
-            .collect(Collectors.toSet());
+        var authorities = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toSet());
 
         return AuthUser.builder()
-            .userId(convertPrincipal(auth.getPrincipal()).orElse(null))
-            .username(extractUsername(auth))
-            .roles(extractRoles(authorities))
-            .permissions(extractPermissions(authorities))
-            .build();
+                .userId(convertPrincipal(auth.getPrincipal()).orElse(null))
+                .username(extractUsername(auth))
+                .roles(extractRoles(authorities))
+                .permissions(extractPermissions(authorities))
+                .build();
     }
 
     private static String extractUsername(Authentication auth) {
-        Object principal = auth.getPrincipal();
-        if (principal instanceof AuthUser authUser) {
-            return authUser.username();
-        }
-        // When principal is a plain String (e.g., user ID), prefer credentials
-        // as the actual username. In production, the principal is an AuthUser;
-        // in tests, principal may be a String ID with credentials=username.
-        if (auth.getCredentials() instanceof String credentials) {
-            return credentials;
-        }
-        if (principal instanceof String username) {
-            return username;
-        }
+        // Principal is never AuthUser here (handled in getUserContext)
+        if (auth.getCredentials() instanceof String credentials) return credentials;
+        if (auth.getPrincipal() instanceof String s) return s;
         return auth.getName();
     }
 
     private static Set<String> extractRoles(Set<String> authorities) {
         return authorities.stream()
-            .filter(a -> a.startsWith("ROLE_"))
-            .map(a -> a.substring("ROLE_".length()))
-            .collect(Collectors.toSet());
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring("ROLE_".length()))
+                .collect(Collectors.toSet());
     }
 
     private static Set<String> extractPermissions(Set<String> authorities) {
         return authorities.stream()
-            .filter(a -> !a.startsWith("ROLE_"))
-            .collect(Collectors.toSet());
+                .filter(a -> !a.startsWith("ROLE_"))
+                .collect(Collectors.toSet());
     }
 }

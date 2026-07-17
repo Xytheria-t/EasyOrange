@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import org.apache.ibatis.type.MappedTypes;
 
 @MappedTypes(UserStatus.class)
+@SuppressWarnings("unused")
 public class UserStatusTypeHandler extends CodeEnumTypeHandler<UserStatus> {
 
     public UserStatusTypeHandler() {

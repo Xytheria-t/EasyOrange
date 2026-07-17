@@ -47,7 +47,6 @@ class AuthenticationServiceTest {
 
     private static final String ACCOUNT = "testuser";
     private static final String PASSWORD = "Password123";
-    private static final String CLIENT_IP = "192.168.1.1";
     private static final String ENCODED_PW = "$2a$10$encoded";
     private static final String USER_ID = "1";
     private static final String PHONE = "13812345678";
@@ -80,13 +79,12 @@ class AuthenticationServiceTest {
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
 
-            User result = service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP);
+            User result = service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD));
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
             verify(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             verify(loginSecurityService).clear(ACCOUNT);
-            verify(userRepository).update(any(User.class));
         }
 
         @Test
@@ -95,13 +93,12 @@ class AuthenticationServiceTest {
             doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
             verify(loginSecurityService).incrementAndCheck(ACCOUNT);
             verify(loginSecurityService, never()).clear(any());
-            verify(userRepository, never()).update(any());
         }
 
         @Test
@@ -112,13 +109,12 @@ class AuthenticationServiceTest {
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(false);
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
 
             verify(loginSecurityService).incrementAndCheck(ACCOUNT);
             verify(loginSecurityService, never()).clear(any());
-            verify(userRepository, never()).update(any());
         }
 
         @Test
@@ -134,13 +130,12 @@ class AuthenticationServiceTest {
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Password(ACCOUNT, PASSWORD)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账户已被禁用");
 
             verify(loginSecurityService, never()).incrementAndCheck(ACCOUNT);
             verify(loginSecurityService, never()).clear(any());
-            verify(userRepository, never()).update(any());
         }
     }
 
@@ -157,12 +152,11 @@ class AuthenticationServiceTest {
             when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
-            User result = service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP);
+            User result = service.authenticate(new LoginCredential.Sms(phone, verifyCode));
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo(USER_ID);
             verify(smsCodePort).verify(phone, verifyCode);
-            verify(userRepository).update(any(User.class));
         }
 
         @Test
@@ -173,11 +167,9 @@ class AuthenticationServiceTest {
             when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode)))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("账号或密码错误");
-
-            verify(userRepository, never()).update(any());
         }
 
         @Test
@@ -194,11 +186,9 @@ class AuthenticationServiceTest {
             when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode), CLIENT_IP))
+            assertThatThrownBy(() -> service.authenticate(new LoginCredential.Sms(phone, verifyCode)))
                 .isInstanceOf(BusinessException.class)
-                .hasMessageContaining("账号或密码错误");
-
-            verify(userRepository, never()).update(any());
+                .hasMessageContaining("账户已被禁用");
         }
     }
 }

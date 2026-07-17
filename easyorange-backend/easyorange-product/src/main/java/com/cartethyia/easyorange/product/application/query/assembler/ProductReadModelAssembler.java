@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.product.application.query.ProductVO;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import org.springframework.stereotype.Component;
 

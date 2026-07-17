@@ -2,9 +2,6 @@ package com.cartethyia.easyorange.adapter.outbound.product;
 
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
-import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
-import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;
-import com.cartethyia.easyorange.product.application.command.dto.RestoreStockCommand;
 import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
@@ -34,17 +31,17 @@ public class OrderProductInventoryAdapter implements ProductInventoryPort {
 
     @Override
     public boolean decreaseStock(String productId) {
-        productCommandService.decrementStock(new DecrementStockCommand(productId, 1));
+        productCommandService.decrementStock(productId, 1);
         return true;
     }
 
     @Override
     public void restoreStock(String productId) {
-        productCommandService.restoreStock(new RestoreStockCommand(productId));
+        productCommandService.restoreStock(productId);
     }
 
     @Override
     public void markAsSold(String productId) {
-        productCommandService.markAsSold(new MarkAsSoldCommand(productId));
+        productCommandService.markAsSold(productId);
     }
 }

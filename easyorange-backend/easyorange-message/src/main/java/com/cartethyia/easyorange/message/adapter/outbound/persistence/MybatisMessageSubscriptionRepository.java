@@ -47,7 +47,7 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
 
     @Override
     public void update(MessageSubscriptionAggregate subscription) {
-        updateById(messageDataMapper.toEntity(subscription));
+        mapper.updateById(messageDataMapper.toEntity(subscription));
     }
 
     @Override

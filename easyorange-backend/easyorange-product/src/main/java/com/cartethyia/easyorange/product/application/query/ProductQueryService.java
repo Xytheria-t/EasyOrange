@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadM
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
+import com.cartethyia.easyorange.product.application.query.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;

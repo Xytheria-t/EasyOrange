@@ -35,8 +35,10 @@ public class AuthAppService {
 
     @Transactional(rollbackFor = Exception.class)
     public LoginContext login(LoginCredential credential) {
-        User user = authenticationService.authenticate(credential, RequestUtil.getClientIp());
-        List<String> authorities = user.getUserType().isAdmin()
+        User user = authenticationService.authenticate(credential);
+        User loggedIn = user.recordLogin(RequestUtil.getClientIp());
+        userRepository.update(loggedIn);
+        List<String> authorities = loggedIn.getUserType().isAdmin()
                 ? List.of("ROLE_ADMIN", "ROLE_USER")
                 : List.of("ROLE_USER");
         String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), authorities);
@@ -67,11 +69,11 @@ public class AuthAppService {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void changePassword(String verifyCode, String newPassword) {
+    public void changePassword(String oldPassword, String newPassword) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         User user = userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
-        authenticationService.resetPassword(user.getContactInfo().phone(), verifyCode, newPassword);
+        authenticationService.changePassword(user, oldPassword, newPassword);
     }
 
     public record LoginContext(User user, String accessToken, String refreshToken) {}

@@ -16,8 +16,9 @@ framework/
 │   ├── CacheUtils.java           # 静态辅助 (cast 类型安全转换 / scan 批量扫描)
 │   └── MultiLevelCache.java      # L1 Caffeine → L2 Redis → DB 三级串联
 ├── config/                  # 框架配置
-│   ├── async/                    # 线程池 + Jackson
+│   ├── async/                    # 线程池 + Jackson + MDC 传播
 │   │   ├── ThreadPoolConfig.java
+│   │   ├── MdcTaskDecorator.java       # 异步线程 MDC 传播装饰器
 │   │   ├── JacksonConfig.java
 │   │   └── LoggingRejectedExecutionHandler.java
 │   ├── bloom/                    # 布隆过滤器
@@ -191,6 +192,33 @@ if (lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS)) {
 ```
 
 Redisson 自动处理锁续期（Watch Dog）、重入、死锁检测。配置见 `RedissonConfig.java`。
+
+### 日志系统与 MDC 传播
+
+**traceId 自动注入**：项目引入 `micrometer-tracing-bridge-brave`，Spring Boot 4 自动配置 `Slf4jScopeDecorator` 注入 `traceId`/`spanId` 到 MDC。HTTP 请求进入时 Brave 的 `TracingFilter` 自动开启 span，无需手写 UUID。
+
+**异步线程 MDC 传播**：`MdcTaskDecorator` 实现 Spring 的 `TaskDecorator`，在 `ThreadPoolConfig` 中注入所有线程池（`domainEventExecutor` / `taskScheduler`）：
+
+```java
+public Runnable decorate(@NonNull Runnable runnable) {
+    Map<String, String> context = MDC.getCopyOfContextMap();  // 主线程快照
+    return () -> {
+        if (context != null) MDC.setContextMap(context);  // 复制到子线程
+        try { runnable.run(); }
+        finally { MDC.clear(); }  // 防止线程池复用时上下文泄漏
+    };
+}
+```
+
+覆盖范围：`@Async`、`@Scheduled`、`@RabbitListener`（9 个消费者）、所有线程池任务。
+
+**AsyncAppender 异步日志写入**：`logback-spring.xml` 配置 `ASYNC_FILE` / `ASYNC_ERROR_FILE` / `ASYNC_JSON_FILE` 包装底层同步 Appender：
+
+- `queueSize=1024` / `discardingThreshold=0`（不丢弃任何级别）
+- `neverBlock=true`（队列满不阻塞业务线程）
+- 生产环境 JSON 结构化日志使用 Spring Boot 4 内置 `StructuredLogEncoder` + logstash 格式
+
+**业务字段注入**：`LoggingInterceptor` 在 HTTP 请求进入时注入 `clientIp` / `method` / `uri` / `fullUrl` 到 MDC（traceId 由 Micrometer 自动注入）。
 
 ### 布隆过滤器 (bloom/)
 

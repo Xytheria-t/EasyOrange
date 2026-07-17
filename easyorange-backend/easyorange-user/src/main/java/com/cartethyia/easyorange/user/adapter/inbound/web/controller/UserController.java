@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.user.adapter.inbound.web.controller;
 
 
 import com.cartethyia.easyorange.common.security.AuthUser;
-import com.cartethyia.easyorange.common.exception.file.FileException;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.adapter.inbound.web.assembler.UserAssembler;
@@ -14,8 +14,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/users")
@@ -35,20 +33,20 @@ public class UserController {
 
     @PutMapping("/me")
     public Result<UserResponse> updateUserInfo(@Valid @RequestBody UpdateProfileRequest request) {
-        var user = profileAppService.updateUserInfo(
+        var cmd = new ProfileAppService.UpdateCommand(
             request.nickname(), request.email(), request.phone(),
             request.gender(), request.realName(), request.studentId());
-        return Result.success(userAssembler.toResponse(user));
+        return Result.success(userAssembler.toResponse(profileAppService.updateUserInfo(cmd)));
     }
 
     @PostMapping("/avatar")
     public Result<UserResponse> uploadAvatar(@RequestParam("avatar") MultipartFile avatar) {
         try {
-            profileAppService.uploadAvatar(
+            var user = profileAppService.uploadAvatar(
                 avatar.getBytes(), avatar.getContentType(), avatar.getOriginalFilename());
-            return Result.success(userAssembler.toResponse(profileAppService.getCurrentUser()));
-        } catch (IOException e) {
-            throw FileException.of("头像读取失败", e);
+            return Result.success(userAssembler.toResponse(user));
+        } catch (Exception e) {
+            throw BusinessException.of("头像上传失败", e);
         }
     }
 }

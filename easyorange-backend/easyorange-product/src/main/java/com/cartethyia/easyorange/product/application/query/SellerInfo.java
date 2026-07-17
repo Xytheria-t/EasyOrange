@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.query.dto;
+package com.cartethyia.easyorange.product.application.query;
 
 public record SellerInfo(String id, String username, String nickName, String avatar) {
     public static SellerInfo of(String id, String username, String nickName, String avatar) {

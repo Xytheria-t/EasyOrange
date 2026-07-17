@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { favoriteApi } from '@/api/favoriteApi';
 import { messageApi } from '@/api/messageApi';
@@ -17,6 +17,7 @@ import {
 import { useCurrentUser, useLogout } from '@/hooks';
 import { useUIStore } from '@/store/uiStore';
 import { errorHandler } from '@/utils/errorHandler';
+import type { ChangePasswordForm } from '@/schemas/authSchema';
 import '@/styles/main.css';
 import './profile-sidebar.css';
 import './profile-dashboard.css';
@@ -37,12 +38,9 @@ function ProfilePage() {
     const [editValue, setEditValue] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [passwordForm, setPasswordForm] = useState({ verifyCode: '', newPassword: '', confirmPassword: '' });
     const [isChangingPassword, setIsChangingPassword] = useState(false);
-    const [countdown, setCountdown] = useState(0);
     const [animateIn, setAnimateIn] = useState(false);
     const [favoriteCount, setFavoriteCount] = useState(0);
-    const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const [orderCount, setOrderCount] = useState(0);
     const [productCount, setProductCount] = useState(0);
     const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -83,30 +81,6 @@ function ProfilePage() {
             .catch(() => {});
     }, []);
 
-    useEffect(() => {
-        return () => {
-            if (countdownRef.current) {
-                clearInterval(countdownRef.current);
-            }
-        };
-    }, []);
-
-    const startCountdown = useCallback(() => {
-        setCountdown(60);
-        countdownRef.current = setInterval(() => {
-            setCountdown(prev => {
-                if (prev <= 1) {
-                    if (countdownRef.current) {
-                        clearInterval(countdownRef.current);
-                        countdownRef.current = null;
-                    }
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
-    }, []);
-
     const handleEdit = useCallback((field: EditableField, currentValue: string) => {
         setEditingField(field);
         setEditValue(currentValue || '');
@@ -139,39 +113,14 @@ function ProfilePage() {
         setEditValue('');
     }, []);
 
-    const handleSendCode = useCallback(async () => {
-        const phone = user?.phone;
-        if (!phone) {
-            addToast({ type: 'warning', message: '未绑定手机号，无法修改密码' });
-            return;
-        }
-        try {
-            await userApi.sendSmsCode(phone);
-            startCountdown();
-            addToast({ type: 'success', message: '验证码已发送' });
-        } catch (err) {
-            const msg = errorHandler.handle(err as Error);
-            addToast({ type: 'error', message: msg });
-        }
-    }, [user, addToast, startCountdown]);
-
-    const handleChangePassword = useCallback(async () => {
-        if (!passwordForm.verifyCode || !passwordForm.newPassword) {
-            addToast({ type: 'warning', message: '请填写完整信息' });
-            return;
-        }
-        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            addToast({ type: 'warning', message: '两次输入的新密码不一致' });
-            return;
-        }
+    const handleChangePassword = useCallback(async (data: ChangePasswordForm) => {
         setIsChangingPassword(true);
         try {
             await userApi.changePassword({
-                verifyCode: passwordForm.verifyCode,
-                newPassword: passwordForm.newPassword,
+                oldPassword: data.oldPassword,
+                newPassword: data.newPassword,
             });
             setShowPasswordModal(false);
-            setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' });
             addToast({ type: 'success', message: '密码修改成功，请重新登录' });
             logout();
             navigate('/login');
@@ -181,7 +130,7 @@ function ProfilePage() {
         } finally {
             setIsChangingPassword(false);
         }
-    }, [passwordForm, addToast, logout, navigate]);
+    }, [addToast, logout, navigate]);
 
     const handleLogout = useCallback(async () => {
         await logout();
@@ -253,17 +202,9 @@ function ProfilePage() {
 
             <PasswordModal
                 show={showPasswordModal}
-                form={passwordForm}
                 isLoading={isChangingPassword}
-                countdown={countdown}
-                phone={user?.phone ?? ''}
-                onFormChange={setPasswordForm}
-                onClose={() => {
-                    setShowPasswordModal(false);
-                    setPasswordForm({ verifyCode: '', newPassword: '', confirmPassword: '' });
-                }}
+                onClose={() => setShowPasswordModal(false)}
                 onSubmit={handleChangePassword}
-                onSendCode={handleSendCode}
             />
         </div>
     );

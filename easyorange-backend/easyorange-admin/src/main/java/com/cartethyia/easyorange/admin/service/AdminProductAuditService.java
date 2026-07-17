@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.product.application.query.dto.SellerInfo;
+import com.cartethyia.easyorange.product.application.query.SellerInfo;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductApprovedResult;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductRejectedResult;

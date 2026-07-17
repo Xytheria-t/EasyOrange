@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.request;
 
+import com.cartethyia.easyorange.product.application.command.ProductReviewCommandService.CreateProductReviewCommand;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -24,4 +25,8 @@ public class CreateReviewRequest {
     @NotBlank(message = "评价内容不能为空")
     @Size(max = 2000, message = "评价内容最多2000字")
     private String content;
+
+    public CreateProductReviewCommand toCommand(String productId) {
+        return new CreateProductReviewCommand(productId, rating, content);
+    }
 }

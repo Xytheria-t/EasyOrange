@@ -19,52 +19,55 @@ public class AuthenticationService {
 
     // ========== 登录认证 ==========
 
-    public User authenticate(LoginCredential credential, String clientIp) {
+    public User authenticate(LoginCredential credential) {
         return switch (credential) {
             case LoginCredential.Password(String identifier, String password) ->
-                authenticateByPassword(identifier, password, clientIp);
+                authenticateByPassword(identifier, password);
             case LoginCredential.Sms(String phone, String verifyCode) ->
-                authenticateBySms(phone, verifyCode, clientIp);
+                authenticateBySms(phone, verifyCode);
         };
     }
 
-    private User authenticateByPassword(String identifier, String password, String clientIp) {
+    private User authenticateByPassword(String identifier, String password) {
         loginSecurityService.checkAndThrowIfLocked(identifier);
 
-        User user = userRepository.findByLoginIdentifier(identifier).orElse(null);
-
-        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+        var userOpt = userRepository.findByLoginIdentifier(identifier);
+        if (userOpt.isEmpty() || !passwordEncoder.matches(password, userOpt.get().getPassword())) {
             loginSecurityService.incrementAndCheck(identifier);
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
+        User user = userOpt.get();
         if (!user.isEnabled()) {
             throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
 
         loginSecurityService.clear(identifier);
-
-        User loggedIn = user.recordLogin(clientIp);
-        userRepository.update(loggedIn);
-        return loggedIn;
+        return user;
     }
 
-    private User authenticateBySms(String phone, String verifyCode, String clientIp) {
+    private User authenticateBySms(String phone, String verifyCode) {
         verifyCodeOrThrow(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone)
             .orElseThrow(() -> BusinessException.of(UserResultCode.INVALID_CREDENTIALS));
 
         if (!user.isEnabled()) {
-            throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
+            throw BusinessException.of(UserResultCode.USER_DISABLED);
         }
 
-        User loggedIn = user.recordLogin(clientIp);
-        userRepository.update(loggedIn);
-        return loggedIn;
+        return user;
     }
 
     // ========== 密码管理 ==========
+
+    public void changePassword(User user, String oldPassword, String newPassword) {
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
+        }
+
+        doChangePassword(user, newPassword);
+    }
 
     public void resetPassword(String phone, String verifyCode, String newPassword) {
         verifyCodeOrThrow(phone, verifyCode);

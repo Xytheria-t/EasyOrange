@@ -40,11 +40,7 @@ class ProductReviewCommandServiceTest {
                 return 1;
             }).when(reviewMapper).insert(any(ProductReviewDO.class));
 
-            CreateProductReviewCommand command = CreateProductReviewCommand.builder()
-                    .productId("10")
-                    .rating(5)
-                    .content("非常好的商品")
-                    .build();
+            var command = new ProductReviewCommandService.CreateProductReviewCommand("10", 5, "非常好的商品");
 
             String reviewId = commandService.createReview(command);
 

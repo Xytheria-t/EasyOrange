@@ -51,12 +51,12 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 
 ## CQRS 模式
 
-product、order、payment 模块使用 CQRS：
+product、order、payment 模块使用 CQRS（在 application/domain 层分离，Controller 层可能合并）：
 
-- **Command 侧**: `adapter/inbound/web/*CommandController` → `application/command/*CommandHandler` → `domain`
-- **Query 侧**: `adapter/inbound/web/*QueryController` → `application/query/*QueryHandler` → `domain/repository/query/`
+- **Command 侧**: `application/command/*CommandService` → `domain`
+- **Query 侧**: `application/query/*QueryService` → `domain/repository/query/`
 
-读写使用不同的 Repository 接口和数据模型。
+读写使用不同的 Repository 接口和数据模型。Controller 层按领域概念组织，不强制 CQRS 分割（product 模块只有一个 `ProductController`；order/payment/message 仍维持 `*CommandController` + `*QueryController` 分离）。
 
 ## 领域事件机制
 

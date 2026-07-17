@@ -104,9 +104,10 @@ easyorange-application
 ### 日志配置 (logback-spring.xml)
 
 - `LOG_PATH` — 日志目录，默认 `./logs`，生产环境建议设置为绝对路径
-- 输出：CONSOLE + FILE (app.log) + ERROR_FILE (error.log)
+- 输出：CONSOLE + ASYNC_FILE (app.log) + ASYNC_ERROR_FILE (error.log)
 - 滚动策略：按天 + 大小（100MB/文件，30 天保留，总量 3GB）
-- MDC：`traceId` 贯穿全链路，在 `LoggingInterceptor` 中注入
+- MDC：`traceId` 由 Micrometer Tracing 自动注入，异步线程通过 `MdcTaskDecorator` 传播（见 framework/AGENTS.md）
+- AsyncAppender：生产环境文件日志异步写入，队列满不阻塞业务线程
 
 ## Flyway 迁移规范
 

@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class SearchHistoryBufferService {
+public class SearchHistoryBufferAppService {
 
     private final SearchHistoryMapper searchHistoryMapper;
     

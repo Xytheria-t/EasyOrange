@@ -7,10 +7,8 @@ import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
-import com.cartethyia.easyorange.product.application.command.dto.CreateProductCommand;
-import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
-import com.cartethyia.easyorange.product.application.command.dto.MarkAsSoldCommand;
-import com.cartethyia.easyorange.product.application.command.dto.UpdateProductCommand;
+import com.cartethyia.easyorange.product.application.command.ProductCommandService.CreateProductCommand;
+import com.cartethyia.easyorange.product.application.command.ProductCommandService.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
@@ -83,17 +81,11 @@ class ProductCommandServiceTest {
                 return p.assignId("42");
             });
 
-            CreateProductCommand command = CreateProductCommand.builder()
-                    .categoryId("2")
-                    .name("测试商品")
-                    .price(new BigDecimal("100"))
-                    .stock(10)
-                    .conditionLevel(1)
-                    .location("北京")
-                    .contactMethod("微信")
-                    .description("描述")
-                    .imageUrls(java.util.List.of("http://img/1.jpg"))
-                    .build();
+            CreateProductCommand command = new CreateProductCommand(
+                    "2", "测试商品", new BigDecimal("100"),
+                    null, 10, 1,
+                    "北京", "微信", "描述",
+                    java.util.List.of("http://img/1.jpg"));
 
             String productId = commandService.createProduct(command);
 
@@ -112,11 +104,9 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
-            UpdateProductCommand command = UpdateProductCommand.builder()
-                    .id("1")
-                    .name("新名称")
-                    .price(new BigDecimal("200"))
-                    .build();
+            UpdateProductCommand command = new UpdateProductCommand(
+                    "1", null, "新名称", new BigDecimal("200"),
+                    null, null, null, null, null, null, null);
 
             commandService.updateProduct(command);
 
@@ -134,10 +124,9 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.empty());
 
-            UpdateProductCommand command = UpdateProductCommand.builder()
-                    .id("999")
-                    .name("新名称")
-                    .build();
+            UpdateProductCommand command = new UpdateProductCommand(
+                    "999", null, "新名称", null,
+                    null, null, null, null, null, null, null);
 
             assertThatThrownBy(() -> commandService.updateProduct(command))
                     .isInstanceOf(ProductNotFoundException.class);
@@ -153,7 +142,7 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
-            commandService.decrementStock(new DecrementStockCommand("1", 1));
+            commandService.decrementStock("1", 1);
 
             verify(productCachePort).evictProductCache("1");
             verify(domainEventPublisher).publish(any(StockDecreasedEvent.class));
@@ -169,7 +158,7 @@ class ProductCommandServiceTest {
         try {
             when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
 
-            commandService.markAsSold(new MarkAsSoldCommand("1"));
+            commandService.markAsSold("1");
 
             verify(productCachePort).evictProductCache("1");
             verify(domainEventPublisher).publish(any(ProductMarkedSoldEvent.class));

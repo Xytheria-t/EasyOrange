@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.user.application.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.user.application.service.ProfileAppService.UpdateCommand;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
@@ -12,7 +13,6 @@ import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,7 +22,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,7 +116,7 @@ class ProfileAppServiceTest {
             User user = buildTestUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            profileAppService.updateUserInfo(null, "new@example.com", null, null, null, null);
+            profileAppService.updateUserInfo(new UpdateCommand(null, "new@example.com", null, null, null, null));
         }
 
         @Test
@@ -128,7 +127,7 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByEmail("existing@example.com")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(null, "existing@example.com", null, null, null, null))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, "existing@example.com", null, null, null, null)))
                 .isInstanceOf(BusinessException.class);
         }
 
@@ -140,7 +139,7 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByPhone("13900000000")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(null, null, "13900000000", null, null, null))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, null, "13900000000", null, null, null)))
                 .isInstanceOf(BusinessException.class);
         }
 
@@ -152,7 +151,7 @@ class ProfileAppServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(userRepository.findByStudentId("2022001")).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(null, null, null, null, null, "2022001"))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, null, null, null, null, "2022001")))
                 .isInstanceOf(BusinessException.class);
         }
 
@@ -163,7 +162,7 @@ class ProfileAppServiceTest {
             User user = buildTestUser();
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            assertThatThrownBy(() -> profileAppService.updateUserInfo(null, null, null, null, null, null))
+            assertThatThrownBy(() -> profileAppService.updateUserInfo(new UpdateCommand(null, null, null, null, null, null)))
                 .isInstanceOf(BusinessException.class);
         }
 
@@ -181,14 +180,15 @@ class ProfileAppServiceTest {
             User updatedUser = user.changeAvatar("/avatar/new.png", USER_ID);
 
             when(userRepository.findById(USER_ID))
-                .thenReturn(Optional.of(user))
-                .thenReturn(Optional.of(updatedUser));
+                .thenReturn(Optional.of(user));
 
             byte[] content = "image-data".getBytes();
             when(avatarFilePort.upload(content, "image/png", "avatar.png", USER_ID))
                 .thenReturn("/avatar/new.png");
-            profileAppService.uploadAvatar(content, "image/png", "avatar.png");
+            var result = profileAppService.uploadAvatar(content, "image/png", "avatar.png");
 
+            assertThat(result.getId()).isEqualTo(USER_ID);
+            assertThat(result.getPersonalInfo().avatar()).isEqualTo("/avatar/new.png");
             verify(avatarFilePort).deleteIfExists("/avatar/old.png");
         }
 

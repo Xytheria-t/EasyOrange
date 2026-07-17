@@ -19,14 +19,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("SearchHistoryBufferService 单元测试")
+@DisplayName("SearchHistoryBufferAppService 单元测试")
 class SearchHistoryBufferServiceTest {
 
     @Mock
     private SearchHistoryMapper searchHistoryMapper;
 
     @InjectMocks
-    private SearchHistoryBufferService bufferService;
+    private SearchHistoryBufferAppService bufferService;
 
     @Captor
     private ArgumentCaptor<List<SearchHistoryDO>> batchCaptor;

@@ -57,7 +57,7 @@ export const userApi = {
         });
     },
 
-    changePassword(data: { verifyCode: string; newPassword: string }) {
+    changePassword(data: { oldPassword: string; newPassword: string }) {
         return request<void>('/auth/password/change', {
             method: 'PUT',
             body: data,

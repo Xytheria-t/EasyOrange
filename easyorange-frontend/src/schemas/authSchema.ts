@@ -25,11 +25,8 @@ export const registerSchema = z
             .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
         password: z
             .string()
-            .min(6, '密码至少需要6个字符')
-            .max(20, '密码不能超过20个字符')
-            .regex(/(?=.*[a-z])/, '密码必须包含小写字母')
-            .regex(/(?=.*[A-Z])/, '密码必须包含大写字母')
-            .regex(/(?=.*\d)/, '密码必须包含数字'),
+            .min(8, '密码至少需要8个字符')
+            .max(128, '密码不能超过128个字符'),
         confirmPassword: z.string().min(1, '请确认密码'),
         agreeTerms: z.literal(true, { message: '请同意服务条款和隐私政策' }),
     })
@@ -48,11 +45,8 @@ export const resetPasswordSchema = z
         verifyCode: z.string().min(1, '请输入验证码').max(6),
         newPassword: z
             .string()
-            .min(6, '密码至少需要6个字符')
-            .max(20, '密码不能超过20个字符')
-            .regex(/(?=.*[a-z])/, '密码必须包含小写字母')
-            .regex(/(?=.*[A-Z])/, '密码必须包含大写字母')
-            .regex(/(?=.*\d)/, '密码必须包含数字'),
+            .min(8, '密码至少需要8个字符')
+            .max(128, '密码不能超过128个字符'),
         confirmPassword: z.string().min(1, '请确认密码'),
     })
     .refine(data => data.newPassword === data.confirmPassword, {
@@ -63,14 +57,11 @@ export const resetPasswordSchema = z
 /** 修改密码表单 */
 export const changePasswordSchema = z
     .object({
-        verifyCode: z.string().min(1, '请输入验证码').max(6),
+        oldPassword: z.string().min(1, '请输入旧密码'),
         newPassword: z
             .string()
-            .min(6, '密码至少需要6个字符')
-            .max(20, '密码不能超过20个字符')
-            .regex(/(?=.*[a-z])/, '密码必须包含小写字母')
-            .regex(/(?=.*[A-Z])/, '密码必须包含大写字母')
-            .regex(/(?=.*\d)/, '密码必须包含数字'),
+            .min(8, '密码至少需要8个字符')
+            .max(128, '密码不能超过128个字符'),
         confirmPassword: z.string().min(1, '请确认密码'),
     })
     .refine(data => data.newPassword === data.confirmPassword, {

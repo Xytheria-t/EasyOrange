@@ -9,11 +9,10 @@ product/
 ├── adapter/
 │   ├── inbound/web/
 │   │   ├── controller/
-│   │   │   ├── ProductCommandController.java   # 商品写操作 (创建/更新/删除/状态)
-│   │   │   ├── ProductQueryController.java     # 商品读操作 (详情/列表)
+│   │   │   ├── ProductController.java          # 商品 CRUD + 命令 + 查询 (含库存/状态)
 │   │   │   ├── ProductSearchController.java    # 搜索 (关键词/历史/热词)
 │   │   │   ├── ProductReportController.java    # 举报管理
-│   │   │   └── ProductReviewController.java    # 评价管理
+│   │   │   └── ProductRatingController.java    # 评价管理
 │   │   ├── dto/request/
 │   │   └── dto/response/
 │   └── outbound/
@@ -29,27 +28,27 @@ product/
 │           └── ProductCacheConstant.java
 ├── application/
 │   ├── command/                         # 命令侧 (CQRS Write)
-│   │   ├── ProductCommandService.java
-│   │   ├── ProductReviewCommandService.java
-│   │   ├── dto/                         # Command DTOs
-│   │   └── handler/                     # 命令处理器
+│   │   ├── ProductCommandService.java       # 含内联 CreateProductCommand/UpdateProductCommand records
+│   │   ├── ProductReportCommandService.java
+│   │   └── ProductReviewCommandService.java # 含内联 CreateProductReviewCommand record
 │   ├── query/                           # 查询侧 (CQRS Read)
 │   │   ├── ProductQueryService.java
+│   │   ├── ProductReportQueryService.java
 │   │   ├── ProductReviewQueryService.java
+│   │   ├── ProductSearchHandler.java
+│   │   ├── ProductVO.java, ProductReviewVO.java, ReviewStatsVO.java, SellerInfo.java
 │   │   ├── readmodel/                   # 读模型
 │   │   │   ├── ProductReadModel.java
 │   │   │   ├── CategoryReadModel.java
 │   │   │   ├── SellerReadModel.java
 │   │   │   └── ...
-│   │   ├── assembler/
-│   │   │   └── ProductReadModelAssembler.java
-│   │   ├── dto/                         # Query DTOs + VOs
-│   │   └── handler/                     # 查询处理器
+│   │   └── assembler/
+│   │       └── ProductReadModelAssembler.java
 │   ├── event/
-│   │   └── ProductEventListener.java
-│       └── service/
-│       ├── ProductViewCountService.java
-│       └── SearchHistoryBufferService.java
+│   │   └── ProductEventConsumer.java     # RabbitMQ 领域事件消费者
+│   ├── service/
+│   │   ├── ProductViewCountAppService.java
+│   │   └── SearchHistoryBufferAppService.java
 ├── domain/
 │   ├── aggregate/
 │   │   └── Product.java                 # 商品聚合根
@@ -108,7 +107,7 @@ product/
 `ProductController` → `ProductCommandService` → `Product` 聚合根 → `ProductRepository`
 
 **Query 侧 (读)**:
-`ProductQueryController` → `ProductQueryService` → `ProductQueryRepository` → `ProductReadModel`
+`ProductController` → `ProductQueryService` → `ProductQueryRepository` → `ProductReadModel`
 
 读写使用不同的 Repository 接口和数据模型，查询侧使用 ReadModel 组装响应。
 

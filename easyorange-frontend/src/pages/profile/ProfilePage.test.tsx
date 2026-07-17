@@ -8,7 +8,6 @@ import ProfilePage from './ProfilePage';
 const mockUseCurrentUser = vi.hoisted(() => vi.fn());
 const mockUseLogout = vi.hoisted(() => vi.fn());
 const mockUserApiUpdateProfile = vi.hoisted(() => vi.fn());
-const mockUserApiSendSmsCode = vi.hoisted(() => vi.fn());
 const mockUserApiChangePassword = vi.hoisted(() => vi.fn());
 const mockUserApiUploadAvatar = vi.hoisted(() => vi.fn());
 const mockFavoriteApiGetCount = vi.hoisted(() => vi.fn());
@@ -39,7 +38,6 @@ vi.mock('react-router-dom', async () => {
 vi.mock('@/api/userApi', () => ({
     userApi: {
         updateProfile: mockUserApiUpdateProfile,
-        sendSmsCode: mockUserApiSendSmsCode,
         changePassword: mockUserApiChangePassword,
         uploadAvatar: mockUserApiUploadAvatar,
     },
@@ -77,7 +75,6 @@ beforeEach(() => {
     mockUseCurrentUser.mockReturnValue({ data: mockUser, isLoading: false });
     mockUseLogout.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined) });
     mockUserApiUpdateProfile.mockResolvedValue({ data: mockUser });
-    mockUserApiSendSmsCode.mockResolvedValue(undefined);
     mockUserApiChangePassword.mockResolvedValue(undefined);
     mockUserApiUploadAvatar.mockResolvedValue({ data: mockUser });
     mockFavoriteApiGetCount.mockResolvedValue({ data: 42 });
@@ -172,19 +169,15 @@ describe('ProfilePage', () => {
         expect(changePwdBtns.length).toBeGreaterThanOrEqual(1);
         fireEvent.click(changePwdBtns[0]);
 
-        await screen.findByPlaceholderText('请输入6位验证码');
-        const verifyCodeInput = document.getElementById('change-verify-code') as HTMLElement;
-        const newPwdInput = document.getElementById('new-password') as HTMLElement;
-        const confirmPwdInput = document.getElementById('confirm-password') as HTMLElement;
+        await screen.findByPlaceholderText('请输入旧密码');
+        await user.type(screen.getByPlaceholderText('请输入旧密码'), 'oldPwd123');
+        await user.type(screen.getByPlaceholderText('至少8位字符'), 'newPwd123');
+        await user.type(screen.getByPlaceholderText('再次输入新密码'), 'newPwd123');
 
-        fireEvent.change(verifyCodeInput, { target: { value: '123456' } });
-        fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
-        fireEvent.change(confirmPwdInput, { target: { value: 'NewPass1' } });
-
-        fireEvent.click(screen.getByText('确认修改'));
+        await user.click(screen.getByText('确认修改'));
 
         await waitFor(() => {
-            expect(mockUserApiChangePassword).toHaveBeenCalledWith({ verifyCode: '123456', newPassword: 'NewPass1' });
+            expect(mockUserApiChangePassword).toHaveBeenCalledWith({ oldPassword: 'oldPwd123', newPassword: 'newPwd123' });
         });
         expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '密码修改成功，请重新登录' });
         expect(mockNavigate).toHaveBeenCalledWith('/login');
@@ -192,7 +185,7 @@ describe('ProfilePage', () => {
 
     it('shows error when password change API fails', async () => {
         mockUserApiChangePassword.mockRejectedValue(new Error('修改失败'));
-        mockErrorHandlerHandle.mockReturnValue('验证码错误');
+        mockErrorHandlerHandle.mockReturnValue('旧密码错误');
         renderPage();
         const user = userEvent.setup();
         await user.click(screen.getByText('安全'));
@@ -200,23 +193,19 @@ describe('ProfilePage', () => {
         expect(changePwdBtns.length).toBeGreaterThanOrEqual(1);
         fireEvent.click(changePwdBtns[0]);
 
-        await screen.findByPlaceholderText('请输入6位验证码');
-        const verifyCodeInput = document.getElementById('change-verify-code') as HTMLElement;
-        const newPwdInput = document.getElementById('new-password') as HTMLElement;
-        const confirmPwdInput = document.getElementById('confirm-password') as HTMLElement;
+        await screen.findByPlaceholderText('请输入旧密码');
+        await user.type(screen.getByPlaceholderText('请输入旧密码'), 'wrongOldPwd');
+        await user.type(screen.getByPlaceholderText('至少8位字符'), 'newPwd123');
+        await user.type(screen.getByPlaceholderText('再次输入新密码'), 'newPwd123');
 
-        fireEvent.change(verifyCodeInput, { target: { value: '000000' } });
-        fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
-        fireEvent.change(confirmPwdInput, { target: { value: 'NewPass1' } });
-
-        fireEvent.click(screen.getByText('确认修改'));
+        await user.click(screen.getByText('确认修改'));
 
         await waitFor(() => {
-            expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '验证码错误' });
+            expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '旧密码错误' });
         });
     });
 
-    it('shows warning when confirm password does not match', async () => {
+    it('shows inline error when confirm password does not match', async () => {
         renderPage();
         const user = userEvent.setup();
         await user.click(screen.getByText('安全'));
@@ -224,19 +213,15 @@ describe('ProfilePage', () => {
         expect(changePwdBtns.length).toBeGreaterThanOrEqual(1);
         fireEvent.click(changePwdBtns[0]);
 
-        await screen.findByPlaceholderText('请输入6位验证码');
-        const verifyCodeInput = document.getElementById('change-verify-code') as HTMLElement;
-        const newPwdInput = document.getElementById('new-password') as HTMLElement;
-        const confirmPwdInput = document.getElementById('confirm-password') as HTMLElement;
+        await screen.findByPlaceholderText('请输入旧密码');
+        await user.type(screen.getByPlaceholderText('请输入旧密码'), 'oldPwd123');
+        await user.type(screen.getByPlaceholderText('至少8位字符'), 'newPwd123');
+        await user.type(screen.getByPlaceholderText('再次输入新密码'), 'diffPwd456');
 
-        fireEvent.change(verifyCodeInput, { target: { value: '123456' } });
-        fireEvent.change(newPwdInput, { target: { value: 'NewPass1' } });
-        fireEvent.change(confirmPwdInput, { target: { value: 'NewPass2' } });
-
-        fireEvent.click(screen.getByText('确认修改'));
+        await user.click(screen.getByText('确认修改'));
 
         await waitFor(() => {
-            expect(mockAddToast).toHaveBeenCalledWith({ type: 'warning', message: '两次输入的新密码不一致' });
+            expect(screen.getByText('两次输入的密码不一致')).toBeInTheDocument();
         });
         expect(mockUserApiChangePassword).not.toHaveBeenCalled();
     });

@@ -4,7 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public final class RequestUtil {
 
@@ -37,13 +39,11 @@ public final class RequestUtil {
         if (request == null) {
             return UNKNOWN;
         }
-        var ip = extractFirstIpFromHeader(request, HEADER_X_FORWARDED_FOR);
-        if (ip == null) {
-            ip = extractFirstIpFromHeader(request, HEADER_X_REAL_IP);
-        }
-        if (ip == null) {
-            ip = request.getRemoteAddr();
-        }
+        var ip = Stream.of(HEADER_X_FORWARDED_FOR, HEADER_X_REAL_IP)
+                .map(h -> extractFirstIpFromHeader(request, h))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseGet(request::getRemoteAddr);
         return LOCALHOST_IPS.contains(ip) ? LOCALHOST_IPV4 : ip;
     }
 

@@ -67,10 +67,6 @@ function ForgotPasswordPage() {
     };
 
     const handleResetPassword = async () => {
-        if (!vals.newPassword) {
-            addToast({ type: 'warning', message: '请输入新密码' });
-            return;
-        }
         const valid = await trigger(['newPassword', 'confirmPassword']);
         if (!valid) {
             const errMsg =
@@ -237,7 +233,7 @@ function ForgotPasswordPage() {
                                         <Input
                                             id="forgot-new-password"
                                             type="password"
-                                            placeholder="需包含大小写字母和数字，6-20位"
+                                            placeholder="至少8位字符"
                                             data-testid="input-new-password"
                                             className="pl-11"
                                             {...register('newPassword')}

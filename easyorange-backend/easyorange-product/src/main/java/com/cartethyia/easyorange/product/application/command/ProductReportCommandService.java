@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.command.handler;
+package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
@@ -10,7 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class CreateProductReportHandler {
+public class ProductReportCommandService {
 
     private final ProductReportDomainService productReportDomainService;
     private final ProductReportRepository productReportRepository;
@@ -24,5 +24,15 @@ public class CreateProductReportHandler {
             throw BusinessException.of("您已在24小时内举报过该商品，请耐心等待处理");
         }
         productReportDomainService.reportProduct(productId, reporterId, reason, reasonType);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void handleApprove(String reportId) {
+        productReportDomainService.processReport(reportId, true);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void handleReject(String reportId) {
+        productReportDomainService.processReport(reportId, false);
     }
 }

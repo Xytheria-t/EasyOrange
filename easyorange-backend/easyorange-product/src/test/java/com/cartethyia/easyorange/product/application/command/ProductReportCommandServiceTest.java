@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.command.handler;
+package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("CreateProductReportHandler 测试")
-class CreateProductReportHandlerTest {
+@DisplayName("ProductReportCommandService 测试")
+class ProductReportCommandServiceTest {
 
     @Mock
     private ProductReportDomainService productReportDomainService;
@@ -23,11 +23,11 @@ class CreateProductReportHandlerTest {
     @Mock
     private ProductReportRepository productReportRepository;
 
-    private CreateProductReportHandler handler;
+    private ProductReportCommandService service;
 
     @BeforeEach
     void setUp() {
-        handler = new CreateProductReportHandler(productReportDomainService, productReportRepository);
+        service = new ProductReportCommandService(productReportDomainService, productReportRepository);
     }
 
     @Test
@@ -35,7 +35,7 @@ class CreateProductReportHandlerTest {
     void handleReport_shouldDelegateToDomainService() {
         when(productReportRepository.existsRecentReport("1", "2")).thenReturn(false);
 
-        handler.handleReport("1", "2", "假货", 1);
+        service.handleReport("1", "2", "假货", 1);
 
         verify(productReportRepository).existsRecentReport("1", "2");
         verify(productReportDomainService).reportProduct("1", "2", "假货", 1);
@@ -46,7 +46,7 @@ class CreateProductReportHandlerTest {
     void handleReport_whenRecentReportExists_shouldThrow() {
         when(productReportRepository.existsRecentReport("1", "2")).thenReturn(true);
 
-        assertThatThrownBy(() -> handler.handleReport("1", "2", "假货", 1))
+        assertThatThrownBy(() -> service.handleReport("1", "2", "假货", 1))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("已在24小时内举报过");
 

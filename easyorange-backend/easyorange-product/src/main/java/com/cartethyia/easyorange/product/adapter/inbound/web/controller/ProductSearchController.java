@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
-import com.cartethyia.easyorange.product.application.query.handler.ProductSearchHandler;
+import com.cartethyia.easyorange.product.application.query.ProductSearchHandler;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;

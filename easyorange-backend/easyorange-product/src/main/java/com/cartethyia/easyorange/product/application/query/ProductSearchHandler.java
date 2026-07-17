@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.query.handler;
+package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;

@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChe
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.order.domain.event.StockReservationRequestedEvent;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
-import com.cartethyia.easyorange.product.application.command.dto.DecrementStockCommand;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -35,10 +34,9 @@ public class StockReservationEventConsumer {
                 event.orderId(), event.productId(), event.quantity());
 
         try {
-            int quantity = event.quantity();
-            productCommandService.decrementStock(new DecrementStockCommand(event.productId(), quantity));
+            productCommandService.decrementStock(event.productId(), event.quantity());
 
-            log.info("库存扣减成功: productId={}, orderId={}, quantity={}", event.productId(), event.orderId(), quantity);
+            log.info("库存扣减成功: productId={}, orderId={}, quantity={}", event.productId(), event.orderId(), event.quantity());
         } catch (Exception e) {
             log.error("库存扣减失败: productId={}, orderId={}", event.productId(), event.orderId(), e);
             throw e;

@@ -136,9 +136,11 @@ public Result<LoginResult> login(@Valid @RequestBody PasswordLoginRequest reques
     return Result.success(userAssembler.toLoginResult(ctx.user(), ctx.accessToken(), ctx.refreshToken()));
 }
 
-// AuthAppService - 认证 + Token 创建（完整的应用层编排）
+// AuthAppService - 认证 + Token 创建 + 登录轨迹记录（完整的应用层编排）
 public LoginContext login(LoginCredential credential) {
-    User user = authenticationService.authenticate(credential, RequestUtil.getClientIp());
+    User user = authenticationService.authenticate(credential);
+    User loggedIn = user.recordLogin(RequestUtil.getClientIp());
+    userRepository.update(loggedIn);
     String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), user.getUserType().getCode());
     String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), user.getUserType().getCode());
     return new LoginContext(user, accessToken, refreshToken);
@@ -159,25 +161,26 @@ domain 层通过 `port/` 接口与基础设施解耦：
 
 validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分层原则：
 
-- **`@Password`** — 密码强度校验（字段级）。规则来自 `UserConstant.PASSWORD_REGEX`（8-128位，含大小写+数字+特殊字符）；弱密码黑名单通过 `application.yaml` 的 `easy-orange.validation.password.weak-list` 配置注入。使用示例: `@Password String password`
+- **`@Password`** — 密码强度校验（字段级）。规则来自 `UserConstant.PASSWORD_REGEX`（8-128位，最小长度+弱密码黑名单）；弱密码黑名单通过 `application.yaml` 的 `easy-orange.validation.password.weak-list` 配置注入。使用示例: `@Password String password`
 - **`@Username`** — 用户名格式校验（字段级）。校验长度（3-50位）和字符集（字母、数字、下划线）。使用示例: `@Username String username`
 
 业务规则校验（如唯一性）在 application / domain 层处理，不在 adapter 层做：
 - 注册唯一性 → `RegistrationService.validateUsernameNotExists()` + `validateUniqueContactInfo()`
-- 更新唯一性 → `ProfileAppService.validateUniqueFieldsIfChanged()`
+- 更新唯一性 → `ProfileAppService.checkUnique()`
 
 ## 密码管理
 
-密码操作统一通过 `AuthenticationService`（domain 层）处理，不校验旧密码，一律使用 **手机号 + 短信验证码** 验证身份：
+密码操作统一通过 `AuthenticationService`（domain 层）处理。验证身份方式按操作不同：
 
 | 操作 | 路由 | 身份 | 领域方法 |
 |------|------|------|---------|
 | 发送验证码 | `POST /api/auth/sms-code` | 匿名 | `SmsCodePort.send(phone)` |
 | 重置密码（忘记密码） | `POST /api/auth/password/reset` | 匿名 | `resetPassword(phone, verifyCode, newPassword)` |
-| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `resetPassword(phone, verifyCode, newPassword)`（`AuthAppService` 解析 userId → phone 后委托） |
+| 修改密码（已登录） | `PUT /api/auth/password/change` | 登录 | `changePassword(user, oldPassword, newPassword)` |
 
-- 两种路由共享同一个 `AuthenticationService.resetPassword(phone, ...)` — 无重复领域逻辑
-- `AuthAppService` 负责身份解析：重置密码直接委托，修改密码先通过 `UserRepository` 查询手机号再委托
+- 重置密码走 **手机号 + 短信验证码** 验证身份
+- 修改密码走 **旧密码** 验证身份（不再依赖 SMS 模块）
+- 修改密码后前端登出（清除 token + 重定向登录页），后端不做 token 主动失效
 - 仅 admin 端 `PUT /api/admin/users/{id}/reset-password` 保持管理员强制重置（不走短信验证）
 
 ## 短信验证码（开发环境）
@@ -193,7 +196,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 - `MockSmsCodeAdapter` — 基于 `ConcurrentHashMap` 的验证码存储和限流，重启即重置
 - `MockSmsSenderAdapter` — 日志输出，不调用第三方 API
-- `MockSmsCodeAdapter` 使用 `@Component` + `@ConditionalOnMissingBean`（组件扫描自动注册）；`MockSmsSenderAdapter` 通过 `UserDomainConfig.smsSenderPort()` 显式声明为 `@Bean`（唯一注册点，不依赖组件扫描）
+- `MockSmsCodeAdapter` 和 `MockSmsSenderAdapter` 均使用 `@Component` + `@ConditionalOnMissingBean` 组件扫描自动注册
 
 ## 安全要点
 
@@ -230,8 +233,8 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 ### 添加新 SMS 发送实现（生产环境）
 
-1. 创建类实现 `SmsSenderPort`（如 `AliyunSmsSenderAdapter`），放在 `adapter/outbound/` 下
-2. 修改 `UserDomainConfig.smsSenderPort()` 的返回值为新的实现类，或标注 `@Primary` + `@Component`
+1. 创建类实现 `SmsSenderPort`（如 `AliyunSmsSenderAdapter`），标注 `@Component`
+2. `MockSmsSenderAdapter` 的 `@ConditionalOnMissingBean(SmsSenderPort.class)` 会自动跳过日志模拟实现
 3. 如需切换验证码存储到 Redis，确保 `RedisSmsCodeAdapter` 的 `@Component` 被扫描到（`MockSmsCodeAdapter` 的 `@ConditionalOnMissingBean(name = "redisSmsCodeAdapter")` 会自动跳过内存实现）
 
 ### 添加新领域事件

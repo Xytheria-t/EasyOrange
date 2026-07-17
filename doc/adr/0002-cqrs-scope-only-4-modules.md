@@ -9,7 +9,7 @@
 
 ## 上下文（Context）
 
-EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backend/AGENTS.md`）。CQRS 模式要求 Command 侧与 Query 侧分别走 `*CommandController → *CommandHandler` 与 `*QueryController → *QueryHandler`，读写使用不同的 Repository 接口与数据模型。
+EasyOrange 后端是 11 个 Maven 模块（见 `README.md` 与 `easyorange-backend/AGENTS.md`）。CQRS 模式在 application/domain 层要求 Command 侧与 Query 侧使用不同的 Repository 接口与数据模型，Controller 层按需组织（如 product 模块合并为一个 `ProductController`，order/payment/message 维持 `*CommandController` + `*QueryController` 分离）。
 
 哪些模块该上 CQRS，需要明确边界。否则会出现：
 

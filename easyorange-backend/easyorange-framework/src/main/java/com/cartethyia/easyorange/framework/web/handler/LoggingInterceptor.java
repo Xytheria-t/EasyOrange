@@ -13,14 +13,12 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 public class LoggingInterceptor implements HandlerInterceptor {
 
-    private static final String TRACE_ID = "traceId";
     private static final String START_TIME = "requestStartTime";
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -39,8 +37,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
         request.setAttribute(START_TIME, System.currentTimeMillis());
 
-        var traceId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
-        MDC.put(TRACE_ID, traceId);
+        // traceId 由 Micrometer Tracing (Brave) 自动注入 MDC，无需手写
         MDC.put("clientIp", RequestUtil.getClientIp(request));
         MDC.put("method", request.getMethod());
         MDC.put("uri", uri);
@@ -56,17 +53,16 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
         var costTime = System.currentTimeMillis() - (long) request.getAttribute(START_TIME);
         var status = response.getStatus();
-        var traceId = MDC.get(TRACE_ID);
         var method = request.getMethod();
 
         meterRegistry.counter("http.requests.total").increment();
 
         if (ex != null || status >= 500) {
-            log.error("action=request_error traceId={} method={} uri={} status={} cost={}ms error={}",
-                    traceId, method, uri, status, costTime, ex != null ? ex.getMessage() : "server_error");
+            log.error("action=request_error method={} uri={} status={} cost={}ms error={}",
+                    method, uri, status, costTime, ex != null ? ex.getMessage() : "server_error");
         } else if (status >= 400) {
-            log.warn("action=request_warn traceId={} method={} uri={} status={} cost={}ms",
-                    traceId, method, uri, status, costTime);
+            log.warn("action=request_warn method={} uri={} status={} cost={}ms",
+                    method, uri, status, costTime);
         }
 
         meterRegistry.timer("http.server.request", "uri", uri, "method", method)

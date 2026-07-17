@@ -16,7 +16,8 @@
 | 登出 | `POST /api/auth/logout` | Access Token |
 | 获取当前用户 | `GET /api/users/me` | Access Token |
 | 更新个人资料 | `PUT /api/users/me` | Access Token |
-| 密码重置 | `POST /api/auth/password/reset` | 否 |
+| 密码重置（忘记密码） | `POST /api/auth/password/reset` | 否 |
+| 修改密码（已登录） | `PUT /api/auth/password/change` | Access Token |
 
 ## 二、商品
 

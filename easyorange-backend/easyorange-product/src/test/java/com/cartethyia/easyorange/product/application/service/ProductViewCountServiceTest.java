@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductViewCountService 单元测试")
+@DisplayName("ProductViewCountAppService 单元测试")
 class ProductViewCountServiceTest {
 
     @Mock
@@ -42,7 +42,7 @@ class ProductViewCountServiceTest {
     private ArgumentCaptor<Set<Object>> deleteKeysCaptor;
 
     @InjectMocks
-    private ProductViewCountService viewCountService;
+    private ProductViewCountAppService viewCountService;
 
     @Nested
     @DisplayName("incrementViewCount")

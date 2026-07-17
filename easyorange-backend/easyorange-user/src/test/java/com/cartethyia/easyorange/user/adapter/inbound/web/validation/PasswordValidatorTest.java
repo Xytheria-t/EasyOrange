@@ -61,27 +61,27 @@ class PasswordValidatorTest {
     }
 
     @Test
-    @DisplayName("missing lowercase - invalid")
-    void isValid_missingLowercase_returnsFalse() {
-        assertThat(validator.isValid("ABC12345", null)).isFalse();
+    @DisplayName("no composition rules - lowercase only passes")
+    void isValid_lowercaseOnly_returnsTrue() {
+        assertThat(validator.isValid("abcdefgh", null)).isTrue();
     }
 
     @Test
-    @DisplayName("missing uppercase - invalid")
-    void isValid_missingUppercase_returnsFalse() {
-        assertThat(validator.isValid("abc12345", null)).isFalse();
+    @DisplayName("no composition rules - uppercase only passes")
+    void isValid_uppercaseOnly_returnsTrue() {
+        assertThat(validator.isValid("ABCDEFGH", null)).isTrue();
     }
 
     @Test
-    @DisplayName("missing digit - invalid")
-    void isValid_missingDigit_returnsFalse() {
-        assertThat(validator.isValid("abcABCDEF", null)).isFalse();
+    @DisplayName("no composition rules - digits only passes")
+    void isValid_digitsOnly_returnsTrue() {
+        assertThat(validator.isValid("12345678", null)).isTrue();
     }
 
     @Test
-    @DisplayName("missing special char - invalid")
-    void isValid_missingSpecialChar_returnsFalse() {
-        assertThat(validator.isValid("abcABCDEF123", null)).isFalse();
+    @DisplayName("no composition rules - no special char passes")
+    void isValid_noSpecialChar_returnsTrue() {
+        assertThat(validator.isValid("Abcdef123", null)).isTrue();
     }
 
     @Test
@@ -98,9 +98,9 @@ class PasswordValidatorTest {
     }
 
     @Test
-    @DisplayName("special chars only - invalid")
-    void isValid_specialCharsOnly_returnsFalse() {
-        assertThat(validator.isValid("!@#$%^&*()", null)).isFalse();
+    @DisplayName("special chars only with sufficient length - valid")
+    void isValid_specialCharsOnly_returnsTrue() {
+        assertThat(validator.isValid("!@#$%^&*()", null)).isTrue();
     }
 
     @Test

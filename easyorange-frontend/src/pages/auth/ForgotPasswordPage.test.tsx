@@ -183,7 +183,7 @@ describe('ForgotPasswordPage', () => {
         expect(mockAddToast).toHaveBeenCalledWith({ type: 'error', message: '重置失败，请稍后重试' });
     });
 
-    it('shows warning when new password is empty on reset', async () => {
+    it('shows warning when new password is too short on reset', async () => {
         renderPage();
         const user = userEvent.setup();
         await user.type(screen.getByTestId('input-forgot-phone'), '13800138000');
@@ -191,7 +191,7 @@ describe('ForgotPasswordPage', () => {
         await user.type(screen.getByTestId('input-verify-code'), '123456');
         await user.click(screen.getByTestId('btn-verify-next'));
         await user.click(screen.getByTestId('btn-reset-password'));
-        expect(mockAddToast).toHaveBeenCalledWith({ type: 'warning', message: '请输入新密码' });
+        expect(mockAddToast).toHaveBeenCalledWith({ type: 'warning', message: '密码不符合要求' });
     });
 
     it('navigates to login on back button click', async () => {

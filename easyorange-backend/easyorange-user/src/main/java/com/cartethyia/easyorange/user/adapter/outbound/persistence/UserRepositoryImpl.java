@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.user.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
@@ -90,7 +91,9 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     @Override
     public void update(User user) {
         UserEntity entity = entityMapper.from(user);
-        updateById(entity);
+        if (mapper.updateById(entity) == 0) {
+            throw new ConcurrentUpdateException("用户更新冲突: id=" + user.getId());
+        }
     }
 
     /**

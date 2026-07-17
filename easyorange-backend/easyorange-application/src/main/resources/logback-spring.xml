@@ -46,6 +46,21 @@
         </encoder>
     </appender>
 
+    <!-- 异步包装：避免文件 I/O 阻塞业务线程，队列满时丢弃非关键日志但不阻塞 -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <appender name="ASYNC_ERROR_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="ERROR_FILE"/>
+    </appender>
+
     <!-- JSON 结构化日志 (prod profile) -->
     <springProfile name="prod">
         <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -62,10 +77,17 @@
             </encoder>
         </appender>
 
+        <appender name="ASYNC_JSON_FILE" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>1024</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <neverBlock>true</neverBlock>
+            <appender-ref ref="JSON_FILE"/>
+        </appender>
+
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="JSON_FILE"/>
-            <appender-ref ref="ERROR_FILE"/>
+            <appender-ref ref="ASYNC_JSON_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
     </springProfile>
 
@@ -73,13 +95,10 @@
     <springProfile name="!prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
-            <appender-ref ref="FILE"/>
-            <appender-ref ref="ERROR_FILE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
     </springProfile>
 
-    <logger name="org.springframework" level="WARN"/>
-    <logger name="com.baomidou" level="WARN"/>
-    <logger name="io.lettuce" level="WARN"/>
-    <logger name="org.apache.ibatis" level="WARN"/>
+    <!-- 日志级别统一在 application*.yaml 的 logging.level.* 下配置，便于 Actuator /loggers 动态调整 -->
 </configuration>

@@ -73,7 +73,7 @@ public class AuthController {
 
     @PutMapping("/password/change")
     public Result<Void> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        authAppService.changePassword(request.verifyCode(), request.newPassword());
+        authAppService.changePassword(request.oldPassword(), request.newPassword());
         return Result.success();
     }
 }

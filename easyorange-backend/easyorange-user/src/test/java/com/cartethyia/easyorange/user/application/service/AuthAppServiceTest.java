@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
+import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -100,8 +101,9 @@ class AuthAppServiceTest {
                 .id(USER_ID)
                 .credentials(new Credentials(USERNAME, "encoded"))
                 .userType(UserType.NORMAL)
+                .loginInfo(LoginInfo.empty())
                 .build();
-            when(authenticationService.authenticate(any(LoginCredential.class), anyString()))
+            when(authenticationService.authenticate(any(LoginCredential.class)))
                 .thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("access-token");
@@ -114,6 +116,8 @@ class AuthAppServiceTest {
             assertThat(result.user().getId()).isEqualTo(USER_ID);
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
+            verify(authenticationService).authenticate(credential);
+            verify(userRepository).update(any(User.class));
             verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
             verify(tokenService).createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER"));
         }
@@ -129,8 +133,9 @@ class AuthAppServiceTest {
                 .id(USER_ID)
                 .credentials(new Credentials(USERNAME, "encoded"))
                 .userType(UserType.NORMAL)
+                .loginInfo(LoginInfo.empty())
                 .build();
-            when(authenticationService.authenticate(any(LoginCredential.class), anyString()))
+            when(authenticationService.authenticate(any(LoginCredential.class)))
                 .thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
                 .thenReturn("access-token");
@@ -143,6 +148,8 @@ class AuthAppServiceTest {
             assertThat(result.user().getId()).isEqualTo(USER_ID);
             assertThat(result.accessToken()).isEqualTo("access-token");
             assertThat(result.refreshToken()).isEqualTo("refresh-token");
+            verify(authenticationService).authenticate(credential);
+            verify(userRepository).update(any(User.class));
             verify(tokenService).createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER"));
             verify(tokenService).createRefreshToken(USER_ID, USERNAME, List.of("ROLE_USER"));
         }
@@ -224,18 +231,18 @@ class AuthAppServiceTest {
     class ChangePassword {
 
         @Test
-        @DisplayName("应解析手机号后委托 AuthenticationService.resetPassword")
-        void shouldResolvePhoneAndDelegate() {
+        @DisplayName("应查询用户后委托 AuthenticationService.changePassword 验证旧密码")
+        void shouldFindUserAndDelegateToChangePassword() {
             TestSecurityUtil.setSecurityContext(USER_ID);
             var user = User.builder()
                 .id(USER_ID)
-                .contactInfo(new ContactInfo(null, PHONE))
+                .credentials(new com.cartethyia.easyorange.user.domain.valueobject.Credentials("testuser", "encodedOldPwd"))
                 .build();
             when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
 
-            service.changePassword("123456", "NewPass123");
+            service.changePassword("oldPwd123", "NewPass123");
 
-            verify(authenticationService).resetPassword(PHONE, "123456", "NewPass123");
+            verify(authenticationService).changePassword(user, "oldPwd123", "NewPass123");
         }
 
         @Test

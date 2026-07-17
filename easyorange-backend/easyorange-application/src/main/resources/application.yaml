@@ -176,6 +176,9 @@ logging:
     com.cartethyia.easyorange: INFO
     org.springframework: WARN
     org.springframework.aop.framework.CglibAopProxy: ERROR
+    com.baomidou: WARN
+    io.lettuce: WARN
+    org.apache.ibatis: WARN
 
 thread-pool:
   core-pool-size: 10

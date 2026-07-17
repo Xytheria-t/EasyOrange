@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductViewCountService {
+public class ProductViewCountAppService {
 
     private final RedisTemplate<String, Object> redisTemplate;
     private final ProductMapper productMapper;
