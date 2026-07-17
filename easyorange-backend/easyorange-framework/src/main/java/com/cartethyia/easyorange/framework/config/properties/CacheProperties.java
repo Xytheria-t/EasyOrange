@@ -7,9 +7,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "easyorange.cache")
 public class CacheProperties {
 
-    /** Redis 键前缀，默认为空（不添加前缀） */
-    private String keyPrefix = "";
-
     private ImageCache image = new ImageCache();
 
     private L1Cache l1 = new L1Cache();

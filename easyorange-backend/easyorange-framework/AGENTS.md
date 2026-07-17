@@ -11,10 +11,10 @@ framework/
 ├── bloom/                   # 布隆过滤器 (Redis Bitmap)
 │   ├── BloomFilter.java          # 过滤器接口
 │   └── RedisBitmapBloomFilter.java # Redis Bitmap 实现 (Lua 原子操作)
-├── cache/                   # 缓存抽象 (多级缓存门面 + Redis 缓存实现)
+├── cache/                   # 缓存抽象 (多级缓存门面 + Redis 直接操作)
 │   ├── CacheLoader.java          # 回源加载器函数式接口
-│   ├── MultiLevelCache.java      # L1 Caffeine → L2 Redis → DB 三级串联
-│   └── RedisCache.java           # Redis 缓存 (KV/Hash/Lock/Lua/SCAN, 含 key prefix 与类型转换)
+│   ├── CacheUtils.java           # 静态辅助 (cast 类型安全转换 / scan 批量扫描)
+│   └── MultiLevelCache.java      # L1 Caffeine → L2 Redis → DB 三级串联
 ├── config/                  # 框架配置
 │   ├── async/                    # 线程池 + Jackson
 │   │   ├── ThreadPoolConfig.java
@@ -51,8 +51,7 @@ framework/
 │   └── idempotency/
 │       └── EventIdempotencyChecker.java # 事件幂等性检查
 ├── exception/
-│   ├── GlobalExceptionHandler.java   # 全局异常处理（@RestControllerAdvice，RFC 9457 ProblemDetail）
-│   └── CacheTypeMismatchException.java
+│   └── GlobalExceptionHandler.java   # 全局异常处理（@RestControllerAdvice，RFC 9457 ProblemDetail）
 ├── file/                     # 文件上传下载
 │   ├── adapter/inbound/web/controller/FileController.java
 │   ├── dto/UploadFileVO.java
@@ -138,42 +137,60 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`。Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步读取并发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。`@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
 
-### Redis 缓存抽象
+### Redis 缓存操作
+
+`RedisCache` 薄封装层已移除（2026-07-17），所有缓存操作改为直接注入 `RedisTemplate<String, Object>`。Spring Data Redis 的 `RedisTemplate` 是标准 API，无需额外学习：
 
 ```java
 // KV 操作
-RedisCache.set(key, value)
-RedisCache.set(key, value, timeout, unit)
-RedisCache.get(key)            // 返回 Object, 调用方自行判断类型
-RedisCache.get(key, clazz)     // 带类型转换 (支持 Number 跨类型转换)
-RedisCache.delete(key)
-RedisCache.delete(keys)
+redisTemplate.opsForValue().set(key, value);
+redisTemplate.opsForValue().set(key, value, timeout, unit);
+Object obj = redisTemplate.opsForValue().get(key);
+// 类型安全转换使用 CacheUtils.cast()
+String val = CacheUtils.cast(redisTemplate.opsForValue().get(key), String.class);
+redisTemplate.delete(key);
+redisTemplate.delete(List.of(key1, key2));
 
 // 键生命周期
-RedisCache.hasKey(key)
-RedisCache.expire(key, timeout, unit)
-RedisCache.getExpire(key, unit)
+redisTemplate.hasKey(key);
+redisTemplate.expire(key, timeout, unit);
+redisTemplate.getExpire(key, unit);
 
 // 原子操作
-RedisCache.increment(key)            // +1
-RedisCache.increment(key, delta)
+redisTemplate.opsForValue().increment(key);       // +1
+redisTemplate.opsForValue().increment(key, delta); // +delta
 
-// 分布式锁 (NX + Lua 原子解锁)
-RedisCache.setIfAbsent(key, value, timeout, unit)
-RedisCache.tryLock(key, value, timeout, unit)
-RedisCache.unlock(key, value)
+// Hash 操作
+redisTemplate.opsForHash().putAll(key, map);
 
-// Hash 批量写入
-RedisCache.hashPutAll(key, map)
-
-// Lua 脚本执行
-RedisCache.executeLuaScript(script, keys, args)
-
-// 键扫描 (SCAN 替代 KEYS, 不阻塞 Redis)
-RedisCache.keys(pattern)
+// SCAN 扫描
+CacheUtils.scan(redisTemplate, pattern, count);  // 基于 SCAN 的批量扫描
 ```
 
-> **重要实现细节**: `keys()` 使用 `SCAN` 命令（cursor 迭代, count=1000），避免生产环境 `KEYS *` 阻塞 Redis。`unlock()` 使用 Lua 脚本原子 compare-and-delete。`get(key, clazz)` 的 `castValue` 支持 Number 跨类型转换（如 Long ↔ Integer）。无生产调用的 List/Set/ZSet/Hash 单键操作已移除；需要时直接注入 `RedisTemplate<String, Object>`。
+> **技巧**: `CacheUtils.cast(obj, clazz)` 支持 Number 跨类型转换（Long ↔ Integer）。`CacheUtils.scan()` 使用 `SCAN` 命令（cursor 迭代），避免 `KEYS *` 阻塞 Redis。需要 Lua 脚本时直接调用 `redisTemplate.execute(redisScript, keys, args)`。
+
+### 分布式锁
+
+分布式锁已迁移到 **Redisson RLock**（2026-07-17），替代旧版 RedisTemplate Lua 方案：
+
+```java
+// 通过 RedissonClient 注入
+@Autowired
+private RedissonClient redissonClient;
+
+RLock lock = redissonClient.getLock("eo:lock:" + key);
+if (lock.tryLock(waitTime, leaseTime, TimeUnit.SECONDS)) {
+    try {
+        // 业务逻辑
+    } finally {
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+        }
+    }
+}
+```
+
+Redisson 自动处理锁续期（Watch Dog）、重入、死锁检测。配置见 `RedissonConfig.java`。
 
 ### 布隆过滤器 (bloom/)
 
@@ -190,7 +207,7 @@ bloomFilter.put("eo:bloom:product:id", productId.toString());
 boolean exists = bloomFilter.mightContain("eo:bloom:product:id", productId.toString());
 
 // 自定义参数 (100 万, 1%)
-var custom = new RedisBitmapBloomFilter(redisCache, 1_000_000L, 0.01);
+var custom = new RedisBitmapBloomFilter(redisTemplate, 1_000_000L, 0.01);
 ```
 
 ### 多级缓存门面 (cache/)

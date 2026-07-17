@@ -150,19 +150,16 @@ easyorange:
     key-prefix: "easyorange"
 ```
 
-### 缓存类型转换异常
+### 缓存类型转换
 
-**改进内容**：
+`RedisCache` 薄封装层已移除（2026-07-17），类型安全转换通过 `CacheUtils.cast()` 实现：
 
-- 使用自定义 `CacheTypeMismatchException`
-- 提供友好的错误信息
-- 包含 key、期望类型、实际类型
-
-**异常示例**：
-
+```java
+// 类型安全转换 (支持 Number 跨类型)
+String val = CacheUtils.cast(redisTemplate.opsForValue().get(key), String.class);
 ```
-CacheTypeMismatchException: 缓存类型不匹配 - Key: user:123, 期望类型: java.lang.String, 实际类型: java.lang.Integer
-```
+
+`CacheUtils.cast()` 在类型不匹配时抛出 `ClassCastException`（同标准 Java 语义），不再使用自定义异常。
 
 ---
 

@@ -67,14 +67,13 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
             return Optional.empty();
         }
 
-        String trimmedIdentifier = identifier.trim();
+        var trimmed = identifier.trim();
         return Optional.ofNullable(lambdaQuery()
-                .and(wrapper -> wrapper
-                        .eq(UserEntity::getUsername, trimmedIdentifier)
-                        .or()
-                        .eq(UserEntity::getEmail, trimmedIdentifier)
-                        .or()
-                        .eq(UserEntity::getPhone, trimmedIdentifier))
+                .eq(UserEntity::getUsername, trimmed)
+                .or()
+                .eq(UserEntity::getEmail, trimmed)
+                .or()
+                .eq(UserEntity::getPhone, trimmed)
                 .one())
                 .map(entityMapper::toDomain);
     }

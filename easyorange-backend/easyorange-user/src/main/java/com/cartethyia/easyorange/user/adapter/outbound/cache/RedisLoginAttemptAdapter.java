@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.config.constant.LoginCacheConstants;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.user.domain.port.LoginAttemptPort;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -13,27 +13,27 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RedisLoginAttemptAdapter implements LoginAttemptPort {
 
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public long incrementAndGet(String identifier, Duration expireAfter) {
         String key = LoginCacheConstants.buildAttemptsKey(identifier);
-        Long count = redisCache.increment(key);
+        Long count = redisTemplate.opsForValue().increment(key);
         // Only set TTL on first increment — implements fixed window, not sliding
         if (count != null && count == 1) {
-            redisCache.expire(key, expireAfter.toMinutes(), TimeUnit.MINUTES);
+            redisTemplate.expire(key, expireAfter.toMinutes(), TimeUnit.MINUTES);
         }
         return count != null ? count : 0;
     }
 
     @Override
     public void clear(String identifier) {
-        redisCache.delete(LoginCacheConstants.buildAttemptsKey(identifier));
+        redisTemplate.delete(LoginCacheConstants.buildAttemptsKey(identifier));
     }
 
     @Override
     public long getRemainingLockSeconds(String identifier) {
         String key = LoginCacheConstants.buildAttemptsKey(identifier);
-        return Math.max(0, redisCache.getExpire(key, TimeUnit.SECONDS));
+        return Math.max(0, redisTemplate.getExpire(key, TimeUnit.SECONDS));
     }
 }

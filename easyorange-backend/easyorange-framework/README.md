@@ -70,10 +70,11 @@ public class Application {
 
 | 组件 | 说明 |
 |------|------|
-| `RedisCache` | Redis 缓存抽象接口（支持 String/Hash/List/Set/ZSet/Bitmap/Lua） |
-| `RedisCacheImpl` | Redis 缓存实现 |
+| `RedisTemplate<String, Object>` | Spring Data Redis 标准模板（直接注入，无需自定义封装） |
+| `CacheUtils` | 静态辅助（cast 类型安全转换 / scan SCAN 批量扫描） |
 | `LocalCacheConfig` | Caffeine 本地缓存配置（imageProcessCache / l1Cache） |
 | `MultiLevelCache` | 多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联，自动回填） |
+| `RedissonClient` | Redisson 分布式锁（RLock，替代旧版 Lua 自旋锁） |
 
 ### 缓存防护组件
 
@@ -135,13 +136,13 @@ public class AuthController {
 @Service
 public class UserService {
     
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     
     public User getUserById(Long id) {
         String key = "user:" + id;
         
-        // 先查缓存
-        User user = redisCache.get(key, User.class);
+        // 先查缓存 (使用 CacheUtils.cast 类型安全转换)
+        User user = CacheUtils.cast(redisTemplate.opsForValue().get(key), User.class);
         if (user != null) {
             return user;
         }
@@ -150,7 +151,7 @@ public class UserService {
         user = userRepository.findById(id).orElse(null);
         if (user != null) {
             // 缓存结果
-            redisCache.set(key, user, 30, TimeUnit.MINUTES);
+            redisTemplate.opsForValue().set(key, user, 30, TimeUnit.MINUTES);
         }
         
         return user;

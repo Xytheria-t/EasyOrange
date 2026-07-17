@@ -119,6 +119,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Redisson — 分布式锁 (RLock 实现 java.util.concurrent.locks.Lock + Watch Dog 自动续期) -->
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>${redisson.version}</version>
+        </dependency>
+
         <!-- Spring Modulith Events API (for programmatic event externalization config) -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>

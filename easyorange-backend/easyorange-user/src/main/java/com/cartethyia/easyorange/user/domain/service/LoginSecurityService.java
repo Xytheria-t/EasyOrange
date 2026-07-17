@@ -11,10 +11,6 @@ public class LoginSecurityService {
 
     private final LoginAttemptPort loginAttemptPort;
 
-    /**
-     * 预检 — 若账户已锁定则直接抛出 {@link AccountLockedException}。
-     * 用于密码登录场景中，在数据库查询前快速失败。
-     */
     public void checkAndThrowIfLocked(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
         long remaining = loginAttemptPort.getRemainingLockSeconds(identifier);
@@ -23,9 +19,6 @@ public class LoginSecurityService {
         }
     }
 
-    /**
-     * 递增失败次数；若达到阈值则抛出 {@link AccountLockedException}。
-     */
     public void incrementAndCheck(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
         long count = loginAttemptPort.incrementAndGet(identifier, UserSecurityConstant.LOCK_DURATION);
@@ -35,9 +28,6 @@ public class LoginSecurityService {
         }
     }
 
-    /**
-     * 清除登录失败记录（登录成功后调用）。
-     */
     public void clear(String identifier) {
         BizRequire.notBlank(identifier, "登录标识不能为空");
         loginAttemptPort.clear(identifier);

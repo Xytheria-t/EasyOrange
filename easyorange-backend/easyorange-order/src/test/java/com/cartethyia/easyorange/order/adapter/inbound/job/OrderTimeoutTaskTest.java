@@ -8,7 +8,8 @@ import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -39,7 +40,10 @@ class OrderTimeoutTaskTest {
     private OrderTimeoutProperties properties;
 
     @Mock
-    private RedisCache redisCache;
+    private RedissonClient redissonClient;
+
+    @Mock
+    private RLock lock;
 
     @Mock
     private OrderCachePort orderCachePort;
@@ -78,12 +82,12 @@ class OrderTimeoutTaskTest {
 
         @Test
         @DisplayName("正常取消所有已过期订单")
-        void cancelExpiredOrders_shouldCancelAllExpired() {
+        void cancelExpiredOrders_shouldCancelAllExpired() throws InterruptedException {
             when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
-            when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class)))
-                    .thenReturn(true);
-            when(redisCache.unlock(anyString(), anyString())).thenReturn(true);
+            when(redissonClient.getLock(anyString())).thenReturn(lock);
+            when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+            when(lock.isHeldByCurrentThread()).thenReturn(true);
 
             orderTimeoutTask.cancelExpiredOrders();
 
@@ -94,15 +98,17 @@ class OrderTimeoutTaskTest {
 
         @Test
         @DisplayName("获取锁失败时跳过该订单，不影响其他订单")
-        void cancelExpiredOrders_withLockFailure_shouldSkipOrder() {
+        void cancelExpiredOrders_withLockFailure_shouldSkipOrder() throws InterruptedException {
             when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
             // First order fails to acquire lock, second succeeds
-            when(redisCache.tryLock(contains(String.valueOf(ORDER_ID_1)), anyString(), anyLong(), any(TimeUnit.class)))
-                    .thenReturn(false);
-            when(redisCache.tryLock(contains(String.valueOf(ORDER_ID_2)), anyString(), anyLong(), any(TimeUnit.class)))
-                    .thenReturn(true);
-            when(redisCache.unlock(anyString(), anyString())).thenReturn(true);
+            RLock lock1 = mock(RLock.class);
+            RLock lock2 = mock(RLock.class);
+            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_1)))).thenReturn(lock1);
+            when(redissonClient.getLock(argThat((String key) -> key != null && key.contains(ORDER_ID_2)))).thenReturn(lock2);
+            when(lock1.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
+            when(lock2.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+            when(lock2.isHeldByCurrentThread()).thenReturn(true);
 
             orderTimeoutTask.cancelExpiredOrders();
 
@@ -127,12 +133,12 @@ class OrderTimeoutTaskTest {
 
         @Test
         @DisplayName("部分订单取消失败时继续处理剩余订单")
-        void cancelExpiredOrders_withPartialFailure_shouldContinue() {
+        void cancelExpiredOrders_withPartialFailure_shouldContinue() throws InterruptedException {
             when(properties.isEnabled()).thenReturn(true);
             when(orderRepository.findExpiredOrders(anyInt())).thenReturn(List.of(expiredOrder1, expiredOrder2));
-            when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class)))
-                    .thenReturn(true);
-            when(redisCache.unlock(anyString(), anyString())).thenReturn(true);
+            when(redissonClient.getLock(anyString())).thenReturn(lock);
+            when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+            when(lock.isHeldByCurrentThread()).thenReturn(true);
             // First order update throws exception
             doThrow(new RuntimeException("更新失败"))
                     .doNothing()

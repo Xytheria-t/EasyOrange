@@ -7,9 +7,9 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
+import org.springframework.data.redis.core.RedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -82,18 +82,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private final RateLimitFilterProperties properties;
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final LocalRateLimiter localRateLimiter;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
 
     public RateLimitFilter(RateLimitFilterProperties properties,
-                           RedisCache redisCache,
+                           RedisTemplate<String, Object> redisTemplate,
                            LocalRateLimiter localRateLimiter,
                            ObjectMapper objectMapper,
                            ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
         this.properties = properties;
-        this.redisCache = redisCache;
+        this.redisTemplate = redisTemplate;
         this.localRateLimiter = localRateLimiter;
         this.objectMapper = objectMapper;
         this.handlerMappingsProvider = handlerMappingsProvider;
@@ -184,7 +184,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
             List<String> keys = List.of(key);
-            Long current = redisCache.executeLuaScript(RATE_LIMIT_SCRIPT, keys,
+            Long current = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys,
                     rule.getMaxRequests(), rule.getWindowSeconds());
 
             if (current != null && current > rule.getMaxRequests()) {
@@ -224,7 +224,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String key = "eo:repeat:" + userIdentifier + ":" + request.getRequestURI() + ":" + bodyHash;
 
         try {
-            if (Boolean.FALSE.equals(redisCache.setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
+            if (Boolean.FALSE.equals(redisTemplate.opsForValue().setIfAbsent(key, "1", intervalMs, TimeUnit.MILLISECONDS))) {
                 throw BusinessException.of(config.getMessage());
             }
         } catch (BusinessException ex) {

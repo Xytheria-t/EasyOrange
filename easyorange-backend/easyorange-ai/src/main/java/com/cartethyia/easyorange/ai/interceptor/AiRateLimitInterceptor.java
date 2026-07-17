@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.ai.interceptor;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import org.springframework.data.redis.core.RedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,19 +24,19 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AiRateLimitInterceptor implements HandlerInterceptor {
 
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final Cache<String, Object> staleCache;
     private final AiMetricsService aiMetricsService;
 
     public AiRateLimitInterceptor(
-            RedisCache redisCache,
+            RedisTemplate<String, Object> redisTemplate,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
             AiMetricsService aiMetricsService) {
-        this.redisCache = redisCache;
+        this.redisTemplate = redisTemplate;
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
         this.staleCache = staleCache;
@@ -56,9 +56,9 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         String bucketKey = scope.rateLimitKeyPrefix() + userKey;
 
         try {
-            Long count = redisCache.increment(bucketKey);
+            Long count = redisTemplate.opsForValue().increment(bucketKey);
             if (count != null && count == 1) {
-                redisCache.expire(bucketKey, 60, TimeUnit.SECONDS);
+                redisTemplate.expire(bucketKey, 60, TimeUnit.SECONDS);
             }
 
             if (count != null && count > scope.getRatePerMinute()) {

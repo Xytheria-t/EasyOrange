@@ -3,7 +3,8 @@ package com.cartethyia.easyorange.ai.service;
 import com.cartethyia.easyorange.ai.adapter.outbound.AiSearchEnhancerAdapter;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,17 +38,21 @@ class AiSearchEnhancerTest {
     private ProductTagger productTagger;
 
     @Mock
-    private RedisCache redisCache;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Mock
-    private ObjectProvider<RedisCache> redisCacheProvider;
+    private ValueOperations<String, Object> valueOps;
+
+    @Mock
+    private ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
 
     private AiSearchEnhancerAdapter enhancer;
 
     @BeforeEach
     void setUp() {
-        lenient().when(redisCacheProvider.getIfAvailable()).thenReturn(redisCache);
-        enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisCacheProvider);
+        lenient().when(redisTemplateProvider.getIfAvailable()).thenReturn(redisTemplate);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisTemplateProvider);
     }
 
     private ProductReadModel product(String id, String title, BigDecimal price) {
@@ -72,7 +77,7 @@ class AiSearchEnhancerTest {
                     "MacBook", List.of(product("1", "MacBook", BigDecimal.valueOf(8000))));
 
             assertThat(result).isEmpty();
-            verifyNoInteractions(llmPort, productTagger, redisCache);
+            verifyNoInteractions(llmPort, productTagger, redisTemplate);
         }
 
         @Test
@@ -108,7 +113,7 @@ class AiSearchEnhancerTest {
             AiEnhancement cached = new AiEnhancement(
                     "想找低价智能手机", Map.of(), "市场均价2000左右", List.of()
             );
-            when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(cached);
+            when(valueOps.get(anyString())).thenReturn(cached);
 
             Optional<AiEnhancement> result = enhancer.tryEnhance(
                     "找便宜手机", List.of(product("1", "手机", BigDecimal.valueOf(1500))));
@@ -120,8 +125,8 @@ class AiSearchEnhancerTest {
         @Test
         @DisplayName("Redis 缓存未配置 -> 正常走增强流程")
         void tryEnhance_noRedisConfigured() {
-            when(redisCacheProvider.getIfAvailable()).thenReturn(null);
-            enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisCacheProvider);
+            when(redisTemplateProvider.getIfAvailable()).thenReturn(null);
+            enhancer = new AiSearchEnhancerAdapter(nlDetector, llmPort, productTagger, redisTemplateProvider);
             when(nlDetector.isNaturalLanguage("找电脑")).thenReturn(true);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of("1", List.of()));
             when(llmPort.generateText(anyString(), anyString())).thenReturn("想找电脑");
@@ -142,7 +147,7 @@ class AiSearchEnhancerTest {
         @DisplayName("全部子任务成功 -> 返回完整 AiEnhancement")
         void tryEnhance_allSuccess() {
             when(nlDetector.isNaturalLanguage("推荐个5000的笔记本")).thenReturn(true);
-            when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(null);
+            when(valueOps.get(anyString())).thenReturn(null);
             when(llmPort.generateText(contains("导购助手"), eq("推荐个5000的笔记本")))
                     .thenReturn("想找5000元左右的笔记本电脑");
             when(productTagger.tagProducts(anyList()))
@@ -165,14 +170,14 @@ class AiSearchEnhancerTest {
             assertThat(enhancement.suggestedQuestions())
                     .hasSize(2)
                     .containsExactly("有游戏需求吗", "需要轻薄吗");
-            verify(redisCache).set(anyString(), any(AiEnhancement.class), eq(5L), any());
+            verify(valueOps).set(anyString(), any(AiEnhancement.class), eq(5L), any());
         }
 
         @Test
         @DisplayName("仅 tags 有结果 -> 返回 tags 数据")
         void tryEnhance_onlyTagsSucceed() {
             when(nlDetector.isNaturalLanguage("找个手机")).thenReturn(true);
-            when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(null);
+            when(valueOps.get(anyString())).thenReturn(null);
             when(llmPort.generateText(anyString(), anyString())).thenReturn(null);
             when(productTagger.tagProducts(anyList()))
                     .thenReturn(Map.of("1", List.of("💰超值", "📸实拍")));
@@ -189,7 +194,7 @@ class AiSearchEnhancerTest {
         @DisplayName("所有任务都返回空 -> 返回 empty")
         void tryEnhance_allEmpty() {
             when(nlDetector.isNaturalLanguage("随便看看")).thenReturn(true);
-            when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(null);
+            when(valueOps.get(anyString())).thenReturn(null);
             when(llmPort.generateText(anyString(), anyString())).thenReturn(null);
             when(productTagger.tagProducts(anyList())).thenReturn(Map.of());
 
@@ -197,7 +202,7 @@ class AiSearchEnhancerTest {
                     "随便看看", List.of(product("1", "商品A", BigDecimal.valueOf(100))));
 
             assertThat(result).isEmpty();
-            verify(redisCache, never()).set(anyString(), any(), anyLong(), any());
+            verify(valueOps, never()).set(anyString(), any(), anyLong(), any());
         }
     }
 
@@ -209,7 +214,7 @@ class AiSearchEnhancerTest {
         @DisplayName("LLM 抛异常 -> 降级返回已有结果")
         void tryEnhance_llmException_fallbackToTags() {
             when(nlDetector.isNaturalLanguage("找东西")).thenReturn(true);
-            when(redisCache.get(anyString(), eq(AiEnhancement.class))).thenReturn(null);
+            when(valueOps.get(anyString())).thenReturn(null);
             when(llmPort.generateText(anyString(), anyString()))
                     .thenThrow(new RuntimeException("API timeout"));
             when(productTagger.tagProducts(anyList()))

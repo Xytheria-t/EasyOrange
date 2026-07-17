@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.RedisConnectionFailureException;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -34,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel> {
 
     private final CategoryQueryRepository categoryQueryRepository;
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final Cache<String, List<CategoryReadModel>> localCache;
 
     // 熔断状态管理
@@ -55,9 +56,9 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
     private static final long CIRCUIT_BREAKER_RESET_INTERVAL_MS = 60_000; // 60 秒后重置熔断
 
     public CategoryCacheAdapter(CategoryQueryRepository categoryQueryRepository,
-                                RedisCache redisCache) {
+                                RedisTemplate<String, Object> redisTemplate) {
         this.categoryQueryRepository = categoryQueryRepository;
-        this.redisCache = redisCache;
+        this.redisTemplate = redisTemplate;
         this.localCache = Caffeine.newBuilder()
                 .maximumSize(LOCAL_CACHE_MAX_SIZE)
                 .expireAfterWrite(LOCAL_CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
@@ -76,7 +77,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 检查熔断状态
         if (!shouldSkipRedis()) {
             try {
-                Object redisRaw = redisCache.get(cacheKey);
+                Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
                 if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
                     @SuppressWarnings("unchecked")
                     List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
@@ -106,7 +107,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 写入 Redis（仅在熔断未开启时）
         if (!shouldSkipRedis()) {
             try {
-                redisCache.set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
                 recordRedisSuccess();
             } catch (RedisConnectionFailureException e) {
                 handleRedisConnectionFailure("设置分类缓存", "level=" + level, e);
@@ -132,7 +133,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 检查熔断状态
         if (!shouldSkipRedis()) {
             try {
-                Object redisRaw = redisCache.get(cacheKey);
+                Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
                 if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
                     @SuppressWarnings("unchecked")
                     List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
@@ -162,7 +163,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 写入 Redis（仅在熔断未开启时）
         if (!shouldSkipRedis()) {
             try {
-                redisCache.set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
                 recordRedisSuccess();
             } catch (RedisConnectionFailureException e) {
                 handleRedisConnectionFailure("设置分类缓存", "parentId=" + parentId, e);
@@ -187,7 +188,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 检查熔断状态
         if (!shouldSkipRedis()) {
             try {
-                Object cached = redisCache.get(cacheKey);
+                Object cached = redisTemplate.opsForValue().get(cacheKey);
                 if (cached instanceof CategoryReadModel readModel) {
                     recordRedisSuccess();
                     return Optional.of(readModel);
@@ -210,7 +211,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
             // 写入 Redis（仅在熔断未开启时）
             if (!shouldSkipRedis()) {
                 try {
-                    redisCache.set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
+                    redisTemplate.opsForValue().set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
                     recordRedisSuccess();
                 } catch (RedisConnectionFailureException e) {
                     handleRedisConnectionFailure("设置分类缓存", "id=" + id, e);
@@ -234,9 +235,9 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 检查熔断状态
         if (!shouldSkipRedis()) {
             try {
-                var keys = redisCache.keys(CACHE_KEY_PREFIX + "*");
+                var keys = CacheUtils.scan(redisTemplate, CACHE_KEY_PREFIX + "*");
                 if (keys != null && !keys.isEmpty()) {
-                    redisCache.delete(keys);
+                    redisTemplate.delete(keys);
                 }
                 recordRedisSuccess();
             } catch (RedisConnectionFailureException e) {
@@ -259,7 +260,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 检查熔断状态
         if (!shouldSkipRedis()) {
             try {
-                redisCache.delete(cacheKey);
+                redisTemplate.delete(cacheKey);
                 recordRedisSuccess();
             } catch (RedisConnectionFailureException e) {
                 handleRedisConnectionFailure("清除分类缓存", "level=" + level, e);
@@ -281,7 +282,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
         // 检查熔断状态
         if (!shouldSkipRedis()) {
             try {
-                redisCache.delete(cacheKey);
+                redisTemplate.delete(cacheKey);
                 recordRedisSuccess();
             } catch (RedisConnectionFailureException e) {
                 handleRedisConnectionFailure("清除分类缓存", "parentId=" + parentId, e);

@@ -1,10 +1,11 @@
 package com.cartethyia.easyorange.user.adapter.outbound.cache;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.user.domain.constant.UserSecurityConstant;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
@@ -22,19 +23,19 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
     private static final String DAILY_KEY = SMS_BASE + "daily:";
     private static final String VERIFY_KEY = SMS_BASE + "verify:";
 
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final SmsSenderPort smsSenderPort;
 
     @Override
     public boolean send(String phone) {
-        if (Boolean.TRUE.equals(redisCache.hasKey(LIMIT_KEY + phone))) {
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(LIMIT_KEY + phone))) {
             return false;
         }
 
-        Long daily = redisCache.increment(DAILY_KEY + phone);
+        Long daily = redisTemplate.opsForValue().increment(DAILY_KEY + phone);
         if (daily != null) {
             if (daily == 1) {
-                redisCache.expire(DAILY_KEY + phone, 1, TimeUnit.DAYS);
+                redisTemplate.expire(DAILY_KEY + phone, 1, TimeUnit.DAYS);
             }
             if (daily > UserSecurityConstant.SMS_MAX_DAILY) {
                 return false;
@@ -42,8 +43,8 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
         }
 
         String code = SmsCodePort.generateCode();
-        redisCache.set(CODE_KEY + phone, code, UserSecurityConstant.SMS_CODE_TTL.getSeconds(), TimeUnit.SECONDS);
-        redisCache.set(LIMIT_KEY + phone, "1", UserSecurityConstant.SMS_SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(CODE_KEY + phone, code, UserSecurityConstant.SMS_CODE_TTL.getSeconds(), TimeUnit.SECONDS);
+        redisTemplate.opsForValue().set(LIMIT_KEY + phone, "1", UserSecurityConstant.SMS_SEND_INTERVAL.getSeconds(), TimeUnit.SECONDS);
 
         smsSenderPort.send(phone, code);
         return true;
@@ -55,25 +56,25 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
             return VerifyResult.NOT_FOUND;
         }
 
-        Long attempts = redisCache.increment(VERIFY_KEY + phone);
+        Long attempts = redisTemplate.opsForValue().increment(VERIFY_KEY + phone);
         if (attempts != null) {
             if (attempts == 1) {
-                redisCache.expire(VERIFY_KEY + phone, 10, TimeUnit.MINUTES);
+                redisTemplate.expire(VERIFY_KEY + phone, 10, TimeUnit.MINUTES);
             }
             if (attempts > UserSecurityConstant.SMS_MAX_VERIFY_ATTEMPTS) {
-                redisCache.delete(CODE_KEY + phone);
-                redisCache.delete(VERIFY_KEY + phone);
+                redisTemplate.delete(CODE_KEY + phone);
+                redisTemplate.delete(VERIFY_KEY + phone);
                 return VerifyResult.TOO_MANY_ATTEMPTS;
             }
         }
 
-        String stored = redisCache.get(CODE_KEY + phone, String.class);
+        String stored = CacheUtils.cast(redisTemplate.opsForValue().get(CODE_KEY + phone), String.class);
         if (stored == null || !stored.equals(code)) {
             return VerifyResult.NOT_FOUND;
         }
 
-        redisCache.delete(CODE_KEY + phone);
-        redisCache.delete(VERIFY_KEY + phone);
+        redisTemplate.delete(CODE_KEY + phone);
+        redisTemplate.delete(VERIFY_KEY + phone);
         return VerifyResult.OK;
     }
 }

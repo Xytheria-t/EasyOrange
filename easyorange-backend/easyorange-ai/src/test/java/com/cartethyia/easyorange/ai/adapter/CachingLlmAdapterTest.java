@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import org.springframework.data.redis.core.RedisTemplate;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -37,7 +38,10 @@ class CachingLlmAdapterTest {
     private AiProperties.Cache cacheProps;
 
     @Mock
-    private RedisCache redisCache;
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOps;
 
     @Mock
     private AiMetricsService aiMetricsService;
@@ -50,6 +54,7 @@ class CachingLlmAdapterTest {
     void setUp() {
         lenient().when(aiProperties.getCache()).thenReturn(cacheProps);
         lenient().when(cacheProps.isEnabled()).thenReturn(true);
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
         lenient().doNothing().when(aiMetricsService).recordCacheHit(anyString());
         lenient().doNothing().when(aiMetricsService).recordCacheMiss(anyString());
 
@@ -58,7 +63,7 @@ class CachingLlmAdapterTest {
 
         for (var scope : AiCallScope.values()) {
             Cache<String, Object> l1 = Caffeine.newBuilder().build();
-            var mlc = new MultiLevelCache(l1, redisCache, scope.cacheKeyPrefix(), scope.getTtlSeconds(), java.util.concurrent.TimeUnit.SECONDS);
+            var mlc = new MultiLevelCache(l1, redisTemplate, scope.cacheKeyPrefix(), scope.getTtlSeconds(), java.util.concurrent.TimeUnit.SECONDS);
             aiCaches.put(scope, mlc);
         }
 

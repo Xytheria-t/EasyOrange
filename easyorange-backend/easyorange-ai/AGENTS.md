@@ -98,7 +98,7 @@ AiSearchEnhancer
     ├─ Future 3: LLM → 市场分析 (marketAnalysis)
     └─ Future 4: LLM → 猜你想问 (suggestedQuestions)
     ↓
-RedisCache (5min TTL, 可选：无 Redis 时不缓存)
+RedisTemplate (5min TTL, 注入时检查 ObjectProvider: 无 Redis 时不缓存)
     ↓
 AiEnhancement DTO → SearchPageResponse.aiEnhancement
 ```

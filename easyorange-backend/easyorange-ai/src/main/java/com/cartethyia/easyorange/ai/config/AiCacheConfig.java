@@ -3,8 +3,8 @@ package com.cartethyia.easyorange.ai.config;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.interceptor.AiRateLimitInterceptor;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.github.benmanes.caffeine.cache.Cache;
+import org.springframework.data.redis.core.RedisTemplate;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class AiCacheConfig implements WebMvcConfigurer {
 
     private final AiProperties aiProperties;
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final AiRateLimitInterceptor aiRateLimitInterceptor;
 
     @Bean("aiCaches")
@@ -39,7 +39,7 @@ public class AiCacheConfig implements WebMvcConfigurer {
 
             var mlc = new MultiLevelCache(
                     l1,
-                    redisCache,
+                    redisTemplate,
                     scope.cacheKeyPrefix(),
                     scope.getTtlSeconds(),
                     TimeUnit.SECONDS

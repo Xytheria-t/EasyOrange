@@ -4,8 +4,9 @@ import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.ai.service.NaturalLanguageDetector;
 import com.cartethyia.easyorange.ai.service.ProductTagger;
 import com.cartethyia.easyorange.common.dto.AiEnhancement;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
+import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private final NaturalLanguageDetector nlDetector;
     private final LlmPort llmPort;
     private final ProductTagger productTagger;
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private static final int TIMEOUT_SECONDS = 5;
     private static final long CACHE_TTL_MINUTES = 5;
@@ -61,11 +62,11 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             NaturalLanguageDetector nlDetector,
             LlmPort llmPort,
             ProductTagger productTagger,
-            ObjectProvider<RedisCache> redisCacheProvider) {
+            ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider) {
         this.nlDetector = nlDetector;
         this.llmPort = llmPort;
         this.productTagger = productTagger;
-        this.redisCache = redisCacheProvider.getIfAvailable();
+        this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
 
     @PreDestroy
@@ -92,9 +93,9 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 
         String cacheKey = CACHE_KEY_PREFIX + md5(keyword);
 
-        if (redisCache != null) {
+        if (redisTemplate != null) {
             try {
-                AiEnhancement cached = redisCache.get(cacheKey, AiEnhancement.class);
+                AiEnhancement cached = CacheUtils.cast(redisTemplate.opsForValue().get(cacheKey), AiEnhancement.class);
                 if (cached != null) {
                     log.debug("AI enhancement cache hit for keyword: {}", keyword);
                     return Optional.of(cached);
@@ -176,9 +177,9 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     }
 
     private void writeToCache(String cacheKey, AiEnhancement enhancement) {
-        if (redisCache != null) {
+        if (redisTemplate != null) {
             try {
-                redisCache.set(cacheKey, enhancement, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(cacheKey, enhancement, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
                 log.debug("AI enhancement cached for key: {}", cacheKey);
             } catch (Exception e) {
                 log.debug("Cache write failed for key {}: {}", cacheKey, e.getMessage());

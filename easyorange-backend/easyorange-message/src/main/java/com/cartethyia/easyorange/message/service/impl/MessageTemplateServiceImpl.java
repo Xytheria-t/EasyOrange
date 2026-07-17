@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.message.service.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
+import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.application.query.dto.MessageTemplateVO;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
@@ -27,7 +27,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     private static final String TEMPLATE_CACHE_KEY = "eo:message:templates";
 
     private final MessageTemplateRepository messageTemplateRepository;
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
     public MessageTemplateAggregate getByCode(String templateCode) {
@@ -104,7 +104,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
             templateMap.put(template.templateCode(), template);
         }
         if (!templateMap.isEmpty()) {
-            redisCache.hashPutAll(TEMPLATE_CACHE_KEY, templateMap);
+            redisTemplate.opsForHash().putAll(TEMPLATE_CACHE_KEY, templateMap);
         }
         log.info("消息模板缓存加载完成，共 {} 条", templateMap.size());
     }
@@ -112,7 +112,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     @Override
     public void clearTemplateCache() {
         log.info("清除消息模板缓存");
-        redisCache.delete(TEMPLATE_CACHE_KEY);
+        redisTemplate.delete(TEMPLATE_CACHE_KEY);
     }
 
     @Override

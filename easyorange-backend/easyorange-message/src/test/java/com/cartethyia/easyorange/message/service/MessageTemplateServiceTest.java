@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.application.query.dto.MessageTemplateVO;
@@ -13,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +31,10 @@ class MessageTemplateServiceTest {
     private MessageTemplateRepository messageTemplateRepository;
 
     @Mock
-    private RedisCache redisCache;
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private HashOperations<String, Object, Object> hashOperations;
 
     @InjectMocks
     private MessageTemplateServiceImpl templateService;
@@ -263,11 +267,12 @@ class MessageTemplateServiceTest {
                     "1", TEMPLATE_CODE, "订单通知", "SYSTEM",
                     "标题", "内容", null, 1);
             when(messageTemplateRepository.findByCondition(null)).thenReturn(List.of(template));
+            when(redisTemplate.opsForHash()).thenReturn(hashOperations);
 
             templateService.loadingTemplateCache();
 
             verify(messageTemplateRepository).findByCondition(null);
-            verify(redisCache).hashPutAll(eq("eo:message:templates"), anyMap());
+            verify(hashOperations).putAll(eq("eo:message:templates"), anyMap());
         }
 
         @Test
@@ -277,7 +282,7 @@ class MessageTemplateServiceTest {
 
             templateService.loadingTemplateCache();
 
-            verify(redisCache, never()).hashPutAll(anyString(), anyMap());
+            verify(redisTemplate, never()).opsForHash();
         }
 
         @Test
@@ -285,7 +290,7 @@ class MessageTemplateServiceTest {
         void clearTemplateCache_deletesRedisKey() {
             templateService.clearTemplateCache();
 
-            verify(redisCache).delete("eo:message:templates");
+            verify(redisTemplate).delete("eo:message:templates");
         }
 
         @Test
@@ -295,7 +300,7 @@ class MessageTemplateServiceTest {
 
             templateService.resetTemplateCache();
 
-            verify(redisCache).delete("eo:message:templates");
+            verify(redisTemplate).delete("eo:message:templates");
             verify(messageTemplateRepository).findByCondition(null);
         }
     }

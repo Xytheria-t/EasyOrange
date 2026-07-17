@@ -2,7 +2,8 @@ package com.cartethyia.easyorange.order.application.saga;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.application.saga.support.DistributedLockManager;
@@ -70,7 +71,10 @@ class CreateOrderSagaCompensationTest {
     private OrderCachePort orderCachePort;
 
     @Mock
-    private RedisCache redisCache;
+    private RedissonClient redissonClient;
+
+    @Mock
+    private RLock lock;
 
     @Mock
     private SagaRepository sagaRepository;
@@ -90,9 +94,9 @@ class CreateOrderSagaCompensationTest {
     private static final String SELLER_ID = "2";
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
         // Construct support classes with mocks
-        var lockManager = new DistributedLockManager(redisCache);
+        var lockManager = new DistributedLockManager(redissonClient);
         var sagaCoordinator = new SagaCoordinator(sagaRepository, objectMapper);
         var compensationService = new OrderCompensationService(orderRepository, orderCachePort);
         var preparationService = new OrderPreparationService(productInventoryPort, productQueryPort, idGenerator);
@@ -107,7 +111,9 @@ class CreateOrderSagaCompensationTest {
         );
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+        when(redissonClient.getLock(anyString())).thenReturn(lock);
+        when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+        when(lock.isHeldByCurrentThread()).thenReturn(true);
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of());
         when(idGenerator.generateId()).thenReturn("ORD100");
     }
@@ -131,7 +137,7 @@ class CreateOrderSagaCompensationTest {
         verify(paymentGatewayPort).createPayment(any());
         verify(orderRepository).save(any(OrderAggregate.class));
         verify(eventPublisher).publish(any());
-        verify(redisCache).unlock(anyString(), anyString());
+        verify(lock, atLeastOnce()).unlock();
     }
 
     @Test
@@ -176,8 +182,9 @@ class CreateOrderSagaCompensationTest {
 
     @Test
     @DisplayName("获取分布式锁失败时抛异常")
-    void execute_lockFailed_throws() {
-        when(redisCache.tryLock(anyString(), anyString(), anyLong(), any(TimeUnit.class))).thenReturn(false);
+    void execute_lockFailed_throws() throws InterruptedException {
+        when(redissonClient.getLock(anyString())).thenReturn(lock);
+        when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
 
         CreateOrderCommand command = new CreateOrderCommand();
         command.setItems(List.of(new CreateOrderItem("100", 1)));

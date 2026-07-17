@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.order.application.saga.support;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.order.domain.saga.SagaException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class DistributedLockManager {
 
-    private final RedisCache redisCache;
+    private final RedissonClient redissonClient;
 
     /**
      * 执行带锁的操作
@@ -34,41 +34,50 @@ public class DistributedLockManager {
      * @throws SagaException 如果无法获取锁
      */
     public <T> T executeWithLocks(List<String> lockKeys, long lockTimeout, LockOperation<T> operation) {
-        String lockValue = UUID.randomUUID().toString();
-        List<String> acquiredKeys = new ArrayList<>();
+        List<RLock> acquiredLocks = new ArrayList<>();
 
         try {
-            acquireLocks(lockKeys, lockValue, lockTimeout, acquiredKeys);
+            acquireLocks(lockKeys, lockTimeout, acquiredLocks);
             return operation.execute();
         } finally {
-            releaseLocks(acquiredKeys, lockValue);
+            releaseLocks(acquiredLocks);
         }
     }
 
     /**
      * 批量获取锁
      */
-    private void acquireLocks(List<String> lockKeys, String lockValue, long timeout,
-                               List<String> acquiredKeys) throws SagaException {
+    private void acquireLocks(List<String> lockKeys, long timeout,
+                                List<RLock> acquiredLocks) throws SagaException {
         for (String lockKey : lockKeys) {
-            Boolean locked = redisCache.tryLock(lockKey, lockValue, timeout, TimeUnit.SECONDS);
-            if (!Boolean.TRUE.equals(locked)) {
-                releaseLocks(acquiredKeys, lockValue);
+            RLock lock = redissonClient.getLock(lockKey);
+            try {
+                boolean locked = lock.tryLock(timeout, timeout, TimeUnit.SECONDS);
+                if (!locked) {
+                    releaseLocks(acquiredLocks);
+                    throw new SagaException("资产下单繁忙，请稍后重试");
+                }
+                acquiredLocks.add(lock);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                releaseLocks(acquiredLocks);
                 throw new SagaException("资产下单繁忙，请稍后重试");
             }
-            acquiredKeys.add(lockKey);
         }
     }
 
     /**
      * 批量释放锁（逆序释放，避免死锁）
      */
-    private void releaseLocks(List<String> acquiredKeys, String lockValue) {
-        for (int i = acquiredKeys.size() - 1; i >= 0; i--) {
+    private void releaseLocks(List<RLock> acquiredLocks) {
+        for (int i = acquiredLocks.size() - 1; i >= 0; i--) {
             try {
-                redisCache.unlock(acquiredKeys.get(i), lockValue);
+                RLock lock = acquiredLocks.get(i);
+                if (lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                }
             } catch (Exception e) {
-                log.warn("释放锁失败 key={}", acquiredKeys.get(i), e);
+                log.warn("释放锁失败 key={}", acquiredLocks.get(i).getName(), e);
             }
         }
     }

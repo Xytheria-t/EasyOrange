@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.framework.bloom;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.nio.ByteBuffer;
@@ -42,16 +42,16 @@ public class RedisBitmapBloomFilter implements BloomFilter {
         return s;
     }
 
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final long bitSize;
     private final int numHashFunctions;
 
-    public RedisBitmapBloomFilter(RedisCache redisCache) {
-        this(redisCache, 1_000_000L, 0.01);
+    public RedisBitmapBloomFilter(RedisTemplate<String, Object> redisTemplate) {
+        this(redisTemplate, 1_000_000L, 0.01);
     }
 
-    public RedisBitmapBloomFilter(RedisCache redisCache, long expectedInsertions, double fpp) {
-        this.redisCache = redisCache;
+    public RedisBitmapBloomFilter(RedisTemplate<String, Object> redisTemplate, long expectedInsertions, double fpp) {
+        this.redisTemplate = redisTemplate;
         this.bitSize = optimalBitSize(expectedInsertions, fpp);
         this.numHashFunctions = optimalHashFunctions(expectedInsertions, this.bitSize);
     }
@@ -73,7 +73,7 @@ public class RedisBitmapBloomFilter implements BloomFilter {
         for (int i = 0; i < offsets.length; i++) {
             args[i] = String.valueOf(offsets[i]);
         }
-        return redisCache.executeLuaScript(script, List.of(filterKey), args);
+        return redisTemplate.execute(script, List.of(filterKey), args);
     }
 
     private long[] hash(String element) {

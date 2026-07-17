@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.message.application.service;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -8,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +24,10 @@ import static org.mockito.Mockito.*;
 class RateLimiterServiceTest {
 
     @Mock
-    private RedisCache redisCache;
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Mock
+    private ValueOperations<String, Object> valueOperations;
 
     @InjectMocks
     private RateLimiterService rateLimiterService;
@@ -37,40 +41,44 @@ class RateLimiterServiceTest {
         @Test
         @DisplayName("首次发送消息时返回 true")
         void allowSendMessage_firstCall_returnsTrue() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(null);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(null);
 
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
 
             assertThat(result).isTrue();
-            verify(redisCache).set(anyString(), eq(1), eq(1L), eq(TimeUnit.SECONDS));
+            verify(valueOperations).set(anyString(), eq(1), eq(1L), eq(TimeUnit.SECONDS));
         }
 
         @Test
         @DisplayName("在限制次数内发送消息返回 true")
         void allowSendMessage_underLimit_returnsTrue() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(3);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(3);
 
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
 
             assertThat(result).isTrue();
-            verify(redisCache).increment(anyString(), eq(1L));
+            verify(valueOperations).increment(anyString(), eq(1L));
         }
 
         @Test
         @DisplayName("超过限制次数后返回 false")
         void allowSendMessage_overLimit_returnsFalse() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(5);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(5);
 
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
 
             assertThat(result).isFalse();
-            verify(redisCache, never()).increment(anyString(), anyLong());
+            verify(valueOperations, never()).increment(anyString(), anyLong());
         }
 
         @Test
         @DisplayName("正好达到限制次数时返回 false")
         void allowSendMessage_atExactLimit_returnsFalse() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(5);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(5);
 
             boolean result = rateLimiterService.allowSendMessage(USER_ID);
 
@@ -80,7 +88,8 @@ class RateLimiterServiceTest {
         @Test
         @DisplayName("Redis 异常时使用本地计数器降级")
         void allowSendMessage_redisException_usesLocalFallback() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenThrow(new RuntimeException("Redis 连接失败"));
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis 连接失败"));
 
             // 前 5 次应返回 true（本地计数器 0-4）
             for (int i = 0; i < 5; i++) {
@@ -93,7 +102,8 @@ class RateLimiterServiceTest {
         @Test
         @DisplayName("Redis 异常降级后本地计数器重置")
         void allowSendMessage_redisException_localCounterResets() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenThrow(new RuntimeException("Redis 连接失败"));
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis 连接失败"));
 
             // 触发限流
             for (int i = 0; i < 6; i++) {
@@ -113,29 +123,32 @@ class RateLimiterServiceTest {
         @Test
         @DisplayName("首次发送 typing 时返回 true")
         void allowTyping_firstCall_returnsTrue() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(null);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(null);
 
             boolean result = rateLimiterService.allowTyping(USER_ID);
 
             assertThat(result).isTrue();
-            verify(redisCache).set(anyString(), eq(1), eq(2L), eq(TimeUnit.SECONDS));
+            verify(valueOperations).set(anyString(), eq(1), eq(2L), eq(TimeUnit.SECONDS));
         }
 
         @Test
         @DisplayName("2 秒内再次发送 typing 返回 false")
         void allowTyping_within2Seconds_returnsFalse() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(1);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(1);
 
             boolean result = rateLimiterService.allowTyping(USER_ID);
 
             assertThat(result).isFalse();
-            verify(redisCache, never()).increment(anyString(), anyLong());
+            verify(valueOperations, never()).increment(anyString(), anyLong());
         }
 
         @Test
         @DisplayName("Redis 异常时 typing 优雅降级返回 true")
         void allowTyping_redisException_returnsTrue() {
-            when(redisCache.get(anyString(), eq(Integer.class))).thenThrow(new RuntimeException("Redis 连接失败"));
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenThrow(new RuntimeException("Redis 连接失败"));
 
             boolean result = rateLimiterService.allowTyping(USER_ID);
 
@@ -150,32 +163,35 @@ class RateLimiterServiceTest {
         @Test
         @DisplayName("消息限流 key 包含用户 ID")
         void allowSendMessage_keyContainsUserId() {
-            when(redisCache.get(eq("chat:rate:message:" + USER_ID), eq(Integer.class))).thenReturn(null);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(eq("chat:rate:message:" + USER_ID))).thenReturn(null);
 
             rateLimiterService.allowSendMessage(USER_ID);
 
-            verify(redisCache).set(eq("chat:rate:message:" + USER_ID), eq(1), eq(1L), eq(TimeUnit.SECONDS));
+            verify(valueOperations).set(eq("chat:rate:message:" + USER_ID), eq(1), eq(1L), eq(TimeUnit.SECONDS));
         }
 
         @Test
         @DisplayName("typing 限流 key 包含用户 ID")
         void allowTyping_keyContainsUserId() {
-            when(redisCache.get(eq("chat:rate:typing:" + USER_ID), eq(Integer.class))).thenReturn(null);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(eq("chat:rate:typing:" + USER_ID))).thenReturn(null);
 
             rateLimiterService.allowTyping(USER_ID);
 
-            verify(redisCache).set(eq("chat:rate:typing:" + USER_ID), eq(1), eq(2L), eq(TimeUnit.SECONDS));
+            verify(valueOperations).set(eq("chat:rate:typing:" + USER_ID), eq(1), eq(2L), eq(TimeUnit.SECONDS));
         }
 
         @Test
         @DisplayName("消息限流 key 正确格式化")
         void allowSendMessage_correctKeyFormat() {
             String userId = "12345";
-            when(redisCache.get(anyString(), eq(Integer.class))).thenReturn(null);
+            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+            when(valueOperations.get(anyString())).thenReturn(null);
 
             rateLimiterService.allowSendMessage(userId);
 
-            verify(redisCache).get("chat:rate:message:12345", Integer.class);
+            verify(valueOperations).get("chat:rate:message:12345");
         }
     }
 }

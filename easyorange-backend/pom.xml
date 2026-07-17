@@ -51,6 +51,7 @@
         <!-- Flyway 数据库迁移（覆盖 Spring Boot 管理的版本，支持 MySQL 8.4） -->
         <flyway.version>11.15.0</flyway.version>
         <archunit.version>1.4.1</archunit.version>
+        <redisson.version>4.6.1</redisson.version>
     </properties>
 
     <dependencyManagement>

@@ -1,8 +1,9 @@
 package com.cartethyia.easyorange.message.application.service;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
+import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +19,7 @@ public class RateLimiterService {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimiterService.class);
 
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String MESSAGE_RATE_KEY = "chat:rate:message:%s";
     private static final String TYPING_RATE_KEY = "chat:rate:typing:%s";
@@ -29,8 +30,8 @@ public class RateLimiterService {
 
     private final AtomicInteger localCounter = new AtomicInteger(0);
 
-    public RateLimiterService(RedisCache redisCache) {
-        this.redisCache = redisCache;
+    public RateLimiterService(RedisTemplate<String, Object> redisTemplate) {
+        this.redisTemplate = redisTemplate;
     }
 
     /**
@@ -42,9 +43,9 @@ public class RateLimiterService {
         String key = MESSAGE_RATE_KEY.formatted(userId);
 
         try {
-            Integer count = redisCache.get(key, Integer.class);
+            Integer count = CacheUtils.cast(redisTemplate.opsForValue().get(key), Integer.class);
             if (count == null) {
-                redisCache.set(key, 1, RATE_WINDOW.getSeconds(), TimeUnit.SECONDS);
+                redisTemplate.opsForValue().set(key, 1, RATE_WINDOW.getSeconds(), TimeUnit.SECONDS);
                 return true;
             }
 
@@ -53,7 +54,7 @@ public class RateLimiterService {
                 return false;
             }
 
-            redisCache.increment(key, 1L);
+            redisTemplate.opsForValue().increment(key, 1L);
             return true;
         } catch (Exception e) {
             log.warn("action=rate_limit_fallback userId={}", userId, e);
@@ -74,9 +75,9 @@ public class RateLimiterService {
         String key = TYPING_RATE_KEY.formatted(userId);
 
         try {
-            Integer count = redisCache.get(key, Integer.class);
+            Integer count = CacheUtils.cast(redisTemplate.opsForValue().get(key), Integer.class);
             if (count == null) {
-                redisCache.set(key, 1, 2, TimeUnit.SECONDS);
+                redisTemplate.opsForValue().set(key, 1, 2, TimeUnit.SECONDS);
                 return true;
             }
 
@@ -84,7 +85,7 @@ public class RateLimiterService {
                 return false;
             }
 
-            redisCache.increment(key, 1L);
+            redisTemplate.opsForValue().increment(key, 1L);
             return true;
         } catch (Exception e) {
             return true;

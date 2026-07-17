@@ -1,7 +1,9 @@
 package com.cartethyia.easyorange.framework.event.idempotency;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.TimeUnit;
@@ -15,20 +17,23 @@ public class EventIdempotencyChecker {
     private static final long LOCK_TIMEOUT_SECONDS = 30;
     private static final long DONE_TTL_HOURS = 24;
 
-    private final RedisCache redisCache;
+    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedissonClient redissonClient;
 
-    public EventIdempotencyChecker(RedisCache redisCache) {
-        this.redisCache = redisCache;
+    public EventIdempotencyChecker(RedisTemplate<String, Object> redisTemplate, RedissonClient redissonClient) {
+        this.redisTemplate = redisTemplate;
+        this.redissonClient = redissonClient;
     }
 
     public boolean isDuplicate(String eventType, String eventId) {
-        return redisCache.hasKey(EVENT_DONE_PREFIX + eventType + ":" + eventId);
+        return Boolean.TRUE.equals(redisTemplate.hasKey(EVENT_DONE_PREFIX + eventType + ":" + eventId));
     }
 
     public boolean tryMark(String eventType, String eventId) {
         String lockKey = EVENT_LOCK_PREFIX + eventType + ":" + eventId;
+        RLock lock = redissonClient.getLock(lockKey);
         try {
-            boolean locked = redisCache.tryLock(lockKey, "1", LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            boolean locked = lock.tryLock(0, LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
             if (!locked) {
                 return false;
             }
@@ -36,10 +41,12 @@ public class EventIdempotencyChecker {
                 if (isDuplicate(eventType, eventId)) {
                     return false;
                 }
-                redisCache.set(EVENT_DONE_PREFIX + eventType + ":" + eventId, "1", DONE_TTL_HOURS, TimeUnit.HOURS);
+                redisTemplate.opsForValue().set(EVENT_DONE_PREFIX + eventType + ":" + eventId, "1", DONE_TTL_HOURS, TimeUnit.HOURS);
                 return true;
             } finally {
-                redisCache.unlock(lockKey, "1");
+                if (lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                }
             }
         } catch (Exception e) {
             log.error("Event idempotency check failed: eventType={}, eventId={}", eventType, eventId, e);

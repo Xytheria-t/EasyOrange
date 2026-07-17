@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.message.service.config;
 
-import com.cartethyia.easyorange.framework.cache.RedisCache;
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
+import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.service.MessageRoutingService;
@@ -28,8 +28,8 @@ public class MessageDomainServiceConfig {
     }
 
     @Bean
-    public RateLimiterService rateLimiterService(RedisCache redisCache) {
-        return new RateLimiterService(redisCache);
+    public RateLimiterService rateLimiterService(RedisTemplate<String, Object> redisTemplate) {
+        return new RateLimiterService(redisTemplate);
     }
 
     @Bean
