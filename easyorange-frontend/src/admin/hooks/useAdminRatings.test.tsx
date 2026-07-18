@@ -4,7 +4,7 @@ import { HttpResponse, http } from 'msw';
 import type { ReactNode } from 'react';
 import { describe, expect, it } from 'vitest';
 import { server } from '@/testUtils/mocks/server';
-import { useAdminReviewDetail, useAdminReviews, useDeleteReview } from './useAdminReviews';
+import { useAdminRatingDetail, useAdminRatings, useDeleteRating } from './useAdminRatings';
 
 const testQc = new QueryClient({
     defaultOptions: {
@@ -17,7 +17,7 @@ function Wrapper({ children }: { children: ReactNode }) {
     return <QueryClientProvider client={testQc}>{children}</QueryClientProvider>;
 }
 
-describe('useAdminReviews', () => {
+describe('useAdminRatings', () => {
     it('returns paginated review list', async () => {
         server.use(
             http.get('/api/admin/reviews', () => {
@@ -36,7 +36,7 @@ describe('useAdminReviews', () => {
             })
         );
 
-        const { result } = renderHook(() => useAdminReviews({ pageNum: 1, pageSize: 20 }), {
+        const { result } = renderHook(() => useAdminRatings({ pageNum: 1, pageSize: 20 }), {
             wrapper: Wrapper,
         });
 
@@ -46,7 +46,7 @@ describe('useAdminReviews', () => {
     });
 });
 
-describe('useAdminReviewDetail', () => {
+describe('useAdminRatingDetail', () => {
     it('returns review detail', async () => {
         server.use(
             http.get('/api/admin/reviews/rev-1', () => {
@@ -59,7 +59,7 @@ describe('useAdminReviewDetail', () => {
             })
         );
 
-        const { result } = renderHook(() => useAdminReviewDetail('rev-1'), {
+        const { result } = renderHook(() => useAdminRatingDetail('rev-1'), {
             wrapper: Wrapper,
         });
 
@@ -69,7 +69,7 @@ describe('useAdminReviewDetail', () => {
     });
 });
 
-describe('useDeleteReview', () => {
+describe('useDeleteRating', () => {
     it('deletes review successfully', async () => {
         server.use(
             http.delete('/api/admin/reviews/rev-1', () => {
@@ -82,7 +82,7 @@ describe('useDeleteReview', () => {
             })
         );
 
-        const { result } = renderHook(() => useDeleteReview(), {
+        const { result } = renderHook(() => useDeleteRating(), {
             wrapper: Wrapper,
         });
 

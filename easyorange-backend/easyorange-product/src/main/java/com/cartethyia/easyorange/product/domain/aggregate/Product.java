@@ -1,11 +1,18 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.product.domain.enums.AuditAction;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductPutOnlineEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
@@ -14,7 +21,6 @@ import com.cartethyia.easyorange.product.domain.exception.InvalidProductStatusEx
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
@@ -23,9 +29,6 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.domain.enums.AuditAction;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -36,7 +39,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class Product {
 
     private final ProductId id;
@@ -49,7 +52,7 @@ public class Product {
     private final Version version;
     private final ProductStatus status;
     @Builder.Default
-    private final Integer viewCount = 0;
+    private final int viewCount = 0;
     private final ConditionLevel conditionLevel;
     private final TradeLocation location;
     private final ContactMethod contactMethod;
@@ -61,31 +64,9 @@ public class Product {
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
-    public ProductBuilder toBuilder() {
-        return Product.builder()
-                .id(id)
-                .sellerId(sellerId)
-                .categoryId(categoryId)
-                .title(title)
-                .price(price)
-                .originalPrice(originalPrice)
-                .stock(stock)
-                .version(version)
-                .status(status)
-                .viewCount(viewCount != null ? viewCount : 0)
-                .conditionLevel(conditionLevel)
-                .location(location)
-                .contactMethod(contactMethod)
-                .description(description)
-                .images(images)
-                .tags(tags)
-                .searchText(searchText)
-                .priceUpdateTime(priceUpdateTime)
-                .createTime(createTime)
-                .updateTime(updateTime);
-    }
+    // ==================== Static Factory Methods ====================
 
-    public static ProductCreatedResult create(
+    public static ProductTransition create(
             SellerId sellerId,
             CategoryId categoryId,
             ProductTitle title,
@@ -131,9 +112,9 @@ public class Product {
                 valueOrNull(location, TradeLocation::value),
                 valueOrNull(contactMethod, ContactMethod::value),
                 valueOrNull(description, ProductDescription::value),
-                images.imageUrls()
+                valueOrNull(images, ImageSet::imageUrls)
         );
-        return new ProductCreatedResult(p, event);
+        return new ProductTransition(p, event);
     }
 
     public static Product reconstitute(
@@ -171,7 +152,107 @@ public class Product {
                 .build();
     }
 
-    public ProductUpdatedResult update(
+    // ==================== Review Workflow Methods ====================
+
+    public ProductTransition submitForReview(String userId) {
+        if (!this.sellerId.equals(SellerId.of(userId))) {
+            throw new InvalidProductStatusException("只能提交自己的资产审核", id, status);
+        }
+        if (!status.canTransitionTo(ProductStatus.PENDING_REVIEW)) {
+            throw new InvalidProductStatusException("不允许提交审核", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.PENDING_REVIEW)
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(
+                updated, new ProductSubmittedForReviewEvent(
+                id.value(), sellerId.value(), status.getCode(), ProductStatus.PENDING_REVIEW.getCode()));
+    }
+
+    /**
+     * 审核通过 — 将资产状态变更为 ONLINE（上架）。
+     * <p>
+     * 只有处于 PENDING_REVIEW（待审核）状态的资产可以通过审核。
+     * 返回 {@link ProductTransition}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
+     */
+    public ProductTransition approve(String reason) {
+        if (!status.canTransitionTo(ProductStatus.ONLINE)) {
+            throw new InvalidProductStatusException("不允许审核通过", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.ONLINE)
+                .updateTime(LocalDateTime.now())
+                .build();
+        ProductAuditedEvent event = new ProductAuditedEvent(
+                id.value(), title.value(), sellerId.value(),
+                AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()
+        );
+        return new ProductTransition(updated, event);
+    }
+
+    /**
+     * 审核拒绝 — 将资产状态变更为 REJECTED（已驳回）。
+     * <p>
+     * 只有处于 PENDING_REVIEW（待审核）状态的资产可以被拒绝。
+     * 返回 {@link ProductTransition}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
+     */
+    public ProductTransition reject(String reason) {
+        if (!status.canTransitionTo(ProductStatus.REJECTED)) {
+            throw new InvalidProductStatusException("不允许审核拒绝", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.REJECTED)
+                .updateTime(LocalDateTime.now())
+                .build();
+        ProductAuditedEvent event = new ProductAuditedEvent(
+                id.value(), title.value(), sellerId.value(),
+                AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()
+        );
+        return new ProductTransition(updated, event);
+    }
+
+    // ==================== State Transition Methods ====================
+
+    public ProductTransition putOnline() {
+        if (!status.canTransitionTo(ProductStatus.ONLINE)) {
+            throw new InvalidProductStatusException("不允许上架", id, status);
+        }
+        BizRequire.requireTrue(isComplete(), "资产信息不完整，无法上架");
+        BizRequire.requireTrue(hasValidPrice(), "资产价格无效，无法上架");
+        BizRequire.requireTrue(hasStock(), "资产库存不足，无法上架");
+        Product updated = toBuilder()
+                .status(ProductStatus.ONLINE)
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(updated, new ProductPutOnlineEvent(id.value(), sellerId.value()));
+    }
+
+    public ProductTransition takeOffline() {
+        if (!status.canTransitionTo(ProductStatus.OFFLINE)) {
+            throw new InvalidProductStatusException("不允许下架", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.OFFLINE)
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(updated, new ProductTakeOfflineEvent(id.value(), sellerId.value()));
+    }
+
+    public ProductTransition markAsSold() {
+        if (!status.canTransitionTo(ProductStatus.SOLD)) {
+            throw new InvalidProductStatusException("不允许标记已售", id, status);
+        }
+        Product updated = toBuilder()
+                .status(ProductStatus.SOLD)
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
+    }
+
+    // ==================== Update Methods ====================
+
+    public ProductTransition update(
             CategoryId categoryId,
             ProductTitle title,
             Money price,
@@ -212,158 +293,7 @@ public class Product {
                 valueOrNull(updated.description, ProductDescription::value),
                 valueOrNull(updated.images, ImageSet::imageUrls)
         );
-        return new ProductUpdatedResult(updated, event);
-    }
-
-    public Product putOnline() {
-        if (status.isOnline()) {
-            throw new InvalidProductStatusException("资产已上架，无需重复操作", id, status);
-        }
-        if (status.isSold()) {
-            throw new InvalidProductStatusException("已售出资产不能上架", id, status);
-        }
-        BizRequire.requireTrue(isComplete(), "资产信息不完整，无法上架");
-        BizRequire.requireTrue(hasValidPrice(), "资产价格无效，无法上架");
-        BizRequire.requireTrue(hasStock(), "资产库存不足，无法上架");
-        return toBuilder()
-                .status(ProductStatus.ONLINE)
-                .updateTime(LocalDateTime.now())
-                .build();
-    }
-
-    public Product takeOffline() {
-        if (!status.isOnline()) {
-            throw new InvalidProductStatusException("只有上架中的资产才能下架", id, status);
-        }
-        return toBuilder()
-                .status(ProductStatus.OFFLINE)
-                .updateTime(LocalDateTime.now())
-                .build();
-    }
-
-    public ProductMarkedSoldResult markAsSold() {
-        if (!status.isOnline()) {
-            throw new InvalidProductStatusException("只有上架中的资产才能标记为已售", id, status);
-        }
-        Product updated = toBuilder()
-                .status(ProductStatus.SOLD)
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductMarkedSoldResult(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
-    }
-
-    public ProductDeletedResult delete(String userId) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new InvalidProductStatusException("无权删除此资产", id, status);
-        }
-        if (!status.canDelete()) {
-            throw new InvalidProductStatusException("已售资产不能删除", id, status);
-        }
-        Product updated = toBuilder()
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductDeletedResult(updated, new ProductDeletedEvent(id.value(), userId));
-    }
-
-    public ProductSubmittedForReviewResult submitForReview(String userId) {
-        if (!this.sellerId.equals(SellerId.of(userId))) {
-            throw new InvalidProductStatusException("只能提交自己的资产审核", id, status);
-        }
-        if (!status.canSubmitForReview()) {
-            throw new InvalidProductStatusException("当前状态不支持提交审核", id, status);
-        }
-        Product updated = toBuilder()
-                .status(ProductStatus.PENDING_REVIEW)
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductSubmittedForReviewResult(
-                updated, new ProductSubmittedForReviewEvent(
-                id.value(), sellerId.value(), status.getCode(), ProductStatus.PENDING_REVIEW.getCode()));
-    }
-
-    /**
-     * 审核通过 — 将资产状态变更为 ONLINE（上架）。
-     * <p>
-     * 只有处于 PENDING_REVIEW（待审核）状态的资产可以通过审核。
-     * 返回 {@link ProductApprovedResult}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
-     */
-    public ProductApprovedResult approve(String reason) {
-        if (!status.canApprove()) {
-            throw new InvalidProductStatusException("当前状态不允许审核通过", id, status);
-        }
-        Product updated = toBuilder()
-                .status(ProductStatus.ONLINE)
-                .updateTime(LocalDateTime.now())
-                .build();
-        ProductAuditedEvent event = new ProductAuditedEvent(
-                id.value(), title.value(), sellerId.value(),
-                AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()
-        );
-        return new ProductApprovedResult(updated, event);
-    }
-
-    /**
-     * 审核拒绝 — 将资产状态变更为 REJECTED（已驳回）。
-     * <p>
-     * 只有处于 PENDING_REVIEW（待审核）状态的资产可以被拒绝。
-     * 返回 {@link ProductRejectedResult}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
-     */
-    public ProductRejectedResult reject(String reason) {
-        if (!status.canReject()) {
-            throw new InvalidProductStatusException("当前状态不允许审核拒绝", id, status);
-        }
-        Product updated = toBuilder()
-                .status(ProductStatus.REJECTED)
-                .updateTime(LocalDateTime.now())
-                .build();
-        ProductAuditedEvent event = new ProductAuditedEvent(
-                id.value(), title.value(), sellerId.value(),
-                AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()
-        );
-        return new ProductRejectedResult(updated, event);
-    }
-
-    public Product incrementViewCount() {
-        return toBuilder()
-                .viewCount(viewCount != null ? viewCount + 1 : 1)
-                .updateTime(LocalDateTime.now())
-                .build();
-    }
-
-    public Product addViewCount(int count) {
-        if (count <= 0) {
-            return this;
-        }
-        return toBuilder()
-                .viewCount(viewCount != null ? viewCount + count : count)
-                .updateTime(LocalDateTime.now())
-                .build();
-    }
-
-    public StockDecreasedResult decrementStock() {
-        return decrementStock(1);
-    }
-
-    public StockDecreasedResult decrementStock(int quantity) {
-        if (!hasStock()) {
-            throw new InsufficientStockException("资产库存不足", id, stock);
-        }
-        Product updated = toBuilder()
-                .stock(stock.decrease(quantity))
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new StockDecreasedResult(updated, StockDecreasedEvent.of(id.value()));
-    }
-
-    public StockRestoredResult restoreStock() {
-        if (status.isSold() || status.isOffline()) {
-            throw new InvalidProductStatusException("已售或下架资产不能恢复库存", id, status);
-        }
-        Product updated = toBuilder()
-                .stock(stock.increase())
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new StockRestoredResult(updated, StockRestoredEvent.of(id.value()));
+        return new ProductTransition(updated, event);
     }
 
     public Product assignId(String id) {
@@ -374,6 +304,49 @@ public class Product {
                 .id(ProductId.of(id))
                 .build();
     }
+
+    public ProductTransition delete(String userId) {
+        if (!this.sellerId.equals(SellerId.of(userId))) {
+            throw new InvalidProductStatusException("无权删除此资产", id, status);
+        }
+        if (!status.canDelete()) {
+            throw new InvalidProductStatusException("不允许删除", id, status);
+        }
+        Product updated = toBuilder()
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(updated, new ProductDeletedEvent(id.value(), userId));
+    }
+
+    // ==================== Stock Operation Methods ====================
+
+    public ProductTransition decrementStock() {
+        return decrementStock(1);
+    }
+
+    public ProductTransition decrementStock(int quantity) {
+        if (!hasStock()) {
+            throw new InsufficientStockException("资产库存不足", id, stock);
+        }
+        Product updated = toBuilder()
+                .stock(stock.decrease(quantity))
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(updated, StockDecreasedEvent.of(id.value()));
+    }
+
+    public ProductTransition restoreStock() {
+        if (status == ProductStatus.SOLD || status == ProductStatus.OFFLINE) {
+            throw new InvalidProductStatusException("不允许恢复库存", id, status);
+        }
+        Product updated = toBuilder()
+                .stock(stock.increase())
+                .updateTime(LocalDateTime.now())
+                .build();
+        return new ProductTransition(updated, StockRestoredEvent.of(id.value()));
+    }
+
+    // ==================== Query Methods ====================
 
     public boolean isComplete() {
         return title != null && !title.value().isBlank()
@@ -388,6 +361,8 @@ public class Product {
     public boolean hasStock() {
         return stock != null && stock.isAvailable();
     }
+
+    // ==================== Private Helper Methods ====================
 
     private static <T, R> R valueOrNull(T obj, Function<T, R> extractor) {
         return obj != null ? extractor.apply(obj) : null;
@@ -405,15 +380,7 @@ public class Product {
         }
     }
 
-    // ==================== Result Records ====================
+    // ==================== Result Record ====================
 
-    public record ProductCreatedResult(Product product, ProductCreatedEvent event) {}
-    public record ProductUpdatedResult(Product product, ProductUpdatedEvent event) {}
-    public record ProductMarkedSoldResult(Product product, ProductMarkedSoldEvent event) {}
-    public record ProductDeletedResult(Product product, ProductDeletedEvent event) {}
-    public record ProductSubmittedForReviewResult(Product product, ProductSubmittedForReviewEvent event) {}
-    public record ProductApprovedResult(Product product, ProductAuditedEvent event) {}
-    public record ProductRejectedResult(Product product, ProductAuditedEvent event) {}
-    public record StockDecreasedResult(Product product, StockDecreasedEvent event) {}
-    public record StockRestoredResult(Product product, StockRestoredEvent event) {}
+    public record ProductTransition(Product product, DomainEvent event) {}
 }

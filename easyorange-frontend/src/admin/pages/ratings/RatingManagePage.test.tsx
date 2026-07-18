@@ -2,16 +2,16 @@ import { fireEvent, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { PageResult } from '@/types';
-import type { AdminReview } from '../../types/admin';
-import ReviewManagePage from './ReviewManagePage';
+import type { AdminRating } from '../../types/admin';
+import RatingManagePage from './RatingManagePage';
 
 // ─── Hook mocks ───
-const mockUseAdminReviews = vi.fn();
-const mockUseDeleteReview = vi.fn();
+const mockUseAdminRatings = vi.fn();
+const mockUseDeleteRating = vi.fn();
 
 vi.mock('../../hooks', () => ({
-    useAdminReviews: (...args: unknown[]) => mockUseAdminReviews(...args),
-    useDeleteReview: (...args: unknown[]) => mockUseDeleteReview(...args),
+    useAdminRatings: (...args: unknown[]) => mockUseAdminRatings(...args),
+    useDeleteRating: (...args: unknown[]) => mockUseDeleteRating(...args),
 }));
 
 // Mock AdminTable
@@ -24,7 +24,7 @@ vi.mock('../../components/AdminTable', () => ({
         emptyText,
     }: {
         columns: unknown[];
-        data: AdminReview[];
+        data: AdminRating[];
         loading: boolean;
         pagination: unknown;
         emptyText: string;
@@ -124,7 +124,7 @@ vi.mock('../../components/ConfirmModal', () => ({
 }));
 
 // ─── Sample data ───
-const sampleReviews: AdminReview[] = [
+const sampleReviews: AdminRating[] = [
     {
         reviewId: '1',
         productId: '10',
@@ -157,7 +157,7 @@ const sampleReviews: AdminReview[] = [
     },
 ];
 
-const samplePageData: PageResult<AdminReview> = {
+const samplePageData: PageResult<AdminRating> = {
     records: sampleReviews,
     total: 2,
     current: 1,
@@ -167,22 +167,22 @@ const samplePageData: PageResult<AdminReview> = {
 
 function setupMocks(
     overrides: Partial<{
-        data: PageResult<AdminReview> | undefined;
+        data: PageResult<AdminRating> | undefined;
         isLoading: boolean;
         isError: boolean;
     }> = {}
 ) {
     const { data = samplePageData, isLoading = false, isError = false } = overrides;
 
-    mockUseAdminReviews.mockReturnValue({ data, isLoading, isError, error: isError ? new Error('Error') : null });
+    mockUseAdminRatings.mockReturnValue({ data, isLoading, isError, error: isError ? new Error('Error') : null });
 
-    mockUseDeleteReview.mockReturnValue({
+    mockUseDeleteRating.mockReturnValue({
         mutateAsync: vi.fn().mockResolvedValue({}),
         isPending: false,
     });
 }
 
-describe('ReviewManagePage', () => {
+describe('RatingManagePage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         setupMocks();
@@ -190,14 +190,14 @@ describe('ReviewManagePage', () => {
 
     // ── Test 1: Page title ──
     it('renders page title "评价管理"', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
         expect(screen.getByText('评价管理')).toBeInTheDocument();
         expect(screen.getByText('查看和管理用户对商品的评价')).toBeInTheDocument();
     });
 
     // ── Test 2: Shows review list ──
     it('renders review list with review data', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         expect(screen.getByTestId('admin-table')).toBeInTheDocument();
         const rows = screen.getAllByTestId('review-row');
@@ -206,7 +206,7 @@ describe('ReviewManagePage', () => {
 
     // ── Test 3: Shows total count ──
     it('shows total review count', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         const countText = screen.getByText(/共/);
         expect(countText).toHaveTextContent('共 2 条评价');
@@ -214,52 +214,52 @@ describe('ReviewManagePage', () => {
 
     // ── Test 4: Search by keyword ──
     it('searches by keyword', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         const searchInput = screen.getByPlaceholderText('搜索评价内容...');
         fireEvent.change(searchInput, { target: { value: '棒' } });
 
         fireEvent.click(screen.getByText('搜索'));
-        expect(mockUseAdminReviews).toHaveBeenCalled();
+        expect(mockUseAdminRatings).toHaveBeenCalled();
     });
 
     // ── Test 5: Search on Enter key ──
     it('triggers search on Enter key down', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         const searchInput = screen.getByPlaceholderText('搜索评价内容...');
         fireEvent.change(searchInput, { target: { value: '测试' } });
         fireEvent.keyDown(searchInput, { key: 'Enter' });
 
-        expect(mockUseAdminReviews).toHaveBeenCalled();
+        expect(mockUseAdminRatings).toHaveBeenCalled();
     });
 
     // ── Test 6: Status filter ──
     it('changes status filter', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         const selects = screen.getAllByTestId('admin-select');
         const statusSelect = selects[0];
         fireEvent.change(statusSelect, { target: { value: '1' } });
 
-        expect(mockUseAdminReviews).toHaveBeenCalled();
+        expect(mockUseAdminRatings).toHaveBeenCalled();
     });
 
     // ── Test 7: Rating filter ──
     it('changes rating filter', () => {
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         const selects = screen.getAllByTestId('admin-select');
         const ratingSelect = selects[1];
         fireEvent.change(ratingSelect, { target: { value: '5' } });
 
-        expect(mockUseAdminReviews).toHaveBeenCalled();
+        expect(mockUseAdminRatings).toHaveBeenCalled();
     });
 
     // ── Test 8: Loading state ──
     it('shows loading state', () => {
         setupMocks({ isLoading: true });
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
     });
@@ -269,7 +269,7 @@ describe('ReviewManagePage', () => {
         setupMocks({
             data: { records: [], total: 0, current: 1, size: 10, pages: 0 },
         });
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         expect(screen.getByText('暂无评价数据')).toBeInTheDocument();
     });
@@ -277,7 +277,7 @@ describe('ReviewManagePage', () => {
     // ── Test 10: Error state ──
     it('shows error banner when isError', () => {
         setupMocks({ isError: true, data: undefined });
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         expect(screen.getByText('数据加载失败')).toBeInTheDocument();
         expect(screen.getByText('刷新')).toBeInTheDocument();
@@ -286,12 +286,12 @@ describe('ReviewManagePage', () => {
     // ── Test 11: Delete review flow ──
     it('shows delete confirm modal and calls delete mutation', () => {
         const mockMutateAsync = vi.fn().mockResolvedValue({});
-        mockUseDeleteReview.mockReturnValue({
+        mockUseDeleteRating.mockReturnValue({
             mutateAsync: mockMutateAsync,
             isPending: false,
         });
 
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
 
         // The delete buttons are rendered inside the table mock, but the page
         // has a separate "删除" button rendered via ConfirmModal
@@ -306,7 +306,7 @@ describe('ReviewManagePage', () => {
 
     // ── Test 12: Pagination ──
     it('renders pagination when data exceeds page size', () => {
-        const multiPageData: PageResult<AdminReview> = {
+        const multiPageData: PageResult<AdminRating> = {
             records: Array.from({ length: 10 }, (_, i) => ({
                 reviewId: String(i + 1),
                 productId: String(i + 10),
@@ -329,10 +329,10 @@ describe('ReviewManagePage', () => {
         };
         setupMocks({ data: multiPageData });
 
-        renderWithProviders(<ReviewManagePage />);
+        renderWithProviders(<RatingManagePage />);
         expect(screen.getByTestId('pagination')).toBeInTheDocument();
 
         fireEvent.click(screen.getByText('下一页'));
-        expect(mockUseAdminReviews).toHaveBeenCalled();
+        expect(mockUseAdminRatings).toHaveBeenCalled();
     });
 });

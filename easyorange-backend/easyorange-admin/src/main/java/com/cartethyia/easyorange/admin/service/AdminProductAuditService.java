@@ -17,8 +17,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.application.query.SellerInfo;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductApprovedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductRejectedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
@@ -74,15 +73,15 @@ public class AdminProductAuditService {
 
         switch (action) {
             case APPROVED -> {
-                ProductApprovedResult result = product.approve(request.reason());
+                ProductTransition result = product.approve(request.reason());
                 updated = result.product();
-                event = result.event();
+                event = (ProductAuditedEvent) result.event();
             }
             case REJECTED -> {
                 BizRequire.notBlank(request.reason(), "拒绝时必须填写原因");
-                ProductRejectedResult result = product.reject(request.reason());
+                ProductTransition result = product.reject(request.reason());
                 updated = result.product();
-                event = result.event();
+                event = (ProductAuditedEvent) result.event();
             }
             default -> throw BusinessException.of("无效的审核动作");
         }
@@ -138,18 +137,18 @@ public class AdminProductAuditService {
 
                 switch (action) {
                     case APPROVED -> {
-                        ProductApprovedResult result = product.approve(item.reason());
+                        ProductTransition result = product.approve(item.reason());
                         updated = result.product();
-                        event = result.event();
+                        event = (ProductAuditedEvent) result.event();
                     }
                     case REJECTED -> {
                         if (item.reason() == null || item.reason().isBlank()) {
                             errors.add("商品ID " + item.productId() + ": 拒绝时必须填写原因");
                             continue;
                         }
-                        ProductRejectedResult result = product.reject(item.reason());
+                        ProductTransition result = product.reject(item.reason());
                         updated = result.product();
-                        event = result.event();
+                        event = (ProductAuditedEvent) result.event();
                     }
                     default -> {
                         errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + item.action());

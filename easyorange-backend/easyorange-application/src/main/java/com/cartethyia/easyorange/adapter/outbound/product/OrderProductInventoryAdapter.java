@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.adapter.outbound.product;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
 import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,7 +24,7 @@ public class OrderProductInventoryAdapter implements ProductInventoryPort {
                         snapshot.productId().value(),
                         snapshot.sellerId().value(),
                         snapshot.price().value(),
-                        snapshot.status().isOnline(),
+                        snapshot.status() == ProductStatus.ONLINE,
                         snapshot.stock().isAvailable(),
                         snapshot.location()
                 ));

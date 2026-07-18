@@ -2,6 +2,8 @@ package com.cartethyia.easyorange.product.domain.enums;
 
 import jakarta.annotation.Nullable;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
 
 public enum ProductStatus {
 
@@ -11,6 +13,16 @@ public enum ProductStatus {
     ONLINE(1, "上架"),
     SOLD(2, "已售出"),
     OFFLINE(3, "下架");
+
+    // === State Machine: one source of truth for allowed transitions ===
+
+    private static final Map<ProductStatus, Set<ProductStatus>> ALLOWED_TRANSITIONS = Map.of(
+        DRAFT, Set.of(PENDING_REVIEW, ONLINE),
+        PENDING_REVIEW, Set.of(ONLINE, REJECTED),
+        REJECTED, Set.of(PENDING_REVIEW),
+        ONLINE, Set.of(OFFLINE, SOLD),
+        OFFLINE, Set.of(ONLINE)
+    );
 
     private final Integer code;
     private final String desc;
@@ -28,12 +40,6 @@ public enum ProductStatus {
         return desc;
     }
 
-    /**
-     * Resolves the enum value from its integer code.
-     *
-     * @param code the integer code (may be {@code null})
-     * @return the matching enum value, or {@code null} if code is null or not recognized
-     */
     @Nullable
     public static ProductStatus fromCode(Integer code) {
         if (code == null) {
@@ -50,47 +56,20 @@ public enum ProductStatus {
         return status != null ? status.getDesc() : "未知状态";
     }
 
-    public boolean isDraft() {
-        return this == DRAFT;
+    // === State Machine ===
+
+    /**
+     * Returns whether a transition from the current state to the given target state is allowed.
+     */
+    public boolean canTransitionTo(ProductStatus target) {
+        return ALLOWED_TRANSITIONS.getOrDefault(this, Set.of()).contains(target);
     }
 
-    public boolean isOnline() {
-        return this == ONLINE;
-    }
-
-    public boolean isSold() {
-        return this == SOLD;
-    }
-
-    public boolean isOffline() {
-        return this == OFFLINE;
-    }
-
-    public boolean canPutOnline() {
-        return this == DRAFT || this == OFFLINE;
-    }
-
-    public boolean canTakeOffline() {
-        return this == ONLINE;
-    }
-
-    public boolean canMarkAsSold() {
-        return this == ONLINE;
-    }
-
+    /**
+     * Delete is not a status transition — the status field stays unchanged.
+     * Allowed from all states except SOLD (completed orders must retain the product record).
+     */
     public boolean canDelete() {
         return this != SOLD;
-    }
-
-    public boolean canSubmitForReview() {
-        return this == DRAFT || this == REJECTED;
-    }
-
-    public boolean canApprove() {
-        return this == PENDING_REVIEW;
-    }
-
-    public boolean canReject() {
-        return this == PENDING_REVIEW;
     }
 }

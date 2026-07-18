@@ -119,8 +119,8 @@ public class AdminProductService {
 
     private Product applyStatusTransition(Product product, ProductStatus newStatus) {
         return switch (newStatus) {
-            case ONLINE -> product.putOnline();
-            case OFFLINE -> product.takeOffline();
+            case ONLINE -> product.putOnline().product();
+            case OFFLINE -> product.takeOffline().product();
             case SOLD -> product.markAsSold().product();
             default -> product.toBuilder()
                     .status(newStatus)

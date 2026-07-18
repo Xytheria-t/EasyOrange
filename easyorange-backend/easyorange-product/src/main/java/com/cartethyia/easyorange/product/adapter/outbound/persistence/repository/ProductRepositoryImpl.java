@@ -14,7 +14,8 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -36,92 +37,32 @@ public class ProductRepositoryImpl implements ProductRepository {
     public ProductRepositoryImpl(ProductMapper productMapper,
                                   ProductDetailMapper productDetailMapper,
                                   ProductImageMapper productImageMapper,
-                                  ProductConverter converter) {
+                                  @Qualifier("productConverterImpl") ProductConverter converter) {
         this.productMapper = productMapper;
         this.productDetailMapper = productDetailMapper;
         this.productImageMapper = productImageMapper;
         this.converter = converter;
     }
 
-    @Override
-    public Optional<Product> findById(ProductId id) {
-        ProductDO productDO = productMapper.selectById(id.value());
-        if (productDO == null) {
-            return Optional.empty();
-        }
-        ProductDetailDO detailDO = productDetailMapper.selectById(productDO.getId());
-        List<ProductImageDO> imageDOs = ChainWrappers.lambdaQueryChain(productImageMapper)
-                .eq(ProductImageDO::getProductId, productDO.getId())
-                .orderByAsc(ProductImageDO::getSortOrder)
-                .list();
-        return Optional.of(converter.toDomain(productDO, detailDO, imageDOs));
-    }
+    // ========== 写 ==========
 
     @Override
-    public List<Product> findByIds(List<ProductId> ids) {
-        if (ids == null || ids.isEmpty()) {
-            return List.of();
-        }
-        List<String> idValues = ids.stream().map(ProductId::value).collect(Collectors.toList());
-        List<ProductDO> productDOs = productMapper.selectBatchIds(idValues);
-        if (productDOs.isEmpty()) {
-            return List.of();
-        }
-        return batchConvertProducts(productDOs);
-    }
-
-    @Override
-    public List<Product> findBySellerId(SellerId sellerId) {
-        List<ProductDO> productDOs = ChainWrappers.lambdaQueryChain(productMapper)
-                .eq(ProductDO::getUserId, sellerId.value())
-                .orderByDesc(ProductDO::getCreateTime)
-                .list();
-        if (productDOs.isEmpty()) {
-            return List.of();
-        }
-        return batchConvertProducts(productDOs);
-    }
-
-    private List<Product> batchConvertProducts(List<ProductDO> productDOs) {
-        List<String> productIds = productDOs.stream()
-                .map(ProductDO::getId)
-                .collect(Collectors.toList());
-
-        Map<String, ProductDetailDO> detailMap = productDetailMapper
-                .selectDetailsByProductIds(productIds).stream()
-                .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, b) -> a));
-
-        Map<String, List<ProductImageDO>> imagesByProduct = ChainWrappers.lambdaQueryChain(productImageMapper)
-                .in(ProductImageDO::getProductId, productIds)
-                .orderByAsc(ProductImageDO::getSortOrder)
-                .list().stream().collect(Collectors.groupingBy(ProductImageDO::getProductId));
-
-        return productDOs.stream()
-                .map(productDO -> converter.toDomain(
-                        productDO,
-                        detailMap.get(productDO.getId()),
-                        imagesByProduct.getOrDefault(productDO.getId(), List.of())
-                ))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public Product save(Product product) {
+    public Product create(Product product) {
         ProductDO productDO = converter.toDataObject(product);
         productMapper.insert(productDO);
-        Product saved = product.assignId(productDO.getId());
+        Product created = product.assignId(productDO.getId());
 
-        ProductDetailDO detailDO = converter.toDetailDO(saved.getId(), saved.getDescription());
+        ProductDetailDO detailDO = converter.toDetailDO(created.getId(), created.getDescription());
         if (detailDO != null) {
             productDetailMapper.insert(detailDO);
         }
 
-        List<ProductImageDO> imageDOs = converter.toImageDOs(saved.getId(), saved.getImages());
+        List<ProductImageDO> imageDOs = converter.toImageDOs(created.getId(), created.getImages());
         if (!imageDOs.isEmpty()) {
             productImageMapper.batchInsert(imageDOs);
         }
 
-        return saved;
+        return created;
     }
 
     @Override
@@ -131,6 +72,86 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
         updateProductDetail(product);
         updateImagesDifferentially(product);
+    }
+
+    @Override
+    public void updateStatus(ProductId id, ProductStatus status) {
+        ProductDO productDO = productMapper.selectById(id.value());
+        if (productDO == null) {
+            throw new ProductNotFoundException(id);
+        }
+        if (productMapper.updateStatus(id.value(), status.getCode(), productDO.getVersion()) == 0) {
+            throw new ConcurrentUpdateException("商品状态更新冲突: id=" + id.value());
+        }
+    }
+
+    @Override
+    public void delete(ProductId id) {
+        productMapper.deleteById(id.value());
+        productDetailMapper.deleteById(id.value());
+        productImageMapper.delete(Wrappers.<ProductImageDO>lambdaQuery()
+                .eq(ProductImageDO::getProductId, id.value()));
+    }
+
+    // ========== 读 ==========
+
+    @Override
+    public Optional<Product> findById(ProductId id) {
+        ProductDO productDO = productMapper.selectById(id.value());
+        if (productDO == null) {
+            return Optional.empty();
+        }
+        ProductDetailDO detailDO = productDetailMapper.selectById(productDO.getId());
+        List<ProductImageDO> imageDOs = productMapper.selectImagesByProductIds(List.of(productDO.getId()));
+        return Optional.of(converter.toDomain(productDO, detailDO, imageDOs));
+    }
+
+    @Override
+    public List<Product> findByIds(List<ProductId> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        List<ProductDO> productDOs = productMapper.selectList(
+                Wrappers.<ProductDO>lambdaQuery()
+                        .in(ProductDO::getId, ids.stream().map(ProductId::value).toList()));
+        if (productDOs.isEmpty()) {
+            return List.of();
+        }
+        return batchConvertProducts(productDOs);
+    }
+
+    @Override
+    public List<Product> findBySellerId(SellerId sellerId) {
+        List<ProductDO> productDOs = productMapper.selectList(
+                Wrappers.<ProductDO>lambdaQuery()
+                        .eq(ProductDO::getUserId, sellerId.value())
+                        .orderByDesc(ProductDO::getCreateTime));
+        if (productDOs.isEmpty()) {
+            return List.of();
+        }
+        return batchConvertProducts(productDOs);
+    }
+
+    // ========== 私有辅助 ==========
+
+    private List<Product> batchConvertProducts(List<ProductDO> productDOs) {
+        List<String> productIds = productDOs.stream().map(ProductDO::getId).toList();
+
+        Map<String, ProductDetailDO> detailMap = productDetailMapper
+                .selectDetailsByProductIds(productIds).stream()
+                .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, _) -> a));
+
+        Map<String, List<ProductImageDO>> imagesByProduct = productMapper
+                .selectImagesByProductIds(productIds).stream()
+                .collect(Collectors.groupingBy(ProductImageDO::getProductId));
+
+        return productDOs.stream()
+                .map(productDO -> converter.toDomain(
+                        productDO,
+                        detailMap.get(productDO.getId()),
+                        imagesByProduct.getOrDefault(productDO.getId(), List.of())
+                ))
+                .toList();
     }
 
     private void updateProductDetail(Product product) {
@@ -150,10 +171,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     private void updateImagesDifferentially(Product product) {
         String productId = product.getId().value();
 
-        List<ProductImageDO> existingImages = ChainWrappers.lambdaQueryChain(productImageMapper)
-                .eq(ProductImageDO::getProductId, productId)
-                .list();
-
+        List<ProductImageDO> existingImages = productMapper.selectImagesByProductIds(List.of(productId));
         List<ProductImageDO> newImages = converter.toImageDOs(product.getId(), product.getImages());
 
         Set<String> existingUrls = existingImages.stream()
@@ -177,34 +195,8 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (!urlsToAdd.isEmpty()) {
             List<ProductImageDO> imagesToAdd = newImages.stream()
                     .filter(img -> urlsToAdd.contains(img.getImageUrl()))
-                    .collect(Collectors.toList());
+                    .toList();
             productImageMapper.batchInsert(imagesToAdd);
-        }
-    }
-
-    @Override
-    public void delete(ProductId id) {
-        productMapper.deleteById(id.value());
-        productDetailMapper.deleteById(id.value());
-        ChainWrappers.lambdaUpdateChain(productImageMapper)
-                .eq(ProductImageDO::getProductId, id.value())
-                .remove();
-    }
-
-    @Override
-    public boolean existsById(ProductId id) {
-        return productMapper.selectById(id.value()) != null;
-    }
-
-    @Override
-    public void updateStatus(ProductId id, ProductStatus status) {
-        ProductDO productDO = productMapper.selectById(id.value());
-        if (productDO == null) {
-            throw new ProductNotFoundException(id);
-        }
-        productDO.setStatus(status.getCode());
-        if (productMapper.updateById(productDO) == 0) {
-            throw new ConcurrentUpdateException("商品状态更新冲突: id=" + id.value());
         }
     }
 }

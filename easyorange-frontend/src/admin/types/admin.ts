@@ -392,9 +392,9 @@ export interface AiReviewResult {
     reasoning: string;
 }
 
-// ==================== Review Types ====================
+// ==================== Rating Types ====================
 
-export interface AdminReview {
+export interface AdminRating {
     reviewId: string;
     productId: string;
     productName: string | null;
@@ -410,7 +410,7 @@ export interface AdminReview {
     updateTime: string | null;
 }
 
-export interface AdminReviewQuery {
+export interface AdminRatingQuery {
     pageNum: number;
     pageSize: number;
     productId?: string;
@@ -422,7 +422,7 @@ export interface AdminReviewQuery {
     endTime?: string;
 }
 
-export interface AdminReviewDeleteRequest {
+export interface AdminRatingDeleteRequest {
     reason: string;
 }
 

@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
-import com.cartethyia.easyorange.product.application.query.ProductReviewVO;
-import com.cartethyia.easyorange.product.application.query.ReviewStatsVO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
+import com.cartethyia.easyorange.product.application.query.ProductRatingVO;
+import com.cartethyia.easyorange.product.application.query.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import lombok.RequiredArgsConstructor;
@@ -27,25 +27,25 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductReviewQueryService {
+public class ProductRatingQueryService {
 
-    private final ProductReviewMapper reviewMapper;
+    private final ProductRatingMapper reviewMapper;
     private final SellerInfoPort sellerInfoPort;
 
     @Transactional(readOnly = true)
-    public PageResult<ProductReviewVO> listReviews(String productId, Integer pageNum, Integer pageSize) {
+    public PageResult<ProductRatingVO> listReviews(String productId, Integer pageNum, Integer pageSize) {
         var pageReq = PageRequest.builder()
                 .pageNum(pageNum)
                 .pageSize(pageSize)
                 .build();
 
-        Page<ProductReviewDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
-        LambdaQueryWrapper<ProductReviewDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductReviewDO::getProductId, productId)
-                .eq(ProductReviewDO::getStatus, 1)
-                .orderByDesc(ProductReviewDO::getCreateTime);
+        Page<ProductRatingDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
+        LambdaQueryWrapper<ProductRatingDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductRatingDO::getProductId, productId)
+                .eq(ProductRatingDO::getStatus, 1)
+                .orderByDesc(ProductRatingDO::getCreateTime);
 
-        Page<ProductReviewDO> reviewPage = reviewMapper.selectPage(page, wrapper);
+        Page<ProductRatingDO> reviewPage = reviewMapper.selectPage(page, wrapper);
 
         if (reviewPage.getRecords().isEmpty()) {
             return PageResult.empty(pageReq.getPageNum(), pageReq.getPageSize());
@@ -53,7 +53,7 @@ public class ProductReviewQueryService {
 
         Map<String, SellerInfo> userMap = resolveUsers(reviewPage.getRecords());
 
-        List<ProductReviewVO> vos = reviewPage.getRecords().stream()
+        List<ProductRatingVO> vos = reviewPage.getRecords().stream()
                 .map(r -> toReviewVO(r, userMap))
                 .collect(Collectors.toList());
 
@@ -61,16 +61,16 @@ public class ProductReviewQueryService {
     }
 
     @Transactional(readOnly = true)
-    public ReviewStatsVO getReviewStats(String productId) {
-        LambdaQueryWrapper<ProductReviewDO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(ProductReviewDO::getProductId, productId)
-                .eq(ProductReviewDO::getStatus, 1);
+    public RatingStatsVO getReviewStats(String productId) {
+        LambdaQueryWrapper<ProductRatingDO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(ProductRatingDO::getProductId, productId)
+                .eq(ProductRatingDO::getStatus, 1);
 
-        List<ProductReviewDO> reviews = reviewMapper.selectList(wrapper);
+        List<ProductRatingDO> reviews = reviewMapper.selectList(wrapper);
 
         long totalCount = reviews.size();
         if (totalCount == 0) {
-            return ReviewStatsVO.builder()
+            return RatingStatsVO.builder()
                     .productId(productId)
                     .totalCount(0L)
                     .averageRating(BigDecimal.ZERO)
@@ -79,13 +79,13 @@ public class ProductReviewQueryService {
         }
 
         double avg = reviews.stream()
-                .mapToInt(ProductReviewDO::getRating)
+                .mapToInt(ProductRatingDO::getRating)
                 .average()
                 .orElse(0.0);
 
         Map<Integer, Long> distribution = reviews.stream()
                 .collect(Collectors.groupingBy(
-                        ProductReviewDO::getRating,
+                        ProductRatingDO::getRating,
                         Collectors.counting()
                 ));
 
@@ -93,7 +93,7 @@ public class ProductReviewQueryService {
             distribution.putIfAbsent(i, 0L);
         }
 
-        return ReviewStatsVO.builder()
+        return RatingStatsVO.builder()
                 .productId(productId)
                 .totalCount(totalCount)
                 .averageRating(BigDecimal.valueOf(avg).setScale(1, RoundingMode.HALF_UP))
@@ -101,9 +101,9 @@ public class ProductReviewQueryService {
                 .build();
     }
 
-    private Map<String, SellerInfo> resolveUsers(List<ProductReviewDO> reviews) {
+    private Map<String, SellerInfo> resolveUsers(List<ProductRatingDO> reviews) {
         Set<String> userIds = reviews.stream()
-                .map(ProductReviewDO::getUserId)
+                .map(ProductRatingDO::getUserId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
@@ -114,9 +114,9 @@ public class ProductReviewQueryService {
         return sellerInfoPort.getSellerInfos(userIds);
     }
 
-    private ProductReviewVO toReviewVO(ProductReviewDO review, Map<String, SellerInfo> userMap) {
+    private ProductRatingVO toReviewVO(ProductRatingDO review, Map<String, SellerInfo> userMap) {
         SellerInfo user = userMap.get(review.getUserId());
-        return ProductReviewVO.builder()
+        return ProductRatingVO.builder()
                 .id(review.getId())
                 .productId(review.getProductId())
                 .userId(review.getUserId())

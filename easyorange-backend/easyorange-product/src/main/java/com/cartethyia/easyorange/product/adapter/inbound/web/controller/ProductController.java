@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.annotation.Idempotent;
 import com.cartethyia.easyorange.common.annotation.SkipRepeatSubmit;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -46,6 +47,9 @@ public class ProductController {
 
     // ==================== Commands ====================
 
+    /**
+     * Resource CRUD
+     */
     @PostMapping
     @Idempotent
     public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
@@ -74,13 +78,37 @@ public class ProductController {
         return Result.success();
     }
 
-    @SkipRepeatSubmit
-    @PostMapping("/{id}/view")
-    public Result<Void> incrementView(@PathVariable String id) {
-        viewCountService.incrementViewCount(id);
+    /**
+     * Product state transitions (lifecycle order)
+     */
+    @PutMapping("/{id}/submit")
+    public Result<Void> submitForReview(@PathVariable String id) {
+        commandService.submitForReview(id);
         return Result.success();
     }
 
+    @PutMapping("/{productId}/online")
+    @PreAuthorize("hasRole('ADMIN')")
+    public Result<Void> putOnline(@PathVariable String productId) {
+        commandService.putOnline(productId);
+        return Result.success();
+    }
+
+    @PutMapping("/{productId}/offline")
+    public Result<Void> takeOffline(@PathVariable String productId) {
+        commandService.takeOffline(productId);
+        return Result.success();
+    }
+
+    @PutMapping("/{productId}/mark-sold")
+    public Result<Void> markAsSold(@PathVariable String productId) {
+        commandService.markAsSold(productId);
+        return Result.success();
+    }
+
+    /**
+     * Stock operations
+     */
     @PutMapping("/{productId}/decrement-stock")
     public Result<Void> decrementStock(@PathVariable String productId) {
         commandService.decrementStock(productId, 1);
@@ -93,32 +121,29 @@ public class ProductController {
         return Result.success();
     }
 
-    @PutMapping("/{productId}/mark-sold")
-    public Result<Void> markAsSold(@PathVariable String productId) {
-        commandService.markAsSold(productId);
-        return Result.success();
-    }
-
-    @PutMapping("/{productId}/online")
-    public Result<Void> putOnline(@PathVariable String productId) {
-        commandService.putOnline(productId);
-        return Result.success();
-    }
-
-    @PutMapping("/{productId}/offline")
-    public Result<Void> takeOffline(@PathVariable String productId) {
-        commandService.takeOffline(productId);
-        return Result.success();
-    }
-
-    @PutMapping("/{id}/submit")
-    public Result<Void> submitForReview(@PathVariable String id) {
-        commandService.submitForReview(id);
+    /**
+     * View count tracking
+     */
+    @SkipRepeatSubmit
+    @PostMapping("/{id}/view")
+    public Result<Void> incrementViewCount(@PathVariable String id) {
+        viewCountService.incrementViewCount(id);
         return Result.success();
     }
 
     // ==================== Queries ====================
 
+    /**
+     * Single resource lookup
+     */
+    @GetMapping("/{id}")
+    public Result<ProductVO> getProduct(@PathVariable String id) {
+        return Result.success(queryService.getProductById(id));
+    }
+
+    /**
+     * Product listing and filtered queries
+     */
     @GetMapping
     public Result<PageResult<ProductVO>> listProducts(@Valid ProductQueryRequest request) {
         return Result.success(queryService.listProducts(
@@ -127,11 +152,6 @@ public class ProductController {
                 request.getConditionLevel(), request.getSort(),
                 request.getHasDiscount(),
                 request.getPageNum(), request.getPageSize()));
-    }
-
-    @GetMapping("/{id}")
-    public Result<ProductVO> getProduct(@PathVariable String id) {
-        return Result.success(queryService.getProductById(id));
     }
 
     @GetMapping("/my")

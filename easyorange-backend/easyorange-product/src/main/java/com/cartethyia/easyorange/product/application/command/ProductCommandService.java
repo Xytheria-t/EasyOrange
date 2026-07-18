@@ -4,17 +4,12 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductDeletedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductMarkedSoldResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductSubmittedForReviewResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductUpdatedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.StockDecreasedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.StockRestoredResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
+import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
@@ -35,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.Function;
 
 @Slf4j
 @Service
@@ -42,29 +38,17 @@ import java.util.List;
 @Transactional(rollbackFor = Exception.class)
 public class ProductCommandService {
 
-    public record CreateProductCommand(
-        String categoryId, String name, BigDecimal price,
-        BigDecimal originalPrice, Integer stock, Integer conditionLevel,
-        String location, String contactMethod, String description,
-        List<String> imageUrls
-    ) {}
-
-    public record UpdateProductCommand(
-        String id, String categoryId, String name, BigDecimal price,
-        BigDecimal originalPrice, Integer stock, Integer conditionLevel,
-        String location, String contactMethod, String description,
-        List<String> imageUrls
-    ) {}
-
     private final ProductRepository productRepository;
     private final ProductCachePort<?> productCachePort;
     private final DomainEventPublisher domainEventPublisher;
     private final ProductAuditLogRepository productAuditLogRepository;
 
-    public String createProduct(CreateProductCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+    // ==================== CRUD ====================
 
-        ProductCreatedResult result = Product.create(
+    public String createProduct(CreateProductCommand command) {
+        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+
+        ProductTransition result = Product.create(
                 SellerId.of(userId),
                 CategoryId.of(command.categoryId()),
                 ProductTitle.of(command.name()),
@@ -77,23 +61,16 @@ public class ProductCommandService {
                 ProductDescription.of(command.description()),
                 ImageSet.of(command.imageUrls())
         );
-        Product saved = productRepository.save(result.product());
+        var created = productRepository.create(result.product());
         domainEventPublisher.publish(result.event());
-
-        return saved.getId().value();
+        return created.getId().value();
     }
 
     public void updateProduct(UpdateProductCommand command) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        ProductId productId = ProductId.of(command.id());
+        var productId = ProductId.of(command.id());
+        var product = verifyOwnership(productId, SecurityContextUtil.getCurrentUserIdOrThrow());
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException(productId));
-        if (!product.getSellerId().equals(SellerId.of(userId))) {
-            throw new IllegalStateException("无权操作此商品");
-        }
-
-        ProductUpdatedResult result = product.update(
+        mutate(product, p -> p.update(
                 command.categoryId() != null ? CategoryId.of(command.categoryId()) : null,
                 command.name() != null ? ProductTitle.of(command.name()) : null,
                 command.price() != null ? Money.of(command.price()) : null,
@@ -104,103 +81,112 @@ public class ProductCommandService {
                 command.contactMethod() != null ? ContactMethod.of(command.contactMethod()) : null,
                 command.description() != null ? ProductDescription.of(command.description()) : null,
                 command.imageUrls() != null ? ImageSet.of(command.imageUrls()) : null
-        );
-        productRepository.update(result.product());
-        domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(result.product().getId().value());
+        ));
     }
 
     public void deleteProduct(String id) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        ProductId productId = ProductId.of(id);
+        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        var pid = ProductId.of(id);
+        var product = findByIdOrThrow(pid);
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new ProductNotFoundException(productId));
-
-        ProductDeletedResult result = product.delete(userId);
-        productRepository.delete(productId);
+        ProductTransition result = product.delete(userId);
+        productRepository.delete(pid);
         domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(productId.value());
+        evictCache(id);
     }
 
-    public void decrementStock(String productId, Integer quantity) {
-        ProductId pid = ProductId.of(productId);
-        Product product = productRepository.findById(pid)
-                .orElseThrow(() -> new ProductNotFoundException(pid));
+    // ==================== Stock ====================
 
-        StockDecreasedResult result = product.decrementStock(quantity != null ? quantity : 1);
-        productRepository.update(result.product());
-        domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(result.product().getId().value());
+    public void decrementStock(String productId, Integer quantity) {
+        var product = findByIdOrThrow(ProductId.of(productId));
+        mutate(product, p -> p.decrementStock(quantity != null ? quantity : 1));
     }
 
     public void restoreStock(String productId) {
-        ProductId pid = ProductId.of(productId);
-        Product product = productRepository.findById(pid)
-                .orElseThrow(() -> new ProductNotFoundException(pid));
+        var product = findByIdOrThrow(ProductId.of(productId));
+        mutate(product, Product::restoreStock);
+    }
 
-        StockRestoredResult result = product.restoreStock();
-        productRepository.update(result.product());
-        domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(result.product().getId().value());
+    // ==================== Status Transitions ====================
+
+    public void submitForReview(String productId) {
+        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        var product = findByIdOrThrow(ProductId.of(productId));
+        var result = mutate(product, p -> p.submitForReview(userId));
+        var event = (ProductSubmittedForReviewEvent) result.event();
+        saveAuditLog(productId, userId, event.beforeStatus(), event.afterStatus());
     }
 
     public void putOnline(String productId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        Product product = productRepository.findById(ProductId.of(productId))
-                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(productId)));
-        if (!product.getSellerId().equals(SellerId.of(userId))) {
-            throw new IllegalStateException("无权操作此商品");
-        }
-        product = product.putOnline();
-        productRepository.update(product);
-        productCachePort.evictProductCache(productId);
+        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        var product = verifyOwnership(ProductId.of(productId), userId);
+        mutate(product, Product::putOnline);
     }
 
     public void takeOffline(String productId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        Product product = productRepository.findById(ProductId.of(productId))
-                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(productId)));
-        if (!product.getSellerId().equals(SellerId.of(userId))) {
-            throw new IllegalStateException("无权操作此商品");
-        }
-        product = product.takeOffline();
-        productRepository.update(product);
-        productCachePort.evictProductCache(productId);
+        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        var product = verifyOwnership(ProductId.of(productId), userId);
+        mutate(product, Product::takeOffline);
     }
 
     public void markAsSold(String productId) {
-        ProductId pid = ProductId.of(productId);
-        Product product = productRepository.findById(pid)
-                .orElseThrow(() -> new ProductNotFoundException(pid));
-
-        ProductMarkedSoldResult result = product.markAsSold();
-        productRepository.update(result.product());
-        domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(result.product().getId().value());
+        var product = findByIdOrThrow(ProductId.of(productId));
+        mutate(product, Product::markAsSold);
     }
 
-    public void submitForReview(String productId) {
-        String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        ProductId pid = ProductId.of(productId);
+    // ==================== Private Helpers ====================
 
-        Product product = productRepository.findById(pid)
-                .orElseThrow(() -> new ProductNotFoundException(productId));
-
-        int beforeStatus = product.getStatus().getCode();
-        ProductSubmittedForReviewResult result = product.submitForReview(userId);
+    private ProductTransition mutate(Product product, Function<Product, ProductTransition> fn) {
+        var result = fn.apply(product);
         productRepository.update(result.product());
         domainEventPublisher.publish(result.event());
-        productCachePort.evictProductCache(productId);
+        evictCache(product.getId().value());
+        return result;
+    }
 
-        ProductAuditLog auditLog = ProductAuditLog.builder()
+    private Product findByIdOrThrow(ProductId id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ProductNotFoundException(id));
+    }
+
+    private Product verifyOwnership(ProductId productId, String userId) {
+        var product = findByIdOrThrow(productId);
+        if (!product.getSellerId().equals(SellerId.of(userId))) {
+            throw new ProductNotOwnerException(productId);
+        }
+        return product;
+    }
+
+    private void evictCache(String productId) {
+        productCachePort.evictProductCache(productId);
+    }
+
+    private void saveAuditLog(String productId, String operatorId, int beforeStatus, int afterStatus) {
+        var context = SecurityContextUtil.getUserContextOrThrow();
+        var auditLog = ProductAuditLog.builder()
                 .productId(productId)
-                .operatorId(userId)
-                .operatorName(SecurityContextUtil.getUserContextOrThrow().username())
+                .operatorId(operatorId)
+                .operatorName(context.username())
                 .action(AuditAction.RESUBMIT.getCode())
                 .beforeStatus(beforeStatus)
-                .afterStatus(ProductStatus.PENDING_REVIEW.getCode())
+                .afterStatus(afterStatus)
                 .build();
         productAuditLogRepository.save(auditLog);
     }
+
+    // ==================== Inner Records ====================
+
+    public record CreateProductCommand(
+            String categoryId, String name, BigDecimal price,
+            BigDecimal originalPrice, Integer stock, Integer conditionLevel,
+            String location, String contactMethod, String description,
+            List<String> imageUrls
+    ) {}
+
+    public record UpdateProductCommand(
+            String id, String categoryId, String name, BigDecimal price,
+            BigDecimal originalPrice, Integer stock, Integer conditionLevel,
+            String location, String contactMethod, String description,
+            List<String> imageUrls
+    ) {}
 }

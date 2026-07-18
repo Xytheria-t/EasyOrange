@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.CreateReviewRequest;
-import com.cartethyia.easyorange.product.application.command.ProductReviewCommandService;
-import com.cartethyia.easyorange.product.application.query.ProductReviewQueryService;
-import com.cartethyia.easyorange.product.application.query.ProductReviewVO;
-import com.cartethyia.easyorange.product.application.query.ReviewStatsVO;
+import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.CreateRatingRequest;
+import com.cartethyia.easyorange.product.application.command.ProductRatingCommandService;
+import com.cartethyia.easyorange.product.application.query.ProductRatingQueryService;
+import com.cartethyia.easyorange.product.application.query.ProductRatingVO;
+import com.cartethyia.easyorange.product.application.query.RatingStatsVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ProductRatingController {
 
-    private final ProductReviewQueryService reviewQueryService;
-    private final ProductReviewCommandService reviewCommandService;
+    private final ProductRatingQueryService reviewQueryService;
+    private final ProductRatingCommandService reviewCommandService;
 
     @GetMapping("/{productId}/reviews")
-    public Result<PageResult<ProductReviewVO>> listReviews(
+    public Result<PageResult<ProductRatingVO>> listReviews(
             @PathVariable String productId,
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize) {
@@ -35,14 +35,14 @@ public class ProductRatingController {
     }
 
     @GetMapping("/{productId}/reviews/stats")
-    public Result<ReviewStatsVO> getReviewStats(@PathVariable String productId) {
+    public Result<RatingStatsVO> getReviewStats(@PathVariable String productId) {
         return Result.success(reviewQueryService.getReviewStats(productId));
     }
 
     @PostMapping("/{productId}/reviews")
     public Result<String> createReview(
             @PathVariable String productId,
-            @Valid @RequestBody CreateReviewRequest request) {
+            @Valid @RequestBody CreateRatingRequest request) {
         return Result.success(reviewCommandService.createReview(request.toCommand(productId)));
     }
 

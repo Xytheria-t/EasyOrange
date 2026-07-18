@@ -1,4 +1,4 @@
 export { AiPricingCard } from './AiPricingCard';
 export { ProductGallery } from './ProductGallery';
-export { ProductReviews } from './ProductReviews';
+export { ProductRatings } from './ProductRatings';
 export { SimilarProducts } from './SimilarProducts';

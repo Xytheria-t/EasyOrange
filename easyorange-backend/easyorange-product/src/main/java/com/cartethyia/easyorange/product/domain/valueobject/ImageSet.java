@@ -7,8 +7,6 @@ import java.util.List;
 
 public record ImageSet(List<ProductImage> images) {
 
-    public static final ImageSet EMPTY = new ImageSet(List.of());
-
     public ImageSet {
         if (images == null || images.isEmpty()) {
             images = List.of();
@@ -20,12 +18,12 @@ public record ImageSet(List<ProductImage> images) {
     }
 
     public static ImageSet empty() {
-        return EMPTY;
+        return new ImageSet(List.of());
     }
 
     public static ImageSet of(List<String> urls) {
         if (urls == null || urls.isEmpty()) {
-            return EMPTY;
+            return empty();
         }
         List<ProductImage> imageList = new ArrayList<>(urls.size());
         for (int i = 0; i < urls.size(); i++) {
@@ -36,7 +34,7 @@ public record ImageSet(List<ProductImage> images) {
 
     public static ImageSet ofImages(List<ProductImage> images) {
         if (images == null || images.isEmpty()) {
-            return EMPTY;
+            return empty();
         }
         return new ImageSet(images);
     }

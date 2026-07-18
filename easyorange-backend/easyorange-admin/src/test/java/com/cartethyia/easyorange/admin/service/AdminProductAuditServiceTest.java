@@ -9,9 +9,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductApprovedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductSubmittedForReviewResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -63,7 +61,7 @@ class AdminProductAuditServiceTest {
     private static final String SELLER_ID = "2";
 
     private Product createProductInPendingReview() {
-        ProductCreatedResult result = Product.create(
+        ProductTransition result = Product.create(
                 SellerId.of(SELLER_ID),
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
@@ -76,12 +74,12 @@ class AdminProductAuditServiceTest {
                 ImageSet.of(List.of("http://img/1.jpg"))
         );
         Product product = result.product().assignId(PRODUCT_ID);
-        ProductSubmittedForReviewResult submitted = product.submitForReview(SELLER_ID);
+        ProductTransition submitted = product.submitForReview(SELLER_ID);
         return submitted.product();
     }
 
     private Product createProductWithStatus(ProductStatus status) {
-        ProductCreatedResult result = Product.create(
+        ProductTransition result = Product.create(
                 SellerId.of(SELLER_ID),
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),

@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,17 +16,17 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductReviewCommandService 测试")
-class ProductReviewCommandServiceTest {
+@DisplayName("ProductRatingCommandService 测试")
+class ProductRatingCommandServiceTest {
 
     @Mock
-    private ProductReviewMapper reviewMapper;
+    private ProductRatingMapper reviewMapper;
 
-    private ProductReviewCommandService commandService;
+    private ProductRatingCommandService commandService;
 
     @BeforeEach
     void setUp() {
-        commandService = new ProductReviewCommandService(reviewMapper);
+        commandService = new ProductRatingCommandService(reviewMapper);
     }
 
     @Test
@@ -35,20 +35,20 @@ class ProductReviewCommandServiceTest {
         TestSecurityUtil.setSecurityContext(1L);
         try {
             doAnswer(invocation -> {
-                ProductReviewDO review = invocation.getArgument(0);
+                ProductRatingDO review = invocation.getArgument(0);
                 review.setId("100");
                 return 1;
-            }).when(reviewMapper).insert(any(ProductReviewDO.class));
+            }).when(reviewMapper).insert(any(ProductRatingDO.class));
 
-            var command = new ProductReviewCommandService.CreateProductReviewCommand("10", 5, "非常好的商品");
+            var command = new ProductRatingCommandService.CreateProductRatingCommand("10", 5, "非常好的商品");
 
             String reviewId = commandService.createReview(command);
 
             assertThat(reviewId).isEqualTo("100");
 
-            ArgumentCaptor<ProductReviewDO> captor = ArgumentCaptor.forClass(ProductReviewDO.class);
+            ArgumentCaptor<ProductRatingDO> captor = ArgumentCaptor.forClass(ProductRatingDO.class);
             verify(reviewMapper).insert(captor.capture());
-            ProductReviewDO captured = captor.getValue();
+            ProductRatingDO captured = captor.getValue();
             assertThat(captured.getProductId()).isEqualTo("10");
             assertThat(captured.getUserId()).isEqualTo("1");
             assertThat(captured.getRating()).isEqualTo(5);
@@ -65,7 +65,7 @@ class ProductReviewCommandServiceTest {
     void deleteReview_ownReview_shouldDelete() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            ProductReviewDO existing = new ProductReviewDO();
+            ProductRatingDO existing = new ProductRatingDO();
             existing.setId("100");
             existing.setProductId("10");
             existing.setUserId("1");
@@ -102,7 +102,7 @@ class ProductReviewCommandServiceTest {
     void deleteReview_alreadyDeleted_shouldThrow() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            ProductReviewDO existing = new ProductReviewDO();
+            ProductRatingDO existing = new ProductRatingDO();
             existing.setId("100");
             existing.setUserId("1");
             existing.setDelFlag(2);
@@ -123,7 +123,7 @@ class ProductReviewCommandServiceTest {
     void deleteReview_notOwner_shouldThrow() {
         TestSecurityUtil.setSecurityContext(2L);
         try {
-            ProductReviewDO existing = new ProductReviewDO();
+            ProductRatingDO existing = new ProductRatingDO();
             existing.setId("100");
             existing.setUserId("1");
             existing.setDelFlag(0);

@@ -30,13 +30,13 @@ product/
 │   ├── command/                         # 命令侧 (CQRS Write)
 │   │   ├── ProductCommandService.java       # 含内联 CreateProductCommand/UpdateProductCommand records
 │   │   ├── ProductReportCommandService.java
-│   │   └── ProductReviewCommandService.java # 含内联 CreateProductReviewCommand record
+│   │   └── ProductRatingCommandService.java # 含内联 CreateProductRatingCommand record
 │   ├── query/                           # 查询侧 (CQRS Read)
 │   │   ├── ProductQueryService.java
 │   │   ├── ProductReportQueryService.java
-│   │   ├── ProductReviewQueryService.java
+│   │   ├── ProductRatingQueryService.java
 │   │   ├── ProductSearchHandler.java
-│   │   ├── ProductVO.java, ProductReviewVO.java, ReviewStatsVO.java, SellerInfo.java
+│   │   ├── ProductVO.java, ProductRatingVO.java, RatingStatsVO.java, SellerInfo.java
 │   │   ├── readmodel/                   # 读模型
 │   │   │   ├── ProductReadModel.java
 │   │   │   ├── CategoryReadModel.java

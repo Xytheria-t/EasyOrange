@@ -12,22 +12,23 @@ import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Mapper
 public interface ProductMapper extends BaseMapper<ProductDO> {
 
-    Page<ProductDO> searchByFullText(Page<ProductDO> page,
-                                    @Param("keyword") String keyword,
-                                    @Param("status") Integer status);
+    // -- 搜索 --
 
     Page<ProductDO> searchByFullText(Page<ProductDO> page,
-                                    @Param("keyword") String keyword,
-                                    @Param("status") Integer status,
-                                    @Param("minPrice") BigDecimal minPrice,
-                                    @Param("maxPrice") BigDecimal maxPrice,
-                                    @Param("conditionLevel") Integer conditionLevel,
-                                    @Param("hasDiscount") Boolean hasDiscount);
+                                     @Param("keyword") String keyword,
+                                     @Param("status") Integer status,
+                                     @Param("minPrice") BigDecimal minPrice,
+                                     @Param("maxPrice") BigDecimal maxPrice,
+                                     @Param("conditionLevel") Integer conditionLevel,
+                                     @Param("hasDiscount") Boolean hasDiscount);
+
+    // -- 批量查询 --
 
     List<ProductDetailDO> selectDetailsByProductIds(@Param("productIds") List<String> productIds);
 
@@ -37,8 +38,12 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
 
     List<SellerInfo> selectSellersByIds(@Param("sellerIds") Set<String> sellerIds);
 
-    void batchAddViewCounts(@Param("viewCounts") java.util.Map<String, Integer> viewCounts);
+    // -- 写入 --
+
+    void batchAddViewCounts(@Param("viewCounts") Map<String, Integer> viewCounts);
 
     void updateSearchText(@Param("productId") String productId,
                           @Param("searchText") String searchText);
+
+    int updateStatus(@Param("id") String id, @Param("status") Integer status, @Param("version") Integer version);
 }

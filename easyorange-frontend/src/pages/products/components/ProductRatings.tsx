@@ -11,7 +11,7 @@ interface Review {
     likes?: number;
 }
 
-interface ProductReviewsProps {
+interface ProductRatingsProps {
     reviews: Review[];
     reviewTotal: number;
     avgRating: string;
@@ -20,14 +20,14 @@ interface ProductReviewsProps {
     onReviewClick: () => void;
 }
 
-export function ProductReviews({
+export function ProductRatings({
     reviews,
     reviewTotal,
     avgRating,
     isLoading,
     canReview,
     onReviewClick,
-}: ProductReviewsProps) {
+}: ProductRatingsProps) {
     return (
         <div className="pdp-reviews-section">
             <div className="pdp-section-header">

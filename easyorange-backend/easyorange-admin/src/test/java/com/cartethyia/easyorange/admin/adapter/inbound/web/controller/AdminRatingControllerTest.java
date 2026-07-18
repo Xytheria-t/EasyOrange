@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReviewResponse;
-import com.cartethyia.easyorange.admin.service.AdminReviewService;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRatingResponse;
+import com.cartethyia.easyorange.admin.service.AdminRatingService;
 import com.cartethyia.easyorange.common.result.PageResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,23 +23,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AdminReviewController.class)
+@WebMvcTest(AdminRatingController.class)
 @AutoConfigureMockMvc(addFilters = false)
-class AdminReviewControllerTest {
+class AdminRatingControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
-    private AdminReviewService adminReviewService;
+    private AdminRatingService adminReviewService;
 
     @Test
     void listReviews_shouldReturnPaginatedReviews() throws Exception {
         var reviews = List.of(
-            AdminReviewResponse.builder().reviewId("1").productId("100").productName("Product1")
+            AdminRatingResponse.builder().reviewId("1").productId("100").productName("Product1")
                 .userId("10").username("user1").rating(5).content("好评！")
                 .likes(3).status(1).createTime(LocalDateTime.of(2026, 5, 16, 10, 0)).build(),
-            AdminReviewResponse.builder().reviewId("2").productId("100").productName("Product1")
+            AdminRatingResponse.builder().reviewId("2").productId("100").productName("Product1")
                 .userId("11").username("user2").rating(4).content("不错")
                 .likes(1).status(1).createTime(LocalDateTime.of(2026, 5, 16, 11, 0)).build()
         );
@@ -59,7 +59,7 @@ class AdminReviewControllerTest {
     @Test
     void listReviews_withRatingFilter_shouldFilterByRating() throws Exception {
         var reviews = List.of(
-            AdminReviewResponse.builder().reviewId("1").rating(5).content("好评").build()
+            AdminRatingResponse.builder().reviewId("1").rating(5).content("好评").build()
         );
         var pageResult = PageResult.of(reviews, 1L, 1, 20);
         when(adminReviewService.listReviews(any())).thenReturn(pageResult);
@@ -71,7 +71,7 @@ class AdminReviewControllerTest {
 
     @Test
     void getReviewDetail_found_shouldReturnReview() throws Exception {
-        var review = AdminReviewResponse.builder().reviewId("1").productId("100").productName("Product1")
+        var review = AdminRatingResponse.builder().reviewId("1").productId("100").productName("Product1")
             .userId("10").username("user1").rating(5).content("好评！")
             .likes(3).status(1).createTime(LocalDateTime.of(2026, 5, 16, 10, 0)).build();
         when(adminReviewService.getReviewDetail("1")).thenReturn(review);

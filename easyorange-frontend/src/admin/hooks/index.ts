@@ -47,11 +47,11 @@ export {
     useHandleReport,
 } from './useAdminReports';
 export {
-    ADMIN_REVIEW_KEYS,
-    useAdminReviewDetail,
-    useAdminReviews,
-    useDeleteReview,
-} from './useAdminReviews';
+    ADMIN_RATING_KEYS,
+    useAdminRatingDetail,
+    useAdminRatings,
+    useDeleteRating,
+} from './useAdminRatings';
 export {
     ADMIN_USER_KEYS,
     useAdminUserDetail,

@@ -1,10 +1,7 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductMarkedSoldResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.StockDecreasedResult;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.StockRestoredResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
@@ -25,7 +22,7 @@ import static org.assertj.core.api.Assertions.*;
 class ProductTest {
 
     private Product createDefaultProduct() {
-        ProductCreatedResult result = Product.create(
+        ProductTransition result = Product.create(
                 SellerId.of("1"),
                 CategoryId.of("2"),
                 ProductTitle.of("测试商品"),
@@ -44,7 +41,7 @@ class ProductTest {
     @Test
     @DisplayName("创建商品时应生成 ProductCreatedEvent")
     void create_shouldEmitProductCreatedEvent() {
-        ProductCreatedResult result = Product.create(
+        ProductTransition result = Product.create(
                 SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("测试商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
@@ -94,7 +91,7 @@ class ProductTest {
     @Test
     @DisplayName("库存不足时应抛出 InsufficientStockException")
     void decrementStock_whenNoStock_shouldThrow() {
-        ProductCreatedResult result = Product.create(
+        ProductTransition result = Product.create(
                 SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(0),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
@@ -111,7 +108,7 @@ class ProductTest {
     void decrementStock_shouldDecreaseAndEmitEvent() {
         Product product = createDefaultProduct();
 
-        StockDecreasedResult result = product.decrementStock();
+        ProductTransition result = product.decrementStock();
 
         assertThat(result.product().getStock().value()).isEqualTo(9);
         assertThat(result.event()).isInstanceOf(StockDecreasedEvent.class);
@@ -122,7 +119,7 @@ class ProductTest {
     void restoreStock_shouldIncreaseAndEmitEvent() {
         Product product = createDefaultProduct();
 
-        StockRestoredResult result = product.restoreStock();
+        ProductTransition result = product.restoreStock();
 
         assertThat(result.product().getStock().value()).isEqualTo(11);
         assertThat(result.event()).isInstanceOf(StockRestoredEvent.class);
@@ -132,9 +129,9 @@ class ProductTest {
     @DisplayName("标记售出成功时应更改状态并发布事件")
     void markAsSold_shouldChangeStatusAndEmitEvent() {
         Product product = createDefaultProduct();
-        product = product.putOnline();
+        product = product.putOnline().product();
 
-        ProductMarkedSoldResult result = product.markAsSold();
+        ProductTransition result = product.markAsSold();
 
         assertThat(result.product().getStatus().getCode()).isEqualTo(2);
         assertThat(result.event()).isInstanceOf(ProductMarkedSoldEvent.class);
@@ -152,7 +149,7 @@ class ProductTest {
     @Test
     @DisplayName("库存为0时不能上架")
     void putOnline_whenNoStock_shouldThrow() {
-        ProductCreatedResult result = Product.create(
+        ProductTransition result = Product.create(
                 SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("商品"),
                 Money.of(new BigDecimal("100")), null, StockQuantity.of(0),
                 ConditionLevel.NEW, TradeLocation.of("北京"),
@@ -169,7 +166,7 @@ class ProductTest {
     @DisplayName("已售商品不能再次标记为已售")
     void markAsSold_whenAlreadySold_shouldThrow() {
         Product product = createDefaultProduct();
-        product = product.putOnline();
+        product = product.putOnline().product();
         Product soldProduct = product.markAsSold().product();
 
         assertThatThrownBy(() -> soldProduct.markAsSold())
@@ -181,7 +178,7 @@ class ProductTest {
     void update_shouldModifyFields() {
         Product product = createDefaultProduct();
 
-        Product.ProductUpdatedResult result = product.update(
+        ProductTransition result = product.update(
                 CategoryId.of("99"),
                 ProductTitle.of("新名称"),
                 Money.of(new BigDecimal("200")),

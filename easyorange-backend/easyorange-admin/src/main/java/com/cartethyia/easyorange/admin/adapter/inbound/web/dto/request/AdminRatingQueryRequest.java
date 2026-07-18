@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class AdminReviewQueryRequest {
+public class AdminRatingQueryRequest {
 
     private Integer pageNum = 1;
     private Integer pageSize = 20;

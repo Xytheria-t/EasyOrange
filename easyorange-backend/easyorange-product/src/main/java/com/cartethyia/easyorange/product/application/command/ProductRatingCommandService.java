@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -16,9 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductReviewCommandService {
+public class ProductRatingCommandService {
 
-    public record CreateProductReviewCommand(
+    public record CreateProductRatingCommand(
         @NotNull(message = "商品ID不能为空")
         String productId,
 
@@ -32,13 +32,13 @@ public class ProductReviewCommandService {
         String content
     ) {}
 
-    private final ProductReviewMapper reviewMapper;
+    private final ProductRatingMapper reviewMapper;
 
     @Transactional(rollbackFor = Exception.class)
-    public String createReview(CreateProductReviewCommand command) {
+    public String createReview(CreateProductRatingCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductReviewDO review = ProductReviewDO.builder()
+        ProductRatingDO review = ProductRatingDO.builder()
                 .productId(command.productId())
                 .userId(userId)
                 .rating(command.rating())
@@ -59,7 +59,7 @@ public class ProductReviewCommandService {
     public void deleteReview(String reviewId) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductReviewDO review = reviewMapper.selectById(reviewId);
+        ProductRatingDO review = reviewMapper.selectById(reviewId);
         if (review == null || review.getDelFlag() != 0) {
             throw new IllegalArgumentException("评价不存在");
         }

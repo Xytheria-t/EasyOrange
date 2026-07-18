@@ -27,7 +27,9 @@
 | 资产详情 | `GET /api/products/{id}` | 否 |
 | 资产列表（分页） | `GET /api/products` | 否 |
 | 编辑资产 | `PUT /api/products/{id}` | Access Token（资产方） |
-| 上下架 | `PUT /api/products/{id}/status` | Access Token（资产方） |
+| 提交审核 | `PUT /api/products/{id}/submit` | Access Token（资产方） |
+| 直接上架 | `PUT /api/products/{productId}/online` | ADMIN |
+| 下架 | `PUT /api/products/{productId}/offline` | Access Token（资产方） |
 | 上传图片 | `POST /api/uploads/image` | Access Token |
 
 详见 [AI-资产管理.md](./AI-资产管理.md) 的 WebSocket 协议。

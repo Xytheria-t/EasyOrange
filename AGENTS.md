@@ -37,14 +37,44 @@ EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：*
 | `eo_order` | 订单主表 | total_amount(行项总和); 状态机: PENDING_PAYMENT/PAID/SHIPPED/COMPLETED/CANCELLED/REFUNDED |
 | `eo_order_item` | 订单行项表 | 含 product_snapshot JSON 快照, unit_price, quantity, subtotal |
 
-## 商品审核工作流
+## 商品状态机
 
-状态机: `DRAFT(0) → PENDING_REVIEW(4) → ONLINE(1)` / `REJECTED(5) → PENDING_REVIEW(4)` (循环)
+```
+                    ┌──────────────────┐
+                    │   DRAFT (0)      │
+                    └────┬────┬────────┘
+                         │    │
+                    submit    putOnline (ADMIN bypass)
+                         │    │
+                    ┌────▼────▼────────┐
+                    │ PENDING_REVIEW(4) │
+                    └────┬────────┬─────┘
+                    approve    reject
+                         │    ┌────▼─────┐
+                    ┌────▼────▼─┐  REJECTED(5) │
+                    │ ONLINE(1) │  └─────┬──────┘
+                    └──┬─────┬──┘      submit (循环)
+                  takeOffline  markAsSold
+                       │      │
+                  ┌────▼──┐   │
+                  │OFFLINE│   │
+                  │  (3)  │   │
+                  └───┬───┘   │
+                 putOnline    │
+                  (relist)    │
+                       ┌──────▼──────┐
+                       │  SOLD (2)   │ (终端状态)
+                       └─────────────┘
+```
 
-- 资产方提交资产自动进入待审核
-- 管理员审核通过→上架, 驳回→退回草稿(可重新提交)
-- 审核结果触发站内消息通知(AUDIT_SUCCESS/AUDIT_REJECTED)
-- 审核记录持久化至 `eo_product_audit_log` 表
+- **资产方角度**：`DRAFT → submitForReview → PENDING_REVIEW → (approve → ONLINE)` / `REJECTED → submitForReview`（循环）。前端 C 端仅展示 submitForReview 按钮
+- **管理员角度**：`DRAFT` / `OFFLINE → putOnline → ONLINE`（绕过审核直接上架）。`putOnline` 端点受 `@PreAuthorize("hasRole('ADMIN')")` 保护
+- **系统角度**：`ONLINE → markAsSold → SOLD`（订单完成时由 Saga 自动触发）
+- **卖家**：`ONLINE → takeOffline → OFFLINE`
+- 审核结果触发站内消息通知（AUDIT_SUCCESS / AUDIT_REJECTED）
+- 审核记录持久化至 `eo_product_audit_log` 表（action: 1通过/2拒绝/3重提交; 含维度JSON+前后状态快照）
+
+状态机定义在 `ProductStatus.java`，所有合法转换集中在一张 `ALLOWED_TRANSITIONS` 表，守卫统一由 `canTransitionTo(target)` 入口。delete 不改变 status，单独由 `canDelete()` 守卫（SOLD 状态下的商品不可删除以保留订单追溯记录）。
 
 ## AI 能力清单
 

@@ -5,8 +5,6 @@ import java.util.Set;
 
 public record TagSet(Set<String> tags) {
 
-    public static final TagSet EMPTY = new TagSet(Set.of());
-
     public TagSet {
         tags = tags == null || tags.isEmpty()
                 ? Set.of()
@@ -17,18 +15,18 @@ public record TagSet(Set<String> tags) {
     }
 
     public static TagSet empty() {
-        return EMPTY;
+        return new TagSet(Set.of());
     }
 
     public static TagSet of(String... tags) {
         if (tags == null || tags.length == 0) {
-            return EMPTY;
+            return empty();
         }
         var filtered = Arrays.stream(tags)
                 .filter(t -> t != null && !t.isBlank())
                 .map(String::trim)
                 .toList();
-        return filtered.isEmpty() ? EMPTY : new TagSet(Set.copyOf(filtered));
+        return filtered.isEmpty() ? empty() : new TagSet(Set.copyOf(filtered));
     }
 
     public boolean contains(String tag) {

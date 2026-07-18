@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.command;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
@@ -23,11 +24,14 @@ class ProductReportCommandServiceTest {
     @Mock
     private ProductReportRepository productReportRepository;
 
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+
     private ProductReportCommandService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProductReportCommandService(productReportDomainService, productReportRepository);
+        service = new ProductReportCommandService(productReportDomainService, productReportRepository, domainEventPublisher);
     }
 
     @Test

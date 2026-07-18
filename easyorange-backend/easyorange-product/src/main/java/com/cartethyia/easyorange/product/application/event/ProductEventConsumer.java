@@ -88,6 +88,30 @@ public class ProductEventConsumer {
         searchIndexPort.ifPresent(port -> safeCall(() -> port.updateProductIndex(productId), "updateProductIndex", productId));
     }
 
+    @RabbitHandler
+    public void onProductSubmittedForReview(ProductSubmittedForReviewEvent event) {
+        String productId = event.productId();
+        log.info("event=ProductSubmittedForReview productId={} sellerId={} before={} after={}",
+                productId, event.sellerId(), event.beforeStatus(), event.afterStatus());
+        productCachePort.evictProductCache(productId);
+    }
+
+    @RabbitHandler
+    public void onProductPutOnline(ProductPutOnlineEvent event) {
+        String productId = event.productId();
+        log.info("event=ProductPutOnline productId={} sellerId={}", productId, event.sellerId());
+        productCachePort.evictProductCache(productId);
+        searchIndexPort.ifPresent(port -> safeCall(() -> port.indexProduct(productId), "indexProduct", productId));
+    }
+
+    @RabbitHandler
+    public void onProductTakeOffline(ProductTakeOfflineEvent event) {
+        String productId = event.productId();
+        log.info("event=ProductTakeOffline productId={} sellerId={}", productId, event.sellerId());
+        productCachePort.evictProductCache(productId);
+        searchIndexPort.ifPresent(port -> safeCall(() -> port.removeProductIndex(productId), "removeProductIndex", productId));
+    }
+
     private void evictListCache(String categoryId) {
         if (categoryId != null) {
             productCachePort.evictProductListCache(categoryId);

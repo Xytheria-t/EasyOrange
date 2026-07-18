@@ -5,9 +5,12 @@ import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
+import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -33,33 +36,43 @@ public class ProductReportDomainService {
     /**
      * Processes a product report by approving or rejecting it.
      * <p>
-     * When approved, the reported product is taken offline and its cache is evicted.
+     * When approved, the reported product is taken offline via the aggregate
+     * (preserving domain invariants and producing a domain event).
      * When rejected, the report is marked as rejected without affecting the product.
      *
      * @param reportId the ID of the report to process
      * @param approved {@code true} to approve the report and take the product offline,
      *                 {@code false} to reject the report
+     * @return the domain event if the product was taken offline, {@code null} otherwise
      * @throws ReportNotFoundException if no report exists with the given ID
      */
-    public void processReport(String reportId, boolean approved) {
+    @Nullable
+    public ProductTakeOfflineEvent processReport(String reportId, boolean approved) {
         ProductReport report = productReportRepository.findById(reportId);
         if (report == null) {
             throw new ReportNotFoundException("举报记录不存在: " + reportId);
         }
 
         ProductReport updated;
+        ProductTakeOfflineEvent event = null;
         if (approved) {
             updated = report.approve(null);
-            productRepository.updateStatus(
-                    ProductId.of(report.getProductId()),
-                    ProductStatus.OFFLINE
-            );
-            productCachePort.evictProductCache(report.getProductId());
+            event = takeProductOffline(report.getProductId());
         } else {
             updated = report.reject(null);
         }
 
         productReportRepository.update(updated);
+        return event;
+    }
+
+    private ProductTakeOfflineEvent takeProductOffline(String productId) {
+        Product product = productRepository.findById(ProductId.of(productId))
+                .orElseThrow(() -> new ReportNotFoundException("商品不存在: " + productId));
+        ProductTransition result = product.takeOffline();
+        productRepository.update(result.product());
+        productCachePort.evictProductCache(productId);
+        return (ProductTakeOfflineEvent) result.event();
     }
 
     public static class ReportNotFoundException extends BaseBusinessException {

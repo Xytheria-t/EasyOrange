@@ -14,7 +14,7 @@
 | 订单管理 | AdminOrderController | 订单列表、详情、取消、强制完成、退款、统计 |
 | 分类管理 | AdminCategoryController | 分类 CRUD、树形结构、启用禁用 |
 | 举报管理 | AdminReportController | 举报列表、详情、处理、统计 |
-| 评价管理 | AdminReviewController | 评价列表、详情、删除 |
+| 评价管理 | AdminRatingController | 评价列表、详情、删除 |
 
 ## 目录结构
 

@@ -10,19 +10,21 @@ import java.util.Optional;
 
 public interface ProductRepository {
 
-    Product save(Product product);
+    // -- 写 --
+
+    Product create(Product product);
 
     void update(Product product);
+
+    void updateStatus(ProductId id, ProductStatus status);
+
+    void delete(ProductId id);
+
+    // -- 读 --
 
     Optional<Product> findById(ProductId id);
 
     List<Product> findByIds(List<ProductId> ids);
 
     List<Product> findBySellerId(SellerId sellerId);
-
-    void delete(ProductId id);
-
-    boolean existsById(ProductId id);
-
-    void updateStatus(ProductId id, ProductStatus status);
 }

@@ -10,7 +10,7 @@ import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogReposi
 import com.cartethyia.easyorange.product.application.command.ProductCommandService.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductCreatedResult;
+import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -54,7 +54,7 @@ class ProductCommandServiceTest {
     void setUp() {
         commandService = new ProductCommandService(productRepository, productCachePort, domainEventPublisher, productAuditLogRepository);
 
-        ProductCreatedResult created = Product.create(
+        ProductTransition created = Product.create(
                 com.cartethyia.easyorange.product.domain.valueobject.SellerId.of("1"),
                 com.cartethyia.easyorange.product.domain.valueobject.CategoryId.of("2"),
                 com.cartethyia.easyorange.product.domain.valueobject.ProductTitle.of("测试商品"),
@@ -68,7 +68,7 @@ class ProductCommandServiceTest {
                 com.cartethyia.easyorange.product.domain.valueobject.ImageSet.of(java.util.List.of("http://img/1.jpg"))
         );
         existingProduct = created.product().assignId("1");
-        existingProduct = existingProduct.putOnline();
+        existingProduct = existingProduct.putOnline().product();
     }
 
     @Test
@@ -76,7 +76,7 @@ class ProductCommandServiceTest {
     void createProduct_shouldSaveToRepository() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
+            when(productRepository.create(any(Product.class))).thenAnswer(invocation -> {
                 Product p = invocation.getArgument(0);
                 return p.assignId("42");
             });
@@ -90,7 +90,7 @@ class ProductCommandServiceTest {
             String productId = commandService.createProduct(command);
 
             assertThat(productId).isEqualTo("42");
-            verify(productRepository).save(any(Product.class));
+            verify(productRepository).create(any(Product.class));
             verify(domainEventPublisher).publish(any(ProductCreatedEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();

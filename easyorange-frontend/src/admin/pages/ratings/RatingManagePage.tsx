@@ -6,8 +6,8 @@ import { AdminSelect } from '../../components/AdminSelect';
 import { AdminTable, type Column } from '../../components/AdminTable';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { StatusBadge } from '../../components/StatusBadge';
-import { useAdminReviews, useDeleteReview } from '../../hooks';
-import type { AdminReview } from '../../types/admin';
+import { useAdminRatings, useDeleteRating } from '../../hooks';
+import type { AdminRating } from '../../types/admin';
 
 const STATUS_OPTIONS = [
     { value: '', label: '全部状态' },
@@ -32,7 +32,7 @@ const RATING_LABELS: Record<number, { emoji: string; label: string; color: strin
     1: { emoji: '⭐', label: '非常差', color: '#DC2626' },
 };
 
-export default function ReviewManagePage() {
+export default function RatingManagePage() {
     const [statusFilter, setStatusFilter] = useState('');
     const [ratingFilter, setRatingFilter] = useState('');
     const [keyword, setKeyword] = useState('');
@@ -51,7 +51,7 @@ export default function ReviewManagePage() {
     });
     const [deleteReason, setDeleteReason] = useState('');
 
-    const { data, isLoading, isError } = useAdminReviews({
+    const { data, isLoading, isError } = useAdminRatings({
         pageNum: page,
         pageSize,
         status: statusFilter ? Number(statusFilter) : undefined,
@@ -59,7 +59,7 @@ export default function ReviewManagePage() {
         keyword: keyword || undefined,
     });
 
-    const deleteReview = useDeleteReview();
+    const deleteReview = useDeleteRating();
 
     const handleSearch = useCallback(() => {
         setKeyword(searchInput);
@@ -75,7 +75,7 @@ export default function ReviewManagePage() {
         [handleSearch]
     );
 
-    const confirmDelete = (review: AdminReview) => {
+    const confirmDelete = (review: AdminRating) => {
         setDeleteModal({ open: true, reviewId: review.reviewId, reviewContent: review.content });
         setDeleteReason('');
     };
@@ -96,7 +96,7 @@ export default function ReviewManagePage() {
     const formatDate = (dateString: string) =>
         new Date(dateString).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-    const columns: Column<AdminReview>[] = [
+    const columns: Column<AdminRating>[] = [
         {
             key: 'content',
             title: '评价内容',

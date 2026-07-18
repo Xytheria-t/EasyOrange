@@ -1,11 +1,16 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.converter;
 
+import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageSet;
 import com.cartethyia.easyorange.product.domain.valueobject.ImageUrl;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductDescription;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductTitle;
@@ -14,21 +19,49 @@ import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.TradeLocation;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-@Component
-public final class ProductConverter {
+@Mapper(componentModel = "spring")
+public interface ProductConverter {
 
-    public Product toDomain(ProductDO productDO, ProductDetailDO detailDO, List<ProductImageDO> imageDOs) {
+    // ==================== Domain → DO ====================
+
+    @Mapping(target = "userId", source = "sellerId")
+    @Mapping(target = "name", source = "title")
+    @Mapping(target = "tags", ignore = true)
+    ProductDO toDataObject(Product product);
+
+    default ProductDetailDO toDetailDO(ProductId productId, ProductDescription description) {
+        if (description == null || description.isBlank()) return null;
+        return ProductDetailDO.builder()
+                .productId(productId.value())
+                .description(description.value())
+                .build();
+    }
+
+    default List<ProductImageDO> toImageDOs(ProductId productId, ImageSet imageSet) {
+        if (imageSet == null || imageSet.isEmpty()) return List.of();
+        var urls = imageSet.imageUrls();
+        var result = new ArrayList<ProductImageDO>(urls.size());
+        for (int i = 0; i < urls.size(); i++) {
+            result.add(ProductImageDO.builder()
+                    .productId(productId.value())
+                    .imageUrl(urls.get(i))
+                    .sortOrder(i)
+                    .isMain(i == 0 ? 1 : 0)
+                    .build());
+        }
+        return result;
+    }
+
+    // ==================== DO → Domain ====================
+
+    default Product toDomain(ProductDO productDO, ProductDetailDO detailDO, List<ProductImageDO> imageDOs) {
         return Product.reconstitute(
                 ProductId.of(productDO.getId()),
                 SellerId.of(productDO.getUserId()),
@@ -53,65 +86,37 @@ public final class ProductConverter {
         );
     }
 
-    public ImageSet toImageSet(List<ProductImageDO> imageDOs) {
-        if (imageDOs == null || imageDOs.isEmpty()) {
-            return ImageSet.empty();
-        }
-        List<ImageSet.ProductImage> images = imageDOs.stream()
+    private static ImageSet toImageSet(List<ProductImageDO> imageDOs) {
+        if (imageDOs == null || imageDOs.isEmpty()) return ImageSet.empty();
+        return ImageSet.ofImages(imageDOs.stream()
                 .map(img -> new ImageSet.ProductImage(
                         new ImageUrl(img.getImageUrl()),
                         img.getSortOrder(),
-                        img.getIsMain() != null && img.getIsMain().equals(1)
-                ))
-                .collect(Collectors.toList());
-        return ImageSet.ofImages(images);
+                        img.getIsMain() != null && img.getIsMain().equals(1)))
+                .toList());
     }
 
-    public ProductDO toDataObject(Product product) {
-        ProductDO dobj = new ProductDO();
-        dobj.setId(product.getId() != null ? product.getId().value() : null);
-        dobj.setUserId(product.getSellerId().value());
-        dobj.setCategoryId(product.getCategoryId() != null ? product.getCategoryId().value() : null);
-        dobj.setName(product.getTitle().value());
-        dobj.setPrice(product.getPrice().value());
-        dobj.setOriginalPrice(product.getOriginalPrice() != null ? product.getOriginalPrice().value() : null);
-        dobj.setStock(product.getStock().value());
-        dobj.setVersion(product.getVersion().value());
-        dobj.setStatus(product.getStatus() != null ? product.getStatus().getCode() : null);
-        dobj.setViewCount(product.getViewCount());
-        dobj.setConditionLevel(product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null);
-        dobj.setLocation(product.getLocation() != null ? product.getLocation().value() : null);
-        dobj.setContactMethod(product.getContactMethod() != null && product.getContactMethod().isNotBlank() ? product.getContactMethod().value() : null);
-        dobj.setCreateTime(product.getCreateTime());
-        dobj.setUpdateTime(product.getUpdateTime());
-        dobj.setPriceUpdateTime(product.getPriceUpdateTime());
-        return dobj;
-    }
+    // ==================== Type mappings for MapStruct (used by toDataObject) ====================
 
-    public ProductDetailDO toDetailDO(ProductId productId, ProductDescription description) {
-        if (description == null || description.isBlank()) {
-            return null;
-        }
-        ProductDetailDO dobj = new ProductDetailDO();
-        dobj.setProductId(productId.value());
-        dobj.setDescription(description.value());
-        return dobj;
-    }
+    default String map(ProductId id) { return id != null ? id.value() : null; }
 
-    public List<ProductImageDO> toImageDOs(ProductId productId, ImageSet imageSet) {
-        if (imageSet == null || imageSet.isEmpty()) {
-            return List.of();
-        }
-        List<String> urls = imageSet.imageUrls();
-        List<ProductImageDO> result = new ArrayList<>(urls.size());
-        for (int i = 0; i < urls.size(); i++) {
-            ProductImageDO img = new ProductImageDO();
-            img.setProductId(productId.value());
-            img.setImageUrl(urls.get(i));
-            img.setSortOrder(i);
-            img.setIsMain(i == 0 ? 1 : 0);
-            result.add(img);
-        }
-        return result;
-    }
+    default String map(SellerId id) { return id != null ? id.value() : null; }
+
+    default String map(CategoryId id) { return id != null ? id.value() : null; }
+
+    default String map(ProductTitle t) { return t != null ? t.value() : null; }
+
+    default BigDecimal map(Money m) { return m != null ? m.value() : null; }
+
+    default Integer map(StockQuantity q) { return q != null ? q.value() : null; }
+
+    default Integer map(Version v) { return v != null ? v.value() : null; }
+
+    default Integer map(ProductStatus s) { return s != null ? s.getCode() : null; }
+
+    default Integer map(ConditionLevel c) { return c != null ? c.getCode() : null; }
+
+    default String map(TradeLocation l) { return l != null ? l.value() : null; }
+
+    default String map(ContactMethod cm) { return cm != null && cm.isNotBlank() ? cm.value() : null; }
 }

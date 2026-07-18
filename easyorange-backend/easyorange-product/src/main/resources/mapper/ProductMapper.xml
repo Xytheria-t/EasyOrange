@@ -56,7 +56,7 @@
         AND del_flag = 0
     </select>
 
-    <select id="selectSellersByIds" resultType="com.cartethyia.easyorange.product.application.query.dto.SellerInfo">
+    <select id="selectSellersByIds" resultType="com.cartethyia.easyorange.product.application.query.SellerInfo">
         SELECT user_id, username, nick_name, avatar
         FROM eo_user
         WHERE user_id IN
@@ -84,6 +84,12 @@
         UPDATE eo_product
         SET search_text = #{searchText}
         WHERE id = #{productId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE eo_product
+        SET status = #{status}, version = version + 1
+        WHERE id = #{id} AND version = #{version}
     </update>
 
 </mapper>

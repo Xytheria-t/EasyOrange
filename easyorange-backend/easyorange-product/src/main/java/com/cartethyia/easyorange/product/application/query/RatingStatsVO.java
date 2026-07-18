@@ -12,7 +12,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReviewStatsVO {
+public class RatingStatsVO {
 
     private String productId;
 

@@ -185,7 +185,7 @@ public class AdminReportService {
     private void handleProductOffline(ProductReport report, String remark) {
         productRepository.findById(ProductId.of(report.getProductId()))
                 .ifPresent(product -> {
-                    Product updated = product.takeOffline();
+                    Product updated = product.takeOffline().product();
                     productRepository.update(updated);
                     productCachePort.evictProductCache(report.getProductId());
                 });

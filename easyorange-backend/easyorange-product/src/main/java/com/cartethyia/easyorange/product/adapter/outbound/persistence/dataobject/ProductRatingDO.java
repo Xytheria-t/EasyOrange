@@ -15,7 +15,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_product_review")
-public class ProductReviewDO extends BaseDO {
+public class ProductRatingDO extends BaseDO {
 
     private String productId;
 

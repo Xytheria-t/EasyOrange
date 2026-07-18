@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.product.application.query;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
-import com.cartethyia.easyorange.product.application.query.ProductReviewVO;
-import com.cartethyia.easyorange.product.application.query.ReviewStatsVO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
+import com.cartethyia.easyorange.product.application.query.ProductRatingVO;
+import com.cartethyia.easyorange.product.application.query.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,25 +28,25 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductReviewQueryService 测试")
-class ProductReviewQueryServiceTest {
+@DisplayName("ProductRatingQueryService 测试")
+class ProductRatingQueryServiceTest {
 
     @Mock
-    private ProductReviewMapper reviewMapper;
+    private ProductRatingMapper reviewMapper;
 
     @Mock
     private SellerInfoPort sellerInfoPort;
 
-    private ProductReviewQueryService queryService;
+    private ProductRatingQueryService queryService;
 
-    private ProductReviewDO reviewDO;
+    private ProductRatingDO reviewDO;
 
     @BeforeEach
     @SuppressWarnings("unchecked")
     void setUp() {
-        queryService = new ProductReviewQueryService(reviewMapper, sellerInfoPort);
+        queryService = new ProductRatingQueryService(reviewMapper, sellerInfoPort);
 
-        reviewDO = new ProductReviewDO();
+        reviewDO = new ProductRatingDO();
         reviewDO.setId("100");
         reviewDO.setProductId("10");
         reviewDO.setUserId("1");
@@ -61,7 +61,7 @@ class ProductReviewQueryServiceTest {
     @SuppressWarnings("unchecked")
     @DisplayName("查询评价列表应返回分页结果")
     void listReviews_shouldReturnPage() {
-        Page<ProductReviewDO> page = new Page<>(1, 10);
+        Page<ProductRatingDO> page = new Page<>(1, 10);
         page.setRecords(List.of(reviewDO));
         page.setTotal(1);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
@@ -69,12 +69,12 @@ class ProductReviewQueryServiceTest {
                 "1", new SellerInfo("1", "认领方", null, "http://avatar.jpg")
         ));
 
-        PageResult<ProductReviewVO> result = queryService.listReviews("10", 1, 10);
+        PageResult<ProductRatingVO> result = queryService.listReviews("10", 1, 10);
 
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
         assertThat(result.total()).isEqualTo(1);
-        ProductReviewVO vo = result.records().get(0);
+        ProductRatingVO vo = result.records().get(0);
         assertThat(vo.getId()).isEqualTo("100");
         assertThat(vo.getProductId()).isEqualTo("10");
         assertThat(vo.getRating()).isEqualTo(5);
@@ -88,12 +88,12 @@ class ProductReviewQueryServiceTest {
     @SuppressWarnings("unchecked")
     @DisplayName("评价列表为空时应返回空分页")
     void listReviews_withEmptyResult_shouldReturnEmptyPage() {
-        Page<ProductReviewDO> page = new Page<>(1, 10);
+        Page<ProductRatingDO> page = new Page<>(1, 10);
         page.setRecords(List.of());
         page.setTotal(0);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
 
-        PageResult<ProductReviewVO> result = queryService.listReviews("10", 1, 10);
+        PageResult<ProductRatingVO> result = queryService.listReviews("10", 1, 10);
 
         assertThat(result.records()).isEmpty();
         assertThat(result.total()).isZero();
@@ -104,13 +104,13 @@ class ProductReviewQueryServiceTest {
     @SuppressWarnings("unchecked")
     @DisplayName("用户不存在时应使用默认用户名")
     void listReviews_whenUserNotFound_shouldUseDefault() {
-        Page<ProductReviewDO> page = new Page<>(1, 10);
+        Page<ProductRatingDO> page = new Page<>(1, 10);
         page.setRecords(List.of(reviewDO));
         page.setTotal(1);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
         when(sellerInfoPort.getSellerInfos(anySet())).thenReturn(Map.of());
 
-        PageResult<ProductReviewVO> result = queryService.listReviews("10", 1, 10);
+        PageResult<ProductRatingVO> result = queryService.listReviews("10", 1, 10);
 
         assertThat(result.records().get(0).getUsername()).isEqualTo("未知用户");
         assertThat(result.records().get(0).getUserAvatar()).isNull();
@@ -119,11 +119,11 @@ class ProductReviewQueryServiceTest {
     @Test
     @DisplayName("获取评价统计信息应正确计算")
     void getReviewStats_shouldCalculateCorrectly() {
-        ProductReviewDO review2 = new ProductReviewDO();
+        ProductRatingDO review2 = new ProductRatingDO();
         review2.setProductId("10");
         review2.setRating(4);
         review2.setStatus(1);
-        ProductReviewDO review3 = new ProductReviewDO();
+        ProductRatingDO review3 = new ProductRatingDO();
         review3.setProductId("10");
         review3.setRating(5);
         review3.setStatus(1);
@@ -131,7 +131,7 @@ class ProductReviewQueryServiceTest {
         when(reviewMapper.selectList(any(LambdaQueryWrapper.class)))
                 .thenReturn(List.of(reviewDO, review2, review3));
 
-        ReviewStatsVO stats = queryService.getReviewStats("10");
+        RatingStatsVO stats = queryService.getReviewStats("10");
 
         assertThat(stats.getProductId()).isEqualTo("10");
         assertThat(stats.getTotalCount()).isEqualTo(3);
@@ -149,7 +149,7 @@ class ProductReviewQueryServiceTest {
     void getReviewStats_withNoReviews_shouldReturnZeroStats() {
         when(reviewMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
-        ReviewStatsVO stats = queryService.getReviewStats("10");
+        RatingStatsVO stats = queryService.getReviewStats("10");
 
         assertThat(stats.getProductId()).isEqualTo("10");
         assertThat(stats.getTotalCount()).isZero();
@@ -166,14 +166,14 @@ class ProductReviewQueryServiceTest {
     @SuppressWarnings("unchecked")
     @DisplayName("查询评价列表应使用正确分页参数")
     void listReviews_shouldUseCorrectPagination() {
-        Page<ProductReviewDO> page = new Page<>(2, 20);
+        Page<ProductRatingDO> page = new Page<>(2, 20);
         page.setRecords(List.of());
         page.setTotal(0);
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(page);
 
         queryService.listReviews("10", 2, 20);
 
-        ArgumentCaptor<Page<ProductReviewDO>> pageCaptor = ArgumentCaptor.forClass(Page.class);
+        ArgumentCaptor<Page<ProductRatingDO>> pageCaptor = ArgumentCaptor.forClass(Page.class);
         verify(reviewMapper).selectPage(pageCaptor.capture(), any());
         assertThat(pageCaptor.getValue().getCurrent()).isEqualTo(2);
         assertThat(pageCaptor.getValue().getSize()).isEqualTo(20);

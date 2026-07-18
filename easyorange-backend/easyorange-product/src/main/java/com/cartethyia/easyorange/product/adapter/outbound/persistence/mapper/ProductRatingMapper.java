@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @Mapper
-public interface ProductReviewMapper extends BaseMapper<ProductReviewDO> {
+public interface ProductRatingMapper extends BaseMapper<ProductRatingDO> {
 
     @Select("SELECT rating, COUNT(*) as count FROM eo_product_review " +
             "WHERE product_id = #{productId} AND del_flag = 0 AND status = 1 " +

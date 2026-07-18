@@ -2,16 +2,16 @@ package com.cartethyia.easyorange.admin.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminReviewDeleteRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminReviewQueryRequest;
-import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReviewResponse;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminRatingDeleteRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminRatingQueryRequest;
+import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRatingResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReviewDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReviewMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,24 +32,24 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("AdminReviewService 单元测试")
-class AdminReviewServiceTest {
+@DisplayName("AdminRatingService 单元测试")
+class AdminRatingServiceTest {
 
     @Mock
-    private ProductReviewMapper reviewMapper;
+    private ProductRatingMapper reviewMapper;
 
     @Mock
     private BatchQueryUtil batchQueryUtil;
 
     @InjectMocks
-    private AdminReviewService reviewService;
+    private AdminRatingService reviewService;
 
     private static final String REVIEW_ID = "100";
     private static final String PRODUCT_ID = "200";
     private static final String USER_ID = "300";
 
-    private ProductReviewDO createReview(String id, String productId, String userId, Integer rating, String content, Integer delFlag) {
-        return ProductReviewDO.builder()
+    private ProductRatingDO createReview(String id, String productId, String userId, Integer rating, String content, Integer delFlag) {
+        return ProductRatingDO.builder()
             .id(id)
             .productId(productId)
             .userId(userId)
@@ -95,25 +95,25 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("分页查询返回评价列表")
         void listReviews_returnsPagedResults() {
-            AdminReviewQueryRequest request = new AdminReviewQueryRequest();
+            AdminRatingQueryRequest request = new AdminRatingQueryRequest();
             request.setPageNum(1);
             request.setPageSize(10);
 
-            ProductReviewDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 5, "好商品", 0);
-            Page<ProductReviewDO> pageResult = new Page<>(1, 10, 1);
+            ProductRatingDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 5, "好商品", 0);
+            Page<ProductRatingDO> pageResult = new Page<>(1, 10, 1);
             pageResult.setRecords(List.of(review));
 
             when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(pageResult);
             when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, createProduct(PRODUCT_ID, "测试商品")));
             when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
 
-            PageResult<AdminReviewResponse> result = reviewService.listReviews(request);
+            PageResult<AdminRatingResponse> result = reviewService.listReviews(request);
 
             assertThat(result).isNotNull();
             assertThat(result.records()).hasSize(1);
             assertThat(result.total()).isEqualTo(1);
 
-            AdminReviewResponse vo = result.records().get(0);
+            AdminRatingResponse vo = result.records().get(0);
             assertThat(vo.reviewId()).isEqualTo(REVIEW_ID);
             assertThat(vo.productName()).isEqualTo("测试商品");
             assertThat(vo.username()).isEqualTo("测试用户");
@@ -122,16 +122,16 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("空结果返回空分页")
         void listReviews_emptyResult_returnsEmptyPage() {
-            AdminReviewQueryRequest request = new AdminReviewQueryRequest();
+            AdminRatingQueryRequest request = new AdminRatingQueryRequest();
             request.setPageNum(1);
             request.setPageSize(20);
 
-            Page<ProductReviewDO> emptyPage = new Page<>(1, 20, 0);
+            Page<ProductRatingDO> emptyPage = new Page<>(1, 20, 0);
             emptyPage.setRecords(List.of());
 
             when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(emptyPage);
 
-            PageResult<AdminReviewResponse> result = reviewService.listReviews(request);
+            PageResult<AdminRatingResponse> result = reviewService.listReviews(request);
 
             assertThat(result).isNotNull();
             assertThat(result.records()).isEmpty();
@@ -146,13 +146,13 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("查询评价详情成功")
         void getReviewDetail_returnsDetail() {
-            ProductReviewDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 4, "还不错", 0);
+            ProductRatingDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 4, "还不错", 0);
 
             when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
             when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, createProduct(PRODUCT_ID, "测试商品")));
             when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
 
-            AdminReviewResponse result = reviewService.getReviewDetail(REVIEW_ID);
+            AdminRatingResponse result = reviewService.getReviewDetail(REVIEW_ID);
 
             assertThat(result).isNotNull();
             assertThat(result.reviewId()).isEqualTo(REVIEW_ID);
@@ -172,7 +172,7 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("已删除评价抛出异常")
         void getReviewDetail_deleted_throwsException() {
-            ProductReviewDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 3, "已删除", 2);
+            ProductRatingDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 3, "已删除", 2);
             when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
 
             assertThatThrownBy(() -> reviewService.getReviewDetail(REVIEW_ID))
@@ -188,8 +188,8 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("删除评价成功")
         void deleteReview_success() {
-            ProductReviewDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 3, "要删除的", 0);
-            AdminReviewDeleteRequest request = new AdminReviewDeleteRequest();
+            ProductRatingDO review = createReview(REVIEW_ID, PRODUCT_ID, USER_ID, 3, "要删除的", 0);
+            AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
             request.setReason("违规内容");
 
             when(reviewMapper.selectById(REVIEW_ID)).thenReturn(review);
@@ -207,7 +207,7 @@ class AdminReviewServiceTest {
         @Test
         @DisplayName("删除不存在的评价抛出异常")
         void deleteReview_notFound_throwsException() {
-            AdminReviewDeleteRequest request = new AdminReviewDeleteRequest();
+            AdminRatingDeleteRequest request = new AdminRatingDeleteRequest();
             request.setReason("test");
 
             when(reviewMapper.selectById("999")).thenReturn(null);

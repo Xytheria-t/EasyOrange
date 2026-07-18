@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '../api/adminApi';
-import type { AdminReview, AdminReviewDeleteRequest, AdminReviewQuery } from '../types/admin';
+import type { AdminRating, AdminRatingDeleteRequest, AdminRatingQuery } from '../types/admin';
 
-export const ADMIN_REVIEW_KEYS = {
+export const ADMIN_RATING_KEYS = {
     all: ['admin', 'reviews'] as const,
-    lists: () => [...ADMIN_REVIEW_KEYS.all, 'list'] as const,
-    list: (params: AdminReviewQuery) =>
+    lists: () => [...ADMIN_RATING_KEYS.all, 'list'] as const,
+    list: (params: AdminRatingQuery) =>
         [
-            ...ADMIN_REVIEW_KEYS.lists(),
+            ...ADMIN_RATING_KEYS.lists(),
             params.pageNum,
             params.pageSize,
             params.productId,
@@ -18,13 +18,13 @@ export const ADMIN_REVIEW_KEYS = {
             params.startTime,
             params.endTime,
         ] as const,
-    details: () => [...ADMIN_REVIEW_KEYS.all, 'detail'] as const,
-    detail: (id: string) => [...ADMIN_REVIEW_KEYS.details(), id] as const,
+    details: () => [...ADMIN_RATING_KEYS.all, 'detail'] as const,
+    detail: (id: string) => [...ADMIN_RATING_KEYS.details(), id] as const,
 };
 
-export function useAdminReviews(params: AdminReviewQuery) {
+export function useAdminRatings(params: AdminRatingQuery) {
     return useQuery({
-        queryKey: ADMIN_REVIEW_KEYS.list(params),
+        queryKey: ADMIN_RATING_KEYS.list(params),
         queryFn: async () => {
             const response = await adminApi.getReviews(params);
             return response.data;
@@ -35,9 +35,9 @@ export function useAdminReviews(params: AdminReviewQuery) {
     });
 }
 
-export function useAdminReviewDetail(id: string) {
-    return useQuery<AdminReview>({
-        queryKey: ADMIN_REVIEW_KEYS.detail(id),
+export function useAdminRatingDetail(id: string) {
+    return useQuery<AdminRating>({
+        queryKey: ADMIN_RATING_KEYS.detail(id),
         queryFn: async () => {
             const response = await adminApi.getReviewById(id);
             return response.data;
@@ -49,16 +49,16 @@ export function useAdminReviewDetail(id: string) {
     });
 }
 
-export function useDeleteReview() {
+export function useDeleteRating() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: AdminReviewDeleteRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: AdminRatingDeleteRequest }) => {
             const response = await adminApi.deleteReview(id, data);
             return response.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ADMIN_REVIEW_KEYS.all });
+            queryClient.invalidateQueries({ queryKey: ADMIN_RATING_KEYS.all });
         },
     });
 }

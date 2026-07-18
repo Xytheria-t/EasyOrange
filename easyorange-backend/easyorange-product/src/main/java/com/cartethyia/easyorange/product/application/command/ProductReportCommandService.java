@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.application.command;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
 import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
@@ -14,6 +15,7 @@ public class ProductReportCommandService {
 
     private final ProductReportDomainService productReportDomainService;
     private final ProductReportRepository productReportRepository;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public void handleReport(String productId, String reporterId, String reason, Integer reasonType) {
@@ -28,7 +30,10 @@ public class ProductReportCommandService {
 
     @Transactional(rollbackFor = Exception.class)
     public void handleApprove(String reportId) {
-        productReportDomainService.processReport(reportId, true);
+        var event = productReportDomainService.processReport(reportId, true);
+        if (event != null) {
+            domainEventPublisher.publish(event);
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

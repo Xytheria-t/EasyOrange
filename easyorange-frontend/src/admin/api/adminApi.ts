@@ -9,9 +9,9 @@ import type {
     AdminProductQuery,
     AdminReport,
     AdminReportQuery,
-    AdminReview,
-    AdminReviewDeleteRequest,
-    AdminReviewQuery,
+    AdminRating,
+    AdminRatingDeleteRequest,
+    AdminRatingQuery,
     AdminUser,
     AdminUserQuery,
     AiReviewResult,
@@ -248,19 +248,19 @@ export const adminApi = {
         });
     },
 
-    // ==================== Review Management ====================
+    // ==================== Rating Management ====================
 
-    getReviews(params: AdminReviewQuery) {
-        return request<PageResult<AdminReview>>(`${ADMIN_API_PREFIX}/reviews`, {
+    getReviews(params: AdminRatingQuery) {
+        return request<PageResult<AdminRating>>(`${ADMIN_API_PREFIX}/reviews`, {
             params: { ...params },
         });
     },
 
     getReviewById(id: string) {
-        return request<AdminReview>(`${ADMIN_API_PREFIX}/reviews/${id}`);
+        return request<AdminRating>(`${ADMIN_API_PREFIX}/reviews/${id}`);
     },
 
-    deleteReview(id: string, data: AdminReviewDeleteRequest) {
+    deleteReview(id: string, data: AdminRatingDeleteRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/reviews/${id}`, {
             method: 'DELETE',
             body: data,

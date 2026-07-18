@@ -5,7 +5,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 
 @Builder
-public record AdminReviewResponse(
+public record AdminRatingResponse(
     String reviewId,
     String productId,
     String productName,

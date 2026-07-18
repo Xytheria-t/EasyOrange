@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.request;
 
-import com.cartethyia.easyorange.product.application.command.ProductReviewCommandService.CreateProductReviewCommand;
+import com.cartethyia.easyorange.product.application.command.ProductRatingCommandService.CreateProductRatingCommand;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateReviewRequest {
+public class CreateRatingRequest {
 
     @NotNull(message = "评分不能为空")
     @Min(value = 1, message = "评分最小为1")
@@ -26,7 +26,7 @@ public class CreateReviewRequest {
     @Size(max = 2000, message = "评价内容最多2000字")
     private String content;
 
-    public CreateProductReviewCommand toCommand(String productId) {
-        return new CreateProductReviewCommand(productId, rating, content);
+    public CreateProductRatingCommand toCommand(String productId) {
+        return new CreateProductRatingCommand(productId, rating, content);
     }
 }
