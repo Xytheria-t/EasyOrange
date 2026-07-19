@@ -42,15 +42,15 @@ public class RedisBitmapBloomFilter implements BloomFilter {
         return s;
     }
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final long bitSize;
     private final int numHashFunctions;
 
-    public RedisBitmapBloomFilter(RedisTemplate<String, Object> redisTemplate) {
+    public RedisBitmapBloomFilter(RedisTemplate<Object, Object> redisTemplate) {
         this(redisTemplate, 1_000_000L, 0.01);
     }
 
-    public RedisBitmapBloomFilter(RedisTemplate<String, Object> redisTemplate, long expectedInsertions, double fpp) {
+    public RedisBitmapBloomFilter(RedisTemplate<Object, Object> redisTemplate, long expectedInsertions, double fpp) {
         this.redisTemplate = redisTemplate;
         this.bitSize = optimalBitSize(expectedInsertions, fpp);
         this.numHashFunctions = optimalHashFunctions(expectedInsertions, this.bitSize);

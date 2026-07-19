@@ -1,8 +1,10 @@
-package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject;
+package com.cartethyia.easyorange.product.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,9 +30,9 @@ public class ProductDO extends BaseDO {
     private Integer stock;
     @Version
     private Integer version;
-    private Integer status;
+    private ProductStatus status;
     private Integer viewCount;
-    private Integer conditionLevel;
+    private ConditionLevel conditionLevel;
     private String location;
     private String contactMethod;
     private String tags;

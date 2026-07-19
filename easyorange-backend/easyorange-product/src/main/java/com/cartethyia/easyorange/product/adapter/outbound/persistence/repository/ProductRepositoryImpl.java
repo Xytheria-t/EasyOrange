@@ -2,15 +2,13 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.repositor
 
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
-import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
-import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.converter.ProductConverter;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
@@ -72,17 +70,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
         updateProductDetail(product);
         updateImagesDifferentially(product);
-    }
-
-    @Override
-    public void updateStatus(ProductId id, ProductStatus status) {
-        ProductDO productDO = productMapper.selectById(id.value());
-        if (productDO == null) {
-            throw new ProductNotFoundException(id);
-        }
-        if (productMapper.updateStatus(id.value(), status.getCode(), productDO.getVersion()) == 0) {
-            throw new ConcurrentUpdateException("商品状态更新冲突: id=" + id.value());
-        }
     }
 
     @Override

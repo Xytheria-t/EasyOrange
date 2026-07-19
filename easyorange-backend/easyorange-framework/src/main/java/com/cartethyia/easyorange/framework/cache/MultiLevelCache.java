@@ -8,20 +8,20 @@ import java.util.concurrent.TimeUnit;
 public class MultiLevelCache {
 
     private final Cache<String, Object> l1Cache;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final String l2KeyPrefix;
     private final long l2DefaultTimeout;
     private final TimeUnit l2DefaultUnit;
 
     public MultiLevelCache(
             Cache<String, Object> l1Cache,
-            RedisTemplate<String, Object> redisTemplate) {
+            RedisTemplate<Object, Object> redisTemplate) {
         this(l1Cache, redisTemplate, "mlc:", 30, TimeUnit.MINUTES);
     }
 
     public MultiLevelCache(
             Cache<String, Object> l1Cache,
-            RedisTemplate<String, Object> redisTemplate,
+            RedisTemplate<Object, Object> redisTemplate,
             String l2KeyPrefix,
             long l2DefaultTimeout,
             TimeUnit l2DefaultUnit) {

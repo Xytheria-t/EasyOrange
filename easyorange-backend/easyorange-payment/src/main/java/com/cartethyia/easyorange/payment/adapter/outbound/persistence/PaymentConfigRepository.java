@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentConfigMapper;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentConfigPO;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentConfigDO;
 import com.cartethyia.easyorange.payment.constant.PaymentConstant;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentConfigResponse;
 import org.springframework.stereotype.Repository;
@@ -11,25 +11,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Repository
-public class PaymentConfigRepository extends BaseRepository<PaymentConfigMapper, PaymentConfigPO> {
+public class PaymentConfigRepository extends BaseRepository<PaymentConfigMapper, PaymentConfigDO> {
 
     public PaymentConfigRepository(PaymentConfigMapper paymentConfigMapper) {
         super(paymentConfigMapper);
     }
 
-    public PaymentConfigPO getByChannelCode(String channelCode) {
+    public PaymentConfigDO getByChannelCode(String channelCode) {
         return lambdaQuery()
-                .eq(PaymentConfigPO::getChannelCode, channelCode)
-                .eq(PaymentConfigPO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
+                .eq(PaymentConfigDO::getChannelCode, channelCode)
+                .eq(PaymentConfigDO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
                 .one();
     }
 
     public List<PaymentConfigResponse> getEnabledChannels() {
         return lambdaQuery()
-                        .eq(PaymentConfigPO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
-                        .select(PaymentConfigPO::getId, PaymentConfigPO::getChannelCode,
-                                PaymentConfigPO::getChannelName, PaymentConfigPO::getSandbox,
-                                PaymentConfigPO::getStatus)
+                        .eq(PaymentConfigDO::getStatus, PaymentConstant.CONFIG_STATUS_ENABLED)
+                        .select(PaymentConfigDO::getId, PaymentConfigDO::getChannelCode,
+                                PaymentConfigDO::getChannelName, PaymentConfigDO::getSandbox,
+                                PaymentConfigDO::getStatus)
                         .list()
                 .stream()
                 .map(config -> PaymentConfigResponse.builder()
@@ -43,7 +43,7 @@ public class PaymentConfigRepository extends BaseRepository<PaymentConfigMapper,
     }
 
     public boolean isSandbox(String channelCode) {
-        PaymentConfigPO config = getByChannelCode(channelCode);
+        PaymentConfigDO config = getByChannelCode(channelCode);
         return config != null && Boolean.TRUE.equals(config.getSandbox());
     }
 }

@@ -9,6 +9,8 @@ import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Objects;
+
 @RequiredArgsConstructor
 public class AuthenticationService {
 
@@ -62,6 +64,10 @@ public class AuthenticationService {
     // ========== 密码管理 ==========
 
     public void changePassword(User user, String oldPassword, String newPassword) {
+        Objects.requireNonNull(user, "用户不能为空");
+        Objects.requireNonNull(oldPassword, "旧密码不能为空");
+        Objects.requireNonNull(newPassword, "新密码不能为空");
+
         if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
@@ -70,6 +76,7 @@ public class AuthenticationService {
     }
 
     public void resetPassword(String phone, String verifyCode, String newPassword) {
+        Objects.requireNonNull(newPassword, "新密码不能为空");
         verifyCodeOrThrow(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone)

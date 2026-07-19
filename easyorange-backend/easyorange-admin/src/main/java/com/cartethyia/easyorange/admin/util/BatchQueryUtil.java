@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.admin.util;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,10 +22,10 @@ public class BatchQueryUtil {
     private final UserMapper userMapper;
     private final ProductMapper productMapper;
 
-    public Map<String, UserEntity> batchGetUsers(List<String> userIds) {
+    public Map<String, UserDO> batchGetUsers(List<String> userIds) {
         if (userIds.isEmpty()) return Map.of();
         return userMapper.selectBatchIds(userIds).stream()
-                .collect(Collectors.toMap(UserEntity::getId, u -> u, (a, b) -> a));
+                .collect(Collectors.toMap(UserDO::getId, u -> u, (a, b) -> a));
     }
 
     public Map<String, ProductDO> batchGetProducts(List<String> productIds) {

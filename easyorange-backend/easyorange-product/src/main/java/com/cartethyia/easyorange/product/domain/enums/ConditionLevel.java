@@ -3,8 +3,11 @@ package com.cartethyia.easyorange.product.domain.enums;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import jakarta.annotation.Nullable;
-import java.util.Arrays;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@Getter
+@AllArgsConstructor
 public enum ConditionLevel {
 
     NEW(1, "全新"),
@@ -12,39 +15,20 @@ public enum ConditionLevel {
     GOOD(3, "轻微使用痕迹"),
     FAIR(4, "明显使用痕迹");
 
-    private final Integer code;
+    @JsonValue
+    private final int code;
     private final String desc;
 
-    ConditionLevel(Integer code, String desc) {
-        this.code = code;
-        this.desc = desc;
-    }
-
-    @JsonValue
-    public Integer getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
-    }
-
-    /**
-     * Resolves the enum value from its integer code.
-     *
-     * @param code the integer code (may be {@code null})
-     * @return the matching enum value, or {@code null} if code is null or not recognized
-     */
     @Nullable
     @JsonCreator
     public static ConditionLevel fromCode(Integer code) {
-        if (code == null) {
-            return null;
-        }
-        return Arrays.stream(values())
-                .filter(level -> level.code.equals(code))
-                .findFirst()
-                .orElse(null);
+        return switch (code) {
+            case 1 -> NEW;
+            case 2 -> LIKE_NEW;
+            case 3 -> GOOD;
+            case 4 -> FAIR;
+            case null, default -> null;
+        };
     }
 
     public static String getDescByCode(Integer code) {

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+import java.util.List;
+
 @Getter
 @AllArgsConstructor
 public enum UserType {
@@ -30,5 +32,13 @@ public enum UserType {
      */
     public boolean isAdmin() {
         return this == ADMIN || this == MANAGER;
+    }
+
+    /**
+     * 返回该用户类型的默认 Spring Security 角色列表。
+     * <p>管理员额外包含 ROLE_ADMIN，普通用户仅 ROLE_USER。</p>
+     */
+    public List<String> getDefaultRoles() {
+        return isAdmin() ? List.of("ROLE_ADMIN", "ROLE_USER") : List.of("ROLE_USER");
     }
 }

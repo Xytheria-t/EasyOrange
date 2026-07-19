@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.payment.adapter.outbound.persistence.po;
+package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_idempotency_key")
-public class IdempotencyKeyPO extends BaseDO {
+public class IdempotencyKeyDO extends BaseDO {
 
     private String idempotencyKey;
 

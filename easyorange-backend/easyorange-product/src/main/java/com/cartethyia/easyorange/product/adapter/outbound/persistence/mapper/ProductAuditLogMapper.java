@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductAuditLogDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

@@ -29,10 +29,10 @@ import static org.mockito.Mockito.*;
 class AiRateLimitInterceptorTest {
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, Object> valueOps;
+    private ValueOperations<Object, Object> valueOps;
 
     @Mock
     private AiProperties aiProperties;

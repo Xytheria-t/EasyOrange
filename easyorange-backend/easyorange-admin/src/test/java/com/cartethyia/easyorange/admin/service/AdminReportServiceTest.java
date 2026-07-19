@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportSt
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -22,13 +22,13 @@ import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,8 +95,8 @@ class AdminReportServiceTest {
                 LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), 1);
     }
 
-    private UserEntity createUser(String id, String name) {
-        return UserEntity.builder()
+    private UserDO createUser(String id, String name) {
+        return UserDO.builder()
                 .id(id)
                 .username(name)
                 .nickName(name)
@@ -256,13 +256,13 @@ class AdminReportServiceTest {
             ProductReport report = createPendingReport();
             when(productReportRepository.findById(REPORT_ID)).thenReturn(report);
 
-            Product product = Product.reconstitute(
-                    ProductId.of(PRODUCT_ID), SellerId.of("1"), CategoryId.of("1"),
-                    ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
-                    StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
-                    0, null, null, null, null, null, TagSet.empty(), null, null,
-                    LocalDateTime.now(), LocalDateTime.now()
-            );
+            Product product = Product.builder()
+                    .id(ProductId.of(PRODUCT_ID)).sellerId(SellerId.of("1")).categoryId(CategoryId.of("1"))
+                    .title(ProductTitle.of("测试商品")).price(Money.of(new BigDecimal("99.99")))
+                    .stock(StockQuantity.of(10)).version(Version.INITIAL).status(ProductStatus.ONLINE)
+                    .tags(TagSet.empty())
+                    .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+                    .build();
             when(productRepository.findById(ProductId.of(PRODUCT_ID)))
                     .thenReturn(Optional.of(product));
 

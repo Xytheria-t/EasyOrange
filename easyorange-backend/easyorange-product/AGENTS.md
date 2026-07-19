@@ -18,7 +18,7 @@ product/
 │   └── outbound/
 │       ├── persistence/                 # 持久化
 │       │   ├── converter/ProductConverter.java
-│       │   ├── dataobject/              # DO: ProductDO, ProductDetailDO, CategoryDO, etc.
+│       │   ├── persistence/             # DO: ProductDO, ProductDetailDO, CategoryDO, etc.
 │       │   ├── mapper/                  # MyBatis Mapper
 │       │   ├── repository/              # Repository 实现
 │       │   └── ProductSnapshotPortImpl.java

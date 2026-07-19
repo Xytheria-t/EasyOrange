@@ -82,13 +82,13 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private final RateLimitFilterProperties properties;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final LocalRateLimiter localRateLimiter;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
 
     public RateLimitFilter(RateLimitFilterProperties properties,
-                           RedisTemplate<String, Object> redisTemplate,
+                           RedisTemplate<Object, Object> redisTemplate,
                            LocalRateLimiter localRateLimiter,
                            ObjectMapper objectMapper,
                            ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
@@ -183,7 +183,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String identifier = RequestUtil.getClientIp(request);
         String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
-            List<String> keys = List.of(key);
+            List<Object> keys = List.of((Object) key);
             Long current = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys,
                     rule.getMaxRequests(), rule.getWindowSeconds());
 

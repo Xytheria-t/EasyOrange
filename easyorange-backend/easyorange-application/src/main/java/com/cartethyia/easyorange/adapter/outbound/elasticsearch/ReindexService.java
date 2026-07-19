@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import lombok.RequiredArgsConstructor;

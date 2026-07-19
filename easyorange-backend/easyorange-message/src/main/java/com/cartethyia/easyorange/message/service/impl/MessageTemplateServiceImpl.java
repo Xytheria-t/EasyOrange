@@ -27,7 +27,7 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     private static final String TEMPLATE_CACHE_KEY = "eo:message:templates";
 
     private final MessageTemplateRepository messageTemplateRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     @Override
     public MessageTemplateAggregate getByCode(String templateCode) {

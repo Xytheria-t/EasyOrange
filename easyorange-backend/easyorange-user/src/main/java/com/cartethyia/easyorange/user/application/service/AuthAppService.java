@@ -13,7 +13,6 @@ import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,11 +37,9 @@ public class AuthAppService {
         User user = authenticationService.authenticate(credential);
         User loggedIn = user.recordLogin(RequestUtil.getClientIp());
         userRepository.update(loggedIn);
-        List<String> authorities = loggedIn.getUserType().isAdmin()
-                ? List.of("ROLE_ADMIN", "ROLE_USER")
-                : List.of("ROLE_USER");
-        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), authorities);
-        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), authorities);
+        var roles = loggedIn.getUserType().getDefaultRoles();
+        String accessToken = tokenService.createAccessToken(user.getId(), user.getUsername(), roles);
+        String refreshToken = tokenService.createRefreshToken(user.getId(), user.getUsername(), roles);
         return new LoginContext(user, accessToken, refreshToken);
     }
 

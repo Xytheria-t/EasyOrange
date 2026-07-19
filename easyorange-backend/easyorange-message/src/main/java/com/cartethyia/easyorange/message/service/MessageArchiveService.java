@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -53,7 +53,7 @@ public class MessageArchiveService {
             int batchCount = 0;
 
             while (true) {
-                List<Message> messagesToArchive = selectMessagesBefore(archiveDate);
+                List<MessageDO> messagesToArchive = selectMessagesBefore(archiveDate);
                 if (messagesToArchive.isEmpty()) {
                     break;
                 }
@@ -63,7 +63,7 @@ public class MessageArchiveService {
                 batchCount++;
 
                 List<String> idsToDelete = messagesToArchive.stream()
-                        .map(Message::getId)
+                        .map(MessageDO::getId)
                         .toList();
                 deleteByIds(idsToDelete);
 
@@ -78,16 +78,16 @@ public class MessageArchiveService {
         }
     }
 
-    private List<Message> selectMessagesBefore(LocalDateTime targetDate) {
+    private List<MessageDO> selectMessagesBefore(LocalDateTime targetDate) {
         return ChainWrappers.lambdaQueryChain(messageMapper)
-                .lt(Message::getCreateTime, targetDate)
-                .eq(Message::getDelFlag, 0)
-                .orderByAsc(Message::getCreateTime)
+                .lt(MessageDO::getCreateTime, targetDate)
+                .eq(MessageDO::getDelFlag, 0)
+                .orderByAsc(MessageDO::getCreateTime)
                 .last("LIMIT " + BATCH_SIZE)
                 .list();
     }
 
-    private void batchInsertArchive(List<Message> messages) {
+    private void batchInsertArchive(List<MessageDO> messages) {
         if (messages.isEmpty()) {
             return;
         }
@@ -131,7 +131,7 @@ public class MessageArchiveService {
 
     private int deleteExpiredBatch(LocalDateTime expireDate) {
         return ChainWrappers.lambdaUpdateChain(messageMapper)
-                .lt(Message::getCreateTime, expireDate)
+                .lt(MessageDO::getCreateTime, expireDate)
                 .last("LIMIT " + BATCH_SIZE)
                 .remove() ? 1 : 0;
     }

@@ -31,10 +31,10 @@ import static org.mockito.Mockito.*;
 class OrderCacheServiceTest {
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, Object> valueOperations;
+    private ValueOperations<Object, Object> valueOperations;
 
     private RedisOrderCacheAdapter orderCachePort;
 

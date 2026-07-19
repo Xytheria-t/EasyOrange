@@ -194,10 +194,9 @@ describe('MyProductsPage', () => {
 
         renderPage();
 
-        const user = userEvent.setup();
-        const viewBtn = screen.getByText('查看');
-        await user.click(viewBtn);
-        expect(mockNavigate).toHaveBeenCalledWith('/products/2');
+        // "查看" button uses <Button asChild><Link to={to}>, so check href instead of navigate mock
+        const viewLink = screen.getByRole('link', { name: '查看' });
+        expect(viewLink).toHaveAttribute('href', '/products/2');
     });
 
     it('navigates to publish page when "发布新商品" button is clicked', async () => {

@@ -25,10 +25,10 @@ import java.util.concurrent.TimeUnit;
 @ConditionalOnClass(RedisTemplate.class)
 public class RedisIdempotencyService implements IdempotencyService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final IdempotencyProperties properties;
 
-    public RedisIdempotencyService(RedisTemplate<String, Object> redisTemplate, IdempotencyProperties properties) {
+    public RedisIdempotencyService(RedisTemplate<Object, Object> redisTemplate, IdempotencyProperties properties) {
         this.redisTemplate = redisTemplate;
         this.properties = properties;
     }

@@ -9,11 +9,11 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRat
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,7 @@ public class AdminRatingService {
         }
 
         Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reviewPage.getRecords().stream().map(ProductRatingDO::getProductId).distinct().toList());
-        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(reviewPage.getRecords().stream().map(ProductRatingDO::getUserId).distinct().toList());
+        Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(reviewPage.getRecords().stream().map(ProductRatingDO::getUserId).distinct().toList());
 
         List<AdminRatingResponse> records = reviewPage.getRecords().stream()
             .map(r -> toAdminRatingResponse(r, productMap, userMap))
@@ -64,7 +64,7 @@ public class AdminRatingService {
         }
 
         Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(review.getProductId()));
-        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(review.getUserId()));
+        Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(List.of(review.getUserId()));
 
         return toAdminRatingResponse(review, productMap, userMap);
     }
@@ -116,10 +116,10 @@ public class AdminRatingService {
     private AdminRatingResponse toAdminRatingResponse(
         ProductRatingDO review,
         Map<String, ProductDO> productMap,
-        Map<String, UserEntity> userMap
+        Map<String, UserDO> userMap
     ) {
         ProductDO product = productMap.get(review.getProductId());
-        UserEntity user = userMap.get(review.getUserId());
+        UserDO user = userMap.get(review.getUserId());
 
         return AdminRatingResponse.builder()
             .reviewId(review.getId())
@@ -138,7 +138,7 @@ public class AdminRatingService {
             .build();
     }
 
-    private String resolveUsername(UserEntity user) {
+    private String resolveUsername(UserDO user) {
         if (user == null) {
             return null;
         }

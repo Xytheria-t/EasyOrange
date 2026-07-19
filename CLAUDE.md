@@ -133,7 +133,7 @@ AI 规则存放在 `.trae/rules/` 目录，根据以下条件自动激活：
 - **管理端路由架构**: `admin/*` 路由必须在 `MinimalLayout` 外部独立渲染（见 `src/routes/index.tsx`），否则 C 端 Header/导航栏会在管理页面显示
 - **UUID v7 ID**: 全库 ID 使用 UUID v7 (RFC 9562, String)，已彻底移除 Snowflake 备选代码。后端通过 `IdGenerator` 接口（`UuidV7IdGenerator` 为 `@Primary` 实现）生成 36 位 UUID 字符串。`BaseDO.id` 字段类型为 `String`，`@TableId(type = IdType.INPUT)`。前端 TypeScript 中所有实体 ID 字段类型保持 `string`（无需更改，JS 始终兼容字符串）。DDL 在 `V1__init_schema.sql` 直接定义 `VARCHAR(36)`。
 - **React Query 缓存失效**: mutation 后 `invalidateQueries` 必须使用 `ORDER_KEYS.all`（`['orders']`）前缀，确保能匹配 `myOrders` / `soldOrders` / `detail` 等所有查询。使用 `ORDER_KEYS.lists()`（`['orders', 'list']`）会导致 myOrders/soldOrders 缓存无法失效
-- **管理员角色判断（前端）**: 前端管理员判断在 `useAdminGuard.ts` 中通过 `user.userType`（`'00'` = 超级管理员, `'02'` = 管理员）判定，用于 UI 权限展示。后端在 `AuthAppService.login()` 中通过 `UserType.isAdmin()` 决议角色写入 JWT，资源服务器直接读取 `"authorities"` claim，不依赖前端 clientType 判断
+- **管理员角色判断（前端）**: 前端管理员判断在 `useAdminGuard.ts` 中通过 `user.userType`（`'00'` = 超级管理员, `'02'` = 管理员）判定，用于 UI 权限展示。后端通过 `UserType.getDefaultRoles()`（在 `AuthAppService.login()` 中调用）将角色写入 JWT 的 `"authorities"` claim，资源服务器直接读取该 claim，不依赖前端 clientType 判断
 - **查询方法只读事务**: 所有 Service 类中的纯查询/读取方法（find/get/list/query/count/check/is* 等命名）**必须**标注 `@Transactional(readOnly = true)`。写操作方法使用 `@Transactional(rollbackFor = Exception.class)`。遗漏只读注解会导致 Hibernate/MyBatis 做不必要的脏检查和 flush，影响性能
 - **管理端页面布局模式**: `src/admin/pages/` 下所有页面**必须**使用以下三层结构，否则内容区会被裁切或背景不随内容滚动：
   1. 根容器: `position: relative, minHeight: 'calc(100vh - 80px)'`

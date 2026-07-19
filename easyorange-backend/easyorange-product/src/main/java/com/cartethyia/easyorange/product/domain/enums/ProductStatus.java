@@ -1,10 +1,14 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
 import jakarta.annotation.Nullable;
-import java.util.Arrays;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 import java.util.Map;
 import java.util.Set;
 
+@Getter
+@AllArgsConstructor
 public enum ProductStatus {
 
     DRAFT(0, "草稿"),
@@ -24,31 +28,20 @@ public enum ProductStatus {
         OFFLINE, Set.of(ONLINE)
     );
 
-    private final Integer code;
+    private final int code;
     private final String desc;
-
-    ProductStatus(Integer code, String desc) {
-        this.code = code;
-        this.desc = desc;
-    }
-
-    public Integer getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
-    }
 
     @Nullable
     public static ProductStatus fromCode(Integer code) {
-        if (code == null) {
-            return null;
-        }
-        return Arrays.stream(values())
-                .filter(v -> v.code.equals(code))
-                .findFirst()
-                .orElse(null);
+        return switch (code) {
+            case 0 -> DRAFT;
+            case 1 -> ONLINE;
+            case 2 -> SOLD;
+            case 3 -> OFFLINE;
+            case 4 -> PENDING_REVIEW;
+            case 5 -> REJECTED;
+            case null, default -> null;
+        };
     }
 
     public static String getDescByCode(Integer code) {

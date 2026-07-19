@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UserRoleRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ResetPasswordResponse;
 import com.cartethyia.easyorange.framework.auth.TokenService;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
@@ -33,7 +33,7 @@ public class AdminUserSecurityService {
 
     @Transactional(rollbackFor = Exception.class)
     public void unlockUser(String id) {
-        UserEntity entity = findUserByIdOrThrow(id);
+        UserDO entity = findUserByIdOrThrow(id);
         if (entity.getStatus() != UserStatus.LOCKED && entity.getStatus() != UserStatus.DISABLED) {
             throw BusinessException.of("该用户未被锁定或禁用");
         }
@@ -43,7 +43,7 @@ public class AdminUserSecurityService {
 
     @Transactional(rollbackFor = Exception.class)
     public ResetPasswordResponse resetPassword(String id) {
-        UserEntity entity = findUserByIdOrThrow(id);
+        UserDO entity = findUserByIdOrThrow(id);
         String newPassword = generateRandomPassword();
         entity.setPassword(passwordEncoder.encode(newPassword));
         userMapper.updateById(entity);
@@ -61,15 +61,15 @@ public class AdminUserSecurityService {
 
     @Transactional(rollbackFor = Exception.class)
     public void changeUserRole(String id, UserRoleRequest request) {
-        UserEntity entity = findUserByIdOrThrow(id);
+        UserDO entity = findUserByIdOrThrow(id);
         UserType newRole = UserType.fromCode(request.getRole());
         if (newRole == entity.getUserType()) {
             throw BusinessException.of("用户已是该角色");
         }
         if (newRole == UserType.ADMIN) {
             long adminCount = ChainWrappers.lambdaQueryChain(userMapper)
-                .eq(UserEntity::getUserType, UserType.ADMIN)
-                .eq(UserEntity::getDelFlag, 0)
+                .eq(UserDO::getUserType, UserType.ADMIN)
+                .eq(UserDO::getDelFlag, 0)
                 .count();
             if (adminCount <= 1 && entity.getUserType() == UserType.ADMIN) {
                 throw BusinessException.of("不能修改最后一个管理员的角色");
@@ -79,8 +79,8 @@ public class AdminUserSecurityService {
         userMapper.updateById(entity);
     }
 
-    private UserEntity findUserByIdOrThrow(String id) {
-        UserEntity entity = userMapper.selectById(id);
+    private UserDO findUserByIdOrThrow(String id) {
+        UserDO entity = userMapper.selectById(id);
         if (entity == null || entity.getDelFlag() != 0) {
             throw BusinessException.of("用户不存在");
         }

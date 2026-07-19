@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject;
+package com.cartethyia.easyorange.product.adapter.outbound.persistence;
 
 import lombok.Data;
 

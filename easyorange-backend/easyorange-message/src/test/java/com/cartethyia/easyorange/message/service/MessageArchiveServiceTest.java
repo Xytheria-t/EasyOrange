@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
-import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -76,10 +76,10 @@ class MessageArchiveServiceTest {
         @Test
         @DisplayName("有待归档消息时归档并删除原记录")
         void archiveOldMessages_hasMessages_archivesAndDeletes() {
-            Message msg1 = Message.builder().id("1").senderId("1").receiverId("2").type(1)
+            MessageDO msg1 = MessageDO.builder().id("1").senderId("1").receiverId("2").type(1)
                     .title("title").content("content").isRead(0)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
-            Message msg2 = Message.builder().id("2").senderId("1").receiverId("2").type(1)
+            MessageDO msg2 = MessageDO.builder().id("2").senderId("1").receiverId("2").type(1)
                     .title("title2").content("content2").isRead(1)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1, msg2), List.of());
@@ -106,10 +106,10 @@ class MessageArchiveServiceTest {
         @Test
         @DisplayName("多批次归档时循环处理")
         void archiveOldMessages_multipleBatches_processesAll() {
-            Message msg1 = Message.builder().id("1").senderId("1").receiverId("2").type(1)
+            MessageDO msg1 = MessageDO.builder().id("1").senderId("1").receiverId("2").type(1)
                     .title("t").content("c").isRead(0)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
-            Message msg2 = Message.builder().id("2").senderId("1").receiverId("2").type(1)
+            MessageDO msg2 = MessageDO.builder().id("2").senderId("1").receiverId("2").type(1)
                     .title("t2").content("c2").isRead(1)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1), List.of(msg2), List.of());

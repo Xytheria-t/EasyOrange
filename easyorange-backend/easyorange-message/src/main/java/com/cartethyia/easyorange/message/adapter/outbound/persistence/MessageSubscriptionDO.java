@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.entity;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
@@ -12,7 +12,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_message_subscription")
-public class MessageSubscription extends BaseDO {
+public class MessageSubscriptionDO extends BaseDO {
 
     private String userId;
     private String messageType;

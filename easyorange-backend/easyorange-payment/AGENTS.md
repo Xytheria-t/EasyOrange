@@ -25,7 +25,7 @@ payment/
 │           ├── converter/
 │           │   └── PaymentConverter.java
 │           ├── mapper/                      # PaymentMapper, IdempotencyKeyMapper, PaymentConfigMapper
-│           └── po/                          # PaymentPO, IdempotencyKeyPO, PaymentConfigPO
+│           └── persistence/                # PaymentDO, IdempotencyKeyDO, PaymentConfigDO
 ├── application/
 │   ├── command/                             # 命令 (CQRS Write)
 │   │   ├── PaymentCommandHandler.java
@@ -146,5 +146,5 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 
 - 支付回调必须验签 (`CallbackSignatureVerifierPort`)
 - 金额使用 `PaymentAmount` 值对象，避免浮点精度问题
-- 版本号乐观锁（`PaymentPO` 上的 `@Version` 注解 + 聚合根内手动递增 `int version`）
+- 版本号乐观锁（`PaymentDO` 上的 `@Version` 注解 + 聚合根内手动递增 `int version`）
 - 幂等保护防止重复支付/退款

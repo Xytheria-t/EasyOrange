@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
 
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
 import org.junit.jupiter.api.BeforeEach;

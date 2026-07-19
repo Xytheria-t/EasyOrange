@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class ProductViewCountAppService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final ProductMapper productMapper;
 
     private static final String VIEW_COUNT_KEY = "eo:product:views:pending";

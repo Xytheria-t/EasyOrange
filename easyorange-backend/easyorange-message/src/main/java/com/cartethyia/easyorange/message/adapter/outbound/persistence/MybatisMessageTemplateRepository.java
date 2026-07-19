@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
-import com.cartethyia.easyorange.message.entity.MessageTemplate;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageTemplateDO;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Repository
-public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemplateMapper, MessageTemplate> implements MessageTemplateRepository {
+public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemplateMapper, MessageTemplateDO> implements MessageTemplateRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
@@ -23,16 +23,16 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
 
     @Override
     public MessageTemplateAggregate findByCode(String templateCode) {
-        MessageTemplate entity = lambdaQuery()
-                .eq(MessageTemplate::getTemplateCode, templateCode)
-                .eq(MessageTemplate::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED)
+        MessageTemplateDO entity = lambdaQuery()
+                .eq(MessageTemplateDO::getTemplateCode, templateCode)
+                .eq(MessageTemplateDO::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED)
                 .one();
         return messageDataMapper.toAggregate(entity);
     }
 
     @Override
     public MessageTemplateAggregate save(MessageTemplateAggregate template) {
-        MessageTemplate entity = messageDataMapper.toEntity(template);
+        MessageTemplateDO entity = messageDataMapper.toEntity(template);
         mapper.insert(entity);
         return messageDataMapper.toAggregate(entity);
     }
@@ -52,27 +52,27 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
         var wrapper = lambdaQuery();
         if (condition != null) {
             if (condition.templateCode() != null) {
-                wrapper.like(MessageTemplate::getTemplateCode, condition.templateCode());
+                wrapper.like(MessageTemplateDO::getTemplateCode, condition.templateCode());
             }
             if (condition.templateName() != null) {
-                wrapper.like(MessageTemplate::getTemplateName, condition.templateName());
+                wrapper.like(MessageTemplateDO::getTemplateName, condition.templateName());
             }
             if (condition.templateType() != null) {
-                wrapper.eq(MessageTemplate::getTemplateType, condition.templateType());
+                wrapper.eq(MessageTemplateDO::getTemplateType, condition.templateType());
             }
             if (condition.status() != null) {
-                wrapper.eq(MessageTemplate::getStatus, condition.status());
+                wrapper.eq(MessageTemplateDO::getStatus, condition.status());
             }
         }
-        wrapper.orderByDesc(MessageTemplate::getCreateTime);
+        wrapper.orderByDesc(MessageTemplateDO::getCreateTime);
         return messageDataMapper.toTemplateAggregateList(wrapper.list());
     }
 
     @Override
     public boolean existsByCodeExcludingId(String templateCode, String excludeId) {
         Long count = lambdaQuery()
-                .eq(MessageTemplate::getTemplateCode, templateCode)
-                .ne(excludeId != null, MessageTemplate::getId, excludeId)
+                .eq(MessageTemplateDO::getTemplateCode, templateCode)
+                .ne(excludeId != null, MessageTemplateDO::getId, excludeId)
                 .count();
         return count > 0;
     }

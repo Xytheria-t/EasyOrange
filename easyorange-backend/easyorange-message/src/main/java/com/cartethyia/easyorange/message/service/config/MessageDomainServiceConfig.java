@@ -28,7 +28,7 @@ public class MessageDomainServiceConfig {
     }
 
     @Bean
-    public RateLimiterService rateLimiterService(RedisTemplate<String, Object> redisTemplate) {
+    public RateLimiterService rateLimiterService(RedisTemplate<Object, Object> redisTemplate) {
         return new RateLimiterService(redisTemplate);
     }
 

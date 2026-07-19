@@ -24,10 +24,10 @@ import static org.mockito.Mockito.*;
 class RateLimiterServiceTest {
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, Object> valueOperations;
+    private ValueOperations<Object, Object> valueOperations;
 
     @InjectMocks
     private RateLimiterService rateLimiterService;

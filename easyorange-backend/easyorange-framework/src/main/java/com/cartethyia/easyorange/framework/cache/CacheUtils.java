@@ -49,7 +49,7 @@ public final class CacheUtils {
      * @param pattern  键模式（如 {@code eo:category:*})
      * @return 匹配的键集合，不会返回 null
      */
-    public static Set<String> scan(RedisTemplate<String, Object> template, String pattern) {
+    public static Set<String> scan(RedisTemplate<Object, Object> template, String pattern) {
         Set<String> result = new HashSet<>();
         template.execute((RedisCallback<Set<String>>) connection -> {
             try (Cursor<byte[]> cursor = connection.keyCommands()

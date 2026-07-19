@@ -19,7 +19,7 @@
 
 | 模块 | 表名 | 说明 | 实体类 |
 |------|------|------|--------|
-| 用户 | eo_user | 用户信息 | UserEntity |
+| 用户 | eo_user | 用户信息 | UserDO |
 | 用户 | eo_user_credit | 用户信用评分 | UserCreditDO |
 | 商品 | eo_category | 商品分类（两级树） | CategoryDO |
 | 商品 | eo_product | 商品信息 | ProductDO |
@@ -34,18 +34,18 @@
 | 搜索 | eo_hot_keyword | 热门关键词 | HotKeywordDO |
 | 订单 | eo_order | 订单 | OrderDO |
 | 订单 | eo_order_item | 订单行项 | OrderItemDO |
-| 支付 | eo_payment | 支付记录 | PaymentPO |
-| 支付 | eo_payment_config | 支付渠道配置 | PaymentConfigPO |
-| 消息 | eo_message | 消息 | Message |
+| 支付 | eo_payment | 支付记录 | PaymentDO |
+| 支付 | eo_payment_config | 支付渠道配置 | PaymentConfigDO |
+| 消息 | eo_message | 消息 | MessageDO |
 | 消息 | eo_message_archive | 消息归档 | — |
-| 消息 | eo_message_subscription | 消息订阅 | MessageSubscription |
-| 消息 | eo_message_template | 消息模板 | MessageTemplate |
-| 消息 | eo_offline_message | 离线消息 | OfflineMessage |
-| 文件 | eo_upload_file | 文件上传记录 | UploadFile |
+| 消息 | eo_message_subscription | 消息订阅 | MessageSubscriptionDO |
+| 消息 | eo_message_template | 消息模板 | MessageTemplateDO |
+| 消息 | eo_offline_message | 离线消息 | OfflineMessageDO |
+| 文件 | eo_upload_file | 文件上传记录 | UploadFileDO |
 | 审计 | eo_audit_log | 审计日志 | AuditLog |
 | 事件 | EVENT_PUBLICATION | 领域事件注册表（Spring Modulith） | V3 |
 | 事务 | eo_saga_status | Saga 分布式事务 | SagaDO |
-| 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyPO |
+| 幂等 | eo_idempotency_key | 幂等性键 | IdempotencyKeyDO |
 
 ## 公共字段
 

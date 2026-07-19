@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
-import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import lombok.RequiredArgsConstructor;
@@ -32,14 +32,14 @@ public class ConversationQueryHandler {
     public List<ConversationVO> getConversation(String otherUserId) {
         String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        List<Message> messages = ChainWrappers.lambdaQueryChain(messageMapper)
+        List<MessageDO> messages = ChainWrappers.lambdaQueryChain(messageMapper)
                 .and(w -> w
-                        .eq(Message::getSenderId, currentUserId).eq(Message::getReceiverId, otherUserId)
+                        .eq(MessageDO::getSenderId, currentUserId).eq(MessageDO::getReceiverId, otherUserId)
                         .or()
-                        .eq(Message::getSenderId, otherUserId).eq(Message::getReceiverId, currentUserId)
+                        .eq(MessageDO::getSenderId, otherUserId).eq(MessageDO::getReceiverId, currentUserId)
                 )
-                .eq(Message::getDelFlag, 0)
-                .orderByAsc(Message::getCreateTime)
+                .eq(MessageDO::getDelFlag, 0)
+                .orderByAsc(MessageDO::getCreateTime)
                 .list();
 
         if (messages.isEmpty()) {
@@ -53,7 +53,7 @@ public class ConversationQueryHandler {
                 .toList();
     }
 
-    private ConversationVO toConversationVO(Message message, Map<String, UserInfo> userMap) {
+    private ConversationVO toConversationVO(MessageDO message, Map<String, UserInfo> userMap) {
         UserInfo sender = userMap.get(message.getSenderId());
         UserInfo receiver = userMap.get(message.getReceiverId());
 
@@ -75,24 +75,24 @@ public class ConversationQueryHandler {
     public List<ConversationListVO> getConversations() {
         String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        List<Message> messages = ChainWrappers.lambdaQueryChain(messageMapper)
+        List<MessageDO> messages = ChainWrappers.lambdaQueryChain(messageMapper)
                 .and(w -> w
-                        .eq(Message::getSenderId, currentUserId)
+                        .eq(MessageDO::getSenderId, currentUserId)
                         .or()
-                        .eq(Message::getReceiverId, currentUserId)
+                        .eq(MessageDO::getReceiverId, currentUserId)
                 )
-                .eq(Message::getDelFlag, 0)
-                .orderByDesc(Message::getCreateTime)
+                .eq(MessageDO::getDelFlag, 0)
+                .orderByDesc(MessageDO::getCreateTime)
                 .list();
 
         if (messages.isEmpty()) {
             return List.of();
         }
 
-        Map<String, Message> latestByUser = new LinkedHashMap<>();
+        Map<String, MessageDO> latestByUser = new LinkedHashMap<>();
         Map<String, Integer> unreadCounts = new HashMap<>();
 
-        for (Message msg : messages) {
+        for (MessageDO msg : messages) {
             String otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
             latestByUser.putIfAbsent(otherUserId, msg);
             if (msg.getReceiverId().equals(currentUserId) && MessageStatus.UNREAD.getCode().equals(msg.getIsRead())) {
@@ -108,7 +108,7 @@ public class ConversationQueryHandler {
                 .toList();
     }
 
-    private ConversationListVO buildConversationListVO(String targetUserId, Message latestMsg,
+    private ConversationListVO buildConversationListVO(String targetUserId, MessageDO latestMsg,
                                                         Map<String, UserInfo> userMap, Map<String, Integer> unreadCounts) {
         UserInfo targetUser = userMap.get(targetUserId);
         return ConversationListVO.builder()

@@ -4,10 +4,10 @@ import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
-import com.cartethyia.easyorange.message.entity.Message;
-import com.cartethyia.easyorange.message.entity.MessageSubscription;
-import com.cartethyia.easyorange.message.entity.MessageTemplate;
-import com.cartethyia.easyorange.message.entity.OfflineMessage;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageSubscriptionDO;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageTemplateDO;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -19,9 +19,9 @@ public interface MessageDataMapper {
     // ==================== Message ====================
 
     @Mapping(target = "createTime", ignore = true)
-    Message toEntity(MessageAggregate aggregate);
+    MessageDO toEntity(MessageAggregate aggregate);
 
-    default MessageAggregate toAggregate(Message entity) {
+    default MessageAggregate toAggregate(MessageDO entity) {
         if (entity == null) {
             return null;
         }
@@ -41,7 +41,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<MessageAggregate> toAggregateList(List<Message> entities) {
+    default List<MessageAggregate> toAggregateList(List<MessageDO> entities) {
         if (entities == null) {
             return List.of();
         }
@@ -50,9 +50,9 @@ public interface MessageDataMapper {
 
     // ==================== OfflineMessage ====================
 
-    OfflineMessage toEntity(OfflineMessageAggregate aggregate);
+    OfflineMessageDO toEntity(OfflineMessageAggregate aggregate);
 
-    default OfflineMessageAggregate toAggregate(OfflineMessage entity) {
+    default OfflineMessageAggregate toAggregate(OfflineMessageDO entity) {
         if (entity == null) {
             return null;
         }
@@ -67,7 +67,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<OfflineMessageAggregate> toOfflineAggregateList(List<OfflineMessage> entities) {
+    default List<OfflineMessageAggregate> toOfflineAggregateList(List<OfflineMessageDO> entities) {
         if (entities == null) {
             return List.of();
         }
@@ -76,9 +76,9 @@ public interface MessageDataMapper {
 
     // ==================== MessageSubscription ====================
 
-    MessageSubscription toEntity(MessageSubscriptionAggregate aggregate);
+    MessageSubscriptionDO toEntity(MessageSubscriptionAggregate aggregate);
 
-    default MessageSubscriptionAggregate toAggregate(MessageSubscription entity) {
+    default MessageSubscriptionAggregate toAggregate(MessageSubscriptionDO entity) {
         if (entity == null) {
             return null;
         }
@@ -91,7 +91,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<MessageSubscriptionAggregate> toSubscriptionAggregateList(List<MessageSubscription> entities) {
+    default List<MessageSubscriptionAggregate> toSubscriptionAggregateList(List<MessageSubscriptionDO> entities) {
         if (entities == null) {
             return List.of();
         }
@@ -100,9 +100,9 @@ public interface MessageDataMapper {
 
     // ==================== MessageTemplate ====================
 
-    MessageTemplate toEntity(MessageTemplateAggregate aggregate);
+    MessageTemplateDO toEntity(MessageTemplateAggregate aggregate);
 
-    default MessageTemplateAggregate toAggregate(MessageTemplate entity) {
+    default MessageTemplateAggregate toAggregate(MessageTemplateDO entity) {
         if (entity == null) {
             return null;
         }
@@ -119,7 +119,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<MessageTemplateAggregate> toTemplateAggregateList(List<MessageTemplate> entities) {
+    default List<MessageTemplateAggregate> toTemplateAggregateList(List<MessageTemplateDO> entities) {
         if (entities == null) {
             return List.of();
         }

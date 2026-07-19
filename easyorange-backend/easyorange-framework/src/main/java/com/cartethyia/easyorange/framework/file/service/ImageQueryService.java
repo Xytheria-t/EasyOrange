@@ -5,8 +5,8 @@ import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.I
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ImageFormat;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService.ProcessedImage;
 import com.github.benmanes.caffeine.cache.Cache;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
@@ -22,17 +22,25 @@ import java.util.HexFormat;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ImageQueryService {
 
     private final FileService fileService;
     private final ImageProcessingService imageProcessingService;
     private final ImageProcessingProperties imageProcessingProperties;
-
-    @SuppressWarnings("unchecked")
-    private final Cache<String, ImageProcessingCacheEntry> imageProcessCache;
+    private final Cache<String, Object> imageProcessCache;
 
     private static final int[] PRESET_WIDTHS = {150, 300, 600, 1200};
+
+    public ImageQueryService(
+            FileService fileService,
+            ImageProcessingService imageProcessingService,
+            ImageProcessingProperties imageProcessingProperties,
+            @Qualifier("imageProcessCache") Cache<String, Object> imageProcessCache) {
+        this.fileService = fileService;
+        this.imageProcessingService = imageProcessingService;
+        this.imageProcessingProperties = imageProcessingProperties;
+        this.imageProcessCache = imageProcessCache;
+    }
 
     public record ImageProcessingCacheEntry(File file, String mimeType, String eTag) {}
 
@@ -91,6 +99,16 @@ public class ImageQueryService {
         log.info("Evicted image cache for fileId={}", fileId);
     }
 
+    @SuppressWarnings("unchecked")
+    private ImageProcessingCacheEntry getFromCache(String cacheKey) {
+        var cached = imageProcessCache.getIfPresent(cacheKey);
+        return cached != null ? (ImageProcessingCacheEntry) cached : null;
+    }
+
+    private void putToCache(String cacheKey, ImageProcessingCacheEntry entry) {
+        imageProcessCache.put(cacheKey, entry);
+    }
+
     // ===== Internal =====
 
     private record FileEntry(Path path, Resource resource, String mimeType) {}
@@ -135,12 +153,12 @@ public class ImageQueryService {
                                                   ImageFormat format, float quality,
                                                   String ifNoneMatch) throws IOException {
         var cacheKey = buildCacheKey(fileId, width, height, format, quality);
-        var cached = imageProcessCache.getIfPresent(cacheKey);
+        var cached = getFromCache(cacheKey);
         if (cached != null) {
-            if (ifNoneMatch != null && ifNoneMatch.equals(cached.eTag)) {
+            if (ifNoneMatch != null && ifNoneMatch.equals(cached.eTag())) {
                 return new ProcessCacheEntry(cached, true);
             }
-            if (cached.file.exists()) {
+            if (cached.file().exists()) {
                 return new ProcessCacheEntry(cached, false);
             }
             imageProcessCache.invalidate(cacheKey);
@@ -149,7 +167,7 @@ public class ImageQueryService {
         var processed = imageProcessingService.processImage(originalFile, width, height, format, quality);
         var eTag = computeETag(processed.file());
         var entry = new ImageProcessingCacheEntry(processed.file(), processed.mimeType(), eTag);
-        imageProcessCache.put(cacheKey, entry);
+        putToCache(cacheKey, entry);
         log.debug("Image processed and cached: key={}", cacheKey);
         return new ProcessCacheEntry(entry, false);
     }
@@ -158,12 +176,12 @@ public class ImageQueryService {
                                                               int size, String ifNoneMatch) throws IOException {
         var quality = imageProcessingProperties.getThumbnailQuality();
         var cacheKey = buildCacheKey(fileId, size, size, ImageFormat.WEBP, quality);
-        var cached = imageProcessCache.getIfPresent(cacheKey);
+        var cached = getFromCache(cacheKey);
         if (cached != null) {
-            if (ifNoneMatch != null && ifNoneMatch.equals(cached.eTag)) {
+            if (ifNoneMatch != null && ifNoneMatch.equals(cached.eTag())) {
                 return new ProcessCacheEntry(cached, true);
             }
-            if (cached.file.exists()) {
+            if (cached.file().exists()) {
                 return new ProcessCacheEntry(cached, false);
             }
             imageProcessCache.invalidate(cacheKey);
@@ -172,7 +190,7 @@ public class ImageQueryService {
         var thumbnail = imageProcessingService.createThumbnail(originalFile, size, quality);
         var eTag = computeETag(thumbnail.file());
         var entry = new ImageProcessingCacheEntry(thumbnail.file(), thumbnail.mimeType(), eTag);
-        imageProcessCache.put(cacheKey, entry);
+        putToCache(cacheKey, entry);
         log.debug("Thumbnail processed and cached: key={}", cacheKey);
         return new ProcessCacheEntry(entry, false);
     }

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.adapter.outbound.admin;
 
 import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -22,7 +22,7 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
 
     @Override
     public UserInfo getUserInfo(String userId) {
-        UserEntity user = userMapper.selectById(userId);
+        UserDO user = userMapper.selectById(userId);
         if (user == null) {
             return null;
         }
@@ -34,16 +34,16 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
         if (userIds == null || userIds.isEmpty()) {
             return Map.of();
         }
-        List<UserEntity> users = userMapper.selectBatchIds(userIds);
+        List<UserDO> users = userMapper.selectBatchIds(userIds);
         return users.stream()
             .collect(Collectors.toMap(
-                UserEntity::getId,
+                UserDO::getId,
                 this::toUserInfo,
                 (a, b) -> a
             ));
     }
 
-    private UserInfo toUserInfo(UserEntity user) {
+    private UserInfo toUserInfo(UserDO user) {
         return new UserInfo(
             user.getId(),
             user.getUsername(),

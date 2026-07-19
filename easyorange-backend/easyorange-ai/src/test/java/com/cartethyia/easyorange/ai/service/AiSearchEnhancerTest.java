@@ -38,13 +38,13 @@ class AiSearchEnhancerTest {
     private ProductTagger productTagger;
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, Object> valueOps;
+    private ValueOperations<Object, Object> valueOps;
 
     @Mock
-    private ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider;
+    private ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider;
 
     private AiSearchEnhancerAdapter enhancer;
 

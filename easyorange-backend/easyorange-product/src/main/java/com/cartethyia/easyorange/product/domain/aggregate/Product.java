@@ -34,9 +34,6 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 @Getter
 @Builder(toBuilder = true)
@@ -51,8 +48,7 @@ public class Product {
     private final StockQuantity stock;
     private final Version version;
     private final ProductStatus status;
-    @Builder.Default
-    private final int viewCount = 0;
+    @Builder.Default private final int viewCount = 0;
     private final ConditionLevel conditionLevel;
     private final TradeLocation location;
     private final ContactMethod contactMethod;
@@ -64,92 +60,43 @@ public class Product {
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
-    // ==================== Static Factory Methods ====================
+    // ==================== Factory Methods ====================
 
     public static ProductTransition create(
-            SellerId sellerId,
-            CategoryId categoryId,
-            ProductTitle title,
-            Money price,
-            Money originalPrice,
-            StockQuantity stock,
-            ConditionLevel conditionLevel,
-            TradeLocation location,
-            ContactMethod contactMethod,
-            ProductDescription description,
-            ImageSet images
+            SellerId sellerId, CategoryId categoryId, ProductTitle title,
+            Money price, Money originalPrice, StockQuantity stock,
+            ConditionLevel conditionLevel, TradeLocation location, ContactMethod contactMethod,
+            ProductDescription description, ImageSet images
     ) {
         BizRequire.notNull(title, "资产名称不能为空");
         BizRequire.notNull(price, "资产价格不能为空");
         BizRequire.requireTrue(price.isGreaterThan(Money.ZERO), "资产价格必须大于0");
         BizRequire.requireTrue(images != null && !images.isEmpty(), "资产图片不能为空");
 
-        Product p = Product.builder()
-                .sellerId(sellerId)
-                .categoryId(categoryId)
-                .title(title)
-                .price(price)
-                .originalPrice(originalPrice)
+        var p = Product.builder()
+                .sellerId(sellerId).categoryId(categoryId).title(title)
+                .price(price).originalPrice(originalPrice)
                 .stock(stock != null ? stock : StockQuantity.of(1))
-                .version(Version.INITIAL)
-                .status(ProductStatus.DRAFT)
-                .viewCount(0)
-                .conditionLevel(conditionLevel)
-                .location(location)
-                .contactMethod(contactMethod)
-                .description(description)
-                .tags(TagSet.empty())
+                .version(Version.INITIAL).status(ProductStatus.DRAFT)
+                .conditionLevel(conditionLevel).location(location).contactMethod(contactMethod)
+                .description(description).tags(TagSet.empty())
                 .priceUpdateTime(LocalDateTime.now())
-                .createTime(LocalDateTime.now())
-                .updateTime(LocalDateTime.now())
+                .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
                 .build();
 
-        ProductCreatedEvent event = new ProductCreatedEvent(
-                null, sellerId.value(), valueOrNull(categoryId, CategoryId::value),
+        var event = new ProductCreatedEvent(
+                null, sellerId.value(),
+                categoryId != null ? categoryId.value() : null,
                 title.value(), price.value(),
-                valueOrNull(originalPrice, Money::value),
-                p.stock.value(), valueOrNull(conditionLevel, ConditionLevel::getCode),
-                valueOrNull(location, TradeLocation::value),
-                valueOrNull(contactMethod, ContactMethod::value),
-                valueOrNull(description, ProductDescription::value),
-                valueOrNull(images, ImageSet::imageUrls)
+                originalPrice != null ? originalPrice.value() : null,
+                p.stock.value(),
+                conditionLevel != null ? conditionLevel.getCode() : null,
+                location != null ? location.value() : null,
+                contactMethod != null ? contactMethod.value() : null,
+                description != null ? description.value() : null,
+                images != null ? images.imageUrls() : null
         );
         return new ProductTransition(p, event);
-    }
-
-    public static Product reconstitute(
-            ProductId id, SellerId sellerId, CategoryId categoryId,
-            ProductTitle title, Money price, Money originalPrice,
-            StockQuantity stock, Version version, ProductStatus status,
-            Integer viewCount, ConditionLevel conditionLevel,
-            TradeLocation location, ContactMethod contactMethod,
-            ProductDescription description, ImageSet images,
-            TagSet tags, String searchText,
-            LocalDateTime priceUpdateTime,
-            LocalDateTime createTime, LocalDateTime updateTime
-    ) {
-        return Product.builder()
-                .id(id)
-                .sellerId(sellerId)
-                .categoryId(categoryId)
-                .title(title)
-                .price(price)
-                .originalPrice(originalPrice)
-                .stock(stock)
-                .version(version)
-                .status(status)
-                .viewCount(viewCount != null ? viewCount : 0)
-                .conditionLevel(conditionLevel)
-                .location(location)
-                .contactMethod(contactMethod)
-                .description(description)
-                .images(images)
-                .tags(tags)
-                .searchText(searchText)
-                .priceUpdateTime(priceUpdateTime)
-                .createTime(createTime)
-                .updateTime(updateTime)
-                .build();
     }
 
     // ==================== Review Workflow Methods ====================
@@ -161,7 +108,7 @@ public class Product {
         if (!status.canTransitionTo(ProductStatus.PENDING_REVIEW)) {
             throw new InvalidProductStatusException("不允许提交审核", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .status(ProductStatus.PENDING_REVIEW)
                 .updateTime(LocalDateTime.now())
                 .build();
@@ -180,32 +127,26 @@ public class Product {
         if (!status.canTransitionTo(ProductStatus.ONLINE)) {
             throw new InvalidProductStatusException("不允许审核通过", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .status(ProductStatus.ONLINE)
                 .updateTime(LocalDateTime.now())
                 .build();
-        ProductAuditedEvent event = new ProductAuditedEvent(
+        var event = new ProductAuditedEvent(
                 id.value(), title.value(), sellerId.value(),
                 AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()
         );
         return new ProductTransition(updated, event);
     }
 
-    /**
-     * 审核拒绝 — 将资产状态变更为 REJECTED（已驳回）。
-     * <p>
-     * 只有处于 PENDING_REVIEW（待审核）状态的资产可以被拒绝。
-     * 返回 {@link ProductTransition}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
-     */
     public ProductTransition reject(String reason) {
         if (!status.canTransitionTo(ProductStatus.REJECTED)) {
             throw new InvalidProductStatusException("不允许审核拒绝", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .status(ProductStatus.REJECTED)
                 .updateTime(LocalDateTime.now())
                 .build();
-        ProductAuditedEvent event = new ProductAuditedEvent(
+        var event = new ProductAuditedEvent(
                 id.value(), title.value(), sellerId.value(),
                 AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()
         );
@@ -221,7 +162,7 @@ public class Product {
         BizRequire.requireTrue(isComplete(), "资产信息不完整，无法上架");
         BizRequire.requireTrue(hasValidPrice(), "资产价格无效，无法上架");
         BizRequire.requireTrue(hasStock(), "资产库存不足，无法上架");
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .status(ProductStatus.ONLINE)
                 .updateTime(LocalDateTime.now())
                 .build();
@@ -232,7 +173,7 @@ public class Product {
         if (!status.canTransitionTo(ProductStatus.OFFLINE)) {
             throw new InvalidProductStatusException("不允许下架", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .status(ProductStatus.OFFLINE)
                 .updateTime(LocalDateTime.now())
                 .build();
@@ -243,55 +184,48 @@ public class Product {
         if (!status.canTransitionTo(ProductStatus.SOLD)) {
             throw new InvalidProductStatusException("不允许标记已售", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .status(ProductStatus.SOLD)
                 .updateTime(LocalDateTime.now())
                 .build();
         return new ProductTransition(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
     }
 
-    // ==================== Update Methods ====================
+    // ==================== Update ====================
 
     public ProductTransition update(
-            CategoryId categoryId,
-            ProductTitle title,
-            Money price,
-            Money originalPrice,
-            StockQuantity stock,
-            ConditionLevel conditionLevel,
-            TradeLocation location,
-            ContactMethod contactMethod,
-            ProductDescription description,
-            ImageSet images
+            CategoryId categoryId, ProductTitle title, Money price, Money originalPrice,
+            StockQuantity stock, ConditionLevel conditionLevel, TradeLocation location,
+            ContactMethod contactMethod, ProductDescription description, ImageSet images
     ) {
-        ProductBuilder builder = toBuilder();
-        updateIfPresent(categoryId, builder::categoryId);
-        updateIfPresent(title, builder::title, t -> !t.value().isBlank());
-        updateIfPresent(price, v -> {
-            builder.price(v);
+        var builder = toBuilder();
+        if (categoryId != null) builder.categoryId(categoryId);
+        if (title != null && !title.value().isBlank()) builder.title(title);
+        if (price != null) {
+            builder.price(price);
             builder.priceUpdateTime(LocalDateTime.now());
-        });
-        updateIfPresent(originalPrice, builder::originalPrice);
-        updateIfPresent(stock, builder::stock);
-        updateIfPresent(conditionLevel, builder::conditionLevel);
-        updateIfPresent(location, builder::location);
-        updateIfPresent(contactMethod, builder::contactMethod, ContactMethod::isNotBlank);
-        updateIfPresent(description, builder::description);
-        updateIfPresent(images, builder::images);
+        }
+        if (originalPrice != null) builder.originalPrice(originalPrice);
+        if (stock != null) builder.stock(stock);
+        if (conditionLevel != null) builder.conditionLevel(conditionLevel);
+        if (location != null) builder.location(location);
+        if (contactMethod != null && contactMethod.isNotBlank()) builder.contactMethod(contactMethod);
+        if (description != null) builder.description(description);
+        if (images != null) builder.images(images);
 
-        Product updated = builder.updateTime(LocalDateTime.now()).build();
+        var updated = builder.updateTime(LocalDateTime.now()).build();
 
-        ProductUpdatedEvent event = new ProductUpdatedEvent(
+        var event = new ProductUpdatedEvent(
                 id.value(), sellerId.value(),
-                valueOrNull(updated.categoryId, CategoryId::value),
+                updated.categoryId != null ? updated.categoryId.value() : null,
                 updated.title.value(), updated.price.value(),
-                valueOrNull(updated.originalPrice, Money::value),
+                updated.originalPrice != null ? updated.originalPrice.value() : null,
                 updated.stock.value(),
-                valueOrNull(updated.conditionLevel, ConditionLevel::getCode),
-                valueOrNull(updated.location, TradeLocation::value),
-                valueOrNull(updated.contactMethod, ContactMethod::value),
-                valueOrNull(updated.description, ProductDescription::value),
-                valueOrNull(updated.images, ImageSet::imageUrls)
+                updated.conditionLevel != null ? updated.conditionLevel.getCode() : null,
+                updated.location != null ? updated.location.value() : null,
+                updated.contactMethod != null && updated.contactMethod.isNotBlank() ? updated.contactMethod.value() : null,
+                updated.description != null ? updated.description.value() : null,
+                updated.images != null ? updated.images.imageUrls() : null
         );
         return new ProductTransition(updated, event);
     }
@@ -312,7 +246,7 @@ public class Product {
         if (!status.canDelete()) {
             throw new InvalidProductStatusException("不允许删除", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .updateTime(LocalDateTime.now())
                 .build();
         return new ProductTransition(updated, new ProductDeletedEvent(id.value(), userId));
@@ -328,7 +262,7 @@ public class Product {
         if (!hasStock()) {
             throw new InsufficientStockException("资产库存不足", id, stock);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .stock(stock.decrease(quantity))
                 .updateTime(LocalDateTime.now())
                 .build();
@@ -339,7 +273,7 @@ public class Product {
         if (status == ProductStatus.SOLD || status == ProductStatus.OFFLINE) {
             throw new InvalidProductStatusException("不允许恢复库存", id, status);
         }
-        Product updated = toBuilder()
+        var updated = toBuilder()
                 .stock(stock.increase())
                 .updateTime(LocalDateTime.now())
                 .build();
@@ -360,24 +294,6 @@ public class Product {
 
     public boolean hasStock() {
         return stock != null && stock.isAvailable();
-    }
-
-    // ==================== Private Helper Methods ====================
-
-    private static <T, R> R valueOrNull(T obj, Function<T, R> extractor) {
-        return obj != null ? extractor.apply(obj) : null;
-    }
-
-    private static <T> void updateIfPresent(T value, Consumer<T> setter) {
-        if (value != null) {
-            setter.accept(value);
-        }
-    }
-
-    private static <T> void updateIfPresent(T value, Consumer<T> setter, Predicate<T> condition) {
-        if (value != null && condition.test(value)) {
-            setter.accept(value);
-        }
     }
 
     // ==================== Result Record ====================

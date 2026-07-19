@@ -9,10 +9,12 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -71,16 +73,16 @@ class AdminRatingServiceTest {
             .categoryId("1")
             .price(new BigDecimal("99.00"))
             .stock(10)
-            .status(1)
+            .status(ProductStatus.ONLINE)
             .viewCount(100)
-            .conditionLevel(1)
+            .conditionLevel(ConditionLevel.NEW)
             .build();
         product.setDelFlag(0);
         return product;
     }
 
-    private UserEntity createUser(String id, String username, String nickname) {
-        return UserEntity.builder()
+    private UserDO createUser(String id, String username, String nickname) {
+        return UserDO.builder()
             .id(id)
             .username(username)
             .nickName(nickname)

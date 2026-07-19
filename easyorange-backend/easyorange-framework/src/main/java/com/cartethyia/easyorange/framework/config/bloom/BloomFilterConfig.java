@@ -10,7 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 public class BloomFilterConfig {
 
     @Bean
-    public BloomFilter bloomFilter(RedisTemplate<String, Object> redisTemplate) {
+    public BloomFilter bloomFilter(RedisTemplate<Object, Object> redisTemplate) {
         return new RedisBitmapBloomFilter(redisTemplate);
     }
 }

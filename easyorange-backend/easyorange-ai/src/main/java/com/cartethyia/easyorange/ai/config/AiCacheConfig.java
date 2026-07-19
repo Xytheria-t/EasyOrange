@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class AiCacheConfig implements WebMvcConfigurer {
 
     private final AiProperties aiProperties;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final AiRateLimitInterceptor aiRateLimitInterceptor;
 
     @Bean("aiCaches")

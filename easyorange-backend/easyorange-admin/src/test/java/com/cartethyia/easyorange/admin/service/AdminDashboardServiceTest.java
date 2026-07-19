@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
@@ -59,8 +59,8 @@ class AdminDashboardServiceTest {
     @InjectMocks
     private AdminDashboardService dashboardService;
 
-    private UserEntity createTestUser() {
-        return UserEntity.builder()
+    private UserDO createTestUser() {
+        return UserDO.builder()
                 .id("1")
                 .username("testuser")
                 .nickName("测试用户")

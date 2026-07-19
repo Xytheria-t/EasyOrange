@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.application.query;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
 import com.cartethyia.easyorange.product.application.query.ProductRatingVO;
 import com.cartethyia.easyorange.product.application.query.RatingStatsVO;

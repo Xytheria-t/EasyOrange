@@ -184,8 +184,9 @@ describe('HeroSection', () => {
 
     it('renders product preview with image', () => {
         render(<HeroSection />);
-        expect(screen.getByText('Notion 团队版会员 剩余8个月')).toBeInTheDocument();
-        expect(screen.getByText('¥299')).toBeInTheDocument();
+        expect(screen.getByText('MacBook Pro 14" M3 Pro')).toBeInTheDocument();
+        expect(screen.getByText('¥12,999')).toBeInTheDocument();
+        expect(screen.getByText('原价 ¥16,999')).toBeInTheDocument();
     });
 
     it('creates IntersectionObserver for counter animation', () => {

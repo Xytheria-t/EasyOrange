@@ -42,7 +42,7 @@ public class RedissonConfig {
                 .setConnectionPoolSize(4);
 
         if (password != null && !password.isEmpty()) {
-            serverConfig.setPassword(password);
+            config.setPassword(password);
         }
 
         Duration timeout = properties.getTimeout();

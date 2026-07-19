@@ -23,7 +23,7 @@ public class RedisSmsCodeAdapter implements SmsCodePort {
     private static final String DAILY_KEY = SMS_BASE + "daily:";
     private static final String VERIFY_KEY = SMS_BASE + "verify:";
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final SmsSenderPort smsSenderPort;
 
     @Override

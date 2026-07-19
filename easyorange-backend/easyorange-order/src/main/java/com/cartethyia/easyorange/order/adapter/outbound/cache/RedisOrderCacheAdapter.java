@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     private static final String ORDER_LIST_CACHE_KEY_PREFIX = "eo:order:list:";
     private static final String ORDER_DETAIL_CACHE_KEY_PREFIX = "eo:order:detail:";
@@ -209,7 +209,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
         String pattern = ORDER_LIST_CACHE_KEY_PREFIX + roleId + ":*";
 
         try {
-            Collection<String> keys = redisTemplate.keys(pattern);
+            Collection<Object> keys = redisTemplate.keys(pattern);
             if (keys != null && !keys.isEmpty()) {
                 redisTemplate.delete(keys);
             }

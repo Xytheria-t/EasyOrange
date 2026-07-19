@@ -117,27 +117,22 @@ class ProductReportDomainServiceTest {
     }
 
     private Product createOnlineProduct() {
-        return Product.reconstitute(
-                ProductId.of(PRODUCT_ID),
-                SellerId.of("2"),
-                CategoryId.of("1"),
-                ProductTitle.of("测试商品"),
-                Money.of(new BigDecimal("100")),
-                null,
-                StockQuantity.of(10),
-                com.cartethyia.easyorange.product.domain.valueobject.Version.INITIAL,
-                ProductStatus.ONLINE,
-                0,
-                ConditionLevel.NEW,
-                TradeLocation.of("北京"),
-                ContactMethod.of("微信"),
-                ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg")),
-                com.cartethyia.easyorange.product.domain.valueobject.TagSet.empty(),
-                null,
-                null,
-                null,
-                null
-        );
+        return Product.builder()
+                .id(ProductId.of(PRODUCT_ID))
+                .sellerId(SellerId.of("2"))
+                .categoryId(CategoryId.of("1"))
+                .title(ProductTitle.of("测试商品"))
+                .price(Money.of(new BigDecimal("100")))
+                .stock(StockQuantity.of(10))
+                .version(Version.INITIAL)
+                .status(ProductStatus.ONLINE)
+                .viewCount(0)
+                .conditionLevel(ConditionLevel.NEW)
+                .location(TradeLocation.of("北京"))
+                .contactMethod(ContactMethod.of("微信"))
+                .description(ProductDescription.of("描述"))
+                .images(ImageSet.of(List.of("http://img/1.jpg")))
+                .tags(TagSet.empty())
+                .build();
     }
 }

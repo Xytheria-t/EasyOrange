@@ -38,10 +38,10 @@ class CachingLlmAdapterTest {
     private AiProperties.Cache cacheProps;
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private ValueOperations<String, Object> valueOps;
+    private ValueOperations<Object, Object> valueOps;
 
     @Mock
     private AiMetricsService aiMetricsService;

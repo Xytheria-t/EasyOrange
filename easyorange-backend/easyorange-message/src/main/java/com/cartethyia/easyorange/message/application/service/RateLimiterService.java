@@ -19,7 +19,7 @@ public class RateLimiterService {
 
     private static final Logger log = LoggerFactory.getLogger(RateLimiterService.class);
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     private static final String MESSAGE_RATE_KEY = "chat:rate:message:%s";
     private static final String TYPING_RATE_KEY = "chat:rate:typing:%s";
@@ -30,7 +30,7 @@ public class RateLimiterService {
 
     private final AtomicInteger localCounter = new AtomicInteger(0);
 
-    public RateLimiterService(RedisTemplate<String, Object> redisTemplate) {
+    public RateLimiterService(RedisTemplate<Object, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 

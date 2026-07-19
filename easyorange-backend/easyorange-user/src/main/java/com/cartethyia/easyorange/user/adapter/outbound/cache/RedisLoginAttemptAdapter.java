@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class RedisLoginAttemptAdapter implements LoginAttemptPort {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     @Override
     public long incrementAndGet(String identifier, Duration expireAfter) {

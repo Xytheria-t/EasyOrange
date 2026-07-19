@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.repositor
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ReportHandleHistoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ReportHandleHistoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ReportHandleHistoryMapper;
 import org.springframework.stereotype.Repository;
 

@@ -253,11 +253,9 @@ describe('OrdersPage', () => {
         const order = createMockOrder({ id: 'order-detail-1', status: 0 });
         mockUseMyOrders.mockReturnValue({ data: createMockPage([order]), isLoading: false, isError: false });
         renderPage();
-        const user = userEvent.setup();
-        const card = screen.getByText('测试商品名称').closest('button');
-        expect(card).not.toBeNull();
-        await user.click(card as HTMLElement);
-        expect(mockNavigate).toHaveBeenCalledWith('/orders/order-detail-1');
+        // OrderCard root is a <Link>, so check href instead of navigate mock
+        const cardLink = screen.getByRole('link', { name: /测试商品名称/ });
+        expect(cardLink).toHaveAttribute('href', '/orders/order-detail-1');
     });
 
     it('navigates to explore page from empty state CTA', async () => {

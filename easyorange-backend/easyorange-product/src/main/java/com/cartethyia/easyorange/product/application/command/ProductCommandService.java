@@ -113,13 +113,13 @@ public class ProductCommandService {
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         var product = findByIdOrThrow(ProductId.of(productId));
         var result = mutate(product, p -> p.submitForReview(userId));
-        var event = (ProductSubmittedForReviewEvent) result.event();
-        saveAuditLog(productId, userId, event.beforeStatus(), event.afterStatus());
+        if (result.event() instanceof ProductSubmittedForReviewEvent event) {
+            saveAuditLog(productId, userId, event);
+        }
     }
 
     public void putOnline(String productId) {
-        var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        var product = verifyOwnership(ProductId.of(productId), userId);
+        var product = findByIdOrThrow(ProductId.of(productId));
         mutate(product, Product::putOnline);
     }
 
@@ -161,15 +161,15 @@ public class ProductCommandService {
         productCachePort.evictProductCache(productId);
     }
 
-    private void saveAuditLog(String productId, String operatorId, int beforeStatus, int afterStatus) {
+    private void saveAuditLog(String productId, String operatorId, ProductSubmittedForReviewEvent event) {
         var context = SecurityContextUtil.getUserContextOrThrow();
         var auditLog = ProductAuditLog.builder()
                 .productId(productId)
                 .operatorId(operatorId)
                 .operatorName(context.username())
                 .action(AuditAction.RESUBMIT.getCode())
-                .beforeStatus(beforeStatus)
-                .afterStatus(afterStatus)
+                .beforeStatus(event.beforeStatus())
+                .afterStatus(event.afterStatus())
                 .build();
         productAuditLogRepository.save(auditLog);
     }

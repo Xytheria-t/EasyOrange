@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
  *   <li><b>delFlag</b> — 逻辑删除，0=正常，1=已删除。使用 {@code @TableLogic} 自动追加 {@code WHERE del_flag = 0}。
  *      <br>为什么用 0/1 而不是 0/2：0/1 是社区事实标准，无歧义，不创造未定义的"预留"状态。</li>
  *   <li><b>version（乐观锁）</b> — 不在 BaseDO 中统一声明，而是按需添加到有并发写冲突风险的 DO 上
- *      （如 ProductDO、OrderDO、PaymentPO 等有状态机的实体）。append-only 表（审计日志、消息等）不扛此字段。</li>
+ *      （如 ProductDO、OrderDO、PaymentDO 等有状态机的实体）。append-only 表（审计日志、消息等）不扛此字段。</li>
  * </ul>
  */
 @SuperBuilder(toBuilder = true)

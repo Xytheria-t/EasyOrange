@@ -24,14 +24,14 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AiRateLimitInterceptor implements HandlerInterceptor {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final Cache<String, Object> staleCache;
     private final AiMetricsService aiMetricsService;
 
     public AiRateLimitInterceptor(
-            RedisTemplate<String, Object> redisTemplate,
+            RedisTemplate<Object, Object> redisTemplate,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,

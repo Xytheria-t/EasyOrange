@@ -14,7 +14,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_upload_file")
-public class UploadFile extends BaseDO {
+public class UploadFileDO extends BaseDO {
 
     private String fileName;
 

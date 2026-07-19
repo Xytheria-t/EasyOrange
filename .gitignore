@@ -87,3 +87,6 @@ docs/
 !docs/README.md
 
 # ---------- RSA 密钥文件 ----------
+
+# ---------- Deepwork 状态文件 ----------
+.slim/deepwork/

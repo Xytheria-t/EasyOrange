@@ -26,7 +26,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private final NaturalLanguageDetector nlDetector;
     private final LlmPort llmPort;
     private final ProductTagger productTagger;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     private static final int TIMEOUT_SECONDS = 5;
     private static final long CACHE_TTL_MINUTES = 5;
@@ -62,7 +62,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
             NaturalLanguageDetector nlDetector,
             LlmPort llmPort,
             ProductTagger productTagger,
-            ObjectProvider<RedisTemplate<String, Object>> redisTemplateProvider) {
+            ObjectProvider<RedisTemplate<Object, Object>> redisTemplateProvider) {
         this.nlDetector = nlDetector;
         this.llmPort = llmPort;
         this.productTagger = productTagger;

@@ -1,10 +1,10 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
@@ -177,8 +177,8 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .categoryName(categoryName)
                 .price(product.getPrice() != null ? product.getPrice().doubleValue() : null)
                 .originalPrice(product.getOriginalPrice() != null ? product.getOriginalPrice().doubleValue() : null)
-                .conditionLevel(product.getConditionLevel() != null ? product.getConditionLevel().byteValue() : null)
-                .status(product.getStatus() != null ? product.getStatus().byteValue() : null)
+                .conditionLevel(product.getConditionLevel() != null ? (byte) product.getConditionLevel().getCode() : null)
+                .status(product.getStatus() != null ? (byte) product.getStatus().getCode() : null)
                 .viewCount(product.getViewCount())
                 .stock(product.getStock())
                 .location(product.getLocation())

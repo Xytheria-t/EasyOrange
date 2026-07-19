@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateSta
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
@@ -39,8 +39,8 @@ class AdminUserServiceTest {
 
     private static final String USER_ID = "1";
 
-    private UserEntity createTestUser() {
-        UserEntity user = UserEntity.builder()
+    private UserDO createTestUser() {
+        UserDO user = UserDO.builder()
                 .id(USER_ID)
                 .username("testuser")
                 .nickName("测试用户")
@@ -62,13 +62,13 @@ class AdminUserServiceTest {
         @DisplayName("分页查询用户列表")
         void listUsers_defaultParams_returnsPage() {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
-            UserEntity user = createTestUser();
-            Page<UserEntity> page = new Page<>(1, 20);
+            UserDO user = createTestUser();
+            Page<UserDO> page = new Page<>(1, 20);
 
             // must use spy or return real page with records
             when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                     .thenAnswer(invocation -> {
-                        Page<UserEntity> p = invocation.getArgument(0);
+                        Page<UserDO> p = invocation.getArgument(0);
                         p.setRecords(List.of(user));
                         p.setTotal(1);
                         return p;
@@ -89,7 +89,7 @@ class AdminUserServiceTest {
 
             when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                     .thenAnswer(invocation -> {
-                        Page<UserEntity> p = invocation.getArgument(0);
+                        Page<UserDO> p = invocation.getArgument(0);
                         p.setRecords(List.of(createTestUser()));
                         p.setTotal(1);
                         return p;
@@ -107,7 +107,7 @@ class AdminUserServiceTest {
 
             when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                     .thenAnswer(invocation -> {
-                        Page<UserEntity> p = invocation.getArgument(0);
+                        Page<UserDO> p = invocation.getArgument(0);
                         p.setRecords(List.of());
                         p.setTotal(0);
                         return p;
@@ -149,7 +149,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("已删除用户抛出异常")
         void getUserDetail_deleted_throws() {
-            UserEntity deleted = createTestUser();
+            UserDO deleted = createTestUser();
             deleted.setDelFlag(2);
             when(userMapper.selectById(USER_ID)).thenReturn(deleted);
 
@@ -166,7 +166,7 @@ class AdminUserServiceTest {
         @Test
         @DisplayName("更新用户状态成功")
         void updateUserStatus_success() {
-            UserEntity user = createTestUser();
+            UserDO user = createTestUser();
             when(userMapper.selectById(USER_ID)).thenReturn(user);
 
             UpdateStatusRequest request = new UpdateStatusRequest();

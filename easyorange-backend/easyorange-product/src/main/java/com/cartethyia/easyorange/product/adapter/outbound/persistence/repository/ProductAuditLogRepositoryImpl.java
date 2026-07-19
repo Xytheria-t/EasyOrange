@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.outbound.persistence.repository;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductAuditLogDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductAuditLogDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductAuditLogMapper;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;

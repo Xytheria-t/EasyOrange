@@ -31,10 +31,10 @@ class MessageTemplateServiceTest {
     private MessageTemplateRepository messageTemplateRepository;
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
-    private HashOperations<String, Object, Object> hashOperations;
+    private HashOperations<Object, Object, Object> hashOperations;
 
     @InjectMocks
     private MessageTemplateServiceImpl templateService;

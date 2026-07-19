@@ -14,18 +14,19 @@ import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheCons
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.HotKeywordDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.SearchHistoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.HotKeywordDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.SearchHistoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.HotKeywordMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.SearchHistoryMapper;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final CategoryMapper categoryMapper;
     private final SearchHistoryMapper searchHistoryMapper;
     private final HotKeywordMapper hotKeywordMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final SearchHistoryBufferAppService searchHistoryBufferService;
     private final CategoryCachePort<CategoryReadModel> categoryCachePort;
 
@@ -351,10 +352,10 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
                 product.getPrice(),
                 product.getOriginalPrice(),
                 product.getStock(),
-                product.getStatus(),
-                ProductStatus.getDescByCode(product.getStatus()),
+                product.getStatus().getCode(),
+                product.getStatus().getDesc(),
                 product.getViewCount(),
-                product.getConditionLevel(),
+                product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null,
                 null,
                 null,
                 null,

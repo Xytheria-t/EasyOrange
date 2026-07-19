@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
 import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel> {
 
     private final CategoryQueryRepository categoryQueryRepository;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final Cache<String, List<CategoryReadModel>> localCache;
 
     // 熔断状态管理
@@ -56,7 +56,7 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
     private static final long CIRCUIT_BREAKER_RESET_INTERVAL_MS = 60_000; // 60 秒后重置熔断
 
     public CategoryCacheAdapter(CategoryQueryRepository categoryQueryRepository,
-                                RedisTemplate<String, Object> redisTemplate) {
+                                RedisTemplate<Object, Object> redisTemplate) {
         this.categoryQueryRepository = categoryQueryRepository;
         this.redisTemplate = redisTemplate;
         this.localCache = Caffeine.newBuilder()

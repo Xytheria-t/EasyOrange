@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cartethyia.easyorange.message.mapper.MessageMapper">
 
-    <select id="selectMessagesBefore" resultType="com.cartethyia.easyorange.message.entity.Message">
+    <select id="selectMessagesBefore" resultType="com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO">
         SELECT id, sender_id, receiver_id, type, title, content,
                is_read, read_time, business_id, conversation_id,
                del_flag, create_time, update_time, create_by, update_by, version

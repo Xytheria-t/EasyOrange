@@ -1,10 +1,12 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
@@ -61,9 +63,9 @@ class ElasticsearchProductSearchIndexAdapterTest {
                 .price(new BigDecimal("99.99"))
                 .originalPrice(new BigDecimal("199.99"))
                 .stock(10)
-                .status(1)
+                .status(ProductStatus.ONLINE)
                 .viewCount(1000)
-                .conditionLevel(5)
+                .conditionLevel(ConditionLevel.GOOD)
                 .location("北京")
                 .tags("tag1,tag2,tag3")
                 .build();
@@ -88,7 +90,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
         assertThat(doc.getCategoryName()).isEqualTo("手机");
         assertThat(doc.getPrice()).isEqualTo(99.99);
         assertThat(doc.getOriginalPrice()).isEqualTo(199.99);
-        assertThat(doc.getConditionLevel()).isEqualTo((byte) 5);
+        assertThat(doc.getConditionLevel()).isEqualTo((byte) 3);
         assertThat(doc.getStatus()).isEqualTo((byte) 1);
         assertThat(doc.getViewCount()).isEqualTo(1000);
         assertThat(doc.getStock()).isEqualTo(10);

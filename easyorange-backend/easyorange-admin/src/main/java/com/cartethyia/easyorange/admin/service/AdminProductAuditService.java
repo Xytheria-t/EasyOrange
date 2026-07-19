@@ -10,10 +10,10 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import com.cartethyia.easyorange.product.application.query.SellerInfo;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;

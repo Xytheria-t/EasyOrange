@@ -7,18 +7,29 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.concurrent.TimeUnit;
 
 @AutoConfiguration
+@AutoConfigureAfter(org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration.class)
 @RequiredArgsConstructor
 public class LocalCacheConfig {
 
     private final CacheProperties cacheProperties;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
+    /**
+     * 图片处理缓存（通用 Object 类型，适配多种缓存值类型）
+     * <p>
+     * 使用方需自行 cast 缓存值：
+     * <pre>{@code
+     * @SuppressWarnings("unchecked")
+     * Cache<String, ImageProcessingCacheEntry> cache = (Cache<String, ImageProcessingCacheEntry>) imageProcessCache;
+     * }</pre>
+     */
     @Bean("imageProcessCache")
     public Cache<String, Object> imageProcessCache() {
         var imageProps = cacheProperties.getImage();

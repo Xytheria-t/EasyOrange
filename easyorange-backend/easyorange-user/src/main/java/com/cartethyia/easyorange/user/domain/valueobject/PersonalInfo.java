@@ -15,13 +15,14 @@ public record PersonalInfo(
     @Nullable String avatar
 ) {
     public PersonalInfo {
-        requireNonBlank(realName, "realName");
-        requireNonBlank(nickName, "nickName");
-        requireNonBlank(studentId, "studentId");
-        requireNonBlank(avatar, "avatar");
+        rejectBlank(realName, "realName");
+        rejectBlank(nickName, "nickName");
+        rejectBlank(studentId, "studentId");
+        rejectBlank(avatar, "avatar");
     }
 
-    private static void requireNonBlank(@Nullable String value, String fieldName) {
+    /** 拒绝 blank 值；null 是允许的（表示字段未设置） */
+    private static void rejectBlank(@Nullable String value, String fieldName) {
         if (value != null && value.isBlank()) {
             throw new IllegalArgumentException(fieldName + " must not be blank");
         }

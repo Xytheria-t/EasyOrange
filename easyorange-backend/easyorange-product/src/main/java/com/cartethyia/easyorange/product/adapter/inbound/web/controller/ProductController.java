@@ -167,12 +167,8 @@ public class ProductController {
     public Result<PageResult<ProductVO>> getProductsByCategory(
             @PathVariable String categoryId,
             @Valid ProductQueryRequest request) {
-        return Result.success(queryService.listProducts(
-                request.getKeyword(), categoryId, request.getStatus(),
-                request.getMinPrice(), request.getMaxPrice(),
-                request.getConditionLevel(), request.getSort(),
-                request.getHasDiscount(),
-                request.getPageNum(), request.getPageSize()));
+        request.setCategoryId(categoryId);
+        return listProducts(request);
     }
 
     @GetMapping("/{id}/similar")

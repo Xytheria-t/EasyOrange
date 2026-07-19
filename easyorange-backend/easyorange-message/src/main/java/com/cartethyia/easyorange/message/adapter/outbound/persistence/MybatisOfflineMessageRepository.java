@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
-import com.cartethyia.easyorange.message.entity.OfflineMessage;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessageMapper, OfflineMessage> implements OfflineMessageRepository {
+public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessageMapper, OfflineMessageDO> implements OfflineMessageRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
@@ -23,7 +23,7 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
 
     @Override
     public OfflineMessageAggregate save(OfflineMessageAggregate message) {
-        OfflineMessage entity = messageDataMapper.toEntity(message);
+        OfflineMessageDO entity = messageDataMapper.toEntity(message);
         mapper.insert(entity);
         return messageDataMapper.toAggregate(entity);
     }
@@ -32,9 +32,9 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     public List<OfflineMessageAggregate> findPendingByUserId(String userId) {
         return messageDataMapper.toOfflineAggregateList(
                 lambdaQuery()
-                        .eq(OfflineMessage::getUserId, userId)
-                        .eq(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
-                        .orderByAsc(OfflineMessage::getCreateTime)
+                        .eq(OfflineMessageDO::getUserId, userId)
+                        .eq(OfflineMessageDO::getPushStatus, MessageConstant.PUSH_STATUS_PENDING)
+                        .orderByAsc(OfflineMessageDO::getCreateTime)
                         .list()
                         .stream()
                         .filter(msg -> msg.getRetryCount() < msg.getMaxRetryCount())
@@ -45,26 +45,26 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     @Override
     public void markAsPushed(String offlineMessageId) {
         lambdaUpdate()
-                .eq(OfflineMessage::getId, offlineMessageId)
-                .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_PUSHED)
-                .set(OfflineMessage::getPushTime, LocalDateTime.now())
+                .eq(OfflineMessageDO::getId, offlineMessageId)
+                .set(OfflineMessageDO::getPushStatus, MessageConstant.PUSH_STATUS_PUSHED)
+                .set(OfflineMessageDO::getPushTime, LocalDateTime.now())
                 .update();
     }
 
     @Override
     public void markAsFailed(String offlineMessageId) {
         lambdaUpdate()
-                .eq(OfflineMessage::getId, offlineMessageId)
-                .set(OfflineMessage::getPushStatus, MessageConstant.PUSH_STATUS_FAILED)
+                .eq(OfflineMessageDO::getId, offlineMessageId)
+                .set(OfflineMessageDO::getPushStatus, MessageConstant.PUSH_STATUS_FAILED)
                 .update();
     }
 
     @Override
     public void incrementRetryCount(String offlineMessageId) {
         lambdaUpdate()
-                .eq(OfflineMessage::getId, offlineMessageId)
+                .eq(OfflineMessageDO::getId, offlineMessageId)
                 .setSql("retry_count = retry_count + 1")
-                .set(OfflineMessage::getLastRetryTime, LocalDateTime.now())
+                .set(OfflineMessageDO::getLastRetryTime, LocalDateTime.now())
                 .update();
     }
 }

@@ -119,12 +119,12 @@ PageResult.of(records, total, page, size)
 | 领域服务 | `*Service` | `AuthenticationService` |
 | 应用服务 | `*AppService` / `*CommandHandler` | `AuthAppService`, `ProfileAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
-| 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity>` |
+| 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserDO>` |
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
 | 控制器 | `*Controller` | `AuthController` |
 | 请求 DTO | `*Request` | `PasswordLoginRequest`, `RegisterRequest` |
 | 响应 DTO | `*Response` / `*Response` | `UserResponse` |
-| 数据对象 | `*DO` / `*PO` | `UserEntity`, `PaymentPO` |
+| 数据对象 | `*DO` | `UserDO`, `PaymentDO` |
 
 ## 服务层方法返回值约定
 
@@ -151,9 +151,20 @@ public class BaseDO {
     @TableLogic(value = "0", delval = "1")
     private Integer delFlag;
     // version 乐观锁不在 BaseDO 中统一声明，
-    // 按需添加到有并发写冲突风险的 DO 上（ProductDO、OrderDO、PaymentPO 等）
+    // 按需添加到有并发写冲突风险的 DO 上（ProductDO、OrderDO、PaymentDO 等）
 }
 ```
+
+## DO 枚举字段约定
+
+DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类型（`ProductStatus`、`ConditionLevel`），通过自定义 MyBatis TypeHandler 持久化。框架提供两个可继承基类：
+
+| 基类 | 适用列类型 | 示例 |
+|------|-----------|------|
+| `IntegerCodeEnumTypeHandler` | TINYINT / INT | `ProductStatusTypeHandler`, `ConditionLevelTypeHandler` |
+| `CodeEnumTypeHandler` | VARCHAR | `UserStatus` 等 String 枚举 |
+
+新增枚举字段步骤：① 创建 TypeHandler 继承对应基类，标注 `@MappedTypes`；② 将 TypeHandler 所在包加入 `application.yaml` 的 `mybatis-plus.type-handlers-package`；③ DO 字段类型改为枚举。参考实现：`easyorange-product` 模块的 `ProductStatusTypeHandler` + `ConditionLevelTypeHandler`。
 
 ## 测试策略
 
@@ -257,6 +268,17 @@ Jackson 3 相比 Jackson 2 有 API 变更，迁移时需注意：
 ### Spring Boot 4 @WebMvcTest 路径变化
 
 Spring Boot 4.0 迁移到 `org.springframework.boot.webmvc.test` 包。规则：① 新 import 路径；② 无 `@SpringBootConfiguration` 的模块在 test 下创建空 `@SpringBootApplication` 类；③ `@ComponentScan` 限于 web controller 包，否则拉入 persistence 类导致切片失败。参考 `easyorange-order` 的 `OrderTestApplication`。
+
+### Spring Boot 4 RedisTemplate 类型约定
+
+Spring Boot 4 自动配置的 `RedisTemplate` 泛型为 `<Object, Object>`，非 `<String, Object>`。**全项目统一约定**：
+
+- 所有注入 `RedisTemplate` 的地方声明为 `RedisTemplate<Object, Object>`（匹配自动配置）
+- 禁止自定义 `RedisTemplate<String, Object>` Bean（会与自动配置冲突）
+- Mock 测试中的 `HashOperations` / `ValueOperations` 也需改为 `<Object, Object>` 类型
+- Spring Boot 4 的 `GenericJacksonJsonRedisSerializer` 已支持 Jackson 3，无需自定义序列化器
+
+**已修复（2026-07-18）**：全项目（framework + 5 个业务模块 + 8 个测试文件）已统一改为 `<Object, Object>`，删除了 `RedisConfig` 中的自定义 Bean 定义。
 
 ### Port/Adapter / MapStruct IntelliJ 误报
 

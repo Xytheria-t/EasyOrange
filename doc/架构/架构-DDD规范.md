@@ -126,18 +126,18 @@ public interface UserRepository {
 
 // adapter/outbound/persistence/UserRepositoryImpl.java
 // 继承 framework/repository/BaseRepository 获取 lambdaQuery()/lambdaUpdate() 便利方法
-public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> implements UserRepository {
+public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> implements UserRepository {
 
     @Override
     public User save(User user) {
-        UserEntity entity = UserAssembler.toEntity(user);
+        UserDO entity = UserAssembler.toEntity(user);
         mapper.insertOrUpdate(entity);
         return UserAssembler.toDomain(entity);
     }
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return findBy(UserEntity::getUsername, username).map(this::toDomain);
+        return findBy(UserDO::getUsername, username).map(this::toDomain);
     }
 }
 ```
@@ -490,7 +490,7 @@ public class RegistrationService {
 
 ### 9. DO 命名规范
 
-- 数据库实体统一使用 `DO` 后缀或 `Entity` 后缀或 `PO` 后缀：`UserEntity`、`ProductDO`、`PaymentPO`
+- 数据库实体统一使用 `*DO` 后缀：`UserDO`、`ProductDO`、`PaymentDO`
 - DO/PO 仅存在于 `adapter/outbound/persistence` 包中，不得泄漏到领域层
 - DO/PO 与聚合根之间的转换在 `RepositoryImpl` 或 `Converter/Assembler` 中完成
 

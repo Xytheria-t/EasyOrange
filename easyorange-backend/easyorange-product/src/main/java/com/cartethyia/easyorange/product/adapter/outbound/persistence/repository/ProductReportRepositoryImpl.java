@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductReportDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductReportDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductReportMapper;
 import org.springframework.stereotype.Repository;
 

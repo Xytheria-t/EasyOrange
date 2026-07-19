@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class UserEntity extends BaseDO {
+public class UserDO extends BaseDO {
 
     @TableId(value = "user_id", type = IdType.INPUT)
     private String id;

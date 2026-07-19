@@ -27,16 +27,16 @@ import static org.mockito.Mockito.*;
 class ProductViewCountServiceTest {
 
     @Mock
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisTemplate<Object, Object> redisTemplate;
 
     @Mock
     private ProductMapper productMapper;
 
     @Mock
-    private HashOperations<String, Object, Object> hashOperations;
+    private HashOperations<Object, Object, Object> hashOperations;
 
     @Mock
-    private ValueOperations<String, Object> valueOperations;
+    private ValueOperations<Object, Object> valueOperations;
 
     @Captor
     private ArgumentCaptor<Set<Object>> deleteKeysCaptor;

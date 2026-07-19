@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.user.adapter.outbound.mock;
 import com.cartethyia.easyorange.user.domain.port.SmsSenderPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 /**
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Component;
  * <p>
  * 不真实调用短信服务商，而是将验证码打印到日志，方便开发调试。
  * <p>
- * 当存在其他 {@link SmsSenderPort} 实现时自动跳过，生产环境替换为真实 SMS 发送实现即可覆盖。
+ * 生产环境替换为真实 SMS 发送实现。
  */
 @Component
-@ConditionalOnMissingBean(SmsSenderPort.class)
+@Profile({"dev", "test", "default"})
 public class MockSmsSenderAdapter implements SmsSenderPort {
 
     private static final Logger log = LoggerFactory.getLogger(MockSmsSenderAdapter.class);

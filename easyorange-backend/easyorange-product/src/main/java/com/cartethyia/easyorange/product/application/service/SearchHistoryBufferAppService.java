@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.service;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.SearchHistoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.SearchHistoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.SearchHistoryMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.product.application.query.SellerInfo;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -45,5 +45,4 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
     void updateSearchText(@Param("productId") String productId,
                           @Param("searchText") String searchText);
 
-    int updateStatus(@Param("id") String id, @Param("status") Integer status, @Param("version") Integer version);
 }

@@ -56,7 +56,7 @@ framework/
 ├── file/                     # 文件上传下载
 │   ├── adapter/inbound/web/controller/FileController.java
 │   ├── dto/UploadFileVO.java
-│   ├── entity/UploadFile.java
+│   ├── entity/UploadFileDO.java
 │   ├── mapper/UploadFileMapper.java
 │   ├── service/
 │   │   ├── FileService.java
@@ -132,7 +132,7 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 5. 登出时 Token 的 jti 加入 Redis 黑名单（TTL = 剩余有效期，自动过期）
 6. `WebSocketAuthInterceptor` 复用 `JwtDecoder` bean 做连接握手认证
 
-> **管理员判定**：在 `AuthAppService.login()` 中通过 `UserType.isAdmin()` 决议 `UserType → authorities`，将 `["ROLE_ADMIN", "ROLE_USER"]` 或 `["ROLE_USER"]` 写入 JWT 的 `"authorities"` claim。资源服务器直接读取该 claim，无需重新判定。
+> **管理员判定**：后端通过 `UserType.getDefaultRoles()`（领域枚举，在 `AuthAppService.login()` 中调用）决议 `UserType → authorities`，将 `["ROLE_ADMIN", "ROLE_USER"]` 或 `["ROLE_USER"]` 写入 JWT 的 `"authorities"` claim。资源服务器直接读取该 claim，无需重新判定。
 
 ### 领域事件发布流程
 

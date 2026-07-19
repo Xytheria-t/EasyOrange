@@ -157,13 +157,13 @@ class AdminProductServiceTest {
         @Test
         @DisplayName("更新商品状态成功 — ONLINE -> OFFLINE")
         void updateProductStatus_success() {
-            Product product = Product.reconstitute(
-                    ProductId.of(PRODUCT_ID), SellerId.of("1"), CategoryId.of("1"),
-                    ProductTitle.of("测试商品"), Money.of(new BigDecimal("99.99")), null,
-                    StockQuantity.of(10), Version.INITIAL, ProductStatus.ONLINE,
-                    0, null, null, null, null, null, TagSet.empty(), null, null,
-                    LocalDateTime.now(), LocalDateTime.now()
-            );
+            Product product = Product.builder()
+                    .id(ProductId.of(PRODUCT_ID)).sellerId(SellerId.of("1")).categoryId(CategoryId.of("1"))
+                    .title(ProductTitle.of("测试商品")).price(Money.of(new BigDecimal("99.99")))
+                    .stock(StockQuantity.of(10)).version(Version.INITIAL).status(ProductStatus.ONLINE)
+                    .tags(TagSet.empty())
+                    .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
+                    .build();
             when(productRepository.findById(ProductId.of(PRODUCT_ID)))
                     .thenReturn(Optional.of(product));
 

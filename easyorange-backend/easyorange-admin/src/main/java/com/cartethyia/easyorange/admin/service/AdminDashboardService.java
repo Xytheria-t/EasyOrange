@@ -14,7 +14,7 @@ import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -58,13 +58,13 @@ public class AdminDashboardService {
 
     public DashboardStatsResponse getDashboardStats() {
         long totalUsers = ChainWrappers.lambdaQueryChain(userMapper)
-            .eq(UserEntity::getDelFlag, 0)
+            .eq(UserDO::getDelFlag, 0)
             .count();
 
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         long todayNewUsers = ChainWrappers.lambdaQueryChain(userMapper)
-            .eq(UserEntity::getDelFlag, 0)
-            .ge(UserEntity::getCreateTime, todayStart)
+            .eq(UserDO::getDelFlag, 0)
+            .ge(UserDO::getCreateTime, todayStart)
             .count();
 
         long totalProducts = productQueryRepository.countByStatus(null);
@@ -112,9 +112,9 @@ public class AdminDashboardService {
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
 
         return ChainWrappers.lambdaQueryChain(userMapper)
-            .eq(UserEntity::getDelFlag, 0)
-            .ge(UserEntity::getCreateTime, todayStart)
-            .orderByDesc(UserEntity::getCreateTime)
+            .eq(UserDO::getDelFlag, 0)
+            .ge(UserDO::getCreateTime, todayStart)
+            .orderByDesc(UserDO::getCreateTime)
             .last("LIMIT " + limit)
             .list()
             .stream()
@@ -293,7 +293,7 @@ public class AdminDashboardService {
         );
     }
 
-    private RecentUserResponse toRecentUserResponse(UserEntity entity) {
+    private RecentUserResponse toRecentUserResponse(UserDO entity) {
         return RecentUserResponse.builder()
             .userId(entity.getId())
             .username(entity.getUsername())

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter;
 
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.mapstruct.Mapper;
@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Mapper(componentModel = "spring")
 public interface PaymentDataMapper {
 
-    default PaymentAggregate toAggregate(PaymentPO po) {
+    default PaymentAggregate toAggregate(PaymentDO po) {
         if (po == null) {
             return null;
         }
@@ -33,11 +33,11 @@ public interface PaymentDataMapper {
         );
     }
 
-    default PaymentPO toPO(PaymentAggregate aggregate) {
+    default PaymentDO toPO(PaymentAggregate aggregate) {
         if (aggregate == null) {
             return null;
         }
-        return PaymentPO.builder()
+        return PaymentDO.builder()
                 .id(aggregate.id())
                 .paymentNo(aggregate.paymentNo())
                 .orderId(aggregate.orderId())

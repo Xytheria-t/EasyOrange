@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.payment.adapter.outbound.persistence.po;
+package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_payment")
-public class PaymentPO extends BaseDO {
+public class PaymentDO extends BaseDO {
 
     private String paymentNo;
 

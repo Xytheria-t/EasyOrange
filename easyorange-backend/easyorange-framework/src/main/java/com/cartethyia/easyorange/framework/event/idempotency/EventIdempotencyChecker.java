@@ -17,10 +17,10 @@ public class EventIdempotencyChecker {
     private static final long LOCK_TIMEOUT_SECONDS = 30;
     private static final long DONE_TTL_HOURS = 24;
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     private final RedissonClient redissonClient;
 
-    public EventIdempotencyChecker(RedisTemplate<String, Object> redisTemplate, RedissonClient redissonClient) {
+    public EventIdempotencyChecker(RedisTemplate<Object, Object> redisTemplate, RedissonClient redissonClient) {
         this.redisTemplate = redisTemplate;
         this.redissonClient = redissonClient;
     }

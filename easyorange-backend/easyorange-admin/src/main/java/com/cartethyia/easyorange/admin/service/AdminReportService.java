@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHand
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.dataobject.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
@@ -19,7 +19,7 @@ import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
-import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserEntity;
+import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +50,7 @@ public class AdminReportService {
 
         PageResult<ProductReport> reportPage = productReportRepository.findByStatus(status, page, size);
 
-        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
+        Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
         Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
 
         List<AdminReportResponse> records = reportPage.records().stream()
@@ -65,7 +65,7 @@ public class AdminReportService {
         ProductReport report = productReportRepository.findById(id);
         BizRequire.notNull(report, "举报记录不存在");
 
-        Map<String, UserEntity> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
+        Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(List.of(report.getReporterId()));
         Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(List.of(report.getProductId()));
 
         return toAdminReportResponse(report, userMap, productMap);
@@ -82,7 +82,7 @@ public class AdminReportService {
     public List<ReportHandleHistoryResponse> getReportHistory(String reportId) {
         List<ReportHandleHistory> histories = reportHandleHistoryRepository.findByReportId(reportId);
 
-        Map<String, UserEntity> operatorMap = batchQueryUtil.batchGetUsers(histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
+        Map<String, UserDO> operatorMap = batchQueryUtil.batchGetUsers(histories.stream().map(ReportHandleHistory::getOperatorId).distinct().toList());
 
         return histories.stream()
             .map(h -> toHistoryResponse(h, operatorMap))
@@ -203,10 +203,10 @@ public class AdminReportService {
 
     private AdminReportResponse toAdminReportResponse(
         ProductReport report,
-        Map<String, UserEntity> userMap,
+        Map<String, UserDO> userMap,
         Map<String, ProductDO> productMap
     ) {
-        UserEntity reporter = userMap.get(report.getReporterId());
+        UserDO reporter = userMap.get(report.getReporterId());
         ProductDO product = productMap.get(report.getProductId());
 
         String statusDesc = switch (report.statusCode()) {
@@ -248,9 +248,9 @@ public class AdminReportService {
 
     private ReportHandleHistoryResponse toHistoryResponse(
         ReportHandleHistory history,
-        Map<String, UserEntity> operatorMap
+        Map<String, UserDO> operatorMap
     ) {
-        UserEntity operator = operatorMap.get(history.getOperatorId());
+        UserDO operator = operatorMap.get(history.getOperatorId());
 
         String actionDesc = switch (history.getAction()) {
             case "resolve" -> "处理通过";

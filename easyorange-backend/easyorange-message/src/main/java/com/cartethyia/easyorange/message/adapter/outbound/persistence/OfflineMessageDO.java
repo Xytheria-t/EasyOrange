@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.message.entity;
+package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_offline_message")
-public class OfflineMessage extends BaseDO {
+public class OfflineMessageDO extends BaseDO {
 
     private String userId;
     private String messageId;

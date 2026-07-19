@@ -44,11 +44,11 @@ class UserRepositoryImplTest {
 
     @BeforeAll
     static void initMybatisPlusCache() {
-        if (TableInfoHelper.getTableInfo(UserEntity.class) == null) {
+        if (TableInfoHelper.getTableInfo(UserDO.class) == null) {
             MybatisConfiguration configuration = new MybatisConfiguration();
             MapperBuilderAssistant assistant = new MapperBuilderAssistant(configuration, "");
             assistant.setCurrentNamespace("com.cartethyia.easyorange.user.infrastructure.persistence.UserMapper");
-            TableInfoHelper.initTableInfo(assistant, UserEntity.class);
+            TableInfoHelper.initTableInfo(assistant, UserDO.class);
         }
     }
 
@@ -57,8 +57,8 @@ class UserRepositoryImplTest {
         userRepository = new UserRepositoryImpl(userMapper, entityMapper);
     }
 
-    private UserEntity buildTestEntity() {
-        return UserEntity.builder()
+    private UserDO buildTestEntity() {
+        return UserDO.builder()
             .id("1")
             .username("testuser")
             .password("$2a$10$encoded")
@@ -108,7 +108,7 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应返回领域用户")
         void shouldReturnDomainUser() {
-            UserEntity entity = buildTestEntity();
+            UserDO entity = buildTestEntity();
             when(userMapper.selectById("1")).thenReturn(entity);
             when(entityMapper.toDomain(entity)).thenReturn(buildTestDomainUser());
 
@@ -143,9 +143,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应返回领域用户")
         void shouldReturnDomainUser() {
-            UserEntity entity = buildTestEntity();
+            UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
+            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByUsername("testuser");
 
@@ -176,23 +176,23 @@ class UserRepositoryImplTest {
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
                 .build();
-            when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
+            when(entityMapper.from(domainUser)).thenReturn(UserDO.builder()
                 .username("newuser")
                 .password("$2a$10$encoded")
                 .userType(UserType.NORMAL)
                 .status(UserStatus.NORMAL)
                 .build());
             doAnswer(invocation -> {
-                UserEntity e = invocation.getArgument(0);
+                UserDO e = invocation.getArgument(0);
                 e.setId("1");
                 return 1;
-            }).when(userMapper).insert(any(UserEntity.class));
+            }).when(userMapper).insert(any(UserDO.class));
 
             User result = userRepository.save(domainUser);
 
             assertThat(result).isNotNull();
             assertThat(result.getId()).isEqualTo("1");
-            verify(userMapper).insert(any(UserEntity.class));
+            verify(userMapper).insert(any(UserDO.class));
         }
     }
 
@@ -208,17 +208,17 @@ class UserRepositoryImplTest {
                 .credentials(new Credentials("testuser", "password"))
                 .contactInfo(new ContactInfo("updated@example.com", null))
                 .build();
-            when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
+            when(entityMapper.from(domainUser)).thenReturn(UserDO.builder()
                 .id("1")
                 .username("testuser")
                 .password("password")
                 .email("updated@example.com")
                 .build());
-            when(userMapper.updateById(any(UserEntity.class))).thenReturn(1);
+            when(userMapper.updateById(any(UserDO.class))).thenReturn(1);
 
             userRepository.update(domainUser);
 
-            verify(userMapper).updateById(any(UserEntity.class));
+            verify(userMapper).updateById(any(UserDO.class));
         }
 
         @Test
@@ -228,12 +228,12 @@ class UserRepositoryImplTest {
                 .id("999")
                 .credentials(new Credentials("testuser", "password"))
                 .build();
-            when(entityMapper.from(domainUser)).thenReturn(UserEntity.builder()
+            when(entityMapper.from(domainUser)).thenReturn(UserDO.builder()
                 .id("999")
                 .username("testuser")
                 .password("password")
                 .build());
-            when(userMapper.updateById(any(UserEntity.class))).thenReturn(0);
+            when(userMapper.updateById(any(UserDO.class))).thenReturn(0);
 
             assertThatThrownBy(() -> userRepository.update(domainUser))
                 .isInstanceOf(ConcurrentUpdateException.class);
@@ -293,9 +293,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应通过邮箱查找用户")
         void shouldFindByEmail() {
-            UserEntity entity = buildTestEntity();
+            UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
+            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("test@example.com");
 
@@ -306,9 +306,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应通过手机号查找用户")
         void shouldFindByPhone() {
-            UserEntity entity = buildTestEntity();
+            UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
+            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByLoginIdentifier("13812345678");
 
@@ -324,9 +324,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应返回领域用户")
         void shouldReturnDomainUser() {
-            UserEntity entity = buildTestEntity();
+            UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
+            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByPhone("13812345678");
 
@@ -342,9 +342,9 @@ class UserRepositoryImplTest {
         @Test
         @DisplayName("应返回领域用户")
         void shouldReturnDomainUser() {
-            UserEntity entity = buildTestEntity();
+            UserDO entity = buildTestEntity();
             when(userMapper.selectOne(any())).thenReturn(entity);
-            when(entityMapper.toDomain(any(UserEntity.class))).thenReturn(buildTestDomainUser());
+            when(entityMapper.toDomain(any(UserDO.class))).thenReturn(buildTestDomainUser());
 
             Optional<User> result = userRepository.findByEmail("test@example.com");
 

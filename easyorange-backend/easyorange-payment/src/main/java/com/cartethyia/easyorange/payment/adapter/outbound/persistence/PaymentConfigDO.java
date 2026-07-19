@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.payment.adapter.outbound.persistence.po;
+package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
@@ -16,7 +16,7 @@ import lombok.experimental.SuperBuilder;
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @TableName("eo_payment_config")
-public class PaymentConfigPO extends BaseDO {
+public class PaymentConfigDO extends BaseDO {
 
     private String channelCode;
 

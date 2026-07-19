@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> implements UserRepository {
+public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> implements UserRepository {
 
     private final UserEntityMapper entityMapper;
 
@@ -37,29 +37,29 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
     @Override
     public List<User> findAllByIds(Collection<String> ids) {
-        return findAllByIn(UserEntity::getId, ids).stream()
+        return findAllByIn(UserDO::getId, ids).stream()
             .map(entityMapper::toDomain)
             .toList();
     }
 
     @Override
     public Optional<User> findByEmail(String email) {
-        return findBy(UserEntity::getEmail, email).map(entityMapper::toDomain);
+        return findBy(UserDO::getEmail, email).map(entityMapper::toDomain);
     }
 
     @Override
     public Optional<User> findByPhone(String phone) {
-        return findBy(UserEntity::getPhone, phone).map(entityMapper::toDomain);
+        return findBy(UserDO::getPhone, phone).map(entityMapper::toDomain);
     }
 
     @Override
     public Optional<User> findByStudentId(String studentId) {
-        return findBy(UserEntity::getStudentId, studentId).map(entityMapper::toDomain);
+        return findBy(UserDO::getStudentId, studentId).map(entityMapper::toDomain);
     }
 
     @Override
     public Optional<User> findByUsername(String username) {
-        return findBy(UserEntity::getUsername, username).map(entityMapper::toDomain);
+        return findBy(UserDO::getUsername, username).map(entityMapper::toDomain);
     }
 
     @Override
@@ -70,11 +70,11 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
         var trimmed = identifier.trim();
         return Optional.ofNullable(lambdaQuery()
-                .eq(UserEntity::getUsername, trimmed)
+                .eq(UserDO::getUsername, trimmed)
                 .or()
-                .eq(UserEntity::getEmail, trimmed)
+                .eq(UserDO::getEmail, trimmed)
                 .or()
-                .eq(UserEntity::getPhone, trimmed)
+                .eq(UserDO::getPhone, trimmed)
                 .one())
                 .map(entityMapper::toDomain);
     }
@@ -83,14 +83,14 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
 
     @Override
     public User save(User user) {
-        UserEntity entity = entityMapper.from(user);
+        UserDO entity = entityMapper.from(user);
         mapper.insert(entity);
         return user.assignId(entity.getId());
     }
 
     @Override
     public void update(User user) {
-        UserEntity entity = entityMapper.from(user);
+        UserDO entity = entityMapper.from(user);
         if (mapper.updateById(entity) == 0) {
             throw new ConcurrentUpdateException("用户更新冲突: id=" + user.getId());
         }
@@ -104,9 +104,9 @@ public class UserRepositoryImpl extends BaseRepository<UserMapper, UserEntity> i
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void updateLoginInfo(String userId, String loginIp) {
         boolean updated = lambdaUpdate()
-            .eq(UserEntity::getId, userId)
-            .set(UserEntity::getLoginDate, LocalDateTime.now())
-            .set(UserEntity::getLoginIp, loginIp)
+            .eq(UserDO::getId, userId)
+            .set(UserDO::getLoginDate, LocalDateTime.now())
+            .set(UserDO::getLoginIp, loginIp)
             .update();
         if (!updated) {
             throw BusinessException.of(UserResultCode.USER_NOT_FOUND);

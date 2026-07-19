@@ -20,23 +20,23 @@ import java.util.function.Function;
 public interface UserEntityMapper {
 
     @Mapping(target = "encodedPassword", source = "password")
-    Credentials toCredentials(UserEntity entity);
+    Credentials toCredentials(UserDO entity);
 
-    ContactInfo toContactInfo(UserEntity entity);
+    ContactInfo toContactInfo(UserDO entity);
 
-    LoginInfo toLoginInfo(UserEntity entity);
+    LoginInfo toLoginInfo(UserDO entity);
 
-    AuditInfo toAuditInfo(UserEntity entity);
+    AuditInfo toAuditInfo(UserDO entity);
 
-    PersonalInfo toPersonalInfo(UserEntity entity);
+    PersonalInfo toPersonalInfo(UserDO entity);
 
-    User toDomain(UserEntity entity);
+    User toDomain(UserDO entity);
 
-    default UserEntity from(User user) {
+    default UserDO from(User user) {
         if (user == null) {
             return null;
         }
-        return UserEntity.builder()
+        return UserDO.builder()
             .id(user.getId())
             .username(user.getUsername())
             .password(user.getPassword())

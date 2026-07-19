@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.framework.file.dto.UploadFileVO;
-import com.cartethyia.easyorange.framework.file.entity.UploadFile;
+import com.cartethyia.easyorange.framework.file.entity.UploadFileDO;
 import com.cartethyia.easyorange.framework.file.mapper.UploadFileMapper;
 import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.storage.FileStorage;
@@ -51,7 +51,7 @@ public class FileServiceImpl implements FileService {
             var content = file.getBytes();
             var storageKey = fileStorage.store(content, file.getOriginalFilename(), file.getContentType());
 
-            var entity = new UploadFile();
+            var entity = new UploadFileDO();
             entity.setFileName(file.getOriginalFilename());
             entity.setStorageKey(storageKey);
             entity.setFileUrl(fileStorage.getUrl(storageKey));
@@ -125,11 +125,11 @@ public class FileServiceImpl implements FileService {
     @Override
     public List<UploadFileVO> getFilesByBusiness(String businessType, String businessId) {
         return uploadFileMapper.selectList(
-                new LambdaQueryWrapper<UploadFile>()
-                        .eq(UploadFile::getBusinessType, businessType)
-                        .eq(UploadFile::getBusinessId, businessId)
-                        .eq(UploadFile::getStatus, CommonConstant.FILE_STATUS_NORMAL)
-                        .orderByAsc(UploadFile::getCreateTime))
+                new LambdaQueryWrapper<UploadFileDO>()
+                        .eq(UploadFileDO::getBusinessType, businessType)
+                        .eq(UploadFileDO::getBusinessId, businessId)
+                        .eq(UploadFileDO::getStatus, CommonConstant.FILE_STATUS_NORMAL)
+                        .orderByAsc(UploadFileDO::getCreateTime))
                 .stream()
                 .map(FileServiceImpl::toVo)
                 .toList();
@@ -149,7 +149,7 @@ public class FileServiceImpl implements FileService {
         return new FileSystemResource(path);
     }
 
-    private static UploadFileVO toVo(UploadFile entity) {
+    private static UploadFileVO toVo(UploadFileDO entity) {
         return new UploadFileVO(
                 entity.getId(),
                 entity.getFileName(),

@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
-import com.cartethyia.easyorange.message.entity.Message;
+import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
 import org.springframework.stereotype.Repository;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
-public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper, Message> implements MessageQueryRepository {
+public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper, MessageDO> implements MessageQueryRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
@@ -39,20 +39,20 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
                 .pageNum(query.pageNum())
                 .pageSize(query.pageSize())
                 .build();
-        Page<Message> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
+        Page<MessageDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
         var wrapper = lambdaQuery();
-        wrapper.eq(Message::getReceiverId, userId);
+        wrapper.eq(MessageDO::getReceiverId, userId);
 
         if (query.type() != null) {
-            wrapper.eq(Message::getType, query.type());
+            wrapper.eq(MessageDO::getType, query.type());
         }
         if (query.isRead() != null) {
-            wrapper.eq(Message::getIsRead, query.isRead());
+            wrapper.eq(MessageDO::getIsRead, query.isRead());
         }
 
-        wrapper.orderByDesc(Message::getCreateTime);
+        wrapper.orderByDesc(MessageDO::getCreateTime);
 
-        Page<Message> messagePage = wrapper.page(page);
+        Page<MessageDO> messagePage = wrapper.page(page);
         return toAggregatePageResult(messagePage);
     }
 
@@ -62,18 +62,18 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
                 .pageNum(query.pageNum())
                 .pageSize(query.pageSize())
                 .build();
-        Page<Message> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
+        Page<MessageDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
         var wrapper = lambdaQuery();
-        wrapper.eq(Message::getReceiverId, userId)
-                .eq(Message::getIsRead, MessageStatus.UNREAD.getCode());
+        wrapper.eq(MessageDO::getReceiverId, userId)
+                .eq(MessageDO::getIsRead, MessageStatus.UNREAD.getCode());
 
         if (query.type() != null) {
-            wrapper.eq(Message::getType, query.type());
+            wrapper.eq(MessageDO::getType, query.type());
         }
 
-        wrapper.orderByDesc(Message::getCreateTime);
+        wrapper.orderByDesc(MessageDO::getCreateTime);
 
-        Page<Message> messagePage = wrapper.page(page);
+        Page<MessageDO> messagePage = wrapper.page(page);
         return toAggregatePageResult(messagePage);
     }
 
@@ -99,7 +99,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
         );
     }
 
-    private PageResult<MessageAggregate> toAggregatePageResult(Page<Message> messagePage) {
+    private PageResult<MessageAggregate> toAggregatePageResult(Page<MessageDO> messagePage) {
         List<MessageAggregate> records = messageDataMapper.toAggregateList(messagePage.getRecords());
         return PageResult.of(records, messagePage.getTotal(),
                 (int) messagePage.getCurrent(), (int) messagePage.getSize());

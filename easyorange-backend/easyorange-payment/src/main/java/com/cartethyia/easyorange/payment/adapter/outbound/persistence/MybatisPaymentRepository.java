@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
-import com.cartethyia.easyorange.payment.adapter.outbound.persistence.po.PaymentPO;
+import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, PaymentPO> implements PaymentRepositoryPort, PaymentQueryRepositoryPort {
+public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, PaymentDO> implements PaymentRepositoryPort, PaymentQueryRepositoryPort {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final PaymentDataMapper paymentDataMapper;
@@ -33,7 +33,7 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
 
     @Override
     public void update(PaymentAggregate aggregate) {
-        PaymentPO po = paymentDataMapper.toPO(aggregate);
+        PaymentDO po = paymentDataMapper.toPO(aggregate);
         int rows = mapper.updateById(po);
 
         if (rows == 0) {
@@ -48,13 +48,13 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
 
     @Override
     public Optional<PaymentAggregate> findByPaymentNo(String paymentNo) {
-        return Optional.ofNullable(lambdaQuery().eq(PaymentPO::getPaymentNo, paymentNo).one())
+        return Optional.ofNullable(lambdaQuery().eq(PaymentDO::getPaymentNo, paymentNo).one())
                 .map(paymentDataMapper::toAggregate);
     }
 
     @Override
     public Optional<PaymentAggregate> findByOrderId(String orderId) {
-        return Optional.ofNullable(lambdaQuery().eq(PaymentPO::getOrderId, orderId).one())
+        return Optional.ofNullable(lambdaQuery().eq(PaymentDO::getOrderId, orderId).one())
                 .map(paymentDataMapper::toAggregate);
     }
 
@@ -75,10 +75,10 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
 
     @Override
     public List<PaymentAggregate> findByUserIdAndStatus(String userId, Integer status, int pageNum, int pageSize) {
-        Page<PaymentPO> page = lambdaQuery()
-                .eq(userId != null, PaymentPO::getUserId, userId)
-                .eq(status != null, PaymentPO::getStatus, status)
-                .orderByDesc(PaymentPO::getCreateTime)
+        Page<PaymentDO> page = lambdaQuery()
+                .eq(userId != null, PaymentDO::getUserId, userId)
+                .eq(status != null, PaymentDO::getStatus, status)
+                .orderByDesc(PaymentDO::getCreateTime)
                 .page(new Page<>(pageNum, pageSize));
         return page.getRecords().stream().map(paymentDataMapper::toAggregate).toList();
     }
@@ -86,8 +86,8 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     @Override
     public long countByUserIdAndStatus(String userId, Integer status) {
         return lambdaQuery()
-                .eq(userId != null, PaymentPO::getUserId, userId)
-                .eq(status != null, PaymentPO::getStatus, status)
+                .eq(userId != null, PaymentDO::getUserId, userId)
+                .eq(status != null, PaymentDO::getStatus, status)
                 .count();
     }
 }
