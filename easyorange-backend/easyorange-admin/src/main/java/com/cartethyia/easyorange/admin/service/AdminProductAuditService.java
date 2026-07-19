@@ -220,7 +220,7 @@ public class AdminProductAuditService {
                 product.getName(),
                 description,
                 categoryName,
-                product.getConditionLevel(),
+                product.getConditionLevel() != null ? product.getConditionLevel().getCode() : null,
                 product.getPrice().toString(),
                 sellerName,
                 imageUrls

@@ -12,4 +12,8 @@ public record PaymentCreatedEvent(
         BigDecimal amount,
         Integer paymentMethod
 ) implements DomainEvent {
+    @Override
+    public String aggregateId() {
+        return paymentId;
+    }
 }

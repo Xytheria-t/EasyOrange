@@ -12,4 +12,9 @@ public record PaymentInitiationRequestedEvent(
         String attach,
         String description
 ) implements DomainEvent {
+
+    @Override
+    public String aggregateId() {
+        return orderId;
+    }
 }

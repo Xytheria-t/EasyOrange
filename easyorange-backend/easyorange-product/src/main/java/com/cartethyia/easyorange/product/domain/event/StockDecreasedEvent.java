@@ -7,4 +7,9 @@ public record StockDecreasedEvent(String productId, int quantity) implements Dom
     public static StockDecreasedEvent of(String productId) {
         return new StockDecreasedEvent(productId, 1);
     }
+
+    @Override
+    public String aggregateId() {
+        return productId;
+    }
 }

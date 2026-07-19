@@ -9,4 +9,9 @@ public record OrderCompletedEvent(String orderId, List<String> productIds) imple
     public OrderCompletedEvent {
         productIds = List.copyOf(productIds);
     }
+
+    @Override
+    public String aggregateId() {
+        return orderId;
+    }
 }

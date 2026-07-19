@@ -6,4 +6,8 @@ import java.time.LocalDateTime;
 
 public record ProductAuditedEvent(String productId, String productName, String sellerId,
                                   Integer action, String reason, LocalDateTime auditTime) implements DomainEvent {
+    @Override
+    public String aggregateId() {
+        return productId;
+    }
 }

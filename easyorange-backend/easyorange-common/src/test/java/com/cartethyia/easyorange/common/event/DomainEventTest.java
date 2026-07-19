@@ -48,9 +48,31 @@ class DomainEventTest {
     }
 
     // Test helper classes
-    static class TestProductCreatedEvent implements DomainEvent {}
-    static class TestDomainNotification implements DomainEvent {}
-    static class TestLogin implements DomainEvent {}
+    static class TestProductCreatedEvent implements DomainEvent {
+        @Override
+        public String aggregateId() {
+            return "agg-1";
+        }
+    }
 
-    record TestRecordEvent(String value) implements DomainEvent {}
+    static class TestDomainNotification implements DomainEvent {
+        @Override
+        public String aggregateId() {
+            return "agg-2";
+        }
+    }
+
+    static class TestLogin implements DomainEvent {
+        @Override
+        public String aggregateId() {
+            return "user-1";
+        }
+    }
+
+    record TestRecordEvent(String value) implements DomainEvent {
+        @Override
+        public String aggregateId() {
+            return value;
+        }
+    }
 }

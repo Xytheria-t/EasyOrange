@@ -7,4 +7,9 @@ public record StockRestoredEvent(String productId, int quantity) implements Doma
     public static StockRestoredEvent of(String productId) {
         return new StockRestoredEvent(productId, 1);
     }
+
+    @Override
+    public String aggregateId() {
+        return productId;
+    }
 }

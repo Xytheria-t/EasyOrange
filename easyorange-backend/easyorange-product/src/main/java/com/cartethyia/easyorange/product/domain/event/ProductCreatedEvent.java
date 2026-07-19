@@ -13,4 +13,9 @@ public record ProductCreatedEvent(String productId, String userId, String catego
     public ProductCreatedEvent {
         imageUrls = imageUrls != null ? List.copyOf(imageUrls) : List.of();
     }
+
+    @Override
+    public String aggregateId() {
+        return productId;
+    }
 }

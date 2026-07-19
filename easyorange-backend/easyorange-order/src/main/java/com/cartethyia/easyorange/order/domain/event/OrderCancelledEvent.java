@@ -9,4 +9,9 @@ public record OrderCancelledEvent(String orderId, List<String> productIds, Strin
     public OrderCancelledEvent {
         productIds = List.copyOf(productIds);
     }
+
+    @Override
+    public String aggregateId() {
+        return orderId;
+    }
 }

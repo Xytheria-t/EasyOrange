@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.messaging.config;
 
+import com.cartethyia.easyorange.framework.event.metadata.EventMetadataMessagePostProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.*;
@@ -103,10 +104,19 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, MessageConverter jsonMessageConverter) {
+    public EventMetadataMessagePostProcessor eventMetadataMessagePostProcessor() {
+        return new EventMetadataMessagePostProcessor();
+    }
+
+    @Bean
+    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory,
+                                         MessageConverter jsonMessageConverter,
+                                         EventMetadataMessagePostProcessor metadataPostProcessor) {
         var template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(jsonMessageConverter);
         template.setMandatory(true);
+        // 发布前注入事件元数据（eventId / timestamp / traceId）到 message headers
+        template.setBeforePublishPostProcessors(metadataPostProcessor);
         return template;
     }
 
