@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.common.util.Singleflight;
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
@@ -32,6 +33,7 @@ public class ProductQueryService {
     private final ProductQueryRepository productQueryRepository;
     private final ProductReadModelAssembler readModelAssembler;
     private final ProductCachePort<ProductVO> productCachePort;
+    private final Singleflight<String, ProductVO> productSingleflight = new Singleflight<>();
 
     // ── Public query API (single → multi → computed → paged) ──
 
@@ -47,12 +49,18 @@ public class ProductQueryService {
             return cachedProduct.get();
         }
 
-        var product = productRepository.findById(ProductId.of(id))
-                .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
-        var productVO = assembleProductVO(product);
-
-        productCachePort.setProductCache(id, productVO);
-        return productVO;
+        return productSingleflight.execute(id, () -> {
+            // double-check cache（其他线程可能已回填）
+            var cached = productCachePort.getProductCache(id);
+            if (cached.isPresent()) {
+                return cached.get();
+            }
+            var product = productRepository.findById(ProductId.of(id))
+                    .orElseThrow(() -> new ProductNotFoundException(ProductId.of(id)));
+            var productVO = assembleProductVOs(List.of(product)).getFirst();
+            productCachePort.setProductCache(id, productVO);
+            return productVO;
+        });
     }
 
     @Transactional(readOnly = true)
@@ -174,28 +182,6 @@ public class ProductQueryService {
     }
 
     // ── Aggregate assembly path (for getById / getByIds) ──
-
-    private ProductVO assembleProductVO(Product product) {
-        if (product == null) return null;
-        var productId = product.getId().value();
-        var categoryIds = product.getCategoryId() != null
-                ? List.of(product.getCategoryId().value()) : List.<String>of();
-        var sellerIds = product.getSellerId() != null
-                ? Set.of(product.getSellerId().value()) : Set.<String>of();
-
-        var imagesByProduct = productQueryRepository
-                .findImagesByProductIds(List.of(productId)).stream()
-                .collect(Collectors.groupingBy(ProductImageInfo::productId));
-        var categoryMap = productQueryRepository
-                .findCategoriesByIds(categoryIds).stream()
-                        .collect(Collectors.toMap(ProductQueryRepository.CategoryInfo::id, c -> c, (a, _) -> a));
-        var detailMap = productQueryRepository
-                .findDetailsByProductIds(List.of(productId)).stream()
-                .collect(Collectors.toMap(ProductQueryRepository.ProductDetailInfo::productId, d -> d, (a, _) -> a));
-        var sellerMap = fetchSellers(sellerIds);
-
-        return readModelAssembler.toProductVO(product, imagesByProduct, categoryMap, detailMap, sellerMap);
-    }
 
     private List<ProductVO> assembleProductVOs(List<Product> products) {
         if (products == null || products.isEmpty()) {

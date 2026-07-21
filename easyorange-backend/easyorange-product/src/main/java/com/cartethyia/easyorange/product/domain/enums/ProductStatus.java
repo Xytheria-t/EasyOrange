@@ -33,6 +33,7 @@ public enum ProductStatus {
 
     @Nullable
     public static ProductStatus fromCode(Integer code) {
+        if (code == null) return null;
         return switch (code) {
             case 0 -> DRAFT;
             case 1 -> ONLINE;
@@ -40,13 +41,17 @@ public enum ProductStatus {
             case 3 -> OFFLINE;
             case 4 -> PENDING_REVIEW;
             case 5 -> REJECTED;
-            case null, default -> null;
+            default -> throw new IllegalArgumentException("Unknown ProductStatus code: " + code);
         };
     }
 
     public static String getDescByCode(Integer code) {
-        ProductStatus status = fromCode(code);
-        return status != null ? status.getDesc() : "未知状态";
+        try {
+            var status = fromCode(code);
+            return status != null ? status.getDesc() : "未知状态";
+        } catch (IllegalArgumentException e) {
+            return "未知状态";
+        }
     }
 
     // === State Machine ===

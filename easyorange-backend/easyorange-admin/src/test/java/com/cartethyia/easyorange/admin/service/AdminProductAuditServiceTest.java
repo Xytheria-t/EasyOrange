@@ -10,6 +10,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
+import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -61,7 +62,7 @@ class AdminProductAuditServiceTest {
     private static final String SELLER_ID = "2";
 
     private Product createProductInPendingReview() {
-        ProductTransition result = Product.create(
+        ProductTransition result = Product.create(new ProductCreateSpec(
                 SellerId.of(SELLER_ID),
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
@@ -72,14 +73,14 @@ class AdminProductAuditServiceTest {
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
-        );
+        ));
         Product product = result.product().assignId(PRODUCT_ID);
         ProductTransition submitted = product.submitForReview(SELLER_ID);
         return submitted.product();
     }
 
     private Product createProductWithStatus(ProductStatus status) {
-        ProductTransition result = Product.create(
+        ProductTransition result = Product.create(new ProductCreateSpec(
                 SellerId.of(SELLER_ID),
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
@@ -90,7 +91,7 @@ class AdminProductAuditServiceTest {
                 ContactMethod.of("微信"),
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
-        );
+        ));
         Product product = result.product().assignId(PRODUCT_ID);
         if (status == ProductStatus.PENDING_REVIEW) {
             return product.submitForReview(SELLER_ID).product();

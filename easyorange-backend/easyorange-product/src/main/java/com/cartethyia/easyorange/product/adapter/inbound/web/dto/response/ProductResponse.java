@@ -1,41 +1,35 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ProductResponse {
-    private String id;
-    private String sellerId;
-    private String username;
-    private String userAvatar;
-    private String categoryId;
-    private String categoryName;
-    private String title;
-    private String description;
-    private BigDecimal price;
-    private BigDecimal originalPrice;
-    private Integer stock;
-    private Integer status;
-    private String statusDesc;
-    private Integer views;
-    private Integer condition;
-    private String conditionDesc;
-    private String location;
-    private String contactMethod;
-    private List<String> images;
-    private String mainImageUrl;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
-}
+public record ProductResponse(
+        String id,
+        String sellerId,
+        String username,
+        String userAvatar,
+        String categoryId,
+        String categoryName,
+        String title,
+        String description,
+        BigDecimal price,
+        BigDecimal originalPrice,
+        Integer stock,
+        Integer status,
+        String statusDesc,
+        Integer views,
+        Integer condition,
+        String conditionDesc,
+        String location,
+        String contactMethod,
+        List<String> images,
+        String mainImageUrl,
+        LocalDateTime createTime,
+        LocalDateTime updateTime
+) {}

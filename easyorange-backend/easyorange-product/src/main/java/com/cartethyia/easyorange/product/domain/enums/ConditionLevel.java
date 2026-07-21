@@ -22,17 +22,22 @@ public enum ConditionLevel {
     @Nullable
     @JsonCreator
     public static ConditionLevel fromCode(Integer code) {
+        if (code == null) return null;
         return switch (code) {
             case 1 -> NEW;
             case 2 -> LIKE_NEW;
             case 3 -> GOOD;
             case 4 -> FAIR;
-            case null, default -> null;
+            default -> throw new IllegalArgumentException("Unknown ConditionLevel code: " + code);
         };
     }
 
     public static String getDescByCode(Integer code) {
-        ConditionLevel level = fromCode(code);
-        return level != null ? level.getDesc() : "未知";
+        try {
+            var level = fromCode(code);
+            return level != null ? level.getDesc() : "未知";
+        } catch (IllegalArgumentException e) {
+            return "未知";
+        }
     }
 }

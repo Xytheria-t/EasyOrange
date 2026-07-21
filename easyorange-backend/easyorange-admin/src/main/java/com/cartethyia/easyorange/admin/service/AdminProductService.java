@@ -8,7 +8,6 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.Product
 import com.cartethyia.easyorange.common.constant.CommonConstant;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
@@ -106,8 +105,12 @@ public class AdminProductService {
 
     @Transactional(rollbackFor = Exception.class)
     public void updateProductStatus(String id, UpdateStatusRequest request) {
-        ProductStatus newStatus = ProductStatus.fromCode(request.getStatus());
-        BizRequire.notNull(newStatus, "无效的商品状态");
+        ProductStatus newStatus;
+        try {
+            newStatus = ProductStatus.fromCode(request.getStatus());
+        } catch (IllegalArgumentException ex) {
+            throw BusinessException.of("无效的商品状态");
+        }
 
         Product product = productRepository.findById(ProductId.of(id))
                 .orElseThrow(() -> BusinessException.of("商品不存在"));

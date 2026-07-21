@@ -54,20 +54,20 @@ public class ProductController {
     @Idempotent
     public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
         var cmd = new ProductCommandService.CreateProductCommand(
-                request.getCategoryId(), request.getName(), request.getPrice(),
-                request.getOriginalPrice(), request.getStock(), request.getConditionLevel(),
-                request.getLocation(), request.getContactMethod(), request.getDescription(),
-                request.getImageUrls());
+                request.categoryId(), request.name(), request.price(),
+                request.originalPrice(), request.stock(), request.conditionLevel(),
+                request.location(), request.contactMethod(), request.description(),
+                request.imageUrls());
         return Result.success(commandService.createProduct(cmd));
     }
 
     @PutMapping("/{id}")
     public Result<Void> updateProduct(@PathVariable String id, @Valid @RequestBody ProductUpdateRequest request) {
         var cmd = new ProductCommandService.UpdateProductCommand(
-                id, request.getCategoryId(), request.getName(), request.getPrice(),
-                request.getOriginalPrice(), request.getStock(), request.getConditionLevel(),
-                request.getLocation(), request.getContactMethod(), request.getDescription(),
-                request.getImageUrls());
+                id, request.categoryId(), request.name(), request.price(),
+                request.originalPrice(), request.stock(), request.conditionLevel(),
+                request.location(), request.contactMethod(), request.description(),
+                request.imageUrls());
         commandService.updateProduct(cmd);
         return Result.success();
     }

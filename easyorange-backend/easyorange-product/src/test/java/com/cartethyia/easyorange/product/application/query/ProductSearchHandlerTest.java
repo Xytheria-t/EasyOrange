@@ -68,10 +68,10 @@ class ProductSearchHandlerTest {
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
         assertThat(result.total()).isEqualTo(1);
-        assertThat(result.records().get(0).getId()).isEqualTo("1");
-        assertThat(result.records().get(0).getTitle()).isEqualTo("测试商品");
-        assertThat(result.records().get(0).getPrice()).isEqualByComparingTo(new BigDecimal("100"));
-        assertThat(result.records().get(0).getMainImageUrl()).isEqualTo("http://img/1.jpg");
+        assertThat(result.records().get(0).id()).isEqualTo("1");
+        assertThat(result.records().get(0).title()).isEqualTo("测试商品");
+        assertThat(result.records().get(0).price()).isEqualByComparingTo(new BigDecimal("100"));
+        assertThat(result.records().get(0).mainImageUrl()).isEqualTo("http://img/1.jpg");
     }
 
     @Test
@@ -116,8 +116,8 @@ class ProductSearchHandlerTest {
             List<SearchHistoryResponse> result = searchHandler.getMySearchHistory(10);
 
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getId()).isEqualTo("100");
-            assertThat(result.get(0).getKeyword()).isEqualTo("手机");
+            assertThat(result.get(0).id()).isEqualTo("100");
+            assertThat(result.get(0).keyword()).isEqualTo("手机");
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -158,10 +158,10 @@ class ProductSearchHandlerTest {
         List<HotKeywordResponse> result = searchHandler.getHotKeywords(10);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getId()).isEqualTo("1");
-        assertThat(result.get(0).getKeyword()).isEqualTo("手机");
-        assertThat(result.get(0).getSearchCount()).isEqualTo(100);
-        assertThat(result.get(0).getHotLevel()).isEqualTo(5);
+        assertThat(result.get(0).id()).isEqualTo("1");
+        assertThat(result.get(0).keyword()).isEqualTo("手机");
+        assertThat(result.get(0).searchCount()).isEqualTo(100);
+        assertThat(result.get(0).hotLevel()).isEqualTo(5);
     }
 
     @Test

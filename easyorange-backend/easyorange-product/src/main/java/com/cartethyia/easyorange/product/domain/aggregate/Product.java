@@ -62,12 +62,19 @@ public class Product {
 
     // ==================== Factory Methods ====================
 
-    public static ProductTransition create(
-            SellerId sellerId, CategoryId categoryId, ProductTitle title,
-            Money price, Money originalPrice, StockQuantity stock,
-            ConditionLevel conditionLevel, TradeLocation location, ContactMethod contactMethod,
-            ProductDescription description, ImageSet images
-    ) {
+    public static ProductTransition create(ProductCreateSpec spec) {
+        var sellerId = spec.sellerId();
+        var categoryId = spec.categoryId();
+        var title = spec.title();
+        var price = spec.price();
+        var originalPrice = spec.originalPrice();
+        var stock = spec.stock();
+        var conditionLevel = spec.conditionLevel();
+        var location = spec.location();
+        var contactMethod = spec.contactMethod();
+        var description = spec.description();
+        var images = spec.images();
+
         BizRequire.notNull(title, "资产名称不能为空");
         BizRequire.notNull(price, "资产价格不能为空");
         BizRequire.requireTrue(price.isGreaterThan(Money.ZERO), "资产价格必须大于0");
@@ -193,11 +200,18 @@ public class Product {
 
     // ==================== Update ====================
 
-    public ProductTransition update(
-            CategoryId categoryId, ProductTitle title, Money price, Money originalPrice,
-            StockQuantity stock, ConditionLevel conditionLevel, TradeLocation location,
-            ContactMethod contactMethod, ProductDescription description, ImageSet images
-    ) {
+    public ProductTransition update(ProductUpdateSpec spec) {
+        var categoryId = spec.categoryId();
+        var title = spec.title();
+        var price = spec.price();
+        var originalPrice = spec.originalPrice();
+        var stock = spec.stock();
+        var conditionLevel = spec.conditionLevel();
+        var location = spec.location();
+        var contactMethod = spec.contactMethod();
+        var description = spec.description();
+        var images = spec.images();
+
         var builder = toBuilder();
         if (categoryId != null) builder.categoryId(categoryId);
         if (title != null && !title.value().isBlank()) builder.title(title);

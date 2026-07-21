@@ -22,16 +22,21 @@ public enum AuditAction {
 
     @Nullable
     public static AuditAction fromCode(Integer code) {
+        if (code == null) return null;
         return switch (code) {
             case 1 -> APPROVED;
             case 2 -> REJECTED;
             case 3 -> RESUBMIT;
-            case null, default -> null;
+            default -> throw new IllegalArgumentException("Unknown AuditAction code: " + code);
         };
     }
 
     public static String getDescByCode(Integer code) {
-        AuditAction action = fromCode(code);
-        return action != null ? action.getDesc() : "未知";
+        try {
+            var action = fromCode(code);
+            return action != null ? action.getDesc() : "未知";
+        } catch (IllegalArgumentException e) {
+            return "未知";
+        }
     }
 }

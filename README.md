@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形里装 LLM：可换供应商、可降级、可观测的 AI 工程化落地。
 >
-> **11 模块全解耦 · 2,221 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）· 4 ADR 架构决策记录。**
+> **11 模块全解耦 · 2,172 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）· 4 ADR 架构决策记录。**
 >
 > 业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。 · 2025 年 11 月启动开发
 
@@ -36,13 +36,13 @@ C2C 资产流转（固定价格 + 直发 + 平台不碰货）—— 业务聚焦
 
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
-| **架构落地** | 11 模块 / 7 对 Port-Adapter / 11 消费者+DLQ / 30 表 / 2,221 测试 | DDD/CQRS/Saga/事件驱动 在真实业务压力下的协同落地 |
+| **架构落地** | 11 模块 / 7 对 Port-Adapter / 11 消费者+DLQ / 30 表 / 2,172 测试 | DDD/CQRS/Saga/事件驱动 在真实业务压力下的协同落地 |
 | **架构决策记录** | 4 ADR + 13 关键决策可独立讲解 | 每个架构选择都有"为什么这样选 + 拒绝了什么"的 ADR 记录 |
 | **AI 工程化** | 6 决策点 + 7 件套 | Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理 |
 
 > **4 个核心架构模式**：`DDD 六边形` · `CQRS` · `Saga` · `事件驱动` — 11 模块全解耦、4 模式 4 ADR。落地细节见 [doc/架构/架构-DDD规范.md](doc/架构/架构-DDD规范.md) + [doc/adr/](doc/adr/)。
 
-> **By the numbers**：11 模块 / 28 Port 接口 / 11 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,221 测试 / 4 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
+> **By the numbers**：11 模块 / 28 Port 接口 / 11 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,172 测试 / 4 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
 
 ## 架构总览（一图看懂）
 
@@ -262,7 +262,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + Biome (前端, 替代 ESLint + Prettier)
-- 测试: 后端 JUnit 5 (1,269 用例) + 前端 Vitest/Playwright (952 用例)
+- 测试: 后端 JUnit 5 (1,220 用例) + 前端 Vitest/Playwright (952 用例)
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南

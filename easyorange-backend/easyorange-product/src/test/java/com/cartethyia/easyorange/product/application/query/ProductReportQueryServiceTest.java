@@ -61,10 +61,10 @@ class ProductReportQueryServiceTest {
             assertThat(result).isNotNull();
             assertThat(result.records()).hasSize(2);
             assertThat(result.total()).isEqualTo(2L);
-            assertThat(result.records().get(0).getId()).isEqualTo("100");
-            assertThat(result.records().get(0).getProductId()).isEqualTo("1");
-            assertThat(result.records().get(0).getReason()).isEqualTo("假货");
-            assertThat(result.records().get(0).getStatus()).isEqualTo(0);
+            assertThat(result.records().get(0).id()).isEqualTo("100");
+            assertThat(result.records().get(0).productId()).isEqualTo("1");
+            assertThat(result.records().get(0).reason()).isEqualTo("假货");
+            assertThat(result.records().get(0).status()).isEqualTo(0);
         }
 
         @Test

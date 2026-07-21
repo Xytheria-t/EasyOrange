@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.application.query;
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
 import com.cartethyia.easyorange.product.application.query.ProductVO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
+import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -52,17 +53,19 @@ class ProductQueryServiceTest {
         queryService = new ProductQueryService(productRepository, productQueryRepository, readModelAssembler, productCachePort);
 
         testProduct = Product.create(
-                SellerId.of("1"),
-                CategoryId.of("2"),
-                ProductTitle.of("测试商品"),
-                Money.of(new BigDecimal("100")),
-                null,
-                StockQuantity.of(10),
-                ConditionLevel.NEW,
-                TradeLocation.of("北京"),
-                ContactMethod.of("微信"),
-                ProductDescription.of("描述"),
-                ImageSet.of(List.of("http://img/1.jpg"))
+                new ProductCreateSpec(
+                        SellerId.of("1"),
+                        CategoryId.of("2"),
+                        ProductTitle.of("测试商品"),
+                        Money.of(new BigDecimal("100")),
+                        null,
+                        StockQuantity.of(10),
+                        ConditionLevel.NEW,
+                        TradeLocation.of("北京"),
+                        ContactMethod.of("微信"),
+                        ProductDescription.of("描述"),
+                        ImageSet.of(List.of("http://img/1.jpg"))
+                )
         ).product().assignId("1");
 
         testProductVO = ProductVO.builder()

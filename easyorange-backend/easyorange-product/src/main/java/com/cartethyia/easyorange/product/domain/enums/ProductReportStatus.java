@@ -20,19 +20,19 @@ public enum ProductReportStatus {
      * Resolves the enum value from its integer code.
      *
      * @param code the integer code (may be {@code null})
-     * @return the matching enum value, or {@code null} if code is null or not recognized
+     * @return the matching enum value, or {@code null} if code is null
+     * @throws IllegalArgumentException if code is non-null but not recognized
      */
     @Nullable
     public static ProductReportStatus fromCode(Integer code) {
-        if (code == null) {
-            return null;
-        }
-        for (ProductReportStatus status : values()) {
-            if (status.getCode().equals(code)) {
-                return status;
-            }
-        }
-        return null;
+        if (code == null) return null;
+        return switch (code) {
+            case 0 -> PENDING;
+            case 1 -> PROCESSING;
+            case 2 -> RESOLVED;
+            case 3 -> DISMISSED;
+            default -> throw new IllegalArgumentException("Unknown ProductReportStatus code: " + code);
+        };
     }
 
     public boolean isPending() {

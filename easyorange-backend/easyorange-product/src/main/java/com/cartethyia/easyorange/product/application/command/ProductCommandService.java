@@ -5,6 +5,8 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
+import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
+import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
@@ -42,17 +44,19 @@ public class ProductCommandService {
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         ProductTransition result = Product.create(
-                SellerId.of(userId),
-                CategoryId.of(command.categoryId()),
-                ProductTitle.of(command.name()),
-                Money.of(command.price()),
-                command.originalPrice() != null ? Money.of(command.originalPrice()) : null,
-                StockQuantity.of(command.stock() != null ? command.stock() : 1),
-                ConditionLevel.fromCode(command.conditionLevel()),
-                TradeLocation.of(command.location()),
-                ContactMethod.of(command.contactMethod()),
-                ProductDescription.of(command.description()),
-                ImageSet.of(command.imageUrls())
+                new ProductCreateSpec(
+                        SellerId.of(userId),
+                        CategoryId.of(command.categoryId()),
+                        ProductTitle.of(command.name()),
+                        Money.of(command.price()),
+                        mapIfPresent(command.originalPrice(), Money::of),
+                        StockQuantity.of(command.stock() != null ? command.stock() : 1),
+                        ConditionLevel.fromCode(command.conditionLevel()),
+                        TradeLocation.of(command.location()),
+                        ContactMethod.of(command.contactMethod()),
+                        ProductDescription.of(command.description()),
+                        ImageSet.of(command.imageUrls())
+                )
         );
 
         var created = productRepository.create(result.product());
@@ -65,16 +69,18 @@ public class ProductCommandService {
         var product = verifyOwnership(productId, SecurityContextUtil.getCurrentUserIdOrThrow());
 
         mutate(product, p -> p.update(
-                command.categoryId() != null ? CategoryId.of(command.categoryId()) : null,
-                command.name() != null ? ProductTitle.of(command.name()) : null,
-                command.price() != null ? Money.of(command.price()) : null,
-                command.originalPrice() != null ? Money.of(command.originalPrice()) : null,
-                command.stock() != null ? StockQuantity.of(command.stock()) : null,
-                command.conditionLevel() != null ? ConditionLevel.fromCode(command.conditionLevel()) : null,
-                command.location() != null ? TradeLocation.of(command.location()) : null,
-                command.contactMethod() != null ? ContactMethod.of(command.contactMethod()) : null,
-                command.description() != null ? ProductDescription.of(command.description()) : null,
-                command.imageUrls() != null ? ImageSet.of(command.imageUrls()) : null
+                new ProductUpdateSpec(
+                        mapIfPresent(command.categoryId(), CategoryId::of),
+                        mapIfPresent(command.name(), ProductTitle::of),
+                        mapIfPresent(command.price(), Money::of),
+                        mapIfPresent(command.originalPrice(), Money::of),
+                        mapIfPresent(command.stock(), StockQuantity::of),
+                        mapIfPresent(command.conditionLevel(), ConditionLevel::fromCode),
+                        mapIfPresent(command.location(), TradeLocation::of),
+                        mapIfPresent(command.contactMethod(), ContactMethod::of),
+                        mapIfPresent(command.description(), ProductDescription::of),
+                        mapIfPresent(command.imageUrls(), ImageSet::of)
+                )
         ));
     }
 
@@ -125,6 +131,10 @@ public class ProductCommandService {
     }
 
     // ==================== Private Helpers ====================
+
+    private static <T, R> R mapIfPresent(T value, Function<T, R> mapper) {
+        return value != null ? mapper.apply(value) : null;
+    }
 
     private void mutate(Product product, Function<Product, ProductTransition> fn) {
         var result = fn.apply(product);

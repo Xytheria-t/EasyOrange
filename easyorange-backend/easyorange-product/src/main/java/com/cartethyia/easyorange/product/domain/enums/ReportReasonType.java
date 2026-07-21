@@ -20,22 +20,26 @@ public enum ReportReasonType {
      * Resolves the enum value from its integer code.
      *
      * @param code the integer code (may be {@code null})
-     * @return the matching enum value, or {@code null} if code is null or not recognized
+     * @return the matching enum value, or {@code null} if code is null
+     * @throws IllegalArgumentException if code is non-null but not recognized
      */
     @Nullable
     public static ReportReasonType fromCode(Integer code) {
-        if (code == null) {
-            return null;
-        }
-        for (ReportReasonType type : values()) {
-            if (type.getCode().equals(code)) {
-                return type;
-            }
-        }
-        return null;
+        if (code == null) return null;
+        return switch (code) {
+            case 1 -> FAKE_INFO;
+            case 2 -> INFRINGEMENT;
+            case 3 -> VIOLATION;
+            case 4 -> OTHER;
+            default -> throw new IllegalArgumentException("Unknown ReportReasonType code: " + code);
+        };
     }
 
     public static boolean isValidCode(Integer code) {
-        return fromCode(code) != null;
+        if (code == null) return false;
+        for (var type : values()) {
+            if (type.getCode().equals(code)) return true;
+        }
+        return false;
     }
 }

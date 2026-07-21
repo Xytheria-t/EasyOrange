@@ -28,7 +28,7 @@ public class ProductReportController {
     public Result<Void> reportProduct(@PathVariable String productId,
                                        @Valid @RequestBody ReportRequest request) {
         String reporterId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        reportCommandService.handleReport(productId, reporterId, request.getReason(), request.getReasonType());
+        reportCommandService.handleReport(productId, reporterId, request.reason(), request.reasonType());
         return Result.success();
     }
 

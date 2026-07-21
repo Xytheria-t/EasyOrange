@@ -124,7 +124,7 @@ public Runnable decorate(@NonNull Runnable runnable) {
 }
 ```
 
-覆盖范围：`@Async`、`@Scheduled`、`@RabbitListener`（9 个消费者）、所有线程池任务。
+覆盖范围：`@Async`、`@Scheduled`、`@RabbitListener`（11 个消费者）、所有线程池任务。
 
 **AsyncAppender 异步日志写入**：`logback-spring.xml` 配置 `ASYNC_FILE` / `ASYNC_ERROR_FILE` / `ASYNC_JSON_FILE` 包装底层同步 Appender：
 

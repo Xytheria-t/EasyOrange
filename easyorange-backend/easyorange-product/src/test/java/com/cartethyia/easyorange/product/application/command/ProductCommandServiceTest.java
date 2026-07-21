@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.product.application.command.ProductCommandServi
 import com.cartethyia.easyorange.product.application.command.ProductCommandService.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
+import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
@@ -44,17 +45,19 @@ class ProductCommandServiceTest {
         commandService = new ProductCommandService(productRepository, domainEventPublisher);
 
         ProductTransition created = Product.create(
-                com.cartethyia.easyorange.product.domain.valueobject.SellerId.of("1"),
-                com.cartethyia.easyorange.product.domain.valueobject.CategoryId.of("2"),
-                com.cartethyia.easyorange.product.domain.valueobject.ProductTitle.of("测试商品"),
-                com.cartethyia.easyorange.common.domain.Money.of(new BigDecimal("100")),
-                null,
-                com.cartethyia.easyorange.product.domain.valueobject.StockQuantity.of(10),
-                ConditionLevel.NEW,
-                com.cartethyia.easyorange.product.domain.valueobject.TradeLocation.of("北京"),
-                com.cartethyia.easyorange.product.domain.valueobject.ContactMethod.of("微信"),
-                com.cartethyia.easyorange.product.domain.valueobject.ProductDescription.of("描述"),
-                com.cartethyia.easyorange.product.domain.valueobject.ImageSet.of(java.util.List.of("http://img/1.jpg"))
+                new ProductCreateSpec(
+                        com.cartethyia.easyorange.product.domain.valueobject.SellerId.of("1"),
+                        com.cartethyia.easyorange.product.domain.valueobject.CategoryId.of("2"),
+                        com.cartethyia.easyorange.product.domain.valueobject.ProductTitle.of("测试商品"),
+                        com.cartethyia.easyorange.common.domain.Money.of(new BigDecimal("100")),
+                        null,
+                        com.cartethyia.easyorange.product.domain.valueobject.StockQuantity.of(10),
+                        ConditionLevel.NEW,
+                        com.cartethyia.easyorange.product.domain.valueobject.TradeLocation.of("北京"),
+                        com.cartethyia.easyorange.product.domain.valueobject.ContactMethod.of("微信"),
+                        com.cartethyia.easyorange.product.domain.valueobject.ProductDescription.of("描述"),
+                        com.cartethyia.easyorange.product.domain.valueobject.ImageSet.of(java.util.List.of("http://img/1.jpg"))
+                )
         );
         existingProduct = created.product().assignId("1");
         existingProduct = existingProduct.putOnline().product();
