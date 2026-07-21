@@ -7,7 +7,7 @@ import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @EnableConfigurationProperties(RabbitMQProperties.class)
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class RabbitMQConfig {
+public class  RabbitMQConfig {
 
     public static final String EXCHANGE_NAME = "eo.domain.events";
     public static final String DLQ_EXCHANGE_NAME = "eo.dlq";
@@ -35,11 +35,15 @@ public class RabbitMQConfig {
     public static final String QUEUE_ORDER_NOTIFICATION = "eo.order.notification";
     public static final String QUEUE_ORDER_SAGA = "eo.order.saga";
     public static final String QUEUE_STOCK_RESERVATION = "eo.stock.reservation";
-    public static final String QUEUE_PAYMENT_INITIATION = "eo.payment.initiation";
     public static final String QUEUE_AUDIT_NOTIFICATION = "eo.audit.notification";
     public static final String QUEUE_REPORT_NOTIFICATION = "eo.report.notification";
     public static final String QUEUE_MESSAGE_WEBSOCKET = "eo.message.websocket";
     public static final String QUEUE_PAYMENT_METRICS = "eo.payment.metrics";
+
+    // AI 事件驱动队列
+    public static final String QUEUE_AI_PRODUCT = "eo.ai.product";
+    public static final String QUEUE_AI_CREDIT = "eo.ai.credit";
+    public static final String QUEUE_COMPENSATION_ALERT = "eo.compensation.alert";
 
     private final RabbitMQProperties properties;
 
@@ -68,11 +72,13 @@ public class RabbitMQConfig {
                 new QueueSpec(QUEUE_ORDER_NOTIFICATION, "order.#"),
                 new QueueSpec(QUEUE_ORDER_SAGA, "order.created", "order.cancelled", "order.completed", "order.refunded"),
                 new QueueSpec(QUEUE_STOCK_RESERVATION, "stock.reservation.requested"),
-                new QueueSpec(QUEUE_PAYMENT_INITIATION, "payment.initiation.requested"),
                 new QueueSpec(QUEUE_AUDIT_NOTIFICATION, "product.audited"),
                 new QueueSpec(QUEUE_REPORT_NOTIFICATION, "report.#"),
                 new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
-                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#")
+                new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#", "compensation.failed.alert"),
+                new QueueSpec(QUEUE_AI_PRODUCT, "product.created", "product.updated", "product.marked.sold"),
+                new QueueSpec(QUEUE_AI_CREDIT, "order.completed", "report.processed"),
+                new QueueSpec(QUEUE_COMPENSATION_ALERT, "compensation.failed.alert")
         )) {
             var queue = QueueBuilder.durable(q.name())
                     .quorum()
@@ -92,7 +98,7 @@ public class RabbitMQConfig {
             }
         }
 
-        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings", 9);
+        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings", 11);
         return new Declarables(declarables);
     }
 
@@ -100,7 +106,7 @@ public class RabbitMQConfig {
 
     @Bean
     public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
+        return new JacksonJsonMessageConverter();
     }
 
     @Bean

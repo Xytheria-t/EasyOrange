@@ -4,14 +4,14 @@ import com.cartethyia.easyorange.common.event.DomainEvent;
 
 import java.util.List;
 
-public record OrderCompletedEvent(String orderId, List<String> productIds) implements DomainEvent {
+public record OrderCompletedEvent(String orderId, List<String> productIds) implements OrderEvent {
 
     public OrderCompletedEvent {
         productIds = List.copyOf(productIds);
     }
 
     @Override
-    public String aggregateId() {
+    public String orderId() {
         return orderId;
     }
 }

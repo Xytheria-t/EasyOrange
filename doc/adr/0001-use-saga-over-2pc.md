@@ -34,15 +34,15 @@ EasyOrange 的 C2C 资产流转业务中，「认领方下单」是一个跨三�
 - 步骤：创建订单 → 创建支付 → 完成；失败时逆序执行补偿（`OrderCompensationService.cancelOrder`）
 - 状态机持久化到 `eo_saga` 表：`PENDING → ORDER_CREATED → PAYMENT_CREATED → COMPLETED` / `COMPENSATING → COMPENSATED`，支持故障后 `retryFailedSaga(sagaId)` 重试
 - 分布式锁按 `productId` 排序获取（`DistributedLockManager`），避免死锁
-- 写操作通过领域事件解耦后续模块（库存扣减由 `StockReservationEventConsumer` 异步消费 `StockReservationRequestedEvent` 完成）
+- 写操作通过领域事件解耦后续模块（库存扣减由 `OrderFulfillmentEventConsumer` 异步消费 `StockReservationRequestedEvent` 完成）
 
 典型事件流（来自 `easyorange-backend/AGENTS.md`）：
 
 ```
 OrderCreatedEvent → OrderSagaEventConsumer
-  → StockReservationRequestedEvent → StockReservationEventConsumer
+  → StockReservationRequestedEvent → OrderFulfillmentEventConsumer
   → ProductCommandService.decrementStock()
-PaymentInitiationRequestedEvent → PaymentInitiationEventConsumer
+PaymentInitiationRequestedEvent → OrderFulfillmentEventConsumer
   → PaymentCommandHandler.handle()
 ```
 

@@ -2,82 +2,61 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper">
 
-    <select id="searchByFullText" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO">
+    <select id="searchByFullText" resultType="ProductDO">
         SELECT id, user_id, category_id, name, price, original_price, stock,
                status, view_count, condition_level, location, contact_method,
                create_time, update_time, create_by, update_by, del_flag, version,
-               MATCH(name) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE) AS relevance
+               MATCH(name) AGAINST(#{c.keyword} IN NATURAL LANGUAGE MODE) AS relevance
         FROM eo_product
-        WHERE MATCH(name) AGAINST(#{keyword} IN NATURAL LANGUAGE MODE)
-          AND status = #{status}
+        WHERE MATCH(name) AGAINST(#{c.keyword} IN NATURAL LANGUAGE MODE)
+          AND status = #{c.status}
           AND del_flag = 0
-          <if test="minPrice != null">
-              AND price &gt;= #{minPrice}
-          </if>
-          <if test="maxPrice != null">
-              AND price &lt;= #{maxPrice}
-          </if>
-          <if test="conditionLevel != null">
-              AND condition_level = #{conditionLevel}
-          </if>
-          <if test="hasDiscount != null and hasDiscount">
+          <if test="c.minPrice != null">AND price &gt;= #{c.minPrice}</if>
+          <if test="c.maxPrice != null">AND price &lt;= #{c.maxPrice}</if>
+          <if test="c.conditionLevel != null">AND condition_level = #{c.conditionLevel}</if>
+          <if test="c.hasDiscount != null and c.hasDiscount">
               AND original_price IS NOT NULL AND original_price > price
           </if>
         ORDER BY relevance DESC, create_time DESC
     </select>
 
-    <select id="selectDetailsByProductIds" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO">
+    <!-- ========== 批量查询 ========== -->
+
+    <select id="selectDetailsByProductIds" resultType="ProductDetailDO">
         SELECT product_id, description, create_time, update_time
         FROM eo_product_detail
-        WHERE product_id IN
-        <foreach collection="productIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
+        WHERE product_id IN <foreach collection="productIds" item="id" open="(" separator="," close=")">#{id}</foreach>
     </select>
 
-    <select id="selectImagesByProductIds" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO">
+    <select id="selectImagesByProductIds" resultType="ProductImageDO">
         SELECT id, product_id, image_url, sort_order, is_main, create_time
         FROM eo_product_image
-        WHERE product_id IN
-        <foreach collection="productIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-        ORDER BY product_id, sort_order ASC
+        WHERE product_id IN <foreach collection="productIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        ORDER BY product_id, sort_order
     </select>
 
-    <select id="selectCategoriesByIds" resultType="com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO">
-        SELECT id, name, parent_id, level, icon, sort_order, status, 
+    <select id="selectCategoriesByIds" resultType="CategoryDO">
+        SELECT id, name, parent_id, level, icon, sort_order, status,
                create_time, update_time, create_by, update_by, del_flag
         FROM eo_category
-        WHERE id IN
-        <foreach collection="categoryIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-        AND del_flag = 0
+        WHERE id IN <foreach collection="categoryIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+          AND del_flag = 0
     </select>
 
-    <select id="selectSellersByIds" resultType="com.cartethyia.easyorange.product.application.query.SellerInfo">
+    <select id="selectSellersByIds" resultType="SellerInfo">
         SELECT user_id, username, nick_name, avatar
         FROM eo_user
-        WHERE user_id IN
-        <foreach collection="sellerIds" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
+        WHERE user_id IN <foreach collection="sellerIds" item="id" open="(" separator="," close=")">#{id}</foreach>
     </select>
 
+    <!-- ========== 写入 ========== -->
+
     <update id="batchAddViewCounts">
-        UPDATE eo_product 
-        SET view_count = view_count + 
-            CASE id 
-                <foreach collection="viewCounts" item="count" index="productId">
-                    WHEN #{productId} THEN #{count}
-                </foreach>
-                ELSE 0
-            END
+        UPDATE eo_product
+        SET view_count = view_count
+        <foreach collection="entries" item="e"> + IF(id = #{e.productId}, #{e.count}, 0)</foreach>
         WHERE id IN
-        <foreach collection="viewCounts" item="count" index="productId" open="(" separator="," close=")">
-            #{productId}
-        </foreach>
+        <foreach collection="entries" item="e" open="(" separator="," close=")">#{e.productId}</foreach>
     </update>
 
     <update id="updateSearchText">

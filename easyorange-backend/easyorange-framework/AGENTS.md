@@ -6,117 +6,21 @@
 
 ```
 framework/
-├── async/                   # 异步任务管理
-│   └── AsyncManager.java         # 异步任务管理器
-├── bloom/                   # 布隆过滤器 (Redis Bitmap)
-│   ├── BloomFilter.java          # 过滤器接口
-│   └── RedisBitmapBloomFilter.java # Redis Bitmap 实现 (Lua 原子操作)
-├── cache/                   # 缓存抽象 (多级缓存门面 + Redis 直接操作)
-│   ├── CacheLoader.java          # 回源加载器函数式接口
-│   ├── CacheUtils.java           # 静态辅助 (cast 类型安全转换 / scan 批量扫描)
-│   └── MultiLevelCache.java      # L1 Caffeine → L2 Redis → DB 三级串联
-├── config/                  # 框架配置
-│   ├── async/                    # 线程池 + Jackson + MDC 传播
-│   │   ├── ThreadPoolConfig.java
-│   │   ├── MdcTaskDecorator.java       # 异步线程 MDC 传播装饰器
-│   │   ├── JacksonConfig.java
-│   │   └── LoggingRejectedExecutionHandler.java
-│   ├── bloom/                    # 布隆过滤器
-│   │   └── BloomFilterConfig.java
-│   ├── cache/                    # 本地缓存 (Caffeine)
-│   │   └── LocalCacheConfig.java
-│   ├── constant/                 # 配置常量 (缓存 key 约定等)
-│   │   └── LoginCacheConstants.java
-│   ├── database/                 # MyBatis-Plus 配置
-│   │   └── MybatisPlusConfig.java
-│   ├── properties/               # 配置属性类
-│   │   ├── CacheProperties.java
-│   │   ├── FileUploadProperties.java
-│   │   ├── ImageProcessingProperties.java
-│   │   ├── JwtProperties.java
-│   │   ├── IdempotencyProperties.java  # 幂等 key 配置（前缀、默认 TTL、开关）
-│   │   ├── AuditLogProperties.java
-│   │   ├── RateLimitFilterProperties.java
-│   │   ├── SecurityProperties.java       # 安全配置（ignorePaths / CORS / 密码强度）
-│   │   ├── ThreadPoolProperties.java
-│   │   └── WebMvcProperties.java
-│   ├── redis/                    # Redis 配置
-│   │   ├── RedisConfig.java
-│   │   └── CacheConfig.java
-│   ├── security/                 # Spring Security 配置 (含 JwtDecoder + JwtEncoder + JwtAuthenticationConverter)
-│   │   └── SecurityConfig.java
-│   └── web/                      # WebMVC 配置
-│       ├── WebMvcConfig.java
-│       └── ResponseAdvice.java       # 统一响应包装
-├── event/                    # 领域事件基础设施
-│   └── idempotency/
-│       └── EventIdempotencyChecker.java # 事件幂等性检查
-├── exception/
-│   └── GlobalExceptionHandler.java   # 全局异常处理（@RestControllerAdvice，RFC 9457 ProblemDetail）
-├── file/                     # 文件上传下载
-│   ├── adapter/inbound/web/controller/FileController.java
-│   ├── dto/UploadFileVO.java
-│   ├── entity/UploadFileDO.java
-│   ├── mapper/UploadFileMapper.java
-│   ├── service/
-│   │   ├── FileService.java
-│   │   ├── ImageProcessingService.java
-│   │   └── impl/
-│   │       ├── FileServiceImpl.java
-│   │       └── ImageProcessingServiceImpl.java
-│   ├── storage/
-│   │   ├── FileStorage.java
-│   │   └── LocalFileStorage.java
-│   └── util/
-│       └── ByteArrayMultipartFile.java      # byte[] → MultipartFile 适配器（解耦 Servlet 容器依赖）
-├── idgen/                   # 分布式 ID 生成器
-│   └── UuidV7IdGenerator.java        # UUID v7 (RFC 9562) 主实现（实现 common.idgen.IdGenerator）
-├── mybatis/                 # MyBatis 扩展工具箱
-│   └── CodeEnumTypeHandler.java      # 通用枚举 TypeHandler 基类（按 getCode/fromCode 自动编解码）
-├── messaging/               # RabbitMQ 消息队列（Spring Modulith 事务发件箱 + Topic Exchange）
-│   ├── config/                    # RabbitMQ 配置
-│   │   ├── EventExternalizationConfig.java  # Spring Modulith 事件外化（@Primary 路径）
-│   │   ├── RabbitMQConfig.java              # 交换机/队列/DLQ 拓扑（Declarables 批量声明）+ 基础设施 Bean
-│   │   └── RabbitMQProperties.java          # 配置属性绑定
-│   └── core/
-│       └── ModulithDomainEventPublisher.java # @Primary 发布器（代理到 ApplicationEventPublisher → Modulith 外化）
-├── metrics/                 # 业务指标埋点
-│   ├── BusinessMetricsService.java
-│   └── MetricsConfig.java
-├── audit/                   # 审计日志 (AOP + @Async 持久化)
-│   ├── aspect/
-│   │   └── AuditLogAspect.java      # 审计日志切面 (@Around + Builder 模式, 约定式拦截所有写操作)
-│   ├── entity/AuditLog.java
-│   ├── mapper/AuditLogMapper.java
-│   └── service/
-│       ├── AuditLogService.java
-│       └── impl/AuditLogServiceImpl.java
-├── outbox/                  # [已删除] Outbox 模式 — 已完成 RabbitMQ 迁移，所有事件走 Topic Exchange
-├── entity/                  # [已迁移至 common] BaseDO → common/entity/
-├── repository/              # [已迁移至 common] BaseRepository → common/repository/
-├── auth/                    # Token 认证服务
-│   ├── TokenService.java         # Token 服务接口
-│   ├── TokenRefreshResult.java   # 刷新结果记录
-│   └── impl/TokenServiceImpl.java # Token 服务实现 (使用 JwtEncoder/JwtDecoder)
-├── util/                    # 纯工具函数
-│   ├── FileUtils.java            # 文件工具
-│   ├── LocalRateLimiter.java     # 本地固定窗口限流器
-│   ├── AuditLogUtil.java         # 审计日志工具（字符串截断）
-│   ├── RequestUtil.java          # 请求工具 (自动识别代理头)
-│   ├── SecurityContextUtil.java  # 安全上下文工具
-│   └── TestSecurityUtil.java     # 测试安全上下文工具
-└── web/                     # Web 层 (过滤器 + 处理器 + 幂等)
-    ├── filter/                    # Servlet 过滤器
-    │   ├── CachedBodyHttpServletRequestWrapper.java
-    │   └── RateLimitFilter.java            # 限流 + 防连点过滤器
-    ├── handler/                    # 处理器
-    │   ├── CustomMetaObjectHandler.java    # MyBatis-Plus 自动填充
-    │   └── LoggingInterceptor.java         # 请求日志拦截
-    └── idempotency/                # Idempotency-Key 协议级幂等
-        ├── IdempotentOperation.java        # 幂等操作函数式接口
-        ├── IdempotencyService.java         # 幂等服务接口
-        ├── RedisIdempotencyService.java    # Redis 实现（SETNX + TTL，fail-open）
-        └── IdempotencyAspect.java          # @Idempotent 切面（@Order 1）
+├── async/             # AsyncManager（异步任务管理）
+├── bloom/             # BloomFilter + RedisBitmapBloomFilter（布隆过滤器）
+├── cache/             # CacheLoader + CacheUtils + MultiLevelCache（多级缓存门面）
+├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
+├── event/             # 领域事件基础设施（AbstractDomainEventConsumer / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
+├── exception/         # GlobalExceptionHandler（全局异常处理，RFC 9457 ProblemDetail）
+├── file/              # 文件上传下载（FileController/FileService/FileStorage）
+├── idgen/             # UuidV7IdGenerator（UUID v7）
+├── mybatis/           # CodeEnumTypeHandler（通用枚举 TypeHandler 基类）
+├── messaging/         # RabbitMQ + Spring Modulith（EventExternalizationConfig / RabbitMQConfig / ModulithDomainEventPublisher）
+├── metrics/           # BusinessMetricsService + MetricsConfig
+├── audit/             # AuditLogAspect + AuditLogService（审计日志 AOP）
+├── auth/              # TokenService + TokenServiceImpl（JWT 签发/刷新/吊销）
+├── util/              # 工具函数（FileUtils/LocalRateLimiter/SecurityContextUtil/TestSecurityUtil）
+└── web/               # 过滤器（RateLimitFilter）+ 处理器（CustomMetaObjectHandler）+ 幂等（@Idempotent）
 ```
 
 ## 核心机制
@@ -138,9 +42,19 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 业务模块注入 `DomainEventPublisher` 调用 `publish()`，实际由 `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`。Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步读取并发布到 `eo.domain.events` Topic Exchange。各模块通过 `@RabbitListener` 注解的消费者异步处理事件。`@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动。
 
+### 事件消费者基础设施
+
+所有消费者继承 `AbstractDomainEventConsumer` 模板基类，统一以下横切关注点：
+
+1. **幂等去重**：`EventIdempotencyChecker`（Redis SETNX + Redisson 锁），命名空间 `consumerId() + ":" + eventType()` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
+2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前向 message headers 注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 在消费端解码
+3. **指标埋点**：`EventMetricsService` 自动上报 `easyorange.events.received{type,outcome}` / `easyorange.events.duration{type,outcome}` / `easyorange.events.dlq{queue,reason}`
+4. **DLQ 异常监听**：`DlqAnomalyListener` 监听 11 个 DLQ 队列，提取 x-death header 记录指标
+5. **模板方法**：`handle(event, message)` 做统一预处理（幂等 → metrics 采样 → 日志 → 业务处理 → 异常兜底），`doHandle(event, metadata)` 由子类实现业务逻辑
+
 ### Redis 缓存操作
 
-`RedisCache` 薄封装层已移除（2026-07-17），所有缓存操作改为直接注入 `RedisTemplate<String, Object>`。Spring Data Redis 的 `RedisTemplate` 是标准 API，无需额外学习：
+`RedisCache` 薄封装层已移除（2026-07-17），所有缓存操作改为直接注入 `RedisTemplate<Object, Object>`。Spring Data Redis 的 `RedisTemplate` 是标准 API，无需额外学习：
 
 ```java
 // KV 操作

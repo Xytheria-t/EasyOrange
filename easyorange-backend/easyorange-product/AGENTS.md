@@ -22,6 +22,8 @@ product/
 │       │   ├── mapper/                  # MyBatis Mapper
 │       │   ├── repository/              # Repository 实现
 │       │   └── ProductSnapshotPortImpl.java
+│       ├── scheduler/                  # 定时批处理
+│       │   └── ViewCountFlushScheduler.java  # 浏览量 Redis→DB 定时刷入
 │       └── cache/                       # 缓存适配器
 │           ├── ProductCacheAdapter.java     # 实现 ProductCachePort
 │           ├── CategoryCacheAdapter.java    # 实现 CategoryCachePort
@@ -47,7 +49,8 @@ product/
 │   ├── event/
 │   │   └── ProductEventConsumer.java     # RabbitMQ 领域事件消费者
 │   ├── service/
-│   │   ├── ProductViewCountAppService.java
+│   │   ├── ProductViewCountAppService.java    # 浏览量 Redis 增量（仅写Redis）
+│   │   ├── ViewCountBatchProcessor.java       # 浏览量批量刷入DB（@Transactional）
 │   │   └── SearchHistoryBufferAppService.java
 ├── domain/
 │   ├── aggregate/
@@ -64,13 +67,19 @@ product/
 │   │   ├── ImageUrl.java, ImageSet.java, TagSet.java
 │   │   ├── ContactMethod.java, TradeLocation.java
 │   │   └── SellerInfo.java
-│   ├── event/
-│   │   ├── ProductCreatedEvent.java
-│   │   ├── ProductUpdatedEvent.java
-│   │   ├── ProductDeletedEvent.java
-│   │   ├── ProductMarkedSoldEvent.java
-│   │   ├── StockDecreasedEvent.java
-│   │   └── StockRestoredEvent.java
+    │   ├── event/
+    │   │   ├── ProductEvent.java                 # 密封接口（消除 aggregateId() 模板）
+    │   │   ├── ProductCreatedEvent.java
+    │   │   ├── ProductUpdatedEvent.java
+    │   │   ├── ProductDeletedEvent.java
+    │   │   ├── ProductSubmittedForReviewEvent.java
+    │   │   ├── ProductPutOnlineEvent.java
+    │   │   ├── ProductTakeOfflineEvent.java
+    │   │   ├── ProductMarkedSoldEvent.java
+    │   │   ├── ProductAuditedEvent.java
+    │   │   ├── StockDecreasedEvent.java
+    │   │   ├── StockRestoredEvent.java
+    │   │   └── ReportProcessedEvent.java
 │   ├── port/
 │   │   ├── OutboundPort.java            # 标记接口 (跨模块出站端口)
 │   │   ├── ProductCachePort.java        # 缓存端口 (domain 定义, application 实现)
@@ -99,6 +108,21 @@ product/
 │       └── ProductNotFoundException.java
 └── config/
     └── ProductDomainConfig.java
+```
+
+## 领域事件模式
+
+商品领域事件统一实现 `ProductEvent` 密封接口（extends `DomainEvent`）：
+- 所有事件共享 `String productId()` 作为聚合根标识
+- 密封接口消除 ~22 行重复的 `aggregateId()` 模板代码
+- 新增产品事件只需 `implements ProductEvent` 并定义组件即可，无需手动实现 `aggregateId()`
+
+```java
+public sealed interface ProductEvent extends DomainEvent
+    permits ProductCreatedEvent, ProductUpdatedEvent, ..., ReportProcessedEvent {
+    String productId();
+    @Override default String aggregateId() { return productId(); }
+}
 ```
 
 ## CQRS 架构

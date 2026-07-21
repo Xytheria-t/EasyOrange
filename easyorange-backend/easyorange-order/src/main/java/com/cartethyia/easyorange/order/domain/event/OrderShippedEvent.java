@@ -5,10 +5,10 @@ import com.cartethyia.easyorange.common.event.DomainEvent;
 /**
  * 订单已发货事件
  */
-public record OrderShippedEvent(String orderId) implements DomainEvent {
+public record OrderShippedEvent(String orderId) implements OrderEvent {
 
     @Override
-    public String aggregateId() {
+    public String orderId() {
         return orderId;
     }
 }

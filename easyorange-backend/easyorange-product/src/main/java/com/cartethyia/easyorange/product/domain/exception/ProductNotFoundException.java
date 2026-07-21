@@ -10,10 +10,6 @@ public class ProductNotFoundException extends BaseBusinessException {
         super(ProductResultCode.PRODUCT_NOT_FOUND, "资产不存在: id=" + (id != null ? id.value() : "null"));
     }
 
-    public ProductNotFoundException(Long id) {
-        super(ProductResultCode.PRODUCT_NOT_FOUND, "资产不存在: id=" + id);
-    }
-
     public ProductNotFoundException(String id) {
         super(ProductResultCode.PRODUCT_NOT_FOUND, "资产不存在: id=" + id);
     }

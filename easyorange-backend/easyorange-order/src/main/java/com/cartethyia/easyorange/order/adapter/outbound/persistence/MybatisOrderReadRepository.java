@@ -18,13 +18,13 @@ import java.util.Optional;
 @Repository
 public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, OrderDO> implements OrderReadRepository {
 
-    private final OrderDataConverter converter;
+    private final OrderEntityMapper entityMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public MybatisOrderReadRepository(OrderMapper orderMapper, OrderDataConverter converter,
+    public MybatisOrderReadRepository(OrderMapper orderMapper, OrderEntityMapper entityMapper,
                                       OrderItemMapper orderItemMapper) {
         super(orderMapper);
-        this.converter = converter;
+        this.entityMapper = entityMapper;
         this.orderItemMapper = orderItemMapper;
     }
 
@@ -35,7 +35,7 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
             return Optional.empty();
         }
         List<OrderItemReadModel> items = findItemsByOrderId(id.value());
-        return Optional.ofNullable(converter.toReadModel(orderDO, items));
+        return Optional.ofNullable(entityMapper.toReadModel(orderDO, items));
     }
 
     @Override
@@ -53,7 +53,7 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
         Page<OrderDO> orderPage = wrapper.page(page);
 
         return PageResult.of(
-                orderPage.getRecords().stream().map(converter::toReadModel).toList(),
+                orderPage.getRecords().stream().map(entityMapper::toReadModel).toList(),
                 orderPage.getTotal(), (int) orderPage.getCurrent(), (int) orderPage.getSize()
         );
     }
@@ -70,6 +70,6 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
         return orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)
-        ).stream().map(converter::toItemReadModel).toList();
+        ).stream().map(entityMapper::toItemReadModel).toList();
     }
 }

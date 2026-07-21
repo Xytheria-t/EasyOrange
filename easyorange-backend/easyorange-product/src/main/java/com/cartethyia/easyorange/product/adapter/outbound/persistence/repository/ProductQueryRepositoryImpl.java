@@ -71,9 +71,14 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
         Page<ProductDO> page = new Page<>(pageNum, pageSize);
 
         if (keyword != null && !keyword.isBlank()) {
-            Integer searchStatus = status != null ? status : ProductStatus.ONLINE.getCode();
-            Page<ProductDO> resultPage = productMapper.searchByFullText(
-                    page, keyword, searchStatus, minPrice, maxPrice, conditionLevel, hasDiscount);
+            var criteria = new ProductMapper.ProductSearchCriteria(
+                    keyword,
+                    status != null ? ProductStatus.fromCode(status) : ProductStatus.ONLINE,
+                    minPrice,
+                    maxPrice,
+                    conditionLevel != null ? ConditionLevel.fromCode(conditionLevel) : null,
+                    hasDiscount);
+            Page<ProductDO> resultPage = productMapper.searchByFullText(page, criteria);
             return convertToReadModelPage(resultPage);
         }
 

@@ -11,10 +11,10 @@ application/
 │       ├── EasyOrangeApplication.java     # Spring Boot 主类
 │       ├── adapter/
 │       │   ├── event/                     # 跨模块事件监听器
-│   │   │   ├── PaymentInitiationEventConsumer.java
+│   │   │   ├── OrderFulfillmentEventConsumer.java  # 库存扣减
+│   │   │   ├── OrderNotificationEventConsumer.java
 │   │   │   ├── ProductAuditEventConsumer.java
-│   │   │   ├── ReportProcessedEventConsumer.java
-│   │   │   └── StockReservationEventConsumer.java
+│   │   │   └── ReportProcessedEventConsumer.java
 │       │   ├── inbound/web/controller/  # Web 控制器
 │       │   │   ├── AiController.java                  # AI 服务端点
 │       │   │   ├── CreditScoreController.java         # 信用分数端点
@@ -169,10 +169,12 @@ easyorange-application
 | 消费者 | 事件 | 功能 |
 |--------|------|------|
 | `OrderNotificationEventConsumer` | `OrderCreatedEvent` 等 6 个订单事件 | 订单状态变更→站内消息通知 |
-| `PaymentInitiationEventConsumer` | `PaymentInitiationRequestedEvent` | 创建支付记录 |
+| `OrderFulfillmentEventConsumer` | `StockReservationRequestedEvent` | 库存扣减 |
 | `ProductAuditEventConsumer` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventConsumer` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
-| `StockReservationEventConsumer` | `StockReservationRequestedEvent` | 扣减库存 |
+| `AiProductEventConsumer` | `ProductCreatedEvent` / `ProductUpdatedEvent` / `ProductMarkedSoldEvent` | 商品→AI 智能估值 + 营销文案生成 |
+| `AiCreditEventConsumer` | `OrderCompletedEvent` / `ReportProcessedEvent` | 交易/举报→信用分重算 |
+| `CompensationFailedAlertConsumer` | `CompensationFailedAlertEvent` | Saga 补偿失败告警 |
 
 所有事件消费者使用 `@RabbitListener` + `EventIdempotencyChecker` 模式，通过 Modulith at-least-once 语义 + 幂等去重实现精确一次处理。
 

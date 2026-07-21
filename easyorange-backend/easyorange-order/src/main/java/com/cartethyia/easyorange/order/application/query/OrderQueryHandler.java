@@ -12,8 +12,8 @@ import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.application.assembler.OrderVOAssembler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class OrderQueryHandler {
     private final OrderReadRepository orderReadRepository;
     private final ProductQueryPort productQueryPort;
     private final OrderCachePort<OrderVO> orderCachePort;
-    private final OrderVOAssembler orderVOAssembler;
+    private final OrderReadModelAssembler readModelAssembler;
 
     @Transactional(readOnly = true)
     public OrderVO getOrderDetail(String orderId) {
@@ -40,7 +40,7 @@ public class OrderQueryHandler {
             return null;
         }
         Map<String, ProductDetail> productMap = loadProductMap(order);
-        return orderVOAssembler.toOrderVO(order, productMap, true);
+        return readModelAssembler.toOrderVO(order, productMap, true);
     }
 
     @Transactional(readOnly = true)
@@ -54,7 +54,7 @@ public class OrderQueryHandler {
                 OrderResultCode.ORDER_NOT_OWNER);
 
         Map<String, ProductDetail> productMap = loadProductMap(order);
-        return orderVOAssembler.toOrderVO(order, productMap, false);
+        return readModelAssembler.toOrderVO(order, productMap, false);
     }
 
     @Transactional(readOnly = true)
@@ -122,7 +122,7 @@ public class OrderQueryHandler {
                 .collect(Collectors.toSet());
 
         Map<String, ProductDetail> productMap = loadProducts(productIds);
-        return orderVOAssembler.toOrderVOs(orders, productMap);
+        return readModelAssembler.toOrderVOs(orders, productMap);
     }
 
     private Map<String, ProductDetail> loadProducts(Set<String> productIds) {
@@ -131,7 +131,7 @@ public class OrderQueryHandler {
         }
 
         List<ProductDetail> products = productQueryPort.getProductsByIds(List.copyOf(productIds));
-        return orderVOAssembler.buildProductMap(products);
+        return readModelAssembler.buildProductMap(products);
     }
 
     private Map<String, ProductDetail> loadProductMap(OrderReadModel order) {

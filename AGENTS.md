@@ -1,12 +1,6 @@
 # EasyOrange — LLM × DDD：Java 架构工程化实战
 
-> 11 模块全解耦 + DDD 六边形 + CQRS 读写分离 + Saga 编排 + Spring Modulith 事件发布 + RabbitMQ 事件驱动 + AI Port/Adapter 多级缓存 + 1,269 测试 + CI/CD 全自动。**业务聚焦核心流程（C2C 资产流转：固定价格 + 平台不碰货），把复杂度留给架构与 AI 工程化。**
-
-EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：**DDD 六边形 + CQRS + Saga + 事件驱动 + AI 工程化**。业务聚焦核心流程为 C2C 固定价格资产交易（发布→AI 辅助定价/文案→审核→搜索→下单支付→WebSocket 沟通→信用评分），**2025 年 11 月启动**。
-
-> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测
-> **业务**：C2C 资产流转（聚焦核心流程：固定价格 + 直发 + 平台不碰货，把复杂度留给架构与 AI 工程化）
-> **工程亮点**：DDD 六边形 + CQRS · Saga 分布式事务 · Spring Modulith 事件发布 · RabbitMQ 事件路由 + DLQ · LLM/Vision 多级缓存 + 令牌桶限流 + stale 降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,269 测试
+> **定位**：LLM × DDD 工程化实战项目 — 在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。**业务**：C2C 资产流转（固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。**工程亮点**：DDD 六边形 + CQRS · Saga · 事件驱动 · AI Port/Adapter 多级缓存 + 令牌桶限流 + stale 降级 · ES 搜索 + IK 分词 · ArchUnit 架构守卫 · 1,269 测试。**2025 年 11 月启动**。
 
 ## 技术栈
 
@@ -110,30 +104,8 @@ EasyOrange 基于 Spring Boot 4 + React 全栈，完整落地的架构模式：*
 ```
 easy-orange/
 ├── easyorange-backend/          # Spring Boot 后端 (11 Maven 模块)
-│   ├── easyorange-common/       # 通用组件 (Result, PageResult, 注解, 异常, BaseDO, BaseRepository, IdGenerator)
-│   ├── easyorange-framework/    # 框架基础设施 (Security, Redis, RabbitMQ, Cache, File, ID生成实现)
-│   ├── easyorange-user/         # 用户模块 (DDD: 认证/注册/密码管理/个人资料)
-│   │   ├── domain/service/      # AuthenticationService, RegistrationService, LoginSecurityService
-│   │   ├── domain/port/         # SmsSenderPort, PasswordEncoderPort, LoginAttemptPort, SmsCodePort, AvatarFilePort
-│   │   ├── adapter/outbound/mock/ # MockSmsCodeAdapter, MockSmsSenderAdapter (测试隔离)
-│   │   └── adapter/inbound/web/dto/request/ # PasswordResetRequest, UpdateProfileRequest (新增)
-│   ├── easyorange-product/      # 商品模块 (DDD + CQRS + 审核工作流 + 举报)
-│   ├── easyorange-order/        # 订单模块 (DDD + CQRS + Saga)
-│   ├── easyorange-payment/      # 支付模块 (DDD + CQRS)
-│   ├── easyorange-message/      # 消息模块 (DDD + WebSocket + 聊天)
-│   ├── easyorange-favorite/     # 收藏模块 (DDD 六边形架构)
-│   ├── easyorange-ai/           # AI 模块 (Port/Adapter: LLM + Embedding + Vision)
-│   ├── easyorange-admin/        # 管理端模块 (商品/举报/订单/评价/分类/用户管理 API)
-│   └── easyorange-application/  # 应用启动入口 + Flyway + 架构测试 + ES 搜索适配器
 ├── easyorange-frontend/         # React 前端 (Vite + TypeScript + TanStack Query)
-│   ├── src/admin/               # 管理端模块（暖橙指挥中心设计系统，完整 CRUD + 商品审核 + 举报处理）
-│   ├── src/pages/               # C 端页面（商品详情/我的发布/通知/搜索/个人中心）
-│   ├── src/components/          # 共享组件（AdminTable, Search/Facet, Chat, Notification）
-│   ├── src/hooks/               # React Query hooks + 聊天/搜索 Hooks
-│   ├── src/api/                 # API 模块（admin/message/notification/search）
-│   └── src/types/               # 类型定义
 ├── doc/                         # 项目文档
-│   └── 架构/                   # 架构规范文档（已切分为多个子文档）
 └── .trae/rules/                 # AI 编码规则
 ```
 
@@ -143,7 +115,7 @@ easy-orange/
 2. **CQRS**: 命令与查询分离 (product, order, payment 模块)
 3. **六边形架构**: domain 层通过 port 接口与外部解耦
 4. **不可变性**: 聚合根用 `@Builder(toBuilder = true)`，值对象用 `record`
-5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 9 个事件消费者**: ProductEventConsumer, OrderNotificationEventConsumer, OrderSagaEventConsumer, StockReservationEventConsumer, PaymentInitiationEventConsumer, ProductAuditEventConsumer, ReportProcessedEventConsumer, WebSocketEventConsumer, PaymentMetricsConsumer
+5. **领域事件**: `DomainEventPublisher` 发布事件 → `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher` → Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子） → 异步从 `EVENT_PUBLICATION` 读取并发布到 **RabbitMQ Topic Exchange** (`eo.domain.events`)。路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册。每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试。Modulith 的 at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理。采用 RabbitMQ-only 模式（`@ConditionalOnProperty(matchIfMissing=true)` 保留以防无 RabbitMQ 环境）。**已实现 11 个事件消费者**: ProductEventConsumer (内部 CQRS 投影), AiProductEventConsumer (AI 估值/文案), OrderNotificationEventConsumer (站内信), OrderSagaEventConsumer (Saga 协调), OrderFulfillmentEventConsumer (库存扣减), AiCreditEventConsumer (信用分), ProductAuditEventConsumer (审核通知), ReportProcessedEventConsumer (举报通知), WebSocketEventConsumer (消息撤回广播), PaymentMetricsConsumer (支付指标), CompensationFailedAlertConsumer (补偿失败告警)
 6. **Assembler 模式**: DTO 转换统一在 `adapter/inbound/web/assembler/` 目录下实现（FavoriteAssembler, CategoryAssembler, PaymentViewAssembler, UserAssembler）。**禁止**在 Controller/Service 中直接构造 Response DTO。已废弃旧 DTO（AddFavoriteDTO, FavoriteVO, QueryOrderRequest, PaymentQuery, PaymentView, PaymentMethodVO 等）
 7. **ACL 隔离**: 跨模块通过 ACL/Port 适配，禁止直接依赖领域模型
 8. **异常继承**: 领域异常必须继承 `BaseBusinessException`（common 模块），`GlobalExceptionHandler` 使用 Java 21 模式匹配 switch 在单个 `handle()` 方法内按类型分发，返回动态 HTTP 状态码（按错误码前缀自动映射：A0401→401/A0403→403/B→400/C→500/D→502）+ 业务错误码；校验类错误统一返回 400。**禁止直接抛出非 `BaseBusinessException` 子类的 RuntimeException**，否则会落入 500 兜底。`BusinessException` 和 `FileException` 构造器均设为 `protected`，抛业务异常时统一使用 `BusinessException.of(...)` / `FileException.of(...)` 工厂方法；子类可正常调用 `super(...)`。各模块领域异常必须使用模块专属 `ResultCode`（如 `ProductResultCode.PRODUCT_NOT_FOUND`），**禁止回退到全局 `B0002`**
@@ -311,20 +283,8 @@ npm run test:e2e
 npm run build:analyze
 ```
 
-# CI/CD 流水线（GitHub Actions）
-# 配置文件: .github/workflows/ci.yml
-# 触发: push/PR 到 main/develop 分支
-# 包含: 后端编译 → 后端测试 → 前端依赖安装 → 前端 typecheck → 前端 lint → 前端测试
-# 超时: 30 分钟 | 并行控制: 相同 PR 自动取消进行中运行
-```
+CI/CD: `.github/workflows/ci.yml` — push/PR 到 main/develop 触发（后端编译测试 → 前端 typecheck/lint/测试），30min 超时
 
 ## Repository Map
 
-A full codemap is available at `codemap.md` in the project root.
-
-Before working on any task, read `codemap.md` to understand:
-- Project architecture and entry points
-- Directory responsibilities and design patterns
-- Data flow and integration points between modules
-
-For deep work on a specific folder, also read that folder's `codemap.md`.
+`codemap.md` 在项目根目录，按模块/目录分布。工作前先读对应的 `codemap.md` 了解入口、模式和数据流。

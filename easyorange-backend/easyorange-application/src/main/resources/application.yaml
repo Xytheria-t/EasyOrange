@@ -135,6 +135,7 @@ server:
 
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
+  type-aliases-package: com.cartethyia.easyorange.product.adapter.outbound.persistence, com.cartethyia.easyorange.product.application.query
   type-handlers-package: com.cartethyia.easyorange.framework.config.database, com.cartethyia.easyorange.user.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.product.adapter.outbound.persistence.typehandler
   configuration:
     map-underscore-to-camel-case: true

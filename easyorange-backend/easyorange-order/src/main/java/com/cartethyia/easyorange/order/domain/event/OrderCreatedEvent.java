@@ -11,14 +11,14 @@ public record OrderCreatedEvent(
         String sellerId,
         List<OrderItemPayload> items,
         BigDecimal totalAmount
-) implements DomainEvent {
+) implements OrderEvent {
 
     public OrderCreatedEvent {
         items = List.copyOf(items);
     }
 
     @Override
-    public String aggregateId() {
+    public String orderId() {
         return orderId;
     }
 

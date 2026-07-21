@@ -62,20 +62,10 @@ product、order、payment 模块使用 CQRS（在 application/domain 层分离�
 
 应用服务注入 `DomainEventPublisher` 发布事件，框架层通过 Spring Modulith + RabbitMQ Topic Exchange 分发：
 
-```java
-// 应用服务
-private final DomainEventPublisher eventPublisher;
-eventPublisher.publish(new SomeEvent(...));
-```
-
-- `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`，Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子）
-- 事务提交后，Modulith 异步从 `EVENT_PUBLICATION` 读取并发布到 `eo.domain.events` Topic Exchange
-- 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`），无需手动注册
-- 每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ（`eo.{name}.dlq`）+ 指数退避重试
-- 多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发，非轮询竞争）
-- 各模块通过 `@RabbitListener` 注解的消费者异步处理事件（9 个消费者，见根目录 AGENTS.md）
-- `@ConditionalOnProperty(matchIfMissing=true)` 确保无 RabbitMQ 环境开发/测试正常启动
-- Modulith at-least-once 语义 + 消费者 `EventIdempotencyChecker` 确保精确一次处理
+- `ModulithDomainEventPublisher`（`@Primary`）代理到 `ApplicationEventPublisher`，Spring Modulith 在数据库 `EVENT_PUBLICATION` 表中持久化事件（与应用事务同原子），事务提交后异步发布到 `eo.domain.events` Topic Exchange
+- 路由键由事件类名自动派生（`ProductCreatedEvent` → `product.created`）；每个消费者独占队列（`eo.{name}`），失败消息路由到 DLQ + 指数退避重试；多方法消费者使用类级 `@RabbitListener` + 方法级 `@RabbitHandler`（类型分发）
+- 11 个消费者（见根目录 AGENTS.md），Modulith at-least-once 语义 + `EventIdempotencyChecker` 确保精确一次处理
+- `@ConditionalOnProperty(matchIfMissing=true)` 支持无 RabbitMQ 环境启动
 
 ## 跨模块通信
 
@@ -87,16 +77,12 @@ eventPublisher.publish(new SomeEvent(...));
 - Maven 依赖标记为 `<optional>true</optional>` 实现编译期隔离
 
 **事件驱动**：
-- 写操作通过领域事件解耦（如 `PaymentInitiationRequestedEvent`、`StockReservationRequestedEvent`）
+- 写操作通过领域事件解耦（如 `StockReservationRequestedEvent`）
 - 事件监听器在 `easyorange-application/adapter/event/` 包下（机制与第 3 节"领域事件"一致）
 
 **查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
 
-**事件流**：
-```
-OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → StockReservationEventConsumer → ProductCommandService.decrementStock()
-PaymentInitiationRequestedEvent → PaymentInitiationEventConsumer → PaymentCommandHandler.handle()
-```
+**事件流**：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandService.decrementStock()`
 
 ## 统一响应格式
 
@@ -165,6 +151,8 @@ DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类�
 | `CodeEnumTypeHandler` | VARCHAR | `UserStatus` 等 String 枚举 |
 
 新增枚举字段步骤：① 创建 TypeHandler 继承对应基类，标注 `@MappedTypes`；② 将 TypeHandler 所在包加入 `application.yaml` 的 `mybatis-plus.type-handlers-package`；③ DO 字段类型改为枚举。参考实现：`easyorange-product` 模块的 `ProductStatusTypeHandler` + `ConditionLevelTypeHandler`。
+
+> **提示**：`mybatis-plus.type-aliases-package` 已配置（见 application.yaml），Mapper XML 的 `resultType` 中可直接使用类名（如 `ProductDO`）代替 FQCN。
 
 ## 测试策略
 

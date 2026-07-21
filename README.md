@@ -36,13 +36,13 @@ C2C 资产流转（固定价格 + 直发 + 平台不碰货）—— 业务聚焦
 
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
-| **架构落地** | 11 模块 / 7 对 Port-Adapter / 9 消费者+DLQ / 30 表 / 2,221 测试 | DDD/CQRS/Saga/事件驱动 在真实业务压力下的协同落地 |
+| **架构落地** | 11 模块 / 7 对 Port-Adapter / 11 消费者+DLQ / 30 表 / 2,221 测试 | DDD/CQRS/Saga/事件驱动 在真实业务压力下的协同落地 |
 | **架构决策记录** | 4 ADR + 13 关键决策可独立讲解 | 每个架构选择都有"为什么这样选 + 拒绝了什么"的 ADR 记录 |
 | **AI 工程化** | 6 决策点 + 7 件套 | Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理 |
 
 > **4 个核心架构模式**：`DDD 六边形` · `CQRS` · `Saga` · `事件驱动` — 11 模块全解耦、4 模式 4 ADR。落地细节见 [doc/架构/架构-DDD规范.md](doc/架构/架构-DDD规范.md) + [doc/adr/](doc/adr/)。
 
-> **By the numbers**：11 模块 / 28 Port 接口 / 9 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,221 测试 / 4 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
+> **By the numbers**：11 模块 / 28 Port 接口 / 11 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,221 测试 / 4 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
 
 ## 架构总览（一图看懂）
 
@@ -62,7 +62,7 @@ graph TB
     ADMIN[admin]
     AI["easyorange-ai · 6 决策点<br/>Port + 多级缓存 + 限流 + AiMetrics"]
 
-    MQ[("RabbitMQ<br/>9 消费者 + DLQ")]
+    MQ[("RabbitMQ<br/>11 消费者 + DLQ")]
     DB[("MySQL 8.4<br/>30 表")]
     REDIS[("Redis 7.4")]
     ES[("ES 8 可选")]
@@ -131,8 +131,7 @@ sequenceDiagram
     participant S as CreateOrderSaga
     participant P as DomainEventPublisher
     participant MQ as RabbitMQ
-    participant SC as StockReservationConsumer
-    participant PC as PaymentInitiationConsumer
+    participant FC as OrderFulfillmentEventConsumer
     participant DB as eo_saga 表
 
     C->>H: createOrder(cmd)
@@ -141,14 +140,9 @@ sequenceDiagram
     S->>P: publish(OrderCreatedEvent)
     P->>MQ: route(order.created)
 
-    par 并行编排
-        MQ->>SC: consume
-        SC->>SC: 扣减库存
-        SC->>P: publish(StockReservedEvent)
-    and
-        MQ->>PC: consume
-        PC->>PC: 发起支付
-        PC->>P: publish(PaymentInitiatedEvent)
+    par Saga 步骤
+        MQ->>FC: StockReservationRequestedEvent
+        FC->>FC: 扣减库存
     end
 
     alt 全部成功

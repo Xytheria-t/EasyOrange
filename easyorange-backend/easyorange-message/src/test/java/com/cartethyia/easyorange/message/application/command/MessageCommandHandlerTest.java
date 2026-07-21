@@ -4,10 +4,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
-import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageReadEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
@@ -120,7 +117,6 @@ class MessageCommandHandlerTest {
                 verify(messageRepository).save(any(MessageAggregate.class));
                 verify(rateLimiterService).allowSendMessage(USER_ID);
                 verify(sensitiveWordFilterService).filter("hello");
-                verify(domainEventPublisher).publish(any(MessageSentEvent.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -211,7 +207,6 @@ class MessageCommandHandlerTest {
             commandHandler.handle(command);
 
             verify(messageRepository).save(any(MessageAggregate.class));
-            verify(domainEventPublisher).publish(any(MessageSentEvent.class));
             verify(offlineMessageStoreService).storeIfOffline(anyString(), any(), anyString(), eq(true));
             verify(webSocketNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
@@ -236,7 +231,6 @@ class MessageCommandHandlerTest {
                 commandHandler.handle(command);
 
                 verify(messageRepository).update(any(MessageAggregate.class));
-                verify(domainEventPublisher).publish(any(MessageReadEvent.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -400,7 +394,6 @@ class MessageCommandHandlerTest {
                 commandHandler.handle(command);
 
                 verify(messageRepository).delete(MESSAGE_ID);
-                verify(domainEventPublisher).publish(any(MessageDeletedEvent.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

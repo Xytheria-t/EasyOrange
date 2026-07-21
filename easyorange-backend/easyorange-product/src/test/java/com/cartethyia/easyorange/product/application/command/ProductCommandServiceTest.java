@@ -2,17 +2,12 @@ package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
-import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
@@ -38,13 +33,7 @@ class ProductCommandServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private ProductCachePort productCachePort;
-
-    @Mock
     private DomainEventPublisher domainEventPublisher;
-
-    @Mock
-    private ProductAuditLogRepository productAuditLogRepository;
 
     private ProductCommandService commandService;
 
@@ -52,7 +41,7 @@ class ProductCommandServiceTest {
 
     @BeforeEach
     void setUp() {
-        commandService = new ProductCommandService(productRepository, productCachePort, domainEventPublisher, productAuditLogRepository);
+        commandService = new ProductCommandService(productRepository, domainEventPublisher);
 
         ProductTransition created = Product.create(
                 com.cartethyia.easyorange.product.domain.valueobject.SellerId.of("1"),
@@ -98,26 +87,6 @@ class ProductCommandServiceTest {
     }
 
     @Test
-    @DisplayName("更新商品后应使缓存失效")
-    void updateProduct_shouldEvictCache() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
-
-            UpdateProductCommand command = new UpdateProductCommand(
-                    "1", null, "新名称", new BigDecimal("200"),
-                    null, null, null, null, null, null, null);
-
-            commandService.updateProduct(command);
-
-            verify(productCachePort).evictProductCache("1");
-            verify(domainEventPublisher).publish(any(ProductUpdatedEvent.class));
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
-    }
-
-    @Test
     @DisplayName("更新不存在的商品应抛出异常")
     void updateProduct_whenNotFound_shouldThrow() {
         TestSecurityUtil.setSecurityContext(1L);
@@ -130,38 +99,6 @@ class ProductCommandServiceTest {
 
             assertThatThrownBy(() -> commandService.updateProduct(command))
                     .isInstanceOf(ProductNotFoundException.class);
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
-    }
-
-    @Test
-    @DisplayName("扣减库存后应使缓存失效")
-    void decrementStock_shouldEvictCache() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
-
-            commandService.decrementStock("1", 1);
-
-            verify(productCachePort).evictProductCache("1");
-            verify(domainEventPublisher).publish(any(StockDecreasedEvent.class));
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
-    }
-
-    @Test
-    @DisplayName("标记售出后应使缓存失效")
-    void markAsSold_shouldEvictCache() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            when(productRepository.findById(any(ProductId.class))).thenReturn(Optional.of(existingProduct));
-
-            commandService.markAsSold("1");
-
-            verify(productCachePort).evictProductCache("1");
-            verify(domainEventPublisher).publish(any(ProductMarkedSoldEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }

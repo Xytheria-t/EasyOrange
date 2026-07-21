@@ -37,78 +37,41 @@ public class ProductSearchHandler {
 
     @Transactional(readOnly = true)
     public SearchPageResponse<ProductResponse> handleSearch(ProductSearchRequest request) {
+        List<ProductReadModel> readModels;
         SearchPageResponse<ProductResponse> result;
+
         if (searchQueryPort.isPresent()) {
-            ProductSearchQueryPort.ProductSearchQuery query = new ProductSearchQueryPort.ProductSearchQuery(
-                    request.getKeyword(),
-                    request.getCategoryId(),
-                    request.getStatus(),
-                    request.getMinPrice(),
-                    request.getMaxPrice(),
-                    request.getConditionLevel(),
+            var query = new ProductSearchQueryPort.ProductSearchQuery(
+                    request.getKeyword(), request.getCategoryId(), request.getStatus(),
+                    request.getMinPrice(), request.getMaxPrice(), request.getConditionLevel(),
                     request.getSortField(),
                     request.getPageNum() != null ? request.getPageNum() : 1,
                     request.getPageSize() != null ? request.getPageSize() : 20,
-                    null,
-                    false
-            );
-            SearchResult searchResult = searchQueryPort.get().search(query);
-            List<ProductResponse> responses = searchResult.records().stream()
-                    .map(this::toProductResponse)
-                    .collect(Collectors.toList());
-            List<FacetBucketResponse> facets = mergeFacets(searchResult);
+                    null, false);
+            var searchResult = searchQueryPort.get().search(query);
+            readModels = searchResult.records();
+            var responses = readModels.stream().map(this::toProductResponse).toList();
+            var facets = mergeFacets(searchResult);
             result = SearchPageResponse.of(responses, searchResult.total(), searchResult.current(),
                     searchResult.size(), facets);
         } else {
-            PageResult<ProductReadModel> page = productQueryRepository.searchProducts(
-                    request.getKeyword(),
-                    request.getCategoryId(),
-                    request.getStatus(),
+            var page = productQueryRepository.searchProducts(
+                    request.getKeyword(), request.getCategoryId(), request.getStatus(),
                     request.getPageNum() != null ? request.getPageNum() : 1,
-                    request.getPageSize() != null ? request.getPageSize() : 20
-            );
-
-            List<ProductResponse> responses = page.records().stream()
-                    .map(this::toProductResponse)
-                    .collect(Collectors.toList());
-
+                    request.getPageSize() != null ? request.getPageSize() : 20);
+            readModels = page.records();
+            var responses = readModels.stream().map(this::toProductResponse).toList();
             result = SearchPageResponse.of(page, responses);
         }
 
+        // AI search enhancement — use original ReadModels directly, no back-conversion
         if (request.isAiEnhanced()
                 && aiSearchEnhancer.isPresent()
-                && !result.records().isEmpty()) {
-
-            List<ProductReadModel> topProducts = result.records().stream()
-                    .limit(5)
-                    .<ProductReadModel>map(r -> new ProductReadModel(
-                            r.getId(),
-                            r.getSellerId(),
-                            r.getUsername(),
-                            r.getUserAvatar(),
-                            r.getCategoryId(),
-                            r.getCategoryName(),
-                            r.getTitle(),
-                            r.getDescription(),
-                            r.getPrice(),
-                            r.getOriginalPrice(),
-                            r.getStock(),
-                            r.getStatus(),
-                            r.getStatusDesc(),
-                            r.getViews(),
-                            r.getCondition(),
-                            r.getConditionDesc(),
-                            r.getLocation(),
-                            r.getContactMethod(),
-                            r.getImages(),
-                            r.getMainImageUrl(),
-                            r.getCreateTime(),
-                            r.getUpdateTime()
-                    ))
-                    .toList();
-
-            var enhancement = aiSearchEnhancer.get()
-                    .tryEnhance(request.getKeyword(), topProducts);
+                && !readModels.isEmpty()) {
+            var topProducts = readModels.size() <= 5
+                    ? readModels
+                    : readModels.subList(0, 5);
+            var enhancement = aiSearchEnhancer.get().tryEnhance(request.getKeyword(), topProducts);
             if (enhancement.isPresent()) {
                 result = result.withAiEnhancement(enhancement.get());
             }

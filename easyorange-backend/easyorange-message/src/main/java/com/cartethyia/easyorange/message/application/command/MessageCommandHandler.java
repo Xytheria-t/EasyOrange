@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.Messa
 import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
-import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
@@ -65,9 +64,6 @@ public class MessageCommandHandler {
         offlineMessageStoreService.storeIfOffline(
                 saved.receiverId(), saved.id(), "websocket", decision.isOnline());
 
-        MessageSentEvent event = saved.send();
-        domainEventPublisher.publish(event);
-
         log.info("action=send_message messageId={} senderId={} receiverId={} type={}",
                 saved.id(), senderId, command.getReceiverId(), command.getType());
     }
@@ -98,9 +94,6 @@ public class MessageCommandHandler {
             ));
         }
 
-        MessageSentEvent event = saved.send();
-        domainEventPublisher.publish(event);
-
         log.info("action=send_system_message messageId={} receiverId={}",
                 saved.id(), command.getReceiverId());
     }
@@ -121,7 +114,6 @@ public class MessageCommandHandler {
             MessageReadResult readResult = aggregate.read(userId);
             if (readResult != null) {
                 messageRepository.update(readResult.aggregate());
-                domainEventPublisher.publish(readResult.event());
             }
         }
     }
@@ -140,7 +132,6 @@ public class MessageCommandHandler {
                     MessageReadResult readResult = aggregate.read(userId);
                     if (readResult != null) {
                         messageRepository.update(readResult.aggregate());
-                        domainEventPublisher.publish(readResult.event());
                     }
                 }
             } catch (Exception e) {
@@ -200,7 +191,6 @@ public class MessageCommandHandler {
 
         MessageDeletedEvent event = aggregate.delete(userId);
         messageRepository.delete(command.getMessageId());
-        domainEventPublisher.publish(event);
 
         log.info("action=delete_message messageId={} userId={}", command.getMessageId(), userId);
     }

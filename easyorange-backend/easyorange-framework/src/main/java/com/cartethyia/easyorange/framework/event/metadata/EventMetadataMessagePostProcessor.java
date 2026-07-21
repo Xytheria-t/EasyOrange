@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.framework.event.metadata;
 
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.MDC;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessagePostProcessor;
@@ -21,6 +22,7 @@ import java.util.UUID;
  * 由 {@code RabbitMQConfig.rabbitTemplate()} 注册为 {@code beforePublishPostProcessor}，
  * 所有经 Modulith 外化到 RabbitMQ 的领域事件自动获得元数据。
  */
+@NullMarked
 public class EventMetadataMessagePostProcessor implements MessagePostProcessor {
 
     public static final String HEADER_TRACE_ID = "traceId";

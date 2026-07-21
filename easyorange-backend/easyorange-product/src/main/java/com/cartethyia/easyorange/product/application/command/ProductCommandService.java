@@ -5,14 +5,9 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
-import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
-import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
-import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
-import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.product.domain.valueobject.ContactMethod;
@@ -39,9 +34,7 @@ import java.util.function.Function;
 public class ProductCommandService {
 
     private final ProductRepository productRepository;
-    private final ProductCachePort<?> productCachePort;
     private final DomainEventPublisher domainEventPublisher;
-    private final ProductAuditLogRepository productAuditLogRepository;
 
     // ==================== CRUD ====================
 
@@ -61,6 +54,7 @@ public class ProductCommandService {
                 ProductDescription.of(command.description()),
                 ImageSet.of(command.imageUrls())
         );
+
         var created = productRepository.create(result.product());
         domainEventPublisher.publish(result.event());
         return created.getId().value();
@@ -89,10 +83,9 @@ public class ProductCommandService {
         var pid = ProductId.of(id);
         var product = findByIdOrThrow(pid);
 
-        ProductTransition result = product.delete(userId);
+        var result = product.delete(userId);
         productRepository.delete(pid);
         domainEventPublisher.publish(result.event());
-        evictCache(id);
     }
 
     // ==================== Stock ====================
@@ -112,10 +105,7 @@ public class ProductCommandService {
     public void submitForReview(String productId) {
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         var product = findByIdOrThrow(ProductId.of(productId));
-        var result = mutate(product, p -> p.submitForReview(userId));
-        if (result.event() instanceof ProductSubmittedForReviewEvent event) {
-            saveAuditLog(productId, userId, event);
-        }
+        mutate(product, p -> p.submitForReview(userId));
     }
 
     public void putOnline(String productId) {
@@ -136,12 +126,10 @@ public class ProductCommandService {
 
     // ==================== Private Helpers ====================
 
-    private ProductTransition mutate(Product product, Function<Product, ProductTransition> fn) {
+    private void mutate(Product product, Function<Product, ProductTransition> fn) {
         var result = fn.apply(product);
         productRepository.update(result.product());
         domainEventPublisher.publish(result.event());
-        evictCache(product.getId().value());
-        return result;
     }
 
     private Product findByIdOrThrow(ProductId id) {
@@ -155,23 +143,6 @@ public class ProductCommandService {
             throw new ProductNotOwnerException(productId);
         }
         return product;
-    }
-
-    private void evictCache(String productId) {
-        productCachePort.evictProductCache(productId);
-    }
-
-    private void saveAuditLog(String productId, String operatorId, ProductSubmittedForReviewEvent event) {
-        var context = SecurityContextUtil.getUserContextOrThrow();
-        var auditLog = ProductAuditLog.builder()
-                .productId(productId)
-                .operatorId(operatorId)
-                .operatorName(context.username())
-                .action(AuditAction.RESUBMIT.getCode())
-                .beforeStatus(event.beforeStatus())
-                .afterStatus(event.afterStatus())
-                .build();
-        productAuditLogRepository.save(auditLog);
     }
 
     // ==================== Inner Records ====================

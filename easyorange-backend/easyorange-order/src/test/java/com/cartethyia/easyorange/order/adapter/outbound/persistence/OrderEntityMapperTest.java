@@ -13,8 +13,6 @@ import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import tools.jackson.databind.DeserializationFeature;
-import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,18 +22,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DisplayName("OrderDataConverter 单元测试")
-class OrderDataConverterTest {
+@DisplayName("OrderEntityMapper 单元测试")
+class OrderEntityMapperTest {
 
-    private final OrderDataConverter converter = new OrderDataConverter(createObjectMapper());
-
-    private static JsonMapper createObjectMapper() {
-        return JsonMapper.builder()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .build();
-    }
+    private final OrderEntityMapper mapper = new OrderEntityMapperImpl();
 
     private static final String ID = "100";
     private static final String ORDER_NO = "ORD100";
@@ -51,6 +42,7 @@ class OrderDataConverterTest {
     private static final LocalDateTime CANCEL_TIME = null;
     private static final LocalDateTime CREATE_TIME = LocalDateTime.of(2026, 5, 1, 10, 0);
     private static final LocalDateTime UPDATE_TIME = LocalDateTime.of(2026, 5, 1, 12, 0);
+    private static final String PRODUCT_SNAPSHOT = "{\"productId\":\"200\",\"name\":\"测试商品\",\"price\":99.99}";
 
     private OrderDO createOrderDO() {
         OrderDO orderDO = OrderDO.builder()
@@ -100,7 +92,7 @@ class OrderDataConverterTest {
         void toDataObject_shouldMapAllFields() {
             OrderAggregate aggregate = createAggregate();
 
-            OrderDO orderDO = converter.toDataObject(aggregate);
+            OrderDO orderDO = mapper.toDataObject(aggregate);
 
             assertThat(orderDO).isNotNull();
             assertThat(orderDO.getId()).isEqualTo(ID);
@@ -116,13 +108,6 @@ class OrderDataConverterTest {
             assertThat(orderDO.getCancelReason()).isNull();
             assertThat(orderDO.getCancelTime()).isNull();
         }
-
-        @Test
-        @DisplayName("null 输入应快速失败")
-        void toDataObject_withNull_shouldThrow() {
-            assertThatThrownBy(() -> converter.toDataObject(null))
-                    .isInstanceOf(NullPointerException.class);
-        }
     }
 
     @Nested
@@ -134,7 +119,7 @@ class OrderDataConverterTest {
         void toAggregate_shouldReconstructFullAggregate() {
             OrderDO orderDO = createOrderDO();
 
-            OrderAggregate aggregate = converter.toAggregate(orderDO);
+            OrderAggregate aggregate = mapper.toAggregate(orderDO);
 
             assertThat(aggregate).isNotNull();
             assertThat(aggregate.id().value()).isEqualTo(ID);
@@ -153,10 +138,14 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("null 输入应快速失败")
-        void toAggregate_withNull_shouldThrow() {
-            assertThatThrownBy(() -> converter.toAggregate(null))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("携带行项重建应保留行项")
+        void toAggregate_withItems_shouldKeepItems() {
+            OrderDO orderDO = createOrderDO();
+
+            OrderAggregate aggregate = mapper.toAggregate(orderDO, itemForTest());
+
+            assertThat(aggregate.items()).hasSize(1);
+            assertThat(aggregate.items().get(0).productId().value()).isEqualTo(PRODUCT_ID);
         }
     }
 
@@ -169,7 +158,7 @@ class OrderDataConverterTest {
         void toReadModel_shouldMapToReadModel() {
             OrderDO orderDO = createOrderDO();
 
-            OrderReadModel readModel = converter.toReadModel(orderDO);
+            OrderReadModel readModel = mapper.toReadModel(orderDO);
 
             assertThat(readModel).isNotNull();
             assertThat(readModel.id()).isEqualTo(ID);
@@ -189,10 +178,15 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("null 输入应快速失败")
-        void toReadModel_withNull_shouldThrow() {
-            assertThatThrownBy(() -> converter.toReadModel(null))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("携带行项的读模型重建应包含行项")
+        void toReadModel_withItems_shouldIncludeItems() {
+            OrderDO orderDO = createOrderDO();
+            var items = List.of(new OrderItemReadModel("1", PRODUCT_ID, PRODUCT_SNAPSHOT, AMOUNT, 1, AMOUNT));
+
+            OrderReadModel readModel = mapper.toReadModel(orderDO, items);
+
+            assertThat(readModel.items()).hasSize(1);
+            assertThat(readModel.items().get(0).productId()).isEqualTo(PRODUCT_ID);
         }
 
         @Test
@@ -201,7 +195,7 @@ class OrderDataConverterTest {
             OrderDO orderDO = createOrderDO();
             orderDO.setStatus(OrderStatus.CANCELLED.getCode());
 
-            OrderReadModel readModel = converter.toReadModel(orderDO);
+            OrderReadModel readModel = mapper.toReadModel(orderDO);
 
             assertThat(readModel.statusDesc()).isEqualTo("已取消");
         }
@@ -215,7 +209,7 @@ class OrderDataConverterTest {
         @DisplayName("toItemDO 应将 OrderItem 正确映射")
         void toItemDO_shouldMapAllFields() {
             OrderItem item = itemForTest().get(0);
-            OrderItemDO itemDO = converter.toItemDO(ID, item);
+            OrderItemDO itemDO = mapper.toItemDO(ID, item);
 
             assertThat(itemDO).isNotNull();
             assertThat(itemDO.getId()).isEqualTo(item.id());
@@ -228,13 +222,6 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("toItemDO null 输入应快速失败")
-        void toItemDO_withNull_shouldThrow() {
-            assertThatThrownBy(() -> converter.toItemDO(ID, null))
-                    .isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
         @DisplayName("toItemReadModel 应将 OrderItemDO 正确映射")
         void toItemReadModel_shouldMapAllFields() {
             OrderItemDO itemDO = OrderItemDO.builder()
@@ -243,7 +230,7 @@ class OrderDataConverterTest {
                     .unitPrice(AMOUNT).quantity(1).subtotal(AMOUNT)
                     .build();
 
-            OrderItemReadModel readModel = converter.toItemReadModel(itemDO);
+            OrderItemReadModel readModel = mapper.toItemReadModel(itemDO);
 
             assertThat(readModel).isNotNull();
             assertThat(readModel.itemId()).isEqualTo("1");
@@ -254,10 +241,22 @@ class OrderDataConverterTest {
         }
 
         @Test
-        @DisplayName("toItemReadModel null 输入应快速失败")
-        void toItemReadModel_withNull_shouldThrow() {
-            assertThatThrownBy(() -> converter.toItemReadModel(null))
-                    .isInstanceOf(NullPointerException.class);
+        @DisplayName("toOrderItem 应将 OrderItemDO 正确映射为领域对象")
+        void toOrderItem_shouldMapToDomain() {
+            OrderItemDO itemDO = OrderItemDO.builder()
+                    .id("1").orderId(ID).productId(PRODUCT_ID)
+                    .productSnapshot("{}")
+                    .unitPrice(AMOUNT).quantity(1).subtotal(AMOUNT)
+                    .build();
+
+            OrderItem item = mapper.toOrderItem(itemDO);
+
+            assertThat(item).isNotNull();
+            assertThat(item.id()).isEqualTo("1");
+            assertThat(item.productId().value()).isEqualTo(PRODUCT_ID);
+            assertThat(item.unitPrice().value()).isEqualByComparingTo(AMOUNT);
+            assertThat(item.quantity()).isEqualTo(1);
+            assertThat(item.subtotal().value()).isEqualByComparingTo(AMOUNT);
         }
     }
 
@@ -270,8 +269,8 @@ class OrderDataConverterTest {
         void roundtrip_shouldPreserveAllData() {
             OrderAggregate original = createAggregate();
 
-            OrderDO orderDO = converter.toDataObject(original);
-            OrderAggregate restored = converter.toAggregate(orderDO);
+            OrderDO orderDO = mapper.toDataObject(original);
+            OrderAggregate restored = mapper.toAggregate(orderDO);
 
             assertThat(restored.id().value()).isEqualTo(original.id().value());
             assertThat(restored.orderNo().value()).isEqualTo(original.orderNo().value());
@@ -293,8 +292,8 @@ class OrderDataConverterTest {
         void roundtrip_fromDO_shouldPreserveAllData() {
             OrderDO original = createOrderDO();
 
-            OrderAggregate aggregate = converter.toAggregate(original);
-            OrderDO converted = converter.toDataObject(aggregate);
+            OrderAggregate aggregate = mapper.toAggregate(original);
+            OrderDO converted = mapper.toDataObject(aggregate);
 
             assertThat(converted.getId()).isEqualTo(original.getId());
             assertThat(converted.getOrderNo()).isEqualTo(original.getOrderNo());

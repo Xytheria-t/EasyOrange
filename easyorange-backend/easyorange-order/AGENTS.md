@@ -32,7 +32,7 @@ order/
 │       │   ├── OrderMapper.java, SagaMapper.java
 │       │   ├── OrderItemDO.java             # eo_order_item 实体
 │       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
-│       │   └── OrderDataConverter.java
+│       │   └── OrderEntityMapper.java       # MapStruct: DO ↔ Domain
 │       ├── cache/                           # 缓存
 │       │   └── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
 │       └── messaging/                       # 跨模块适配器
@@ -59,11 +59,11 @@ order/
 │   │   └── RefundOrderCommand.java
 │   ├── query/                               # 查询 (CQRS Read)
 │   │   ├── OrderQueryHandler.java
-│   │   └── OrderQuery.java
-│   ├── assembler/
-│   │   └── OrderVOAssembler.java
+│   │   ├── OrderQuery.java
+│   │   └── assembler/
+│   │       └── OrderReadModelAssembler.java  # ReadModel → OrderVO（应用层组装）
 │   └── dto/
-│       └── OrderVO.java                      # 响应 VO（与缓存系统耦合，暂留 application）
+│       └── OrderVO.java                      # 响应 VO
 ├── domain/
 │   ├── aggregate/
 │   │   └── OrderAggregate.java             # 订单聚合根 (不可变)
@@ -82,12 +82,14 @@ order/
 │   │   ├── ProductSnapshot.java           # 下单时商品快照
 │   │   ├── PaymentStatus.java             # 支付状态枚举（UNPAID/PAID/REFUNDED）
 │   ├── event/
+│   │   ├── OrderEvent.java                   # sealed 接口（含 default aggregateId），所有事件实现此接口
 │   │   ├── OrderCreatedEvent.java
 │   │   ├── OrderPaidEvent.java
 │   │   ├── OrderShippedEvent.java
 │   │   ├── OrderCompletedEvent.java
 │   │   ├── OrderCancelledEvent.java
-│   │   └── OrderRefundedEvent.java
+│   │   ├── OrderRefundedEvent.java
+│   │   └── StockReservationRequestedEvent.java
 │   ├── readmodel/
 │   │   ├── OrderReadModel.java
 │   │   └── OrderItemReadModel.java
@@ -144,6 +146,17 @@ CreateOrderSaga.execute():
 
 **Query 侧**: `OrderQueryController` → `OrderQueryHandler` → `OrderReadRepository` → `OrderReadModel`
 
+## 对象映射策略
+
+模块内有两层映射（与 User 模块一致），职责分离：
+
+| Mapper | 方向 | 位置 | 说明 |
+|--------|------|------|------|
+| `OrderEntityMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | MapStruct 接口：OrderDO ↔ OrderAggregate、OrderItemDO ↔ OrderItem |
+| `OrderReadModelAssembler` | ReadModel → VO | `application/query/assembler/` | OrderReadModel → OrderVO（含脱敏、商品信息填充） |
+
+`OrderDO` 是纯数据库实体，不含映射逻辑。所有持久化映射集中在 `OrderEntityMapper`。
+
 ## 跨模块通信
 
 通过 `port/` 接口解耦，`adapter/outbound/messaging/` 实现适配器：
@@ -190,5 +203,5 @@ CANCELLED CANCELLED REFUNDED
 3. Controller 提取参数传递原始类型给 `OrderQueryHandler`
 4. `OrderReadRepository` 修改查询
 5. `OrderReadModel` 添加字段
-6. `OrderVOAssembler` 更新
+6. `OrderReadModelAssembler` 更新
 7. 测试

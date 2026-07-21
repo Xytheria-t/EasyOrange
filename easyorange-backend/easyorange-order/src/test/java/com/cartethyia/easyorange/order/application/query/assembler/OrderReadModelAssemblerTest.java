@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.order.application.assembler;
+package com.cartethyia.easyorange.order.application.query.assembler;
 
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
@@ -15,10 +15,10 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("OrderVOAssembler 单元测试")
-class OrderVOAssemblerTest {
+@DisplayName("OrderReadModelAssembler 单元测试")
+class OrderReadModelAssemblerTest {
 
-    private final OrderVOAssembler assembler = new OrderVOAssembler();
+    private final OrderReadModelAssembler assembler = new OrderReadModelAssembler();
 
     private static final String ORDER_ID = "100";
     private static final String ORDER_NO = "ORD100";

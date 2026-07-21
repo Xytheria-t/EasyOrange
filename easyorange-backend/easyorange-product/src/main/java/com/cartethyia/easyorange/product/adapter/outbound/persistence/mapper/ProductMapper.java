@@ -7,12 +7,13 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
+import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 @Mapper
@@ -20,13 +21,16 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
 
     // -- 搜索 --
 
-    Page<ProductDO> searchByFullText(Page<ProductDO> page,
-                                     @Param("keyword") String keyword,
-                                     @Param("status") Integer status,
-                                     @Param("minPrice") BigDecimal minPrice,
-                                     @Param("maxPrice") BigDecimal maxPrice,
-                                     @Param("conditionLevel") Integer conditionLevel,
-                                     @Param("hasDiscount") Boolean hasDiscount);
+    record ProductSearchCriteria(
+        String keyword,
+        ProductStatus status,
+        BigDecimal minPrice,
+        BigDecimal maxPrice,
+        ConditionLevel conditionLevel,
+        Boolean hasDiscount
+    ) {}
+
+    Page<ProductDO> searchByFullText(Page<ProductDO> page, @Param("c") ProductSearchCriteria criteria);
 
     // -- 批量查询 --
 
@@ -40,7 +44,9 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
 
     // -- 写入 --
 
-    void batchAddViewCounts(@Param("viewCounts") Map<String, Integer> viewCounts);
+    record ViewCountEntry(String productId, int count) {}
+
+    void batchAddViewCounts(@Param("entries") List<ViewCountEntry> entries);
 
     void updateSearchText(@Param("productId") String productId,
                           @Param("searchText") String searchText);

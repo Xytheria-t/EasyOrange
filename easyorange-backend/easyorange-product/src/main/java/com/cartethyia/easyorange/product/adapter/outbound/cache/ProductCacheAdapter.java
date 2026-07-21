@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -17,22 +19,15 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
     private final BloomFilter bloomFilter;
 
     @Override
-    public ProductVO getProductCache(String productId) {
+    public Optional<ProductVO> getProductCache(String productId) {
         if (productId == null) {
-            return null;
+            return Optional.empty();
         }
-
         if (!bloomFilter.mightContain(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId)) {
-            log.debug("action=bloom_filter_miss productId={}", productId);
-            return null;
+            log.debug("action=bloomFilterMiss productId={}", productId);
+            return Optional.empty();
         }
-
-        try {
-            return multiLevelCache.get(ProductCacheConstant.infoKey(productId), ProductVO.class, () -> null);
-        } catch (Exception e) {
-            log.warn("获取商品缓存失败: productId={}", productId, e);
-            return null;
-        }
+        return cached(ProductCacheConstant.infoKey(productId));
     }
 
     @Override
@@ -40,42 +35,58 @@ public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
         if (productId == null || productVO == null) {
             return;
         }
-        try {
-            addToBloomFilter(productId);
-            multiLevelCache.put(ProductCacheConstant.infoKey(productId), productVO);
-        } catch (Exception e) {
-            log.warn("设置商品缓存失败: productId={}", productId, e);
-        }
+        addToBloomFilter(productId);
+        put(ProductCacheConstant.infoKey(productId), productVO);
     }
 
     @Override
     public void evictProductCache(String productId) {
-        if (productId == null) {
-            return;
-        }
-        try {
-            multiLevelCache.evict(ProductCacheConstant.infoKey(productId));
-        } catch (Exception e) {
-            log.warn("删除商品缓存失败: productId={}", productId, e);
-        }
+        if (productId == null) return;
+        evict(ProductCacheConstant.infoKey(productId));
     }
 
     @Override
     public void evictProductListCache(String categoryId) {
-        if (categoryId == null) {
-            return;
-        }
+        if (categoryId == null) return;
+        evictL2(ProductCacheConstant.listKey(categoryId));
+    }
+
+    // ── Private helpers ──
+
+    private Optional<ProductVO> cached(String key) {
         try {
-            multiLevelCache.evictL2(ProductCacheConstant.listKey(categoryId));
+            return Optional.ofNullable(multiLevelCache.get(key, ProductVO.class, () -> null));
         } catch (Exception e) {
-            log.warn("删除商品列表缓存失败: categoryId={}", categoryId, e);
+            log.warn("action=cacheGetFailed key={}", key, e);
+            return Optional.empty();
         }
     }
 
-    public void addToBloomFilter(String productId) {
-        if (productId == null) {
-            return;
+    private void put(String key, Object value) {
+        try {
+            multiLevelCache.put(key, value);
+        } catch (Exception e) {
+            log.warn("action=cachePutFailed key={}", key, e);
         }
+    }
+
+    private void evict(String key) {
+        try {
+            multiLevelCache.evict(key);
+        } catch (Exception e) {
+            log.warn("action=cacheEvictFailed key={}", key, e);
+        }
+    }
+
+    private void evictL2(String key) {
+        try {
+            multiLevelCache.evictL2(key);
+        } catch (Exception e) {
+            log.warn("action=cacheEvictL2Failed key={}", key, e);
+        }
+    }
+
+    private void addToBloomFilter(String productId) {
         bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId);
     }
 }

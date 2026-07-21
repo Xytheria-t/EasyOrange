@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
-import com.cartethyia.easyorange.order.application.assembler.OrderVOAssembler;
+import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,7 +45,7 @@ class OrderQueryHandlerTest {
     private OrderCachePort orderCachePort;
 
     @Mock
-    private OrderVOAssembler orderVOAssembler;
+    private OrderReadModelAssembler readModelAssembler;
 
     private OrderQueryHandler handler;
 
@@ -54,7 +54,7 @@ class OrderQueryHandlerTest {
 
     @BeforeEach
     void setUp() {
-        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, orderVOAssembler);
+        handler = new OrderQueryHandler(orderReadRepository, productQueryPort, orderCachePort, readModelAssembler);
 
         testOrderReadModel = new OrderReadModel(
                 "1", "ORD001", "100", "200", List.of(),
@@ -73,11 +73,11 @@ class OrderQueryHandlerTest {
                 .totalAmount(new BigDecimal("99.99"))
                 .build();
         
-        when(orderVOAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
+        when(readModelAssembler.toOrderVO(any(OrderReadModel.class), anyMap(), anyBoolean()))
                 .thenReturn(mockOrderVO);
-        when(orderVOAssembler.toOrderVOs(any(), anyMap()))
+        when(readModelAssembler.toOrderVOs(any(), anyMap()))
                 .thenReturn(List.of(mockOrderVO));
-        when(orderVOAssembler.buildProductMap(any()))
+        when(readModelAssembler.buildProductMap(any()))
                 .thenReturn(Map.of("300", testProductDetail));
     }
 

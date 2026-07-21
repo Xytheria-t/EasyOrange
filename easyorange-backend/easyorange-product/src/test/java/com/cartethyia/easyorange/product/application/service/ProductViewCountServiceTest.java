@@ -14,8 +14,8 @@ import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductViewCountAppService 单元测试")
+@DisplayName("浏览量服务单元测试")
 class ProductViewCountServiceTest {
 
     @Mock
@@ -38,11 +38,11 @@ class ProductViewCountServiceTest {
     @Mock
     private ValueOperations<Object, Object> valueOperations;
 
-    @Captor
-    private ArgumentCaptor<Set<Object>> deleteKeysCaptor;
-
     @InjectMocks
     private ProductViewCountAppService viewCountService;
+
+    @InjectMocks
+    private ViewCountBatchProcessor batchProcessor;
 
     @Nested
     @DisplayName("incrementViewCount")
@@ -76,82 +76,63 @@ class ProductViewCountServiceTest {
     }
 
     @Nested
-    @DisplayName("flushViewCountBatch")
-    class FlushViewCountBatchTests {
+    @DisplayName("batchProcessor.flush")
+    class FlushTests {
 
         @Test
         @DisplayName("批量同步浏览量成功")
-        void flushViewCountBatch_success() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.setIfAbsent(eq("eo:product:views:lock"), eq("1"), eq(10L), eq(TimeUnit.SECONDS)))
-                    .thenReturn(true);
+        void flush_success() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
             when(hashOperations.entries("eo:product:views:pending"))
-                    .thenReturn(Map.of("1", "5", "2", "3"));
+                    .thenReturn(Map.of("1", 5, "2", 3));
 
-            viewCountService.flushViewCountBatch();
+            batchProcessor.flush();
 
-            verify(productMapper).batchAddViewCounts(Map.of("1", 5, "2", 3));
+            @SuppressWarnings("unchecked")
+            var captor = ArgumentCaptor.forClass(List.class);
+            verify(productMapper).batchAddViewCounts(captor.capture());
+            assertThat(captor.getValue())
+                    .hasSize(2)
+                    .containsExactlyInAnyOrder(
+                            new ProductMapper.ViewCountEntry("1", 5),
+                            new ProductMapper.ViewCountEntry("2", 3));
             verify(hashOperations).delete(eq("eo:product:views:pending"), any(Object[].class));
-            verify(redisTemplate).delete("eo:product:views:lock");
-        }
-
-        @Test
-        @DisplayName("未获取到锁时跳过")
-        void flushViewCountBatch_lockNotAcquired_skips() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.setIfAbsent(anyString(), any(), anyLong(), any()))
-                    .thenReturn(false);
-
-            viewCountService.flushViewCountBatch();
-
-            verify(productMapper, never()).batchAddViewCounts(any());
-            verify(redisTemplate, never()).delete("eo:product:views:lock");
         }
 
         @Test
         @DisplayName("待同步列表为空时跳过")
-        void flushViewCountBatch_empty_skips() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.setIfAbsent(anyString(), any(), anyLong(), any()))
-                    .thenReturn(true);
+        void flush_empty_skips() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
             when(hashOperations.entries("eo:product:views:pending"))
                     .thenReturn(Map.of());
 
-            viewCountService.flushViewCountBatch();
+            batchProcessor.flush();
 
             verify(productMapper, never()).batchAddViewCounts(any());
-            verify(redisTemplate).delete("eo:product:views:lock");
         }
 
         @Test
-        @DisplayName("解析无效的数据时跳过")
-        void flushViewCountBatch_invalidData_skips() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.setIfAbsent(anyString(), any(), anyLong(), any()))
-                    .thenReturn(true);
+        @DisplayName("所有数据解析失败时跳过DB写入，数据保留在Redis中等待下次重试")
+        void flush_allInvalid_skipsDbWrite() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
             when(hashOperations.entries("eo:product:views:pending"))
-                    .thenReturn(Map.of("100", "invalid"));
+                    .thenReturn(Map.of("100", "not-a-number"));
 
-            viewCountService.flushViewCountBatch();
+            batchProcessor.flush();
 
             verify(productMapper, never()).batchAddViewCounts(any());
-            verify(redisTemplate).delete("eo:product:views:lock");
+            verify(hashOperations, never()).delete(any(), any());
         }
 
         @Test
-        @DisplayName("异常时释放锁")
-        void flushViewCountBatch_error_releasesLock() {
-            when(redisTemplate.opsForValue()).thenReturn(valueOperations);
-            when(valueOperations.setIfAbsent(anyString(), any(), anyLong(), any()))
-                    .thenReturn(true);
+        @DisplayName("Redis读取异常时抛出")
+        void flush_redisError_propagates() {
             when(redisTemplate.opsForHash()).thenThrow(new RuntimeException("Redis error"));
 
-            viewCountService.flushViewCountBatch();
+            org.junit.jupiter.api.Assertions.assertThrows(RuntimeException.class,
+                    () -> batchProcessor.flush());
 
-            verify(redisTemplate).delete("eo:product:views:lock");
+            verify(productMapper, never()).batchAddViewCounts(any());
         }
     }
 }

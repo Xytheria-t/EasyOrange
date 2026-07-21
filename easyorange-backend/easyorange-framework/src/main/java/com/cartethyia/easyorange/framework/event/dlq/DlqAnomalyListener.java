@@ -18,7 +18,7 @@ import java.util.Map;
  * RabbitMQ 死信路由：业务队列的 {@code x-dead-letter-exchange=eo.dlq}，
  * 消息重试耗尽或被拒绝时进入对应 {@code <queue>.dlq} 队列。
  * <p>
- * 监听方式：单个 @RabbitListener 同时监听 9 个 DLQ 队列，
+ * 监听方式：单个 @RabbitListener 同时监听 8 个 DLQ 队列，
  * 通过 message properties 的 {@code x-death} header 提取：
  * <ul>
  *   <li>原始 queue / exchange / routing-key</li>
@@ -45,7 +45,6 @@ public class DlqAnomalyListener {
                     RabbitMQConfig.QUEUE_ORDER_NOTIFICATION + ".dlq",
                     RabbitMQConfig.QUEUE_ORDER_SAGA + ".dlq",
                     RabbitMQConfig.QUEUE_STOCK_RESERVATION + ".dlq",
-                    RabbitMQConfig.QUEUE_PAYMENT_INITIATION + ".dlq",
                     RabbitMQConfig.QUEUE_AUDIT_NOTIFICATION + ".dlq",
                     RabbitMQConfig.QUEUE_REPORT_NOTIFICATION + ".dlq",
                     RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET + ".dlq",

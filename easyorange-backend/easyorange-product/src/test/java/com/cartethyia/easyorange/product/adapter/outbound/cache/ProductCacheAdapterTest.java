@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,44 +50,44 @@ class ProductCacheAdapterTest {
     @Test
     @DisplayName("获取缓存 - Bloom Filter 命中且缓存命中")
     void getProductCache_bloomHitAndCacheHit_shouldReturnProduct() {
-        when(bloomFilter.mightContain(anyString(), eq(PRODUCT_ID.toString()))).thenReturn(true);
+        when(bloomFilter.mightContain(anyString(), eq(PRODUCT_ID))).thenReturn(true);
         when(multiLevelCache.get(anyString(), eq(ProductVO.class), any())).thenReturn(testProductVO);
 
-        ProductVO result = cacheAdapter.getProductCache(PRODUCT_ID);
+        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID);
 
-        assertThat(result).isNotNull();
-        assertThat(result.getId()).isEqualTo(PRODUCT_ID);
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(PRODUCT_ID);
     }
 
     @Test
-    @DisplayName("获取缓存 - Bloom Filter 未命中返回 null")
-    void getProductCache_bloomMiss_shouldReturnNull() {
-        when(bloomFilter.mightContain(anyString(), eq(PRODUCT_ID.toString()))).thenReturn(false);
+    @DisplayName("获取缓存 - Bloom Filter 未命中返回空")
+    void getProductCache_bloomMiss_shouldReturnEmpty() {
+        when(bloomFilter.mightContain(anyString(), eq(PRODUCT_ID))).thenReturn(false);
 
-        ProductVO result = cacheAdapter.getProductCache(PRODUCT_ID);
+        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID);
 
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
         verify(multiLevelCache, never()).get(anyString(), any(), any());
     }
 
     @Test
-    @DisplayName("获取缓存 - productId为null返回null")
-    void getProductCache_nullProductId_shouldReturnNull() {
-        ProductVO result = cacheAdapter.getProductCache(null);
+    @DisplayName("获取缓存 - productId为null返回空")
+    void getProductCache_nullProductId_shouldReturnEmpty() {
+        Optional<ProductVO> result = cacheAdapter.getProductCache(null);
 
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
         verify(bloomFilter, never()).mightContain(anyString(), anyString());
     }
 
     @Test
-    @DisplayName("获取缓存 - 缓存未命中返回null")
-    void getProductCache_cacheMiss_shouldReturnNull() {
-        when(bloomFilter.mightContain(anyString(), eq(PRODUCT_ID.toString()))).thenReturn(true);
+    @DisplayName("获取缓存 - 缓存未命中返回空")
+    void getProductCache_cacheMiss_shouldReturnEmpty() {
+        when(bloomFilter.mightContain(anyString(), eq(PRODUCT_ID))).thenReturn(true);
         when(multiLevelCache.get(anyString(), eq(ProductVO.class), any())).thenReturn(null);
 
-        ProductVO result = cacheAdapter.getProductCache(PRODUCT_ID);
+        Optional<ProductVO> result = cacheAdapter.getProductCache(PRODUCT_ID);
 
-        assertThat(result).isNull();
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -94,7 +95,7 @@ class ProductCacheAdapterTest {
     void setProductCache_shouldSetCache() {
         cacheAdapter.setProductCache(PRODUCT_ID, testProductVO);
 
-        verify(bloomFilter).put(eq(ProductCacheConstant.PRODUCT_BLOOM_KEY), eq(PRODUCT_ID.toString()));
+        verify(bloomFilter).put(eq(ProductCacheConstant.PRODUCT_BLOOM_KEY), eq(PRODUCT_ID));
         verify(multiLevelCache).put(eq(ProductCacheConstant.infoKey(PRODUCT_ID)), eq(testProductVO));
     }
 
@@ -123,8 +124,8 @@ class ProductCacheAdapterTest {
     void evictProductListCache_shouldDelete() {
         doNothing().when(multiLevelCache).evictL2(anyString());
 
-        cacheAdapter.evictProductListCache("1");
+        cacheAdapter.evictProductListCache(PRODUCT_ID);
 
-        verify(multiLevelCache).evictL2(ProductCacheConstant.listKey(1L));
+        verify(multiLevelCache).evictL2(ProductCacheConstant.listKey(PRODUCT_ID));
     }
 }

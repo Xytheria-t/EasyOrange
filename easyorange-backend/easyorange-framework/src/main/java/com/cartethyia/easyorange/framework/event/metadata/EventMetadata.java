@@ -1,11 +1,10 @@
 package com.cartethyia.easyorange.framework.event.metadata;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
+import org.jspecify.annotations.Nullable;
 import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 
 import java.time.Instant;
-import java.util.Date;
 
 /**
  * 领域事件元数据信封。
@@ -33,19 +32,17 @@ import java.util.Date;
  * @param causationId   因果链上游事件 ID (可空)
  */
 public record EventMetadata(
-        String eventId,
-        Instant occurredOn,
+        @Nullable String eventId,
+        @Nullable Instant occurredOn,
         String eventType,
         String aggregateId,
         int version,
-        String traceId,
-        String causationId
+        @Nullable String traceId,
+        @Nullable String causationId
 ) {
 
-    private static final String HEADER_EVENT_ID = "eventId";
-    private static final String HEADER_OCCURRED_ON = "occurredOn";
-    private static final String HEADER_CAUSATION_ID = "causationId";
     private static final String HEADER_TRACE_ID = "traceId";
+    private static final String HEADER_CAUSATION_ID = "causationId";
 
     /**
      * 从 RabbitMQ message headers 解码元数据，结合事件本身的属性。
@@ -63,23 +60,4 @@ public record EventMetadata(
         );
     }
 
-    /**
-     * 将元数据写入 message headers（发布端使用）。
-     */
-    public void applyTo(MessageProperties props) {
-        if (eventId != null) {
-            props.setMessageId(eventId);
-        }
-        if (occurredOn != null) {
-            props.setTimestamp(Date.from(occurredOn));
-        }
-        if (traceId != null) {
-            props.setHeader(HEADER_TRACE_ID, traceId);
-        }
-        if (causationId != null) {
-            props.setHeader(HEADER_CAUSATION_ID, causationId);
-        }
-        props.setHeader(HEADER_EVENT_ID, eventId);
-        props.setHeader(HEADER_OCCURRED_ON, occurredOn != null ? occurredOn.toString() : null);
-    }
 }

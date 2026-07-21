@@ -1,13 +1,7 @@
 package com.cartethyia.easyorange.product.domain.event;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 
-import java.time.LocalDateTime;
-
-public record ProductSubmittedForReviewEvent(String productId, String sellerId,
-                                             Integer beforeStatus, Integer afterStatus) implements DomainEvent {
-    @Override
-    public String aggregateId() {
-        return productId;
-    }
+public record ProductSubmittedForReviewEvent(String productId, String operatorId, String sellerId,
+                                              ProductStatus beforeStatus, ProductStatus afterStatus) implements ProductEvent {
 }

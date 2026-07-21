@@ -44,6 +44,8 @@ common/
 ├── result/
 │   ├── Result.java          # 统一响应 Result<T>
 │   └── PageResult.java      # 分页响应 PageResult<T>
+├── domain/
+│   └── Money.java           # 金额值对象（record，精度2 HALF_UP，不可变四则运算）
 └── util/
     ├── BizRequire.java          # 业务断言工具
     ├── MaskUtils.java           # 数据脱敏

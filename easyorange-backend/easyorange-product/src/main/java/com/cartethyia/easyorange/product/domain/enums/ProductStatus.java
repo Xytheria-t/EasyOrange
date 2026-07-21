@@ -54,6 +54,7 @@ public enum ProductStatus {
     /**
      * Returns whether a transition from the current state to the given target state is allowed.
      */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean canTransitionTo(ProductStatus target) {
         return ALLOWED_TRANSITIONS.getOrDefault(this, Set.of()).contains(target);
     }

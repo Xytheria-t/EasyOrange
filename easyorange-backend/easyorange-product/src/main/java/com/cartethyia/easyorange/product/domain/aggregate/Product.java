@@ -114,7 +114,7 @@ public class Product {
                 .build();
         return new ProductTransition(
                 updated, new ProductSubmittedForReviewEvent(
-                id.value(), sellerId.value(), status.getCode(), ProductStatus.PENDING_REVIEW.getCode()));
+                id.value(), userId, sellerId.value(), status, ProductStatus.PENDING_REVIEW));
     }
 
     /**

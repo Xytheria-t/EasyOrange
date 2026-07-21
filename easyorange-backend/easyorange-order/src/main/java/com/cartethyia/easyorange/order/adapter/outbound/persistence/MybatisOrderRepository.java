@@ -17,25 +17,25 @@ import java.util.Optional;
 @Repository
 public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO> implements OrderRepository {
 
-    private final OrderDataConverter converter;
+    private final OrderEntityMapper entityMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public MybatisOrderRepository(OrderMapper orderMapper, OrderDataConverter converter,
+    public MybatisOrderRepository(OrderMapper orderMapper, OrderEntityMapper entityMapper,
                                   OrderItemMapper orderItemMapper) {
         super(orderMapper);
-        this.converter = converter;
+        this.entityMapper = entityMapper;
         this.orderItemMapper = orderItemMapper;
     }
 
     @Override
     public void save(OrderAggregate aggregate) {
-        mapper.insert(converter.toDataObject(aggregate));
+        mapper.insert(entityMapper.toDataObject(aggregate));
         batchInsertItems(aggregate.id().value(), aggregate.items());
     }
 
     @Override
     public void update(OrderAggregate aggregate) {
-        mapper.updateById(converter.toDataObject(aggregate));
+        mapper.updateById(entityMapper.toDataObject(aggregate));
     }
 
     @Override
@@ -45,7 +45,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
             return Optional.empty();
         }
         List<OrderItem> items = findItemsByOrderId(id.value());
-        return Optional.ofNullable(converter.toAggregate(orderDO, items));
+        return Optional.ofNullable(entityMapper.toAggregate(orderDO, items));
     }
 
     @Override
@@ -54,7 +54,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
                 .eq(OrderDO::getBuyerId, buyerId.value())
                 .orderByDesc(OrderDO::getCreateTime)
                 .list()
-                .stream().map(converter::toAggregate).toList();
+                .stream().map(entityMapper::toAggregate).toList();
     }
 
     @Override
@@ -63,7 +63,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
                 .eq(OrderDO::getSellerId, sellerId.value())
                 .orderByDesc(OrderDO::getCreateTime)
                 .list()
-                .stream().map(converter::toAggregate).toList();
+                .stream().map(entityMapper::toAggregate).toList();
     }
 
     @Override
@@ -73,7 +73,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
                 .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT.getCode())
                 .lt(OrderDO::getCreateTime, threshold)
                 .list()
-                .stream().map(converter::toAggregate).toList();
+                .stream().map(entityMapper::toAggregate).toList();
     }
 
     @Override
@@ -82,7 +82,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
                 .eq(OrderDO::getStatus, status)
                 .orderByDesc(OrderDO::getCreateTime)
                 .list()
-                .stream().map(converter::toAggregate).toList();
+                .stream().map(entityMapper::toAggregate).toList();
     }
 
     @Override
@@ -91,7 +91,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
                 .eq(OrderDO::getStatus, OrderStatus.SHIPPED.getCode())
                 .lt(OrderDO::getUpdateTime, threshold)
                 .list()
-                .stream().map(converter::toAggregate).toList();
+                .stream().map(entityMapper::toAggregate).toList();
     }
 
     @Override
@@ -99,7 +99,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
         return orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)
-        ).stream().map(converter::toOrderItem).toList();
+        ).stream().map(entityMapper::toOrderItem).toList();
     }
 
     private void batchInsertItems(String orderId, List<OrderItem> items) {
@@ -107,7 +107,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
             return;
         }
         for (OrderItem item : items) {
-            orderItemMapper.insert(converter.toItemDO(orderId, item));
+            orderItemMapper.insert(entityMapper.toItemDO(orderId, item));
         }
     }
 }

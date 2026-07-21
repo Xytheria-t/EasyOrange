@@ -76,7 +76,7 @@ class ProductQueryServiceTest {
     @Test
     @DisplayName("缓存命中时直接返回缓存数据")
     void getProductById_cacheHit_shouldReturnCached() {
-        when(productCachePort.getProductCache("1")).thenReturn(testProductVO);
+        when(productCachePort.getProductCache("1")).thenReturn(Optional.of(testProductVO));
 
         ProductVO result = queryService.getProductById("1");
 
@@ -88,7 +88,7 @@ class ProductQueryServiceTest {
     @Test
     @DisplayName("缓存未命中时从数据库查询并写入缓存")
     void getProductById_cacheMiss_shouldQueryDbAndSetCache() {
-        when(productCachePort.getProductCache("1")).thenReturn(null);
+        when(productCachePort.getProductCache("1")).thenReturn(Optional.empty());
         when(productRepository.findById(ProductId.of("1"))).thenReturn(Optional.of(testProduct));
         when(productQueryRepository.findImagesByProductIds(any())).thenReturn(List.of());
         when(productQueryRepository.findCategoriesByIds(any())).thenReturn(List.of());
@@ -106,7 +106,7 @@ class ProductQueryServiceTest {
     @Test
     @DisplayName("查询不存在的商品应抛出异常")
     void getProductById_notFound_shouldThrow() {
-        when(productCachePort.getProductCache("999")).thenReturn(null);
+        when(productCachePort.getProductCache("999")).thenReturn(Optional.empty());
         when(productRepository.findById(ProductId.of("999"))).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> queryService.getProductById("999"))

@@ -1,23 +1,20 @@
-package com.cartethyia.easyorange.order.application.assembler;
+package com.cartethyia.easyorange.order.application.query.assembler;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
-import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import org.springframework.stereotype.Component;
-
 @Component
-public class OrderVOAssembler {
+public class OrderReadModelAssembler {
 
     public List<OrderVO> toOrderVOs(List<OrderReadModel> orders, Map<String, ProductDetail> productMap) {
         if (orders == null || orders.isEmpty()) {
             return List.of();
         }
-
         return orders.stream()
                 .map(o -> toOrderVO(o, productMap, true))
                 .toList();
@@ -71,7 +68,6 @@ public class OrderVOAssembler {
         if (products == null || products.isEmpty()) {
             return Map.of();
         }
-
         Map<String, ProductDetail> productMap = new HashMap<>();
         products.forEach(p -> productMap.put(p.id(), p));
         return productMap;

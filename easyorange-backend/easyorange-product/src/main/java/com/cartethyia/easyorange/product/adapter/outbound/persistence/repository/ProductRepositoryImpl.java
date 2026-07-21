@@ -4,7 +4,6 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.common.exception.ConcurrentUpdateException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.converter.ProductConverter;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
@@ -101,18 +100,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<ProductDO> productDOs = productMapper.selectList(
                 Wrappers.<ProductDO>lambdaQuery()
                         .in(ProductDO::getId, ids.stream().map(ProductId::value).toList()));
-        if (productDOs.isEmpty()) {
-            return List.of();
-        }
-        return batchConvertProducts(productDOs);
-    }
-
-    @Override
-    public List<Product> findBySellerId(SellerId sellerId) {
-        List<ProductDO> productDOs = productMapper.selectList(
-                Wrappers.<ProductDO>lambdaQuery()
-                        .eq(ProductDO::getUserId, sellerId.value())
-                        .orderByDesc(ProductDO::getCreateTime));
         if (productDOs.isEmpty()) {
             return List.of();
         }
