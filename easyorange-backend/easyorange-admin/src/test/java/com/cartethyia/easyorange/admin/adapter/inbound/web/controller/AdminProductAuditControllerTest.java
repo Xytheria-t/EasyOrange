@@ -117,7 +117,7 @@ class AdminProductAuditControllerTest {
     void getAuditLogs_withData_shouldReturnList() throws Exception {
         var logs = List.of(
             new AuditLogResponse("1", "1", "10", "admin", 1, "通过", null, List.of(),
-                4, "待审核", 1, "上架", null, LocalDateTime.of(2026, 5, 16, 10, 0))
+                "4", "待审核", "1", "上架", null, LocalDateTime.of(2026, 5, 16, 10, 0))
         );
         when(adminProductAuditService.getAuditLogs("1")).thenReturn(logs);
 

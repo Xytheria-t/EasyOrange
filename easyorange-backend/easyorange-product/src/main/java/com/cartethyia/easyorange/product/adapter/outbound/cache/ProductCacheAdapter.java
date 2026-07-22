@@ -2,8 +2,9 @@ package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.bloom.BloomFilter;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
+import com.cartethyia.easyorange.product.application.port.ProductCachePort;
 import com.cartethyia.easyorange.product.application.query.ProductVO;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,7 @@ import java.util.Optional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ProductCacheAdapter implements ProductCachePort<ProductVO> {
+public class ProductCacheAdapter implements ProductCachePort, ProductCacheEvictionPort {
 
     private final MultiLevelCache multiLevelCache;
     private final BloomFilter bloomFilter;

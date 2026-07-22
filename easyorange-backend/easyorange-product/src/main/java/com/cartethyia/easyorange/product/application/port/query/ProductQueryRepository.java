@@ -12,16 +12,16 @@ import java.util.Set;
 
 public interface ProductQueryRepository {
 
-    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
+    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
                                             Integer pageNum, Integer pageSize);
 
-    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
+    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
                                            BigDecimal minPrice, BigDecimal maxPrice,
-                                           Integer conditionLevel, String sort,
+                                           String conditionLevel, String sort,
                                            Boolean hasDiscount,
                                            Integer pageNum, Integer pageSize);
 
-    PageResult<ProductReadModel> findProductsBySellerId(String sellerId, Integer status,
+    PageResult<ProductReadModel> findProductsBySellerId(String sellerId, String status,
                                                     Integer pageNum, Integer pageSize);
 
     List<ProductReadModel> findProductsByIds(List<String> ids);
@@ -48,7 +48,7 @@ public interface ProductQueryRepository {
 
     void deleteSearchHistoryById(String historyId, String userId);
 
-    long countByStatus(Integer status);
+    long countByStatus(String status);
 
     record CategoryInfo(String id, String name, String parentId, Integer level, Integer sortOrder) { }
 

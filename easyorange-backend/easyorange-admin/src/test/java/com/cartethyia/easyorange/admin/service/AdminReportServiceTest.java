@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.CategoryId;
 import com.cartethyia.easyorange.common.domain.Money;
@@ -26,6 +26,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
@@ -61,13 +62,16 @@ class AdminReportServiceTest {
     private ProductReportRepository productReportRepository;
 
     @Mock
+    private ProductReportQueryRepository productReportQueryRepository;
+
+    @Mock
     private ReportHandleHistoryRepository reportHandleHistoryRepository;
 
     @Mock
     private ProductRepository productRepository;
 
     @Mock
-    private ProductCachePort<?> productCachePort;
+    private ProductCacheEvictionPort productCachePort;
 
     @Mock
     private BatchQueryUtil batchQueryUtil;
@@ -114,7 +118,7 @@ class AdminReportServiceTest {
         void listReports_withStatus_returnsPage() {
             ProductReport report = createPendingReport();
             PageResult<ProductReport> pageResult = PageResult.of(List.of(report), 1L, 1, 20);
-            when(productReportRepository.findByStatus(0, 1, 20)).thenReturn(pageResult);
+            when(productReportQueryRepository.findByStatus(0, 1, 20)).thenReturn(pageResult);
             when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             ProductDO reportTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
             reportTestProduct.setDelFlag(0);
@@ -346,11 +350,11 @@ class AdminReportServiceTest {
         @Test
         @DisplayName("获取举报统计")
         void getReportStats_returnsStats() {
-            when(productReportRepository.countByStatus(null)).thenReturn(10L);
-            when(productReportRepository.countByStatus(0)).thenReturn(5L);
-            when(productReportRepository.countByStatus(1)).thenReturn(2L);
-            when(productReportRepository.countByStatus(2)).thenReturn(2L);
-            when(productReportRepository.countByStatus(3)).thenReturn(1L);
+            when(productReportQueryRepository.countByStatus(null)).thenReturn(10L);
+            when(productReportQueryRepository.countByStatus(0)).thenReturn(5L);
+            when(productReportQueryRepository.countByStatus(1)).thenReturn(2L);
+            when(productReportQueryRepository.countByStatus(2)).thenReturn(2L);
+            when(productReportQueryRepository.countByStatus(3)).thenReturn(1L);
 
             ReportStatsResponse stats = reportService.getReportStats();
 

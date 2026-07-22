@@ -44,7 +44,7 @@ class ProductSearchHandlerTest {
         testProduct = new ProductReadModel(
                 "1", "10", "资产方", null, "2", "分类",
                 "测试商品", "描述", new BigDecimal("100"), null,
-                10, 1, "上架", 0, 1, "全新",
+                10, "1", "上架", 0, "1", "全新",
                 "北京", "微信", List.of("http://img/1.jpg"),
                 "http://img/1.jpg",
                 LocalDateTime.now(), LocalDateTime.now()
@@ -57,10 +57,10 @@ class ProductSearchHandlerTest {
         ProductSearchRequest request = new ProductSearchRequest();
         request.setKeyword("手机");
         request.setCategoryId("2");
-        request.setStatus(1);
+        request.setStatus("1");
 
         PageResult<ProductReadModel> page = PageResult.of(List.of(testProduct), 1, 1, 20);
-        when(productQueryRepository.searchProducts("手机", "2", 1, 1, 20))
+        when(productQueryRepository.searchProducts("手机", "2", "1", 1, 20))
                 .thenReturn(page);
 
         SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);

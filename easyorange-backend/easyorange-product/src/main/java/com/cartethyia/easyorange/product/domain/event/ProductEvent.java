@@ -36,7 +36,7 @@ public sealed interface ProductEvent extends DomainEvent
      */
     record Data(String productId, String userId, String categoryId, String name,
                 BigDecimal price, BigDecimal originalPrice, Integer stock,
-                Integer conditionLevel, String location, String contactMethod,
+                String conditionLevel, String location, String contactMethod,
                 String description, List<String> imageUrls) {
 
         public Data {

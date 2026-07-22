@@ -3,22 +3,23 @@ package com.cartethyia.easyorange.product.domain.service;
 import com.cartethyia.easyorange.common.exception.BaseBusinessException;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
-import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Optional;
 
 @RequiredArgsConstructor
 public class ProductReportDomainService {
 
     private final ProductReportRepository productReportRepository;
     private final ProductRepository productRepository;
-    private final ProductCachePort<?> productCachePort;
+    private final ProductCacheEvictionPort productCachePort;
 
     /**
      * Creates and saves a new product report.
@@ -43,21 +44,20 @@ public class ProductReportDomainService {
      * @param reportId the ID of the report to process
      * @param approved {@code true} to approve the report and take the product offline,
      *                 {@code false} to reject the report
-     * @return the domain event if the product was taken offline, {@code null} otherwise
+     * @return the domain event if the product was taken offline, {@link Optional#empty()} otherwise
      * @throws ReportNotFoundException if no report exists with the given ID
      */
-    @Nullable
-    public ProductTakeOfflineEvent processReport(String reportId, boolean approved) {
+    public Optional<ProductTakeOfflineEvent> processReport(String reportId, boolean approved) {
         ProductReport report = productReportRepository.findById(reportId);
         if (report == null) {
             throw new ReportNotFoundException("举报记录不存在: " + reportId);
         }
 
         ProductReport updated;
-        ProductTakeOfflineEvent event = null;
+        Optional<ProductTakeOfflineEvent> event = Optional.empty();
         if (approved) {
             updated = report.approve(null);
-            event = takeProductOffline(report.getProductId());
+            event = Optional.of(takeProductOffline(report.getProductId()));
         } else {
             updated = report.reject(null);
         }

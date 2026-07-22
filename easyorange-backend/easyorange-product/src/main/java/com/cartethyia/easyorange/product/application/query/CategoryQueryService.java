@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
-import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CategoryQueryService {
 
-    private final CategoryCachePort<CategoryReadModel> categoryCachePort;
+    private final CategoryCachePort categoryCachePort;
     private final CategoryQueryRepository categoryQueryRepository;
 
     @Transactional(readOnly = true)

@@ -64,7 +64,7 @@ class OrderQueryHandlerTest {
         );
 
         testProductDetail = new ProductDetail(
-                "300", "测试商品", new BigDecimal("99.99"), 1, List.of("http://img.jpg"), null, null
+                "300", "测试商品", new BigDecimal("99.99"), "1", List.of("http://img.jpg"), null, null
         );
         
         OrderVO mockOrderVO = OrderVO.builder()

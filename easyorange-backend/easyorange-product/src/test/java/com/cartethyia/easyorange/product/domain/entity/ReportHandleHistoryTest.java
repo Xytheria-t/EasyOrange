@@ -73,14 +73,16 @@ class ReportHandleHistoryTest {
     }
 
     @Test
-    @DisplayName("assignId 仅在 id 为空时设置")
-    void assignId_shouldOnlySetWhenNull() {
+    @DisplayName("withId 应返回包含指定 ID 的新实例（不可变模式）")
+    void withId_shouldReturnNewInstance() {
         ReportHandleHistory history = ReportHandleHistory.create("1", "2", "RESOLVE", "备注");
 
-        history.assignId("100");
-        assertThat(history.getId()).isEqualTo("100");
+        ReportHandleHistory withId1 = history.withId("100");
+        assertThat(withId1.getId()).isEqualTo("100");
+        assertThat(history.getId()).isNull();
 
-        history.assignId("200");
-        assertThat(history.getId()).isEqualTo("100");
+        ReportHandleHistory withId2 = withId1.withId("200");
+        assertThat(withId2.getId()).isEqualTo("200");
+        assertThat(withId1.getId()).isEqualTo("100");
     }
 }

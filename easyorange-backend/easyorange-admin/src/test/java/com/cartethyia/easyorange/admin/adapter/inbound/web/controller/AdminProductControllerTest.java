@@ -36,9 +36,9 @@ class AdminProductControllerTest {
     void listProducts_shouldReturnPaginatedProducts() throws Exception {
         var products = List.of(
             AdminProductResponse.builder().productId("1").name("Product1").price(BigDecimal.valueOf(100))
-                .status(1).statusDesc("上架").build(),
+                .status("1").statusDesc("上架").build(),
             AdminProductResponse.builder().productId("2").name("Product2").price(BigDecimal.valueOf(200))
-                .status(0).statusDesc("草稿").build()
+                .status("0").statusDesc("草稿").build()
         );
         var pageResult = PageResult.of(products, 2L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
@@ -55,7 +55,7 @@ class AdminProductControllerTest {
     @Test
     void listProducts_withStatusFilter_shouldFilterByStatus() throws Exception {
         var products = List.of(
-            AdminProductResponse.builder().productId("1").name("Online").status(1).build()
+            AdminProductResponse.builder().productId("1").name("Online").status("1").build()
         );
         var pageResult = PageResult.of(products, 1L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
@@ -69,7 +69,7 @@ class AdminProductControllerTest {
     void getProductDetail_shouldReturnProduct() throws Exception {
         var product = AdminProductResponse.builder()
             .productId("1").name("DetailProduct").description("A detailed product")
-            .price(BigDecimal.valueOf(150)).status(1).statusDesc("上架").build();
+            .price(BigDecimal.valueOf(150)).status("1").statusDesc("上架").build();
         when(adminProductService.getProductDetail("1")).thenReturn(product);
 
         mockMvc.perform(get("/api/admin/products/1"))

@@ -170,7 +170,7 @@ class AdminUserServiceTest {
             when(userMapper.selectById(USER_ID)).thenReturn(user);
 
             UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus(1);
+            request.setStatus("1");
 
             userService.updateUserStatus(USER_ID, request);
 
@@ -184,7 +184,7 @@ class AdminUserServiceTest {
             when(userMapper.selectById(USER_ID)).thenReturn(null);
 
             UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus(1);
+            request.setStatus("1");
 
             assertThatThrownBy(() -> userService.updateUserStatus(USER_ID, request))
                     .isInstanceOf(BusinessException.class)

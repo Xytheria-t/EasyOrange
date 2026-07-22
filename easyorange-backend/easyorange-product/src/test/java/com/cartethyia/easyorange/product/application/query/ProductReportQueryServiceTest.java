@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,13 +32,16 @@ class ProductReportQueryServiceTest {
     private ProductReportRepository productReportRepository;
 
     @Mock
+    private ProductReportQueryRepository productReportQueryRepository;
+
+    @Mock
     private ProductQueryRepository productQueryRepository;
 
     private ProductReportQueryService service;
 
     @BeforeEach
     void setUp() {
-        service = new ProductReportQueryService(productReportRepository, productQueryRepository);
+        service = new ProductReportQueryService(productReportRepository, productReportQueryRepository, productQueryRepository);
     }
 
     @Nested
@@ -54,7 +58,7 @@ class ProductReportQueryServiceTest {
 
             List<ProductReport> reports = List.of(report1, report2);
             PageResult<ProductReport> pageResult = PageResult.of(reports, 2L, 1, 20);
-            when(productReportRepository.findByReporterId("2", 1, 20)).thenReturn(pageResult);
+            when(productReportQueryRepository.findByReporterId("2", 1, 20)).thenReturn(pageResult);
 
             PageResult<ProductReportResponse> result = service.getMyReports("2", 1, 20);
 
@@ -70,7 +74,7 @@ class ProductReportQueryServiceTest {
         @Test
         @DisplayName("结果为空时应返回空分页")
         void withEmptyResult_shouldReturnEmptyPage() {
-            when(productReportRepository.findByReporterId("2", 1, 20))
+            when(productReportQueryRepository.findByReporterId("2", 1, 20))
                     .thenReturn(PageResult.of(List.of(), 0L, 1, 20));
 
             PageResult<ProductReportResponse> result = service.getMyReports("2", 1, 20);
@@ -86,7 +90,7 @@ class ProductReportQueryServiceTest {
             report = report.assignId("100");
 
             List<ProductReport> reports = Arrays.asList(report, null);
-            when(productReportRepository.findByReporterId("2", 1, 20))
+            when(productReportQueryRepository.findByReporterId("2", 1, 20))
                     .thenReturn(PageResult.of(reports, 2L, 1, 20));
 
             PageResult<ProductReportResponse> result = service.getMyReports("2", 1, 20);
@@ -177,7 +181,7 @@ class ProductReportQueryServiceTest {
             return new ProductReadModel(
                     id, "seller1", "seller", null, "cat1", "分类",
                     title, "描述", null, null, 10,
-                    0, "草稿", 0, null, null, null, null,
+                    "0", "草稿", 0, null, null, null, null,
                     List.of(), "main.jpg", LocalDateTime.now(), LocalDateTime.now()
             );
         }

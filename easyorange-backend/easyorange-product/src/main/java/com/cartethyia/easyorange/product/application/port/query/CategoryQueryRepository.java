@@ -1,19 +1,19 @@
-package com.cartethyia.easyorange.product.domain.repository.query;
+package com.cartethyia.easyorange.product.application.port.query;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 
 import java.util.List;
 import java.util.Map;
 
 public interface CategoryQueryRepository {
 
-    List<CategoryDO> findByParentId(String parentId);
+    List<CategoryReadModel> findByParentId(String parentId);
 
-    List<CategoryDO> findByLevel(Integer level);
+    List<CategoryReadModel> findByLevel(Integer level);
 
-    CategoryDO findByName(String name);
+    CategoryReadModel findByName(String name);
 
-    List<CategoryDO> findByIds(List<String> ids);
+    List<CategoryReadModel> findByIds(List<String> ids);
 
     Map<String, Long> countProductsByCategoryIds(List<String> categoryIds);
 

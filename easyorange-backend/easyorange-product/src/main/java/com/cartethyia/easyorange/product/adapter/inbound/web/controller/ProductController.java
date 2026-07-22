@@ -158,7 +158,7 @@ public class ProductController {
     public Result<PageResult<ProductVO>> getMyProducts(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "20") Integer pageSize,
-            @RequestParam(required = false) Integer status) {
+            @RequestParam(required = false) String status) {
         String currentUserId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return Result.success(queryService.getMyProducts(currentUserId, status, pageNum, pageSize));
     }

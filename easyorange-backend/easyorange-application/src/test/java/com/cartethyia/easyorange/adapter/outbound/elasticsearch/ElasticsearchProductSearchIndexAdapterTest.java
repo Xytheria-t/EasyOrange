@@ -90,8 +90,8 @@ class ElasticsearchProductSearchIndexAdapterTest {
         assertThat(doc.getCategoryName()).isEqualTo("手机");
         assertThat(doc.getPrice()).isEqualTo(99.99);
         assertThat(doc.getOriginalPrice()).isEqualTo(199.99);
-        assertThat(doc.getConditionLevel()).isEqualTo((byte) 3);
-        assertThat(doc.getStatus()).isEqualTo((byte) 1);
+        assertThat(doc.getConditionLevel()).isEqualTo("3");
+        assertThat(doc.getStatus()).isEqualTo("1");
         assertThat(doc.getViewCount()).isEqualTo(1000);
         assertThat(doc.getStock()).isEqualTo(10);
         assertThat(doc.getLocation()).isEqualTo("北京");

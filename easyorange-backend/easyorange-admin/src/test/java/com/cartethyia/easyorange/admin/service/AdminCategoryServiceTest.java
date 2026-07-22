@@ -8,7 +8,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.Category
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
-import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -137,7 +138,7 @@ class AdminCategoryServiceTest {
         @Test
         @DisplayName("同名一级分类抛出异常")
         void createCategory_duplicateName_throws() {
-            CategoryDO existing = createCategory(CATEGORY_ID, "已存在", null, 1);
+            CategoryReadModel existing = new CategoryReadModel(CATEGORY_ID, "已存在", null, 1, null, 0, 1, LocalDateTime.now(), 0);
             when(categoryQueryRepository.findByName("已存在")).thenReturn(existing);
 
             CategoryCreateRequest request = new CategoryCreateRequest("已存在", null, null);

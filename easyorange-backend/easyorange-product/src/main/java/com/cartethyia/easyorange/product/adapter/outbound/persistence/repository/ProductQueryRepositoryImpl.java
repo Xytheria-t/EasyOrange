@@ -26,7 +26,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.Sea
 import com.cartethyia.easyorange.product.domain.constant.ProductConstant;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
+import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -54,20 +54,20 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     private final HotKeywordMapper hotKeywordMapper;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final SearchHistoryBufferAppService searchHistoryBufferService;
-    private final CategoryCachePort<CategoryReadModel> categoryCachePort;
+    private final CategoryCachePort categoryCachePort;
 
     // ===================== 商品查询 =====================
 
     @Override
-    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
+    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
                                                         Integer pageNum, Integer pageSize) {
         return searchProducts(keyword, categoryId, status, null, null, null, null, null, pageNum, pageSize);
     }
 
     @Override
-    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
+    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
                                                        BigDecimal minPrice, BigDecimal maxPrice,
-                                                       Integer conditionLevel, String sort,
+                                                       String conditionLevel, String sort,
                                                        Boolean hasDiscount,
                                                        Integer pageNum, Integer pageSize) {
         var page = new Page<ProductDO>(pageNum, pageSize);
@@ -99,7 +99,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     }
 
     @Override
-    public PageResult<ProductReadModel> findProductsBySellerId(String sellerId, Integer status,
+    public PageResult<ProductReadModel> findProductsBySellerId(String sellerId, String status,
                                                                 Integer pageNum, Integer pageSize) {
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);
         wrapper.eq(ProductDO::getUserId, sellerId);
@@ -268,7 +268,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     // ===================== 统计 =====================
 
     @Override
-    public long countByStatus(Integer status) {
+    public long countByStatus(String status) {
         return ChainWrappers.lambdaQueryChain(productMapper)
                 .eq(ProductDO::getStatus, status).count();
     }

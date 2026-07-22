@@ -274,8 +274,8 @@ class AdminProductAuditServiceTest {
                     .operatorId(OPERATOR_ID)
                     .operatorName("管理员")
                     .action(1)
-                    .beforeStatus(4)
-                    .afterStatus(1)
+                    .beforeStatus("4")
+                    .afterStatus("1")
                     .build();
 
             when(productAuditLogRepository.findByProductId(PRODUCT_ID)).thenReturn(List.of(log));

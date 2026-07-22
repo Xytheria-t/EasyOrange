@@ -18,7 +18,7 @@ public class RecentProductResponse {
 
     private String mainImage;
 
-    private Integer status;
+    private String status;
 
     private String statusDesc;
 

@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
@@ -51,7 +52,7 @@ public class ProductCommandService {
                         Money.of(command.price()),
                         mapIfPresent(command.originalPrice(), Money::of),
                         StockQuantity.of(command.stock() != null ? command.stock() : 1),
-                        ConditionLevel.fromCode(command.conditionLevel()),
+                        parseConditionLevel(command.conditionLevel()),
                         TradeLocation.of(command.location()),
                         ContactMethod.of(command.contactMethod()),
                         ProductDescription.of(command.description()),
@@ -75,7 +76,7 @@ public class ProductCommandService {
                         mapIfPresent(command.price(), Money::of),
                         mapIfPresent(command.originalPrice(), Money::of),
                         mapIfPresent(command.stock(), StockQuantity::of),
-                        mapIfPresent(command.conditionLevel(), ConditionLevel::fromCode),
+                        command.conditionLevel() != null ? parseConditionLevel(command.conditionLevel()) : null,
                         mapIfPresent(command.location(), TradeLocation::of),
                         mapIfPresent(command.contactMethod(), ContactMethod::of),
                         mapIfPresent(command.description(), ProductDescription::of),
@@ -136,6 +137,15 @@ public class ProductCommandService {
         return value != null ? mapper.apply(value) : null;
     }
 
+    private ConditionLevel parseConditionLevel(String code) {
+        if (code == null) return null;
+        try {
+            return ConditionLevel.fromCode(code);
+        } catch (IllegalArgumentException ex) {
+            throw BusinessException.of("无效的成色等级: " + code);
+        }
+    }
+
     private void mutate(Product product, Function<Product, ProductTransition> fn) {
         var result = fn.apply(product);
         productRepository.update(result.product());
@@ -159,14 +169,14 @@ public class ProductCommandService {
 
     public record CreateProductCommand(
             String categoryId, String name, BigDecimal price,
-            BigDecimal originalPrice, Integer stock, Integer conditionLevel,
+            BigDecimal originalPrice, Integer stock, String conditionLevel,
             String location, String contactMethod, String description,
             List<String> imageUrls
     ) {}
 
     public record UpdateProductCommand(
             String id, String categoryId, String name, BigDecimal price,
-            BigDecimal originalPrice, Integer stock, Integer conditionLevel,
+            BigDecimal originalPrice, Integer stock, String conditionLevel,
             String location, String contactMethod, String description,
             List<String> imageUrls
     ) {}

@@ -12,7 +12,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActi
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
@@ -39,17 +39,17 @@ public class AdminDashboardService {
 
     private final UserMapper userMapper;
     private final ProductQueryRepository productQueryRepository;
-    private final ProductReportRepository productReportRepository;
+    private final ProductReportQueryRepository productReportQueryRepository;
     private final OrderReadRepository orderReadRepository;
     private final JdbcTemplate jdbcTemplate;
 
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final DateTimeFormatter DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final int TREND_MONTHS = 6;
-    private static final Map<Integer, String> PRODUCT_STATUS_MAP;
+    private static final Map<String, String> PRODUCT_STATUS_MAP;
 
     static {
-        Map<Integer, String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         for (ProductStatus s : ProductStatus.values()) {
             map.put(s.getCode(), s.getDesc());
         }
@@ -70,7 +70,7 @@ public class AdminDashboardService {
         long totalProducts = productQueryRepository.countByStatus(null);
         long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
         long totalOrders = orderReadRepository.countByStatus(null);
-        long pendingReports = productReportRepository.countPendingReports();
+        long pendingReports = productReportQueryRepository.countPendingReports();
 
         return DashboardStatsResponse.builder()
             .totalUsers(totalUsers)
@@ -85,11 +85,11 @@ public class AdminDashboardService {
     }
 
     public PendingItemsResponse getPendingItems() {
-        long pendingReports = productReportRepository.countPendingReports();
+        long pendingReports = productReportQueryRepository.countPendingReports();
         long pendingOrders = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode());
         long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
 
-        List<PendingItemsResponse.PendingReportItem> recentReports = productReportRepository
+        List<PendingItemsResponse.PendingReportItem> recentReports = productReportQueryRepository
             .findPendingReports(1, 5)
             .stream()
             .map(report -> PendingItemsResponse.PendingReportItem.builder()
@@ -249,11 +249,11 @@ public class AdminDashboardService {
         return jdbcTemplate.queryForList(
             "SELECT p.id, p.name, p.view_count, p.price, p.status, " +
             "(SELECT pi.image_url FROM eo_product_image pi WHERE pi.product_id = p.id AND pi.del_flag = 0 ORDER BY pi.is_main DESC, pi.sort_order ASC LIMIT 1) AS main_image " +
-            "FROM eo_product p WHERE p.del_flag = 0 AND p.status = 1 " +
+            "FROM eo_product p WHERE p.del_flag = 0 AND p.status = '1' " +
             "ORDER BY p.view_count DESC LIMIT " + limit
         ).stream()
             .map(row -> {
-                int statusCode = row.get("status") != null ? ((Number) row.get("status")).intValue() : -1;
+                String statusCode = row.get("status") != null ? row.get("status").toString() : null;
                 return TopProductResponse.builder()
                     .productId(String.valueOf(row.get("id")))
                     .name((String) row.get("name"))

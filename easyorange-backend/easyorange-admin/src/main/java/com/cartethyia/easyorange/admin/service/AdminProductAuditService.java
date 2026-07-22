@@ -20,6 +20,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -62,7 +63,7 @@ public class AdminProductAuditService {
                 .map(authUser -> authUser.username())
                 .orElse("管理员");
 
-        int beforeStatus = product.getStatus().getCode();
+        String beforeStatus = product.getStatus().getCode();
         AuditAction action = AuditAction.fromCode(request.action());
         if (action == null) {
             throw BusinessException.of("无效的审核动作");
@@ -131,7 +132,7 @@ public class AdminProductAuditService {
                     continue;
                 }
 
-                int beforeStatus = product.getStatus().getCode();
+                String beforeStatus = product.getStatus().getCode();
                 Product updated;
                 ProductAuditedEvent event;
 
@@ -238,12 +239,21 @@ public class AdminProductAuditService {
                 log.getReason(),
                 parseDimensions(log.getAuditDimensions()),
                 log.getBeforeStatus(),
-                com.cartethyia.easyorange.product.domain.enums.ProductStatus.getDescByCode(log.getBeforeStatus()),
+                describeStatus(log.getBeforeStatus()),
                 log.getAfterStatus(),
-                com.cartethyia.easyorange.product.domain.enums.ProductStatus.getDescByCode(log.getAfterStatus()),
+                describeStatus(log.getAfterStatus()),
                 log.getRemark(),
                 log.getCreateTime()
         );
+    }
+
+    private String describeStatus(String code) {
+        if (code == null) return "未知状态";
+        try {
+            return ProductStatus.fromCode(code).getDesc();
+        } catch (IllegalArgumentException e) {
+            return "未知状态";
+        }
     }
 
     private String toJsonString(List<String> dimensions) {

@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class ProductDomainEventListener {
 
     private static final String PRODUCT_EVENT_PACKAGE = "com.cartethyia.easyorange.product.domain.event";
 
-    private final ProductCachePort<?> productCachePort;
+    private final ProductCacheEvictionPort productCachePort;
     private final ProductAuditLogRepository auditLogRepository;
 
     @EventListener

@@ -1,10 +1,9 @@
 package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.cache.CacheUtils;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
-import com.cartethyia.easyorange.product.domain.port.CategoryCachePort;
-import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 @Component
-public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel> {
+public class CategoryCacheAdapter implements CategoryCachePort {
 
     private final CategoryQueryRepository categoryQueryRepository;
     private final RedisTemplate<Object, Object> redisTemplate;
@@ -96,11 +95,10 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
             log.warn("action=circuit_breaker_skip_redis, operation=读取分类缓存, key={}", cacheKey);
         }
 
-        List<CategoryDO> categories = categoryQueryRepository.findByLevel(level);
-        if (categories == null) {
-            categories = List.of();
+        List<CategoryReadModel> models = categoryQueryRepository.findByLevel(level);
+        if (models == null) {
+            models = List.of();
         }
-        List<CategoryReadModel> models = categories.stream().map(this::toReadModel).toList();
 
         localCache.put(cacheKey, models);
 
@@ -152,11 +150,10 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
             log.warn("action=circuit_breaker_skip_redis, operation=读取分类缓存, key={}", cacheKey);
         }
 
-        List<CategoryDO> categories = categoryQueryRepository.findByParentId(parentId);
-        if (categories == null) {
-            categories = List.of();
+        List<CategoryReadModel> models = categoryQueryRepository.findByParentId(parentId);
+        if (models == null) {
+            models = List.of();
         }
-        List<CategoryReadModel> models = categories.stream().map(this::toReadModel).toList();
 
         localCache.put(cacheKey, models);
 
@@ -204,9 +201,9 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
             log.warn("action=circuit_breaker_skip_redis, operation=读取分类缓存, key={}", cacheKey);
         }
 
-        List<CategoryDO> allCategories = categoryQueryRepository.findByIds(List.of(id));
+        List<CategoryReadModel> allCategories = categoryQueryRepository.findByIds(List.of(id));
         if (allCategories != null && !allCategories.isEmpty()) {
-            CategoryReadModel model = toReadModel(allCategories.getFirst());
+            CategoryReadModel model = allCategories.getFirst();
 
             // 写入 Redis（仅在熔断未开启时）
             if (!shouldSkipRedis()) {
@@ -372,17 +369,4 @@ public class CategoryCacheAdapter implements CategoryCachePort<CategoryReadModel
                 operation, context, redisFailureCount.get(), e);
     }
 
-    private CategoryReadModel toReadModel(CategoryDO category) {
-        return new CategoryReadModel(
-                category.getId(),
-                category.getName(),
-                category.getParentId(),
-                category.getLevel(),
-                category.getIcon(),
-                category.getSortOrder(),
-                category.getStatus(),
-                category.getCreateTime(),
-                0
-        );
-    }
 }

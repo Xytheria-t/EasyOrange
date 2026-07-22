@@ -12,6 +12,6 @@ public class TopProductResponse {
     private Integer viewCount;
     private BigDecimal price;
     private String mainImage;
-    private Integer status;
+    private String status;
     private String statusDesc;
 }

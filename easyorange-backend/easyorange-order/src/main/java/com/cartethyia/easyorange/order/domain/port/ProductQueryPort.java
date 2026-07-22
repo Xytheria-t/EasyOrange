@@ -14,7 +14,7 @@ public interface ProductQueryPort {
             String id,
             String title,
             BigDecimal price,
-            Integer status,
+            String status,
             List<String> images,
             String description,
             String conditionLevel

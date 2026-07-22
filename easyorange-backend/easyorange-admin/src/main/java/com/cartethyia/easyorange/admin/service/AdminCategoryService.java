@@ -8,7 +8,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.Category
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
-import com.cartethyia.easyorange.product.domain.repository.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
+import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +28,16 @@ public class AdminCategoryService {
     private static final int MAX_CATEGORY_LEVEL = 3;
 
     public List<CategoryResponse> listCategories(String parentId) {
-        List<CategoryDO> entities;
+        List<CategoryReadModel> entities;
         if (parentId != null) {
             entities = categoryQueryRepository.findByParentId(parentId);
         } else {
             entities = ChainWrappers.lambdaQueryChain(categoryMapper)
                 .eq(CategoryDO::getDelFlag, 0)
                 .orderByAsc(CategoryDO::getSortOrder)
-                .list();
+                .list().stream()
+                .map(this::toReadModel)
+                .toList();
         }
 
         Map<String, Long> productCountMap = countProductMaps(entities);
@@ -106,7 +109,7 @@ public class AdminCategoryService {
 
         categoryMapper.insert(entity);
 
-        return toCategoryResponse(entity, Map.of(), Map.of());
+        return toCategoryResponse(toReadModel(entity), Map.of(), Map.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -148,8 +151,9 @@ public class AdminCategoryService {
 
         categoryMapper.updateById(entity);
 
-        Map<String, Long> productCountMap = countProductMaps(List.of(entity));
-        return toCategoryResponse(entity, productCountMap, Map.of());
+        CategoryReadModel readModel = toReadModel(entity);
+        Map<String, Long> productCountMap = countProductMaps(List.of(readModel));
+        return toCategoryResponse(readModel, productCountMap, Map.of());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -187,24 +191,24 @@ public class AdminCategoryService {
     }
 
     private void checkDuplicateName(String name, String parentId) {
-        CategoryDO existing = categoryQueryRepository.findByName(name);
-        if (existing != null && existing.getDelFlag() == 0 && Objects.equals(existing.getParentId(), parentId)) {
+        CategoryReadModel existing = categoryQueryRepository.findByName(name);
+        if (existing != null && Objects.equals(existing.parentId(), parentId)) {
             throw BusinessException.of("同级下已存在同名分类");
         }
     }
 
     private void checkDuplicateNameAtRoot(String name) {
-        CategoryDO existing = categoryQueryRepository.findByName(name);
-        if (existing != null && existing.getDelFlag() == 0 && existing.getParentId() == null) {
+        CategoryReadModel existing = categoryQueryRepository.findByName(name);
+        if (existing != null && existing.parentId() == null) {
             throw BusinessException.of("已存在同名的一级分类");
         }
     }
 
-    private Map<String, Long> countProductMaps(List<CategoryDO> categories) {
+    private Map<String, Long> countProductMaps(List<CategoryReadModel> categories) {
         if (categories == null || categories.isEmpty()) {
             return Map.of();
         }
-        List<String> ids = categories.stream().map(CategoryDO::getId).collect(Collectors.toList());
+        List<String> ids = categories.stream().map(CategoryReadModel::id).collect(Collectors.toList());
         return categoryQueryRepository.countProductsByCategoryIds(ids);
     }
 
@@ -213,9 +217,9 @@ public class AdminCategoryService {
         return result.getOrDefault(categoryId, 0L);
     }
 
-    private Map<String, String> buildParentNameMap(List<CategoryDO> categories) {
+    private Map<String, String> buildParentNameMap(List<CategoryReadModel> categories) {
         Set<String> parentIds = categories.stream()
-            .map(CategoryDO::getParentId)
+            .map(CategoryReadModel::parentId)
             .filter(Objects::nonNull)
             .collect(Collectors.toSet());
 
@@ -223,23 +227,37 @@ public class AdminCategoryService {
             return Map.of();
         }
 
-        List<CategoryDO> parents = categoryQueryRepository.findByIds(new ArrayList<>(parentIds));
+        List<CategoryReadModel> parents = categoryQueryRepository.findByIds(new ArrayList<>(parentIds));
         return parents.stream()
-            .collect(Collectors.toMap(CategoryDO::getId, CategoryDO::getName, (a, b) -> a));
+            .collect(Collectors.toMap(CategoryReadModel::id, CategoryReadModel::name, (a, b) -> a));
     }
 
-    private CategoryResponse toCategoryResponse(CategoryDO dobj, Map<String, Long> productCountMap, Map<String, String> parentNameMap) {
+    private CategoryResponse toCategoryResponse(CategoryReadModel cat, Map<String, Long> productCountMap, Map<String, String> parentNameMap) {
         return new CategoryResponse(
-            dobj.getId(),
-            dobj.getName(),
-            dobj.getParentId(),
-            dobj.getParentId() != null ? parentNameMap.get(dobj.getParentId()) : null,
-            dobj.getLevel(),
-            dobj.getSortOrder(),
-            dobj.getStatus(),
-            productCountMap.getOrDefault(dobj.getId(), 0L),
-            dobj.getCreateTime(),
-            dobj.getUpdateTime()
+            cat.id(),
+            cat.name(),
+            cat.parentId(),
+            cat.parentId() != null ? parentNameMap.get(cat.parentId()) : null,
+            cat.level(),
+            cat.sortOrder(),
+            cat.status(),
+            productCountMap.getOrDefault(cat.id(), 0L),
+            cat.createTime(),
+            null
+        );
+    }
+
+    private CategoryReadModel toReadModel(CategoryDO category) {
+        return new CategoryReadModel(
+            category.getId(),
+            category.getName(),
+            category.getParentId(),
+            category.getLevel(),
+            category.getIcon(),
+            category.getSortOrder(),
+            category.getStatus(),
+            category.getCreateTime(),
+            0
         );
     }
 }

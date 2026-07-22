@@ -77,9 +77,9 @@ CREATE TABLE `eo_product` (
     `price`       DECIMAL(10,2) NOT NULL COMMENT '售价',
     `original_price` DECIMAL(10,2) DEFAULT NULL COMMENT '原价',
     `stock`       INT           NOT NULL DEFAULT 1 COMMENT '库存数量',
-    `status`      TINYINT       NOT NULL DEFAULT 0 COMMENT '商品状态（0 草稿 4 待审核 5 已驳回 1 上架 2 已售出 3 下架）',
+    `status`      VARCHAR(2)    NOT NULL DEFAULT '0' COMMENT '商品状态（0 草稿 4 待审核 5 已驳回 1 上架 2 已售出 3 下架）',
     `view_count`  INT           NOT NULL DEFAULT 0 COMMENT '浏览次数',
-    `condition_level` TINYINT   DEFAULT NULL COMMENT '新旧程度（1-10）',
+    `condition_level` VARCHAR(2) DEFAULT NULL COMMENT '新旧程度（1 全新 2 九五新 3 八五新 4 七成新）',
     `location`    VARCHAR(100)  DEFAULT NULL COMMENT '交易地点',
     `contact_method` VARCHAR(200) DEFAULT NULL COMMENT '联系方式',
     `tags`        VARCHAR(500)  DEFAULT NULL COMMENT '标签',
@@ -103,8 +103,8 @@ CREATE TABLE `eo_product` (
     CONSTRAINT `chk_eo_product_price` CHECK (`price` >= 0),
     CONSTRAINT `chk_eo_product_original_price` CHECK (`original_price` IS NULL OR `original_price` >= 0),
     CONSTRAINT `chk_eo_product_stock` CHECK (`stock` >= 0),
-    CONSTRAINT `chk_eo_product_status` CHECK (`status` IN (0, 4, 5, 1, 2, 3)),
-    CONSTRAINT `chk_eo_product_condition` CHECK (`condition_level` IS NULL OR (`condition_level` >= 1 AND `condition_level` <= 10)),
+    CONSTRAINT `chk_eo_product_status` CHECK (`status` IN ('0', '1', '2', '3', '4', '5')),
+    CONSTRAINT `chk_eo_product_condition` CHECK (`condition_level` IS NULL OR `condition_level` IN ('1', '2', '3', '4')),
     CONSTRAINT `chk_eo_product_view_count` CHECK (`view_count` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品信息表';
 
@@ -116,8 +116,8 @@ CREATE TABLE `eo_product_audit_log` (
     `action`          TINYINT     NOT NULL COMMENT '审核动作（1 通过 2 拒绝 3 重新提交）',
     `reason`          VARCHAR(500) DEFAULT NULL COMMENT '审核原因',
     `audit_dimensions` VARCHAR(500) DEFAULT NULL COMMENT '审核维度JSON',
-    `before_status`   TINYINT     NOT NULL COMMENT '操作前状态',
-    `after_status`    TINYINT     NOT NULL COMMENT '操作后状态',
+    `before_status`   VARCHAR(2)  NOT NULL COMMENT '操作前状态',
+    `after_status`    VARCHAR(2)  NOT NULL COMMENT '操作后状态',
     `remark`          VARCHAR(500) DEFAULT NULL COMMENT '管理员备注',
     `create_time`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),

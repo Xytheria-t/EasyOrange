@@ -55,6 +55,12 @@ user/
 │   │   └── User.java                    # 用户聚合根
 │   ├── exception/
 │   │   └── AccountLockedException.java  # 登录锁定异常（含 remainingSeconds，不含 UI 文案）
+│   ├── event/                           # 领域事件
+│   │   ├── UserEvent.java               # 密封接口（extends DomainEvent）
+│   │   ├── UserRegisteredEvent.java     # 注册事件
+│   │   ├── UserPasswordChangedEvent.java # 密码变更事件
+│   │   ├── UserProfileUpdatedEvent.java # 资料更新事件
+│   │   └── UserAvatarChangedEvent.java  # 头像变更事件
 │   ├── valueobject/
 │   │   ├── AuditInfo.java               # 审计信息 (createTime, updateTime, createBy, updateBy, delFlag, version)
 │   │   ├── ContactInfo.java              # 联系方式 (email, phone)
@@ -64,6 +70,7 @@ user/
 │   ├── service/                         # 领域服务
 │   │   ├── AuthenticationService.java   # 认证 + 密码管理（完整用例，含内部持久化）
 │   │   ├── LoginSecurityService.java
+│   │   ├── ProfileUpdateService.java    # 用户资料更新 + 唯一性校验
 │   │   └── RegistrationService.java
 │   ├── repository/
 │   │   └── UserRepository.java
@@ -166,7 +173,7 @@ validation 包仅包含纯格式校验（无 I/O 副作用），遵循 DDD 分�
 
 业务规则校验（如唯一性）在 application / domain 层处理，不在 adapter 层做：
 - 注册唯一性 → `RegistrationService.validateUsernameNotExists()` + `validateUniqueContactInfo()`
-- 更新唯一性 → `ProfileAppService.checkUnique()`
+- 更新唯一性 → `ProfileUpdateService.validateUniqueContact()`（原 `ProfileAppService.checkUnique()` 已下沉至领域层）
 
 ## 密码管理
 

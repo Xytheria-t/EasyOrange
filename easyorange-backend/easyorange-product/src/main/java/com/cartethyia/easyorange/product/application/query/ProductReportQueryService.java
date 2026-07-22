@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,11 +22,12 @@ import java.util.stream.Collectors;
 public class ProductReportQueryService {
 
     private final ProductReportRepository productReportRepository;
+    private final ProductReportQueryRepository productReportQueryRepository;
     private final ProductQueryRepository productQueryRepository;
 
     @Transactional(readOnly = true)
     public PageResult<ProductReportResponse> getMyReports(String reporterId, int pageNum, int pageSize) {
-        PageResult<ProductReport> reportPage = productReportRepository.findByReporterId(reporterId, pageNum, pageSize);
+        PageResult<ProductReport> reportPage = productReportQueryRepository.findByReporterId(reporterId, pageNum, pageSize);
 
         List<ProductReportResponse> voList = reportPage.records().stream()
                 .map(this::toResponse)
@@ -77,8 +79,8 @@ public class ProductReportQueryService {
 
     @Transactional(readOnly = true)
     public PageResult<ProductReportResponse> getPendingReports(int pageNum, int pageSize) {
-        List<ProductReport> reports = productReportRepository.findPendingReports(pageNum, pageSize);
-        long total = productReportRepository.countPendingReports();
+        List<ProductReport> reports = productReportQueryRepository.findPendingReports(pageNum, pageSize);
+        long total = productReportQueryRepository.countPendingReports();
 
         List<ProductReportResponse> voList = reports.stream()
                 .map(this::toResponse)

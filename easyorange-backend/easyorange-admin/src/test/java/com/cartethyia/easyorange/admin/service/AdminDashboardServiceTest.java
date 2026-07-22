@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendRes
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
@@ -48,7 +48,7 @@ class AdminDashboardServiceTest {
     private ProductQueryRepository productQueryRepository;
 
     @Mock
-    private ProductReportRepository productReportRepository;
+    private ProductReportQueryRepository productReportQueryRepository;
 
     @Mock
     private OrderReadRepository orderReadRepository;
@@ -79,9 +79,9 @@ class AdminDashboardServiceTest {
         void getDashboardStats_returnsStats() {
             when(userMapper.selectCount(any())).thenReturn(100L, 5L);
             when(productQueryRepository.countByStatus(null)).thenReturn(200L);
-            when(productQueryRepository.countByStatus(0)).thenReturn(10L);
+            when(productQueryRepository.countByStatus("0")).thenReturn(10L);
             when(orderReadRepository.countByStatus(null)).thenReturn(300L);
-            when(productReportRepository.countPendingReports()).thenReturn(8L);
+            when(productReportQueryRepository.countPendingReports()).thenReturn(8L);
 
             DashboardStatsResponse stats = dashboardService.getDashboardStats();
 
@@ -101,10 +101,10 @@ class AdminDashboardServiceTest {
         @Test
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
-            when(productReportRepository.countPendingReports()).thenReturn(3L);
+            when(productReportQueryRepository.countPendingReports()).thenReturn(3L);
             when(orderReadRepository.countByStatus(anyInt())).thenReturn(5L);
-            when(productQueryRepository.countByStatus(anyInt())).thenReturn(7L);
-            when(productReportRepository.findPendingReports(anyInt(), anyInt()))
+            when(productQueryRepository.countByStatus(anyString())).thenReturn(7L);
+            when(productReportQueryRepository.findPendingReports(anyInt(), anyInt()))
                     .thenReturn(List.of(
                             ProductReport.reconstitute("1", "100", "1",
                                     "虚假信息", null, null,

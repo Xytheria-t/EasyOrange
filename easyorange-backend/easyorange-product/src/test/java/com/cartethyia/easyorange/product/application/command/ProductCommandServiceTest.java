@@ -75,7 +75,7 @@ class ProductCommandServiceTest {
 
             CreateProductCommand command = new CreateProductCommand(
                     "2", "测试商品", new BigDecimal("100"),
-                    null, 10, 1,
+                    null, 10, "1",
                     "北京", "微信", "描述",
                     java.util.List.of("http://img/1.jpg"));
 

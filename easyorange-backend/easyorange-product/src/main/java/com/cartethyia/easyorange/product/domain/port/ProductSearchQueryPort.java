@@ -9,10 +9,10 @@ public interface ProductSearchQueryPort {
     record ProductSearchQuery(
         String keyword,
         String categoryId,
-        Integer status,
+        String status,
         java.math.BigDecimal minPrice,
         java.math.BigDecimal maxPrice,
-        Integer conditionLevel,
+        String conditionLevel,
         String sort,
         int pageNum,
         int pageSize,

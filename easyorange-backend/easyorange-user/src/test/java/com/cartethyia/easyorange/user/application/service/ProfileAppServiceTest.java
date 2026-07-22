@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService.UpdateCommand;
@@ -9,6 +10,7 @@ import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import com.cartethyia.easyorange.user.domain.service.ProfileUpdateService;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
@@ -38,8 +40,11 @@ class ProfileAppServiceTest {
 
     @Mock
     private AvatarFilePort avatarFilePort;
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
     private ProfileAppService profileAppService;
+    private ProfileUpdateService profileUpdateService;
 
     private static final String USER_ID = "1";
     private static final String USERNAME = "testuser";
@@ -48,7 +53,8 @@ class ProfileAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        profileAppService = new ProfileAppService(userRepository, avatarFilePort);
+        profileUpdateService = new ProfileUpdateService(userRepository);
+        profileAppService = new ProfileAppService(userRepository, avatarFilePort, domainEventPublisher, profileUpdateService);
     }
 
     @AfterEach

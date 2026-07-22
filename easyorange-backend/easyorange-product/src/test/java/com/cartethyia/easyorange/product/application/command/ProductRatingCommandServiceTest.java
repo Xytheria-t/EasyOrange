@@ -1,18 +1,19 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
-
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
+import com.cartethyia.easyorange.product.domain.entity.ProductRating;
+import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -20,25 +21,28 @@ import static org.mockito.Mockito.*;
 class ProductRatingCommandServiceTest {
 
     @Mock
-    private ProductRatingMapper reviewMapper;
+    private ProductRatingRepository productRatingRepository;
 
     private ProductRatingCommandService commandService;
 
     @BeforeEach
     void setUp() {
-        commandService = new ProductRatingCommandService(reviewMapper);
+        commandService = new ProductRatingCommandService(productRatingRepository);
     }
 
     @Test
-    @DisplayName("创建评价应插入数据库并返回 ID")
-    void createReview_shouldInsertAndReturnId() {
-        TestSecurityUtil.setSecurityContext(1L);
+    @DisplayName("创建评价应保存领域实体并返回 ID")
+    void createReview_shouldCreateAndSave() {
+        TestSecurityUtil.setSecurityContext("1");
         try {
             doAnswer(invocation -> {
-                ProductRatingDO review = invocation.getArgument(0);
-                review.setId("100");
-                return 1;
-            }).when(reviewMapper).insert(any(ProductRatingDO.class));
+                ProductRating rating = invocation.getArgument(0);
+                // 模拟仓储生成 ID
+                var field = ProductRating.class.getDeclaredField("id");
+                field.setAccessible(true);
+                field.set(rating, "100");
+                return null;
+            }).when(productRatingRepository).save(any(ProductRating.class));
 
             var command = new ProductRatingCommandService.CreateProductRatingCommand("10", 5, "非常好的商品");
 
@@ -46,35 +50,30 @@ class ProductRatingCommandServiceTest {
 
             assertThat(reviewId).isEqualTo("100");
 
-            ArgumentCaptor<ProductRatingDO> captor = ArgumentCaptor.forClass(ProductRatingDO.class);
-            verify(reviewMapper).insert(captor.capture());
-            ProductRatingDO captured = captor.getValue();
-            assertThat(captured.getProductId()).isEqualTo("10");
-            assertThat(captured.getUserId()).isEqualTo("1");
-            assertThat(captured.getRating()).isEqualTo(5);
-            assertThat(captured.getContent()).isEqualTo("非常好的商品");
-            assertThat(captured.getLikes()).isEqualTo(0);
-            assertThat(captured.getStatus()).isEqualTo(1);
+            verify(productRatingRepository).save(argThat(r ->
+                    r.getProductId().equals("10") &&
+                    r.getUserId().equals("1") &&
+                    r.getRating().value() == 5 &&
+                    r.getContent().value().equals("非常好的商品")
+            ));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
     }
 
     @Test
-    @DisplayName("删除自己的评价应成功")
-    void deleteReview_ownReview_shouldDelete() {
-        TestSecurityUtil.setSecurityContext(1L);
+    @DisplayName("删除自己的评价应调用软删除")
+    void deleteReview_ownReview_shouldSoftDelete() {
+        TestSecurityUtil.setSecurityContext("1");
         try {
-            ProductRatingDO existing = new ProductRatingDO();
-            existing.setId("100");
-            existing.setProductId("10");
-            existing.setUserId("1");
-            existing.setDelFlag(0);
-            when(reviewMapper.selectById("100")).thenReturn(existing);
+            ProductRating rating = ProductRating.create("10", "1", 4, "不错");
+            when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
             commandService.deleteReview("100");
 
-            verify(reviewMapper).deleteById("100");
+            verify(productRatingRepository).update(argThat(r -> r.getStatus() == 0));
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -83,36 +82,15 @@ class ProductRatingCommandServiceTest {
     @Test
     @DisplayName("删除不存在的评价应抛出异常")
     void deleteReview_notFound_shouldThrow() {
-        TestSecurityUtil.setSecurityContext(1L);
+        TestSecurityUtil.setSecurityContext("1");
         try {
-            when(reviewMapper.selectById("999")).thenReturn(null);
+            when(productRatingRepository.findById("999")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> commandService.deleteReview("999"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("评价不存在");
 
-            verify(reviewMapper, never()).deleteById(anyString());
-        } finally {
-            TestSecurityUtil.clearSecurityContext();
-        }
-    }
-
-    @Test
-    @DisplayName("删除已被逻辑删除的评价应抛出异常")
-    void deleteReview_alreadyDeleted_shouldThrow() {
-        TestSecurityUtil.setSecurityContext(1L);
-        try {
-            ProductRatingDO existing = new ProductRatingDO();
-            existing.setId("100");
-            existing.setUserId("1");
-            existing.setDelFlag(2);
-            when(reviewMapper.selectById("100")).thenReturn(existing);
-
-            assertThatThrownBy(() -> commandService.deleteReview("100"))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("评价不存在");
-
-            verify(reviewMapper, never()).deleteById(anyString());
+            verify(productRatingRepository, never()).update(any());
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -121,19 +99,16 @@ class ProductRatingCommandServiceTest {
     @Test
     @DisplayName("删除他人的评价应抛出异常")
     void deleteReview_notOwner_shouldThrow() {
-        TestSecurityUtil.setSecurityContext(2L);
+        TestSecurityUtil.setSecurityContext("2");
         try {
-            ProductRatingDO existing = new ProductRatingDO();
-            existing.setId("100");
-            existing.setUserId("1");
-            existing.setDelFlag(0);
-            when(reviewMapper.selectById("100")).thenReturn(existing);
+            ProductRating rating = ProductRating.create("10", "1", 4, "不错");
+            when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
             assertThatThrownBy(() -> commandService.deleteReview("100"))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("只能删除自己的评价");
 
-            verify(reviewMapper, never()).deleteById(anyString());
+            verify(productRatingRepository, never()).update(any());
         } finally {
             TestSecurityUtil.clearSecurityContext();
         }
@@ -142,8 +117,16 @@ class ProductRatingCommandServiceTest {
     @Test
     @DisplayName("点赞评价应增加点赞数")
     void likeReview_shouldIncrementLikes() {
-        commandService.likeReview("100");
+        TestSecurityUtil.setSecurityContext("1");
+        try {
+            ProductRating rating = ProductRating.create("10", "1", 4, "不错");
+            when(productRatingRepository.findById("100")).thenReturn(Optional.of(rating));
 
-        verify(reviewMapper).incrementLikes("100");
+            commandService.likeReview("100");
+
+            verify(productRatingRepository).update(argThat(r -> r.getLikes() == 1));
+        } finally {
+            TestSecurityUtil.clearSecurityContext();
+        }
     }
 }

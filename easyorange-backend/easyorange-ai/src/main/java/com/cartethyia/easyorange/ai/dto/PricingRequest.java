@@ -6,6 +6,6 @@ public record PricingRequest(
         String productName,
         String description,
         String categoryName,
-        Integer conditionLevel,
+        String conditionLevel,
         BigDecimal originalPrice
 ) {}

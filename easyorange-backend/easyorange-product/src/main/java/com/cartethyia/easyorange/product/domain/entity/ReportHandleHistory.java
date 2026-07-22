@@ -9,19 +9,25 @@ import java.time.LocalDateTime;
 @Getter
 public class ReportHandleHistory {
 
-    private String id;
+    private final String id;
     private final String reportId;
     private final String operatorId;
     private final String action;
     private final String remark;
-    private LocalDateTime createTime;
+    private final LocalDateTime createTime;
 
-    public ReportHandleHistory(String reportId, String operatorId, String action, String remark) {
+    private ReportHandleHistory(String id, String reportId, String operatorId,
+                                String action, String remark, LocalDateTime createTime) {
+        this.id = id;
         this.reportId = reportId;
         this.operatorId = operatorId;
         this.action = action;
         this.remark = remark;
-        this.createTime = LocalDateTime.now();
+        this.createTime = createTime;
+    }
+
+    public ReportHandleHistory(String reportId, String operatorId, String action, String remark) {
+        this(null, reportId, operatorId, action, remark, LocalDateTime.now());
     }
 
     public static ReportHandleHistory create(String reportId, String operatorId, String action, String remark) {
@@ -40,16 +46,11 @@ public class ReportHandleHistory {
     public static ReportHandleHistory reconstitute(String id, String reportId, String operatorId,
                                                      String action, String remark,
                                                      LocalDateTime createTime) {
-        ReportHandleHistory history = new ReportHandleHistory(reportId, operatorId, action, remark);
-        history.id = id;
-        history.createTime = createTime;
-        return history;
+        return new ReportHandleHistory(id, reportId, operatorId, action, remark, createTime);
     }
 
-    public void assignId(String id) {
-        if (this.id == null) {
-            this.id = id;
-        }
+    public ReportHandleHistory withId(String id) {
+        return new ReportHandleHistory(id, this.reportId, this.operatorId, this.action, this.remark, this.createTime);
     }
 
     public static class HistoryDomainException extends BaseBusinessException {

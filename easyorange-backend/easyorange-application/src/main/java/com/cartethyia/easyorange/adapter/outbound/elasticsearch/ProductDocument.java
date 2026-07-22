@@ -34,8 +34,8 @@ public class ProductDocument {
     @Field(type = FieldType.Double)
     private Double originalPrice;
 
-    private Byte conditionLevel;
-    private Byte status;
+    private String conditionLevel;
+    private String status;
     private Integer viewCount;
     private Integer stock;
     private String location;

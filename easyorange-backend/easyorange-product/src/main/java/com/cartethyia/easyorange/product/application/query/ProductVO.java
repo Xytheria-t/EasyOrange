@@ -28,10 +28,10 @@ public class ProductVO {
     private BigDecimal price;
     private BigDecimal originalPrice;
     private Integer stock;
-    private Integer status;
+    private String status;
     private String statusDesc;
     private Integer views;
-    private Integer condition;
+    private String condition;
     private String conditionDesc;
     private String location;
     private String contactMethod;

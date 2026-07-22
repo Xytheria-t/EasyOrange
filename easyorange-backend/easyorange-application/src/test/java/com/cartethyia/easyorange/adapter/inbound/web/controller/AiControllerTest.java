@@ -78,14 +78,14 @@ class AiControllerTest {
             when(pricingService.suggestPrice(anyString(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
-            var request = new PricingRequest("在管 iPhone 14", "99新", "手机数码", 2, new BigDecimal("6999"));
+            var request = new PricingRequest("在管 iPhone 14", "99新", "手机数码", "2", new BigDecimal("6999"));
             Result<PricingSuggestion> result = controller.suggestPrice(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data()).isEqualTo(expected);
             assertThat(result.data().suggestedPrice()).isEqualByComparingTo(new BigDecimal("4500"));
             verify(pricingService).suggestPrice(eq("在管 iPhone 14"), eq("99新"),
-                    eq("手机数码"), eq(2), eq(new BigDecimal("6999")));
+                    eq("手机数码"), eq("2"), eq(new BigDecimal("6999")));
         }
 
         @Test
@@ -107,7 +107,7 @@ class AiControllerTest {
         void autoListing_success() {
             var expected = new AutoListingResult(
                     "在管 iPhone 14", "99新", new BigDecimal("4500"),
-                    "手机数码", 1, 2, "广州",
+                    "手机数码", 1, "2", "广州",
                     List.of("手机", "数码"), List.of("正面照片", "背面照片")
             );
             when(autoListingService.analyzeImages(anyList())).thenReturn(expected);
@@ -146,7 +146,7 @@ class AiControllerTest {
             when(reviewService.reviewProduct(anyString(), any(), any(), any(), any(), any(), any()))
                     .thenReturn(expected);
 
-            var request = new AiReviewRequest("iPhone 14", "99新手机", "手机数码", 2, "¥4500", "张三",
+            var request = new AiReviewRequest("iPhone 14", "99新手机", "手机数码", "2", "¥4500", "张三",
                     List.of("https://example.com/phone.jpg"));
             Result<AiReviewResult> result = controller.reviewProduct(request);
 
@@ -154,7 +154,7 @@ class AiControllerTest {
             assertThat(result.data().suggestedAction()).isTrue();
             assertThat(result.data().confidenceScore()).isEqualTo(90);
             verify(reviewService).reviewProduct(eq("iPhone 14"), eq("99新手机"),
-                    eq("手机数码"), eq(2), eq("¥4500"), eq("张三"),
+                    eq("手机数码"), eq("2"), eq("¥4500"), eq("张三"),
                     eq(List.of("https://example.com/phone.jpg")));
         }
 
@@ -236,14 +236,14 @@ class AiControllerTest {
             when(copyGenerationService.generateCopy(anyString(), any(), any(), any(), anyString()))
                     .thenReturn(expected);
 
-            var request = new CopyGenerationRequest("iPhone 14", "手机数码", 2, "¥6999", "standard");
+            var request = new CopyGenerationRequest("iPhone 14", "手机数码", "2", "¥6999", "standard");
             Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
             assertThat(result.data().title()).isEqualTo("超值iPhone 14");
             assertThat(result.data().style()).isEqualTo("standard");
             verify(copyGenerationService).generateCopy(eq("iPhone 14"), eq("手机数码"),
-                    eq(2), eq("¥6999"), eq("standard"));
+                    eq("2"), eq("¥6999"), eq("standard"));
         }
 
         @Test
@@ -266,12 +266,12 @@ class AiControllerTest {
             when(copyGenerationService.generateCopy(anyString(), any(), any(), any(), anyString()))
                     .thenReturn(new CopyGenerationResult("标题", "描述", "detailed"));
 
-            var request = new CopyGenerationRequest("商品", "分类", 1, "¥100", "detailed");
+            var request = new CopyGenerationRequest("商品", "分类", "1", "¥100", "detailed");
             Result<CopyGenerationResult> result = controller.generateCopy(request);
 
             assertThat(result.isSuccess()).isTrue();
             verify(copyGenerationService).generateCopy(eq("商品"), eq("分类"),
-                    eq(1), eq("¥100"), eq("detailed"));
+                    eq("1"), eq("¥100"), eq("detailed"));
         }
     }
 }

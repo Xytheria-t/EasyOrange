@@ -9,9 +9,9 @@ public record SearchResultResponse(
     BigDecimal price,
     BigDecimal originalPrice,
     String mainImageUrl,
-    Integer status,
+    String status,
     String statusDesc,
-    Integer condition,
+    String condition,
     String conditionDesc,
     String location,
     LocalDateTime createTime

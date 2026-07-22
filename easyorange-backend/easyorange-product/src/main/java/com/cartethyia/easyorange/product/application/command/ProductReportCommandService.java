@@ -31,8 +31,8 @@ public class ProductReportCommandService {
     @Transactional(rollbackFor = Exception.class)
     public void handleApprove(String reportId) {
         var event = productReportDomainService.processReport(reportId, true);
-        if (event != null) {
-            domainEventPublisher.publish(event);
+        if (event.isPresent()) {
+            domainEventPublisher.publish(event.get());
         }
     }
 

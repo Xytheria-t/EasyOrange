@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.auth.TokenService;
@@ -7,6 +8,8 @@ import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.event.UserPasswordChangedEvent;
+import com.cartethyia.easyorange.user.domain.event.UserRegisteredEvent;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
@@ -26,10 +29,13 @@ public class AuthAppService {
     private final TokenService tokenService;
     private final UserRepository userRepository;
     private final SmsCodePort smsCodePort;
+    private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
     public String register(String username, String password) {
-        return registrationService.registerNewUser(username, password).getId();
+        User user = registrationService.registerNewUser(username, password);
+        domainEventPublisher.publish(new UserRegisteredEvent(user.getId(), username));
+        return user.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -50,6 +56,7 @@ public class AuthAppService {
         SecurityContextUtil.clearContext();
     }
 
+    @Transactional(readOnly = true)
     public void sendSmsCode(String phone) {
         if (!smsCodePort.send(phone)) {
             throw BusinessException.of(UserResultCode.SMS_CODE_SEND_TOO_FREQUENT);
@@ -71,6 +78,7 @@ public class AuthAppService {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
         authenticationService.changePassword(user, oldPassword, newPassword);
+        domainEventPublisher.publish(new UserPasswordChangedEvent(userId));
     }
 
     public record LoginContext(User user, String accessToken, String refreshToken) {}

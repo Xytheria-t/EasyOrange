@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.LoginSecurityService;
+import com.cartethyia.easyorange.user.domain.service.ProfileUpdateService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,5 +33,10 @@ public class UserDomainConfig {
             UserRepository userRepository,
             PasswordEncoderPort passwordEncoder) {
         return new RegistrationService(userRepository, passwordEncoder);
+    }
+
+    @Bean
+    ProfileUpdateService profileUpdateService(UserRepository userRepository) {
+        return new ProfileUpdateService(userRepository);
     }
 }

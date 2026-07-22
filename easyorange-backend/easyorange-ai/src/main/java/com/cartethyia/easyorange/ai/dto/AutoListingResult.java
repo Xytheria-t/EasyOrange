@@ -9,7 +9,7 @@ public record AutoListingResult(
         BigDecimal price,
         String categoryName,
         Integer categoryId,
-        Integer conditionLevel,
+        String conditionLevel,
         String location,
         List<String> tags,
         List<String> imageDescriptions

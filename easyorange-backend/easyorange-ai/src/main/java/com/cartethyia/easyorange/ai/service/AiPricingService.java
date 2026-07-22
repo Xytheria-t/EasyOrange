@@ -21,7 +21,7 @@ public class AiPricingService {
             String productName,
             String description,
             String categoryName,
-            Integer conditionLevel,
+            String conditionLevel,
             BigDecimal originalPrice
     ) {
         String systemPrompt = """
@@ -61,13 +61,13 @@ public class AiPricingService {
         }
     }
 
-    private String formatCondition(Integer conditionLevel) {
+    private String formatCondition(String conditionLevel) {
         if (conditionLevel == null) return "未知";
         return switch (conditionLevel) {
-            case 1 -> "全新";
-            case 2 -> "九五新";
-            case 3 -> "八五新";
-            case 4 -> "七成新";
+            case "1" -> "全新";
+            case "2" -> "九五新";
+            case "3" -> "八五新";
+            case "4" -> "七成新";
             default -> "未知";
         };
     }

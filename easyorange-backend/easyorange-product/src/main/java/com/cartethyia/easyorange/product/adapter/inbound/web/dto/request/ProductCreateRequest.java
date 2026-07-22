@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -17,7 +18,7 @@ public record ProductCreateRequest(
         @NotNull(message = "商品价格不能为空") @DecimalMin(value = "0.01", message = "商品价格必须大于 0") BigDecimal price,
         @DecimalMin(value = "0.01", message = "商品原价必须大于 0") BigDecimal originalPrice,
         Integer stock,
-        @NotNull(message = "新旧程度不能为空") Integer conditionLevel,
+        @NotNull(message = "新旧程度不能为空") @Pattern(regexp = "^[1-4]$", message = "成色等级必须为 1-4") String conditionLevel,
         @Size(max = 100, message = "交易地点不能超过 100 个字符") String location,
         @Size(max = 50, message = "联系方式不能超过 50 个字符") String contactMethod,
         @Size(max = 9, message = "图片数量不能超过 9 张") List<String> imageUrls

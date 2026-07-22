@@ -158,7 +158,7 @@ class AdminDashboardControllerTest {
     void getTopProducts_shouldReturnTopProducts() throws Exception {
         var topProducts = List.of(
             TopProductResponse.builder().productId("1").name("Top1").viewCount(1000)
-                .price(BigDecimal.valueOf(99)).status(1).statusDesc("上架").build()
+                .price(BigDecimal.valueOf(99)).status("1").statusDesc("上架").build()
         );
         when(adminDashboardService.getTopProducts(10)).thenReturn(topProducts);
 

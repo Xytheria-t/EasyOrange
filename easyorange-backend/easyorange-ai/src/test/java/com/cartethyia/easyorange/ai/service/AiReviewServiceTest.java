@@ -52,7 +52,7 @@ class AiReviewServiceTest {
             when(objectMapper.readValue(jsonResponse, AiReviewResult.class)).thenReturn(expected);
 
             AiReviewResult result = service.reviewProduct(
-                    "iPhone 14", "99新手机", "手机数码", 2,
+                    "iPhone 14", "99新手机", "手机数码", "2",
                     "¥4500", "张三", List.of("https://example.com/phone.jpg")
             );
 
@@ -79,7 +79,7 @@ class AiReviewServiceTest {
             when(objectMapper.readValue(jsonResponse, AiReviewResult.class)).thenReturn(expected);
 
             AiReviewResult result = service.reviewProduct(
-                    "Gucci 包", "正品", "奢侈品", 1,
+                    "Gucci 包", "正品", "奢侈品", "1",
                     "¥999999", "资产方", List.of("url1", "url2")
             );
 
@@ -94,7 +94,7 @@ class AiReviewServiceTest {
             when(llmPort.generateTextWithJson(anyString(), anyString())).thenReturn(null);
 
             AiReviewResult result = service.reviewProduct(
-                    "测试商品", "描述", "分类", 1, "¥100", "资产方", List.of()
+                    "测试商品", "描述", "分类", "1", "¥100", "资产方", List.of()
             );
 
             assertThat(result.suggestedAction()).isTrue();
@@ -110,7 +110,7 @@ class AiReviewServiceTest {
                     .thenThrow(new RuntimeException("API error"));
 
             AiReviewResult result = service.reviewProduct(
-                    "测试商品", "描述", "分类", 1, "¥100", "资产方", null
+                    "测试商品", "描述", "分类", "1", "¥100", "资产方", null
             );
 
             assertThat(result.suggestedAction()).isTrue();
@@ -129,7 +129,7 @@ class AiReviewServiceTest {
                     .thenThrow(JacksonException.class);
 
             AiReviewResult result = service.reviewProduct(
-                    "测试商品", "描述", "分类", 1, "¥100", "资产方", List.of("url")
+                    "测试商品", "描述", "分类", "1", "¥100", "资产方", List.of("url")
             );
 
             assertThat(result.suggestedAction()).isTrue();

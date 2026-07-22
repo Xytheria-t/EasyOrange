@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.auth.TokenService;
@@ -44,6 +45,8 @@ class AuthAppServiceTest {
     private UserRepository userRepository;
     @Mock
     private SmsCodePort smsCodePort;
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
     private AuthAppService service;
 
@@ -53,7 +56,7 @@ class AuthAppServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AuthAppService(authenticationService, registrationService, tokenService, userRepository, smsCodePort);
+        service = new AuthAppService(authenticationService, registrationService, tokenService, userRepository, smsCodePort, domainEventPublisher);
     }
 
     @AfterEach

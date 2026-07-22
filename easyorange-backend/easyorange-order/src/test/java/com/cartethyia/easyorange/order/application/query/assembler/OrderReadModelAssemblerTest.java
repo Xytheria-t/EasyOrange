@@ -39,7 +39,7 @@ class OrderReadModelAssemblerTest {
 
     private static final String PRODUCT_TITLE = "测试商品";
     private static final BigDecimal PRODUCT_PRICE = new BigDecimal("99.99");
-    private static final Integer PRODUCT_STATUS = 1;
+    private static final String PRODUCT_STATUS = "1";
     private static final List<String> PRODUCT_IMAGES = List.of("http://example.com/img1.jpg");
 
     private static List<OrderItemReadModel> testItems() {
@@ -178,7 +178,7 @@ class OrderReadModelAssemblerTest {
             );
 
             ProductDetail product1 = createProductDetail();
-            ProductDetail product2 = new ProductDetail("201", "商品2", new BigDecimal("49.99"), 1, List.of("img2.jpg"), null, null);
+            ProductDetail product2 = new ProductDetail("201", "商品2", new BigDecimal("49.99"), "1", List.of("img2.jpg"), null, null);
             Map<String, ProductDetail> productMap = Map.of(PRODUCT_ID, product1, "201", product2);
 
             List<OrderVO> vos = assembler.toOrderVOs(List.of(order1, order2), productMap);
@@ -209,8 +209,8 @@ class OrderReadModelAssemblerTest {
         @Test
         @DisplayName("应正确构建商品映射")
         void buildProductMap_shouldMapById() {
-            ProductDetail p1 = new ProductDetail("1", "商品1", BigDecimal.TEN, 1, List.of(), null, null);
-            ProductDetail p2 = new ProductDetail("2", "商品2", BigDecimal.valueOf(20), 1, List.of(), null, null);
+            ProductDetail p1 = new ProductDetail("1", "商品1", BigDecimal.TEN, "1", List.of(), null, null);
+            ProductDetail p2 = new ProductDetail("2", "商品2", BigDecimal.valueOf(20), "1", List.of(), null, null);
 
             Map<String, ProductDetail> map = assembler.buildProductMap(List.of(p1, p2));
 

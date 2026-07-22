@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.application.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository.ProductImageInfo;
@@ -32,7 +32,7 @@ public class ProductQueryService {
     private final ProductRepository productRepository;
     private final ProductQueryRepository productQueryRepository;
     private final ProductReadModelAssembler readModelAssembler;
-    private final ProductCachePort<ProductVO> productCachePort;
+    private final ProductCachePort productCachePort;
     private final Singleflight<String, ProductVO> productSingleflight = new Singleflight<>();
 
     // ── Public query API (single → multi → computed → paged) ──
@@ -90,9 +90,9 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> listProducts(String keyword, String categoryId, Integer status,
+    public PageResult<ProductVO> listProducts(String keyword, String categoryId, String status,
                                               BigDecimal minPrice, BigDecimal maxPrice,
-                                              Integer conditionLevel, String sort,
+                                              String conditionLevel, String sort,
                                               Boolean hasDiscount,
                                               Integer pageNum, Integer pageSize) {
         int effectivePageNum = pageNum != null ? pageNum : 1;
@@ -108,7 +108,7 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> getMyProducts(String sellerId, Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<ProductVO> getMyProducts(String sellerId, String status, Integer pageNum, Integer pageSize) {
         var page = productQueryRepository.findProductsBySellerId(sellerId, status, pageNum, pageSize);
         var vos = enrichPage(page);
         return PageResult.of(vos, page.total(), pageNum, pageSize);

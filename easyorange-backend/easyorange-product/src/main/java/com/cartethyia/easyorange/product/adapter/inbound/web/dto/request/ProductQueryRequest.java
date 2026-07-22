@@ -17,9 +17,9 @@ public class ProductQueryRequest extends PageRequest {
 
     private String userId;
 
-    private Integer status;
+    private String status;
 
-    private Integer conditionLevel;
+    private String conditionLevel;
 
     private String keyword;
 

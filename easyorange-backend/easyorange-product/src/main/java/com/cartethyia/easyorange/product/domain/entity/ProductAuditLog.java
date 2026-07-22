@@ -11,14 +11,14 @@ public class ProductAuditLog {
     private Integer action;
     private String reason;
     private String auditDimensions;
-    private Integer beforeStatus;
-    private Integer afterStatus;
+    private String beforeStatus;
+    private String afterStatus;
     private String remark;
     private LocalDateTime createTime;
 
     private ProductAuditLog(String productId, String operatorId, String operatorName,
                             Integer action, String reason, String auditDimensions,
-                            Integer beforeStatus, Integer afterStatus, String remark) {
+                            String beforeStatus, String afterStatus, String remark) {
         this.productId = productId;
         this.operatorId = operatorId;
         this.operatorName = operatorName;
@@ -38,8 +38,8 @@ public class ProductAuditLog {
     public Integer getAction() { return action; }
     public String getReason() { return reason; }
     public String getAuditDimensions() { return auditDimensions; }
-    public Integer getBeforeStatus() { return beforeStatus; }
-    public Integer getAfterStatus() { return afterStatus; }
+    public String getBeforeStatus() { return beforeStatus; }
+    public String getAfterStatus() { return afterStatus; }
     public String getRemark() { return remark; }
     public LocalDateTime getCreateTime() { return createTime; }
 
@@ -52,8 +52,8 @@ public class ProductAuditLog {
         private Integer action;
         private String reason;
         private String auditDimensions;
-        private Integer beforeStatus;
-        private Integer afterStatus;
+        private String beforeStatus;
+        private String afterStatus;
         private String remark;
 
         public Builder productId(String productId) { this.productId = productId; return this; }
@@ -62,8 +62,8 @@ public class ProductAuditLog {
         public Builder action(Integer action) { this.action = action; return this; }
         public Builder reason(String reason) { this.reason = reason; return this; }
         public Builder auditDimensions(String auditDimensions) { this.auditDimensions = auditDimensions; return this; }
-        public Builder beforeStatus(Integer beforeStatus) { this.beforeStatus = beforeStatus; return this; }
-        public Builder afterStatus(Integer afterStatus) { this.afterStatus = afterStatus; return this; }
+        public Builder beforeStatus(String beforeStatus) { this.beforeStatus = beforeStatus; return this; }
+        public Builder afterStatus(String afterStatus) { this.afterStatus = afterStatus; return this; }
         public Builder remark(String remark) { this.remark = remark; return this; }
 
         public ProductAuditLog build() {

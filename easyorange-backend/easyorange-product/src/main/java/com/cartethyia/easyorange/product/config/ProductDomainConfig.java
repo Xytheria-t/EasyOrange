@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.config;
 
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.service.ProductReportDomainService;
@@ -14,7 +14,7 @@ public class ProductDomainConfig {
     public ProductReportDomainService productReportDomainService(
             ProductReportRepository productReportRepository,
             ProductRepository productRepository,
-            ProductCachePort<?> productCachePort) {
+            ProductCacheEvictionPort productCachePort) {
         return new ProductReportDomainService(productReportRepository, productRepository, productCachePort);
     }
 }

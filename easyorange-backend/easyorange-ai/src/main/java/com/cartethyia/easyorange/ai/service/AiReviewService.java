@@ -21,7 +21,7 @@ public class AiReviewService {
             String productName,
             String description,
             String categoryName,
-            Integer conditionLevel,
+            String conditionLevel,
             String price,
             String sellerName,
             List<String> imageUrls
@@ -73,13 +73,13 @@ public class AiReviewService {
         }
     }
 
-    private String formatCondition(Integer conditionLevel) {
+    private String formatCondition(String conditionLevel) {
         if (conditionLevel == null) return "未知";
         return switch (conditionLevel) {
-            case 1 -> "全新";
-            case 2 -> "九五新";
-            case 3 -> "八五新";
-            case 4 -> "七成新";
+            case "1" -> "全新";
+            case "2" -> "九五新";
+            case "3" -> "八五新";
+            case "4" -> "七成新";
             default -> "未知";
         };
     }

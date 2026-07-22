@@ -259,7 +259,7 @@ public class Product {
                 .stock(stock.decrease(quantity))
                 .updateTime(LocalDateTime.now())
                 .build();
-        return new ProductTransition(updated, StockDecreasedEvent.of(id.value()));
+        return new ProductTransition(updated, StockDecreasedEvent.of(id.value(), quantity));
     }
 
     public ProductTransition restoreStock() {
@@ -270,7 +270,7 @@ public class Product {
                 .stock(stock.increase())
                 .updateTime(LocalDateTime.now())
                 .build();
-        return new ProductTransition(updated, StockRestoredEvent.of(id.value()));
+        return new ProductTransition(updated, StockRestoredEvent.of(id.value(), 1));
     }
 
     // ==================== Query / Predicate ====================

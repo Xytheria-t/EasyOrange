@@ -19,7 +19,7 @@ import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
 import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import org.springframework.amqp.core.Message;
@@ -43,7 +43,7 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
 
     private static final int LOW_STOCK_THRESHOLD = 5;
 
-    private final ProductCachePort<?> productCachePort;
+    private final ProductCacheEvictionPort productCachePort;
     private final ProductQueryService productQueryService;
     private final Optional<ProductNotificationPort> notificationPort;
     private final Optional<ProductSearchIndexPort> searchIndexPort;
@@ -51,7 +51,7 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
 
     public ProductEventConsumer(EventIdempotencyChecker idempotencyChecker,
                                  EventMetricsService metricsService,
-                                 ProductCachePort<?> productCachePort,
+                                 ProductCacheEvictionPort productCachePort,
                                  ProductQueryService productQueryService,
                                  Optional<ProductNotificationPort> notificationPort,
                                  Optional<ProductSearchIndexPort> searchIndexPort,

@@ -12,9 +12,9 @@ public record AuditLogResponse(
     String actionDesc,
     String reason,
     List<String> dimensions,
-    Integer beforeStatus,
+    String beforeStatus,
     String beforeStatusDesc,
-    Integer afterStatus,
+    String afterStatus,
     String afterStatusDesc,
     String remark,
     LocalDateTime createTime

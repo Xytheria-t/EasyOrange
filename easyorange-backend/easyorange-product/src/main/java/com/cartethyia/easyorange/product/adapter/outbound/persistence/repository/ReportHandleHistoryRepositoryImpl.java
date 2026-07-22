@@ -20,7 +20,6 @@ public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHand
     public void save(ReportHandleHistory history) {
         ReportHandleHistoryDO historyDO = convertToDO(history);
         mapper.insert(historyDO);
-        history.assignId(historyDO.getId());
     }
 
     @Override

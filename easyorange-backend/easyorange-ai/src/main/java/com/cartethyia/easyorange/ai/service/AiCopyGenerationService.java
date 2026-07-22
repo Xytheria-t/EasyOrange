@@ -18,7 +18,7 @@ public class AiCopyGenerationService {
     public CopyGenerationResult generateCopy(
             String productName,
             String categoryName,
-            Integer conditionLevel,
+            String conditionLevel,
             String originalPrice,
             String style
     ) {
@@ -64,13 +64,13 @@ public class AiCopyGenerationService {
         }
     }
 
-    private String formatCondition(Integer conditionLevel) {
+    private String formatCondition(String conditionLevel) {
         if (conditionLevel == null) return "未知";
         return switch (conditionLevel) {
-            case 1 -> "全新（未拆封）";
-            case 2 -> "九五新（几乎无使用痕迹）";
-            case 3 -> "八五新（正常使用痕迹）";
-            case 4 -> "七成新（明显使用痕迹）";
+            case "1" -> "全新（未拆封）";
+            case "2" -> "九五新（几乎无使用痕迹）";
+            case "3" -> "八五新（正常使用痕迹）";
+            case "4" -> "七成新（明显使用痕迹）";
             default -> "未知";
         };
     }

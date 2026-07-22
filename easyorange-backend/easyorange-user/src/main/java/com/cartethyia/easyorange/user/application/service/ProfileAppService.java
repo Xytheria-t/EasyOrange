@@ -1,12 +1,16 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
+import com.cartethyia.easyorange.user.domain.event.UserAvatarChangedEvent;
+import com.cartethyia.easyorange.user.domain.event.UserProfileUpdatedEvent;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
+import com.cartethyia.easyorange.user.domain.service.ProfileUpdateService;
 import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,8 @@ public class ProfileAppService {
 
     private final UserRepository userRepository;
     private final AvatarFilePort avatarFilePort;
+    private final DomainEventPublisher domainEventPublisher;
+    private final ProfileUpdateService profileUpdateService;
 
     public record UpdateCommand(
         String nickname, String email, String phone,
@@ -38,9 +44,11 @@ public class ProfileAppService {
     @Transactional(rollbackFor = Exception.class)
     public User updateUserInfo(UpdateCommand cmd) {
         User currentUser = getCurrentUser();
-        if (!hasAny(cmd)) throw BusinessException.of("没有需要更新的字段");
+        if (!ProfileUpdateService.hasAny(cmd.nickname(), cmd.email(), cmd.phone(),
+            cmd.gender(), cmd.realName(), cmd.studentId()))
+            throw BusinessException.of("没有需要更新的字段");
 
-        checkUnique(cmd, currentUser);
+        profileUpdateService.validateUniqueContact(cmd.email(), cmd.phone(), cmd.studentId(), currentUser);
 
         var updated = currentUser
             .updateContactInfo(cmd.email(), cmd.phone(), currentUser.getId())
@@ -49,6 +57,7 @@ public class ProfileAppService {
                 cmd.studentId(), currentUser.getId());
 
         userRepository.update(updated);
+        domainEventPublisher.publish(new UserProfileUpdatedEvent(currentUser.getId()));
         return updated;
     }
 
@@ -66,33 +75,11 @@ public class ProfileAppService {
             var avatarUrl = avatarFilePort.upload(content, contentType, filename, currentUser.getId());
             var updated = currentUser.changeAvatar(avatarUrl, currentUser.getId());
             userRepository.update(updated);
+            domainEventPublisher.publish(new UserAvatarChangedEvent(currentUser.getId()));
             return updated;
         } catch (Exception e) {
             throw BusinessException.of("头像上传失败", e);
         }
     }
 
-    private void checkUnique(UpdateCommand cmd, User currentUser) {
-        var contact = currentUser.getContactInfo();
-        if (isPresent(cmd.email()) && !cmd.email().equals(contact != null ? contact.email() : null)
-            && userRepository.findByEmail(cmd.email()).isPresent())
-            throw BusinessException.of(UserResultCode.EMAIL_EXISTS);
-        if (isPresent(cmd.phone()) && !cmd.phone().equals(contact != null ? contact.phone() : null)
-            && userRepository.findByPhone(cmd.phone()).isPresent())
-            throw BusinessException.of(UserResultCode.PHONE_EXISTS);
-
-        var personal = currentUser.getPersonalInfo();
-        if (isPresent(cmd.studentId()) && !cmd.studentId().equals(personal != null ? personal.studentId() : null)
-            && userRepository.findByStudentId(cmd.studentId()).isPresent())
-            throw BusinessException.of(UserResultCode.STUDENT_ID_EXISTS);
-    }
-
-    private static boolean hasAny(UpdateCommand cmd) {
-        return isPresent(cmd.nickname()) || isPresent(cmd.email()) || isPresent(cmd.phone())
-            || cmd.gender() != null || isPresent(cmd.realName()) || isPresent(cmd.studentId());
-    }
-
-    private static boolean isPresent(String value) {
-        return value != null && !value.isBlank();
-    }
 }

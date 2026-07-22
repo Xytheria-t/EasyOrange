@@ -45,7 +45,7 @@ class AiPricingServiceTest {
             String productName = "在管 iPhone 14";
             String description = "99新，使用3个月，配件齐全";
             String categoryName = "手机数码";
-            Integer conditionLevel = 2;
+            String conditionLevel = "2";
             BigDecimal originalPrice = new BigDecimal("6999");
 
             String jsonResponse = """
@@ -99,7 +99,7 @@ class AiPricingServiceTest {
                     .thenThrow(JacksonException.class);
 
             PricingSuggestion result = service.suggestPrice(
-                    "测试商品", "描述", "分类", 1, new BigDecimal("100")
+                    "测试商品", "描述", "分类", "1", new BigDecimal("100")
             );
 
             assertThat(result).isNull();
@@ -113,7 +113,7 @@ class AiPricingServiceTest {
                     .thenThrow(new RuntimeException("API connection timeout"));
 
             PricingSuggestion result = service.suggestPrice(
-                    "测试商品", "描述", "分类", 1, new BigDecimal("100")
+                    "测试商品", "描述", "分类", "1", new BigDecimal("100")
             );
 
             assertThat(result).isNull();

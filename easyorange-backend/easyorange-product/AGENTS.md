@@ -25,7 +25,7 @@ product/
 │       ├── scheduler/                  # 定时批处理
 │       │   └── ViewCountFlushScheduler.java  # 浏览量 Redis→DB 定时刷入
 │       └── cache/                       # 缓存适配器
-│           ├── ProductCacheAdapter.java     # 实现 ProductCachePort
+│           ├── ProductCacheAdapter.java     # 实现 ProductCacheEvictionPort + ProductCachePort
 │           ├── CategoryCacheAdapter.java    # 实现 CategoryCachePort
 │           └── ProductCacheConstant.java
 ├── application/
@@ -46,6 +46,12 @@ product/
 │   │   │   └── ...
 │   │   └── assembler/
 │   │       └── ProductReadModelAssembler.java
+│   ├── port/                            # 应用层端口
+│   │   ├── ProductCachePort.java        # 缓存端口（含 ProductVO 类型）
+│   │   ├── CategoryCachePort.java       # 分类缓存端口
+│   │   └── query/                       # 查询仓储
+│   │       ├── CategoryQueryRepository.java    # 分类查询（返回 CategoryReadModel）
+│   │       └── ProductRatingQueryRepository.java  # 评价查询
 │   ├── event/
 │   │   └── ProductEventConsumer.java     # RabbitMQ 领域事件消费者
 │   ├── service/
@@ -58,6 +64,7 @@ product/
 │   ├── entity/
 │   │   ├── ProductAuditLog.java
 │   │   ├── ProductDetail.java
+│   │   ├── ProductRating.java
 │   │   ├── ProductReport.java
 │   │   └── ReportHandleHistory.java
 │   ├── valueobject/
@@ -66,7 +73,8 @@ product/
 │   │   ├── ProductTitle.java, ProductDescription.java
 │   │   ├── ImageUrl.java, ImageSet.java, TagSet.java
 │   │   ├── ContactMethod.java, TradeLocation.java
-│   │   └── SellerInfo.java
+│   │   ├── SellerInfo.java
+│   │   ├── Rating.java, ReviewContent.java
     │   ├── event/
     │   │   ├── ProductEvent.java                 # 密封接口（消除 aggregateId() 模板）
     │   │   ├── ProductCreatedEvent.java
@@ -82,8 +90,7 @@ product/
     │   │   └── ReportProcessedEvent.java
 │   ├── port/
 │   │   ├── OutboundPort.java            # 标记接口 (跨模块出站端口)
-│   │   ├── ProductCachePort.java        # 缓存端口 (domain 定义, application 实现)
-│   │   ├── CategoryCachePort.java
+│   │   ├── ProductCacheEvictionPort.java # 缓存驱逐端口（domain 层，仅 evict）
 │   │   ├── ProductSnapshotPort.java
 │   │   ├── SellerInfoPort.java          # 资产方信息查询 (跨模块)
 │   │   ├── ProductNotificationPort.java # 商品事件通知 (跨模块)
@@ -91,8 +98,7 @@ product/
 │   ├── repository/
 │   │   ├── ProductRepository.java       # 写仓储
 │   │   ├── ProductReportRepository.java
-│   │   └── query/
-│   │       └── CategoryQueryRepository.java
+│   │   └── ProductRatingRepository.java
 │   ├── service/
 │   │   └── ProductReportDomainService.java
 │   ├── enums/
@@ -136,18 +142,30 @@ public sealed interface ProductEvent extends DomainEvent
 
 ## 缓存端口模式
 
-domain 层定义缓存端口接口，application 层实现：
+缓存端口按 DDD 双向依赖原则分拆：
+
+- **domain 层**: `ProductCacheEvictionPort` — 仅 `evictProductCache(id)` / `evictProductListCache()`，领域服务只做驱逐
+- **application 层**: `ProductCachePort` — 完整 CRUD 操作（get/put/evict），供查询服务使用
+- **adapter 层**: `ProductCacheAdapter` 同时实现两个端口
 
 ```java
-// domain/port/ProductCachePort.java
-public interface ProductCachePort {
-    Optional<ProductReadModel> getProduct(ProductId id);
-    void putProduct(ProductId id, ProductReadModel product);
-    void invalidateProduct(ProductId id);
+// domain/port/ProductCacheEvictionPort.java
+public interface ProductCacheEvictionPort {
+    void evictProductCache(String productId);
+    void evictProductListCache();
 }
 
-// adapter/outbound/cache/ProductCacheAdapter.java — Redis 实现
+// application/port/ProductCachePort.java
+public interface ProductCachePort {
+    Optional<ProductVO> getProduct(ProductId id);
+    void putProduct(ProductId id, ProductVO product);
+    void evictProductCache(String productId);
+}
+
+// adapter/outbound/cache/ProductCacheAdapter.java — Redis 实现，实现两个接口
 ```
+
+`CategoryCachePort` 同理，已从 domain 层移至 application 层，移除泛型 `<T>` 参数，直接使用 `CategoryReadModel`。
 
 ## 库存并发控制
 

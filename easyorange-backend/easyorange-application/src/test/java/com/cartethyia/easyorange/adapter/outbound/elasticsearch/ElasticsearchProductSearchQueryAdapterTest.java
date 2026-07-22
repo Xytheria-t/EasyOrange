@@ -70,8 +70,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 .categoryName("手机")
                 .price(99.99)
                 .originalPrice(199.99)
-                .conditionLevel((byte) 5)
-                .status((byte) 1)
+                .conditionLevel("5")
+                .status("1")
                 .viewCount(1000)
                 .stock(10)
                 .location("北京")
@@ -107,8 +107,8 @@ class ElasticsearchProductSearchQueryAdapterTest {
         assertThat(record.categoryName()).isEqualTo("手机");
         assertThat(record.price()).isEqualByComparingTo("99.99");
         assertThat(record.originalPrice()).isEqualByComparingTo("199.99");
-        assertThat(record.condition()).isEqualTo(5);
-        assertThat(record.status()).isEqualTo(1);
+        assertThat(record.condition()).isEqualTo("5");
+        assertThat(record.status()).isEqualTo("1");
         assertThat(record.views()).isEqualTo(1000);
         assertThat(record.stock()).isEqualTo(10);
         assertThat(record.location()).isEqualTo("北京");

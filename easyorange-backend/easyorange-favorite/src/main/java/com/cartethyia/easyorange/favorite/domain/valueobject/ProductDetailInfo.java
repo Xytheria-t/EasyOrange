@@ -16,10 +16,10 @@ public record ProductDetailInfo(
     BigDecimal price,
     BigDecimal originalPrice,
     Integer stock,
-    Integer status,
+    String status,
     String statusDesc,
     Integer views,
-    Integer condition,
+    String condition,
     String conditionDesc,
     String location,
     String contactMethod,
@@ -44,10 +44,10 @@ public record ProductDetailInfo(
         private BigDecimal price;
         private BigDecimal originalPrice;
         private Integer stock;
-        private Integer status;
+        private String status;
         private String statusDesc;
         private Integer views;
-        private Integer condition;
+        private String condition;
         private String conditionDesc;
         private String location;
         private String contactMethod;
@@ -67,10 +67,10 @@ public record ProductDetailInfo(
         public Builder price(BigDecimal price) { this.price = price; return this; }
         public Builder originalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; return this; }
         public Builder stock(Integer stock) { this.stock = stock; return this; }
-        public Builder status(Integer status) { this.status = status; return this; }
+        public Builder status(String status) { this.status = status; return this; }
         public Builder statusDesc(String statusDesc) { this.statusDesc = statusDesc; return this; }
         public Builder views(Integer views) { this.views = views; return this; }
-        public Builder condition(Integer condition) { this.condition = condition; return this; }
+        public Builder condition(String condition) { this.condition = condition; return this; }
         public Builder conditionDesc(String conditionDesc) { this.conditionDesc = conditionDesc; return this; }
         public Builder location(String location) { this.location = location; return this; }
         public Builder contactMethod(String contactMethod) { this.contactMethod = contactMethod; return this; }

@@ -11,13 +11,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHa
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.event.ReportProcessedEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
@@ -37,9 +38,10 @@ import java.util.stream.Collectors;
 public class AdminReportService {
 
     private final ProductReportRepository productReportRepository;
+    private final ProductReportQueryRepository productReportQueryRepository;
     private final ReportHandleHistoryRepository reportHandleHistoryRepository;
     private final ProductRepository productRepository;
-    private final ProductCachePort<?> productCachePort;
+    private final ProductCacheEvictionPort productCachePort;
     private final BatchQueryUtil batchQueryUtil;
     private final DomainEventPublisher domainEventPublisher;
 
@@ -48,7 +50,7 @@ public class AdminReportService {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
-        PageResult<ProductReport> reportPage = productReportRepository.findByStatus(status, page, size);
+        PageResult<ProductReport> reportPage = productReportQueryRepository.findByStatus(status, page, size);
 
         Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
         Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
@@ -112,11 +114,11 @@ public class AdminReportService {
     @Transactional(readOnly = true)
     public ReportStatsResponse getReportStats() {
         return ReportStatsResponse.builder()
-            .totalReports(productReportRepository.countByStatus(null))
-            .pendingReports(productReportRepository.countByStatus(ProductReportStatus.PENDING.getCode()))
-            .processingReports(productReportRepository.countByStatus(ProductReportStatus.PROCESSING.getCode()))
-            .resolvedReports(productReportRepository.countByStatus(ProductReportStatus.RESOLVED.getCode()))
-            .dismissedReports(productReportRepository.countByStatus(ProductReportStatus.DISMISSED.getCode()))
+            .totalReports(productReportQueryRepository.countByStatus(null))
+            .pendingReports(productReportQueryRepository.countByStatus(ProductReportStatus.PENDING.getCode()))
+            .processingReports(productReportQueryRepository.countByStatus(ProductReportStatus.PROCESSING.getCode()))
+            .resolvedReports(productReportQueryRepository.countByStatus(ProductReportStatus.RESOLVED.getCode()))
+            .dismissedReports(productReportQueryRepository.countByStatus(ProductReportStatus.DISMISSED.getCode()))
             .build();
     }
 

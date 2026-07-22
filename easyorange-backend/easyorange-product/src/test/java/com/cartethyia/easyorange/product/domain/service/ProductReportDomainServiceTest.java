@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.*;
@@ -37,13 +37,13 @@ class ProductReportDomainServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private ProductCachePort productCachePort;
+    private ProductCacheEvictionPort productCacheEvictionPort;
 
     private ProductReportDomainService domainService;
 
     @BeforeEach
     void setUp() {
-        domainService = new ProductReportDomainService(productReportRepository, productRepository, productCachePort);
+        domainService = new ProductReportDomainService(productReportRepository, productRepository, productCacheEvictionPort);
     }
 
     @Test
@@ -65,11 +65,11 @@ class ProductReportDomainServiceTest {
 
         var event = domainService.processReport("100", true);
 
-        assertThat(event).isNotNull();
-        assertThat(event.productId()).isEqualTo(PRODUCT_ID);
+        assertThat(event).isPresent();
+        assertThat(event.get().productId()).isEqualTo(PRODUCT_ID);
         verify(productRepository).update(argThat(p ->
                 p.getId().value().equals(PRODUCT_ID) && p.getStatus() == ProductStatus.OFFLINE));
-        verify(productCachePort).evictProductCache(PRODUCT_ID);
+        verify(productCacheEvictionPort).evictProductCache(PRODUCT_ID);
         verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }
 
@@ -82,9 +82,9 @@ class ProductReportDomainServiceTest {
 
         var event = domainService.processReport("100", false);
 
-        assertThat(event).isNull();
+        assertThat(event).isEmpty();
         verify(productRepository, never()).update(any());
-        verify(productCachePort, never()).evictProductCache(any());
+        verify(productCacheEvictionPort, never()).evictProductCache(any());
         verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }
 

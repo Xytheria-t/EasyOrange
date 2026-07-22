@@ -12,16 +12,16 @@ public class ProductAuditLogDO extends BaseDO {
     private Integer action;
     private String reason;
     private String auditDimensions;
-    private Integer beforeStatus;
-    private Integer afterStatus;
+    private String beforeStatus;
+    private String afterStatus;
     private String remark;
 
     public ProductAuditLogDO() {
     }
 
     public ProductAuditLogDO(String productId, String operatorId, String operatorName, Integer action,
-                              String reason, String auditDimensions, Integer beforeStatus,
-                              Integer afterStatus, String remark) {
+                              String reason, String auditDimensions, String beforeStatus,
+                              String afterStatus, String remark) {
         this.productId = productId;
         this.operatorId = operatorId;
         this.operatorName = operatorName;
@@ -81,19 +81,19 @@ public class ProductAuditLogDO extends BaseDO {
         this.auditDimensions = auditDimensions;
     }
 
-    public Integer getBeforeStatus() {
+    public String getBeforeStatus() {
         return beforeStatus;
     }
 
-    public void setBeforeStatus(Integer beforeStatus) {
+    public void setBeforeStatus(String beforeStatus) {
         this.beforeStatus = beforeStatus;
     }
 
-    public Integer getAfterStatus() {
+    public String getAfterStatus() {
         return afterStatus;
     }
 
-    public void setAfterStatus(Integer afterStatus) {
+    public void setAfterStatus(String afterStatus) {
         this.afterStatus = afterStatus;
     }
 
@@ -117,8 +117,8 @@ public class ProductAuditLogDO extends BaseDO {
         private Integer action;
         private String reason;
         private String auditDimensions;
-        private Integer beforeStatus;
-        private Integer afterStatus;
+        private String beforeStatus;
+        private String afterStatus;
         private String remark;
 
         public Builder id(String id) {
@@ -156,12 +156,12 @@ public class ProductAuditLogDO extends BaseDO {
             return this;
         }
 
-        public Builder beforeStatus(Integer beforeStatus) {
+        public Builder beforeStatus(String beforeStatus) {
             this.beforeStatus = beforeStatus;
             return this;
         }
 
-        public Builder afterStatus(Integer afterStatus) {
+        public Builder afterStatus(String afterStatus) {
             this.afterStatus = afterStatus;
             return this;
         }

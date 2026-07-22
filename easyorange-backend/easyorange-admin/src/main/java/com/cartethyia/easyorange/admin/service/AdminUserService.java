@@ -98,7 +98,12 @@ public class AdminUserService {
             throw BusinessException.of("用户不存在");
         }
 
-        UserStatus newStatus = UserStatus.values()[request.getStatus()];
+        UserStatus newStatus;
+        try {
+            newStatus = UserStatus.fromCode(request.getStatus());
+        } catch (IllegalArgumentException ex) {
+            throw BusinessException.of("无效的用户状态");
+        }
         entity.setStatus(newStatus);
         userMapper.updateById(entity);
     }

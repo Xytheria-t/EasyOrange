@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
+import com.cartethyia.easyorange.product.domain.entity.ProductRating;
+import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -32,50 +32,44 @@ public class ProductRatingCommandService {
         String content
     ) {}
 
-    private final ProductRatingMapper reviewMapper;
+    private final ProductRatingRepository productRatingRepository;
 
     @Transactional(rollbackFor = Exception.class)
     public String createReview(CreateProductRatingCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductRatingDO review = ProductRatingDO.builder()
-                .productId(command.productId())
-                .userId(userId)
-                .rating(command.rating())
-                .content(command.content())
-                .likes(0)
-                .status(1)
-                .build();
-
-        reviewMapper.insert(review);
+        ProductRating rating = ProductRating.create(command.productId(), userId, command.rating(), command.content());
+        productRatingRepository.save(rating);
 
         log.info("action=create_review reviewId={} productId={} userId={} rating={}",
-                review.getId(), command.productId(), userId, command.rating());
+                rating.getId(), command.productId(), userId, command.rating());
 
-        return review.getId();
+        return rating.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void deleteReview(String reviewId) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductRatingDO review = reviewMapper.selectById(reviewId);
-        if (review == null || review.getDelFlag() != 0) {
-            throw new IllegalArgumentException("评价不存在");
-        }
+        ProductRating rating = productRatingRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("评价不存在"));
 
-        if (!review.getUserId().equals(userId)) {
+        if (!rating.getUserId().equals(userId)) {
             throw new IllegalArgumentException("只能删除自己的评价");
         }
 
-        reviewMapper.deleteById(reviewId);
+        rating.delete();
+        productRatingRepository.update(rating);
 
         log.info("action=delete_review reviewId={} userId={}", reviewId, userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void likeReview(String reviewId) {
-        reviewMapper.incrementLikes(reviewId);
+        ProductRating rating = productRatingRepository.findById(reviewId)
+                .orElseThrow(() -> new IllegalArgumentException("评价不存在"));
+        rating.like();
+        productRatingRepository.update(rating);
         log.info("action=like_review reviewId={}", reviewId);
     }
 }

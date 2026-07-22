@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
-import jakarta.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -11,14 +11,15 @@ import java.util.Set;
 @AllArgsConstructor
 public enum ProductStatus {
 
-    DRAFT(0, "草稿"),
-    ONLINE(1, "上架"),
-    SOLD(2, "已售出"),
-    OFFLINE(3, "下架"),
-    PENDING_REVIEW(4, "待审核"),
-    REJECTED(5, "已驳回");
+    DRAFT("0", "草稿"),
+    ONLINE("1", "上架"),
+    SOLD("2", "已售出"),
+    OFFLINE("3", "下架"),
+    PENDING_REVIEW("4", "待审核"),
+    REJECTED("5", "已驳回");
 
-    private final int code;
+    @JsonValue
+    private final String code;
     private final String desc;
 
     // === State Machine: one source of truth for allowed transitions ===
@@ -31,27 +32,13 @@ public enum ProductStatus {
         OFFLINE, Set.of(ONLINE)
     );
 
-    @Nullable
-    public static ProductStatus fromCode(Integer code) {
-        if (code == null) return null;
-        return switch (code) {
-            case 0 -> DRAFT;
-            case 1 -> ONLINE;
-            case 2 -> SOLD;
-            case 3 -> OFFLINE;
-            case 4 -> PENDING_REVIEW;
-            case 5 -> REJECTED;
-            default -> throw new IllegalArgumentException("Unknown ProductStatus code: " + code);
-        };
-    }
-
-    public static String getDescByCode(Integer code) {
-        try {
-            var status = fromCode(code);
-            return status != null ? status.getDesc() : "未知状态";
-        } catch (IllegalArgumentException e) {
-            return "未知状态";
+    public static ProductStatus fromCode(String code) {
+        for (var status : values()) {
+            if (status.code.equals(code)) {
+                return status;
+            }
         }
+        throw new IllegalArgumentException("Unknown ProductStatus code: " + code);
     }
 
     // === State Machine ===

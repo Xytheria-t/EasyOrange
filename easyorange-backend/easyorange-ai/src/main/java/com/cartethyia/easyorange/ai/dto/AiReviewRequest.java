@@ -6,7 +6,7 @@ public record AiReviewRequest(
         String productName,
         String description,
         String categoryName,
-        Integer conditionLevel,
+        String conditionLevel,
         String price,
         String sellerName,
         List<String> imageUrls

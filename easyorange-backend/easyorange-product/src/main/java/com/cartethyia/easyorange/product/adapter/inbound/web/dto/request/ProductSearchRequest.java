@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.product.adapter.inbound.web.dto.request;
 
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -18,9 +19,10 @@ public class ProductSearchRequest extends PageRequest {
 
     private String userId;
 
-    private Integer status;
+    private String status;
 
-    private Integer conditionLevel;
+    @Pattern(regexp = "^[1-4]$", message = "成色等级必须为 1-4")
+    private String conditionLevel;
 
     private BigDecimal minPrice;
 

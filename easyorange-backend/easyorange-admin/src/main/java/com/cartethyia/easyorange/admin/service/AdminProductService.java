@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateSta
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
+import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +38,7 @@ public class AdminProductService {
 
     private final AdminProductQueryPort adminProductQueryPort;
     private final ProductRepository productRepository;
-    private final ProductCachePort<?> productCachePort;
+    private final ProductCacheEvictionPort productCachePort;
 
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
         LocalDateTime startTime = parseStartTime(request.startTime());

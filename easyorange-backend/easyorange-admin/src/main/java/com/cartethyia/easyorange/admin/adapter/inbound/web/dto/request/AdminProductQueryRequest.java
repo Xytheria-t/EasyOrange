@@ -9,7 +9,7 @@ public record AdminProductQueryRequest(
     @Max(value = 100, message = "每页条数最大为100") Integer pageSize,
     String keyword,
     String categoryId,
-    Integer status,
+    String status,
     String sellerId,
     String startTime,
     String endTime

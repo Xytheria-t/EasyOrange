@@ -145,7 +145,7 @@ class ProductTest {
 
         ProductTransition result = product.markAsSold();
 
-        assertThat(result.product().getStatus().getCode()).isEqualTo(2);
+        assertThat(result.product().getStatus().getCode()).isEqualTo("2");
         assertThat(result.event()).isInstanceOf(ProductMarkedSoldEvent.class);
     }
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -20,8 +21,8 @@ public class ViewCountBatchProcessor {
 
     private static final String VIEW_COUNT_KEY = "eo:product:views:pending";
 
-    @Transactional(rollbackFor = Exception.class)
     public void flush() {
+        // Step 1: Read all pending views from Redis (non-transactional)
         var pendingViews = redisTemplate.opsForHash().entries(VIEW_COUNT_KEY);
         if (pendingViews.isEmpty()) return;
 
@@ -31,14 +32,26 @@ public class ViewCountBatchProcessor {
                 var count = Integer.parseInt(entry.getValue().toString());
                 entries.add(new ProductMapper.ViewCountEntry(entry.getKey().toString(), count));
             } catch (NumberFormatException e) {
-                log.warn("解析浏览量数据失败: key={}, value={}", entry.getKey(), entry.getValue());
+                log.warn("parse view count failed: key={}, value={}", entry.getKey(), entry.getValue());
             }
         }
 
         if (entries.isEmpty()) return;
 
+        // Step 2: Batch update DB (transactional — Redis data is preserved if this fails)
+        doBatchUpdate(entries);
+
+        // Step 3: Clean up Redis (non-transactional, best-effort)
+        try {
+            redisTemplate.opsForHash().delete(VIEW_COUNT_KEY, pendingViews.keySet().toArray());
+        } catch (Exception e) {
+            log.error("action=cleanupViewCountCacheFailed entries={}", entries.size(), e);
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    void doBatchUpdate(List<ProductMapper.ViewCountEntry> entries) {
         productMapper.batchAddViewCounts(entries);
-        redisTemplate.opsForHash().delete(VIEW_COUNT_KEY, pendingViews.keySet().toArray());
-        log.debug("批量更新浏览量完成: processed={}", entries.size());
+        log.debug("batch update view count done: processed={}", entries.size());
     }
 }
