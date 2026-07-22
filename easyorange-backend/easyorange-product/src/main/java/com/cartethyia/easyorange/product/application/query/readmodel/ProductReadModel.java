@@ -1,9 +1,12 @@
 package com.cartethyia.easyorange.product.application.query.readmodel;
 
+import lombok.Builder;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Builder(toBuilder = true)
 public record ProductReadModel(
     String id,
     String sellerId,

@@ -12,11 +12,14 @@ import java.util.Set;
 public enum ProductStatus {
 
     DRAFT(0, "草稿"),
-    PENDING_REVIEW(4, "待审核"),
-    REJECTED(5, "已驳回"),
     ONLINE(1, "上架"),
     SOLD(2, "已售出"),
-    OFFLINE(3, "下架");
+    OFFLINE(3, "下架"),
+    PENDING_REVIEW(4, "待审核"),
+    REJECTED(5, "已驳回");
+
+    private final int code;
+    private final String desc;
 
     // === State Machine: one source of truth for allowed transitions ===
 
@@ -27,9 +30,6 @@ public enum ProductStatus {
         ONLINE, Set.of(OFFLINE, SOLD),
         OFFLINE, Set.of(ONLINE)
     );
-
-    private final int code;
-    private final String desc;
 
     @Nullable
     public static ProductStatus fromCode(Integer code) {

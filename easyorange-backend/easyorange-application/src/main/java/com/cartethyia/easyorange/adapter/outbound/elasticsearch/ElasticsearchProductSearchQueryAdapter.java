@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -75,7 +75,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         List<ProductReadModel> records = searchHits.getSearchHits().stream()
                 .map(SearchHit::getContent)
                 .map(this::toReadModel)
-                .collect(Collectors.toList());
+                .toList();
 
         // Extract aggregations
         List<FacetBucket> categoryFacets = extractAggBuckets(searchHits, "category");
@@ -238,30 +238,25 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
     }
 
     private ProductReadModel toReadModel(ProductDocument doc) {
-        return new ProductReadModel(
-                doc.getId(),
-                doc.getUserId() != null ? doc.getUserId().toString() : null,
-                null,                                    // username
-                null,                                    // userAvatar
-                doc.getCategoryId(),                     // categoryId
-                doc.getCategoryName(),
-                doc.getName(),                           // title
-                doc.getDescription(),
-                doc.getPrice() != null ? BigDecimal.valueOf(doc.getPrice()) : null,
-                doc.getOriginalPrice() != null ? BigDecimal.valueOf(doc.getOriginalPrice()) : null,
-                doc.getStock(),
-                doc.getStatus() != null ? doc.getStatus().intValue() : null,
-                null,                                    // statusDesc
-                doc.getViewCount(),
-                doc.getConditionLevel() != null ? doc.getConditionLevel().intValue() : null,
-                null,                                    // conditionDesc
-                doc.getLocation(),
-                null,                                    // contactMethod
-                doc.getImages(),
-                doc.getMainImage(),
-                doc.getCreateTime(),
-                doc.getUpdateTime()
-        );
+        return ProductReadModel.builder()
+                .id(doc.getId())
+                .sellerId(doc.getUserId() != null ? doc.getUserId().toString() : null)
+                .categoryId(doc.getCategoryId())
+                .categoryName(doc.getCategoryName())
+                .title(doc.getName())
+                .description(doc.getDescription())
+                .price(doc.getPrice() != null ? BigDecimal.valueOf(doc.getPrice()) : null)
+                .originalPrice(doc.getOriginalPrice() != null ? BigDecimal.valueOf(doc.getOriginalPrice()) : null)
+                .stock(doc.getStock())
+                .status(doc.getStatus() != null ? doc.getStatus().intValue() : null)
+                .views(doc.getViewCount())
+                .condition(doc.getConditionLevel() != null ? doc.getConditionLevel().intValue() : null)
+                .location(doc.getLocation())
+                .images(Objects.requireNonNullElseGet(doc.getImages(), List::of))
+                .mainImageUrl(Objects.requireNonNullElse(doc.getMainImage(), ""))
+                .createTime(doc.getCreateTime())
+                .updateTime(doc.getUpdateTime())
+                .build();
     }
 
     private List<FacetBucket> extractAggBuckets(SearchHits<?> searchHits, String aggName) {
@@ -278,7 +273,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         if (sterms != null && sterms.buckets() != null) {
             return sterms.buckets().array().stream()
                     .map(b -> new FacetBucket(b.key().stringValue(), b.key().stringValue(), b.docCount()))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         // Try long terms (integer fields — categoryId, conditionLevel are integers)
@@ -286,7 +281,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
         if (lterms != null && lterms.buckets() != null) {
             return lterms.buckets().array().stream()
                     .map(b -> new FacetBucket(String.valueOf(b.key()), String.valueOf(b.key()), b.docCount()))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         return List.of();
@@ -307,7 +302,7 @@ public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQuer
                         String key = b.key() != null ? b.key() : (b.from() + "-" + b.to());
                         return new FacetBucket(key, key, b.docCount());
                     })
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         return List.of();

@@ -11,7 +11,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.SearchHisto
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
 import com.cartethyia.easyorange.product.domain.port.SearchResult;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
-import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;

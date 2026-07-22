@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;

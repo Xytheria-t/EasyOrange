@@ -13,9 +13,4 @@ public record StockReservationRequestedEvent(String orderId, String productId, i
     public String aggregateId() {
         return orderId;
     }
-
-    @Override
-    public String idempotencyKey() {
-        return eventType() + ":" + orderId + ":" + productId + ":v" + version();
-    }
 }

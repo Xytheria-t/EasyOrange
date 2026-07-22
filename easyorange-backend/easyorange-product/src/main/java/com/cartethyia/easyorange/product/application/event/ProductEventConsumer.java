@@ -109,15 +109,16 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
 
     private void handleCreated(ProductCreatedEvent e) {
         var productId = e.productId();
+        var data = e.data();
         bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId);
-        evictListCache(e.categoryId());
-        notificationPort.ifPresent(p -> safeCall(() -> p.notifyProductCreated(productId, e.userId()), "notifyProductCreated", productId));
+        evictListCache(data.categoryId());
+        notificationPort.ifPresent(p -> safeCall(() -> p.notifyProductCreated(productId, data.userId()), "notifyProductCreated", productId));
         searchIndexPort.ifPresent(p -> safeCall(() -> p.indexProduct(productId), "indexProduct", productId));
     }
 
     private void handleUpdated(ProductUpdatedEvent e) {
         var productId = e.productId();
-        evictListCache(e.categoryId());
+        evictListCache(e.data().categoryId());
         searchIndexPort.ifPresent(p -> safeCall(() -> p.updateProductIndex(productId), "updateProductIndex", productId));
     }
 

@@ -9,8 +9,8 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.port.ProductCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository.ProductImageInfo;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository.ProductImageInfo;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,11 +45,7 @@ public class ProductQueryService {
     @Transactional(readOnly = true)
     public ProductVO getProductById(String id) {
         var cachedProduct = productCachePort.getProductCache(id);
-        if (cachedProduct.isPresent()) {
-            return cachedProduct.get();
-        }
-
-        return productSingleflight.execute(id, () -> {
+        return cachedProduct.orElseGet(() -> productSingleflight.execute(id, () -> {
             // double-check cache（其他线程可能已回填）
             var cached = productCachePort.getProductCache(id);
             if (cached.isPresent()) {
@@ -60,7 +56,8 @@ public class ProductQueryService {
             var productVO = assembleProductVOs(List.of(product)).getFirst();
             productCachePort.setProductCache(id, productVO);
             return productVO;
-        });
+        }));
+
     }
 
     @Transactional(readOnly = true)

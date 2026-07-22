@@ -82,8 +82,9 @@ public class AiProductEventConsumer extends AbstractDomainEventConsumer {
     }
 
     private void handleProductCreated(ProductCreatedEvent e) {
+        var data = e.data();
         var suggestion = pricingService.suggestPrice(
-                e.name(), e.description(), null, e.conditionLevel(), e.originalPrice());
+                data.name(), data.description(), null, data.conditionLevel(), data.originalPrice());
         if (suggestion != null) {
             redisTemplate.opsForValue().set(
                     "eo:ai:valuation:" + e.productId(), suggestion, 24, TimeUnit.HOURS);
@@ -93,9 +94,10 @@ public class AiProductEventConsumer extends AbstractDomainEventConsumer {
     }
 
     private void handleProductUpdated(ProductUpdatedEvent e) {
+        var data = e.data();
         var copyResult = copyGenerationService.generateCopy(
-                e.name(), null, e.conditionLevel(),
-                e.originalPrice() != null ? e.originalPrice().toString() : null,
+                data.name(), null, data.conditionLevel(),
+                data.originalPrice() != null ? data.originalPrice().toString() : null,
                 "standard");
         if (copyResult != null) {
             redisTemplate.opsForValue().set(

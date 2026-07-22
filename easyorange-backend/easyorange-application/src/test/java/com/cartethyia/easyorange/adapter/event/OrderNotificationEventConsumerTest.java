@@ -32,6 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -74,7 +75,9 @@ class OrderNotificationEventConsumerTest {
     }
 
     private Message buildMessage() {
-        return new Message(new byte[0], new MessageProperties());
+        var props = new MessageProperties();
+        props.setMessageId(java.util.UUID.randomUUID().toString());
+        return new Message(new byte[0], props);
     }
 
     private void mockLockSuccess() {
@@ -103,9 +106,9 @@ class OrderNotificationEventConsumerTest {
             consumer.handle(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
-                    CONSUMER_ID + ":OrderCreated", "OrderCreated:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderCreated"), anyString());
             verify(idempotencyChecker).tryMark(
-                    CONSUMER_ID + ":OrderCreated", "OrderCreated:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderCreated"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -132,9 +135,9 @@ class OrderNotificationEventConsumerTest {
             consumer.handle(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
-                    CONSUMER_ID + ":OrderPaid", "OrderPaid:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderPaid"), anyString());
             verify(idempotencyChecker).tryMark(
-                    CONSUMER_ID + ":OrderPaid", "OrderPaid:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderPaid"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -161,9 +164,9 @@ class OrderNotificationEventConsumerTest {
             consumer.handle(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
-                    CONSUMER_ID + ":OrderShipped", "OrderShipped:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderShipped"), anyString());
             verify(idempotencyChecker).tryMark(
-                    CONSUMER_ID + ":OrderShipped", "OrderShipped:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderShipped"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -190,9 +193,9 @@ class OrderNotificationEventConsumerTest {
             consumer.handle(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
-                    CONSUMER_ID + ":OrderCompleted", "OrderCompleted:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderCompleted"), anyString());
             verify(idempotencyChecker).tryMark(
-                    CONSUMER_ID + ":OrderCompleted", "OrderCompleted:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderCompleted"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -219,9 +222,9 @@ class OrderNotificationEventConsumerTest {
             consumer.handle(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
-                    CONSUMER_ID + ":OrderCancelled", "OrderCancelled:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderCancelled"), anyString());
             verify(idempotencyChecker).tryMark(
-                    CONSUMER_ID + ":OrderCancelled", "OrderCancelled:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderCancelled"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
@@ -248,9 +251,9 @@ class OrderNotificationEventConsumerTest {
             consumer.handle(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
-                    CONSUMER_ID + ":OrderRefunded", "OrderRefunded:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderRefunded"), anyString());
             verify(idempotencyChecker).tryMark(
-                    CONSUMER_ID + ":OrderRefunded", "OrderRefunded:" + ORDER_ID + ":v1");
+                    eq(CONSUMER_ID + ":OrderRefunded"), anyString());
 
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());

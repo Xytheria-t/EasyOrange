@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.favorite.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
-import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

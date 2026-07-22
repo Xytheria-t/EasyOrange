@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.ProductRead
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ReportReasonType;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
-import com.cartethyia.easyorange.product.domain.repository.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import lombok.RequiredArgsConstructor;

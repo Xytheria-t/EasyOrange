@@ -12,6 +12,7 @@ public final class ProductCacheConstant {
 
     public static final String HOT_KEYWORD_ZSET_KEY = APP_PREFIX + "search:hot:zset";
     public static final String SEARCH_HISTORY_KEY_PREFIX = APP_PREFIX + "search:history:user:";
+    public static final int SEARCH_HISTORY_MAX_SIZE = 20;
     public static final long SEARCH_HISTORY_EXPIRE_DAYS = 7L;
     public static final int HOT_KEYWORD_LIMIT = 50;
 

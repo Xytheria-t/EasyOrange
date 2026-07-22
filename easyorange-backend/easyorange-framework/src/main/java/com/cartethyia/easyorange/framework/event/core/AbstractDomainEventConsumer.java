@@ -57,6 +57,9 @@ public abstract class AbstractDomainEventConsumer {
     /**
      * 模板方法：幂等检查 → metrics → 业务处理 → 异常透传。
      * <p>
+     * 幂等基于 {@link EventMetadata#eventId()}（UUID，每事件实例唯一），
+     * 而非事件的语义内容（eventType + aggregateId），避免可重复事件（如 {@code StockDecreasedEvent}）被静默跳过。
+     * <p>
      * 子类的 {@code @RabbitHandler} 方法只需单行委托：{@code handle(event, message);}。
      */
     public final void handle(DomainEvent event, Message message) {
@@ -64,24 +67,25 @@ public abstract class AbstractDomainEventConsumer {
         var sample = metricsService.startTimer();
         var eventType = event.eventType();
         var aggregateId = event.aggregateId();
+        var eventId = metadata.eventId();
         var outcome = "success";
 
         try {
-            if (idempotencyEnabled && isDuplicate(event)) {
-                log.info("事件重复跳过: type={} aggregateId={} key={} consumer={}",
-                        eventType, aggregateId, event.idempotencyKey(), consumerId());
+            if (idempotencyEnabled && isDuplicate(eventType, eventId)) {
+                log.info("事件重复跳过: type={} aggregateId={} eventId={} consumer={}",
+                        eventType, aggregateId, eventId, consumerId());
                 metricsService.recordReceived(eventType, "duplicate");
                 return;
             }
             log.info("事件处理开始: type={} aggregateId={} eventId={} traceId={} consumer={}",
-                    eventType, aggregateId, metadata.eventId(), metadata.traceId(), consumerId());
+                    eventType, aggregateId, eventId, metadata.traceId(), consumerId());
             doHandle(event, metadata);
             log.info("事件处理完成: type={} aggregateId={} consumer={}",
                     eventType, aggregateId, consumerId());
         } catch (Exception e) {
             outcome = "failure";
             log.error("事件处理失败: type={} aggregateId={} eventId={} consumer={}",
-                    eventType, aggregateId, metadata.eventId(), consumerId(), e);
+                    eventType, aggregateId, eventId, consumerId(), e);
             throw e;
         } finally {
             metricsService.recordReceived(eventType, outcome);
@@ -106,16 +110,17 @@ public abstract class AbstractDomainEventConsumer {
     }
 
     /**
-     * 幂等检查：用 consumerId + eventType 作为 Redis eventType tag，
-     * 同一事件可被多个消费者独立处理。先查已处理标记，未命中则尝试加锁标记。
+     * 幂等检查：用 consumerId + eventType + eventId（UUID）作为 Redis 命名空间，
+     * 同一事件实例（由 {@code EventMetadataMessagePostProcessor} 分配唯一 UUID）
+     * 被多个消费者独立处理，不同事件实例即使语义相同也不会互相阻塞。
+     * 先查已处理标记，未命中则尝试加锁标记。
      * 并发场景下未抢到锁返回 true（视为重复，跳过本次处理）。
      */
-    private boolean isDuplicate(DomainEvent event) {
-        var redisEventType = consumerId() + ":" + event.eventType();
-        var key = event.idempotencyKey();
-        if (idempotencyChecker.isDuplicate(redisEventType, key)) {
+    private boolean isDuplicate(String eventType, String eventId) {
+        var namespace = consumerId() + ":" + eventType;
+        if (idempotencyChecker.isDuplicate(namespace, eventId)) {
             return true;
         }
-        return !idempotencyChecker.tryMark(redisEventType, key);
+        return !idempotencyChecker.tryMark(namespace, eventId);
     }
 }

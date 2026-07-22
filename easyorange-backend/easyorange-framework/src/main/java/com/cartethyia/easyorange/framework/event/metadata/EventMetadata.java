@@ -14,29 +14,26 @@ import java.time.Instant;
  * <p>
  * 字段语义：
  * <ul>
- *   <li>eventId: 事件唯一 ID (UUID v7)，用于跨服务追踪</li>
+ *   <li>eventId: 事件唯一 ID (UUID v7)，用于跨服务追踪与幂等去重</li>
  *   <li>occurredOn: 事件发布时刻</li>
  *   <li>eventType: 事件类型名 (取自 {@link DomainEvent#eventType()})</li>
  *   <li>aggregateId: 聚合根 ID</li>
- *   <li>version: 事件 schema 版本</li>
  *   <li>traceId: Micrometer Tracing 的 traceId，跨服务串联</li>
  *   <li>causationId: 触发本事件的上游事件 ID，可选</li>
  * </ul>
  *
- * @param eventId       事件唯一 ID
- * @param occurredOn    发生时刻
- * @param eventType     事件类型名
- * @param aggregateId   聚合根 ID
- * @param version       schema 版本
- * @param traceId       跨服务追踪 ID
- * @param causationId   因果链上游事件 ID (可空)
+ * @param eventId     事件唯一 ID
+ * @param occurredOn  发生时刻
+ * @param eventType   事件类型名
+ * @param aggregateId 聚合根 ID
+ * @param traceId     跨服务追踪 ID
+ * @param causationId 因果链上游事件 ID (可空)
  */
 public record EventMetadata(
         @Nullable String eventId,
         @Nullable Instant occurredOn,
         String eventType,
         String aggregateId,
-        int version,
         @Nullable String traceId,
         @Nullable String causationId
 ) {
@@ -54,7 +51,6 @@ public record EventMetadata(
                 props.getTimestamp() != null ? props.getTimestamp().toInstant() : null,
                 event.eventType(),
                 event.aggregateId(),
-                event.version(),
                 props.getHeader(HEADER_TRACE_ID),
                 props.getHeader(HEADER_CAUSATION_ID)
         );

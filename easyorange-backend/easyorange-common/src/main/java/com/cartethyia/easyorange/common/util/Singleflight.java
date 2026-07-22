@@ -42,11 +42,9 @@ public final class Singleflight<K, V> {
             V result = supplier.get();
             newFuture.complete(result);
             return result;
-        } catch (Throwable ex) {
+        } catch (RuntimeException | Error ex) {
             newFuture.completeExceptionally(ex);
-            if (ex instanceof RuntimeException re) throw re;
-            if (ex instanceof Error e) throw e;
-            throw new RuntimeException(ex);
+            throw ex;
         } finally {
             inFlight.remove(key, newFuture);
         }

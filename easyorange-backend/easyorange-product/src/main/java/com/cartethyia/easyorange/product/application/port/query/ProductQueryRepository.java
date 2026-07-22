@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.domain.repository.query;
+package com.cartethyia.easyorange.product.application.port.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
@@ -13,16 +13,16 @@ import java.util.Set;
 public interface ProductQueryRepository {
 
     PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
-                                           Integer pageNum, Integer pageSize);
+                                            Integer pageNum, Integer pageSize);
 
     PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, Integer status,
-                                          BigDecimal minPrice, BigDecimal maxPrice,
-                                          Integer conditionLevel, String sort,
-                                          Boolean hasDiscount,
-                                          Integer pageNum, Integer pageSize);
+                                           BigDecimal minPrice, BigDecimal maxPrice,
+                                           Integer conditionLevel, String sort,
+                                           Boolean hasDiscount,
+                                           Integer pageNum, Integer pageSize);
 
     PageResult<ProductReadModel> findProductsBySellerId(String sellerId, Integer status,
-                                                   Integer pageNum, Integer pageSize);
+                                                    Integer pageNum, Integer pageSize);
 
     List<ProductReadModel> findProductsByIds(List<String> ids);
 

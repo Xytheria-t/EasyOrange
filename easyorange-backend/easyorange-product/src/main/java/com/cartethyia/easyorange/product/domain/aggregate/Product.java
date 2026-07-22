@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductPutOnlineEvent;
@@ -60,53 +61,42 @@ public class Product {
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
-    // ==================== Factory Methods ====================
+    // ==================== Static Factory ====================
 
     public static ProductTransition create(ProductCreateSpec spec) {
-        var sellerId = spec.sellerId();
-        var categoryId = spec.categoryId();
-        var title = spec.title();
-        var price = spec.price();
-        var originalPrice = spec.originalPrice();
-        var stock = spec.stock();
-        var conditionLevel = spec.conditionLevel();
-        var location = spec.location();
-        var contactMethod = spec.contactMethod();
-        var description = spec.description();
-        var images = spec.images();
-
-        BizRequire.notNull(title, "资产名称不能为空");
-        BizRequire.notNull(price, "资产价格不能为空");
-        BizRequire.requireTrue(price.isGreaterThan(Money.ZERO), "资产价格必须大于0");
-        BizRequire.requireTrue(images != null && !images.isEmpty(), "资产图片不能为空");
+        BizRequire.notNull(spec.title(), "资产名称不能为空");
+        BizRequire.notNull(spec.price(), "资产价格不能为空");
+        BizRequire.requireTrue(spec.price().isGreaterThan(Money.ZERO), "资产价格必须大于0");
+        BizRequire.requireTrue(spec.images() != null && !spec.images().isEmpty(), "资产图片不能为空");
 
         var p = Product.builder()
-                .sellerId(sellerId).categoryId(categoryId).title(title)
-                .price(price).originalPrice(originalPrice)
-                .stock(stock != null ? stock : StockQuantity.of(1))
+                .sellerId(spec.sellerId()).categoryId(spec.categoryId()).title(spec.title())
+                .price(spec.price()).originalPrice(spec.originalPrice())
+                .stock(spec.stock() != null ? spec.stock() : StockQuantity.of(1))
                 .version(Version.INITIAL).status(ProductStatus.DRAFT)
-                .conditionLevel(conditionLevel).location(location).contactMethod(contactMethod)
-                .description(description).tags(TagSet.empty())
+                .conditionLevel(spec.conditionLevel()).location(spec.location()).contactMethod(spec.contactMethod())
+                .description(spec.description()).tags(TagSet.empty())
                 .priceUpdateTime(LocalDateTime.now())
                 .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
                 .build();
 
-        var event = new ProductCreatedEvent(
-                null, sellerId.value(),
-                categoryId != null ? categoryId.value() : null,
-                title.value(), price.value(),
-                originalPrice != null ? originalPrice.value() : null,
+        var event = new ProductCreatedEvent(new ProductEvent.Data(
+                null, spec.sellerId().value(),
+                spec.categoryId() != null ? spec.categoryId().value() : null,
+                spec.title().value(), spec.price().value(),
+                spec.originalPrice() != null ? spec.originalPrice().value() : null,
                 p.stock.value(),
-                conditionLevel != null ? conditionLevel.getCode() : null,
-                location != null ? location.value() : null,
-                contactMethod != null ? contactMethod.value() : null,
-                description != null ? description.value() : null,
-                images != null ? images.imageUrls() : null
-        );
+                spec.conditionLevel() != null ? spec.conditionLevel().getCode() : null,
+                spec.location() != null ? spec.location().value() : null,
+                spec.contactMethod() != null ? spec.contactMethod().value() : null,
+                spec.description() != null ? spec.description().value() : null,
+                spec.images() != null ? spec.images().imageUrls() : null
+        ));
         return new ProductTransition(p, event);
     }
 
-    // ==================== Review Workflow Methods ====================
+    // ==================== State Transitions ====================
+    // Ordered by state machine lifecycle: DRAFT → PENDING_REVIEW → ONLINE → OFFLINE → SOLD
 
     public ProductTransition submitForReview(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
@@ -160,8 +150,6 @@ public class Product {
         return new ProductTransition(updated, event);
     }
 
-    // ==================== State Transition Methods ====================
-
     public ProductTransition putOnline() {
         if (!status.canTransitionTo(ProductStatus.ONLINE)) {
             throw new InvalidProductStatusException("不允许上架", id, status);
@@ -198,38 +186,27 @@ public class Product {
         return new ProductTransition(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
     }
 
-    // ==================== Update ====================
+    // ==================== Mutations ====================
 
     public ProductTransition update(ProductUpdateSpec spec) {
-        var categoryId = spec.categoryId();
-        var title = spec.title();
-        var price = spec.price();
-        var originalPrice = spec.originalPrice();
-        var stock = spec.stock();
-        var conditionLevel = spec.conditionLevel();
-        var location = spec.location();
-        var contactMethod = spec.contactMethod();
-        var description = spec.description();
-        var images = spec.images();
-
         var builder = toBuilder();
-        if (categoryId != null) builder.categoryId(categoryId);
-        if (title != null && !title.value().isBlank()) builder.title(title);
-        if (price != null) {
-            builder.price(price);
+        if (spec.categoryId() != null) builder.categoryId(spec.categoryId());
+        if (spec.title() != null && !spec.title().value().isBlank()) builder.title(spec.title());
+        if (spec.price() != null) {
+            builder.price(spec.price());
             builder.priceUpdateTime(LocalDateTime.now());
         }
-        if (originalPrice != null) builder.originalPrice(originalPrice);
-        if (stock != null) builder.stock(stock);
-        if (conditionLevel != null) builder.conditionLevel(conditionLevel);
-        if (location != null) builder.location(location);
-        if (contactMethod != null && contactMethod.isNotBlank()) builder.contactMethod(contactMethod);
-        if (description != null) builder.description(description);
-        if (images != null) builder.images(images);
+        if (spec.originalPrice() != null) builder.originalPrice(spec.originalPrice());
+        if (spec.stock() != null) builder.stock(spec.stock());
+        if (spec.conditionLevel() != null) builder.conditionLevel(spec.conditionLevel());
+        if (spec.location() != null) builder.location(spec.location());
+        if (spec.contactMethod() != null && spec.contactMethod().isNotBlank()) builder.contactMethod(spec.contactMethod());
+        if (spec.description() != null) builder.description(spec.description());
+        if (spec.images() != null) builder.images(spec.images());
 
         var updated = builder.updateTime(LocalDateTime.now()).build();
 
-        var event = new ProductUpdatedEvent(
+        var event = new ProductUpdatedEvent(new ProductEvent.Data(
                 id.value(), sellerId.value(),
                 updated.categoryId != null ? updated.categoryId.value() : null,
                 updated.title.value(), updated.price.value(),
@@ -240,17 +217,8 @@ public class Product {
                 updated.contactMethod != null && updated.contactMethod.isNotBlank() ? updated.contactMethod.value() : null,
                 updated.description != null ? updated.description.value() : null,
                 updated.images != null ? updated.images.imageUrls() : null
-        );
+        ));
         return new ProductTransition(updated, event);
-    }
-
-    public Product assignId(String id) {
-        if (this.id != null && this.id.value() != null) {
-            return this;
-        }
-        return toBuilder()
-                .id(ProductId.of(id))
-                .build();
     }
 
     public ProductTransition delete(String userId) {
@@ -266,7 +234,18 @@ public class Product {
         return new ProductTransition(updated, new ProductDeletedEvent(id.value(), userId));
     }
 
-    // ==================== Stock Operation Methods ====================
+    // ==================== Utility ====================
+
+    public Product assignId(String id) {
+        if (this.id != null && this.id.value() != null) {
+            return this;
+        }
+        return toBuilder()
+                .id(ProductId.of(id))
+                .build();
+    }
+
+    // ==================== Stock Operations ====================
 
     public ProductTransition decrementStock() {
         return decrementStock(1);
@@ -294,7 +273,7 @@ public class Product {
         return new ProductTransition(updated, StockRestoredEvent.of(id.value()));
     }
 
-    // ==================== Query Methods ====================
+    // ==================== Query / Predicate ====================
 
     public boolean isComplete() {
         return title != null && !title.value().isBlank()
@@ -310,7 +289,7 @@ public class Product {
         return stock != null && stock.isAvailable();
     }
 
-    // ==================== Result Record ====================
+    // ==================== Inner Types ====================
 
     public record ProductTransition(Product product, DomainEvent event) {}
 }

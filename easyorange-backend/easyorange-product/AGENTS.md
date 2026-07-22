@@ -92,7 +92,6 @@ product/
 │   │   ├── ProductRepository.java       # 写仓储
 │   │   ├── ProductReportRepository.java
 │   │   └── query/
-│   │       ├── ProductQueryRepository.java  # 读仓储
 │   │       └── CategoryQueryRepository.java
 │   ├── service/
 │   │   └── ProductReportDomainService.java
@@ -131,9 +130,9 @@ public sealed interface ProductEvent extends DomainEvent
 `ProductController` → `ProductCommandService` → `Product` 聚合根 → `ProductRepository`
 
 **Query 侧 (读)**:
-`ProductController` → `ProductQueryService` → `ProductQueryRepository` → `ProductReadModel`
+`ProductController` → `ProductQueryService` → `ProductQueryRepository`（`application/port/query/`）→ `ProductReadModel`
 
-读写使用不同的 Repository 接口和数据模型，查询侧使用 ReadModel 组装响应。
+读写使用不同的 Repository 接口和数据模型，查询侧使用 ReadModel 组装响应。查询 Repository 接口位于 `application/port/query/`（非 domain 层），因为查询 ReadModel 是 application 层的概念。
 
 ## 缓存端口模式
 

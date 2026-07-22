@@ -67,7 +67,9 @@ class OrderEventSubscribersTest {
         }
 
         private Message buildMessage() {
-            return new Message(new byte[0], new MessageProperties());
+            var props = new MessageProperties();
+            props.setMessageId(java.util.UUID.randomUUID().toString());
+            return new Message(new byte[0], props);
         }
 
         @Test
