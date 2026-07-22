@@ -257,16 +257,17 @@ Jackson 3 相比 Jackson 2 有 API 变更，迁移时需注意：
 
 Spring Boot 4.0 迁移到 `org.springframework.boot.webmvc.test` 包。规则：① 新 import 路径；② 无 `@SpringBootConfiguration` 的模块在 test 下创建空 `@SpringBootApplication` 类；③ `@ComponentScan` 限于 web controller 包，否则拉入 persistence 类导致切片失败。参考 `easyorange-order` 的 `OrderTestApplication`。
 
-### Spring Boot 4 RedisTemplate 类型约定
+### Spring Boot 4 RedisTemplate 类型与序列化器约定
 
-Spring Boot 4 自动配置的 `RedisTemplate` 泛型为 `<Object, Object>`，非 `<String, Object>`。**全项目统一约定**：
+Spring Boot 4 的 `DataRedisAutoConfiguration` 自动配置的 `RedisTemplate` 泛型为 `<Object, Object>`，但**不设置任何序列化器**，默认用 `JdkSerializationRedisSerializer`（二进制 key/value，导致 Redis CLI 不可读、Lua `tonumber(ARGV)` 返回 nil）。**全项目统一约定**：
 
-- 所有注入 `RedisTemplate` 的地方声明为 `RedisTemplate<Object, Object>`（匹配自动配置）
-- 禁止自定义 `RedisTemplate<String, Object>` Bean（会与自动配置冲突）
-- Mock 测试中的 `HashOperations` / `ValueOperations` 也需改为 `<Object, Object>` 类型
-- Spring Boot 4 的 `GenericJacksonJsonRedisSerializer` 已支持 Jackson 3，无需自定义序列化器
+- 所有注入 `RedisTemplate` 的地方声明为 `RedisTemplate<Object, Object>`
+- `RedisConfig` 中显式定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer`（value/hashValue，需 `builder().enableDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build()).build()`）
+- `@AutoConfigureBefore(DataRedisAutoConfiguration.class)` 确保自定义 Bean 先注册，触发 `@ConditionalOnMissingBean` 跳过默认实现
+- 禁止自定义 `RedisTemplate<String, Object>` Bean（类型不匹配）
+- Mock 测试中的 `HashOperations` / `ValueOperations` 也需为 `<Object, Object>` 类型
 
-**已修复（2026-07-18）**：全项目（framework + 5 个业务模块 + 8 个测试文件）已统一改为 `<Object, Object>`，删除了 `RedisConfig` 中的自定义 Bean 定义。
+**已修复（2026-07-23）**：根因是 `DataRedisAutoConfiguration` 不设序列化器 → `RateLimitFilter` Lua `ARGV` 变二进制 → 限流器 fail-open；`RedisBitmapBloomFilter` 同理。修复方案：`RedisConfig` 全局配置序列化器 + 两个组件用 `opsForValue()` 标准 API 替代 Lua（`increment()+expire()` / `setBit()/getBit()`）。
 
 ### Port/Adapter / MapStruct IntelliJ 误报
 

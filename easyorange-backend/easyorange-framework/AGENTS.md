@@ -140,7 +140,7 @@ Redis 位图实现的布隆过滤器，用于缓存穿透防护：
 
 - 默认配置: 100 万预期插入, 1% 假阳性率 → 约 1.2MB 内存, 7 个哈希函数
 - 哈希策略: Murmur3 128-bit 拆两个 long → k 个偏移量 (Less Hashing, Same Performance)
-- Lua 脚本保证 SETBIT/GETBIT 原子性 (单次 Redis 调用完成 k 次位操作)
+- 位操作: `opsForValue().setBit/getBit`（标准 API，无 Lua、无序列化依赖；位图操作本身幂等，无需单次调用原子性）
 - 支持自定义预期数据量和假阳性率
 
 ```java
@@ -216,7 +216,7 @@ public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request
 - **WebMvcConfig 不再重写 `extendMessageConverters`**：Spring Boot 4.0 使用 Jackson 3.x 的 HTTP 消息转换器，`MappingJackson2HttpMessageConverter`（Jackson 2.x）配置已无效
 - **RedisWorkerIdProvider 优雅降级**：Redis 不可用时 `afterPropertiesSet()` 自动降级至 workerId=0，不影响应用启动。`DisposableBean.destroy()` 在 Spring 关闭时释放 Redis WorkerId 租约。请勿移除这些异常处理，否则 Redis 故障会导致启动失败
 - **RedisBitmapBloomFilter 哈希偏移量**：`hash()` 方法使用 `Math.floorMod()` 计算位偏移量，避免 Java `%` 在负值时产生负数偏移。修改哈希逻辑需保持 `Math.floorMod`，否则 `SETBIT` 会收到非法偏移量
-- **RedisConfig 使用 `GenericJacksonJsonRedisSerializer`（Spring Data Redis 4.x 原生 Jackson 3 支持）**：注入 Spring Boot 自动配置的 Jackson 3 `ObjectMapper`，序列化策略与 HTTP 一致（Long→String）。不再需要 Jackson 2.x 的 `GenericJackson2JsonRedisSerializer`
+- **RedisConfig 显式配置序列化器（2026-07-23）**：Spring Boot 4 `DataRedisAutoConfiguration` 不设任何序列化器（默认 `JdkSerializationRedisSerializer`，二进制 key/value 破坏 Lua `tonumber` 且不可读）。`RedisConfig` 通过 `@AutoConfigureBefore` 注入自定义 `@Bean RedisTemplate<Object, Object>`：`StringRedisSerializer`（key/hashKey）+ `GenericJacksonJsonRedisSerializer.builder().enableDefaultTyping(BasicPolymorphicTypeValidator).build()`（value/hashValue，含默认类型信息以便 `CacheUtils.cast()` 还原为原类型）。修改序列化策略时须同步评估所有 `RedisTemplate` 使用方
 - **配置属性类统一使用 `@ConfigurationProperties` + `@ConfigurationPropertiesScan` 模式**（纯 POJO，无需 `@Component`）：新建配置类时优先使用 Properties 类绑定，不新增 `@Value` 散落配置。默认值在 Properties 类中定义，通过 profile-specific yaml 覆盖。主应用类 `EasyOrangeApplication` 已添加 `@ConfigurationPropertiesScan`，自动扫描所有 `@ConfigurationProperties` 类。推荐加 `@Validated` + Jakarta Validation 约束（`@Min`/`@NotBlank`/`@NotNull` 等）实现启动时 fail-fast 验证，替代手写 `@PostConstruct validate()`— 后者仅在需要输出警告而非错误时保留
 - **`@Idempotent` 幂等切面（`IdempotencyAspect`）**：`@Order(1)`，在 `RateLimitFilter(0)` 之后、`AuditLogAspect(3)` 之前执行。此顺序确保：① Filter 层先做快速防重；② 幂等拦截命中后不记录审计日志（避免重复日志）；③ 只有未缓存的请求会走到业务逻辑和日志记录。修改 Aspect 的 `@Order` 值时需评估这三层的影响
 - **`RateLimitFilter` 支持 `@SkipRateLimit`/`@SkipRepeatSubmit`**：Filter 通过 `HandlerMapping` 解析目标 Controller 方法，检查方法或类上的 Skip 注解后跳过对应检查。支持类级（`@Inherited` 继承）和方法级。无法解析 handler（如静态资源）时放行默认规则

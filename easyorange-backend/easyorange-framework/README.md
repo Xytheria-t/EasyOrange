@@ -10,7 +10,7 @@
 
 - **安全认证**：JWT 认证、密码加密、CORS 配置
 - **缓存抽象**：Redis 缓存封装（支持位图操作）、本地缓存（Caffeine）、多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联）
-- **布隆过滤器**：基于 Redis Bitmap + Lua 脚本实现的分布式布隆过滤器，用于缓存穿透防护
+- **布隆过滤器**：基于 Redis Bitmap (`opsForValue().setBit/getBit`) 实现的分布式布隆过滤器，用于缓存穿透防护
 - **分布式 ID**：UUID v7 (RFC 9562) 生成器，零协调零依赖，时间有序
 - **一致性哈希**：基于 TreeMap + 虚拟节点的一致性哈希路由，用于缓存分片等场景
 - **领域事件**：事件发布与订阅机制
@@ -70,7 +70,7 @@ public class Application {
 
 | 组件 | 说明 |
 |------|------|
-| `RedisTemplate<String, Object>` | Spring Data Redis 标准模板（直接注入，无需自定义封装） |
+| `RedisTemplate<Object, Object>` | Spring Data Redis 标准模板（`RedisConfig` 显式配置 StringRedisSerializer + GenericJacksonJsonRedisSerializer） |
 | `CacheUtils` | 静态辅助（cast 类型安全转换 / scan SCAN 批量扫描） |
 | `LocalCacheConfig` | Caffeine 本地缓存配置（imageProcessCache / l1Cache） |
 | `MultiLevelCache` | 多级缓存门面（L1 Caffeine → L2 Redis → DB 三级串联，自动回填） |
@@ -81,7 +81,7 @@ public class Application {
 | 组件 | 说明 |
 |------|------|
 | `BloomFilter` | 布隆过滤器接口 |
-| `RedisBitmapBloomFilter` | Redis Bitmap 实现（Lua 原子操作，默认 100 万/1% 假阳性率） |
+| `RedisBitmapBloomFilter` | Redis Bitmap 实现（`opsForValue().setBit/getBit`，默认 100 万/1% 假阳性率） |
 
 ### 分布式基础设施
 
@@ -136,7 +136,7 @@ public class AuthController {
 @Service
 public class UserService {
     
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<Object, Object> redisTemplate;
     
     public User getUserById(Long id) {
         String key = "user:" + id;
