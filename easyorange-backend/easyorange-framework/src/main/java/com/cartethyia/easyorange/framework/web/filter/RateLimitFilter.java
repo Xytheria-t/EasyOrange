@@ -18,7 +18,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.annotation.Order;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -59,27 +58,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private static final HexFormat HEX_FORMAT = HexFormat.of();
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
     private static final Set<String> WRITE_METHODS = Set.of("POST", "PUT", "DELETE", "PATCH");
-
-    private static final String RATE_LIMIT_LUA = """
-            local key = KEYS[1]
-            local count = tonumber(ARGV[1])
-            local time = tonumber(ARGV[2])
-            local current = redis.call('INCR', key)
-            if current > count then
-                return current
-            end
-            if current == 1 then
-                redis.call('EXPIRE', key, time)
-            end
-            return current""";
-
-    private static final DefaultRedisScript<Long> RATE_LIMIT_SCRIPT;
-
-    static {
-        RATE_LIMIT_SCRIPT = new DefaultRedisScript<>();
-        RATE_LIMIT_SCRIPT.setScriptText(RATE_LIMIT_LUA);
-        RATE_LIMIT_SCRIPT.setResultType(Long.class);
-    }
 
     private final RateLimitFilterProperties properties;
     private final RedisTemplate<Object, Object> redisTemplate;
@@ -183,9 +161,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String identifier = RequestUtil.getClientIp(request);
         String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
-            List<Object> keys = List.of((Object) key);
-            Long current = redisTemplate.execute(RATE_LIMIT_SCRIPT, keys,
-                    rule.getMaxRequests(), rule.getWindowSeconds());
+            // 用 increment + expire 替代 Lua 脚本，避免 JdkSerializationRedisSerializer
+            // 将 Integer 参数序列化成二进制破坏 Lua tonumber 的问题（与 AiRateLimitInterceptor 一致）
+            Long current = redisTemplate.opsForValue().increment(key);
+            if (current != null && current == 1L) {
+                redisTemplate.expire(key, rule.getWindowSeconds(), TimeUnit.SECONDS);
+            }
 
             if (current != null && current > rule.getMaxRequests()) {
                 log.warn("action=redis_rate_limit, key={}, current={}, limit={}", key, current, rule.getMaxRequests());

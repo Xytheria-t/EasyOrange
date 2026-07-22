@@ -1,24 +1,54 @@
 package com.cartethyia.easyorange.framework.config.redis;
 
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 
 /**
- * Redis 配置（仅自定义序列化器，RedisTemplate 由 Spring Boot 自动配置）
+ * Redis 序列化器配置。
  * <p>
- * Spring Boot 4 的 {@link DataRedisAutoConfiguration} 已自动配置 Jackson 3 的
- * {@link GenericJacksonJsonRedisSerializer}。本配置类仅作为扩展点保留，
- * 如需自定义序列化行为可在此添加 {@code RedisTemplateCustomizer}。
+ * Spring Boot 4 的 {@link DataRedisAutoConfiguration} 自动配置的 {@code RedisTemplate}
+ * <b>不设置任何序列化器</b>，默认使用 {@code JdkSerializationRedisSerializer}，导致：
+ * <ul>
+ *   <li>key/value 为二进制，Redis CLI 不可读、不可调试</li>
+ *   <li>Lua 脚本的 ARGV 参数被序列化成二进制，{@code tonumber()} 返回 nil → 限流器 fail-open</li>
+ *   <li>JDK 反序列化存在安全风险</li>
+ * </ul>
+ * <p>
+ * 本配置统一设置：
+ * <ul>
+ *   <li>key / hashKey：{@link StringRedisSerializer}（UTF-8 可读）</li>
+ *   <li>value / hashValue：{@link GenericJacksonJsonRedisSerializer}（Jackson 3 JSON + 默认类型信息）</li>
+ * </ul>
+ * 通过 {@code @AutoConfigureBefore} 确保本 Bean 先于自动配置注册，
+ * 触发 {@code @ConditionalOnMissingBean} 跳过默认实现。
  */
 @AutoConfiguration
+@AutoConfigureBefore(DataRedisAutoConfiguration.class)
 public class RedisConfig {
 
-    // Spring Boot 4 自动配置的 redisTemplate 已使用 Jackson 3 GenericJacksonJsonRedisSerializer
-    // 无需自定义 Bean，直接注入 RedisTemplate<String, Object> 即可
+    @Bean
+    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        var typeValidator = BasicPolymorphicTypeValidator.builder()
+                .allowIfBaseType(Object.class)
+                .build();
+        var stringSerializer = StringRedisSerializer.UTF_8;
+        var jsonSerializer = GenericJacksonJsonRedisSerializer.builder()
+                .enableDefaultTyping(typeValidator)
+                .build();
+
+        RedisTemplate<Object, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        template.setKeySerializer(stringSerializer);
+        template.setHashKeySerializer(stringSerializer);
+        template.setValueSerializer(jsonSerializer);
+        template.setHashValueSerializer(jsonSerializer);
+        return template;
+    }
 }

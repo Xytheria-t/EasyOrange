@@ -3,44 +3,20 @@ package com.cartethyia.easyorange.framework.bloom;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.script.DefaultRedisScript;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
+/**
+ * 基于 Redis bitmap 的布隆过滤器实现。
+ * <p>
+ * 使用 {@code ValueOperations.setBit/getBit} 直接操作 Redis bitmap，
+ * key 由 {@link RedisTemplate} 的 keySerializer 序列化（全局配置为
+ * {@code StringRedisSerializer}，可读且不破坏 Lua 参数）。
+ */
 public class RedisBitmapBloomFilter implements BloomFilter {
 
-    private static final String BLOOM_PUT_SCRIPT = """
-            local key = KEYS[1]
-            local offsets = ARGV
-            for i = 1, #offsets do
-                redis.call('SETBIT', key, tonumber(offsets[i]), 1)
-            end
-            return 1
-            """;
-
-    private static final String BLOOM_CHECK_SCRIPT = """
-            local key = KEYS[1]
-            local offsets = ARGV
-            for i = 1, #offsets do
-                if redis.call('GETBIT', key, tonumber(offsets[i])) == 0 then
-                    return 0
-                end
-            end
-            return 1
-            """;
-
-    private static final DefaultRedisScript<Long> PUT_SCRIPT = script(BLOOM_PUT_SCRIPT);
-    private static final DefaultRedisScript<Long> CHECK_SCRIPT = script(BLOOM_CHECK_SCRIPT);
     private static final HashFunction MURMUR3_128 = Hashing.murmur3_128();
-
-    private static DefaultRedisScript<Long> script(String text) {
-        var s = new DefaultRedisScript<Long>();
-        s.setScriptText(text);
-        s.setResultType(Long.class);
-        return s;
-    }
 
     private final RedisTemplate<Object, Object> redisTemplate;
     private final long bitSize;
@@ -58,22 +34,23 @@ public class RedisBitmapBloomFilter implements BloomFilter {
 
     @Override
     public void put(String filterKey, String element) {
-        execute(filterKey, element, PUT_SCRIPT);
+        long[] offsets = hash(element);
+        var ops = redisTemplate.opsForValue();
+        for (long offset : offsets) {
+            ops.setBit(filterKey, offset, true);
+        }
     }
 
     @Override
     public boolean mightContain(String filterKey, String element) {
-        Long result = execute(filterKey, element, CHECK_SCRIPT);
-        return result != null && result == 1L;
-    }
-
-    private Long execute(String filterKey, String element, DefaultRedisScript<Long> script) {
         long[] offsets = hash(element);
-        Object[] args = new Object[offsets.length];
-        for (int i = 0; i < offsets.length; i++) {
-            args[i] = String.valueOf(offsets[i]);
+        var ops = redisTemplate.opsForValue();
+        for (long offset : offsets) {
+            if (!Boolean.TRUE.equals(ops.getBit(filterKey, offset))) {
+                return false;
+            }
         }
-        return redisTemplate.execute(script, List.of(filterKey), args);
+        return true;
     }
 
     private long[] hash(String element) {
