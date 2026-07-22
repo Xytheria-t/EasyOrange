@@ -90,17 +90,14 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> listProducts(String keyword, String categoryId, String status,
-                                              BigDecimal minPrice, BigDecimal maxPrice,
-                                              String conditionLevel, String sort,
-                                              Boolean hasDiscount,
-                                              Integer pageNum, Integer pageSize) {
-        int effectivePageNum = pageNum != null ? pageNum : 1;
-        int effectivePageSize = pageSize != null ? pageSize : 20;
+    public PageResult<ProductVO> listProducts(ProductListQuery query) {
+        int effectivePageNum = query.effectivePageNum();
+        int effectivePageSize = query.effectivePageSize();
 
         var page = productQueryRepository.searchProducts(
-                keyword, categoryId, status, minPrice, maxPrice,
-                conditionLevel, sort, hasDiscount,
+                query.keyword(), query.categoryId(), query.status(),
+                query.minPrice(), query.maxPrice(),
+                query.conditionLevel(), query.sort(), query.hasDiscount(),
                 effectivePageNum, effectivePageSize);
 
         var vos = enrichPage(page);
