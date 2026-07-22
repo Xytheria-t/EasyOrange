@@ -16,7 +16,7 @@ CREATE TABLE `eo_user` (
     `password`    VARCHAR(100) NOT NULL COMMENT '密码（BCrypt）',
     `user_type`   VARCHAR(2)   NOT NULL DEFAULT '01' COMMENT '用户类型（01 普通用户 02 管理员）',
     `email`       VARCHAR(255) DEFAULT NULL COMMENT '邮箱',
-    `phonenumber` VARCHAR(20)  DEFAULT NULL COMMENT '手机号码',
+    `phone`        VARCHAR(20)  DEFAULT NULL COMMENT '手机号码',
     `student_id`  VARCHAR(20)  DEFAULT NULL COMMENT '学号',
     `real_name`   VARCHAR(30)  DEFAULT NULL COMMENT '真实姓名',
     `nick_name`   VARCHAR(30)  DEFAULT NULL COMMENT '用户昵称',
@@ -36,7 +36,7 @@ CREATE TABLE `eo_user` (
     PRIMARY KEY (`user_id`),
     UNIQUE KEY `uk_eo_user_username` (`username`),
     UNIQUE KEY `uk_eo_user_email` (`email`),
-    UNIQUE KEY `uk_eo_user_phone` (`phonenumber`),
+    UNIQUE KEY `uk_eo_user_phone` (`phone`),
     UNIQUE KEY `uk_eo_user_student_id` (`student_id`),
     KEY `idx_eo_user_status_del` (`status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_user_type_status` (`user_type`, `status`, `del_flag`),
@@ -652,33 +652,36 @@ CREATE TABLE `eo_credit_change_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='信用变更日志表';
 
 -- ===================================================================
--- 11. 领域事件表 (Outbox 模式)
+-- 11. Spring Modulith 事件发布注册表（替代 Outbox 模式）
 -- ===================================================================
 
-CREATE TABLE `eo_domain_event` (
-    `id`             VARCHAR(36) NOT NULL COMMENT '主键 ID',
-    `event_id`       CHAR(36)    NOT NULL COMMENT '事件唯一标识（UUID）',
-    `aggregate_type` VARCHAR(100) NOT NULL COMMENT '聚合类型',
-    `aggregate_id`   VARCHAR(36) NOT NULL COMMENT '聚合 ID',
-    `event_type`     VARCHAR(100) NOT NULL COMMENT '事件类型',
-    `payload`        TEXT        DEFAULT NULL COMMENT '事件载荷（JSON）',
-    `status`         VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '状态（PENDING/PUBLISHED/FAILED）',
-    `error_message`  VARCHAR(500) DEFAULT NULL COMMENT '错误信息',
-    `created_at`     DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '事件创建时间',
-    `published_at`   DATETIME(3) DEFAULT NULL COMMENT '事件发布时间',
-    `del_flag`       TINYINT     NOT NULL DEFAULT 0 COMMENT '删除标志（0 正常 1 删除）',
-    `create_time`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
-    `update_time`    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间',
-    `create_by`      VARCHAR(36) DEFAULT NULL COMMENT '创建人 ID',
-    `update_by`      VARCHAR(36) DEFAULT NULL COMMENT '更新人 ID',
-    `version`        INT         NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_eo_domain_event_event_id` (`event_id`),
-    KEY `idx_eo_domain_event_aggregate` (`aggregate_type`, `aggregate_id`),
-    KEY `idx_eo_domain_event_status_created` (`status`, `created_at`),
-    KEY `idx_eo_domain_event_event_type` (`event_type`),
-    CONSTRAINT `chk_eo_domain_event_status` CHECK (`status` IN ('PENDING', 'PUBLISHED', 'FAILED'))
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='领域事件表';
+CREATE TABLE IF NOT EXISTS EVENT_PUBLICATION (
+    ID                     VARCHAR(36)   NOT NULL,
+    LISTENER_ID            VARCHAR(512)  NOT NULL,
+    EVENT_TYPE             VARCHAR(512)  NOT NULL,
+    SERIALIZED_EVENT       TEXT          NOT NULL,
+    PUBLICATION_DATE       TIMESTAMP(6)  NOT NULL,
+    COMPLETION_DATE        TIMESTAMP(6)  NULL DEFAULT NULL,
+    STATUS                 VARCHAR(20)   NULL DEFAULT NULL,
+    COMPLETION_ATTEMPTS    INT           NULL DEFAULT NULL,
+    LAST_RESUBMISSION_DATE TIMESTAMP(6)  NULL DEFAULT NULL,
+    PRIMARY KEY (ID),
+    INDEX EVENT_PUBLICATION_BY_COMPLETION_DATE_IDX (COMPLETION_DATE)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Spring Modulith 事件发布注册表';
+
+CREATE TABLE IF NOT EXISTS EVENT_PUBLICATION_ARCHIVE (
+    ID                     VARCHAR(36)   NOT NULL,
+    LISTENER_ID            VARCHAR(512)  NOT NULL,
+    EVENT_TYPE             VARCHAR(512)  NOT NULL,
+    SERIALIZED_EVENT       TEXT          NOT NULL,
+    PUBLICATION_DATE       TIMESTAMP(6)  NOT NULL,
+    COMPLETION_DATE        TIMESTAMP(6)  NULL DEFAULT NULL,
+    STATUS                 VARCHAR(20)   NULL DEFAULT NULL,
+    COMPLETION_ATTEMPTS    INT           NULL DEFAULT NULL,
+    LAST_RESUBMISSION_DATE TIMESTAMP(6)  NULL DEFAULT NULL,
+    PRIMARY KEY (ID),
+    INDEX EVENT_PUBLICATION_ARCHIVE_BY_COMPLETION_DATE_IDX (COMPLETION_DATE)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Spring Modulith 事件发布归档表';
 
 -- ===================================================================
 -- 12. Saga 分布式事务状态表
