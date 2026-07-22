@@ -31,11 +31,11 @@ public class    UserProfileResponse implements CommonUserFields {
 
     private String realName;
 
-    private Integer status;
+    private String status;
 
     private String statusDesc;
 
-    private Integer gender;
+    private String gender;
 
     private UserType userType;
 

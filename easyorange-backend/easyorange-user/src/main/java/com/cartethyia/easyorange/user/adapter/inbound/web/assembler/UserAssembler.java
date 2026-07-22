@@ -72,15 +72,13 @@ public interface UserAssembler {
         r.setUserType(user.getUserType());
     }
 
-    private static Integer genderCode(PersonalInfo info) {
+    private static String genderCode(PersonalInfo info) {
         if (info == null) return null;
         var sex = info.sex();
-        if (sex == null) return null;
-        var code = sex.getCode();
-        return code != null ? Integer.parseInt(code) : null;
+        return sex != null ? sex.getCode() : null;
     }
 
-    record CommonData(int status, LocalDateTime createTime, LocalDateTime updateTime,
+    record CommonData(String status, LocalDateTime createTime, LocalDateTime updateTime,
                       String nickname, String email, String phone, String realName,
                       String avatar, String studentId) {
 
@@ -91,7 +89,7 @@ public interface UserAssembler {
             var st = user.getStatus();
             var sc = st != null ? st.getCode() : null;
             return new CommonData(
-                    sc != null ? Integer.parseInt(sc) : 0,
+                    sc,
                     ai != null ? ai.createTime() : null,
                     ai != null ? ai.updateTime() : null,
                     pi != null ? pi.nickName() : null,

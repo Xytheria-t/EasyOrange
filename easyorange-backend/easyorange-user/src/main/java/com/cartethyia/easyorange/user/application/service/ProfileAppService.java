@@ -33,7 +33,7 @@ public class ProfileAppService {
 
     public record UpdateCommand(
         String nickname, String email, String phone,
-        Integer gender, String realName, String studentId
+        String gender, String realName, String studentId
     ) {}
 
     @Transactional(readOnly = true)
@@ -55,7 +55,7 @@ public class ProfileAppService {
         var updated = currentUser
             .updateContactInfo(new ContactUpdateSpec(cmd.email(), cmd.phone()), currentUser.getId())
             .updatePersonalInfo(new PersonalUpdateSpec(cmd.realName(), cmd.nickname(),
-                cmd.gender() != null ? Sex.fromCode(String.valueOf(cmd.gender())) : null,
+                cmd.gender() != null ? Sex.fromCode(cmd.gender()) : null,
                 cmd.studentId()), currentUser.getId());
 
         userRepository.update(updated);

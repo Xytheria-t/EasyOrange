@@ -9,7 +9,7 @@ public interface CommonUserFields {
     void setRealName(String v);
     void setAvatar(String v);
     void setStudentId(String v);
-    void setStatus(Integer v);
+    void setStatus(String v);
     void setCreateTime(LocalDateTime v);
     void setUpdateTime(LocalDateTime v);
 }

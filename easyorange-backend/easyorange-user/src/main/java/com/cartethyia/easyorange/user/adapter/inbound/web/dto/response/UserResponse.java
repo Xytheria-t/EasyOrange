@@ -32,7 +32,7 @@ public class UserResponse implements CommonUserFields {
 
     private String avatar;
 
-    private Integer status;
+    private String status;
 
     private UserType userType;
 

@@ -42,7 +42,7 @@ public class ProfileUpdateService {
      * 判断是否有任何字段需要更新。
      */
     public static boolean hasAny(String nickname, String email, String phone,
-                                  Integer gender, String realName, String studentId) {
+                                  String gender, String realName, String studentId) {
         return isPresent(nickname) || isPresent(email) || isPresent(phone)
             || gender != null || isPresent(realName) || isPresent(studentId);
     }
