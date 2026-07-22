@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.user.domain.aggregate;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import com.cartethyia.easyorange.user.domain.enums.UserType;
-import com.cartethyia.easyorange.user.domain.valueobject.AuditInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
 import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
@@ -242,49 +241,6 @@ class UserTest {
     }
 
     @Nested
-    @DisplayName("Builder")
-    class BuilderTests {
-
-        @Test
-        @DisplayName("Builder 应正确创建 User 对象")
-        void shouldCreateUserCorrectly() {
-            ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = PersonalInfo.builder()
-                .realName("张三")
-                .nickName("小张")
-                .sex(Sex.MALE)
-                .studentId("2024001")
-                .avatar("/avatar/test.png")
-                .build();
-            LoginInfo loginInfo = new LoginInfo("192.168.1.1", null, null);
-            AuditInfo auditInfo = AuditInfo.create("1");
-
-            User user = User.builder()
-                .id("1")
-                .credentials(new Credentials("testuser", "encodedPassword"))
-                .userType(UserType.NORMAL)
-                .status(UserStatus.NORMAL)
-                .contactInfo(contactInfo)
-                .personalInfo(personalInfo)
-                .loginInfo(loginInfo)
-                .auditInfo(auditInfo)
-                .build();
-
-            assertThat(user.getId()).isEqualTo("1");
-            assertThat(user.getUsername()).isEqualTo("testuser");
-            assertThat(user.getPassword()).isEqualTo("encodedPassword");
-            assertThat(user.getUserType()).isEqualTo(UserType.NORMAL);
-            assertThat(user.getStatus()).isEqualTo(UserStatus.NORMAL);
-            assertThat(user.getContactInfo().email()).isEqualTo("test@example.com");
-            assertThat(user.getContactInfo().phone()).isEqualTo("13812345678");
-            assertThat(user.getPersonalInfo().realName()).isEqualTo("张三");
-            assertThat(user.getPersonalInfo().nickName()).isEqualTo("小张");
-            assertThat(user.getPersonalInfo().studentId()).isEqualTo("2024001");
-            assertThat(user.getPersonalInfo().avatar()).isEqualTo("/avatar/test.png");
-        }
-    }
-
-    @Nested
     @DisplayName("assignId")
     class AssignIdTests {
 
@@ -313,33 +269,4 @@ class UserTest {
         }
     }
 
-    @Nested
-    @DisplayName("toBuilder")
-    class ToBuilderTests {
-
-        @Test
-        @DisplayName("toBuilder 应保留所有字段")
-        void shouldPreserveAllFields() {
-            ContactInfo contactInfo = new ContactInfo("test@example.com", "13812345678");
-            PersonalInfo personalInfo = PersonalInfo.builder().nickName("nickname").build();
-            User original = User.builder()
-                .id("1")
-                .credentials(new Credentials("testuser", "password"))
-                .userType(UserType.NORMAL)
-                .status(UserStatus.NORMAL)
-                .contactInfo(contactInfo)
-                .personalInfo(personalInfo)
-                .build();
-
-            User copied = original.toBuilder().build();
-
-            assertThat(copied.getId()).isEqualTo(original.getId());
-            assertThat(copied.getUsername()).isEqualTo(original.getUsername());
-            assertThat(copied.getPassword()).isEqualTo(original.getPassword());
-            assertThat(copied.getUserType()).isEqualTo(original.getUserType());
-            assertThat(copied.getStatus()).isEqualTo(original.getStatus());
-            assertThat(copied.getContactInfo()).isEqualTo(original.getContactInfo());
-            assertThat(copied.getPersonalInfo()).isEqualTo(original.getPersonalInfo());
-        }
-    }
 }

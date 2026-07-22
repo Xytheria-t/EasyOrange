@@ -22,36 +22,13 @@ import static org.assertj.core.api.Assertions.*;
 class ProductTest {
 
     private Product createDefaultProduct() {
-        ProductTransition result = Product.create(
-                new ProductCreateSpec(
-                        SellerId.of("1"),
-                        CategoryId.of("2"),
-                        ProductTitle.of("测试商品"),
-                        Money.of(new BigDecimal("100")),
-                        null,
-                        StockQuantity.of(10),
-                        ConditionLevel.NEW,
-                        TradeLocation.of("北京"),
-                        ContactMethod.of("微信"),
-                        ProductDescription.of("描述"),
-                        ImageSet.of(List.of("http://img/1.jpg"))
-                )
-        );
-        return result.product().assignId("1");
+        return ProductTestFixture.defaultProduct();
     }
 
     @Test
     @DisplayName("创建商品时应生成 ProductCreatedEvent")
     void create_shouldEmitProductCreatedEvent() {
-        ProductTransition result = Product.create(
-                new ProductCreateSpec(
-                        SellerId.of("1"), CategoryId.of("2"), ProductTitle.of("测试商品"),
-                        Money.of(new BigDecimal("100")), null, StockQuantity.of(10),
-                        ConditionLevel.NEW, TradeLocation.of("北京"),
-                        ContactMethod.of("微信"), ProductDescription.of("描述"),
-                        ImageSet.of(List.of("http://img/1.jpg"))
-                )
-        );
+        ProductTransition result = Product.create(ProductTestFixture.defaultCreateSpec());
 
         assertThat(result.event()).isInstanceOf(ProductCreatedEvent.class);
     }
