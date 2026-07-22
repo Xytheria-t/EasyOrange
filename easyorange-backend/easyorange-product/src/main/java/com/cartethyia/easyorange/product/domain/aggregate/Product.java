@@ -80,18 +80,7 @@ public class Product {
                 .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
                 .build();
 
-        var event = new ProductCreatedEvent(new ProductEvent.Data(
-                null, spec.sellerId().value(),
-                spec.categoryId() != null ? spec.categoryId().value() : null,
-                spec.title().value(), spec.price().value(),
-                spec.originalPrice() != null ? spec.originalPrice().value() : null,
-                p.stock.value(),
-                spec.conditionLevel() != null ? spec.conditionLevel().getCode() : null,
-                spec.location() != null ? spec.location().value() : null,
-                spec.contactMethod() != null ? spec.contactMethod().value() : null,
-                spec.description() != null ? spec.description().value() : null,
-                spec.images() != null ? spec.images().imageUrls() : null
-        ));
+        var event = new ProductCreatedEvent(ProductEvent.Data.fromCreate(spec, p.stock));
         return new ProductTransition(p, event);
     }
 
@@ -206,18 +195,7 @@ public class Product {
 
         var updated = builder.updateTime(LocalDateTime.now()).build();
 
-        var event = new ProductUpdatedEvent(new ProductEvent.Data(
-                id.value(), sellerId.value(),
-                updated.categoryId != null ? updated.categoryId.value() : null,
-                updated.title.value(), updated.price.value(),
-                updated.originalPrice != null ? updated.originalPrice.value() : null,
-                updated.stock.value(),
-                updated.conditionLevel != null ? updated.conditionLevel.getCode() : null,
-                updated.location != null ? updated.location.value() : null,
-                updated.contactMethod != null && updated.contactMethod.isNotBlank() ? updated.contactMethod.value() : null,
-                updated.description != null ? updated.description.value() : null,
-                updated.images != null ? updated.images.imageUrls() : null
-        ));
+        var event = new ProductUpdatedEvent(ProductEvent.Data.fromUpdated(updated));
         return new ProductTransition(updated, event);
     }
 
