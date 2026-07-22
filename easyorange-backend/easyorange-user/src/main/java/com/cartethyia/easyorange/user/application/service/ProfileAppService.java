@@ -3,6 +3,8 @@ package com.cartethyia.easyorange.user.application.service;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import com.cartethyia.easyorange.user.domain.aggregate.ContactUpdateSpec;
+import com.cartethyia.easyorange.user.domain.aggregate.PersonalUpdateSpec;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.enums.Sex;
 import com.cartethyia.easyorange.user.domain.enums.UserResultCode;
@@ -51,10 +53,10 @@ public class ProfileAppService {
         profileUpdateService.validateUniqueContact(cmd.email(), cmd.phone(), cmd.studentId(), currentUser);
 
         var updated = currentUser
-            .updateContactInfo(cmd.email(), cmd.phone(), currentUser.getId())
-            .updatePersonalInfo(cmd.realName(), cmd.nickname(),
+            .updateContactInfo(new ContactUpdateSpec(cmd.email(), cmd.phone()), currentUser.getId())
+            .updatePersonalInfo(new PersonalUpdateSpec(cmd.realName(), cmd.nickname(),
                 cmd.gender() != null ? Sex.fromCode(String.valueOf(cmd.gender())) : null,
-                cmd.studentId(), currentUser.getId());
+                cmd.studentId()), currentUser.getId());
 
         userRepository.update(updated);
         domainEventPublisher.publish(new UserProfileUpdatedEvent(currentUser.getId()));

@@ -48,14 +48,14 @@ public class User {
             .build();
     }
 
-    public User updateContactInfo(String email, String phone, String operatorId) {
+    public User updateContactInfo(ContactUpdateSpec spec, String operatorId) {
         ContactInfo updated = this.contactInfo;
 
-        if (isPresent(email)) {
-            updated = updated.withEmail(email);
+        if (isPresent(spec.email())) {
+            updated = updated.withEmail(spec.email());
         }
-        if (isPresent(phone)) {
-            updated = updated.withPhone(phone);
+        if (isPresent(spec.phone())) {
+            updated = updated.withPhone(spec.phone());
         }
 
         return this.toBuilder()
@@ -64,20 +64,20 @@ public class User {
             .build();
     }
 
-    public User updatePersonalInfo(String realName, String nickName, Sex sex, String studentId, String operatorId) {
+    public User updatePersonalInfo(PersonalUpdateSpec spec, String operatorId) {
         PersonalInfo updated = this.personalInfo;
 
-        if (isPresent(realName)) {
-            updated = updated.withRealName(realName);
+        if (isPresent(spec.realName())) {
+            updated = updated.withRealName(spec.realName());
         }
-        if (isPresent(nickName)) {
-            updated = updated.withNickName(nickName);
+        if (isPresent(spec.nickName())) {
+            updated = updated.withNickName(spec.nickName());
         }
-        if (sex != null) {
-            updated = updated.withSex(sex);
+        if (spec.sex() != null) {
+            updated = updated.withSex(spec.sex());
         }
-        if (isPresent(studentId)) {
-            updated = updated.withStudentId(studentId);
+        if (isPresent(spec.studentId())) {
+            updated = updated.withStudentId(spec.studentId());
         }
 
         return this.toBuilder()

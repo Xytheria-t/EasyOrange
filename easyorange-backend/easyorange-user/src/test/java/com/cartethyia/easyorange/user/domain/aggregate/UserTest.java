@@ -152,8 +152,8 @@ class UserTest {
                 .personalInfo(PersonalInfo.empty())
                 .build();
 
-            User updatedUser = user.updateContactInfo("new@example.com", "13999999999", "1")
-                .updatePersonalInfo(null, null, Sex.FEMALE, "2024001", "1");
+            User updatedUser = user.updateContactInfo(new ContactUpdateSpec("new@example.com", "13999999999"), "1")
+                .updatePersonalInfo(new PersonalUpdateSpec(null, null, Sex.FEMALE, "2024001"), "1");
 
             assertThat(updatedUser.getContactInfo().email()).isEqualTo("new@example.com");
             assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13999999999");
@@ -174,7 +174,7 @@ class UserTest {
                 .personalInfo(personalInfo)
                 .build();
 
-            User updatedUser = user.updateContactInfo("", "", "1");
+            User updatedUser = user.updateContactInfo(new ContactUpdateSpec("", ""), "1");
 
             assertThat(updatedUser.getContactInfo().email()).isEqualTo("old@example.com");
             assertThat(updatedUser.getContactInfo().phone()).isEqualTo("13812345678");
