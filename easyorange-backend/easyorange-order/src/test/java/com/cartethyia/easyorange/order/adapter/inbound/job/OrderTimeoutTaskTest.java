@@ -2,11 +2,11 @@ package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.domain.valueobject.UserId;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -22,7 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.orderWithStatus;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -53,27 +53,14 @@ class OrderTimeoutTaskTest {
 
     private static final String ORDER_ID_1 = "100";
     private static final String ORDER_ID_2 = "101";
-    private static final String BUYER_ID = "1";
-    private static final String SELLER_ID = "2";
 
     private OrderAggregate expiredOrder1;
     private OrderAggregate expiredOrder2;
 
     @BeforeEach
     void setUp() {
-        expiredOrder1 = buildPendingOrder(ORDER_ID_1);
-        expiredOrder2 = buildPendingOrder(ORDER_ID_2);
-    }
-
-    private OrderAggregate buildPendingOrder(String orderId) {
-        return OrderAggregate.fromRaw(
-                orderId, "ORD" + orderId,
-                BUYER_ID, SELLER_ID,
-                java.math.BigDecimal.valueOf(99.99),
-                0, "0",
-                "地址", "13800138000", "备注",
-                null, null
-        );
+        expiredOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
+        expiredOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID);
     }
 
     @Nested

@@ -28,65 +28,41 @@ public class OrderCommandController {
     @Idempotent
     public Result<String> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         List<CreateOrderCommand.CreateOrderItem> items = request.getItems().stream()
-                .map(i -> CreateOrderCommand.CreateOrderItem.builder()
-                        .productId(i.getProductId())
-                        .quantity(i.getQuantity())
-                        .build())
+                .map(i -> new CreateOrderCommand.CreateOrderItem(i.getProductId(), i.getQuantity()))
                 .toList();
-        CreateOrderCommand command = CreateOrderCommand.builder()
-                .items(items)
-                .address(request.getAddress())
-                .phone(request.getPhone())
-                .remark(request.getRemark())
-                .build();
+        CreateOrderCommand command = new CreateOrderCommand(
+                items, request.getAddress(), request.getPhone(), request.getRemark(), null);
         CreateOrderResult result = commandHandler.handle(command);
         return Result.success(result.orderId());
     }
 
     @PutMapping("/{id}/cancel")
     public Result<Void> cancelOrder(@PathVariable String id, @RequestParam(required = false) String reason) {
-        CancelOrderCommand command = CancelOrderCommand.builder()
-                .orderId(id)
-                .reason(reason)
-                .build();
-        commandHandler.handle(command);
+        commandHandler.handle(new CancelOrderCommand(id, reason));
         return Result.success();
     }
 
     @PutMapping("/{id}/pay")
     public Result<Void> payOrder(@PathVariable String id) {
-        PayOrderCommand command = PayOrderCommand.builder()
-                .orderId(id)
-                .build();
-        commandHandler.handle(command);
+        commandHandler.handle(new PayOrderCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/ship")
     public Result<Void> shipOrder(@PathVariable String id) {
-        ShipOrderCommand command = ShipOrderCommand.builder()
-                .orderId(id)
-                .build();
-        commandHandler.handle(command);
+        commandHandler.handle(new ShipOrderCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/receive")
     public Result<Void> confirmReceipt(@PathVariable String id) {
-        ConfirmReceiptCommand command = ConfirmReceiptCommand.builder()
-                .orderId(id)
-                .build();
-        commandHandler.handle(command);
+        commandHandler.handle(new ConfirmReceiptCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/refund")
     public Result<Void> refundOrder(@PathVariable String id, @RequestParam(required = false) String reason) {
-        RefundOrderCommand command = RefundOrderCommand.builder()
-                .orderId(id)
-                .reason(reason)
-                .build();
-        commandHandler.handle(command);
+        commandHandler.handle(new RefundOrderCommand(id, reason));
         return Result.success();
     }
 }

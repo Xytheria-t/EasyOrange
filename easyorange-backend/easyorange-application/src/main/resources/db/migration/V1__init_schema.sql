@@ -283,8 +283,8 @@ CREATE TABLE `eo_order` (
     `buyer_id`       VARCHAR(36)   NOT NULL COMMENT '认领方 ID',
     `seller_id`      VARCHAR(36)   NOT NULL COMMENT '资产方 ID',
     `total_amount`   DECIMAL(10,2) NOT NULL COMMENT '订单总金额',
-    `status`         TINYINT       NOT NULL DEFAULT 0 COMMENT '订单状态（0 待付款 1 待发货 2 待收货 3 已完成 4 已取消 5 已退款）',
-    `payment_status` TINYINT       NOT NULL DEFAULT 0 COMMENT '支付状态（0 未支付 1 已支付 2 已退款）',
+    `status`         VARCHAR(20)   NOT NULL DEFAULT 'PENDING_PAYMENT' COMMENT '订单状态（PENDING_PAYMENT 待付款 PAID 已付款 SHIPPED 已发货 COMPLETED 已完成 CANCELLED 已取消 REFUNDED 已退款）',
+    `payment_status` VARCHAR(20)   NOT NULL DEFAULT 'UNPAID' COMMENT '支付状态（UNPAID 未支付 PAID 已支付 REFUNDED 已退款）',
     `address`        VARCHAR(500)  DEFAULT NULL COMMENT '收货地址',
     `phone`          VARCHAR(20)   DEFAULT NULL COMMENT '联系电话',
     `remark`         VARCHAR(500)  DEFAULT NULL COMMENT '备注',
@@ -302,8 +302,8 @@ CREATE TABLE `eo_order` (
     KEY `idx_eo_order_seller_status_time` (`seller_id`, `status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_order_status_payment` (`status`, `payment_status`, `create_time` DESC),
     CONSTRAINT `chk_eo_order_total_amount` CHECK (`total_amount` >= 0),
-    CONSTRAINT `chk_eo_order_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5)),
-    CONSTRAINT `chk_eo_order_payment_status` CHECK (`payment_status` IN (0, 1, 2))
+    CONSTRAINT `chk_eo_order_status` CHECK (`status` IN ('PENDING_PAYMENT', 'PAID', 'SHIPPED', 'COMPLETED', 'CANCELLED', 'REFUNDED')),
+    CONSTRAINT `chk_eo_order_payment_status` CHECK (`payment_status` IN ('UNPAID', 'PAID', 'REFUNDED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='订单表';
 
 CREATE TABLE `eo_order_item` (

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.application.saga;
 
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import org.redisson.api.RLock;
@@ -12,12 +13,18 @@ import com.cartethyia.easyorange.order.application.saga.support.OrderCreationExe
 import com.cartethyia.easyorange.order.application.saga.support.OrderPreparationService;
 import com.cartethyia.easyorange.order.application.saga.support.SagaCoordinator;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.Phone;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
@@ -121,11 +128,10 @@ class CreateOrderSagaCompensationTest {
     @Test
     @DisplayName("正常创建订单 Saga 成功")
     void execute_normalFlow_succeeds() {
-        CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem("100", 1)));
-        command.setAddress("北京市朝阳区");
-        command.setPhone("13800138000");
-        command.setRemark("备注");
+        CreateOrderCommand command = new CreateOrderCommand(
+                List.of(new CreateOrderItem("100", 1)),
+                "北京市朝阳区", "13800138000", "备注", null
+        );
 
         ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
         when(productInventoryPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
@@ -143,19 +149,25 @@ class CreateOrderSagaCompensationTest {
     @Test
     @DisplayName("支付失败时执行订单补偿")
     void execute_paymentFails_cancelsOrder() {
-        CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem("100", 1)));
-        command.setAddress("北京市朝阳区");
-        command.setPhone("13800138000");
+        CreateOrderCommand command = new CreateOrderCommand(
+                List.of(new CreateOrderItem("100", 1)),
+                "北京市朝阳区", "13800138000", null, null
+        );
 
         ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
         when(productInventoryPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
-        OrderAggregate cancelledAggregate = OrderAggregate.fromRaw(
-                "1", "ORD1", BUYER_ID, SELLER_ID,
-                new BigDecimal("99.99"), 0, "0",
-                "地址", "13800138000", "备注", null, null
+        OrderAggregate cancelledAggregate = OrderAggregate.from(
+                new OrderReconstructSpec(
+                        OrderId.of("1"), OrderNo.of("ORD1"),
+                        UserId.of(BUYER_ID), UserId.of(SELLER_ID),
+                        List.of(),
+                        Money.of(new BigDecimal("99.99")),
+                        OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
+                        Address.of("地址"), Phone.of("13800138000"),
+                        "备注", null, null
+                )
         );
         when(orderRepository.findById(any(OrderId.class))).thenReturn(Optional.of(cancelledAggregate));
 
@@ -168,10 +180,10 @@ class CreateOrderSagaCompensationTest {
     @Test
     @DisplayName("资产不存在时 Saga 失败")
     void execute_productNotFound_throws() {
-        CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem("999", 1)));
-        command.setAddress("北京市朝阳区");
-        command.setPhone("13800138000");
+        CreateOrderCommand command = new CreateOrderCommand(
+                List.of(new CreateOrderItem("999", 1)),
+                "北京市朝阳区", "13800138000", null, null
+        );
 
         when(productInventoryPort.getSnapshot("999")).thenReturn(Optional.empty());
 
@@ -186,10 +198,10 @@ class CreateOrderSagaCompensationTest {
         when(redissonClient.getLock(anyString())).thenReturn(lock);
         when(lock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(false);
 
-        CreateOrderCommand command = new CreateOrderCommand();
-        command.setItems(List.of(new CreateOrderItem("100", 1)));
-        command.setAddress("北京市朝阳区");
-        command.setPhone("13800138000");
+        CreateOrderCommand command = new CreateOrderCommand(
+                List.of(new CreateOrderItem("100", 1)),
+                "北京市朝阳区", "13800138000", null, null
+        );
 
         assertThatThrownBy(() -> saga.execute(command))
                 .isInstanceOf(Exception.class)

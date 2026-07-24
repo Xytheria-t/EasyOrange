@@ -1,11 +1,12 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
+import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
@@ -34,12 +35,11 @@ class OrderEntityMapperTest {
     private static final String SELLER_ID = "2";
     private static final String PRODUCT_ID = "200";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
-    private static final Integer STATUS = 0;
+    private static final OrderStatus STATUS = OrderStatus.PENDING_PAYMENT;
+    private static final PaymentStatus PAYMENT_STATUS = PaymentStatus.UNPAID;
     private static final String ADDRESS = "北京市朝阳区建国路88号";
     private static final String PHONE = "13800138000";
     private static final String REMARK = "尽快发货";
-    private static final String CANCEL_REASON = null;
-    private static final LocalDateTime CANCEL_TIME = null;
     private static final LocalDateTime CREATE_TIME = LocalDateTime.of(2026, 5, 1, 10, 0);
     private static final LocalDateTime UPDATE_TIME = LocalDateTime.of(2026, 5, 1, 12, 0);
     private static final String PRODUCT_SNAPSHOT = "{\"productId\":\"200\",\"name\":\"测试商品\",\"price\":99.99}";
@@ -52,12 +52,10 @@ class OrderEntityMapperTest {
                 .sellerId(SELLER_ID)
                 .totalAmount(AMOUNT)
                 .status(STATUS)
-                .paymentStatus(0)
+                .paymentStatus(PAYMENT_STATUS)
                 .address(ADDRESS)
                 .phone(PHONE)
                 .remark(REMARK)
-                .cancelReason(CANCEL_REASON)
-                .cancelTime(CANCEL_TIME)
                 .build();
         orderDO.setCreateTime(CREATE_TIME);
         orderDO.setUpdateTime(UPDATE_TIME);
@@ -75,12 +73,12 @@ class OrderEntityMapperTest {
     }
 
     private OrderAggregate createAggregate() {
-        return OrderAggregate.from(
+        return OrderAggregate.from(new OrderReconstructSpec(
                 OrderId.of(ID), OrderNo.of(ORDER_NO),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
-                Money.of(AMOUNT), OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
-                Address.of(ADDRESS), Phone.of(PHONE), REMARK, CANCEL_REASON, CANCEL_TIME
-        );
+                Money.of(AMOUNT), STATUS, PAYMENT_STATUS,
+                Address.of(ADDRESS), Phone.of(PHONE), REMARK, null, null
+        ));
     }
 
     @Nested
@@ -101,7 +99,7 @@ class OrderEntityMapperTest {
             assertThat(orderDO.getSellerId()).isEqualTo(SELLER_ID);
             assertThat(orderDO.getTotalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(orderDO.getStatus()).isEqualTo(STATUS);
-            assertThat(orderDO.getPaymentStatus()).isEqualTo(0);
+            assertThat(orderDO.getPaymentStatus()).isEqualTo(PAYMENT_STATUS);
             assertThat(orderDO.getAddress()).isEqualTo(ADDRESS);
             assertThat(orderDO.getPhone()).isEqualTo(PHONE);
             assertThat(orderDO.getRemark()).isEqualTo(REMARK);
@@ -128,8 +126,8 @@ class OrderEntityMapperTest {
             assertThat(aggregate.sellerId().value()).isEqualTo(SELLER_ID);
             assertThat(aggregate.items()).isEmpty();
             assertThat(aggregate.totalAmount().value()).isEqualByComparingTo(AMOUNT);
-            assertThat(aggregate.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-            assertThat(aggregate.paymentStatus()).isEqualTo(PaymentStatus.UNPAID);
+            assertThat(aggregate.status()).isEqualTo(STATUS);
+            assertThat(aggregate.paymentStatus()).isEqualTo(PAYMENT_STATUS);
             assertThat(aggregate.address().value()).isEqualTo(ADDRESS);
             assertThat(aggregate.phone().value()).isEqualTo(PHONE);
             assertThat(aggregate.remark()).isEqualTo(REMARK);
@@ -145,7 +143,7 @@ class OrderEntityMapperTest {
             OrderAggregate aggregate = mapper.toAggregate(orderDO, itemForTest());
 
             assertThat(aggregate.items()).hasSize(1);
-            assertThat(aggregate.items().get(0).productId().value()).isEqualTo(PRODUCT_ID);
+            assertThat(aggregate.items().getFirst().productId().value()).isEqualTo(PRODUCT_ID);
         }
     }
 
@@ -167,9 +165,9 @@ class OrderEntityMapperTest {
             assertThat(readModel.sellerId()).isEqualTo(SELLER_ID);
             assertThat(readModel.items()).isEmpty();
             assertThat(readModel.totalAmount()).isEqualByComparingTo(AMOUNT);
-            assertThat(readModel.status()).isEqualTo(STATUS);
-            assertThat(readModel.statusDesc()).isEqualTo(OrderStatus.getDescByCode(String.valueOf(STATUS)));
-            assertThat(readModel.paymentStatus()).isEqualTo(0);
+            assertThat(readModel.status()).isEqualTo(STATUS.getCode());
+            assertThat(readModel.statusDesc()).isEqualTo(STATUS.getDesc());
+            assertThat(readModel.paymentStatus()).isEqualTo(PAYMENT_STATUS.getCode());
             assertThat(readModel.address()).isEqualTo(ADDRESS);
             assertThat(readModel.phone()).isEqualTo(PHONE);
             assertThat(readModel.remark()).isEqualTo(REMARK);
@@ -186,14 +184,14 @@ class OrderEntityMapperTest {
             OrderReadModel readModel = mapper.toReadModel(orderDO, items);
 
             assertThat(readModel.items()).hasSize(1);
-            assertThat(readModel.items().get(0).productId()).isEqualTo(PRODUCT_ID);
+            assertThat(readModel.items().getFirst().productId()).isEqualTo(PRODUCT_ID);
         }
 
         @Test
         @DisplayName("已取消订单的状态描述应正确")
         void toReadModel_withCancelledOrder_shouldHaveCorrectStatusDesc() {
             OrderDO orderDO = createOrderDO();
-            orderDO.setStatus(4);
+            orderDO.setStatus(OrderStatus.CANCELLED);
 
             OrderReadModel readModel = mapper.toReadModel(orderDO);
 
@@ -208,7 +206,7 @@ class OrderEntityMapperTest {
         @Test
         @DisplayName("toItemDO 应将 OrderItem 正确映射")
         void toItemDO_shouldMapAllFields() {
-            OrderItem item = itemForTest().get(0);
+            OrderItem item = itemForTest().getFirst();
             OrderItemDO itemDO = mapper.toItemDO(ID, item);
 
             assertThat(itemDO).isNotNull();

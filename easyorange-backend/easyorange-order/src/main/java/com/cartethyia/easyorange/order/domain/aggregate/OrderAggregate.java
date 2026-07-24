@@ -1,5 +1,7 @@
 package com.cartethyia.easyorange.order.domain.aggregate;
 
+import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -11,7 +13,6 @@ import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderStatusException;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
@@ -79,207 +80,110 @@ public class OrderAggregate {
 
     // ==================== Getters ====================
 
-    public OrderId id() {
-        return id;
-    }
-
-    public OrderNo orderNo() {
-        return orderNo;
-    }
-
-    public UserId buyerId() {
-        return buyerId;
-    }
-
-    public UserId sellerId() {
-        return sellerId;
-    }
-
-    public List<OrderItem> items() {
-        return List.copyOf(items);
-    }
-
-    public Money totalAmount() {
-        return totalAmount;
-    }
-
-    public OrderStatus status() {
-        return status;
-    }
-
-    public PaymentStatus paymentStatus() {
-        return paymentStatus;
-    }
-
-    public Address address() {
-        return address;
-    }
-
-    public Phone phone() {
-        return phone;
-    }
-
-    public String remark() {
-        return remark;
-    }
-
-    public String cancelReason() {
-        return cancelReason;
-    }
-
-    public LocalDateTime cancelTime() {
-        return cancelTime;
-    }
+    public OrderId id() { return id; }
+    public OrderNo orderNo() { return orderNo; }
+    public UserId buyerId() { return buyerId; }
+    public UserId sellerId() { return sellerId; }
+    public List<OrderItem> items() { return List.copyOf(items); }
+    public Money totalAmount() { return totalAmount; }
+    public OrderStatus status() { return status; }
+    public PaymentStatus paymentStatus() { return paymentStatus; }
+    public Address address() { return address; }
+    public Phone phone() { return phone; }
+    public String remark() { return remark; }
+    public String cancelReason() { return cancelReason; }
+    public LocalDateTime cancelTime() { return cancelTime; }
 
     // ==================== Factory ====================
 
     /**
-     * 创建新订单
+     * 创建新订单。
      *
-     * @param buyerId  认领方 ID
-     * @param sellerId 资产方 ID
-     * @param items    订单资产列表
-     * @param address  收货地址
-     * @param phone    联系电话
-     * @param remark   备注
+     * @param spec 创建参数（收敛 buyerId/sellerId/items/address/phone/remark/orderId）
      * @return 订单创建结果（含聚合根与领域事件）
      * @throws IllegalArgumentException 如果认领方等于资产方、资产为空或金额为零
      */
-    public static OrderCreatedResult createOrder(UserId buyerId, UserId sellerId,
-                                                  List<OrderItem> items,
-                                                  Address address, Phone phone, String remark,
-                                                   String orderId) {
-        BizRequire.requireTrue(!java.util.Objects.equals(buyerId.value(), sellerId.value()), "不能认领自己的资产");
-        BizRequire.notEmpty(items, "订单资产不能为空");
+    public static OrderTransition<OrderCreatedEvent> createOrder(OrderCreateSpec spec) {
+        BizRequire.requireTrue(!java.util.Objects.equals(spec.buyerId().value(), spec.sellerId().value()),
+                "不能认领自己的资产");
+        BizRequire.notEmpty(spec.items(), "订单资产不能为空");
 
-        BigDecimal total = items.stream()
+        BigDecimal total = spec.items().stream()
                 .map(item -> item.subtotal().value())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BizRequire.requireTrue(total.compareTo(BigDecimal.ZERO) > 0, "订单金额必须大于0");
         Money totalAmount = Money.of(total);
 
-        OrderNo orderNo = OrderNo.of(orderId);
-
+        OrderId orderId = OrderId.of(spec.orderId());
         OrderAggregate aggregate = new OrderAggregate(
-                OrderId.of(orderId), orderNo, buyerId, sellerId, items,
+                orderId, OrderNo.of(spec.orderId()), spec.buyerId(), spec.sellerId(), spec.items(),
                 totalAmount, OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
-                address, phone, remark, null, null
+                spec.address(), spec.phone(), spec.remark(), null, null
         );
 
-        List<OrderCreatedEvent.OrderItemPayload> itemPayloads = items.stream()
+        List<OrderCreatedEvent.OrderItemPayload> itemPayloads = spec.items().stream()
                 .map(item -> new OrderCreatedEvent.OrderItemPayload(
                         item.productId().value(), item.quantity(),
                         item.unitPrice().value(), item.subtotal().value()))
                 .toList();
 
         OrderCreatedEvent event = new OrderCreatedEvent(
-                orderId, buyerId.value(), sellerId.value(),
+                spec.orderId(), spec.buyerId().value(), spec.sellerId().value(),
                 itemPayloads, totalAmount.value()
         );
 
-        return new OrderCreatedResult(aggregate, event);
+        return new OrderTransition<>(aggregate, event);
     }
 
     // ==================== Reconstruction ====================
 
     /**
-     * 从完整的值对象重建聚合根（主要用于测试和已有聚合根重建）。
+     * 从持久层重建聚合根（统一入口，含列表查询无行项场景）。
+     * <p>
+     * 状态字段使用领域枚举类型，由 TypeHandler 完成 VARCHAR 列互转。
      */
-    public static OrderAggregate from(OrderId id, OrderNo orderNo, UserId buyerId, UserId sellerId,
-                                       List<OrderItem> items, Money totalAmount, OrderStatus status,
-                                       PaymentStatus paymentStatus, Address address, Phone phone,
-                                       String remark, String cancelReason, LocalDateTime cancelTime) {
-        return new OrderAggregate(id, orderNo, buyerId, sellerId, items,
-                totalAmount, status, paymentStatus, address, phone,
-                remark, cancelReason, cancelTime);
-    }
-
-    /**
-     * 从持久层原始数据重建聚合根（不含行项）。
-     *
-     * @see #fromRaw(String, String, String, String, List, BigDecimal, Integer, Integer, String, String, String, String, LocalDateTime)
-     */
-    public static OrderAggregate fromRaw(String id, String orderNo, String buyerId, String sellerId,
-                                            BigDecimal amount, Integer status, String paymentStatus,
-                                           String address, String phone, String remark,
-                                           String cancelReason, LocalDateTime cancelTime) {
-        return fromRaw(id, orderNo, buyerId, sellerId, List.of(),
-                amount, status, paymentStatus, address, phone,
-                remark, cancelReason, cancelTime);
-    }
-
-    /**
-     * 从持久层原始数据重建聚合根（含行项）。
-     */
-    public static OrderAggregate fromRaw(String id, String orderNo, String buyerId, String sellerId,
-                                           List<OrderItem> items, BigDecimal totalAmount,
-                                            Integer status, String paymentStatus,
-                                            String address, String phone, String remark,
-                                            String cancelReason, LocalDateTime cancelTime) {
+    public static OrderAggregate from(OrderReconstructSpec spec) {
         return new OrderAggregate(
-                OrderId.of(id), OrderNo.of(orderNo), UserId.of(buyerId), UserId.of(sellerId),
-                items != null ? items : List.of(), Money.of(totalAmount), OrderStatus.fromCode(String.valueOf(status)),
-                PaymentStatus.fromCode(paymentStatus),
-                Address.of(address), Phone.of(phone), remark, cancelReason, cancelTime
+                spec.id(), spec.orderNo(), spec.buyerId(), spec.sellerId(),
+                spec.items(), spec.totalAmount(), spec.status(), spec.paymentStatus(),
+                spec.address(), spec.phone(), spec.remark(), spec.cancelReason(), spec.cancelTime()
         );
     }
 
     // ==================== Status Queries ====================
 
-    /**
-     * 是否可支付（仅待付款状态可支付）
-     */
-    public boolean canPay() {
-        return status == OrderStatus.PENDING_PAYMENT;
-    }
+    /** 是否可支付（仅待付款状态可支付） */
+    public boolean canPay() { return status == OrderStatus.PENDING_PAYMENT; }
 
-    /**
-     * 是否可取消（仅待付款状态可取消）
-     */
-    public boolean canCancel() {
-        return status == OrderStatus.PENDING_PAYMENT;
-    }
+    /** 是否可取消（仅待付款状态可取消） */
+    public boolean canCancel() { return status == OrderStatus.PENDING_PAYMENT; }
 
-    /**
-     * 是否可发货（仅已付款状态可发货）
-     */
-    public boolean canShip() {
-        return status == OrderStatus.PAID;
-    }
+    /** 是否可发货（仅已付款状态可发货） */
+    public boolean canShip() { return status == OrderStatus.PAID; }
 
-    /**
-     * 是否可确认收货（仅已发货状态可确认）
-     */
-    public boolean canConfirmReceipt() {
-        return status == OrderStatus.SHIPPED;
-    }
+    /** 是否可确认收货（仅已发货状态可确认） */
+    public boolean canConfirmReceipt() { return status == OrderStatus.SHIPPED; }
 
-    /**
-     * 是否可退款（已付款或已发货状态可退款）
-     */
+    /** 是否可退款（已付款或已发货状态，且支付状态为已支付时可退款） */
     public boolean canRefund() {
-        return status == OrderStatus.PAID || status == OrderStatus.SHIPPED;
+        return (status == OrderStatus.PAID || status == OrderStatus.SHIPPED)
+                && paymentStatus == PaymentStatus.PAID;
     }
 
     // ==================== State Transitions ====================
 
-    /**
-     * 支付订单
-     */
-    public OrderPaidResult pay() {
+    /** 支付订单 */
+    public OrderTransition<OrderPaidEvent> pay() {
         BizRequire.requireTrue(canPay(), OrderResultCode.ORDER_STATUS_ERROR);
-        OrderAggregate updated = withStatus(OrderStatus.PAID, PaymentStatus.PAID);
-        return new OrderPaidResult(updated, new OrderPaidEvent(id.value(), PaymentStatus.PAID.code()));
+        var updated = copy(OrderStatus.PAID, PaymentStatus.PAID, cancelReason, cancelTime);
+        return new OrderTransition<>(updated, new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
     }
 
-    /**
-     * 取消订单
-     */
-    public OrderCancelledResult cancel(String reason) {
+    /** 取消订单 */
+    public OrderTransition<OrderCancelledEvent> cancel(String reason) {
         BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
-        OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
-        List<String> productIds = extractProductIds();
-        return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));
+        var updated = copy(OrderStatus.CANCELLED, paymentStatus, reason, LocalDateTime.now());
+        return new OrderTransition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /**
@@ -287,71 +191,60 @@ public class OrderAggregate {
      * <p>
      * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
      */
-    public OrderCancelledResult forceCancel(String reason) {
+    public OrderTransition<OrderCancelledEvent> forceCancel(String reason) {
         if (status != OrderStatus.PENDING_PAYMENT && status != OrderStatus.PAID) {
             throw new OrderStatusException(id.value(), "强制取消", status);
         }
-        OrderAggregate updated = withStatusAndReason(OrderStatus.CANCELLED, paymentStatus, reason);
-        List<String> productIds = extractProductIds();
-        return new OrderCancelledResult(updated, new OrderCancelledEvent(id.value(), productIds, reason));
+        var updated = copy(OrderStatus.CANCELLED, paymentStatus, reason, LocalDateTime.now());
+        return new OrderTransition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
-    /**
-     * 发货
-     */
-    public OrderShippedResult ship() {
+    /** 发货 */
+    public OrderTransition<OrderShippedEvent> ship() {
         BizRequire.requireTrue(canShip(), OrderResultCode.ORDER_STATUS_ERROR);
-        OrderAggregate updated = withStatus(OrderStatus.SHIPPED, paymentStatus);
-        return new OrderShippedResult(updated, new OrderShippedEvent(id.value()));
+        var updated = copy(OrderStatus.SHIPPED, paymentStatus, cancelReason, cancelTime);
+        return new OrderTransition<>(updated, new OrderShippedEvent(id.value()));
     }
 
-    /**
-     * 确认收货
-     */
-    public OrderCompletedResult confirmReceipt() {
+    /** 确认收货 */
+    public OrderTransition<OrderCompletedEvent> confirmReceipt() {
         BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
-        OrderAggregate updated = withStatus(OrderStatus.COMPLETED, paymentStatus);
-        List<String> productIds = extractProductIds();
-        return new OrderCompletedResult(updated, new OrderCompletedEvent(id.value(), productIds));
+        var updated = copy(OrderStatus.COMPLETED, paymentStatus, cancelReason, cancelTime);
+        return new OrderTransition<>(updated, new OrderCompletedEvent(id.value(), extractProductIds()));
     }
 
-    /**
-     * 退款
-     */
-    public OrderRefundedResult refund(String reason) {
+    /** 退款 */
+    public OrderTransition<OrderRefundedEvent> refund(String reason) {
         BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
-        OrderAggregate updated = withStatusAndReason(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason);
-        List<String> productIds = extractProductIds();
-        return new OrderRefundedResult(updated, new OrderRefundedEvent(id.value(), productIds, reason));
+        var updated = copy(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason, LocalDateTime.now());
+        return new OrderTransition<>(updated, new OrderRefundedEvent(id.value(), extractProductIds(), reason));
     }
 
     // ==================== Internal Helpers ====================
 
     /**
-     * 仅变更订单状态和支付状态，其余字段保持不变，用于安全的不可变状态复制。
+     * 仅变更订单状态、支付状态、取消原因和取消时间，其余字段保持不变。
+     * 用于安全的不可变状态复制（替代多个 withXxx 方法）。
      */
-    private OrderAggregate withStatus(OrderStatus newStatus, PaymentStatus newPaymentStatus) {
+    private OrderAggregate copy(OrderStatus newStatus, PaymentStatus newPaymentStatus,
+                                 String newCancelReason, LocalDateTime newCancelTime) {
         return new OrderAggregate(id, orderNo, buyerId, sellerId, items,
                 totalAmount, newStatus, newPaymentStatus,
-                address, phone, remark, cancelReason, cancelTime);
-    }
-
-    private OrderAggregate withStatusAndReason(OrderStatus newStatus, PaymentStatus newPaymentStatus, String reason) {
-        return new OrderAggregate(id, orderNo, buyerId, sellerId, items,
-                totalAmount, newStatus, newPaymentStatus,
-                address, phone, remark, reason, LocalDateTime.now());
+                address, phone, remark, newCancelReason, newCancelTime);
     }
 
     private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();
     }
 
-    // ==================== Result Records ====================
+    // ==================== Result Record ====================
 
-    public record OrderCreatedResult(OrderAggregate aggregate, OrderCreatedEvent event) {}
-    public record OrderPaidResult(OrderAggregate aggregate, OrderPaidEvent event) {}
-    public record OrderCancelledResult(OrderAggregate aggregate, OrderCancelledEvent event) {}
-    public record OrderShippedResult(OrderAggregate aggregate, OrderShippedEvent event) {}
-    public record OrderCompletedResult(OrderAggregate aggregate, OrderCompletedEvent event) {}
-    public record OrderRefundedResult(OrderAggregate aggregate, OrderRefundedEvent event) {}
+    /**
+     * 状态转换结果 — 聚合根新实例 + 领域事件。
+     * <p>
+     * 泛型 {@code <E>} 保留具体事件类型，避免调用方 cast。
+     *
+     * @param <E> 领域事件具体类型
+     */
+    public record OrderTransition<E extends DomainEvent>(OrderAggregate aggregate, E event) {}
 }

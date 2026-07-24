@@ -13,9 +13,9 @@ public class AdminOrderQueryRequest {
 
     private String sellerId;
 
-    private Integer status;
+    private String status;
 
-    private Integer paymentStatus;
+    private String paymentStatus;
 
     private String startTime;
 

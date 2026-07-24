@@ -102,7 +102,7 @@ class AdminDashboardServiceTest {
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
             when(productReportQueryRepository.countPendingReports()).thenReturn(3L);
-            when(orderReadRepository.countByStatus(anyInt())).thenReturn(5L);
+            when(orderReadRepository.countByStatus(anyString())).thenReturn(5L);
             when(productQueryRepository.countByStatus(anyString())).thenReturn(7L);
             when(productReportQueryRepository.findPendingReports(anyInt(), anyInt()))
                     .thenReturn(List.of(

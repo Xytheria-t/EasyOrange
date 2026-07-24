@@ -1,9 +1,11 @@
 package com.cartethyia.easyorange.order.application.query.assembler;
 
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,9 +28,9 @@ class OrderReadModelAssemblerTest {
     private static final String SELLER_ID = "2";
     private static final String PRODUCT_ID = "200";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
-    private static final Integer STATUS = 0;
+    private static final String STATUS = OrderStatus.PENDING_PAYMENT.getCode();
     private static final String STATUS_DESC = "待付款";
-    private static final Integer PAYMENT_STATUS = 0;
+    private static final String PAYMENT_STATUS = PaymentStatus.UNPAID.getCode();
     private static final String ADDRESS = "北京市朝阳区建国路88号";
     private static final String PHONE = "13800138000";
     private static final String REMARK = "尽快发货";
@@ -146,7 +148,7 @@ class OrderReadModelAssemblerTest {
             OrderReadModel order = new OrderReadModel(
                     ORDER_ID, ORDER_NO, BUYER_ID, SELLER_ID, testItems(),
                     AMOUNT,
-                    STATUS, STATUS_DESC, PAYMENT_STATUS,
+                    OrderStatus.PENDING_PAYMENT.getCode(), STATUS_DESC, PaymentStatus.UNPAID.getCode(),
                     null, null, null, null, null,
                     CREATE_TIME, UPDATE_TIME
             );
@@ -173,7 +175,8 @@ class OrderReadModelAssemblerTest {
                     "101", "ORD101", "3", "4",
                     List.of(new OrderItemReadModel("2", "201", "{}", new BigDecimal("49.99"), 1, new BigDecimal("49.99"))),
                     new BigDecimal("49.99"),
-                    1, "已付款", 1, "上海市浦东新区", "13900139000", "备注2", null, null,
+                    OrderStatus.PAID.getCode(), "已付款", PaymentStatus.PAID.getCode(),
+                    "上海市浦东新区", "13900139000", "备注2", null, null,
                     LocalDateTime.now(), LocalDateTime.now()
             );
 

@@ -15,8 +15,8 @@ import lombok.experimental.SuperBuilder;
 public class QueryOrderRequest extends PageRequest {
 
     private String orderNo;
-    private Integer status;
     private String buyerId;
     private String sellerId;
+    private String status;
 
 }

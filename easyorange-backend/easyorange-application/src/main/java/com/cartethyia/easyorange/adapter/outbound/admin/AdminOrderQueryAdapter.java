@@ -8,21 +8,21 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemDO;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper;
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Admin 订单查询适配器
- * 实现 AdminOrderQueryPort，通过 Order Mapper 查询数据并转换为 Admin 模块需要的格式
+ * <p>
+ * 实现 {@link AdminOrderQueryPort}，通过 Order Mapper 查询数据并转换为 Admin 模块需要的格式。
+ * 状态字段使用 String code，由 OrderDO 的 enum 字段直接 {@code getCode()} 派生。
  */
 @Component
 @RequiredArgsConstructor
@@ -47,10 +47,10 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
             wrapper.eq(OrderDO::getSellerId, condition.sellerId());
         }
         if (condition.status() != null) {
-            wrapper.eq(OrderDO::getStatus, condition.status());
+            wrapper.eq(OrderDO::getStatus, OrderStatus.fromCode(condition.status()));
         }
         if (condition.paymentStatus() != null) {
-            wrapper.eq(OrderDO::getPaymentStatus, condition.paymentStatus());
+            wrapper.eq(OrderDO::getPaymentStatus, PaymentStatus.fromCode(condition.paymentStatus()));
         }
         if (condition.startTime() != null) {
             wrapper.ge(OrderDO::getCreateTime, condition.startTime());
@@ -92,7 +92,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }
-        List<ProductDO> products = productMapper.selectBatchIds(productIds);
+        List<ProductDO> products = productMapper.selectByIds(productIds);
         return products.stream()
             .collect(Collectors.toMap(
                 ProductDO::getId,
@@ -102,17 +102,18 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     }
 
     private OrderSummary toOrderSummary(OrderDO order) {
-        OrderStatus status = OrderStatus.fromCode(String.valueOf(order.getStatus()));
+        OrderStatus status = order.getStatus();
+        PaymentStatus paymentStatus = order.getPaymentStatus();
         return new OrderSummary(
             order.getId(),
             order.getOrderNo(),
             order.getBuyerId(),
             order.getSellerId(),
             order.getTotalAmount(),
-            order.getStatus(),
+            status != null ? status.getCode() : null,
             status != null ? status.getDesc() : "未知状态",
-            order.getPaymentStatus(),
-            getPaymentStatusDesc(order.getPaymentStatus()),
+            paymentStatus != null ? paymentStatus.getCode() : null,
+            paymentStatus != null ? paymentStatus.getDesc() : "未支付",
             order.getCreateTime()
         );
     }
@@ -132,15 +133,5 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
             product.getName(),
             product.getPrice()
         );
-    }
-
-    private String getPaymentStatusDesc(Integer paymentStatus) {
-        if (paymentStatus == null) return "未支付";
-        return switch (paymentStatus) {
-            case 0 -> "待支付";
-            case 1 -> "已支付";
-            case 2 -> "已退款";
-            default -> "未知";
-        };
     }
 }

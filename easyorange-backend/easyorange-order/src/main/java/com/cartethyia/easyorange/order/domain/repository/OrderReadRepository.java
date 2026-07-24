@@ -15,7 +15,7 @@ public interface OrderReadRepository {
 
     PageResult<OrderReadModel> findPage(OrderQueryCondition condition);
 
-    long countByStatus(Integer status);
+    long countByStatus(String status);
 
     List<OrderItemReadModel> findItemsByOrderId(String orderId);
 }

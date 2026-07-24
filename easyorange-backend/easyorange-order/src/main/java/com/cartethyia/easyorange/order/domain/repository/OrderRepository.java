@@ -23,8 +23,6 @@ public interface OrderRepository {
 
     List<OrderAggregate> findExpiredOrders(int timeoutMinutes);
 
-    List<OrderAggregate> findByStatus(Integer status);
-
     List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold);
 
     List<OrderItem> findItemsByOrderId(String orderId);

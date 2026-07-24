@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -16,10 +17,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.orderWithStatus;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -44,27 +45,14 @@ class OrderAutoConfirmTaskTest {
 
     private static final String ORDER_ID_1 = "100";
     private static final String ORDER_ID_2 = "101";
-    private static final String BUYER_ID = "1";
-    private static final String SELLER_ID = "2";
 
     private OrderAggregate shippedOrder1;
     private OrderAggregate shippedOrder2;
 
     @BeforeEach
     void setUp() {
-        shippedOrder1 = buildShippedOrder(ORDER_ID_1);
-        shippedOrder2 = buildShippedOrder(ORDER_ID_2);
-    }
-
-    private OrderAggregate buildShippedOrder(String orderId) {
-        return OrderAggregate.fromRaw(
-                orderId, "ORD" + orderId,
-                BUYER_ID, SELLER_ID,
-                BigDecimal.valueOf(99.99),
-                2, "1",
-                "地址", "13800138000", "备注",
-                null, null
-        );
+        shippedOrder1 = orderWithStatus(ORDER_ID_1, OrderStatus.SHIPPED, PaymentStatus.PAID);
+        shippedOrder2 = orderWithStatus(ORDER_ID_2, OrderStatus.SHIPPED, PaymentStatus.PAID);
     }
 
     @Nested

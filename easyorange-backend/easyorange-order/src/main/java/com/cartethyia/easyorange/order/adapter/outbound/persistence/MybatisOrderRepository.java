@@ -70,17 +70,8 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     public List<OrderAggregate> findExpiredOrders(int timeoutMinutes) {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(timeoutMinutes);
         return lambdaQuery()
-                .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT.getCode())
+                .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT)
                 .lt(OrderDO::getCreateTime, threshold)
-                .list()
-                .stream().map(entityMapper::toAggregate).toList();
-    }
-
-    @Override
-    public List<OrderAggregate> findByStatus(Integer status) {
-        return lambdaQuery()
-                .eq(OrderDO::getStatus, status)
-                .orderByDesc(OrderDO::getCreateTime)
                 .list()
                 .stream().map(entityMapper::toAggregate).toList();
     }
@@ -88,7 +79,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     @Override
     public List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold) {
         return lambdaQuery()
-                .eq(OrderDO::getStatus, OrderStatus.SHIPPED.getCode())
+                .eq(OrderDO::getStatus, OrderStatus.SHIPPED)
                 .lt(OrderDO::getUpdateTime, threshold)
                 .list()
                 .stream().map(entityMapper::toAggregate).toList();

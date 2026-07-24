@@ -12,9 +12,9 @@ import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
-import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,23 +47,24 @@ public class OrderQueryHandler {
     public OrderVO getOrderDetailForOwner(String orderId) {
         OrderReadModel order = orderReadRepository.findById(OrderId.of(orderId))
                 .orElseThrow(() -> new OrderDomainException(OrderResultCode.ORDER_NOT_FOUND));
-        BizRequire.notNull(order, OrderResultCode.ORDER_NOT_FOUND);
 
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        BizRequire.requireTrue(order.buyerId().equals(userId) || order.sellerId().equals(userId),
+        BizRequire.requireTrue(
+                order.buyerId().equals(userId) || order.sellerId().equals(userId),
                 OrderResultCode.ORDER_NOT_OWNER);
 
         Map<String, ProductDetail> productMap = loadProductMap(order);
         return readModelAssembler.toOrderVO(order, productMap, false);
     }
 
+    /**
+     * 订单列表查询（管理端 / 通用） — 通过 OrderListQuery 收敛 6 个参数。
+     */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> handle(String orderNo, Integer status, String buyerId, String sellerId,
-                                       Integer pageNum, Integer pageSize) {
-        int effectivePageNum = pageNum != null ? pageNum : 1;
-        int effectivePageSize = pageSize != null ? pageSize : 20;
-        OrderQueryCondition condition = new OrderQueryCondition(orderNo, status, buyerId, sellerId,
-                effectivePageNum, effectivePageSize);
+    public PageResult<OrderVO> listOrders(OrderListQuery query) {
+        OrderQueryCondition condition = new OrderQueryCondition(
+                query.orderNo(), query.status(), query.buyerId(), query.sellerId(),
+                query.pageNum(), query.pageSize());
         PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
         List<OrderVO> voList = assembleOrderVOs(orderPage.records());
         return PageResult.of(voList, orderPage.total(),
@@ -71,43 +72,31 @@ public class OrderQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getMyOrders(Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<OrderVO> getMyOrders(String status, Integer pageNum, Integer pageSize) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryOrdersWithCache(userId, null, status, pageNum, pageSize);
     }
 
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getSoldOrders(Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<OrderVO> getSoldOrders(String status, Integer pageNum, Integer pageSize) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryOrdersWithCache(null, userId, status, pageNum, pageSize);
     }
 
-    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, Integer status,
+    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, String status,
                                                        Integer pageNum, Integer pageSize) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
+        String cacheKey = orderCachePort.buildOrderListKey(userId, status);
 
-        String cacheKey = orderCachePort.buildOrderListKey(userId, String.valueOf(status));
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
         if (cachedResult.isPresent()) {
             return cachedResult.get();
         }
 
-        PageResult<OrderVO> result = queryOrdersByRole(status, buyerId, sellerId, pageNum, pageSize);
+        OrderListQuery query = new OrderListQuery(null, status, buyerId, sellerId, pageNum, pageSize);
+        PageResult<OrderVO> result = listOrders(query);
         orderCachePort.putOrderList(cacheKey, result);
         return result;
-    }
-
-    private PageResult<OrderVO> queryOrdersByRole(Integer status, String buyerId, String sellerId,
-                                                    Integer pageNum, Integer pageSize) {
-        int effectivePageNum = pageNum != null ? pageNum : 1;
-        int effectivePageSize = pageSize != null ? pageSize : 20;
-        OrderQueryCondition condition = new OrderQueryCondition(null, status, buyerId, sellerId,
-                effectivePageNum, effectivePageSize);
-
-        PageResult<OrderReadModel> orderPage = orderReadRepository.findPage(condition);
-        List<OrderVO> voList = assembleOrderVOs(orderPage.records());
-        return PageResult.of(voList, orderPage.total(),
-                orderPage.current(), orderPage.size());
     }
 
     private List<OrderVO> assembleOrderVOs(List<OrderReadModel> orders) {
@@ -129,7 +118,6 @@ public class OrderQueryHandler {
         if (productIds == null || productIds.isEmpty()) {
             return Map.of();
         }
-
         List<ProductDetail> products = productQueryPort.getProductsByIds(List.copyOf(productIds));
         return readModelAssembler.buildProductMap(products);
     }

@@ -3,7 +3,9 @@ package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.application.command.OrderCommandHandler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,7 +41,7 @@ class OrderQueryControllerTest {
     @MockitoBean
     private OrderQueryHandler queryHandler;
 
-    private OrderVO createOrderVO(String id, String orderNo, Integer status, String statusDesc) {
+    private OrderVO createOrderVO(String id, String orderNo, String status, String statusDesc) {
         return OrderVO.builder()
                 .id(id)
                 .orderNo(orderNo)
@@ -63,7 +65,7 @@ class OrderQueryControllerTest {
         @Test
         @DisplayName("存在的订单应返回订单详情")
         void getOrderDetail_withExistingId_shouldReturnOrder() throws Exception {
-            OrderVO vo = createOrderVO("100", "ORD100", 0, "待付款");
+            OrderVO vo = createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款");
             when(queryHandler.getOrderDetailForOwner("100")).thenReturn(vo);
 
             mockMvc.perform(get("/api/orders/{id}", 100L))
@@ -71,7 +73,7 @@ class OrderQueryControllerTest {
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data.id").value(100))
                     .andExpect(jsonPath("$.data.orderNo").value("ORD100"))
-                    .andExpect(jsonPath("$.data.status").value(0))
+                    .andExpect(jsonPath("$.data.status").value(OrderStatus.PENDING_PAYMENT.getCode()))
                     .andExpect(jsonPath("$.data.statusDesc").value("待付款"));
         }
 
@@ -107,8 +109,8 @@ class OrderQueryControllerTest {
         @DisplayName("有订单数据应返回分页结果")
         void getMyOrders_withData_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
-                    createOrderVO("100", "ORD100", 0, "待付款"),
-                    createOrderVO("101", "ORD101", 1, "已付款")
+                    createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款"),
+                    createOrderVO("101", "ORD101", OrderStatus.PAID.getCode(), "已付款")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 2L, 1, 10);
             when(queryHandler.getMyOrders(any(), any(), any())).thenReturn(pageResult);
@@ -149,7 +151,7 @@ class OrderQueryControllerTest {
         @DisplayName("有售出订单应返回分页结果")
         void getSoldOrders_withData_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
-                    createOrderVO("100", "ORD100", 2, "已发货")
+                    createOrderVO("100", "ORD100", OrderStatus.SHIPPED.getCode(), "已发货")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
             when(queryHandler.getSoldOrders(any(), any(), any())).thenReturn(pageResult);
@@ -159,7 +161,7 @@ class OrderQueryControllerTest {
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data.records.length()").value(1))
                     .andExpect(jsonPath("$.data.records[0].orderNo").value("ORD100"))
-                    .andExpect(jsonPath("$.data.records[0].status").value(2));
+                    .andExpect(jsonPath("$.data.records[0].status").value(OrderStatus.SHIPPED.getCode()));
         }
 
         @Test
@@ -183,25 +185,25 @@ class OrderQueryControllerTest {
         @DisplayName("通用查询应返回分页结果")
         void queryOrders_withFilters_shouldReturnPage() throws Exception {
             List<OrderVO> records = List.of(
-                    createOrderVO("100", "ORD100", 0, "待付款")
+                    createOrderVO("100", "ORD100", OrderStatus.PENDING_PAYMENT.getCode(), "待付款")
             );
             PageResult<OrderVO> pageResult = PageResult.of(records, 1L, 1, 10);
-            when(queryHandler.handle(any(), any(), any(), any(), any(), any())).thenReturn(pageResult);
+            when(queryHandler.listOrders(any(OrderListQuery.class))).thenReturn(pageResult);
 
             mockMvc.perform(get("/api/orders/list")
-                            .param("status", "0")
+                            .param("status", OrderStatus.PENDING_PAYMENT.getCode())
                             .param("pageNum", "1")
                             .param("pageSize", "10"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.code").value("A0000"))
                     .andExpect(jsonPath("$.data.records.length()").value(1))
-                    .andExpect(jsonPath("$.data.records[0].status").value(0));
+                    .andExpect(jsonPath("$.data.records[0].status").value(OrderStatus.PENDING_PAYMENT.getCode()));
         }
 
         @Test
         @DisplayName("无结果时应返回空分页")
         void queryOrders_withNoResults_shouldReturnEmptyPage() throws Exception {
-            when(queryHandler.handle(any(), any(), any(), any(), any(), any()))
+            when(queryHandler.listOrders(any(OrderListQuery.class)))
                     .thenReturn(PageResult.empty(1, 10));
 
             mockMvc.perform(get("/api/orders/list"))

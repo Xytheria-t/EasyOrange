@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.adapter.outbound.cache;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.order.adapter.outbound.cache.RedisOrderCacheAdapter;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class OrderCacheServiceTest {
                 .orderNo("TEST001")
                 .buyerId(testBuyerId)
                 .totalAmount(new BigDecimal("99.99"))
-                .status(0)
+                .status(OrderStatus.PENDING_PAYMENT.getCode())
                 .createTime(LocalDateTime.now())
                 .build();
 
@@ -62,7 +63,7 @@ class OrderCacheServiceTest {
                 .orderNo("TEST002")
                 .buyerId(testBuyerId)
                 .totalAmount(new BigDecimal("199.99"))
-                .status(1)
+                .status(OrderStatus.PAID.getCode())
                 .createTime(LocalDateTime.now())
                 .build();
 

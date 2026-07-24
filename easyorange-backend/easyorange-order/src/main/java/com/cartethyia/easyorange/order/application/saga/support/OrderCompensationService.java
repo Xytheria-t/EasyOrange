@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.application.saga.support;
 
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
@@ -96,7 +97,7 @@ public class OrderCompensationService {
      */
     private void cancelIfPossible(OrderAggregate aggregate) {
         if (aggregate.canCancel()) {
-            OrderAggregate.OrderCancelledResult result = aggregate.cancel("Saga 补偿取消");
+            OrderAggregate.OrderTransition<OrderCancelledEvent> result = aggregate.cancel("Saga 补偿取消");
             orderRepository.update(result.aggregate());
             orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());
             log.info("Saga: 订单补偿取消成功 orderId={}", aggregate.id().value());

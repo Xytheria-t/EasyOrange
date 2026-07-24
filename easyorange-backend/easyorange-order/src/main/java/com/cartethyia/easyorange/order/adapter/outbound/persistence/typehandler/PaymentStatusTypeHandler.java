@@ -9,6 +9,6 @@ import org.apache.ibatis.type.MappedTypes;
 public class PaymentStatusTypeHandler extends CodeEnumTypeHandler<PaymentStatus> {
 
     public PaymentStatusTypeHandler() {
-        super(PaymentStatus::code, PaymentStatus::fromCode);
+        super(PaymentStatus::getCode, PaymentStatus::fromCode);
     }
 }

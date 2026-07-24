@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
@@ -44,7 +45,8 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
         var wrapper = lambdaQuery();
 
         wrapper.eq(StringUtils.isNotBlank(condition.orderNo()), OrderDO::getOrderNo, condition.orderNo());
-        wrapper.eq(condition.status() != null, OrderDO::getStatus, condition.status());
+        var statusEnum = resolveStatus(condition.status());
+        wrapper.eq(statusEnum != null, OrderDO::getStatus, statusEnum);
         wrapper.eq(condition.buyerId() != null, OrderDO::getBuyerId, condition.buyerId());
         wrapper.eq(condition.sellerId() != null, OrderDO::getSellerId, condition.sellerId());
 
@@ -59,9 +61,13 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
     }
 
     @Override
-    public long countByStatus(Integer status) {
+    public long countByStatus(String status) {
+        var statusEnum = resolveStatus(status);
+        if (statusEnum == null) {
+            return lambdaQuery().count();
+        }
         return lambdaQuery()
-                .eq(OrderDO::getStatus, status)
+                .eq(OrderDO::getStatus, statusEnum)
                 .count();
     }
 
@@ -71,5 +77,13 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)
         ).stream().map(entityMapper::toItemReadModel).toList();
+    }
+
+    /** 将前端传入的 String code 转为 OrderStatus enum，让 TypeHandler 处理持久化。 */
+    private static OrderStatus resolveStatus(String status) {
+        if (StringUtils.isBlank(status)) {
+            return null;
+        }
+        return OrderStatus.fromCode(status);
     }
 }

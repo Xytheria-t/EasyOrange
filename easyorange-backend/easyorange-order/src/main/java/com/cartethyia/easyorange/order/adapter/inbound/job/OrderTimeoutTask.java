@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.order.adapter.inbound.job;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
@@ -79,7 +80,7 @@ public class OrderTimeoutTask {
             return false;
         }
 
-        OrderAggregate.OrderCancelledResult result = aggregate.cancel("订单超时自动取消");
+        OrderAggregate.OrderTransition<OrderCancelledEvent> result = aggregate.cancel("订单超时自动取消");
         orderRepository.update(result.aggregate());
 
         orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());

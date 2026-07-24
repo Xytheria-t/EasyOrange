@@ -6,7 +6,10 @@ import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetai
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Component
 public class OrderReadModelAssembler {
@@ -27,15 +30,15 @@ public class OrderReadModelAssembler {
                     String productName = product != null ? product.title() : "";
                     String productImage = (product != null && product.images() != null && !product.images().isEmpty())
                             ? product.images().getFirst() : null;
-                    return new OrderVO.OrderItemVO(
-                            item.itemId(),
-                            item.productId(),
-                            productName,
-                            productImage,
-                            item.unitPrice(),
-                            item.quantity(),
-                            item.subtotal()
-                    );
+                    return OrderVO.OrderItemVO.builder()
+                            .itemId(item.itemId())
+                            .productId(item.productId())
+                            .productName(productName)
+                            .productImage(productImage)
+                            .unitPrice(item.unitPrice())
+                            .quantity(item.quantity())
+                            .subtotal(item.subtotal())
+                            .build();
                 })
                 .toList();
 
@@ -64,12 +67,19 @@ public class OrderReadModelAssembler {
         return builder.build();
     }
 
+    /**
+     * 构建产品 Map — 用 Collectors.toMap 替代手动 HashMap 构造。
+     * 重复 key 时保留第一个（与原逻辑一致）。
+     */
     public Map<String, ProductDetail> buildProductMap(List<ProductDetail> products) {
         if (products == null || products.isEmpty()) {
             return Map.of();
         }
-        Map<String, ProductDetail> productMap = new HashMap<>();
-        products.forEach(p -> productMap.put(p.id(), p));
-        return productMap;
+        return products.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        ProductDetail::id,
+                        p -> p,
+                        (a, b) -> a));
     }
 }

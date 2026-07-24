@@ -24,7 +24,7 @@ public class PlatformStatsController {
     public Result<PlatformStatsVO> getPlatformStats() {
         long activeUsers = userRepository.count();
         long onlineProducts = productQueryRepository.countByStatus(ProductStatus.ONLINE.getCode());
-        long completedOrders = orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.COMPLETED.getCode()));
+        long completedOrders = orderReadRepository.countByStatus(OrderStatus.COMPLETED.getCode());
 
         return Result.success(new PlatformStatsVO(activeUsers, onlineProducts, completedOrders));
     }

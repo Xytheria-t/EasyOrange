@@ -5,6 +5,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrd
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -41,7 +43,8 @@ class AdminOrderControllerTest {
         var orders = List.of(
             new AdminOrderResponse("1", "ORD001", "10", "buyer1", "20", "seller1",
                 List.of(new AdminOrderResponse.ItemInfo("100", "Product1")),
-                BigDecimal.valueOf(199), 1, "待付款", 0, "未支付",
+                BigDecimal.valueOf(199), OrderStatus.PENDING_PAYMENT.getCode(), "待付款",
+                PaymentStatus.UNPAID.getCode(), "未支付",
                 LocalDateTime.of(2026, 5, 16, 10, 0))
         );
         var pageResult = PageResult.of(orders, 1L, 1, 20);
@@ -52,7 +55,7 @@ class AdminOrderControllerTest {
             .andExpect(jsonPath("$.code").value("A0000"))
             .andExpect(jsonPath("$.data.records[0].orderId").value("1"))
             .andExpect(jsonPath("$.data.records[0].orderNo").value("ORD001"))
-            .andExpect(jsonPath("$.data.records[0].status").value(1))
+            .andExpect(jsonPath("$.data.records[0].status").value(OrderStatus.PENDING_PAYMENT.getCode()))
             .andExpect(jsonPath("$.data.total").value(1));
     }
 
@@ -63,7 +66,10 @@ class AdminOrderControllerTest {
             .buyer(new AdminOrderDetailResponse.BuyerInfo("10", "buyer1", "avatar1", "13800138000"))
             .seller(new AdminOrderDetailResponse.SellerInfo("20", "seller1", "avatar2", "13900139000"))
             .products(List.of(new AdminOrderDetailResponse.ProductInfo("100", "Product1", "img.jpg", BigDecimal.valueOf(199))))
-            .totalAmount(BigDecimal.valueOf(199)).status(1).statusDesc("待付款").createTime(LocalDateTime.of(2026, 5, 16, 10, 0))
+            .totalAmount(BigDecimal.valueOf(199))
+            .status(OrderStatus.PENDING_PAYMENT.getCode())
+            .statusDesc("待付款")
+            .createTime(LocalDateTime.of(2026, 5, 16, 10, 0))
             .build();
         when(adminOrderService.getOrderDetail("1")).thenReturn(detail);
 

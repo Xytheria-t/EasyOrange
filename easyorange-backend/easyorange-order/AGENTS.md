@@ -174,10 +174,13 @@ CreateOrderSaga.execute():
 ## 订单状态机
 
 ```
-DRAFT → PAID → SHIPPED → COMPLETED
-  ↓       ↓       ↓
-CANCELLED CANCELLED REFUNDED
+PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
+       │                │         │
+       ↓                ↓         ↓
+   CANCELLED        CANCELLED   REFUNDED
 ```
+
+状态码使用 String code（`OrderStatus.PENDING_PAYMENT.getCode()` → `"PENDING_PAYMENT"`），由 `OrderStatusTypeHandler` / `PaymentStatusTypeHandler` 完成 VARCHAR 列互转，详见下方「枚举字符串化」章节。
 
 ## 定时任务
 
@@ -188,20 +191,44 @@ CANCELLED CANCELLED REFUNDED
 
 ### 添加订单新状态
 
-1. `OrderStatus` 枚举新增值
-2. `OrderAggregate` 添加状态转换方法和校验
+1. `OrderStatus` 枚举新增值（`code` 为 String，如 `"EXCHANGED"`）
+2. `OrderAggregate` 添加状态转换方法和校验（返回 `OrderTransition<XxxEvent>`）
 3. 添加对应领域事件
-4. `OrderCommandHandler` 添加命令处理
+4. `OrderCommandHandler` 添加命令处理（命令为 record）
 5. 更新 Saga 补偿逻辑（如需）
-6. Flyway 迁移
+6. Flyway 迁移：`status` 列 CHECK 约束追加新 code
 7. 测试
 
 ### 添加新查询维度
 
-1. `OrderQuery` 添加字段
+1. `OrderListQuery` record 添加字段
 2. 请求 DTO `adapter/inbound/web/dto/request/` 添加字段
-3. Controller 提取参数传递原始类型给 `OrderQueryHandler`
+3. Controller 提取参数构造 `OrderListQuery` 传给 `OrderQueryHandler.listOrders()`
 4. `OrderReadRepository` 修改查询
 5. `OrderReadModel` 添加字段
 6. `OrderReadModelAssembler` 更新
 7. 测试
+
+## 枚举字符串化
+
+`OrderStatus` / `PaymentStatus` 的 `code` 字段为 String（非 Integer），统一全链路字符串化：
+
+- **DB 层**：`eo_order.status` / `eo_order.payment_status` 为 `VARCHAR(20)`，带 CHECK 约束
+- **MyBatis**：`OrderStatusTypeHandler` / `PaymentStatusTypeHandler`（继承 `BaseEnumTypeHandler`）完成 enum ↔ String 互转
+- **领域层**：`OrderAggregate` / `OrderReconstructSpec` 直接使用枚举类型，无 String.valueOf 转换
+- **读模型 / VO**：`OrderReadModel` / `OrderVO` 的 status 字段为 `String code`
+- **JSON 序列化**：`@JsonValue` 标注在 `code` 上，前端收到的就是 `"PENDING_PAYMENT"` 而非 `0`
+
+## Spec Record 与 Command Record
+
+聚合根工厂与重建入口通过 spec record 收敛长参数列表：
+
+| Spec / Command | 用途 | 关键字段 |
+|----------------|------|---------|
+| `OrderCreateSpec` | `OrderAggregate.createOrder()` 工厂参数 | orderId, buyerId, sellerId, items, address, phone, remark |
+| `OrderReconstructSpec` | `OrderAggregate.from()` 重建参数 | id, orderNo, buyerId, sellerId, items, totalAmount, status, paymentStatus, ... |
+| `OrderTransition<E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
+| `CreateOrderCommand` | 创建订单命令（record） | items, address, phone, remark, paymentMethod |
+| `PayOrderCommand` / `ShipOrderCommand` / `ConfirmReceiptCommand` | 单字段命令（record） | orderId |
+| `CancelOrderCommand` / `RefundOrderCommand` | 带原因命令（record） | orderId, reason |
+| `OrderListQuery` | 列表查询参数收敛 | orderNo, status, buyerId, sellerId, pageNum, pageSize |

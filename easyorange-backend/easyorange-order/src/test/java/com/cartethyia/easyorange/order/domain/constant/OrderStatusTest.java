@@ -13,12 +13,12 @@ class OrderStatusTest {
 
     @ParameterizedTest
     @CsvSource({
-        "0, PENDING_PAYMENT, 待付款",
-        "1, PAID, 已付款",
-        "2, SHIPPED, 已发货",
-        "3, COMPLETED, 已完成",
-        "4, CANCELLED, 已取消",
-        "5, REFUNDED, 已退款"
+        "PENDING_PAYMENT, PENDING_PAYMENT, 待付款",
+        "PAID, PAID, 已付款",
+        "SHIPPED, SHIPPED, 已发货",
+        "COMPLETED, COMPLETED, 已完成",
+        "CANCELLED, CANCELLED, 已取消",
+        "REFUNDED, REFUNDED, 已退款"
     })
     void fromCode_withAllValidCodes_shouldReturnCorrectEnum(String code, String expectedName, String expectedDesc) {
         OrderStatus status = OrderStatus.fromCode(code);
@@ -31,33 +31,11 @@ class OrderStatusTest {
 
     @Test
     void fromCode_withInvalidCode_shouldThrow() {
-        assertThatThrownBy(() -> OrderStatus.fromCode("-1"))
+        assertThatThrownBy(() -> OrderStatus.fromCode("UNKNOWN"))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OrderStatus.fromCode("99"))
+        assertThatThrownBy(() -> OrderStatus.fromCode("0"))
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> OrderStatus.fromCode(null))
             .isInstanceOf(IllegalArgumentException.class);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "0, 待付款",
-        "1, 已付款",
-        "2, 已发货",
-        "3, 已完成",
-        "4, 已取消",
-        "5, 已退款"
-    })
-    void getDescByCode_withAllCodes_shouldReturnNonEmpty(String code, String expectedDesc) {
-        String desc = OrderStatus.getDescByCode(code);
-
-        assertThat(desc).isNotNull().isNotEmpty().isEqualTo(expectedDesc);
-    }
-
-    @Test
-    void getDescByCode_withInvalidCode_shouldReturnUnknown() {
-        assertThat(OrderStatus.getDescByCode("-1")).isEqualTo("未知状态");
-        assertThat(OrderStatus.getDescByCode("99")).isEqualTo("未知状态");
-        assertThat(OrderStatus.getDescByCode(null)).isEqualTo("未知状态");
     }
 }

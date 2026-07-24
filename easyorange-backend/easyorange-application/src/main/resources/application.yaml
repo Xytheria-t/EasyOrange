@@ -136,7 +136,7 @@ server:
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cartethyia.easyorange.product.adapter.outbound.persistence, com.cartethyia.easyorange.product.application.query
-  type-handlers-package: com.cartethyia.easyorange.framework.config.database, com.cartethyia.easyorange.user.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.product.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.payment.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.message.adapter.outbound.persistence.typehandler
+  type-handlers-package: com.cartethyia.easyorange.framework.config.database, com.cartethyia.easyorange.user.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.product.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.order.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.payment.adapter.outbound.persistence.typehandler, com.cartethyia.easyorange.message.adapter.outbound.persistence.typehandler
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl

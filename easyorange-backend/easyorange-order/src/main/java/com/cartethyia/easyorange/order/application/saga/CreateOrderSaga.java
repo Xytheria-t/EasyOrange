@@ -22,14 +22,14 @@ import java.util.List;
  * 1. 创建订单
  * 2. 创建支付
  * <p>
- * 失败时自动执行补偿操作
+ * 失败时自动执行补偿操作。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class CreateOrderSaga {
 
-    // 核心依赖（从 10 个减少到 5 个）
+    // 核心依赖（从 10 个减少到 4 个）
     private final DistributedLockManager lockManager;
     private final SagaCoordinator sagaCoordinator;
     private final OrderCompensationService compensationService;
@@ -43,16 +43,15 @@ public class CreateOrderSaga {
     @Transactional(rollbackFor = Exception.class)
     public CreateOrderResult execute(CreateOrderCommand command) {
         List<String> lockKeys = buildLockKeys(command);
-
         return lockManager.executeWithLocks(lockKeys, 10, () -> doExecute(command));
     }
 
     /**
-     * 构建锁键列表
+     * 构建锁键列表 — record accessor 适配
      */
     private List<String> buildLockKeys(CreateOrderCommand command) {
-        return command.getItems().stream()
-            .map(CreateOrderCommand.CreateOrderItem::getProductId)
+        return command.items().stream()
+            .map(CreateOrderCommand.CreateOrderItem::productId)
             .distinct()
             .sorted()
             .map(id -> ORDER_LOCK_PREFIX + id)
@@ -60,7 +59,7 @@ public class CreateOrderSaga {
     }
 
     /**
-     * 执行 Saga 流程
+     * 执行 Saga 流程 — 合并 4 个 catch 块为统一异常处理
      */
     private CreateOrderResult doExecute(CreateOrderCommand command) {
         SagaStatus sagaStatus = sagaCoordinator.createInitialStatus(command);
@@ -70,17 +69,14 @@ public class CreateOrderSaga {
 
         try {
             return executeSagaFlow(command, sagaStatus, compensations);
-        } catch (SagaException e) {
-            handleSagaFailure(sagaStatus, compensations, e);
-            throw new OrderCreationException("订单创建失败：" + e.getMessage(), e);
-        } catch (OrderDomainException e) {
-            handleSagaFailure(sagaStatus, compensations, e);
-            throw new OrderCreationException("订单创建失败：" + e.getMessage(), e);
-        } catch (PaymentGatewayAdapterException e) {
-            handleSagaFailure(sagaStatus, compensations, e);
-            throw new OrderCreationException("订单创建失败：" + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("订单创建 Saga 失败 sagaId={} command={}", sagaStatus.sagaId(), command, e);
+            // 区分领域异常与基础设施异常，仅日志层面区分，处理路径一致
+            if (e instanceof OrderDomainException || e instanceof SagaException
+                    || e instanceof PaymentGatewayAdapterException) {
+                log.warn("订单创建 Saga 业务异常 sagaId={} cause={}", sagaStatus.sagaId(), e.getMessage());
+            } else {
+                log.error("订单创建 Saga 失败 sagaId={} command={}", sagaStatus.sagaId(), command, e);
+            }
             handleSagaFailure(sagaStatus, compensations, e);
             throw new OrderCreationException("订单创建失败：" + e.getMessage(), e);
         }
@@ -94,7 +90,7 @@ public class CreateOrderSaga {
         // 步骤 1: 创建订单
         sagaStatus = sagaCoordinator.transitionTo(sagaStatus, SagaState.ORDER_CREATED, "CREATE_ORDER");
 
-        OrderAggregate.OrderCreatedResult createResult = orderCreationExecutor.createOrder(command);
+        OrderAggregate.OrderTransition<OrderCreatedEvent> createResult = orderCreationExecutor.createOrder(command);
         OrderAggregate aggregate = createResult.aggregate();
         OrderCreatedEvent orderEvent = createResult.event();
 

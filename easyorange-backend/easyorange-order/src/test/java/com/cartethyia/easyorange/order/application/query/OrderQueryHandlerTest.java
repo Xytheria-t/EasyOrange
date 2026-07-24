@@ -9,6 +9,9 @@ import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.application.query.assembler.OrderReadModelAssembler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+
+import static com.cartethyia.easyorange.order.domain.constant.OrderStatus.PENDING_PAYMENT;
+import static com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus.UNPAID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +36,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("OrderQueryHandler 单元测试")
+@SuppressWarnings("unchecked")
 class OrderQueryHandlerTest {
 
     @Mock
@@ -58,7 +62,7 @@ class OrderQueryHandlerTest {
 
         testOrderReadModel = new OrderReadModel(
                 "1", "ORD001", "100", "200", List.of(),
-                new BigDecimal("99.99"), 0, "待付款", 0,
+                new BigDecimal("99.99"), PENDING_PAYMENT.getCode(), "待付款", UNPAID.getCode(),
                 "北京市朝阳区", "13800138000", "备注", null, null,
                 LocalDateTime.now(), LocalDateTime.now()
         );
@@ -106,13 +110,13 @@ class OrderQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("handle 分页查询返回结果")
-    void handle_pageQuery_returnsPageResult() {
+    @DisplayName("listOrders 分页查询返回结果")
+    void listOrders_pageQuery_returnsPageResult() {
         PageResult<OrderReadModel> pageResult = PageResult.of(List.of(testOrderReadModel), 1L, 1, 10);
         when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(pageResult);
         when(productQueryPort.getProductsByIds(any())).thenReturn(List.of(testProductDetail));
 
-        PageResult<OrderVO> result = handler.handle(null, null, null, null, 1, 10);
+        PageResult<OrderVO> result = handler.listOrders(new OrderListQuery(null, null, null, null, 1, 10));
 
         assertThat(result).isNotNull();
         assertThat(result.records()).hasSize(1);
@@ -120,12 +124,12 @@ class OrderQueryHandlerTest {
     }
 
     @Test
-    @DisplayName("handle 空结果返回空列表")
-    void handle_emptyResult_returnsEmptyPage() {
+    @DisplayName("listOrders 空结果返回空列表")
+    void listOrders_emptyResult_returnsEmptyPage() {
         PageResult<OrderReadModel> emptyPage = PageResult.of(List.of(), 0L, 1, 10);
         when(orderReadRepository.findPage(any(OrderQueryCondition.class))).thenReturn(emptyPage);
 
-        PageResult<OrderVO> result = handler.handle(null, null, null, null, 1, 10);
+        PageResult<OrderVO> result = handler.listOrders(new OrderListQuery(null, null, null, null, 1, 10));
 
         assertThat(result).isNotNull();
         assertThat(result.records()).isEmpty();

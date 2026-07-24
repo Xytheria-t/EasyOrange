@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderCreateSpec;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
@@ -38,15 +39,15 @@ public class OrderCreationExecutor {
      * 创建订单
      *
      * @param command 创建订单命令
-     * @return 创建结果
+     * @return 创建结果（聚合根 + 领域事件）
      */
-    public OrderAggregate.OrderCreatedResult createOrder(CreateOrderCommand command) {
+    public OrderAggregate.OrderTransition<OrderCreatedEvent> createOrder(CreateOrderCommand command) {
         String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         // 准备订单项数据
-        List<OrderPreparationService.OrderItemRequest> itemRequests = command.getItems().stream()
+        List<OrderPreparationService.OrderItemRequest> itemRequests = command.items().stream()
             .map(item -> new OrderPreparationService.OrderItemRequest(
-                    item.getProductId(), item.getQuantity()))
+                    item.productId(), item.quantity()))
             .toList();
 
         OrderPreparationService.PreparationResult preparation =
@@ -55,15 +56,17 @@ public class OrderCreationExecutor {
         // 解析地址
         String resolvedAddress = resolveAddress(command);
 
-        // 创建订单聚合根
-        OrderAggregate.OrderCreatedResult result = OrderAggregate.createOrder(
-            UserId.of(buyerId),
-            UserId.of(preparation.sellerId()),
-            preparation.orderItems(),
-            Address.of(resolvedAddress),
-            Phone.of(command.getPhone()),
-            command.getRemark(),
-            idGenerator.generateId()
+        // 创建订单聚合根（通过 spec record 收敛 7 个参数）
+        OrderAggregate.OrderTransition<OrderCreatedEvent> result = OrderAggregate.createOrder(
+            new OrderCreateSpec(
+                idGenerator.generateId(),
+                UserId.of(buyerId),
+                UserId.of(preparation.sellerId()),
+                preparation.orderItems(),
+                Address.of(resolvedAddress),
+                Phone.of(command.phone()),
+                command.remark()
+            )
         );
 
         // 保存并发布事件
@@ -85,7 +88,7 @@ public class OrderCreationExecutor {
             paymentGatewayPort.createPayment(new PaymentGatewayPort.CreatePaymentRequest(
                 orderEvent.orderId(),
                 orderEvent.totalAmount(),
-                command.getPaymentMethod() != null ? command.getPaymentMethod() : "1",
+                command.paymentMethod() != null ? command.paymentMethod() : "1",
                 "ORDER",
                 "订单支付"
             ));
@@ -107,8 +110,8 @@ public class OrderCreationExecutor {
      * 解析地址
      */
     private String resolveAddress(CreateOrderCommand command) {
-        if (command.getAddress() != null && !command.getAddress().isBlank()) {
-            return command.getAddress();
+        if (command.address() != null && !command.address().isBlank()) {
+            return command.address();
         }
         return "未指定";
     }

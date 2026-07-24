@@ -4,14 +4,20 @@ import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
+import com.cartethyia.easyorange.order.domain.valueobject.Address;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
+import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
+import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
@@ -30,14 +36,7 @@ public interface OrderEntityMapper {
      */
     default OrderAggregate toAggregate(OrderDO orderDO) {
         if (orderDO == null) return null;
-        return OrderAggregate.fromRaw(
-                orderDO.getId(), orderDO.getOrderNo(),
-                orderDO.getBuyerId(), orderDO.getSellerId(),
-                orderDO.getTotalAmount(), orderDO.getStatus(),
-                String.valueOf(orderDO.getPaymentStatus()), orderDO.getAddress(),
-                orderDO.getPhone(), orderDO.getRemark(),
-                orderDO.getCancelReason(), orderDO.getCancelTime()
-        );
+        return OrderAggregate.from(toReconstructSpec(orderDO, List.of()));
     }
 
     /**
@@ -45,15 +44,7 @@ public interface OrderEntityMapper {
      */
     default OrderAggregate toAggregate(OrderDO orderDO, List<OrderItem> items) {
         if (orderDO == null) return null;
-        return OrderAggregate.fromRaw(
-                orderDO.getId(), orderDO.getOrderNo(),
-                orderDO.getBuyerId(), orderDO.getSellerId(),
-                items != null ? items : List.of(),
-                orderDO.getTotalAmount(), orderDO.getStatus(),
-                String.valueOf(orderDO.getPaymentStatus()), orderDO.getAddress(),
-                orderDO.getPhone(), orderDO.getRemark(),
-                orderDO.getCancelReason(), orderDO.getCancelTime()
-        );
+        return OrderAggregate.from(toReconstructSpec(orderDO, items != null ? items : List.of()));
     }
 
     // ==================== DO → ReadModel ====================
@@ -63,17 +54,7 @@ public interface OrderEntityMapper {
      */
     default OrderReadModel toReadModel(OrderDO orderDO) {
         if (orderDO == null) return null;
-        return new OrderReadModel(
-                orderDO.getId(), orderDO.getOrderNo(),
-                orderDO.getBuyerId(), orderDO.getSellerId(),
-                List.of(),
-                orderDO.getTotalAmount(), orderDO.getStatus(),
-                OrderStatus.getDescByCode(String.valueOf(orderDO.getStatus())),
-                orderDO.getPaymentStatus(), orderDO.getAddress(),
-                orderDO.getPhone(), orderDO.getRemark(),
-                orderDO.getCancelReason(), orderDO.getCancelTime(),
-                orderDO.getCreateTime(), orderDO.getUpdateTime()
-        );
+        return toReadModel(orderDO, List.of());
     }
 
     /**
@@ -81,14 +62,17 @@ public interface OrderEntityMapper {
      */
     default OrderReadModel toReadModel(OrderDO orderDO, List<OrderItemReadModel> items) {
         if (orderDO == null) return null;
+        var status = orderDO.getStatus();
+        var paymentStatus = orderDO.getPaymentStatus();
         return new OrderReadModel(
                 orderDO.getId(), orderDO.getOrderNo(),
                 orderDO.getBuyerId(), orderDO.getSellerId(),
                 items != null ? items : List.of(),
-                orderDO.getTotalAmount(), orderDO.getStatus(),
-                OrderStatus.getDescByCode(String.valueOf(orderDO.getStatus())),
-                orderDO.getPaymentStatus(), orderDO.getAddress(),
-                orderDO.getPhone(), orderDO.getRemark(),
+                orderDO.getTotalAmount(),
+                status != null ? status.getCode() : null,
+                status != null ? status.getDesc() : null,
+                paymentStatus != null ? paymentStatus.getCode() : null,
+                orderDO.getAddress(), orderDO.getPhone(), orderDO.getRemark(),
                 orderDO.getCancelReason(), orderDO.getCancelTime(),
                 orderDO.getCreateTime(), orderDO.getUpdateTime()
         );
@@ -122,7 +106,7 @@ public interface OrderEntityMapper {
     // ==================== Aggregate → DO (Write path) ====================
 
     /**
-     * OrderAggregate → OrderDO（不含行项）
+     * OrderAggregate → OrderDO（不含行项）。status/paymentStatus 由 TypeHandler 持久化为 VARCHAR。
      */
     default OrderDO toDataObject(OrderAggregate aggregate) {
         if (aggregate == null) return null;
@@ -132,8 +116,8 @@ public interface OrderEntityMapper {
                 .buyerId(aggregate.buyerId().value())
                 .sellerId(aggregate.sellerId().value())
                 .totalAmount(aggregate.totalAmount().value())
-                .status(Integer.valueOf(aggregate.status().getCode()))
-                .paymentStatus(Integer.valueOf(aggregate.paymentStatus().code()))
+                .status(aggregate.status())
+                .paymentStatus(aggregate.paymentStatus())
                 .address(aggregate.address().value())
                 .phone(aggregate.phone().value())
                 .remark(aggregate.remark())
@@ -158,7 +142,23 @@ public interface OrderEntityMapper {
                 .build();
     }
 
-    // ==================== JSON helpers ====================
+    // ==================== Shared helpers ====================
+
+    /**
+     * OrderDO + items → OrderReconstructSpec（统一重建入口）。
+     */
+    private OrderReconstructSpec toReconstructSpec(OrderDO orderDO, List<OrderItem> items) {
+        return new OrderReconstructSpec(
+                OrderId.of(orderDO.getId()), OrderNo.of(orderDO.getOrderNo()),
+                UserId.of(orderDO.getBuyerId()), UserId.of(orderDO.getSellerId()),
+                items,
+                Money.of(orderDO.getTotalAmount()),
+                orderDO.getStatus(),
+                orderDO.getPaymentStatus(),
+                Address.of(orderDO.getAddress()), Phone.of(orderDO.getPhone()),
+                orderDO.getRemark(), orderDO.getCancelReason(), orderDO.getCancelTime()
+        );
+    }
 
     private static String toJson(ProductSnapshot snapshot) {
         try {

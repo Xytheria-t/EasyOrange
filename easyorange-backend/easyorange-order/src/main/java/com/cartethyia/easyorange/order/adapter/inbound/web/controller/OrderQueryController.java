@@ -2,8 +2,9 @@ package com.cartethyia.easyorange.order.adapter.inbound.web.controller;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.result.Result;
-import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.application.dto.OrderVO;
+import com.cartethyia.easyorange.order.application.query.OrderListQuery;
+import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +36,10 @@ public class OrderQueryController {
 
     @GetMapping("/list")
     public Result<PageResult<OrderVO>> queryOrders(@Valid QueryOrderRequest request) {
-        return Result.success(queryHandler.handle(
-                request.getOrderNo(),
-                request.getStatus(), request.getBuyerId(), request.getSellerId(),
-                request.getPageNum(), request.getPageSize()));
+        OrderListQuery query = new OrderListQuery(
+                request.getOrderNo(), request.getStatus(),
+                request.getBuyerId(), request.getSellerId(),
+                request.getPageNum(), request.getPageSize());
+        return Result.success(queryHandler.listOrders(query));
     }
 }

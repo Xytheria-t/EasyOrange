@@ -1,29 +1,6 @@
 package com.cartethyia.easyorange.order.application.command;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 /**
- * 取消订单命令
- *
- * @author cartethyia
- * @date 2026/04/17
+ * 取消订单命令。
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CancelOrderCommand {
-
-    /**
-     * 订单ID
-     */
-    private String orderId;
-
-    /**
-     * 取消原因
-     */
-    private String reason;
-}
+public record CancelOrderCommand(String orderId, String reason) {}

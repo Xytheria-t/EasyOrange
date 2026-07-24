@@ -13,9 +13,9 @@ public record AdminOrderResponse(
     String sellerName,
     List<ItemInfo> items,
     BigDecimal totalAmount,
-    Integer status,
+    String status,
     String statusDesc,
-    Integer paymentStatus,
+    String paymentStatus,
     String paymentStatusDesc,
     LocalDateTime createTime
 ) {

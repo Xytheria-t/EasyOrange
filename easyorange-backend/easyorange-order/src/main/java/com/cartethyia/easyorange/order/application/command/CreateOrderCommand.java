@@ -1,37 +1,28 @@
 package com.cartethyia.easyorange.order.application.command;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
 import java.util.List;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CreateOrderCommand {
+/**
+ * 创建订单命令。
+ * <p>
+ * record 载体替代 Lombok {@code @Data @Builder}，配合 Controller 端直接构造或静态工厂使用。
+ * Jakarta Bean Validation 注解作用于 record 组件（字段级）。
+ */
+public record CreateOrderCommand(
+        @NotEmpty(message = "订单项不能为空") @Valid List<CreateOrderItem> items,
+        String address,
+        String phone,
+        String remark,
+        String paymentMethod
+) {
 
-    @NotEmpty(message = "订单项不能为空")
-    private List<CreateOrderItem> items;
-
-    private String address;
-    private String phone;
-    private String remark;
-    private String paymentMethod;
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class CreateOrderItem {
-        @NotNull(message = "资产 ID 不能为空")
-        private String productId;
-
-        @Min(value = 1, message = "数量至少为 1")
-        private int quantity = 1;
-    }
+    public record CreateOrderItem(
+            @NotNull(message = "资产 ID 不能为空") String productId,
+            @Min(value = 1, message = "数量至少为 1") int quantity
+    ) {}
 }

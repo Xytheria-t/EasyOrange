@@ -27,14 +27,14 @@ public interface AdminOrderQueryPort {
     Map<String, ProductInfo> getProducts(List<String> productIds);
 
     /**
-     * 订单查询条件
+     * 订单查询条件 — status/paymentStatus 为 String code（与 OrderStatus/PaymentStatus code 一致）。
      */
     record OrderQueryCondition(
         String orderNo,
         String buyerId,
         String sellerId,
-        Integer status,
-        Integer paymentStatus,
+        String status,
+        String paymentStatus,
         LocalDateTime startTime,
         LocalDateTime endTime,
         Integer pageNum,
@@ -52,7 +52,7 @@ public interface AdminOrderQueryPort {
     ) {}
 
     /**
-     * 订单摘要信息
+     * 订单摘要信息 — status/paymentStatus 为 String code。
      */
     record OrderSummary(
         String id,
@@ -60,9 +60,9 @@ public interface AdminOrderQueryPort {
         String buyerId,
         String sellerId,
         BigDecimal totalAmount,
-        Integer status,
+        String status,
         String statusDesc,
-        Integer paymentStatus,
+        String paymentStatus,
         String paymentStatusDesc,
         LocalDateTime createTime
     ) {}

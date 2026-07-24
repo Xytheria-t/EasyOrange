@@ -10,9 +10,11 @@ import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderRefundedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderShippedEvent;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
+import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -68,7 +70,8 @@ class OrderNotificationEventConsumerTest {
         orderReadModel = new OrderReadModel(
                 ORDER_ID, "ORD" + ORDER_ID,
                 BUYER_ID, SELLER_ID, List.of(),
-                BigDecimal.valueOf(99.99), 0, "待付款", 0,
+                BigDecimal.valueOf(99.99), OrderStatus.PENDING_PAYMENT.getCode(), "待付款",
+                PaymentStatus.UNPAID.getCode(),
                 "地址", "13800138000", "备注",
                 null, null, null, null
         );

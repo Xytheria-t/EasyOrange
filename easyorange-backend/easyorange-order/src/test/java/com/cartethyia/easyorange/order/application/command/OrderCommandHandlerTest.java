@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderPaidEvent;
@@ -13,16 +14,8 @@ import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.application.saga.CreateOrderSaga;
-import com.cartethyia.easyorange.order.domain.valueobject.Address;
-import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
-import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import com.cartethyia.easyorange.order.domain.valueobject.Phone;
-import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
-import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,11 +27,11 @@ import org.mockito.Mock;
 
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
 import static com.cartethyia.easyorange.order.application.command.CreateOrderCommand.CreateOrderItem;
+import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.aReconstructSpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -83,12 +76,10 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("正常创建订单")
         void handle_createOrder_success() {
-            CreateOrderCommand command = CreateOrderCommand.builder()
-                .items(List.of(new CreateOrderItem(PRODUCT_ID, 1)))
-                .address("北京市朝阳区")
-                .phone("13800138000")
-                .remark("尽快发货")
-                .build();
+            CreateOrderCommand command = new CreateOrderCommand(
+                    List.of(new CreateOrderItem(PRODUCT_ID, 1)),
+                    "北京市朝阳区", "13800138000", "尽快发货", null
+            );
 
             CreateOrderResult expectedResult = new CreateOrderResult(ORDER_ID, "ORD123");
             when(createOrderSaga.execute(command)).thenReturn(expectedResult);
@@ -108,9 +99,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("正常支付订单")
         void handle_payOrder_success() {
-            PayOrderCommand command = PayOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .build();
+            PayOrderCommand command = new PayOrderCommand(ORDER_ID);
 
             OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
@@ -130,9 +119,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("订单不存在时抛出异常")
         void handle_payOrder_orderNotFound() {
-            PayOrderCommand command = PayOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .build();
+            PayOrderCommand command = new PayOrderCommand(ORDER_ID);
 
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
@@ -148,14 +135,12 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("非认领方尝试支付时抛出异常")
         void handle_payOrder_notOwner() {
-            PayOrderCommand command = PayOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .build();
+            PayOrderCommand command = new PayOrderCommand(ORDER_ID);
 
             OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(999L);
+            TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(Exception.class);
@@ -172,10 +157,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("正常取消订单")
         void handle_cancelOrder_success() {
-            CancelOrderCommand command = CancelOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .reason("不想要了")
-                .build();
+            CancelOrderCommand command = new CancelOrderCommand(ORDER_ID, "不想要了");
 
             OrderAggregate aggregate = createPendingPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
@@ -200,9 +182,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("正常发货")
         void handle_shipOrder_success() {
-            ShipOrderCommand command = ShipOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .build();
+            ShipOrderCommand command = new ShipOrderCommand(ORDER_ID);
 
             OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
@@ -222,14 +202,12 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("非资产方尝试发货时抛出异常")
         void handle_shipOrder_notSeller() {
-            ShipOrderCommand command = ShipOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .build();
+            ShipOrderCommand command = new ShipOrderCommand(ORDER_ID);
 
             OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
-            TestSecurityUtil.setSecurityContext(999L);
+            TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
                     .isInstanceOf(Exception.class);
@@ -246,9 +224,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("正常确认收货")
         void handle_confirmReceipt_success() {
-            ConfirmReceiptCommand command = ConfirmReceiptCommand.builder()
-                .orderId(ORDER_ID)
-                .build();
+            ConfirmReceiptCommand command = new ConfirmReceiptCommand(ORDER_ID);
 
             OrderAggregate aggregate = createShippedAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
@@ -273,10 +249,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("正常退款")
         void handle_refundOrder_success() {
-            RefundOrderCommand command = RefundOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .reason("商品有问题")
-                .build();
+            RefundOrderCommand command = new RefundOrderCommand(ORDER_ID, "商品有问题");
 
             OrderAggregate aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
@@ -296,10 +269,7 @@ class OrderCommandHandlerTest {
         @Test
         @DisplayName("订单支付未完成时退款应抛出明确异常")
         void handle_refundOrder_unpaidPayment_throwsException() {
-            RefundOrderCommand command = RefundOrderCommand.builder()
-                .orderId(ORDER_ID)
-                .reason("商品有问题")
-                .build();
+            RefundOrderCommand command = new RefundOrderCommand(ORDER_ID, "商品有问题");
 
             OrderAggregate aggregate = createPaidButUnpaidPaymentAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
@@ -315,49 +285,41 @@ class OrderCommandHandlerTest {
         }
     }
 
-    private List<OrderItem> itemForTest() {
-        return List.of(OrderItem.builder()
-                .id("1")
-                .productId(ProductId.of(PRODUCT_ID))
-                .unitPrice(Money.of(new BigDecimal("99.99")))
-                .quantity(1)
-                .subtotal(Money.of(new BigDecimal("99.99")))
+    // ==================== Aggregate fixtures ====================
+
+    private OrderAggregate createPendingPaymentAggregate() {
+        return OrderAggregate.from(aReconstructSpec()
+                .id(ORDER_ID)
+                .orderNo("ORD" + ORDER_ID)
+                .status(OrderStatus.PENDING_PAYMENT)
+                .paymentStatus(PaymentStatus.UNPAID)
                 .build());
     }
 
-    private OrderAggregate createPendingPaymentAggregate() {
-        return OrderAggregate.from(
-            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
-            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
-            Money.of(new BigDecimal("99.99")), OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID,
-            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
-        );
-    }
-
     private OrderAggregate createPaidAggregate() {
-        return OrderAggregate.from(
-            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
-            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
-            Money.of(new BigDecimal("99.99")), OrderStatus.PAID, PaymentStatus.PAID,
-            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
-        );
+        return OrderAggregate.from(aReconstructSpec()
+                .id(ORDER_ID)
+                .orderNo("ORD" + ORDER_ID)
+                .status(OrderStatus.PAID)
+                .paymentStatus(PaymentStatus.PAID)
+                .build());
     }
 
     private OrderAggregate createShippedAggregate() {
-        return OrderAggregate.from(
-            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
-            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
-            Money.of(new BigDecimal("99.99")), OrderStatus.SHIPPED, PaymentStatus.PAID,
-            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
-        );
+        return OrderAggregate.from(aReconstructSpec()
+                .id(ORDER_ID)
+                .orderNo("ORD" + ORDER_ID)
+                .status(OrderStatus.SHIPPED)
+                .paymentStatus(PaymentStatus.PAID)
+                .build());
     }
 
     private OrderAggregate createPaidButUnpaidPaymentAggregate() {
-        return OrderAggregate.from(
-            OrderId.of(ORDER_ID), OrderNo.of("ORD1"),
-            UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
-            Money.of(new BigDecimal("99.99")), OrderStatus.PAID, PaymentStatus.UNPAID,
-            Address.of("地址"), Phone.of("13800138000"), "备注", null, null
-        );
+        return OrderAggregate.from(aReconstructSpec()
+                .id(ORDER_ID)
+                .orderNo("ORD" + ORDER_ID)
+                .status(OrderStatus.PAID)
+                .paymentStatus(PaymentStatus.UNPAID)
+                .build());
     }
 }
