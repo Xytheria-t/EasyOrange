@@ -113,19 +113,28 @@ public class User {
 
     /**
      * 返回用户名。
-     * <p>此处做 null 防御因为 {@code @Builder(toBuilder = true)} 允许建造不完整的聚合根实例。
-     * 业务代码应优先通过 {@link #create(String, String)} 工厂方法构造，确保 credentials 非空。</p>
+     *
+     * @throws IllegalStateException if the User was constructed without credentials.
+     *                               Use {@link #create(String, String)} factory method instead of the builder directly.
      */
     public String getUsername() {
-        return credentials != null ? credentials.username() : null;
+        if (credentials == null) {
+            throw new IllegalStateException("User was constructed without credentials - use User.create() factory method");
+        }
+        return credentials.username();
     }
 
     /**
      * 返回编码后的密码。
-     * <p>null 防御原因同 {@link #getUsername()}。</p>
+     *
+     * @throws IllegalStateException if the User was constructed without credentials.
+     *                               Use {@link #create(String, String)} factory method instead of the builder directly.
      */
     public String getPassword() {
-        return credentials != null ? credentials.encodedPassword() : null;
+        if (credentials == null) {
+            throw new IllegalStateException("User was constructed without credentials - use User.create() factory method");
+        }
+        return credentials.encodedPassword();
     }
 
     public boolean isEnabled() {

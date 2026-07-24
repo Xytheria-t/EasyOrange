@@ -26,7 +26,7 @@ public class RegistrationService {
 
         String encodedPassword = passwordEncoder.encode(password);
 
-        return userRepository.save(User.create(username, encodedPassword));
+        return User.create(username, encodedPassword);
     }
 
     private void validateUsernameNotExists(String username) {

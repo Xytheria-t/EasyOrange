@@ -9,12 +9,14 @@ import com.cartethyia.easyorange.user.domain.valueobject.PersonalInfo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
 
 import java.util.function.Function;
 
 @Mapper(
     componentModel = "spring",
-    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_NULL,
+    unmappedTargetPolicy = ReportingPolicy.IGNORE
 )
 @SuppressWarnings("unused")
 public interface UserEntityMapper {
@@ -30,6 +32,11 @@ public interface UserEntityMapper {
 
     PersonalInfo toPersonalInfo(UserDO entity);
 
+    @Mapping(target = "credentials", expression = "java(toCredentials(entity))")
+    @Mapping(target = "contactInfo", expression = "java(toContactInfo(entity))")
+    @Mapping(target = "personalInfo", expression = "java(toPersonalInfo(entity))")
+    @Mapping(target = "loginInfo", expression = "java(toLoginInfo(entity))")
+    @Mapping(target = "auditInfo", expression = "java(toAuditInfo(entity))")
     User toDomain(UserDO entity);
 
     default UserDO from(User user) {

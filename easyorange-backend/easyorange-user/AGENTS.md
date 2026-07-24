@@ -68,7 +68,7 @@ user/
 │   │   ├── LoginInfo.java                # 登录轨迹 (loginIp, loginDate, pwdUpdateDate)
 │   │   └── PersonalInfo.java             # 个人信息+展示 (record + @With + @Builder)
 │   ├── service/                         # 领域服务
-│   │   ├── AuthenticationService.java   # 认证 + 密码管理（完整用例，含内部持久化）
+│   │   ├── AuthenticationService.java   # 认证 + 密码管理（领域逻辑，持久化在 AuthAppService）
 │   │   ├── LoginSecurityService.java
 │   │   ├── ProfileUpdateService.java    # 用户资料更新 + 唯一性校验
 │   │   └── RegistrationService.java

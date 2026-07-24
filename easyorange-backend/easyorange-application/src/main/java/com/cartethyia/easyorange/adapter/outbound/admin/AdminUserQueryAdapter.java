@@ -34,7 +34,7 @@ public class AdminUserQueryAdapter implements AdminUserQueryPort {
         if (userIds == null || userIds.isEmpty()) {
             return Map.of();
         }
-        List<UserDO> users = userMapper.selectBatchIds(userIds);
+        List<UserDO> users = userMapper.selectByIds(userIds);
         return users.stream()
             .collect(Collectors.toMap(
                 UserDO::getId,

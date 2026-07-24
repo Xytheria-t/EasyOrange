@@ -63,7 +63,7 @@ public class AuthenticationService {
 
     // ========== 密码管理 ==========
 
-    public void changePassword(User user, String oldPassword, String newPassword) {
+    public User changePassword(User user, String oldPassword, String newPassword) {
         Objects.requireNonNull(user, "用户不能为空");
         Objects.requireNonNull(oldPassword, "旧密码不能为空");
         Objects.requireNonNull(newPassword, "新密码不能为空");
@@ -72,17 +72,17 @@ public class AuthenticationService {
             throw BusinessException.of(UserResultCode.INVALID_CREDENTIALS);
         }
 
-        doChangePassword(user, newPassword);
+        return doChangePassword(user, newPassword);
     }
 
-    public void resetPassword(String phone, String verifyCode, String newPassword) {
+    public User resetPassword(String phone, String verifyCode, String newPassword) {
         Objects.requireNonNull(newPassword, "新密码不能为空");
         verifyCodeOrThrow(phone, verifyCode);
 
         User user = userRepository.findByPhone(phone)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
 
-        doChangePassword(user, newPassword);
+        return doChangePassword(user, newPassword);
     }
 
     private void verifyCodeOrThrow(String phone, String verifyCode) {
@@ -93,12 +93,11 @@ public class AuthenticationService {
         }
     }
 
-    private void doChangePassword(User user, String newPassword) {
+    private User doChangePassword(User user, String newPassword) {
         if (passwordEncoder.matches(newPassword, user.getPassword())) {
             throw BusinessException.of(UserResultCode.PASSWORD_SAME_AS_OLD);
         }
 
-        User updated = user.changePassword(passwordEncoder.encode(newPassword), user.getId());
-        userRepository.update(updated);
+        return user.changePassword(passwordEncoder.encode(newPassword), user.getId());
     }
 }

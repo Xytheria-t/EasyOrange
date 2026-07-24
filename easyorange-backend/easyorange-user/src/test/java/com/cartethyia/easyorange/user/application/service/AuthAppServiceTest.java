@@ -81,11 +81,13 @@ class AuthAppServiceTest {
                 .build();
             when(registrationService.registerNewUser(username, password))
                 .thenReturn(savedUser);
+            when(userRepository.save(savedUser)).thenReturn(savedUser);
 
             String result = service.register(username, password);
 
             assertThat(result).isEqualTo("100");
             verify(registrationService).registerNewUser(username, password);
+            verify(userRepository).save(savedUser);
         }
     }
 
@@ -217,15 +219,23 @@ class AuthAppServiceTest {
     class ResetPassword {
 
         @Test
-        @DisplayName("应委托 AuthenticationService 重置")
-        void shouldDelegate() {
+        @DisplayName("应委托 AuthenticationService 重置并保存")
+        void shouldDelegateAndSave() {
             String phone = "13812345678";
             String verifyCode = "123456";
             String newPassword = "NewPass123";
 
+            User updated = User.builder()
+                .id(USER_ID)
+                .credentials(new Credentials(USERNAME, "encodedNewPwd"))
+                .build();
+            when(authenticationService.resetPassword(phone, verifyCode, newPassword))
+                .thenReturn(updated);
+
             service.resetPassword(phone, verifyCode, newPassword);
 
             verify(authenticationService).resetPassword(phone, verifyCode, newPassword);
+            verify(userRepository).update(updated);
         }
     }
 
@@ -234,18 +244,25 @@ class AuthAppServiceTest {
     class ChangePassword {
 
         @Test
-        @DisplayName("应查询用户后委托 AuthenticationService.changePassword 验证旧密码")
+        @DisplayName("应查询用户后委托 AuthenticationService.changePassword 并保存")
         void shouldFindUserAndDelegateToChangePassword() {
             TestSecurityUtil.setSecurityContext(USER_ID);
             var user = User.builder()
                 .id(USER_ID)
-                .credentials(new com.cartethyia.easyorange.user.domain.valueobject.Credentials("testuser", "encodedOldPwd"))
+                .credentials(new Credentials("testuser", "encodedOldPwd"))
+                .build();
+            var updatedUser = User.builder()
+                .id(USER_ID)
+                .credentials(new Credentials("testuser", "encodedNewPwd"))
                 .build();
             when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
+            when(authenticationService.changePassword(user, "oldPwd123", "NewPass123"))
+                .thenReturn(updatedUser);
 
             service.changePassword("oldPwd123", "NewPass123");
 
             verify(authenticationService).changePassword(user, "oldPwd123", "NewPass123");
+            verify(userRepository).update(updatedUser);
         }
 
         @Test

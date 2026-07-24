@@ -34,8 +34,9 @@ public class AuthAppService {
     @Transactional(rollbackFor = Exception.class)
     public String register(String username, String password) {
         User user = registrationService.registerNewUser(username, password);
-        domainEventPublisher.publish(new UserRegisteredEvent(user.getId(), username));
-        return user.getId();
+        User saved = userRepository.save(user);
+        domainEventPublisher.publish(new UserRegisteredEvent(saved.getId(), username));
+        return saved.getId();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -69,7 +70,8 @@ public class AuthAppService {
 
     @Transactional(rollbackFor = Exception.class)
     public void resetPassword(String phone, String verifyCode, String newPassword) {
-        authenticationService.resetPassword(phone, verifyCode, newPassword);
+        User updated = authenticationService.resetPassword(phone, verifyCode, newPassword);
+        userRepository.update(updated);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -77,7 +79,8 @@ public class AuthAppService {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         User user = userRepository.findById(userId)
             .orElseThrow(() -> BusinessException.of(UserResultCode.USER_NOT_FOUND));
-        authenticationService.changePassword(user, oldPassword, newPassword);
+        User updated = authenticationService.changePassword(user, oldPassword, newPassword);
+        userRepository.update(updated);
         domainEventPublisher.publish(new UserPasswordChangedEvent(userId));
     }
 

@@ -51,20 +51,15 @@ class RegistrationServiceTest {
             when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.empty());
             when(passwordEncoder.encode(PASSWORD)).thenReturn("$2a$10$encoded");
 
-            User savedUser = User.builder()
-                .id("1")
-                .credentials(new Credentials(USERNAME, "$2a$10$encoded"))
-                .personalInfo(PersonalInfo.builder().nickName(USERNAME).build())
-                .build();
-            when(userRepository.save(any(User.class))).thenReturn(savedUser);
-
             User result = service.registerNewUser(USERNAME, PASSWORD);
 
             assertThat(result).isNotNull();
-            assertThat(result.getId()).isEqualTo("1");
+            assertThat(result.getCredentials()).isNotNull();
+            assertThat(result.getUsername()).isEqualTo(USERNAME);
+            assertThat(result.getPersonalInfo().nickName()).isEqualTo(USERNAME);
             verify(userRepository).findByUsername(USERNAME);
             verify(passwordEncoder).encode(PASSWORD);
-            verify(userRepository).save(any(User.class));
+            verify(userRepository, never()).save(any());
         }
 
         @Test
