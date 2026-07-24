@@ -211,7 +211,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
 
     /** 批量加载所有关联数据到内存 Map，再逐条构建 document */
     private List<ProductDocument> loadDocumentsBulk(List<String> productIds) {
-        List<ProductDO> products = productMapper.selectBatchIds(productIds);
+        List<ProductDO> products = productMapper.selectByIds(productIds);
         if (products.isEmpty()) {
             return List.of();
         }
@@ -233,7 +233,7 @@ public class ElasticsearchProductSearchIndexAdapter implements ProductSearchInde
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<String, CategoryDO> categoryMap = categoryIds.isEmpty() ? Map.of()
-                : categoryMapper.selectBatchIds(categoryIds)
+                : categoryMapper.selectByIds(categoryIds)
                         .stream()
                         .collect(Collectors.toMap(CategoryDO::getId, c -> c, (a, b) -> a));
 

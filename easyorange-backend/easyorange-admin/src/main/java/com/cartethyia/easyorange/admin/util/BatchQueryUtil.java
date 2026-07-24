@@ -24,13 +24,13 @@ public class BatchQueryUtil {
 
     public Map<String, UserDO> batchGetUsers(List<String> userIds) {
         if (userIds.isEmpty()) return Map.of();
-        return userMapper.selectBatchIds(userIds).stream()
+        return userMapper.selectByIds(userIds).stream()
                 .collect(Collectors.toMap(UserDO::getId, u -> u, (a, b) -> a));
     }
 
     public Map<String, ProductDO> batchGetProducts(List<String> productIds) {
         if (productIds.isEmpty()) return Map.of();
-        return productMapper.selectBatchIds(productIds).stream()
+        return productMapper.selectByIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDO::getId, p -> p, (a, b) -> a));
     }
 }

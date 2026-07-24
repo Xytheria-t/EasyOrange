@@ -6,8 +6,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.MDC;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
+@NullMarked
 public class LoggingInterceptor implements HandlerInterceptor {
 
     private static final String START_TIME = "requestStartTime";
@@ -31,7 +32,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         var uri = request.getRequestURI();
         if (shouldSkipLogging(uri)) return true;
 
@@ -47,7 +48,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     }
 
     @Override
-    public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, Exception ex) {
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         var uri = request.getRequestURI();
         if (shouldSkipLogging(uri)) return;
 

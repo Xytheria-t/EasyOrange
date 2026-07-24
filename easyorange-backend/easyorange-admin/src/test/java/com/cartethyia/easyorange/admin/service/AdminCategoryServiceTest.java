@@ -29,6 +29,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdminCategoryService 单元测试")
+@SuppressWarnings("unchecked")
 class AdminCategoryServiceTest {
 
     @Mock

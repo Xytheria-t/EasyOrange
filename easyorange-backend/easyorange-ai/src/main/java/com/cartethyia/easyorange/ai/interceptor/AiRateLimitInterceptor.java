@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.data.redis.core.RedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
+@NullMarked
 public class AiRateLimitInterceptor implements HandlerInterceptor {
 
     private final RedisTemplate<Object, Object> redisTemplate;

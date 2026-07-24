@@ -111,16 +111,20 @@ Redisson 自动处理锁续期（Watch Dog）、重入、死锁检测。配置�
 
 **traceId 自动注入**：项目引入 `micrometer-tracing-bridge-brave`，Spring Boot 4 自动配置 `Slf4jScopeDecorator` 注入 `traceId`/`spanId` 到 MDC。HTTP 请求进入时 Brave 的 `TracingFilter` 自动开启 span，无需手写 UUID。
 
-**异步线程 MDC 传播**：`MdcTaskDecorator` 实现 Spring 的 `TaskDecorator`，在 `ThreadPoolConfig` 中注入所有线程池（`domainEventExecutor` / `taskScheduler`）：
+**异步线程 MDC 传播**：`MdcTaskDecorator` 实现 Spring 的 `TaskDecorator`（类级标注 `@NullMarked` 匹配父接口契约），在 `ThreadPoolConfig` 中注入所有线程池（`domainEventExecutor` / `taskScheduler`）：
 
 ```java
-public Runnable decorate(@NonNull Runnable runnable) {
-    Map<String, String> context = MDC.getCopyOfContextMap();  // 主线程快照
-    return () -> {
-        if (context != null) MDC.setContextMap(context);  // 复制到子线程
-        try { runnable.run(); }
-        finally { MDC.clear(); }  // 防止线程池复用时上下文泄漏
-    };
+@NullMarked
+public class MdcTaskDecorator implements TaskDecorator {
+    @Override
+    public Runnable decorate(Runnable runnable) {
+        Map<String, String> context = MDC.getCopyOfContextMap();  // 主线程快照
+        return () -> {
+            if (context != null) MDC.setContextMap(context);  // 复制到子线程
+            try { runnable.run(); }
+            finally { MDC.clear(); }  // 防止线程池复用时上下文泄漏
+        };
+    }
 }
 ```
 

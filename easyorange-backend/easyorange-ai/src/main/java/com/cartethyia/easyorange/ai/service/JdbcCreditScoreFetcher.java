@@ -30,7 +30,7 @@ public class JdbcCreditScoreFetcher implements CreditScoreFetcher {
         try {
             jdbcTemplate.query(sql,
                     (RowCallbackHandler) rs -> result.put(rs.getString("user_id"), rs.getInt("credit_score")),
-                    sellerIds.toArray(new String[0])
+                    (Object[]) sellerIds.toArray(new String[0])
             );
         } catch (Exception e) {
             log.warn("Batch credit score fetch failed, falling back to individual lookup", e);

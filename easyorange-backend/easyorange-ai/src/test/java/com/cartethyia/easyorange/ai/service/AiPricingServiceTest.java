@@ -20,6 +20,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AiPricingService 测试")
+@SuppressWarnings("unchecked")
 class AiPricingServiceTest {
 
     @Mock
