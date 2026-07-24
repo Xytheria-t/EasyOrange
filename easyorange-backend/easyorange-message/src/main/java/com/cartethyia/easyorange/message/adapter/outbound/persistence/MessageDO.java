@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -21,7 +22,7 @@ public class MessageDO extends BaseDO {
     private Integer type;
     private String title;
     private String content;
-    private Integer isRead;
+    private ReadStatus isRead;
     private LocalDateTime readTime;
     private String businessId;
     private String conversationId;
@@ -33,7 +34,7 @@ public class MessageDO extends BaseDO {
     public Integer getType() { return type; }
     public String getTitle() { return title; }
     public String getContent() { return content; }
-    public Integer getIsRead() { return isRead; }
+    public ReadStatus getIsRead() { return isRead; }
     public String getBusinessId() { return businessId; }
     public String getConversationId() { return conversationId; }
     public LocalDateTime getReadTime() { return readTime; }

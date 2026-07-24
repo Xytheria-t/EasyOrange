@@ -29,16 +29,16 @@ public class PaymentQueryHandler {
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
     }
 
-    public PageResult<PaymentAggregate> getMyPayments(Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<PaymentAggregate> getMyPayments(String status, Integer pageNum, Integer pageSize) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryPaymentsInternal(userId, status, pageNum, pageSize);
     }
 
-    public PageResult<PaymentAggregate> queryPayments(String userId, Integer status, Integer pageNum, Integer pageSize) {
+    public PageResult<PaymentAggregate> queryPayments(String userId, String status, Integer pageNum, Integer pageSize) {
         return queryPaymentsInternal(userId, status, pageNum, pageSize);
     }
 
-    private PageResult<PaymentAggregate> queryPaymentsInternal(String userId, Integer status, Integer pageNum, Integer pageSize) {
+    private PageResult<PaymentAggregate> queryPaymentsInternal(String userId, String status, Integer pageNum, Integer pageSize) {
         int effectivePageNum = pageNum != null ? pageNum : 1;
         int effectivePageSize = pageSize != null ? pageSize : 20;
 

@@ -1,8 +1,6 @@
 package com.cartethyia.easyorange.common.enums;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -19,34 +17,35 @@ import java.util.stream.Stream;
 @AllArgsConstructor
 public enum BusinessType {
 
-    OTHER(0, "其它"),
-    ADD(1, "新增"),
-    UPDATE(2, "修改"),
-    DELETE(3, "删除"),
-    LOGIN(4, "登录");
+    OTHER("0", "其它"),
+    ADD("1", "新增"),
+    UPDATE("2", "修改"),
+    DELETE("3", "删除"),
+    LOGIN("4", "登录");
 
-    private static final Map<Integer, BusinessType> CODE_MAP = Stream.of(values())
+    private static final Map<String, BusinessType> CODE_MAP = Stream.of(values())
             .collect(Collectors.toUnmodifiableMap(e -> e.code, e -> e));
 
-    private final int code;
+    @JsonValue
+    private final String code;
     private final String desc;
 
-    @JsonValue
-    public String getDesc() {
-        return desc;
+    public static BusinessType fromCode(String code) {
+        if (code == null) {
+            throw new IllegalArgumentException("BusinessType code must not be null");
+        }
+        var result = CODE_MAP.get(code);
+        if (result == null) {
+            throw new IllegalArgumentException("Unknown BusinessType code: " + code);
+        }
+        return result;
     }
 
-    @Nullable
-    public static BusinessType fromCode(int code) {
-        return CODE_MAP.get(code);
-    }
-
-    /**
-     * 从 code 值反序列化为枚举（支持 JSON 反序列化），未匹配时返回 OTHER。
-     */
-    @JsonCreator
-    public static BusinessType fromJsonValue(int code) {
-        var result = fromCode(code);
-        return result != null ? result : OTHER;
+    public static String getDescByCode(String code) {
+        try {
+            return fromCode(code).getDesc();
+        } catch (IllegalArgumentException e) {
+            return "未知";
+        }
     }
 }

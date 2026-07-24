@@ -31,10 +31,10 @@ public class MockPaymentController {
     @PostMapping("/create")
     public Result<PaymentResponse> createMockPayment(
             @RequestParam String orderId,
-            @RequestParam Integer paymentMethod,
+            @RequestParam String paymentMethod,
             @RequestParam BigDecimal amount) {
         String paymentId = idGenerator.generateId();
-        PaymentAggregate.PaymentCreatedResult created = PaymentAggregate.create(paymentId, orderId, "0", amount, paymentMethod, null);
+        PaymentAggregate.PaymentCreatedResult created = PaymentAggregate.create(paymentId, orderId, "0", amount, PaymentMethod.fromCode(paymentMethod), null);
 
         paymentRepository.save(created.aggregate());
 
@@ -111,8 +111,8 @@ public class MockPaymentController {
                 .paymentNo(aggregate.paymentNo())
                 .orderId(aggregate.orderId())
                 .amount(aggregate.amount())
-                .paymentMethod(aggregate.paymentMethod())
-                .paymentMethodDesc(PaymentMethod.getDescByCode(aggregate.paymentMethod()))
+                .paymentMethod(aggregate.paymentMethod().getCode())
+                .paymentMethodDesc(PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()))
                 .status(aggregate.status().getCode())
                 .statusDesc(PaymentStatus.getDescByCode(aggregate.status().getCode()))
                 .transactionId(aggregate.transactionId())

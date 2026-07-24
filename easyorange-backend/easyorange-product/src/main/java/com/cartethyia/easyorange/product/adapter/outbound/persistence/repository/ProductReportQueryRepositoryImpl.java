@@ -39,7 +39,7 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
     }
 
     @Override
-    public PageResult<ProductReport> findByStatus(Integer status, int pageNum, int pageSize) {
+    public PageResult<ProductReport> findByStatus(String status, int pageNum, int pageSize) {
         Page<ProductReportDO> page = new Page<>(pageNum, pageSize);
         var wrapper = lambdaQuery();
         if (status != null) {
@@ -55,7 +55,7 @@ public class ProductReportQueryRepositoryImpl extends BaseRepository<ProductRepo
     }
 
     @Override
-    public long countByStatus(Integer status) {
+    public long countByStatus(String status) {
         var wrapper = lambdaQuery();
         if (status != null) {
             wrapper.eq(ProductReportDO::getStatus, status);

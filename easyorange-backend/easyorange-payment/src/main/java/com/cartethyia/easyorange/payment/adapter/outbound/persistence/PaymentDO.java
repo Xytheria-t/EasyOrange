@@ -3,6 +3,8 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.Version;
 import com.cartethyia.easyorange.common.entity.BaseDO;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,9 +32,9 @@ public class PaymentDO extends BaseDO {
 
     private BigDecimal refundedAmount;
 
-    private Integer paymentMethod;
+    private PaymentMethod paymentMethod;
 
-    private Integer status;
+    private PaymentStatus status;
 
     private String transactionId;
 

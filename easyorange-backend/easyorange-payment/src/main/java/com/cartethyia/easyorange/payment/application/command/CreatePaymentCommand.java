@@ -15,7 +15,7 @@ public class CreatePaymentCommand {
 
     private String orderId;
     private BigDecimal amount;
-    private Integer paymentMethod;
+    private String paymentMethod;
     private String payPassword;
     private String attach;
 }

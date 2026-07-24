@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter
 
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.mapstruct.Mapper;
 
@@ -22,7 +23,7 @@ public interface PaymentDataMapper {
                 po.getAmount(),
                 po.getRefundedAmount() != null ? po.getRefundedAmount() : BigDecimal.ZERO,
                 po.getPaymentMethod(),
-                PaymentStatus.fromCode(po.getStatus()),
+                po.getStatus(),
                 po.getTransactionId(),
                 po.getRefundReason(),
                 po.getRefundTime(),
@@ -45,7 +46,7 @@ public interface PaymentDataMapper {
                 .amount(aggregate.amount())
                 .refundedAmount(aggregate.refundedAmount())
                 .paymentMethod(aggregate.paymentMethod())
-                .status(aggregate.status().getCode())
+                .status(aggregate.status())
                 .transactionId(aggregate.transactionId())
                 .refundReason(aggregate.refundReason())
                 .refundTime(aggregate.refundTime())

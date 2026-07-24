@@ -102,7 +102,7 @@ public class AdminOrderQueryAdapter implements AdminOrderQueryPort {
     }
 
     private OrderSummary toOrderSummary(OrderDO order) {
-        OrderStatus status = OrderStatus.fromCode(order.getStatus());
+        OrderStatus status = OrderStatus.fromCode(String.valueOf(order.getStatus()));
         return new OrderSummary(
             order.getId(),
             order.getOrderNo(),

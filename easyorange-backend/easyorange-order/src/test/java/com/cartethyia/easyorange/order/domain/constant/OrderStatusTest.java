@@ -20,7 +20,7 @@ class OrderStatusTest {
         "4, CANCELLED, 已取消",
         "5, REFUNDED, 已退款"
     })
-    void fromCode_withAllValidCodes_shouldReturnCorrectEnum(int code, String expectedName, String expectedDesc) {
+    void fromCode_withAllValidCodes_shouldReturnCorrectEnum(String code, String expectedName, String expectedDesc) {
         OrderStatus status = OrderStatus.fromCode(code);
 
         assertThat(status).isNotNull();
@@ -31,9 +31,9 @@ class OrderStatusTest {
 
     @Test
     void fromCode_withInvalidCode_shouldThrow() {
-        assertThatThrownBy(() -> OrderStatus.fromCode(-1))
+        assertThatThrownBy(() -> OrderStatus.fromCode("-1"))
             .isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> OrderStatus.fromCode(99))
+        assertThatThrownBy(() -> OrderStatus.fromCode("99"))
             .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> OrderStatus.fromCode(null))
             .isInstanceOf(IllegalArgumentException.class);
@@ -48,7 +48,7 @@ class OrderStatusTest {
         "4, 已取消",
         "5, 已退款"
     })
-    void getDescByCode_withAllCodes_shouldReturnNonEmpty(int code, String expectedDesc) {
+    void getDescByCode_withAllCodes_shouldReturnNonEmpty(String code, String expectedDesc) {
         String desc = OrderStatus.getDescByCode(code);
 
         assertThat(desc).isNotNull().isNotEmpty().isEqualTo(expectedDesc);
@@ -56,8 +56,8 @@ class OrderStatusTest {
 
     @Test
     void getDescByCode_withInvalidCode_shouldReturnUnknown() {
-        assertThat(OrderStatus.getDescByCode(-1)).isEqualTo("未知状态");
-        assertThat(OrderStatus.getDescByCode(99)).isEqualTo("未知状态");
+        assertThat(OrderStatus.getDescByCode("-1")).isEqualTo("未知状态");
+        assertThat(OrderStatus.getDescByCode("99")).isEqualTo("未知状态");
         assertThat(OrderStatus.getDescByCode(null)).isEqualTo("未知状态");
     }
 }

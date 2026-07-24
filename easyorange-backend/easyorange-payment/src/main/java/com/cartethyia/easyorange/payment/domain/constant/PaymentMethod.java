@@ -8,15 +8,15 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum PaymentMethod {
 
-    WECHAT(1, "微信支付"),
-    ALIPAY(2, "支付宝"),
-    BALANCE(3, "余额支付");
+    WECHAT("1", "微信支付"),
+    ALIPAY("2", "支付宝"),
+    BALANCE("3", "余额支付");
 
     @JsonValue
-    private final Integer code;
+    private final String code;
     private final String desc;
 
-    public static PaymentMethod fromCode(Integer code) {
+    public static PaymentMethod fromCode(String code) {
         if (code == null) {
             throw new IllegalArgumentException("PaymentMethod code must not be null");
         }
@@ -28,7 +28,7 @@ public enum PaymentMethod {
         throw new IllegalArgumentException("Unknown PaymentMethod code: " + code);
     }
 
-    public static String getDescByCode(Integer code) {
+    public static String getDescByCode(String code) {
         try {
             return fromCode(code).getDesc();
         } catch (IllegalArgumentException e) {

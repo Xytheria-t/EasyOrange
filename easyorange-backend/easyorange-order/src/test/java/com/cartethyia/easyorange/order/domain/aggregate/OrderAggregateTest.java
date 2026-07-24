@@ -134,7 +134,7 @@ class OrderAggregateTest {
         void fromRaw_validParams_returnsAggregate() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
                     "1", "ORD123", BUYER_ID, SELLER_ID,
-                    AMOUNT, 0, 0, "地址", "13800138000", "备注", null, null
+                    AMOUNT, 0, "0", "地址", "13800138000", "备注", null, null
             );
 
             assertThat(aggregate.id().value()).isEqualTo("1");
@@ -158,7 +158,7 @@ class OrderAggregateTest {
             OrderAggregate.OrderPaidResult result = aggregate.pay();
 
             assertThat(result.event().orderId()).isEqualTo(aggregate.id().value());
-            assertThat(result.event().paymentStatus()).isEqualTo(1);
+            assertThat(result.event().paymentStatus()).isEqualTo("1");
             assertThat(result.aggregate().paymentStatus()).isEqualTo(PaymentStatus.PAID);
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PAID);
         }

@@ -13,7 +13,7 @@ public interface PaymentQueryRepositoryPort {
 
     Optional<PaymentAggregate> findAggregateByOrderId(String orderId);
 
-    List<PaymentAggregate> findByUserIdAndStatus(String userId, Integer status, int pageNum, int pageSize);
+    List<PaymentAggregate> findByUserIdAndStatus(String userId, String status, int pageNum, int pageSize);
 
-    long countByUserIdAndStatus(String userId, Integer status);
+    long countByUserIdAndStatus(String userId, String status);
 }

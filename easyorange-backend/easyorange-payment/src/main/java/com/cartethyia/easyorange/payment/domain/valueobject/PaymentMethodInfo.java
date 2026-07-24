@@ -3,52 +3,47 @@ package com.cartethyia.easyorange.payment.domain.valueobject;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 
-public record PaymentMethodInfo(Integer code) {
+public record PaymentMethodInfo(PaymentMethod method) {
     public PaymentMethodInfo {
-        if (code == null) {
+        if (method == null) {
             throw PaymentDomainException.of("支付方式不能为空");
-        }
-        try {
-            PaymentMethod.fromCode(code);
-        } catch (IllegalArgumentException e) {
-            throw PaymentDomainException.of("不支持的支付方式: " + code);
         }
     }
 
-    public static PaymentMethodInfo of(Integer code) {
-        return new PaymentMethodInfo(code);
+    public static PaymentMethodInfo of(PaymentMethod method) {
+        return new PaymentMethodInfo(method);
     }
 
     public static PaymentMethodInfo wechat() {
-        return new PaymentMethodInfo(PaymentMethod.WECHAT.getCode());
+        return new PaymentMethodInfo(PaymentMethod.WECHAT);
     }
 
     public static PaymentMethodInfo alipay() {
-        return new PaymentMethodInfo(PaymentMethod.ALIPAY.getCode());
+        return new PaymentMethodInfo(PaymentMethod.ALIPAY);
     }
 
     public static PaymentMethodInfo balance() {
-        return new PaymentMethodInfo(PaymentMethod.BALANCE.getCode());
+        return new PaymentMethodInfo(PaymentMethod.BALANCE);
     }
 
     public boolean isWechat() {
-        return PaymentMethod.WECHAT.getCode().equals(code);
+        return PaymentMethod.WECHAT == method;
     }
 
     public boolean isAlipay() {
-        return PaymentMethod.ALIPAY.getCode().equals(code);
+        return PaymentMethod.ALIPAY == method;
     }
 
     public boolean isBalance() {
-        return PaymentMethod.BALANCE.getCode().equals(code);
+        return PaymentMethod.BALANCE == method;
     }
 
     public String getDesc() {
-        return PaymentMethod.getDescByCode(code);
+        return method.getDesc();
     }
 
     @Override
     public String toString() {
-        return "PaymentMethodInfo[code=" + code + ", desc=" + getDesc() + "]";
+        return "PaymentMethodInfo[method=" + method + ", desc=" + getDesc() + "]";
     }
 }

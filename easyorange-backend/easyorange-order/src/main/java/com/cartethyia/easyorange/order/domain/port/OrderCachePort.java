@@ -24,7 +24,7 @@ public interface OrderCachePort<T> {
 
     void evictOrderCache(String buyerId, String sellerId);
 
-    String buildOrderListKey(String userId, Integer status, Integer pageNum, Integer pageSize);
+    String buildOrderListKey(String userId, String status, Integer pageNum, Integer pageSize);
 
-    String buildOrderListKey(String userId, Integer status);
+    String buildOrderListKey(String userId, String status);
 }

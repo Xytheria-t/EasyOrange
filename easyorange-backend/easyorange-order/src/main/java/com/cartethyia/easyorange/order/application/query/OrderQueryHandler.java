@@ -86,7 +86,7 @@ public class OrderQueryHandler {
                                                        Integer pageNum, Integer pageSize) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        String cacheKey = orderCachePort.buildOrderListKey(userId, status);
+        String cacheKey = orderCachePort.buildOrderListKey(userId, String.valueOf(status));
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
         if (cachedResult.isPresent()) {
             return cachedResult.get();

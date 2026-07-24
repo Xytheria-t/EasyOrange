@@ -51,9 +51,9 @@ class ProductReportQueryServiceTest {
         @Test
         @DisplayName("应返回分页结果")
         void shouldReturnPaginatedReports() {
-            ProductReport report1 = ProductReport.create("1", "2", "假货", 1);
+            ProductReport report1 = ProductReport.create("1", "2", "假货", "1");
             report1 = report1.assignId("100");
-            ProductReport report2 = ProductReport.create("1", "3", "侵权", 2);
+            ProductReport report2 = ProductReport.create("1", "3", "侵权", "2");
             report2 = report2.assignId("101");
 
             List<ProductReport> reports = List.of(report1, report2);
@@ -68,7 +68,7 @@ class ProductReportQueryServiceTest {
             assertThat(result.records().get(0).id()).isEqualTo("100");
             assertThat(result.records().get(0).productId()).isEqualTo("1");
             assertThat(result.records().get(0).reason()).isEqualTo("假货");
-            assertThat(result.records().get(0).status()).isEqualTo(0);
+            assertThat(result.records().get(0).status()).isEqualTo("0");
         }
 
         @Test
@@ -86,7 +86,7 @@ class ProductReportQueryServiceTest {
         @Test
         @DisplayName("null 的记录应返回 null")
         void withNullReport_shouldReturnNull() {
-            ProductReport report = ProductReport.create("1", "2", "假货", 1);
+            ProductReport report = ProductReport.create("1", "2", "假货", "1");
             report = report.assignId("100");
 
             List<ProductReport> reports = Arrays.asList(report, null);
@@ -111,7 +111,7 @@ class ProductReportQueryServiceTest {
 
         @BeforeEach
         void setUp() {
-            report = ProductReport.create(PRODUCT_ID, REPORTER_ID, "假货", 1);
+            report = ProductReport.create(PRODUCT_ID, REPORTER_ID, "假货", "1");
             report = report.assignId("100");
         }
 
@@ -129,8 +129,8 @@ class ProductReportQueryServiceTest {
             assertThat(response.productId()).isEqualTo(PRODUCT_ID);
             assertThat(response.productName()).isEqualTo("测试商品");
             assertThat(response.reason()).isEqualTo("假货");
-            assertThat(response.reasonType()).isEqualTo(1);
-            assertThat(response.status()).isEqualTo(0);
+            assertThat(response.reasonType()).isEqualTo("1");
+            assertThat(response.status()).isEqualTo("0");
             assertThat(response.statusDesc()).isEqualTo("待处理");
         }
 
@@ -173,7 +173,7 @@ class ProductReportQueryServiceTest {
 
             ProductReportDetailResponse response = service.getReportDetail("100", REPORTER_ID);
 
-            assertThat(response.status()).isEqualTo(3);
+            assertThat(response.status()).isEqualTo("3");
             assertThat(response.statusDesc()).isEqualTo("已驳回");
         }
 

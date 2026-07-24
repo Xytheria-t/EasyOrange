@@ -9,7 +9,7 @@ import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRep
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.enums.MessageStatus;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
 import org.springframework.stereotype.Repository;
 
@@ -65,7 +65,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
         Page<MessageDO> page = new Page<>(pageReq.getPageNum(), pageReq.getPageSize());
         var wrapper = lambdaQuery();
         wrapper.eq(MessageDO::getReceiverId, userId)
-                .eq(MessageDO::getIsRead, MessageStatus.UNREAD.getCode());
+                .eq(MessageDO::getIsRead, ReadStatus.UNREAD);
 
         if (query.type() != null) {
             wrapper.eq(MessageDO::getType, query.type());
@@ -79,7 +79,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
 
     @Override
     public UnreadCount countUnreadByReceiverId(String userId) {
-        List<Map<String, Object>> counts = mapper.countUnreadByType(userId, MessageStatus.UNREAD.getCode());
+        List<Map<String, Object>> counts = mapper.countUnreadByType(userId, 0);
 
         Map<Integer, Long> countMap = counts.stream()
                 .collect(Collectors.toMap(

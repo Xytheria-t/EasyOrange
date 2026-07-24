@@ -39,10 +39,10 @@ class ProductReportCommandServiceTest {
     void handleReport_shouldDelegateToDomainService() {
         when(productReportRepository.existsRecentReport("1", "2")).thenReturn(false);
 
-        service.handleReport("1", "2", "假货", 1);
+        service.handleReport("1", "2", "假货", "1");
 
         verify(productReportRepository).existsRecentReport("1", "2");
-        verify(productReportDomainService).reportProduct("1", "2", "假货", 1);
+        verify(productReportDomainService).reportProduct("1", "2", "假货", "1");
     }
 
     @Test
@@ -50,7 +50,7 @@ class ProductReportCommandServiceTest {
     void handleReport_whenRecentReportExists_shouldThrow() {
         when(productReportRepository.existsRecentReport("1", "2")).thenReturn(true);
 
-        assertThatThrownBy(() -> service.handleReport("1", "2", "假货", 1))
+        assertThatThrownBy(() -> service.handleReport("1", "2", "假货", "1"))
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("已在24小时内举报过");
 

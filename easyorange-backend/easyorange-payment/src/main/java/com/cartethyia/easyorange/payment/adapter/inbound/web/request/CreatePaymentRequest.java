@@ -22,7 +22,7 @@ public class CreatePaymentRequest {
     private BigDecimal amount;
 
     @NotNull(message = "支付方式不能为空")
-    private Integer paymentMethod;
+    private String paymentMethod;
 
     @JsonIgnore
     private String payPassword;

@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -77,10 +78,10 @@ class MessageArchiveServiceTest {
         @DisplayName("有待归档消息时归档并删除原记录")
         void archiveOldMessages_hasMessages_archivesAndDeletes() {
             MessageDO msg1 = MessageDO.builder().id("1").senderId("1").receiverId("2").type(1)
-                    .title("title").content("content").isRead(0)
+                    .title("title").content("content").isRead(ReadStatus.UNREAD)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             MessageDO msg2 = MessageDO.builder().id("2").senderId("1").receiverId("2").type(1)
-                    .title("title2").content("content2").isRead(1)
+                    .title("title2").content("content2").isRead(ReadStatus.READ)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1, msg2), List.of());
 
@@ -107,10 +108,10 @@ class MessageArchiveServiceTest {
         @DisplayName("多批次归档时循环处理")
         void archiveOldMessages_multipleBatches_processesAll() {
             MessageDO msg1 = MessageDO.builder().id("1").senderId("1").receiverId("2").type(1)
-                    .title("t").content("c").isRead(0)
+                    .title("t").content("c").isRead(ReadStatus.UNREAD)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             MessageDO msg2 = MessageDO.builder().id("2").senderId("1").receiverId("2").type(1)
-                    .title("t2").content("c2").isRead(1)
+                    .title("t2").content("c2").isRead(ReadStatus.READ)
                     .createTime(LocalDateTime.now().minusDays(100)).build();
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1), List.of(msg2), List.of());
 

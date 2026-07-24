@@ -200,7 +200,7 @@ public class OrderAggregate {
      * @see #fromRaw(String, String, String, String, List, BigDecimal, Integer, Integer, String, String, String, String, LocalDateTime)
      */
     public static OrderAggregate fromRaw(String id, String orderNo, String buyerId, String sellerId,
-                                           BigDecimal amount, Integer status, Integer paymentStatus,
+                                            BigDecimal amount, Integer status, String paymentStatus,
                                            String address, String phone, String remark,
                                            String cancelReason, LocalDateTime cancelTime) {
         return fromRaw(id, orderNo, buyerId, sellerId, List.of(),
@@ -213,13 +213,13 @@ public class OrderAggregate {
      */
     public static OrderAggregate fromRaw(String id, String orderNo, String buyerId, String sellerId,
                                            List<OrderItem> items, BigDecimal totalAmount,
-                                           Integer status, Integer paymentStatus,
-                                           String address, String phone, String remark,
-                                           String cancelReason, LocalDateTime cancelTime) {
+                                            Integer status, String paymentStatus,
+                                            String address, String phone, String remark,
+                                            String cancelReason, LocalDateTime cancelTime) {
         return new OrderAggregate(
                 OrderId.of(id), OrderNo.of(orderNo), UserId.of(buyerId), UserId.of(sellerId),
-                items != null ? items : List.of(), Money.of(totalAmount), OrderStatus.fromCode(status),
-                PaymentStatus.of(paymentStatus),
+                items != null ? items : List.of(), Money.of(totalAmount), OrderStatus.fromCode(String.valueOf(status)),
+                PaymentStatus.fromCode(paymentStatus),
                 Address.of(address), Phone.of(phone), remark, cancelReason, cancelTime
         );
     }

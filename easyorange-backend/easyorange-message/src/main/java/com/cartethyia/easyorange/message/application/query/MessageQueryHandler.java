@@ -13,8 +13,8 @@ import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMe
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.enums.MessageResultCode;
-import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,7 +51,8 @@ public class MessageQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getMyMessages(QueryMessageRequest request) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), request.getIsRead());
+        var readStatus = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
+        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), readStatus);
         PageResult<MessageAggregate> messagePage = queryRepository.findByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
@@ -59,7 +60,8 @@ public class MessageQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<MessageVO> getUnreadMessages(QueryMessageRequest request) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), request.getIsRead());
+        var readStatus = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
+        MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), readStatus);
         PageResult<MessageAggregate> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
@@ -113,11 +115,11 @@ public class MessageQueryHandler {
                 .senderId(aggregate.senderId())
                 .receiverId(aggregate.receiverId())
                 .type(aggregate.type())
-                .typeDesc(MessageType.getDescByCode(aggregate.type()))
+                .typeDesc(MessageType.getDescByCode(String.valueOf(aggregate.type())))
                 .title(aggregate.title())
                 .content(aggregate.content())
-                .isRead(aggregate.isRead())
-                .readDesc(MessageStatus.getDescByCode(aggregate.isRead()))
+                .isRead(Integer.valueOf(aggregate.isRead().getCode()))
+                .readDesc(ReadStatus.READ == aggregate.isRead() ? "已读" : "未读")
                 .businessId(aggregate.businessId())
                 .createTime(aggregate.createTime())
                 .updateTime(null);

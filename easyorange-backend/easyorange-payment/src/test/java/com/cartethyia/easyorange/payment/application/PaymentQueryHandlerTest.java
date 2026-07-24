@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -33,7 +34,7 @@ class PaymentQueryHandlerTest {
     private PaymentAggregate createTestAggregate(String id, String paymentNo, PaymentStatus status) {
         return PaymentAggregate.reconstruct(
                 id, paymentNo, "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 status, null, null, null, null, null, null, 0
         );
     }

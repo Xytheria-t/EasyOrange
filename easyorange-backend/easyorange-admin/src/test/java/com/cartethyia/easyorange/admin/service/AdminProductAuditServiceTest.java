@@ -273,7 +273,7 @@ class AdminProductAuditServiceTest {
                     .productId(PRODUCT_ID)
                     .operatorId(OPERATOR_ID)
                     .operatorName("管理员")
-                    .action(1)
+                    .action("1")
                     .beforeStatus("4")
                     .afterStatus("1")
                     .build();

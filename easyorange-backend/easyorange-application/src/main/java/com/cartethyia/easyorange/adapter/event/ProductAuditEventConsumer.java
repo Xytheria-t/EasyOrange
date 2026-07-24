@@ -44,8 +44,8 @@ public class ProductAuditEventConsumer extends AbstractDomainEventConsumer {
         if (!(event instanceof ProductAuditedEvent e)) {
             throw new IllegalStateException("不支持的事件: " + event.getClass());
         }
-        String title = e.action() == 1 ? "商品审核通过" : "商品审核未通过";
-        String content = e.action() == 1
+        String title = "1".equals(e.action()) ? "商品审核通过" : "商品审核未通过";
+        String content = "1".equals(e.action())
                 ? "您发布的「%s」已通过审核，现已上架销售！".formatted(e.productName())
                 : "您发布的「%s」未通过审核。原因：%s。请修改后重新提交。".formatted(e.productName(), e.reason());
 

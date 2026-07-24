@@ -108,7 +108,7 @@ class AdminDashboardServiceTest {
                     .thenReturn(List.of(
                             ProductReport.reconstitute("1", "100", "1",
                                     "虚假信息", null, null,
-                                    LocalDateTime.now(), LocalDateTime.now(), 1)
+                                    LocalDateTime.now(), LocalDateTime.now(), "1")
                     ));
 
             PendingItemsResponse items = dashboardService.getPendingItems();

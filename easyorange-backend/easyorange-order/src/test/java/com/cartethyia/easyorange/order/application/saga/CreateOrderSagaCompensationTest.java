@@ -154,7 +154,7 @@ class CreateOrderSagaCompensationTest {
 
         OrderAggregate cancelledAggregate = OrderAggregate.fromRaw(
                 "1", "ORD1", BUYER_ID, SELLER_ID,
-                new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
+                new BigDecimal("99.99"), 0, "0",
                 "地址", "13800138000", "备注", null, null
         );
         when(orderRepository.findById(any(OrderId.class))).thenReturn(Optional.of(cancelledAggregate));

@@ -156,12 +156,12 @@ class AdminOrderServiceTest {
         @DisplayName("获取订单统计")
         void getOrderStats_returnsStats() {
             when(orderReadRepository.countByStatus(null)).thenReturn(100L);
-            when(orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode())).thenReturn(20L);
-            when(orderReadRepository.countByStatus(OrderStatus.PAID.getCode())).thenReturn(30L);
-            when(orderReadRepository.countByStatus(OrderStatus.SHIPPED.getCode())).thenReturn(15L);
-            when(orderReadRepository.countByStatus(OrderStatus.COMPLETED.getCode())).thenReturn(25L);
-            when(orderReadRepository.countByStatus(OrderStatus.CANCELLED.getCode())).thenReturn(5L);
-            when(orderReadRepository.countByStatus(OrderStatus.REFUNDED.getCode())).thenReturn(5L);
+            when(orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.PENDING_PAYMENT.getCode()))).thenReturn(20L);
+            when(orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.PAID.getCode()))).thenReturn(30L);
+            when(orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.SHIPPED.getCode()))).thenReturn(15L);
+            when(orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.COMPLETED.getCode()))).thenReturn(25L);
+            when(orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.CANCELLED.getCode()))).thenReturn(5L);
+            when(orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.REFUNDED.getCode()))).thenReturn(5L);
             when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(), 10, 1, 20));
 
@@ -178,7 +178,7 @@ class AdminOrderServiceTest {
         void cancelOrder_success() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
                     ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
-                    new BigDecimal("99.99"), OrderStatus.PENDING_PAYMENT.getCode(), 0,
+                    new BigDecimal("99.99"), Integer.valueOf(OrderStatus.PENDING_PAYMENT.getCode()), "0",
                     "地址", "13800138000", "备注", null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -202,7 +202,7 @@ class AdminOrderServiceTest {
         void forceComplete_success() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
                     ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
-                    new BigDecimal("99.99"), OrderStatus.SHIPPED.getCode(), 1,
+                    new BigDecimal("99.99"), Integer.valueOf(OrderStatus.SHIPPED.getCode()), "1",
                     "地址", "13800138000", "备注", null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -216,7 +216,7 @@ class AdminOrderServiceTest {
         void refundOrder_success() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
                     ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
-                    new BigDecimal("99.99"), OrderStatus.PAID.getCode(), 1,
+                    new BigDecimal("99.99"), Integer.valueOf(OrderStatus.PAID.getCode()), "1",
                     "地址", "13800138000", "备注", null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -230,7 +230,7 @@ class AdminOrderServiceTest {
         void refundOrder_cancelled_throws() {
             OrderAggregate aggregate = OrderAggregate.fromRaw(
                     ORDER_ID, "ORD2026001", BUYER_ID, SELLER_ID, List.of(),
-                    new BigDecimal("99.99"), OrderStatus.CANCELLED.getCode(), 0,
+                    new BigDecimal("99.99"), Integer.valueOf(OrderStatus.CANCELLED.getCode()), "0",
                     "地址", "13800138000", "备注", "已取消", LocalDateTime.now());
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 

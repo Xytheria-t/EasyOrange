@@ -9,7 +9,7 @@ public class ProductAuditLogDO extends BaseDO {
     private String productId;
     private String operatorId;
     private String operatorName;
-    private Integer action;
+    private String action;
     private String reason;
     private String auditDimensions;
     private String beforeStatus;
@@ -19,7 +19,7 @@ public class ProductAuditLogDO extends BaseDO {
     public ProductAuditLogDO() {
     }
 
-    public ProductAuditLogDO(String productId, String operatorId, String operatorName, Integer action,
+    public ProductAuditLogDO(String productId, String operatorId, String operatorName, String action,
                               String reason, String auditDimensions, String beforeStatus,
                               String afterStatus, String remark) {
         this.productId = productId;
@@ -57,11 +57,11 @@ public class ProductAuditLogDO extends BaseDO {
         this.operatorName = operatorName;
     }
 
-    public Integer getAction() {
+    public String getAction() {
         return action;
     }
 
-    public void setAction(Integer action) {
+    public void setAction(String action) {
         this.action = action;
     }
 
@@ -114,7 +114,7 @@ public class ProductAuditLogDO extends BaseDO {
         private String productId;
         private String operatorId;
         private String operatorName;
-        private Integer action;
+private String action;
         private String reason;
         private String auditDimensions;
         private String beforeStatus;
@@ -141,7 +141,7 @@ public class ProductAuditLogDO extends BaseDO {
             return this;
         }
 
-        public Builder action(Integer action) {
+        public Builder action(String action) {
             this.action = action;
             return this;
         }

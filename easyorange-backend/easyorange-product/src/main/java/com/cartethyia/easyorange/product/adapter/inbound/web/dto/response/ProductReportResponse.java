@@ -8,6 +8,6 @@ public record ProductReportResponse(
         String productId,
         String reporterId,
         String reason,
-        Integer reasonType,
-        Integer status
+        String reasonType,
+        String status
 ) {}

@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentSucceededEvent;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
@@ -31,7 +32,7 @@ class PaymentAggregateTest {
         @DisplayName("创建支付成功，返回不可变聚合根和事件")
         void create_withValidParams_createsPayment() {
             PaymentAggregate.PaymentCreatedResult result = PaymentAggregate.create(
-                "1001", "1001", "2001", new BigDecimal("99.99"), 1, "attach_data"
+                "1001", "1001", "2001", new BigDecimal("99.99"), PaymentMethod.WECHAT, "attach_data"
             );
 
             assertThat(result.aggregate().id()).isNotNull();
@@ -39,7 +40,7 @@ class PaymentAggregateTest {
             assertThat(result.aggregate().orderId()).isEqualTo("1001");
             assertThat(result.aggregate().userId()).isEqualTo("2001");
             assertThat(result.aggregate().amount()).isEqualByComparingTo(new BigDecimal("99.99"));
-            assertThat(result.aggregate().paymentMethod()).isEqualTo(1);
+            assertThat(result.aggregate().paymentMethod()).isEqualTo(PaymentMethod.WECHAT);
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.PENDING);
             assertThat(result.event()).isInstanceOf(PaymentCreatedEvent.class);
         }
@@ -48,7 +49,7 @@ class PaymentAggregateTest {
         @DisplayName("create 返回的事件包含正确信息")
         void create_containsCreatedEvent() {
             PaymentAggregate.PaymentCreatedResult result = PaymentAggregate.create(
-                "1001", "1001", "2001", new BigDecimal("99.99"), 1, "attach_data"
+                "1001", "1001", "2001", new BigDecimal("99.99"), PaymentMethod.WECHAT, "attach_data"
             );
 
             PaymentCreatedEvent event = result.event();
@@ -57,14 +58,14 @@ class PaymentAggregateTest {
             assertThat(event.orderId()).isEqualTo("1001");
             assertThat(event.userId()).isEqualTo("2001");
             assertThat(event.amount()).isEqualByComparingTo(new BigDecimal("99.99"));
-            assertThat(event.paymentMethod()).isEqualTo(1);
+            assertThat(event.paymentMethod()).isEqualTo("1");
         }
 
         @Test
         @DisplayName("orderId 为空抛出异常")
         void create_withNullOrderId_throws() {
             assertThatThrownBy(() -> PaymentAggregate.create(
-                "1001", null, "2001", new BigDecimal("99.99"), 1, null
+                "1001", null, "2001", new BigDecimal("99.99"), PaymentMethod.WECHAT, null
             )).isInstanceOf(BusinessException.class)
               .hasMessageContaining("订单ID不能为空");
         }
@@ -73,7 +74,7 @@ class PaymentAggregateTest {
         @DisplayName("userId 为空抛出异常")
         void create_withNullUserId_throws() {
             assertThatThrownBy(() -> PaymentAggregate.create(
-                "1001", "1001", null, new BigDecimal("99.99"), 1, null
+                "1001", "1001", null, new BigDecimal("99.99"), PaymentMethod.WECHAT, null
             )).isInstanceOf(BusinessException.class)
               .hasMessageContaining("用户ID不能为空");
         }
@@ -82,7 +83,7 @@ class PaymentAggregateTest {
         @DisplayName("amount 为空抛出异常")
         void create_withNullAmount_throws() {
             assertThatThrownBy(() -> PaymentAggregate.create(
-                "1001", "1001", "2001", null, 1, null
+                "1001", "1001", "2001", null, PaymentMethod.WECHAT, null
             )).isInstanceOf(BusinessException.class)
               .hasMessageContaining("支付金额不能为空");
         }
@@ -91,7 +92,7 @@ class PaymentAggregateTest {
         @DisplayName("amount 小于等于零抛出异常")
         void create_withZeroAmount_throws() {
             assertThatThrownBy(() -> PaymentAggregate.create(
-                "1001", "1001", "2001", BigDecimal.ZERO, 1, null
+                "1001", "1001", "2001", BigDecimal.ZERO, PaymentMethod.WECHAT, null
             )).isInstanceOf(BusinessException.class)
               .hasMessageContaining("支付金额必须大于0");
         }
@@ -115,7 +116,7 @@ class PaymentAggregateTest {
         void reconstruct_convertsCorrectly() {
             PaymentAggregate aggregate = PaymentAggregate.reconstruct(
                 "1001", "PAY123456", "2001", "3001",
-                new BigDecimal("99.99"), BigDecimal.ZERO, 1,
+                new BigDecimal("99.99"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 PaymentStatus.SUCCESS, "TXN123", "已退款",
                 LocalDateTime.now(), "attach",
                 LocalDateTime.now(), LocalDateTime.now(), 1
@@ -133,7 +134,7 @@ class PaymentAggregateTest {
         void reconstruct_withNullVersion() {
             PaymentAggregate aggregate = PaymentAggregate.reconstruct(
                 "1001", "PAY123456", "2001", "3001",
-                new BigDecimal("99.99"), BigDecimal.ZERO, 1,
+                new BigDecimal("99.99"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 PaymentStatus.PENDING, null, null, null, null, null, null, null
             );
 
@@ -462,7 +463,7 @@ class PaymentAggregateTest {
     private PaymentAggregate createTestAggregate(PaymentStatus status) {
         return PaymentAggregate.reconstruct(
             String.valueOf(System.currentTimeMillis()), "PAY" + System.currentTimeMillis(),
-            "1001", "2001", new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+            "1001", "2001", new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
             status, null, null, null, null, null, null, 0
         );
     }
@@ -470,7 +471,7 @@ class PaymentAggregateTest {
     private PaymentAggregate createRefundedAggregate(BigDecimal refundedAmount) {
         return PaymentAggregate.reconstruct(
             String.valueOf(System.currentTimeMillis()), "PAY" + System.currentTimeMillis(),
-            "1001", "2001", new BigDecimal("100.00"), refundedAmount, 1,
+            "1001", "2001", new BigDecimal("100.00"), refundedAmount, PaymentMethod.WECHAT,
             PaymentStatus.PARTIALLY_REFUNDED, null, null, null, null, null, null, 0
         );
     }

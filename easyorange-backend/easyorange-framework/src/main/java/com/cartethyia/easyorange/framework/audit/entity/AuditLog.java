@@ -33,7 +33,7 @@ public class AuditLog {
     private String title;
 
     /** 业务类型编码（对应 {@link com.cartethyia.easyorange.common.enums.BusinessType}） */
-    private Integer businessType;
+    private String businessType;
 
     /** 完整方法签名 */
     private String method;

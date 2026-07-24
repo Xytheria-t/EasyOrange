@@ -86,7 +86,7 @@ public class AdminDashboardService {
 
     public PendingItemsResponse getPendingItems() {
         long pendingReports = productReportQueryRepository.countPendingReports();
-        long pendingOrders = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode());
+        long pendingOrders = orderReadRepository.countByStatus(Integer.valueOf(OrderStatus.PENDING_PAYMENT.getCode()));
         long pendingProducts = productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode());
 
         List<PendingItemsResponse.PendingReportItem> recentReports = productReportQueryRepository

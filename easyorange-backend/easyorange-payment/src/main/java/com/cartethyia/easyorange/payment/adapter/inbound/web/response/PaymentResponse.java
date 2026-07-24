@@ -28,11 +28,11 @@ public class PaymentResponse {
 
     private BigDecimal amount;
 
-    private Integer paymentMethod;
+    private String paymentMethod;
 
     private String paymentMethodDesc;
 
-    private Integer status;
+    private String status;
 
     private String statusDesc;
 

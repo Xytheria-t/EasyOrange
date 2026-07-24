@@ -179,7 +179,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public String buildOrderListKey(String userId, Integer status, Integer pageNum, Integer pageSize) {
+    public String buildOrderListKey(String userId, String status, Integer pageNum, Integer pageSize) {
         if (userId == null) {
             return null;
         }
@@ -201,7 +201,7 @@ public class RedisOrderCacheAdapter implements OrderCachePort<OrderVO> {
     }
 
     @Override
-    public String buildOrderListKey(String userId, Integer status) {
+    public String buildOrderListKey(String userId, String status) {
         return buildOrderListKey(userId, status, 1, 10);
     }
 

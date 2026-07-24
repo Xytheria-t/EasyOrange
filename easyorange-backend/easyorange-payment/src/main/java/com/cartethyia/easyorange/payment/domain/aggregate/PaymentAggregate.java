@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.domain.aggregate;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.util.BizRequire;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
@@ -26,7 +27,7 @@ public class PaymentAggregate {
     private final String userId;
     private final Money amount;
     private final Money refundedAmount;
-    private final Integer paymentMethod;
+    private final PaymentMethod paymentMethod;
     private final PaymentStatus status;
     private final String transactionId;
     private final String refundReason;
@@ -37,7 +38,7 @@ public class PaymentAggregate {
     private final int version;
 
     private PaymentAggregate(String id, String paymentNo, String orderId, String userId,
-                             Money amount, Money refundedAmount, Integer paymentMethod,
+                             Money amount, Money refundedAmount, PaymentMethod paymentMethod,
                              PaymentStatus status, String transactionId, String refundReason,
                              LocalDateTime refundTime, String attach,
                              LocalDateTime createTime, LocalDateTime updateTime, int version) {
@@ -61,7 +62,7 @@ public class PaymentAggregate {
     // ==================== Factory ====================
 
     public static PaymentCreatedResult create(String paymentId, String orderId, String userId, BigDecimal amount,
-                                              Integer paymentMethod, String attach) {
+                                              PaymentMethod paymentMethod, String attach) {
         BizRequire.notNull(paymentId, "支付ID不能为空");
         BizRequire.notNull(orderId, "订单ID不能为空");
         BizRequire.notNull(userId, "用户ID不能为空");
@@ -80,7 +81,7 @@ public class PaymentAggregate {
         );
 
         PaymentCreatedEvent event = new PaymentCreatedEvent(
-                paymentId, paymentNo, orderId, userId, amount, paymentMethod
+                paymentId, paymentNo, orderId, userId, amount, paymentMethod.getCode()
         );
 
         return new PaymentCreatedResult(aggregate, event);
@@ -89,7 +90,7 @@ public class PaymentAggregate {
     // ==================== Reconstruction ====================
 
     public static PaymentAggregate reconstruct(String id, String paymentNo, String orderId, String userId,
-                                                BigDecimal amount, BigDecimal refundedAmount, Integer paymentMethod,
+                                                BigDecimal amount, BigDecimal refundedAmount, PaymentMethod paymentMethod,
                                                 PaymentStatus status, String transactionId, String refundReason,
                                                 LocalDateTime refundTime, String attach,
                                                 LocalDateTime createTime, LocalDateTime updateTime, Integer version) {
@@ -311,7 +312,7 @@ public class PaymentAggregate {
     public String userId() { return userId; }
     public BigDecimal amount() { return amount.value(); }
     public BigDecimal refundedAmount() { return refundedAmount.value(); }
-    public Integer paymentMethod() { return paymentMethod; }
+    public PaymentMethod paymentMethod() { return paymentMethod; }
     public PaymentStatus status() { return status; }
     public String transactionId() { return transactionId; }
     public String refundReason() { return refundReason; }

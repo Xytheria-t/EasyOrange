@@ -11,9 +11,9 @@ public interface ProductReportQueryRepository {
 
     long countPendingReports();
 
-    PageResult<ProductReport> findByStatus(Integer status, int pageNum, int pageSize);
+    PageResult<ProductReport> findByStatus(String status, int pageNum, int pageSize);
 
-    long countByStatus(Integer status);
+    long countByStatus(String status);
 
     PageResult<ProductReport> findByReporterId(String reporterId, int pageNum, int pageSize);
 }

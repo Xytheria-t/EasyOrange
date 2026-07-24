@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.Pay
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
@@ -74,20 +75,20 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public List<PaymentAggregate> findByUserIdAndStatus(String userId, Integer status, int pageNum, int pageSize) {
+    public List<PaymentAggregate> findByUserIdAndStatus(String userId, String status, int pageNum, int pageSize) {
         Page<PaymentDO> page = lambdaQuery()
                 .eq(userId != null, PaymentDO::getUserId, userId)
-                .eq(status != null, PaymentDO::getStatus, status)
+                .eq(status != null, PaymentDO::getStatus, status != null ? PaymentStatus.fromCode(status) : null)
                 .orderByDesc(PaymentDO::getCreateTime)
                 .page(new Page<>(pageNum, pageSize));
         return page.getRecords().stream().map(paymentDataMapper::toAggregate).toList();
     }
 
     @Override
-    public long countByUserIdAndStatus(String userId, Integer status) {
+    public long countByUserIdAndStatus(String userId, String status) {
         return lambdaQuery()
                 .eq(userId != null, PaymentDO::getUserId, userId)
-                .eq(status != null, PaymentDO::getStatus, status)
+                .eq(status != null, PaymentDO::getStatus, status != null ? PaymentStatus.fromCode(status) : null)
                 .count();
     }
 }

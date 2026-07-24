@@ -70,7 +70,7 @@ class OrderTimeoutTaskTest {
                 orderId, "ORD" + orderId,
                 BUYER_ID, SELLER_ID,
                 java.math.BigDecimal.valueOf(99.99),
-                0, 0,
+                0, "0",
                 "地址", "13800138000", "备注",
                 null, null
         );

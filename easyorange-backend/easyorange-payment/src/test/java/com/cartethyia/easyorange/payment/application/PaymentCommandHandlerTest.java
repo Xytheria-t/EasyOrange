@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.payment.application.command.CreatePaymentComman
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
@@ -63,7 +64,7 @@ class PaymentCommandHandlerTest {
 
         testAggregate = PaymentAggregate.reconstruct(
                 "1001", "PAY123", "2001", "3001",
-                new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 PaymentStatus.PENDING, null, null, null, null, null, null, 0
         );
     }
@@ -83,7 +84,7 @@ class PaymentCommandHandlerTest {
             CreatePaymentCommand command = CreatePaymentCommand.builder()
                     .orderId("2001")
                     .amount(new BigDecimal("100.00"))
-                    .paymentMethod(1)
+                    .paymentMethod("1")
                     .attach("test")
                     .build();
 
@@ -120,7 +121,7 @@ class PaymentCommandHandlerTest {
         void confirmPayPhase2_success() {
             PaymentAggregate payingAggregate = PaymentAggregate.reconstruct(
                     "1001", "PAY123", "2001", "3001",
-                    new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                    new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                     PaymentStatus.PAYING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
@@ -151,7 +152,7 @@ class PaymentCommandHandlerTest {
         void prepareRefundPhase1_success() {
             PaymentAggregate paidAggregate = PaymentAggregate.reconstruct(
                     "1001", "PAY123", "2001", "3001",
-                    new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                    new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                     PaymentStatus.SUCCESS, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(paidAggregate));
@@ -168,7 +169,7 @@ class PaymentCommandHandlerTest {
         void confirmRefundPhase2_success() {
             PaymentAggregate refundingAggregate = PaymentAggregate.reconstruct(
                     "1001", "PAY123", "2001", "3001",
-                    new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                    new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                     PaymentStatus.REFUNDING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
@@ -190,7 +191,7 @@ class PaymentCommandHandlerTest {
         void rollbackPayStatus_success() {
             PaymentAggregate payingAggregate = PaymentAggregate.reconstruct(
                     "1001", "PAY123", "2001", "3001",
-                    new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                    new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                     PaymentStatus.PAYING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
@@ -211,7 +212,7 @@ class PaymentCommandHandlerTest {
         void rollbackRefundStatus_success() {
             PaymentAggregate refundingAggregate = PaymentAggregate.reconstruct(
                     "1001", "PAY123", "2001", "3001",
-                    new BigDecimal("100.00"), BigDecimal.ZERO, 1,
+                    new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                     PaymentStatus.REFUNDING, null, null, null, null, null, null, 0
             );
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));

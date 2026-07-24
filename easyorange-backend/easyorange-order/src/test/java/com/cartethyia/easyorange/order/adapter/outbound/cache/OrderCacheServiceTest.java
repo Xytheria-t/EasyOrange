@@ -109,7 +109,7 @@ class OrderCacheServiceTest {
     @Test
     @DisplayName("buildOrderListKey 构建正确的缓存键")
     void testBuildOrderListKey() {
-        String keyWithStatus = orderCachePort.buildOrderListKey("123", 1);
+        String keyWithStatus = orderCachePort.buildOrderListKey("123", "1");
         assertThat(keyWithStatus).isEqualTo("eo:order:list:123:status:1:page:1:size:10");
 
         String keyWithoutStatus = orderCachePort.buildOrderListKey("123", null);

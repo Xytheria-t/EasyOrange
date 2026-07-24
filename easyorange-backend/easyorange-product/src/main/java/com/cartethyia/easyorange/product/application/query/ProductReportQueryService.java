@@ -47,10 +47,10 @@ public class ProductReportQueryService {
         }
 
         String statusDesc = switch (report.statusCode()) {
-            case 0 -> "待处理";
-            case 1 -> "处理中";
-            case 2 -> "已解决";
-            case 3 -> "已驳回";
+            case "0" -> "待处理";
+            case "1" -> "处理中";
+            case "2" -> "已解决";
+            case "3" -> "已驳回";
             default -> "未知";
         };
 

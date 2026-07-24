@@ -12,7 +12,7 @@ public interface PaymentGatewayPort {
     record CreatePaymentRequest(
             String orderId,
             BigDecimal amount,
-            Integer paymentMethod,
+            String paymentMethod,
             String attach,
             String description
     ) {}

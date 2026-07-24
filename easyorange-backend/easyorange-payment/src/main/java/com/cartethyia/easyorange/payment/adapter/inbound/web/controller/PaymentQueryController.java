@@ -39,7 +39,7 @@ public class PaymentQueryController {
         PaymentAggregate aggregate = queryHandler.getPaymentById(id);
         return Result.success(new PaymentStatusResponse(
                 aggregate.status().getDesc(),
-                com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(aggregate.paymentMethod()),
+                com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()),
                 aggregate.updateTime()
         ));
     }

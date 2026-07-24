@@ -34,7 +34,7 @@ public interface OrderEntityMapper {
                 orderDO.getId(), orderDO.getOrderNo(),
                 orderDO.getBuyerId(), orderDO.getSellerId(),
                 orderDO.getTotalAmount(), orderDO.getStatus(),
-                orderDO.getPaymentStatus(), orderDO.getAddress(),
+                String.valueOf(orderDO.getPaymentStatus()), orderDO.getAddress(),
                 orderDO.getPhone(), orderDO.getRemark(),
                 orderDO.getCancelReason(), orderDO.getCancelTime()
         );
@@ -50,7 +50,7 @@ public interface OrderEntityMapper {
                 orderDO.getBuyerId(), orderDO.getSellerId(),
                 items != null ? items : List.of(),
                 orderDO.getTotalAmount(), orderDO.getStatus(),
-                orderDO.getPaymentStatus(), orderDO.getAddress(),
+                String.valueOf(orderDO.getPaymentStatus()), orderDO.getAddress(),
                 orderDO.getPhone(), orderDO.getRemark(),
                 orderDO.getCancelReason(), orderDO.getCancelTime()
         );
@@ -68,7 +68,7 @@ public interface OrderEntityMapper {
                 orderDO.getBuyerId(), orderDO.getSellerId(),
                 List.of(),
                 orderDO.getTotalAmount(), orderDO.getStatus(),
-                OrderStatus.getDescByCode(orderDO.getStatus()),
+                OrderStatus.getDescByCode(String.valueOf(orderDO.getStatus())),
                 orderDO.getPaymentStatus(), orderDO.getAddress(),
                 orderDO.getPhone(), orderDO.getRemark(),
                 orderDO.getCancelReason(), orderDO.getCancelTime(),
@@ -86,7 +86,7 @@ public interface OrderEntityMapper {
                 orderDO.getBuyerId(), orderDO.getSellerId(),
                 items != null ? items : List.of(),
                 orderDO.getTotalAmount(), orderDO.getStatus(),
-                OrderStatus.getDescByCode(orderDO.getStatus()),
+                OrderStatus.getDescByCode(String.valueOf(orderDO.getStatus())),
                 orderDO.getPaymentStatus(), orderDO.getAddress(),
                 orderDO.getPhone(), orderDO.getRemark(),
                 orderDO.getCancelReason(), orderDO.getCancelTime(),
@@ -132,8 +132,8 @@ public interface OrderEntityMapper {
                 .buyerId(aggregate.buyerId().value())
                 .sellerId(aggregate.sellerId().value())
                 .totalAmount(aggregate.totalAmount().value())
-                .status(aggregate.status().getCode())
-                .paymentStatus(aggregate.paymentStatus().code())
+                .status(Integer.valueOf(aggregate.status().getCode()))
+                .paymentStatus(Integer.valueOf(aggregate.paymentStatus().code()))
                 .address(aggregate.address().value())
                 .phone(aggregate.phone().value())
                 .remark(aggregate.remark())

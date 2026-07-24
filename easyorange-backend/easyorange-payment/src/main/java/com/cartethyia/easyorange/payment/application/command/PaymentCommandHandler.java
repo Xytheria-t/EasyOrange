@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.event.CompensationFailedAlertEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
+import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.exception.SagaCompensationFailedException;
@@ -40,7 +41,7 @@ public class PaymentCommandHandler {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         String paymentId = idGenerator.generateId();
-        PaymentAggregate.PaymentCreatedResult result = PaymentAggregate.create(paymentId, command.getOrderId(), userId, command.getAmount(), command.getPaymentMethod(), command.getAttach());
+        PaymentAggregate.PaymentCreatedResult result = PaymentAggregate.create(paymentId, command.getOrderId(), userId, command.getAmount(), PaymentMethod.fromCode(command.getPaymentMethod()), command.getAttach());
 
         paymentRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());

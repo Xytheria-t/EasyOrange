@@ -13,6 +13,7 @@ import com.cartethyia.easyorange.message.domain.service.OfflineMessageStoreServi
 import com.cartethyia.easyorange.message.application.service.RateLimiterService;
 import com.cartethyia.easyorange.message.domain.service.SensitiveWordFilterService;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.websocket.WebSocketNotifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,14 +75,14 @@ class MessageCommandHandlerTest {
     private MessageAggregate createTestMessage() {
         return MessageAggregate.fromRaw(
                 MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                MessageStatus.UNREAD.getCode(), null, null,
+                ReadStatus.UNREAD, null, null,
                 MessageStatus.SENT.getCode(), null, LocalDateTime.now());
     }
 
     private MessageAggregate createTestMessageForRecall() {
         return MessageAggregate.fromRaw(
                 MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                MessageStatus.UNREAD.getCode(), null, null,
+                ReadStatus.UNREAD, null, null,
                 MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
     }
 
@@ -106,7 +107,7 @@ class MessageCommandHandlerTest {
 
             MessageAggregate savedAggregate = MessageAggregate.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
             when(messageRepository.save(any(MessageAggregate.class))).thenReturn(savedAggregate);
 
@@ -164,7 +165,7 @@ class MessageCommandHandlerTest {
 
             MessageAggregate savedAggregate = MessageAggregate.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "包含***",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
             when(messageRepository.save(any(MessageAggregate.class))).thenReturn(savedAggregate);
 
@@ -200,7 +201,7 @@ class MessageCommandHandlerTest {
 
             MessageAggregate savedAggregate = MessageAggregate.fromRaw(
                     MESSAGE_ID, null, RECEIVER_ID, 1, "系统通知", "您的商品已审核通过",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     null, null, LocalDateTime.now());
             when(messageRepository.save(any(MessageAggregate.class))).thenReturn(savedAggregate);
 
@@ -288,11 +289,11 @@ class MessageCommandHandlerTest {
             MessageAggregate msg1 = createTestMessage();
             MessageAggregate msg2 = MessageAggregate.fromRaw(
                     "101", USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
             MessageAggregate msg3 = MessageAggregate.fromRaw(
                     "102", USER_ID, RECEIVER_ID, 2, "标题", "hello",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));

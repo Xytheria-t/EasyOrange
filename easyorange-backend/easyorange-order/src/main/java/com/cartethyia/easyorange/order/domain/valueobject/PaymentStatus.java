@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
-import java.util.Arrays;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
  * 支付状态枚举 —— 订单聚合根中使用的值对象
@@ -11,23 +11,24 @@ import java.util.Arrays;
 public enum PaymentStatus {
 
     /** 未支付 */
-    UNPAID(0, "未支付"),
+    UNPAID("0", "未支付"),
 
     /** 已支付 */
-    PAID(1, "已支付"),
+    PAID("1", "已支付"),
 
     /** 已退款 */
-    REFUNDED(2, "已退款");
+    REFUNDED("2", "已退款");
 
-    private final int code;
+    @JsonValue
+    private final String code;
     private final String desc;
 
-    PaymentStatus(int code, String desc) {
+    PaymentStatus(String code, String desc) {
         this.code = code;
         this.desc = desc;
     }
 
-    public int code() {
+    public String code() {
         return code;
     }
 
@@ -35,17 +36,15 @@ public enum PaymentStatus {
         return desc;
     }
 
-    public static PaymentStatus of(int code) {
-        return Arrays.stream(values())
-                .filter(v -> v.code == code)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid payment status code: " + code));
-    }
-
-    public static PaymentStatus of(Integer code) {
+    public static PaymentStatus fromCode(String code) {
         if (code == null) {
-            return UNPAID;
+            throw new IllegalArgumentException("PaymentStatus code must not be null");
         }
-        return of(code.intValue());
+        for (var status : values()) {
+            if (status.code.equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown PaymentStatus code: " + code);
     }
 }

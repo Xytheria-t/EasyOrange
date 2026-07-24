@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.message.application.query.dto.ConversationListV
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,7 +52,7 @@ class ConversationQueryHandlerTest {
                 .type(2)
                 .title("")
                 .content(content)
-                .isRead(MessageStatus.UNREAD.getCode())
+                .isRead(ReadStatus.UNREAD)
                 .createTime(LocalDateTime.now())
                 .build();
     }

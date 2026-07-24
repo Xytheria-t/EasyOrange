@@ -18,9 +18,9 @@ class PaymentMethodInfoTest {
 
         @Test
         @DisplayName("使用 of 创建微信支付")
-        void of_withWechatCode_createsPaymentMethodInfo() {
-            PaymentMethodInfo vo = PaymentMethodInfo.of(PaymentMethod.WECHAT.getCode());
-            assertThat(vo.code()).isEqualTo(PaymentMethod.WECHAT.getCode());
+        void of_withWechatMethod_createsPaymentMethodInfo() {
+            PaymentMethodInfo vo = PaymentMethodInfo.of(PaymentMethod.WECHAT);
+            assertThat(vo.method()).isEqualTo(PaymentMethod.WECHAT);
             assertThat(vo.isWechat()).isTrue();
             assertThat(vo.isAlipay()).isFalse();
             assertThat(vo.isBalance()).isFalse();
@@ -28,17 +28,17 @@ class PaymentMethodInfoTest {
 
         @Test
         @DisplayName("使用 of 创建支付宝")
-        void of_withAlipayCode_createsPaymentMethodInfo() {
-            PaymentMethodInfo vo = PaymentMethodInfo.of(PaymentMethod.ALIPAY.getCode());
-            assertThat(vo.code()).isEqualTo(PaymentMethod.ALIPAY.getCode());
+        void of_withAlipayMethod_createsPaymentMethodInfo() {
+            PaymentMethodInfo vo = PaymentMethodInfo.of(PaymentMethod.ALIPAY);
+            assertThat(vo.method()).isEqualTo(PaymentMethod.ALIPAY);
             assertThat(vo.isAlipay()).isTrue();
         }
 
         @Test
         @DisplayName("使用 of 创建余额支付")
-        void of_withBalanceCode_createsPaymentMethodInfo() {
-            PaymentMethodInfo vo = PaymentMethodInfo.of(PaymentMethod.BALANCE.getCode());
-            assertThat(vo.code()).isEqualTo(PaymentMethod.BALANCE.getCode());
+        void of_withBalanceMethod_createsPaymentMethodInfo() {
+            PaymentMethodInfo vo = PaymentMethodInfo.of(PaymentMethod.BALANCE);
+            assertThat(vo.method()).isEqualTo(PaymentMethod.BALANCE);
             assertThat(vo.isBalance()).isTrue();
         }
 
@@ -74,14 +74,6 @@ class PaymentMethodInfoTest {
             assertThatThrownBy(() -> PaymentMethodInfo.of(null))
                 .isInstanceOf(PaymentDomainException.class)
                 .hasMessageContaining("支付方式不能为空");
-        }
-
-        @Test
-        @DisplayName("不支持的支付方式抛出 PaymentDomainException")
-        void of_withUnsupportedCode_throws() {
-            assertThatThrownBy(() -> PaymentMethodInfo.of(999))
-                .isInstanceOf(PaymentDomainException.class)
-                .hasMessageContaining("不支持的支付方式");
         }
     }
 
@@ -145,12 +137,12 @@ class PaymentMethodInfoTest {
     class ToStringTests {
 
         @Test
-        @DisplayName("toString 返回描述和代码")
-        void toString_returnsDescAndCode() {
+        @DisplayName("toString 返回描述和方法")
+        void toString_returnsDescAndMethod() {
             PaymentMethodInfo vo = PaymentMethodInfo.wechat();
             String str = vo.toString();
             assertThat(str).contains("微信支付");
-            assertThat(str).contains(String.valueOf(PaymentMethod.WECHAT.getCode()));
+            assertThat(str).contains(PaymentMethod.WECHAT.name());
         }
     }
 }

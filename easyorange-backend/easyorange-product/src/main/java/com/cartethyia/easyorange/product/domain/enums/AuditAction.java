@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
-import jakarta.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -13,28 +13,29 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum AuditAction {
 
-    APPROVED(1, "通过"),
-    REJECTED(2, "拒绝"),
-    RESUBMIT(3, "重提交");
+    APPROVED("1", "通过"),
+    REJECTED("2", "拒绝"),
+    RESUBMIT("3", "重提交");
 
-    private final int code;
+    @JsonValue
+    private final String code;
     private final String desc;
 
-    @Nullable
-    public static AuditAction fromCode(Integer code) {
-        if (code == null) return null;
-        return switch (code) {
-            case 1 -> APPROVED;
-            case 2 -> REJECTED;
-            case 3 -> RESUBMIT;
-            default -> throw new IllegalArgumentException("Unknown AuditAction code: " + code);
-        };
+    public static AuditAction fromCode(String code) {
+        if (code == null) {
+            throw new IllegalArgumentException("AuditAction code must not be null");
+        }
+        for (var action : values()) {
+            if (action.code.equals(code)) {
+                return action;
+            }
+        }
+        throw new IllegalArgumentException("Unknown AuditAction code: " + code);
     }
 
-    public static String getDescByCode(Integer code) {
+    public static String getDescByCode(String code) {
         try {
-            var action = fromCode(code);
-            return action != null ? action.getDesc() : "未知";
+            return fromCode(code).getDesc();
         } catch (IllegalArgumentException e) {
             return "未知";
         }

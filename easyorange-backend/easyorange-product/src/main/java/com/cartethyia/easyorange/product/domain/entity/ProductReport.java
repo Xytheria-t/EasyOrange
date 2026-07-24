@@ -14,14 +14,14 @@ public class ProductReport {
     private final String productId;
     private final String reporterId;
     private final String reason;
-    private final Integer reasonType;
+    private final String reasonType;
     private final ProductReportStatus status;
     private final String remark;
     private final LocalDateTime createTime;
     private final LocalDateTime updateTime;
 
     private ProductReport(String id, String productId, String reporterId, String reason,
-                          Integer reasonType, ProductReportStatus status,
+                          String reasonType, ProductReportStatus status,
                           String remark, LocalDateTime createTime, LocalDateTime updateTime) {
         this.id = id;
         this.productId = productId;
@@ -34,7 +34,7 @@ public class ProductReport {
         this.updateTime = updateTime;
     }
 
-    public static ProductReport create(String productId, String reporterId, String reason, Integer reasonType) {
+    public static ProductReport create(String productId, String reporterId, String reason, String reasonType) {
         if (productId == null) {
             throw new ReportDomainException("资产ID不能为空");
         }
@@ -52,7 +52,7 @@ public class ProductReport {
     public static ProductReport reconstitute(String id, String productId, String reporterId,
                                               String reason, ProductReportStatus status,
                                               String remark, LocalDateTime createTime,
-                                              LocalDateTime updateTime, Integer reasonType) {
+                                              LocalDateTime updateTime, String reasonType) {
         return new ProductReport(id, productId, reporterId, reason, reasonType,
                 status, remark, createTime, updateTime);
     }
@@ -77,7 +77,7 @@ public class ProductReport {
         return ProductReportStatus.PENDING.equals(this.status);
     }
 
-    public Integer statusCode() {
+    public String statusCode() {
         return status != null ? status.getCode() : null;
     }
 

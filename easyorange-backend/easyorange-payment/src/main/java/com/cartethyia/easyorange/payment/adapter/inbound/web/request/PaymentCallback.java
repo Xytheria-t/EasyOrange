@@ -21,7 +21,7 @@ public class PaymentCallback {
 
     private BigDecimal amount;
 
-    private Integer paymentMethod;
+    private String paymentMethod;
 
     private String attach;
 

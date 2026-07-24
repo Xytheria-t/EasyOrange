@@ -64,7 +64,7 @@ public class AdminProductAuditService {
                 .orElse("管理员");
 
         String beforeStatus = product.getStatus().getCode();
-        AuditAction action = AuditAction.fromCode(request.action());
+        AuditAction action = AuditAction.fromCode(String.valueOf(request.action()));
         if (action == null) {
             throw BusinessException.of("无效的审核动作");
         }
@@ -126,7 +126,7 @@ public class AdminProductAuditService {
                     continue;
                 }
 
-                AuditAction action = AuditAction.fromCode(item.action());
+                AuditAction action = AuditAction.fromCode(String.valueOf(item.action()));
                 if (action == null) {
                     errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + item.action());
                     continue;
@@ -234,7 +234,7 @@ public class AdminProductAuditService {
                 log.getProductId(),
                 log.getOperatorId(),
                 log.getOperatorName(),
-                log.getAction(),
+                Integer.valueOf(log.getAction()),
                 AuditAction.getDescByCode(log.getAction()),
                 log.getReason(),
                 parseDimensions(log.getAuditDimensions()),

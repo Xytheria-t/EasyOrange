@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.QueryMe
 import com.cartethyia.easyorange.message.application.query.dto.MessageVO;
 import com.cartethyia.easyorange.message.application.query.dto.UnreadCountVO;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,7 @@ class MessageQueryHandlerTest {
     private MessageAggregate createTestMessage() {
         return MessageAggregate.fromRaw(
                 MESSAGE_ID, SENDER_ID, USER_ID, 2, "标题", "内容",
-                MessageStatus.UNREAD.getCode(), null, null,
+                ReadStatus.UNREAD, null, null,
                 MessageStatus.SENT.getCode(), null, LocalDateTime.now());
     }
 

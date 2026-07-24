@@ -90,13 +90,13 @@ class AdminReportServiceTest {
     private ProductReport createPendingReport() {
         return ProductReport.reconstitute(REPORT_ID, PRODUCT_ID, REPORTER_ID,
                 "虚假信息", ProductReportStatus.PENDING, null,
-                LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), 1);
+                LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), "1");
     }
 
     private ProductReport createResolvedReport() {
         return ProductReport.reconstitute(REPORT_ID, PRODUCT_ID, REPORTER_ID,
                 "虚假信息", ProductReportStatus.RESOLVED, "已处理",
-                LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), 1);
+                LocalDateTime.now().minusHours(2), LocalDateTime.now().minusHours(1), "1");
     }
 
     private UserDO createUser(String id, String name) {
@@ -118,7 +118,7 @@ class AdminReportServiceTest {
         void listReports_withStatus_returnsPage() {
             ProductReport report = createPendingReport();
             PageResult<ProductReport> pageResult = PageResult.of(List.of(report), 1L, 1, 20);
-            when(productReportQueryRepository.findByStatus(0, 1, 20)).thenReturn(pageResult);
+            when(productReportQueryRepository.findByStatus("0", 1, 20)).thenReturn(pageResult);
             when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(REPORTER_ID, createUser(REPORTER_ID, "举报人")));
             ProductDO reportTestProduct = ProductDO.builder().id(PRODUCT_ID).name("测试商品").price(new BigDecimal("99.99")).build();
             reportTestProduct.setDelFlag(0);
@@ -296,7 +296,7 @@ class AdminReportServiceTest {
             ProductReport report1 = createPendingReport();
             ProductReport report2 = ProductReport.reconstitute("101", PRODUCT_ID, REPORTER_ID,
                     "侵权", ProductReportStatus.PENDING, null,
-                    LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), 2);
+                    LocalDateTime.now().minusHours(1), LocalDateTime.now().minusHours(1), "2");
 
             when(productReportRepository.findById("100")).thenReturn(report1);
             when(productReportRepository.findById("101")).thenReturn(report2);
@@ -351,10 +351,10 @@ class AdminReportServiceTest {
         @DisplayName("获取举报统计")
         void getReportStats_returnsStats() {
             when(productReportQueryRepository.countByStatus(null)).thenReturn(10L);
-            when(productReportQueryRepository.countByStatus(0)).thenReturn(5L);
-            when(productReportQueryRepository.countByStatus(1)).thenReturn(2L);
-            when(productReportQueryRepository.countByStatus(2)).thenReturn(2L);
-            when(productReportQueryRepository.countByStatus(3)).thenReturn(1L);
+            when(productReportQueryRepository.countByStatus("0")).thenReturn(5L);
+            when(productReportQueryRepository.countByStatus("1")).thenReturn(2L);
+            when(productReportQueryRepository.countByStatus("2")).thenReturn(2L);
+            when(productReportQueryRepository.countByStatus("3")).thenReturn(1L);
 
             ReportStatsResponse stats = reportService.getReportStats();
 

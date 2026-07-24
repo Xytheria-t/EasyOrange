@@ -34,7 +34,7 @@ class OrderEntityMapperTest {
     private static final String SELLER_ID = "2";
     private static final String PRODUCT_ID = "200";
     private static final BigDecimal AMOUNT = new BigDecimal("99.99");
-    private static final Integer STATUS = OrderStatus.PENDING_PAYMENT.getCode();
+    private static final Integer STATUS = 0;
     private static final String ADDRESS = "北京市朝阳区建国路88号";
     private static final String PHONE = "13800138000";
     private static final String REMARK = "尽快发货";
@@ -168,7 +168,7 @@ class OrderEntityMapperTest {
             assertThat(readModel.items()).isEmpty();
             assertThat(readModel.totalAmount()).isEqualByComparingTo(AMOUNT);
             assertThat(readModel.status()).isEqualTo(STATUS);
-            assertThat(readModel.statusDesc()).isEqualTo(OrderStatus.getDescByCode(STATUS));
+            assertThat(readModel.statusDesc()).isEqualTo(OrderStatus.getDescByCode(String.valueOf(STATUS)));
             assertThat(readModel.paymentStatus()).isEqualTo(0);
             assertThat(readModel.address()).isEqualTo(ADDRESS);
             assertThat(readModel.phone()).isEqualTo(PHONE);
@@ -193,7 +193,7 @@ class OrderEntityMapperTest {
         @DisplayName("已取消订单的状态描述应正确")
         void toReadModel_withCancelledOrder_shouldHaveCorrectStatusDesc() {
             OrderDO orderDO = createOrderDO();
-            orderDO.setStatus(OrderStatus.CANCELLED.getCode());
+            orderDO.setStatus(4);
 
             OrderReadModel readModel = mapper.toReadModel(orderDO);
 

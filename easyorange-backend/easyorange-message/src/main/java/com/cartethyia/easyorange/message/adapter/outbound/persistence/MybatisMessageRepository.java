@@ -3,7 +3,6 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
 import org.springframework.stereotype.Repository;
@@ -44,18 +43,18 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
         return messageDataMapper.toAggregateList(
                 lambdaQuery()
                         .eq(MessageDO::getReceiverId, receiverId)
-                        .eq(MessageDO::getIsRead, readStatus.getCode())
+                        .eq(MessageDO::getIsRead, readStatus)
                         .orderByDesc(MessageDO::getCreateTime)
                         .last("LIMIT " + limit)
                         .list()
-        );
+            );
     }
 
     @Override
     public long countUnreadByReceiverId(String receiverId) {
         return lambdaQuery()
                 .eq(MessageDO::getReceiverId, receiverId)
-                .eq(MessageDO::getIsRead, MessageStatus.UNREAD.getCode())
+                .eq(MessageDO::getIsRead, ReadStatus.UNREAD)
                 .count();
     }
 
@@ -80,8 +79,8 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     public void markAllAsRead(String receiverId) {
         lambdaUpdate()
                 .eq(MessageDO::getReceiverId, receiverId)
-                .eq(MessageDO::getIsRead, MessageStatus.UNREAD.getCode())
-                .set(MessageDO::getIsRead, MessageStatus.READ.getCode())
+                .eq(MessageDO::getIsRead, ReadStatus.UNREAD)
+                .set(MessageDO::getIsRead, ReadStatus.READ)
                 .update();
     }
 
@@ -90,8 +89,8 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
         lambdaUpdate()
                 .eq(MessageDO::getReceiverId, receiverId)
                 .eq(MessageDO::getType, type)
-                .eq(MessageDO::getIsRead, MessageStatus.UNREAD.getCode())
-                .set(MessageDO::getIsRead, MessageStatus.READ.getCode())
+                .eq(MessageDO::getIsRead, ReadStatus.UNREAD)
+                .set(MessageDO::getIsRead, ReadStatus.READ)
                 .update();
     }
 }

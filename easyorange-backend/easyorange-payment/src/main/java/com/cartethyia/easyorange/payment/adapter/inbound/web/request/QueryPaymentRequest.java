@@ -20,7 +20,7 @@ public class QueryPaymentRequest extends PageRequest {
 
     private String userId;
 
-    private Integer status;
+    private String status;
 
-    private Integer paymentMethod;
+    private String paymentMethod;
 }

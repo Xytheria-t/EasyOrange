@@ -49,7 +49,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("举报商品时应创建并保存举报")
     void reportProduct_shouldCreateAndSave() {
-        domainService.reportProduct("1", "2", "假货", 1);
+        domainService.reportProduct("1", "2", "假货", "1");
 
         verify(productReportRepository).save(any(ProductReport.class));
     }
@@ -57,7 +57,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("批准举报后应将商品下架、清除缓存并返回事件")
     void processReport_withApprove_shouldOfflineProductAndEvictCache() {
-        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", 1);
+        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
         report = report.assignId("100");
         when(productReportRepository.findById("100")).thenReturn(report);
         when(productRepository.findById(ProductId.of(PRODUCT_ID)))
@@ -76,7 +76,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("驳回举报不应操作商品状态和缓存")
     void processReport_withReject_shouldNotTouchProduct() {
-        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", 1);
+        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
         report = report.assignId("100");
         when(productReportRepository.findById("100")).thenReturn(report);
 
@@ -101,7 +101,7 @@ class ProductReportDomainServiceTest {
     @Test
     @DisplayName("批准举报后应保持 remark 正确")
     void processReport_withApprove_shouldSetCorrectRemark() {
-        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", 1);
+        ProductReport report = ProductReport.create(PRODUCT_ID, "2", "假货", "1");
         report = report.assignId("100");
         when(productReportRepository.findById("100")).thenReturn(report);
         when(productRepository.findById(ProductId.of(PRODUCT_ID)))

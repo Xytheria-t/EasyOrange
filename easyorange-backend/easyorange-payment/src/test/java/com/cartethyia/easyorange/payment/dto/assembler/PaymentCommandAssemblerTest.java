@@ -38,13 +38,13 @@ class PaymentCommandAssemblerTest {
         void toCreateCommand_convertsCorrectly() {
             CreatePaymentRequest request = new CreatePaymentRequest();
             request.setOrderId("1001");
-            request.setPaymentMethod(1);
+            request.setPaymentMethod("1");
             request.setPayPassword("123456");
 
             CreatePaymentCommand command = mapper.toCreateCommand(request, "2001");
 
             assertThat(command.getOrderId()).isEqualTo("1001");
-            assertThat(command.getPaymentMethod()).isEqualTo(1);
+            assertThat(command.getPaymentMethod()).isEqualTo("1");
             assertThat(command.getAttach()).isNull();
         }
     }

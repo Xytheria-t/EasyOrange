@@ -29,7 +29,7 @@ public class ProductReportDomainService {
      * @param reason     the description of the report
      * @param reasonType the category code of the report
      */
-    public void reportProduct(String productId, String reporterId, String reason, Integer reasonType) {
+    public void reportProduct(String productId, String reporterId, String reason, String reasonType) {
         ProductReport report = ProductReport.create(productId, reporterId, reason, reasonType);
         productReportRepository.save(report);
     }

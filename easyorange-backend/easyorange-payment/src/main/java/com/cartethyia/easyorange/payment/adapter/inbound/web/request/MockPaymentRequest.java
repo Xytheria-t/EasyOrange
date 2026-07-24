@@ -19,7 +19,7 @@ public class MockPaymentRequest {
 
     private BigDecimal amount;
 
-    private Integer paymentMethod;
+    private String paymentMethod;
 
     private Boolean success;
 }

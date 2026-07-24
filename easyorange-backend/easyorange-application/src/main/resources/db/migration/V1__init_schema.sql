@@ -532,7 +532,7 @@ CREATE TABLE `eo_upload_file` (
 CREATE TABLE `eo_audit_log` (
     `id`             VARCHAR(36) NOT NULL COMMENT '日志主键',
     `title`          VARCHAR(50) DEFAULT NULL COMMENT '模块标题',
-    `business_type`  TINYINT     NOT NULL DEFAULT 0 COMMENT '业务类型',
+    `business_type`  VARCHAR(50)  NOT NULL DEFAULT '0' COMMENT '业务类型',
     `method`         VARCHAR(100) DEFAULT NULL COMMENT '方法名称',
     `request_method` VARCHAR(10) DEFAULT NULL COMMENT '请求方式',
     `operator_type`  TINYINT     NOT NULL DEFAULT 0 COMMENT '操作类别',

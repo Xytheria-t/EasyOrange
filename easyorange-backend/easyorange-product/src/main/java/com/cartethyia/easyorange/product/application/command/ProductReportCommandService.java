@@ -18,7 +18,7 @@ public class ProductReportCommandService {
     private final DomainEventPublisher domainEventPublisher;
 
     @Transactional(rollbackFor = Exception.class)
-    public void handleReport(String productId, String reporterId, String reason, Integer reasonType) {
+    public void handleReport(String productId, String reporterId, String reason, String reasonType) {
         if (!ReportReasonType.isValidCode(reasonType)) {
             throw BusinessException.of("无效的举报类型");
         }

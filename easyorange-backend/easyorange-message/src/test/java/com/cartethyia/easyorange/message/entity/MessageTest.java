@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ class MessageTest {
             assertThat(result.aggregate().title()).isEqualTo("你好");
             assertThat(result.aggregate().content()).isEqualTo("hello world");
             assertThat(result.aggregate().businessId()).isEqualTo("100");
-            assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.UNREAD.getCode());
+            assertThat(result.aggregate().isRead()).isEqualTo(ReadStatus.UNREAD);
         }
 
         @Test
@@ -70,7 +71,7 @@ class MessageTest {
             assertThat(result.aggregate().type()).isEqualTo(1);
             assertThat(result.aggregate().title()).isEqualTo("系统通知");
             assertThat(result.aggregate().content()).isEqualTo("您的商品已审核通过");
-            assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.UNREAD.getCode());
+            assertThat(result.aggregate().isRead()).isEqualTo(ReadStatus.UNREAD);
         }
 
         @Test
@@ -92,7 +93,7 @@ class MessageTest {
         void send_returnsEvent() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             MessageSentEvent event = aggregate.send();
@@ -112,7 +113,7 @@ class MessageTest {
         void recall_within2Minutes_success() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
 
             MessageRecallResult result = aggregate.recall(SENDER_ID, "conv_1_2");
@@ -129,7 +130,7 @@ class MessageTest {
         void recall_notSender_throws() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThatThrownBy(() -> aggregate.recall(OTHER_USER_ID, "conv_1_2"))
@@ -142,7 +143,7 @@ class MessageTest {
         void recall_over2Minutes_throws() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(3));
 
             assertThatThrownBy(() -> aggregate.recall(SENDER_ID, "conv_1_2"))
@@ -155,7 +156,7 @@ class MessageTest {
         void recall_alreadyRecalled_throws() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.RECALLED.getCode(), LocalDateTime.now(), LocalDateTime.now().minusMinutes(1));
 
             assertThatThrownBy(() -> aggregate.recall(SENDER_ID, "conv_1_2"))
@@ -168,7 +169,7 @@ class MessageTest {
         void recall_returnsEventWithCorrectInfo() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
 
             MessageRecallResult result = aggregate.recall(SENDER_ID, "conv_1_2");
@@ -189,7 +190,7 @@ class MessageTest {
         void read_byReceiver_success() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             MessageReadResult result = aggregate.read(RECEIVER_ID);
@@ -197,7 +198,7 @@ class MessageTest {
             assertThat(result).isNotNull();
             assertThat(result.event().messageId()).isEqualTo("100");
             assertThat(result.event().readerId()).isEqualTo(RECEIVER_ID);
-            assertThat(result.aggregate().isRead()).isEqualTo(MessageStatus.READ.getCode());
+            assertThat(result.aggregate().isRead()).isEqualTo(ReadStatus.READ);
             assertThat(result.aggregate().readTime()).isNotNull();
         }
 
@@ -206,7 +207,7 @@ class MessageTest {
         void read_notReceiver_throws() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThatThrownBy(() -> aggregate.read(OTHER_USER_ID))
@@ -219,7 +220,7 @@ class MessageTest {
         void read_alreadyRead_returnsNull() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.READ.getCode(), LocalDateTime.now(), null,
+                    ReadStatus.READ, LocalDateTime.now(), null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             MessageReadResult result = aggregate.read(RECEIVER_ID);
@@ -237,7 +238,7 @@ class MessageTest {
         void delete_byReceiver_success() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             MessageDeletedEvent event = aggregate.delete(RECEIVER_ID);
@@ -252,7 +253,7 @@ class MessageTest {
         void delete_notReceiver_throws() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThatThrownBy(() -> aggregate.delete(SENDER_ID))
@@ -270,7 +271,7 @@ class MessageTest {
         void isUnread_newMessage_returnsTrue() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThat(aggregate.isUnread()).isTrue();
@@ -281,7 +282,7 @@ class MessageTest {
         void isUnread_readMessage_returnsFalse() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.READ.getCode(), LocalDateTime.now(), null,
+                    ReadStatus.READ, LocalDateTime.now(), null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThat(aggregate.isUnread()).isFalse();
@@ -292,7 +293,7 @@ class MessageTest {
         void isOwnedBy_receiver_returnsTrue() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThat(aggregate.isOwnedBy(RECEIVER_ID)).isTrue();
@@ -304,7 +305,7 @@ class MessageTest {
         void isSender_correctSender_returnsTrue() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
 
             assertThat(aggregate.isSender(SENDER_ID)).isTrue();
@@ -316,7 +317,7 @@ class MessageTest {
         void isSender_systemMessage_returnsFalse() {
             MessageAggregate aggregate = MessageAggregate.fromRaw(
                     "100", null, RECEIVER_ID, 1, "通知", "内容",
-                    MessageStatus.UNREAD.getCode(), null, null,
+                    ReadStatus.UNREAD, null, null,
                     null, null, LocalDateTime.now());
 
             assertThat(aggregate.isSender(SENDER_ID)).isFalse();

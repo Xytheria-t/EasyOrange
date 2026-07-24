@@ -130,7 +130,7 @@ class OrderNotificationEventConsumerTest {
             mockLockSuccess();
             mockFindOrderReadModel();
 
-            OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, 1);
+            OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
 
             consumer.handle(event, buildMessage());
 
@@ -310,7 +310,7 @@ class OrderNotificationEventConsumerTest {
             mockLockSuccess();
             when(orderReadRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.empty());
 
-            OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, 1);
+            OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
 
             consumer.handle(event, buildMessage());
 

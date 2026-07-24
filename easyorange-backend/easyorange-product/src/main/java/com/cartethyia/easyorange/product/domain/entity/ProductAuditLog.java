@@ -8,7 +8,7 @@ public class ProductAuditLog {
     private String productId;
     private String operatorId;
     private String operatorName;
-    private Integer action;
+    private String action;
     private String reason;
     private String auditDimensions;
     private String beforeStatus;
@@ -17,7 +17,7 @@ public class ProductAuditLog {
     private LocalDateTime createTime;
 
     private ProductAuditLog(String productId, String operatorId, String operatorName,
-                            Integer action, String reason, String auditDimensions,
+                            String action, String reason, String auditDimensions,
                             String beforeStatus, String afterStatus, String remark) {
         this.productId = productId;
         this.operatorId = operatorId;
@@ -35,7 +35,7 @@ public class ProductAuditLog {
     public String getProductId() { return productId; }
     public String getOperatorId() { return operatorId; }
     public String getOperatorName() { return operatorName; }
-    public Integer getAction() { return action; }
+    public String getAction() { return action; }
     public String getReason() { return reason; }
     public String getAuditDimensions() { return auditDimensions; }
     public String getBeforeStatus() { return beforeStatus; }
@@ -49,7 +49,7 @@ public class ProductAuditLog {
         private String productId;
         private String operatorId;
         private String operatorName;
-        private Integer action;
+private String action;
         private String reason;
         private String auditDimensions;
         private String beforeStatus;
@@ -59,7 +59,7 @@ public class ProductAuditLog {
         public Builder productId(String productId) { this.productId = productId; return this; }
         public Builder operatorId(String operatorId) { this.operatorId = operatorId; return this; }
         public Builder operatorName(String operatorName) { this.operatorName = operatorName; return this; }
-        public Builder action(Integer action) { this.action = action; return this; }
+        public Builder action(String action) { this.action = action; return this; }
         public Builder reason(String reason) { this.reason = reason; return this; }
         public Builder auditDimensions(String auditDimensions) { this.auditDimensions = auditDimensions; return this; }
         public Builder beforeStatus(String beforeStatus) { this.beforeStatus = beforeStatus; return this; }

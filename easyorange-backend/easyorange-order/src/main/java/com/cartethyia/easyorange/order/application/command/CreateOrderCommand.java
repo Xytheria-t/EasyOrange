@@ -21,7 +21,7 @@ public class CreateOrderCommand {
     private String address;
     private String phone;
     private String remark;
-    private Integer paymentMethod;
+    private String paymentMethod;
 
     @Data
     @Builder

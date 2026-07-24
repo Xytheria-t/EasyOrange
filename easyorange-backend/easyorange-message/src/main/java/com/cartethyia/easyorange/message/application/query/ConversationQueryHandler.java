@@ -7,8 +7,8 @@ import com.cartethyia.easyorange.message.domain.valueobject.UserInfo;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.application.query.dto.ConversationVO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
-import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageMapper;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -66,7 +66,7 @@ public class ConversationQueryHandler {
                 .receiverName(receiver != null ? receiver.username() : "未知用户")
                 .receiverAvatar(receiver != null ? receiver.avatar() : null)
                 .content(message.getContent())
-                .isRead(message.getIsRead())
+                .isRead(Integer.valueOf(message.getIsRead().getCode()))
                 .createTime(message.getCreateTime())
                 .build();
     }
@@ -95,7 +95,7 @@ public class ConversationQueryHandler {
         for (MessageDO msg : messages) {
             String otherUserId = msg.getSenderId().equals(currentUserId) ? msg.getReceiverId() : msg.getSenderId();
             latestByUser.putIfAbsent(otherUserId, msg);
-            if (msg.getReceiverId().equals(currentUserId) && MessageStatus.UNREAD.getCode().equals(msg.getIsRead())) {
+            if (msg.getReceiverId().equals(currentUserId) && ReadStatus.UNREAD == msg.getIsRead()) {
                 unreadCounts.merge(otherUserId, 1, Integer::sum);
             }
         }

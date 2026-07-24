@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
-import jakarta.annotation.Nullable;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,31 +8,25 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ProductReportStatus {
 
-    PENDING(0, "待处理"),
-    PROCESSING(1, "处理中"),
-    RESOLVED(2, "已解决"),
-    DISMISSED(3, "已驳回");
+    PENDING("0", "待处理"),
+    PROCESSING("1", "处理中"),
+    RESOLVED("2", "已解决"),
+    DISMISSED("3", "已驳回");
 
-    private final Integer code;
+    @JsonValue
+    private final String code;
     private final String desc;
 
-    /**
-     * Resolves the enum value from its integer code.
-     *
-     * @param code the integer code (may be {@code null})
-     * @return the matching enum value, or {@code null} if code is null
-     * @throws IllegalArgumentException if code is non-null but not recognized
-     */
-    @Nullable
-    public static ProductReportStatus fromCode(Integer code) {
-        if (code == null) return null;
-        return switch (code) {
-            case 0 -> PENDING;
-            case 1 -> PROCESSING;
-            case 2 -> RESOLVED;
-            case 3 -> DISMISSED;
-            default -> throw new IllegalArgumentException("Unknown ProductReportStatus code: " + code);
-        };
+    public static ProductReportStatus fromCode(String code) {
+        if (code == null) {
+            throw new IllegalArgumentException("ProductReportStatus code must not be null");
+        }
+        for (var status : values()) {
+            if (status.code.equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown ProductReportStatus code: " + code);
     }
 
     public boolean isPending() {

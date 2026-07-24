@@ -50,7 +50,7 @@ public class AdminReportService {
         int page = pageNum != null ? pageNum : 1;
         int size = pageSize != null ? pageSize : 20;
 
-        PageResult<ProductReport> reportPage = productReportQueryRepository.findByStatus(status, page, size);
+        PageResult<ProductReport> reportPage = productReportQueryRepository.findByStatus(String.valueOf(status), page, size);
 
         Map<String, UserDO> userMap = batchQueryUtil.batchGetUsers(reportPage.records().stream().map(ProductReport::getReporterId).distinct().toList());
         Map<String, ProductDO> productMap = batchQueryUtil.batchGetProducts(reportPage.records().stream().map(ProductReport::getProductId).distinct().toList());
@@ -212,18 +212,18 @@ public class AdminReportService {
         ProductDO product = productMap.get(report.getProductId());
 
         String statusDesc = switch (report.statusCode()) {
-            case 0 -> "待处理";
-            case 1 -> "处理中";
-            case 2 -> "已解决";
-            case 3 -> "已驳回";
+            case "0" -> "待处理";
+            case "1" -> "处理中";
+            case "2" -> "已解决";
+            case "3" -> "已驳回";
             default -> "未知";
         };
 
-        String reasonTypeDesc = switch (report.getReasonType() != null ? report.getReasonType() : 0) {
-            case 1 -> "虚假信息";
-            case 2 -> "侵权投诉";
-            case 3 -> "违规内容";
-            case 4 -> "其他";
+        String reasonTypeDesc = switch (report.getReasonType() != null ? report.getReasonType() : "0") {
+            case "1" -> "虚假信息";
+            case "2" -> "侵权投诉";
+            case "3" -> "违规内容";
+            case "4" -> "其他";
             default -> null;
         };
 
@@ -236,10 +236,10 @@ public class AdminReportService {
             .productImage(null)
             .reporterId(report.getReporterId())
             .reporterName(reporter != null ? reporter.getNickName() : null)
-            .reasonType(report.getReasonType())
+            .reasonType(Integer.valueOf(report.getReasonType()))
             .reasonTypeDesc(reasonTypeDesc)
             .reason(report.getReason())
-            .status(report.statusCode())
+            .status(Integer.valueOf(report.statusCode()))
             .statusDesc(statusDesc)
             .handleResult(report.getRemark())
             .handleRemark(report.getRemark())

@@ -14,18 +14,18 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum OrderStatus {
 
-    PENDING_PAYMENT(0, "待付款"),
-    PAID(1, "已付款"),
-    SHIPPED(2, "已发货"),
-    COMPLETED(3, "已完成"),
-    CANCELLED(4, "已取消"),
-    REFUNDED(5, "已退款");
+    PENDING_PAYMENT("0", "待付款"),
+    PAID("1", "已付款"),
+    SHIPPED("2", "已发货"),
+    COMPLETED("3", "已完成"),
+    CANCELLED("4", "已取消"),
+    REFUNDED("5", "已退款");
 
     @JsonValue
-    private final Integer code;
+    private final String code;
     private final String desc;
 
-    public static OrderStatus fromCode(Integer code) {
+    public static OrderStatus fromCode(String code) {
         if (code == null) {
             throw new IllegalArgumentException("OrderStatus code must not be null");
         }
@@ -37,7 +37,7 @@ public enum OrderStatus {
         throw new IllegalArgumentException("Unknown OrderStatus code: " + code);
     }
 
-    public static String getDescByCode(Integer code) {
+    public static String getDescByCode(String code) {
         try {
             return fromCode(code).getDesc();
         } catch (IllegalArgumentException e) {

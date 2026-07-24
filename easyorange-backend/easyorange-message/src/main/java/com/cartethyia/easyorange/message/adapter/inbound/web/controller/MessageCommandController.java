@@ -56,7 +56,7 @@ public class MessageCommandController {
 
     @PutMapping("/read-by-type/{type}")
     public Result<Void> markAsReadByType(@PathVariable Integer type) {
-        if (MessageType.fromCode(type) == null) {
+        if (MessageType.fromCode(String.valueOf(type)) == null) {
             return Result.error("无效的消息类型");
         }
         commandHandler.handleMarkAsReadByType(type);

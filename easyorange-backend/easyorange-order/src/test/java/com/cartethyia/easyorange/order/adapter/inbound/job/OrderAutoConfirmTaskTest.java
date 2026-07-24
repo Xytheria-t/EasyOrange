@@ -61,7 +61,7 @@ class OrderAutoConfirmTaskTest {
                 orderId, "ORD" + orderId,
                 BUYER_ID, SELLER_ID,
                 BigDecimal.valueOf(99.99),
-                OrderStatus.SHIPPED.getCode(), 1,
+                2, "1",
                 "地址", "13800138000", "备注",
                 null, null
         );

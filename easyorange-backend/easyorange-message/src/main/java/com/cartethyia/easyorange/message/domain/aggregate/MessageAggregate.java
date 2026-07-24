@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.message.domain.exception.MessageDomainException
 import com.cartethyia.easyorange.message.domain.exception.UnauthorizedOperationException;
 import com.cartethyia.easyorange.message.enums.MessageStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
+import com.cartethyia.easyorange.message.enums.ReadStatus;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -32,7 +33,7 @@ public class MessageAggregate {
     private final Integer type;
     private final String title;
     private final String content;
-    private final Integer isRead;
+    private final ReadStatus isRead;
     private final LocalDateTime readTime;
     private final String businessId;
     private final String msgStatus;
@@ -40,7 +41,7 @@ public class MessageAggregate {
     private final LocalDateTime createTime;
 
     private MessageAggregate(String id, String senderId, String receiverId, Integer type,
-                             String title, String content, Integer isRead, LocalDateTime readTime,
+                             String title, String content, ReadStatus isRead, LocalDateTime readTime,
                              String businessId, String msgStatus, LocalDateTime recalledAt,
                              LocalDateTime createTime) {
         this.id = id;
@@ -65,7 +66,7 @@ public class MessageAggregate {
     public Integer type() { return type; }
     public String title() { return title; }
     public String content() { return content; }
-    public Integer isRead() { return isRead; }
+    public ReadStatus isRead() { return isRead; }
     public LocalDateTime readTime() { return readTime; }
     public String businessId() { return businessId; }
     public String msgStatus() { return msgStatus; }
@@ -82,7 +83,7 @@ public class MessageAggregate {
         MessageAggregate aggregate = new MessageAggregate(
                 null, senderId, receiverId, type,
                 escapeHtml(title), escapeHtml(content),
-                MessageStatus.UNREAD.getCode(), null,
+                ReadStatus.UNREAD, null,
                 businessId, MessageStatus.SENT.getCode(), null, null
         );
         return new MessageCreateResult(aggregate, new MessageSentEvent(null, senderId, receiverId, type));
@@ -94,12 +95,12 @@ public class MessageAggregate {
     public static MessageCreateResult createSystem(String receiverId, String title,
                                                     String content, String businessId) {
         MessageAggregate aggregate = new MessageAggregate(
-                null, null, receiverId, MessageType.SYSTEM.getCode(),
+                null, null, receiverId, Integer.valueOf(MessageType.SYSTEM.getCode()),
                 escapeHtml(title), escapeHtml(content),
-                MessageStatus.UNREAD.getCode(), null,
+                ReadStatus.UNREAD, null,
                 businessId, null, null, null
         );
-        return new MessageCreateResult(aggregate, new MessageSentEvent(null, null, receiverId, MessageType.SYSTEM.getCode()));
+        return new MessageCreateResult(aggregate, new MessageSentEvent(null, null, receiverId, Integer.valueOf(MessageType.SYSTEM.getCode())));
     }
 
     // ==================== Reconstruction ====================
@@ -108,7 +109,7 @@ public class MessageAggregate {
      * 从持久层原始数据重建聚合根
      */
     public static MessageAggregate fromRaw(String id, String senderId, String receiverId, Integer type,
-                                            String title, String content, Integer isRead,
+                                            String title, String content, ReadStatus isRead,
                                             LocalDateTime readTime, String businessId,
                                             String msgStatus, LocalDateTime recalledAt,
                                             LocalDateTime createTime) {
@@ -120,7 +121,7 @@ public class MessageAggregate {
     // ==================== Predicates ====================
 
     public boolean isUnread() {
-        return MessageStatus.UNREAD.getCode().equals(this.isRead);
+        return ReadStatus.UNREAD == this.isRead;
     }
 
     public boolean isOwnedBy(String userId) {
@@ -150,12 +151,12 @@ public class MessageAggregate {
         if (!this.receiverId.equals(userId)) {
             throw new UnauthorizedOperationException("Only receiver can read this message");
         }
-        if (MessageStatus.READ.getCode().equals(this.isRead)) {
+        if (ReadStatus.READ == this.isRead) {
             return null;
         }
         MessageAggregate updated = new MessageAggregate(
                 this.id, this.senderId, this.receiverId, this.type,
-                this.title, this.content, MessageStatus.READ.getCode(), LocalDateTime.now(),
+                this.title, this.content, ReadStatus.READ, LocalDateTime.now(),
                 this.businessId, this.msgStatus, this.recalledAt, this.createTime
         );
         return new MessageReadResult(updated, new MessageReadEvent(this.id, userId));
