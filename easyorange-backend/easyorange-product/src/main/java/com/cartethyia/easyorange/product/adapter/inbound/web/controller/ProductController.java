@@ -13,7 +13,7 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.Product
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryService;
-import com.cartethyia.easyorange.product.application.query.ProductListQuery;
+import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.ProductVO;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountAppService;
@@ -147,12 +147,13 @@ public class ProductController {
      */
     @GetMapping
     public Result<PageResult<ProductVO>> listProducts(@Valid ProductQueryRequest request) {
-        return Result.success(queryService.listProducts(new ProductListQuery(
+        var criteria = new ProductSearchCriteria(
                 request.getKeyword(), request.getCategoryId(), request.getStatus(),
                 request.getMinPrice(), request.getMaxPrice(),
                 request.getConditionLevel(), request.getSort(),
                 request.getHasDiscount(),
-                request.getPageNum(), request.getPageSize())));
+                request.getPageNum(), request.getPageSize());
+        return Result.success(queryService.listProducts(criteria));
     }
 
     @GetMapping("/my")

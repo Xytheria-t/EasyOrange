@@ -55,10 +55,12 @@ public class ProductSearchHandler {
             result = SearchPageResponse.of(responses, searchResult.total(), searchResult.current(),
                     searchResult.size(), facets);
         } else {
-            var page = productQueryRepository.searchProducts(
+            var criteria = new ProductSearchCriteria(
                     request.getKeyword(), request.getCategoryId(), request.getStatus(),
+                    null, null, null, null, null,
                     request.getPageNum() != null ? request.getPageNum() : 1,
                     request.getPageSize() != null ? request.getPageSize() : 20);
+            var page = productQueryRepository.searchProducts(criteria);
             readModels = page.records();
             var responses = readModels.stream().map(this::toProductResponse).toList();
             result = SearchPageResponse.of(page, responses);

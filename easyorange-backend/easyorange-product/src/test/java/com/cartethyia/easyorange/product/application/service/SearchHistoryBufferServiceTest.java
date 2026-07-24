@@ -66,6 +66,20 @@ class SearchHistoryBufferServiceTest {
 
             assertThat(bufferService.getBufferSize()).isEqualTo(0);
         }
+
+        @Test
+        @DisplayName("缓冲区满时丢弃新条目")
+        void addToBuffer_full_drop() {
+            // 填满缓冲区（容量 5000）
+            for (int i = 0; i < 5000; i++) {
+                bufferService.addToBuffer("1", "keyword" + i);
+            }
+            assertThat(bufferService.getBufferSize()).isEqualTo(5000);
+
+            // 再添加一条，应被丢弃
+            bufferService.addToBuffer("1", "overflow");
+            assertThat(bufferService.getBufferSize()).isEqualTo(5000);
+        }
     }
 
     @Nested

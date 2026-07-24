@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.repositor
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
@@ -59,27 +60,26 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     // ===================== 商品查询 =====================
 
     @Override
-    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
-                                                        Integer pageNum, Integer pageSize) {
-        return searchProducts(keyword, categoryId, status, null, null, null, null, null, pageNum, pageSize);
-    }
+    public PageResult<ProductReadModel> searchProducts(ProductSearchCriteria criteria) {
+        var page = new Page<ProductDO>(criteria.effectivePageNum(), criteria.effectivePageSize());
 
-    @Override
-    public PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
-                                                       BigDecimal minPrice, BigDecimal maxPrice,
-                                                       String conditionLevel, String sort,
-                                                       Boolean hasDiscount,
-                                                       Integer pageNum, Integer pageSize) {
-        var page = new Page<ProductDO>(pageNum, pageSize);
+        String keyword = criteria.keyword();
+        String categoryId = criteria.categoryId();
+        String status = criteria.status();
+        BigDecimal minPrice = criteria.minPrice();
+        BigDecimal maxPrice = criteria.maxPrice();
+        String conditionLevel = criteria.conditionLevel();
+        String sort = criteria.sort();
+        Boolean hasDiscount = criteria.hasDiscount();
 
         if (keyword != null && !keyword.isBlank()) {
-            var criteria = new ProductMapper.ProductSearchCriteria(
+            var searchCriteria = new ProductMapper.ProductSearchCriteria(
                     keyword,
                     status != null ? ProductStatus.fromCode(status) : ProductStatus.ONLINE,
                     minPrice, maxPrice,
                     conditionLevel != null ? ConditionLevel.fromCode(conditionLevel) : null,
                     hasDiscount);
-            return convertToReadModelPage(productMapper.searchByFullText(page, criteria));
+            return convertToReadModelPage(productMapper.searchByFullText(page, searchCriteria));
         }
 
         var wrapper = ChainWrappers.lambdaQueryChain(productMapper);

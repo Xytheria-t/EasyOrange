@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
@@ -60,7 +61,8 @@ class ProductSearchHandlerTest {
         request.setStatus("1");
 
         PageResult<ProductReadModel> page = PageResult.of(List.of(testProduct), 1, 1, 20);
-        when(productQueryRepository.searchProducts("手机", "2", "1", 1, 20))
+        var expectedCriteria = new ProductSearchCriteria("手机", "2", "1", null, null, null, null, null, 1, 20);
+        when(productQueryRepository.searchProducts(expectedCriteria))
                 .thenReturn(page);
 
         SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
@@ -81,7 +83,8 @@ class ProductSearchHandlerTest {
         request.setKeyword("不存在");
 
         PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
-        when(productQueryRepository.searchProducts("不存在", null, null, 1, 20))
+        var expectedCriteria = new ProductSearchCriteria("不存在", null, null, null, null, null, null, null, 1, 20);
+        when(productQueryRepository.searchProducts(expectedCriteria))
                 .thenReturn(page);
 
         SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
@@ -96,12 +99,13 @@ class ProductSearchHandlerTest {
         request.setKeyword("手机");
 
         PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
-        when(productQueryRepository.searchProducts("手机", null, null, 1, 20))
+        var expectedCriteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
+        when(productQueryRepository.searchProducts(expectedCriteria))
                 .thenReturn(page);
 
         searchHandler.handleSearch(request);
 
-        verify(productQueryRepository).searchProducts("手机", null, null, 1, 20);
+        verify(productQueryRepository).searchProducts(expectedCriteria);
     }
 
     @Test

@@ -17,11 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,6 +36,12 @@ public class ProductQueryService {
     private final ProductReadModelAssembler readModelAssembler;
     private final ProductCachePort productCachePort;
     private final Singleflight<String, ProductVO> productSingleflight = new Singleflight<>();
+
+    /**
+     * 卖家信息内存缓存 — 卖家信息极少变更，避免重复查询相同卖家。
+     * TODO: 未来可将商品 + 卖家信息合并为一次带 JOIN 的查询，减少 round trip
+     */
+    private final Map<String, SellerReadModel> sellerCache = new ConcurrentHashMap<>();
 
     // ── Public query API (single → multi → computed → paged) ──
 
@@ -78,8 +86,9 @@ public class ProductQueryService {
         }
 
         int effectiveLimit = limit != null ? limit : 10;
-        var page = productQueryRepository.searchProducts(
+        var criteria = new ProductSearchCriteria(
                 null, product.categoryId(), null, null, null, null, null, null, 1, effectiveLimit + 1);
+        var page = productQueryRepository.searchProducts(criteria);
 
         var similarRecords = page.records().stream()
                 .filter(p -> !p.id().equals(productId))
@@ -90,18 +99,10 @@ public class ProductQueryService {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ProductVO> listProducts(ProductListQuery query) {
-        int effectivePageNum = query.effectivePageNum();
-        int effectivePageSize = query.effectivePageSize();
-
-        var page = productQueryRepository.searchProducts(
-                query.keyword(), query.categoryId(), query.status(),
-                query.minPrice(), query.maxPrice(),
-                query.conditionLevel(), query.sort(), query.hasDiscount(),
-                effectivePageNum, effectivePageSize);
-
+    public PageResult<ProductVO> listProducts(ProductSearchCriteria criteria) {
+        var page = productQueryRepository.searchProducts(criteria);
         var vos = enrichPage(page);
-        return PageResult.of(vos, page.total(), effectivePageNum, effectivePageSize);
+        return PageResult.of(vos, page.total(), criteria.effectivePageNum(), criteria.effectivePageSize());
     }
 
     @Transactional(readOnly = true)
@@ -121,8 +122,26 @@ public class ProductQueryService {
 
     private Map<String, SellerReadModel> fetchSellers(Set<String> sellerIds) {
         if (sellerIds.isEmpty()) return Map.of();
-        return productQueryRepository.findSellersByIds(sellerIds).stream()
-                .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, _) -> a));
+
+        var result = new HashMap<String, SellerReadModel>();
+        var missingIds = new HashSet<String>();
+        for (var id : sellerIds) {
+            var cached = sellerCache.get(id);
+            if (cached != null) {
+                result.put(id, cached);
+            } else {
+                missingIds.add(id);
+            }
+        }
+
+        if (!missingIds.isEmpty()) {
+            var fetched = productQueryRepository.findSellersByIds(missingIds).stream()
+                    .collect(Collectors.toMap(SellerReadModel::id, s -> s, (a, _) -> a));
+            sellerCache.putAll(fetched);
+            result.putAll(fetched);
+        }
+
+        return result;
     }
 
     // ── ReadModel assembly path (for listing / similar queries) ──

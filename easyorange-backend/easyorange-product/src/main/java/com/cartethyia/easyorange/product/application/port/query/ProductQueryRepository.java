@@ -1,25 +1,18 @@
 package com.cartethyia.easyorange.product.application.port.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
 public interface ProductQueryRepository {
 
-    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
-                                            Integer pageNum, Integer pageSize);
-
-    PageResult<ProductReadModel> searchProducts(String keyword, String categoryId, String status,
-                                           BigDecimal minPrice, BigDecimal maxPrice,
-                                           String conditionLevel, String sort,
-                                           Boolean hasDiscount,
-                                           Integer pageNum, Integer pageSize);
+    PageResult<ProductReadModel> searchProducts(ProductSearchCriteria criteria);
 
     PageResult<ProductReadModel> findProductsBySellerId(String sellerId, String status,
                                                     Integer pageNum, Integer pageSize);

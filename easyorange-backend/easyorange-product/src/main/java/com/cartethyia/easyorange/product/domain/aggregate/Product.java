@@ -80,7 +80,7 @@ public class Product {
                 .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
                 .build();
 
-        var event = new ProductCreatedEvent(ProductEvent.Data.fromCreate(spec, p.stock));
+        var event = new ProductCreatedEvent(ProductEvent.Data.from(p));
         return new ProductTransition(p, event);
     }
 
@@ -195,7 +195,7 @@ public class Product {
 
         var updated = builder.updateTime(LocalDateTime.now()).build();
 
-        var event = new ProductUpdatedEvent(ProductEvent.Data.fromUpdated(updated));
+        var event = new ProductUpdatedEvent(ProductEvent.Data.from(updated));
         return new ProductTransition(updated, event);
     }
 

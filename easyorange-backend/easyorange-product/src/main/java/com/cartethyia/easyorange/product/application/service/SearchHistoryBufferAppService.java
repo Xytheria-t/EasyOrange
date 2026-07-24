@@ -10,7 +10,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Slf4j
 @Service
@@ -19,9 +20,14 @@ public class SearchHistoryBufferAppService {
 
     private final SearchHistoryMapper searchHistoryMapper;
     
-    private final ConcurrentLinkedQueue<SearchHistoryDO> buffer = new ConcurrentLinkedQueue<>();
+    private final BlockingQueue<SearchHistoryDO> buffer = new LinkedBlockingQueue<>(5000);
     
     private static final int BATCH_SIZE = 100;
+    
+    /**
+     * 队列水位警戒线：超过此水位时 flush 失败不再回插，直接丢弃以保护系统。
+     */
+    private static final int DRAIN_THRESHOLD = 4000;
 
     public void addToBuffer(String userId, String keyword) {
         if (userId == null || keyword == null || keyword.isBlank()) {
@@ -33,30 +39,30 @@ public class SearchHistoryBufferAppService {
                 .keyword(keyword)
                 .searchTime(LocalDateTime.now())
                 .build();
-        buffer.offer(historyDO);
+        if (!buffer.offer(historyDO)) {
+            log.warn("搜索历史缓冲区已满({}), 丢弃条目", buffer.size());
+        }
     }
 
     @Scheduled(fixedRate = 5000)
     public void flushBuffer() {
-        if (buffer.isEmpty()) {
+        var batch = new ArrayList<SearchHistoryDO>(BATCH_SIZE);
+        buffer.drainTo(batch, BATCH_SIZE);
+        
+        if (batch.isEmpty()) {
             return;
         }
         
-        List<SearchHistoryDO> batch = new ArrayList<>();
-        SearchHistoryDO item;
-        while (batch.size() < BATCH_SIZE && (item = buffer.poll()) != null) {
-            batch.add(item);
-        }
-        
-        if (!batch.isEmpty()) {
-            try {
-                searchHistoryMapper.batchInsert(batch);
-                log.debug("Flushed {} search history records to database", batch.size());
-            } catch (Exception e) {
-                log.error("Failed to flush search history buffer", e);
-                for (SearchHistoryDO history : batch) {
-                    buffer.offer(history);
-                }
+        try {
+            searchHistoryMapper.batchInsert(batch);
+            log.debug("Flushed {} search history records to database", batch.size());
+        } catch (Exception e) {
+            log.error("Failed to flush search history buffer", e);
+            // 队列不拥挤才回插，否则丢弃以保护系统
+            if (buffer.size() < DRAIN_THRESHOLD) {
+                buffer.addAll(batch);
+            } else {
+                log.warn("搜索历史缓冲区拥挤({}), 丢弃 {} 条记录", buffer.size(), batch.size());
             }
         }
     }

@@ -54,7 +54,7 @@ public class CategoryQueryRepositoryImpl extends BaseRepository<CategoryMapper, 
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        return mapper.selectBatchIds(ids).stream()
+        return mapper.selectByIds(ids).stream()
                 .map(this::toReadModel)
                 .toList();
     }

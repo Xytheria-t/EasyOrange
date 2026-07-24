@@ -81,6 +81,7 @@ class ProductViewCountServiceTest {
 
         @Test
         @DisplayName("批量同步浏览量成功")
+        @SuppressWarnings("unchecked")
         void flush_success() {
             when(redisTemplate.opsForHash()).thenReturn(hashOperations);
             when(hashOperations.entries("eo:product:views:pending"))
@@ -88,7 +89,6 @@ class ProductViewCountServiceTest {
 
             batchProcessor.flush();
 
-            @SuppressWarnings("unchecked")
             var captor = ArgumentCaptor.forClass(List.class);
             verify(productMapper).batchAddViewCounts(captor.capture());
             assertThat(captor.getValue())
