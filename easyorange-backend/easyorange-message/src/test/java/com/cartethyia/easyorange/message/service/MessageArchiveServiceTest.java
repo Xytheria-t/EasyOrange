@@ -24,6 +24,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MessageArchiveService 单元测试")
+@SuppressWarnings("unchecked")
 class MessageArchiveServiceTest {
 
     @Mock
@@ -89,7 +90,7 @@ class MessageArchiveServiceTest {
 
             verify(messageMapper, times(2)).selectList(any());
             verify(namedParameterJdbcTemplate).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
-            verify(messageMapper).deleteBatchIds(List.of("1", "2"));
+            verify(messageMapper).deleteByIds(List.of("1", "2"));
         }
 
         @Test
@@ -101,7 +102,7 @@ class MessageArchiveServiceTest {
 
             verify(messageMapper, times(1)).selectList(any());
             verify(namedParameterJdbcTemplate, never()).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
-            verify(messageMapper, never()).deleteBatchIds(any());
+            verify(messageMapper, never()).deleteByIds(any());
         }
 
         @Test
@@ -118,7 +119,7 @@ class MessageArchiveServiceTest {
             archiveService.archiveOldMessages();
 
             verify(namedParameterJdbcTemplate, times(2)).batchUpdate(anyString(), any(MapSqlParameterSource[].class));
-            verify(messageMapper, times(2)).deleteBatchIds(any());
+            verify(messageMapper, times(2)).deleteByIds(any());
         }
 
         @Test

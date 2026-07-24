@@ -126,7 +126,7 @@ public class MessageArchiveService {
         if (ids.isEmpty()) {
             return;
         }
-        messageMapper.deleteBatchIds(ids);
+        messageMapper.deleteByIds(ids);
     }
 
     private int deleteExpiredBatch(LocalDateTime expireDate) {

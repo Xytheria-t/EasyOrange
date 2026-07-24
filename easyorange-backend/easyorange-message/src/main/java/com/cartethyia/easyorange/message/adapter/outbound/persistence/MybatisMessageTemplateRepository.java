@@ -44,7 +44,7 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
 
     @Override
     public void deleteByIds(String[] templateIds) {
-        mapper.deleteBatchIds(Arrays.asList(templateIds));
+        mapper.deleteByIds(Arrays.asList(templateIds));
     }
 
     @Override

@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageSub
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageTemplateDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import java.util.List;
 
@@ -18,8 +17,24 @@ public interface MessageDataMapper {
 
     // ==================== Message ====================
 
-    @Mapping(target = "createTime", ignore = true)
-    MessageDO toEntity(MessageAggregate aggregate);
+    default MessageDO toEntity(MessageAggregate aggregate) {
+        if (aggregate == null) {
+            return null;
+        }
+        return MessageDO.builder()
+            .id(aggregate.id())
+            .senderId(aggregate.senderId())
+            .receiverId(aggregate.receiverId())
+            .type(aggregate.type())
+            .title(aggregate.title())
+            .content(aggregate.content())
+            .isRead(aggregate.isRead())
+            .readTime(aggregate.readTime())
+            .businessId(aggregate.businessId())
+            .msgStatus(aggregate.msgStatus())
+            .recalledAt(aggregate.recalledAt())
+            .build();
+    }
 
     default MessageAggregate toAggregate(MessageDO entity) {
         if (entity == null) {
@@ -50,7 +65,20 @@ public interface MessageDataMapper {
 
     // ==================== OfflineMessage ====================
 
-    OfflineMessageDO toEntity(OfflineMessageAggregate aggregate);
+    default OfflineMessageDO toEntity(OfflineMessageAggregate aggregate) {
+        if (aggregate == null) {
+            return null;
+        }
+        return OfflineMessageDO.builder()
+            .id(aggregate.id())
+            .userId(aggregate.userId())
+            .messageId(aggregate.messageId())
+            .pushChannel(aggregate.pushChannel())
+            .pushStatus(aggregate.pushStatus())
+            .retryCount(aggregate.retryCount())
+            .maxRetryCount(aggregate.maxRetryCount())
+            .build();
+    }
 
     default OfflineMessageAggregate toAggregate(OfflineMessageDO entity) {
         if (entity == null) {
@@ -76,7 +104,18 @@ public interface MessageDataMapper {
 
     // ==================== MessageSubscription ====================
 
-    MessageSubscriptionDO toEntity(MessageSubscriptionAggregate aggregate);
+    default MessageSubscriptionDO toEntity(MessageSubscriptionAggregate aggregate) {
+        if (aggregate == null) {
+            return null;
+        }
+        return MessageSubscriptionDO.builder()
+            .id(aggregate.id())
+            .userId(aggregate.userId())
+            .messageType(aggregate.messageType())
+            .pushChannel(aggregate.pushChannel())
+            .enabled(aggregate.enabled())
+            .build();
+    }
 
     default MessageSubscriptionAggregate toAggregate(MessageSubscriptionDO entity) {
         if (entity == null) {
@@ -100,7 +139,22 @@ public interface MessageDataMapper {
 
     // ==================== MessageTemplate ====================
 
-    MessageTemplateDO toEntity(MessageTemplateAggregate aggregate);
+    default MessageTemplateDO toEntity(MessageTemplateAggregate aggregate) {
+        if (aggregate == null) {
+            return null;
+        }
+        return MessageTemplateDO.builder()
+            .id(aggregate.id())
+            .templateCode(aggregate.templateCode())
+            .templateName(aggregate.templateName())
+            .templateType(aggregate.templateType())
+            .title(aggregate.title())
+            .content(aggregate.content())
+            .variables(aggregate.variables())
+            .status(aggregate.status())
+            .remark(aggregate.remark())
+            .build();
+    }
 
     default MessageTemplateAggregate toAggregate(MessageTemplateDO entity) {
         if (entity == null) {
