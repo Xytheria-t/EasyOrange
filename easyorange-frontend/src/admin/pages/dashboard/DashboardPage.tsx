@@ -675,9 +675,7 @@ export default function DashboardPage() {
                 {/* ─── QUICK ACTIONS PANEL ─── */}
                 <QuickActionsPanel pendingItems={pendingItems} />
 
-
                 <PendingItemsAlert pendingItems={pendingItems} isLoading={pendingLoading} />
-
 
                 {/* ─── TWO-COLUMN CONTENT AREA ─── */}
                 <div

@@ -165,6 +165,13 @@
 .search-history-tag {
     display: inline-flex;
     align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.search-history-tag-main {
+    display: inline-flex;
+    align-items: center;
     gap: 0.375rem;
     padding: 0.5rem 0.875rem;
     border-radius: var(--radius-full);
@@ -174,13 +181,13 @@
     font-weight: 500;
     color: var(--text-secondary);
     transition: all var(--transition-normal);
-    position: relative;
-    overflow: hidden;
     height: auto;
     min-height: unset;
+    cursor: pointer;
+    font-family: inherit;
 }
 
-.search-history-tag:hover {
+.search-history-tag-main:hover {
     transform: translateY(-2px);
     border-color: rgba(249, 115, 22, 0.2);
     box-shadow: 0 6px 16px rgba(249, 115, 22, 0.1);
@@ -188,12 +195,12 @@
     background: rgba(255, 255, 255, 0.9);
 }
 
-.search-history-tag svg {
+.search-history-tag-main svg {
     color: var(--text-tertiary);
     transition: color var(--transition-fast);
 }
 
-.search-history-tag:hover svg {
+.search-history-tag-main:hover svg {
     color: var(--primary-400);
 }
 
@@ -864,4 +871,3 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
 }
-

@@ -64,6 +64,7 @@ export function StatCard({ title, value, growth, sub, icon, accent = 'orange' }:
     const cfg = ACCENT_CONFIG[accent];
 
     return (
+        // biome-ignore lint/a11y/noStaticElementInteractions: 非交互式展示卡片，hover 仅用于视觉反馈（动态阴影 + 一次性的高光扫过动画），无点击/键盘行为；动态样式依赖 accent 配置无法用纯 CSS :hover 实现
         <div
             style={{
                 position: 'relative',

@@ -347,16 +347,15 @@ function SearchPage() {
                                         </div>
                                         <div className="search-history-tags">
                                             {searchHistory.map(item => (
-                                                <div
-                                                    key={item}
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    className="search-history-tag"
-                                                    onClick={() => handleHotKeywordClick(item)}
-                                                    onKeyDown={e => e.key === 'Enter' && handleHotKeywordClick(item)}
-                                                >
-                                                    <Clock size={10} />
-                                                    <span>{item}</span>
+                                                <div key={item} className="search-history-tag">
+                                                    <button
+                                                        type="button"
+                                                        className="search-history-tag-main"
+                                                        onClick={() => handleHotKeywordClick(item)}
+                                                    >
+                                                        <Clock size={10} />
+                                                        <span>{item}</span>
+                                                    </button>
                                                     <Button
                                                         type="button"
                                                         variant="ghost"
@@ -489,6 +488,7 @@ function SearchPage() {
                             </div>
                             <div className="search-trending-cards">
                                 {TRENDING_TOPICS.map(topic => (
+                                    // biome-ignore lint/a11y/noStaticElementInteractions: 鼠标跟随的渐变光晕是纯装饰性视觉增强（基于 mousePos 状态动态计算 radial-gradient 位置），无法用纯 CSS :hover 实现；卡片本身无点击/键盘交互，未提供指针设备时静默降级
                                     <div
                                         key={topic.title}
                                         className="search-trending-card"

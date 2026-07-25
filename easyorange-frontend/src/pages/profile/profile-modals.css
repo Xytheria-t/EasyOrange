@@ -567,17 +567,17 @@
         grid-column: span 1;
     }
 
-    .section-header .header-actions,
-    .section-header .header-actions .btn-ghost {
-        width: 100%;
-    }
-
     .btn-primary,
     .btn-secondary,
     .btn-ghost,
     .btn-outline {
         width: 100%;
         justify-content: center;
+    }
+
+    .section-header .header-actions,
+    .section-header .header-actions .btn-ghost {
+        width: 100%;
     }
 
     .metric-card,

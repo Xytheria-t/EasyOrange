@@ -12,8 +12,8 @@ import {
     useUpdateCategory,
     useUpdateCategoryStatus,
 } from '../../hooks';
-import { CategoryTreeNode } from './CategoryTreeNode';
 import type { CategoryCreateRequest, CategoryTreeResponse, CategoryUpdateRequest } from '../../types/admin';
+import { CategoryTreeNode } from './CategoryTreeNode';
 
 type SortField = 'name' | 'sortOrder';
 type SortDir = 'asc' | 'desc';
@@ -23,7 +23,6 @@ const STATUS_FILTER_OPTIONS = [
     { value: '1', label: '启用' },
     { value: '0', label: '禁用' },
 ];
-
 
 export default function CategoryManagePage() {
     const { data: treeData, isLoading, isError } = useAdminCategoryTree();
@@ -194,7 +193,6 @@ export default function CategoryManagePage() {
 
     // Count total categories
     const totalCount = allCategories.length;
-
 
     // Parent options for create/edit
     const parentOptions = useMemo(() => {
@@ -692,7 +690,21 @@ export default function CategoryManagePage() {
                             </p>
                         </div>
                     ) : (
-                        <div>{filteredTree.map(node => <CategoryTreeNode key={node.categoryId} node={node} depth={0} expandedIds={expandedIds} onToggleExpand={toggleExpand} onEdit={openEdit} onToggleStatus={handleToggleStatus} onDelete={setDeleteTarget} isUpdatingStatus={updateStatusMutation.isPending} />)}</div>
+                        <div>
+                            {filteredTree.map(node => (
+                                <CategoryTreeNode
+                                    key={node.categoryId}
+                                    node={node}
+                                    depth={0}
+                                    expandedIds={expandedIds}
+                                    onToggleExpand={toggleExpand}
+                                    onEdit={openEdit}
+                                    onToggleStatus={handleToggleStatus}
+                                    onDelete={setDeleteTarget}
+                                    isUpdatingStatus={updateStatusMutation.isPending}
+                                />
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>
@@ -1058,6 +1070,7 @@ export default function CategoryManagePage() {
                                 className="flex gap-3"
                             >
                                 <label
+                                    htmlFor="status-enabled"
                                     className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 1 ? 'border-emerald-500 bg-emerald-50' : 'border-[#E5E0DB] bg-white'}`}
                                 >
                                     <RadioGroupItem value="1" id="status-enabled" />
@@ -1068,6 +1081,7 @@ export default function CategoryManagePage() {
                                     </span>
                                 </label>
                                 <label
+                                    htmlFor="status-disabled"
                                     className={`flex items-center gap-2 px-4 py-2 rounded-[10px] border-[1.5px] cursor-pointer transition-all ${editStatus === 0 ? 'border-rose-500 bg-rose-50' : 'border-[#E5E0DB] bg-white'}`}
                                 >
                                     <RadioGroupItem value="0" id="status-disabled" />

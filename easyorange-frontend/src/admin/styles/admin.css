@@ -492,3 +492,13 @@
         opacity: 0.3;
     }
 }
+
+/* ============ Category Tree Node ============ */
+.category-tree-node-row {
+    background: transparent;
+    transition: background 0.15s ease;
+}
+
+.category-tree-node-row:hover {
+    background: rgba(249, 115, 22, 0.03);
+}

@@ -15,9 +15,9 @@ import {
     ProfileSidebar,
 } from '@/components/profile';
 import { useCurrentUser, useLogout } from '@/hooks';
+import type { ChangePasswordForm } from '@/schemas/authSchema';
 import { useUIStore } from '@/store/uiStore';
 import { errorHandler } from '@/utils/errorHandler';
-import type { ChangePasswordForm } from '@/schemas/authSchema';
 import '@/styles/main.css';
 import './profile-sidebar.css';
 import './profile-dashboard.css';
@@ -113,24 +113,27 @@ function ProfilePage() {
         setEditValue('');
     }, []);
 
-    const handleChangePassword = useCallback(async (data: ChangePasswordForm) => {
-        setIsChangingPassword(true);
-        try {
-            await userApi.changePassword({
-                oldPassword: data.oldPassword,
-                newPassword: data.newPassword,
-            });
-            setShowPasswordModal(false);
-            addToast({ type: 'success', message: '密码修改成功，请重新登录' });
-            logout();
-            navigate('/login');
-        } catch (err) {
-            const msg = errorHandler.handle(err as Error);
-            addToast({ type: 'error', message: msg });
-        } finally {
-            setIsChangingPassword(false);
-        }
-    }, [addToast, logout, navigate]);
+    const handleChangePassword = useCallback(
+        async (data: ChangePasswordForm) => {
+            setIsChangingPassword(true);
+            try {
+                await userApi.changePassword({
+                    oldPassword: data.oldPassword,
+                    newPassword: data.newPassword,
+                });
+                setShowPasswordModal(false);
+                addToast({ type: 'success', message: '密码修改成功，请重新登录' });
+                logout();
+                navigate('/login');
+            } catch (err) {
+                const msg = errorHandler.handle(err as Error);
+                addToast({ type: 'error', message: msg });
+            } finally {
+                setIsChangingPassword(false);
+            }
+        },
+        [addToast, logout, navigate]
+    );
 
     const handleLogout = useCallback(async () => {
         await logout();

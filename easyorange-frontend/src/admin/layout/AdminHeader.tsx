@@ -50,12 +50,7 @@ export function AdminHeader() {
             </div>
 
             <div className="header-right">
-                <Button
-                    variant="ghost"
-                    className="header-user"
-                    onClick={handleLogout}
-                    title="返回主站"
-                >
+                <Button variant="ghost" className="header-user" onClick={handleLogout} title="返回主站">
                     <div className="header-user-avatar">
                         {user?.nickname?.charAt(0) || user?.username?.charAt(0) || 'A'}
                     </div>

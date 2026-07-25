@@ -330,6 +330,10 @@
                     <!-- @{argLine} 注入 JaCoCo agent；后续 JVM 参数保障 WSL2 Mockito/反射可用 -->
                     <argLine>
                         @{argLine}
+                        -Dfile.encoding=UTF-8
+                        -Dsun.jnu.encoding=UTF-8
+                        -Dstdout.encoding=UTF-8
+                        -Dstderr.encoding=UTF-8
                         -Djdk.attach.allowAttachSelf=true
                         -Dnet.bytebuddy.experimental=true
                         -XX:+EnableDynamicAgentLoading

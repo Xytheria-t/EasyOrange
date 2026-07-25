@@ -1,15 +1,7 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyRound, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    Input,
-    Label,
-} from '@/components/ui';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Input, Label } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { type ChangePasswordForm, changePasswordSchema } from '@/schemas/authSchema';
 

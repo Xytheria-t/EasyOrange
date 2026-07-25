@@ -59,12 +59,10 @@ export function FilterSidebar({ isOpen, onClose, onApplyFilters, onResetFilters,
     return (
         <>
             {isOpen && (
-                <div
-                    role="button"
-                    tabIndex={0}
-                    className="filter-overlay active"
+                <button
+                    type="button"
+                    className="filter-overlay active block border-0 bg-transparent p-0"
                     onClick={onClose}
-                    onKeyDown={e => e.key === 'Enter' && onClose()}
                     aria-label="关闭筛选面板"
                 />
             )}

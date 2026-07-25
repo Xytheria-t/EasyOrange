@@ -104,7 +104,11 @@ function MessageBubble({ message, isOwn, onRecall, canRecallFn }: MessageBubbleP
                     onContextMenu={showMenu}
                     tabIndex={-1}
                     onKeyDown={() => {}}
-                    aria-label={isRecalled ? '已撤回的消息' : `${isOwn ? '我' : '对方'}的消息：${message.content?.slice(0, 30) || ''}`}
+                    aria-label={
+                        isRecalled
+                            ? '已撤回的消息'
+                            : `${isOwn ? '我' : '对方'}的消息：${message.content?.slice(0, 30) || ''}`
+                    }
                 >
                     {isRecalled ? (
                         <span className="italic opacity-60">[消息已撤回]</span>

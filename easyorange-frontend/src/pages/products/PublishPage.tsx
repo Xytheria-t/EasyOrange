@@ -409,6 +409,7 @@ function PublishPage() {
                                 ) : (
                                     <div className="image-grid-v2">
                                         {vals.imageUrls.map((url, index) => (
+                                            // biome-ignore lint/a11y/noStaticElementInteractions: HTML5 拖拽排序是指针式交互；键盘可访问性由相邻的"删除/封面"按钮 + 上下箭头按钮（image-actions-v2）覆盖，纯 DnD 仅作为便捷增强
                                             <div
                                                 key={url}
                                                 className={`image-item-v2 ${dragOverIndex === index ? 'drag-over' : ''} ${index === 0 ? 'is-cover' : ''}`}

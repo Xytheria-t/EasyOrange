@@ -269,11 +269,7 @@ function OrderCard({ order, onCancel, onPay, onReceive, to, isCancelling, index 
     const multiItemBadge = order.items && order.items.length > 1;
 
     return (
-        <Link
-            to={to}
-            className="order-card-premium"
-            style={{ animationDelay: `${index * 80}ms` }}
-        >
+        <Link to={to} className="order-card-premium" style={{ animationDelay: `${index * 80}ms` }}>
             <div className="order-card-shine" />
 
             <div className="order-card-header-premium">

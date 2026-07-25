@@ -400,18 +400,28 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
 
                 {/* Image preview overlay */}
                 {previewImage && (
-                    <div
-                        role="button"
-                        tabIndex={0}
-                        className="fixed inset-0 z-50 bg-[rgba(42,37,32,0.88)]"
-                        style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
-                        onClick={() => setPreviewImage(null)}
-                        onKeyDown={e => e.key === 'Escape' && setPreviewImage(null)}
-                    >
+                    <>
+                        <button
+                            type="button"
+                            aria-label="关闭预览（点击空白处或按 Esc）"
+                            className="fixed inset-0 z-50 cursor-default border-0 bg-[rgba(42,37,32,0.88)] p-0"
+                            style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+                            onClick={() => setPreviewImage(null)}
+                            onKeyDown={e => {
+                                if (e.key === 'Escape') {
+                                    setPreviewImage(null);
+                                }
+                            }}
+                        />
+                        <img
+                            src={previewImage}
+                            alt="预览"
+                            className="pointer-events-none fixed left-1/2 top-1/2 z-[51] max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
+                        />
                         <ShadcnButton
                             variant="ghost"
                             size="icon"
-                            className="fixed right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-white/20 bg-white/10 text-white transition-all duration-150 hover:bg-white/20"
+                            className="fixed right-5 top-5 z-[52] inline-flex h-10 w-10 items-center justify-center rounded-xl border-[1.5px] border-white/20 bg-white/10 text-white transition-all duration-150 hover:bg-white/20"
                             onClick={() => setPreviewImage(null)}
                             aria-label="关闭预览"
                         >
@@ -429,12 +439,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
                                 <path d="M18 6L6 18M6 6l12 12" />
                             </svg>
                         </ShadcnButton>
-                        <img
-                            src={previewImage}
-                            alt="预览"
-                            className="fixed left-1/2 top-1/2 max-h-[90vh] max-w-[90vw] -translate-x-1/2 -translate-y-1/2 rounded-xl object-contain"
-                        />
-                    </div>
+                    </>
                 )}
             </DialogContent>
         </Dialog>

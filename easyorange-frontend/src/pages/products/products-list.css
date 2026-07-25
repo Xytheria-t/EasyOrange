@@ -186,10 +186,6 @@
     }
 }
 
-.pdp-price-card:hover .pdp-price-value {
-    animation: pdpGentleFloat 2s ease-in-out infinite;
-}
-
 /* ============ RESPONSIVE ============ */
 @media (max-width: 1024px) {
     .pdp-container {
@@ -342,6 +338,16 @@
     .pdp-contact-btn {
         transition: none;
     }
+
+    /* 价格卡片 hover 时浮动动画也需在 reduced-motion 下禁用 */
+    .pdp-price-card:hover .pdp-price-value {
+        animation: none;
+    }
+}
+
+/* 悬浮动画规则置于媒体查询之后，避免特异性倒序告警 */
+.pdp-price-card:hover .pdp-price-value {
+    animation: pdpGentleFloat 2s ease-in-out infinite;
 }
 
 /* ============ PRODUCTS GRID ENHANCEMENTS v2 ============ */

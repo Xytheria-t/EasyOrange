@@ -40,18 +40,18 @@ export {
     useUpdateProductStatus,
 } from './useAdminProducts';
 export {
+    ADMIN_RATING_KEYS,
+    useAdminRatingDetail,
+    useAdminRatings,
+    useDeleteRating,
+} from './useAdminRatings';
+export {
     ADMIN_REPORT_KEYS,
     useAdminReportDetail,
     useAdminReportStats,
     useAdminReports,
     useHandleReport,
 } from './useAdminReports';
-export {
-    ADMIN_RATING_KEYS,
-    useAdminRatingDetail,
-    useAdminRatings,
-    useDeleteRating,
-} from './useAdminRatings';
 export {
     ADMIN_USER_KEYS,
     useAdminUserDetail,

@@ -177,7 +177,10 @@ describe('ProfilePage', () => {
         await user.click(screen.getByText('确认修改'));
 
         await waitFor(() => {
-            expect(mockUserApiChangePassword).toHaveBeenCalledWith({ oldPassword: 'oldPwd123', newPassword: 'newPwd123' });
+            expect(mockUserApiChangePassword).toHaveBeenCalledWith({
+                oldPassword: 'oldPwd123',
+                newPassword: 'newPwd123',
+            });
         });
         expect(mockAddToast).toHaveBeenCalledWith({ type: 'success', message: '密码修改成功，请重新登录' });
         expect(mockNavigate).toHaveBeenCalledWith('/login');

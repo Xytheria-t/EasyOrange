@@ -33,6 +33,7 @@ export function CategoryTreeNode({
         <div key={node.categoryId}>
             {/* Node row */}
             <div
+                className="category-tree-node-row"
                 style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -40,18 +41,10 @@ export function CategoryTreeNode({
                     padding: '0.6rem 1rem 0.6rem 0',
                     paddingLeft,
                     borderBottom: '1px solid rgba(229,224,219,0.35)',
-                    transition: 'background 0.15s ease',
-                    background: 'none',
                     color: 'inherit',
                     font: 'inherit',
                     width: '100%',
                     textAlign: 'left',
-                }}
-                onMouseEnter={e => {
-                    e.currentTarget.style.background = 'rgba(249,115,22,0.03)';
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.background = 'transparent';
                 }}
             >
                 {/* Expand/collapse */}
