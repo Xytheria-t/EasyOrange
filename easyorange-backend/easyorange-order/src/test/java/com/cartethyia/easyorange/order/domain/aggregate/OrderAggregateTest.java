@@ -1,13 +1,19 @@
 package com.cartethyia.easyorange.order.domain.aggregate;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static com.cartethyia.easyorange.order.domain.aggregate.OrderTestFixture.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +59,7 @@ class OrderAggregateTest {
         void createOrder_buyerEqualsSeller_throws() {
             assertThatThrownBy(() -> OrderAggregate.createOrder(
                     aCreateSpec().buyerId(BUYER_ID).sellerId(BUYER_ID).build()))
-                    .isInstanceOf(Exception.class)
+                    .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("不能认领自己的资产");
         }
 
@@ -62,7 +68,7 @@ class OrderAggregateTest {
         void createOrder_emptyItems_throws() {
             assertThatThrownBy(() -> OrderAggregate.createOrder(
                     aCreateSpec().items(List.of()).build()))
-                    .isInstanceOf(Exception.class)
+                    .isInstanceOf(BusinessException.class)
                     .hasMessageContaining("订单资产不能为空");
         }
     }
@@ -102,16 +108,14 @@ class OrderAggregateTest {
             assertThat(result.aggregate().status()).isEqualTo(OrderStatus.PAID);
         }
 
-        @Test
-        @DisplayName("已支付状态不能再次支付")
-        void pay_alreadyPaid_throws() {
-            assertThatThrownBy(paidOrder()::pay).isInstanceOf(Exception.class);
-        }
-
-        @Test
-        @DisplayName("已取消状态不能支付")
-        void pay_cancelled_throws() {
-            assertThatThrownBy(cancelledOrder()::pay).isInstanceOf(Exception.class);
+        @ParameterizedTest(name = "[{index}] {0}状态不能支付")
+        @MethodSource("com.cartethyia.easyorange.order.domain.aggregate.OrderAggregateTest#nonPayableOrders")
+        @DisplayName("非待付款状态不能支付")
+        void pay_nonPayable_throwsBusinessException(String stateName, OrderAggregate aggregate) {
+            assertThatThrownBy(aggregate::pay)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_STATUS_ERROR.getCode());
         }
     }
 
@@ -132,18 +136,14 @@ class OrderAggregateTest {
             assertThat(result.aggregate().cancelReason()).isEqualTo("不想要了");
         }
 
-        @Test
-        @DisplayName("已发货状态不能取消")
-        void cancel_shipped_throws() {
-            assertThatThrownBy(() -> shippedOrder().cancel("不想要了"))
-                    .isInstanceOf(Exception.class);
-        }
-
-        @Test
-        @DisplayName("已取消状态不能再次取消")
-        void cancel_alreadyCancelled_throws() {
-            assertThatThrownBy(() -> cancelledOrder().cancel("重复取消"))
-                    .isInstanceOf(Exception.class);
+        @ParameterizedTest(name = "[{index}] {0}状态不能取消")
+        @MethodSource("com.cartethyia.easyorange.order.domain.aggregate.OrderAggregateTest#nonCancellableOrders")
+        @DisplayName("非待付款状态不能取消")
+        void cancel_nonCancellable_throwsBusinessException(String stateName, OrderAggregate aggregate) {
+            assertThatThrownBy(() -> aggregate.cancel("不想要了"))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_CANNOT_CANCEL.getCode());
         }
     }
 
@@ -163,8 +163,11 @@ class OrderAggregateTest {
 
         @Test
         @DisplayName("待付款状态不能发货")
-        void ship_pendingPayment_throws() {
-            assertThatThrownBy(pendingPaymentOrder()::ship).isInstanceOf(Exception.class);
+        void ship_pendingPayment_throwsBusinessException() {
+            assertThatThrownBy(pendingPaymentOrder()::ship)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_STATUS_ERROR.getCode());
         }
     }
 
@@ -185,8 +188,11 @@ class OrderAggregateTest {
 
         @Test
         @DisplayName("待付款状态不能确认收货")
-        void confirmReceipt_pendingPayment_throws() {
-            assertThatThrownBy(pendingPaymentOrder()::confirmReceipt).isInstanceOf(Exception.class);
+        void confirmReceipt_pendingPayment_throwsBusinessException() {
+            assertThatThrownBy(pendingPaymentOrder()::confirmReceipt)
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_STATUS_ERROR.getCode());
         }
     }
 
@@ -217,25 +223,41 @@ class OrderAggregateTest {
             assertThat(result.event().reason()).isEqualTo("快递损坏");
         }
 
-        @Test
-        @DisplayName("待付款状态不能退款")
-        void refund_pendingPayment_throws() {
-            assertThatThrownBy(() -> pendingPaymentOrder().refund("测试"))
-                    .isInstanceOf(Exception.class);
+        @ParameterizedTest(name = "[{index}] {0}状态不能退款")
+        @MethodSource("com.cartethyia.easyorange.order.domain.aggregate.OrderAggregateTest#nonRefundableOrders")
+        @DisplayName("不可退款状态抛业务异常")
+        void refund_nonRefundable_throwsBusinessException(String stateName, OrderAggregate aggregate) {
+            assertThatThrownBy(() -> aggregate.refund("测试"))
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_CANNOT_REFUND.getCode());
         }
+    }
 
-        @Test
-        @DisplayName("已完成状态不能退款")
-        void refund_completed_throws() {
-            assertThatThrownBy(() -> completedOrder().refund("测试"))
-                    .isInstanceOf(Exception.class);
-        }
+    // ==================== Parameterized fixtures ====================
 
-        @Test
-        @DisplayName("已取消状态不能退款")
-        void refund_cancelled_throws() {
-            assertThatThrownBy(() -> cancelledOrder().refund("测试"))
-                    .isInstanceOf(Exception.class);
-        }
+    /** pay() 的非法前置状态 — 已支付 / 已取消 */
+    static Stream<Arguments> nonPayableOrders() {
+        return Stream.of(
+                Arguments.of("已支付", paidOrder()),
+                Arguments.of("已取消", cancelledOrder())
+        );
+    }
+
+    /** cancel() 的非法前置状态 — 已发货 / 已取消 */
+    static Stream<Arguments> nonCancellableOrders() {
+        return Stream.of(
+                Arguments.of("已发货", shippedOrder()),
+                Arguments.of("已取消", cancelledOrder())
+        );
+    }
+
+    /** refund() 的非法前置状态 — 待付款 / 已完成 / 已取消 */
+    static Stream<Arguments> nonRefundableOrders() {
+        return Stream.of(
+                Arguments.of("待付款", pendingPaymentOrder()),
+                Arguments.of("已完成", completedOrder()),
+                Arguments.of("已取消", cancelledOrder())
+        );
     }
 }

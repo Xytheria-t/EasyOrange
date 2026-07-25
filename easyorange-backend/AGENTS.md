@@ -163,7 +163,8 @@ DO 中 `status`、`condition_level` 等枚举字段直接使用领域枚举类�
 | 集成测试 | — | 已移除（WSL2 Docker 兼容性限制，全量改为单元测试） |
 | 架构测试 | ArchUnit | DDD 分层合规、包依赖规则 |
 | 控制器测试 | MockMvc | API 端点 |
-| 覆盖率报告 | JaCoCo 0.8.12 | `prepare-package` 阶段生成报告 (`jacoco:report`)，门禁移到了 CI 层 |
+| 覆盖率报告 | JaCoCo 0.8.14 | `prepare-package` 阶段生成报告 (`jacoco:report`)；门禁（行≥80%/分支≥60%）在 `verify` 阶段，本地 `haltOnFailure=false` 仅出报告，CI 用 `-Djacoco.haltOnFailure=true` 阻断 |
+| 变异测试 | PIT 1.25.8 | domain 层变异（聚合根/领域服务/值对象），`-Ppit` profile 按需启用：`./mvnw -Ppit test-compile pitest:mutationCoverage`；阈值默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60` 等启用 |
 | 依赖安全 | OWASP Dependency Check 12.1.0 | `verify` 阶段检查，CVSS ≥ 8 阻断构建 |
 
 架构守卫测试位于 `easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java`。

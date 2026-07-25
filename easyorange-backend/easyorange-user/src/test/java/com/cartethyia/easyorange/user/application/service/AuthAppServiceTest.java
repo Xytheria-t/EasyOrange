@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.user.application.service;
 
+import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
@@ -269,7 +270,9 @@ class AuthAppServiceTest {
         @DisplayName("SecurityContext 无用户时应抛出异常")
         void shouldThrowWhenNoUserInContext() {
             assertThatThrownBy(() -> service.changePassword("123456", "NewPass123"))
-                .isInstanceOf(Exception.class);
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getCode())
+                .isEqualTo(ResultCode.UNAUTHORIZED.getCode());
         }
     }
 }

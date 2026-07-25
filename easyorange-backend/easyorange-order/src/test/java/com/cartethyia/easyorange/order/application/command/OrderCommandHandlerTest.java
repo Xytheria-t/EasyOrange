@@ -1,10 +1,12 @@
 package com.cartethyia.easyorange.order.application.command;
 
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 
 import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
@@ -138,7 +140,9 @@ class OrderCommandHandlerTest {
             TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(Exception.class);
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -205,7 +209,9 @@ class OrderCommandHandlerTest {
             TestSecurityUtil.setSecurityContext("999");
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(Exception.class);
+                    .isInstanceOf(BusinessException.class)
+                    .extracting(e -> ((BusinessException) e).getCode())
+                    .isEqualTo(OrderResultCode.ORDER_NOT_OWNER.getCode());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -272,8 +278,9 @@ class OrderCommandHandlerTest {
             TestSecurityUtil.setSecurityContext(BUYER_ID);
             try {
                 assertThatThrownBy(() -> commandHandler.handle(command))
-                    .isInstanceOf(Exception.class)
-                    .hasMessageContaining("无法退款");
+                    .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getCode())
+                .isEqualTo(OrderResultCode.ORDER_CANNOT_REFUND.getCode());
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

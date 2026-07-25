@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
@@ -46,6 +47,7 @@ class OrderItemTest {
                 .quantity(0)
                 .subtotal(snap.price().multiply(0))
                 .build())
-                .isInstanceOf(Exception.class);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("数量必须大于 0");
     }
 }

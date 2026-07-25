@@ -9,80 +9,87 @@ payment/
 ├── adapter/
 │   ├── inbound/web/
 │   │   ├── controller/
-│   │   │   ├── PaymentCommandController.java    # 支付写端点
-│   │   │   ├── PaymentQueryController.java      # 支付读端点
-│   │   │   ├── MockPaymentController.java       # 模拟支付 (开发环境)
-│   │   ├── assembler/PaymentCommandAssembler.java
-│   │   ├── request/                         # CreatePaymentRequest, RefundRequest, etc.
-│   │   └── response/                        # PaymentResponse, PaymentConfigResponse
+│   │   │   ├── PaymentCommandController.java    # 支付写端点（@Validated 触发 Bean Validation）
+│   │   │   ├── PaymentQueryController.java      # 支付读端点（基于 PaymentListQuery）
+│   │   │   └── MockPaymentController.java       # 模拟支付（开发环境）
+│   │   ├── assembler/
+│   │   │   ├── PaymentCommandMapper.java        # MapStruct：Request → Command
+│   │   │   └── PaymentViewAssembler.java        # Aggregate → Response DTO
+│   │   ├── request/                              # CreatePaymentRequest, RefundRequest, PaymentCallback, QueryPaymentRequest, MockPaymentRequest
+│   │   └── response/                             # PaymentResponse, PaymentConfigResponse
 │   └── outbound/
 │       ├── gateway/
-│       │   └── PaymentGatewayAdapter.java   # 支付网关适配器 (实现 PaymentGatewayPort)
-│               └── persistence/
-│           ├── MybatisPaymentRepository.java
-│           ├── MybatisIdempotencyKeyRepository.java
-│           ├── PaymentConfigRepository.java
-│           ├── converter/
-│           │   └── PaymentConverter.java
-│           ├── mapper/                      # PaymentMapper, IdempotencyKeyMapper, PaymentConfigMapper
-│           └── persistence/                # PaymentDO, IdempotencyKeyDO, PaymentConfigDO
+│       │   └── PaymentGatewayAdapter.java        # 支付网关适配器（实现 PaymentGatewayPort）
+│       ├── persistence/
+│       │   ├── MybatisPaymentRepository.java     # 写仓储（实现 PaymentRepositoryPort + PaymentQueryRepositoryPort）
+│       │   ├── MybatisIdempotencyKeyRepository.java
+│       │   ├── PaymentConfigRepository.java
+│       │   ├── converter/
+│       │   │   └── PaymentDataMapper.java        # MapStruct：PaymentDO ↔ PaymentAggregate（基于 PaymentCreateSpec / PaymentReconstructSpec）
+│       │   ├── mapper/                            # PaymentMapper, IdempotencyKeyMapper, PaymentConfigMapper
+│       │   ├── typehandler/                       # PaymentStatusTypeHandler, PaymentMethodTypeHandler（VARCHAR ↔ 枚举）
+│       │   └── {PaymentDO, IdempotencyKeyDO, PaymentConfigDO}
+│       └── security/
+│           └── CallbackSignatureVerifier.java    # HMAC-SHA256 回调验签（实现 CallbackSignatureVerifierPort）
 ├── application/
-│   ├── command/                             # 命令 (CQRS Write)
-│   │   ├── PaymentCommandHandler.java
-│   │   ├── CreatePaymentCommand.java
-│   │   ├── PayCommand.java
-│   │   ├── RefundPaymentCommand.java
-│   │   └── ClosePaymentCommand.java
-│   ├── query/                               # 查询 (CQRS Read)
-│   │   └── PaymentQueryHandler.java
-│   ├── event/                    # [空] 事件处理已迁移到 RabbitMQ 消费者
+│   ├── command/                                  # 命令（CQRS Write，sealed PaymentCommand 接口）
+│   │   ├── PaymentCommandHandler.java             # 命令分发器（create/pay/close/refund）
+│   │   ├── PaymentCommand.java                    # sealed interface，permits 4 个命令 record
+│   │   ├── CreatePaymentCommand.java              # @NotBlank orderId / @NotNull @Positive amount / @NotBlank paymentMethod
+│   │   ├── PayCommand.java                        # @NotBlank paymentNo
+│   │   ├── RefundPaymentCommand.java              # @NotBlank paymentId / @NotNull @Positive refundAmount / @NotBlank refundReason
+│   │   └── ClosePaymentCommand.java               # @NotBlank paymentId
+│   ├── query/                                    # 查询（CQRS Read）
+│   │   ├── PaymentQueryHandler.java
+│   │   └── PaymentListQuery.java                  # record 收敛查询参数（userId, status: PaymentStatus, pageNum, pageSize）
 │   ├── idempotency/
-│   │   └── IdempotencyService.java          # 幂等服务 (SHA-256 请求哈希)
+│   │   └── IdempotencyService.java                # 幂等服务（SHA-256 请求哈希）
 │   ├── lock/
-│   │   └── DistributedLockWrapper.java      # 分布式锁封装
+│   │   └── DistributedLockWrapper.java            # 分布式锁封装
 │   ├── metrics/
-│   │   ├── PaymentMetricsService.java       # 支付指标
-│   │   └── PaymentMetricsListener.java
+│   │   ├── PaymentMetricsService.java             # Micrometer 指标
+│   │   └── PaymentMetricsConsumer.java            # RabbitMQ 消费者（监听支付指标事件）
 │   └── mock/
-│       └── MockPaymentUseCase.java          # 模拟支付用例
+│       └── MockPaymentUseCase.java                # 模拟支付用例（基于 PaymentCreateSpec 创建聚合根）
 ├── domain/
 │   ├── aggregate/
-│   │   └── PaymentAggregate.java            # 支付聚合根
-│   ├── factory/
-│   │   └── PaymentFactory.java              # 支付工厂
-│   ├── saga/
-│   │   ├── SagaOrchestrator.java            # Saga 编排器
+│   │   ├── PaymentAggregate.java                  # 不可变聚合根（字段 final，状态转换返回 PaymentTransition / 新实例）
+│   │   ├── PaymentCreateSpec.java                 # record 收敛 create() 工厂参数
+│   │   └── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
+│   ├── saga/                                      # Saga 编排（纯领域）
+│   │   ├── SagaOrchestrator.java                  # Saga 编排器
 │   │   ├── SagaStepResult.java
 │   │   └── SagaExecutionException.java
 │   ├── specification/
-│   │   └── PaymentSpecification.java        # 支付规格 (业务规则)
+│   │   └── PaymentSpecification.java              # 业务规则校验
 │   ├── valueobject/
-│   │   ├── PaymentId.java, PaymentNo.java
-│   │   ├── PaymentAmount.java
-│   │   ├── IdempotencyKey.java
-│   │   └── PaymentMethodInfo.java
-│   ├── event/
+│   │   ├── PaymentId.java                         # String UUID v7
+│   │   ├── PaymentNo.java
+│   │   ├── PaymentMethodInfo.java                 # record
+│   │   └── IdempotencyKey.java
+│   ├── event/                                     # 领域事件（record 实现 DomainEvent）
 │   │   ├── PaymentCreatedEvent.java
 │   │   ├── PaymentSucceededEvent.java
 │   │   ├── PaymentFailedEvent.java
 │   │   ├── PaymentRefundedEvent.java
 │   │   ├── PaymentClosedEvent.java
-│   │   └── CompensationFailedAlertEvent.java  # 补偿失败告警事件
-│   ├── port/
-│   │   ├── PaymentGatewayPort.java          # 支付网关端口
-│   │   ├── IdempotencyKeyRepositoryPort.java # 幂等键仓储端口
-│   │   ├── CallbackSignatureVerifierPort.java # 回调签名验证端口
-│   │   ├── PaymentQueryRepositoryPort.java  # 查询仓储端口（已从 repository/ 迁入）
-│   │   ├── PaymentResult.java, RefundResult.java
+│   │   └── CompensationFailedAlertEvent.java      # 补偿失败告警
+│   ├── port/                                      # 出站端口
+│   │   ├── PaymentGatewayPort.java
+│   │   ├── CallbackSignatureVerifierPort.java
+│   │   ├── PaymentQueryRepositoryPort.java        # status 参数为 PaymentStatus 枚举（类型安全）
+│   │   ├── PaymentResult.java                     # 网关支付结果
+│   │   └── RefundResult.java                      # 网关退款结果
 │   ├── repository/
-│   │   └── PaymentRepositoryPort.java       # 支付仓储端口
+│   │   ├── PaymentRepositoryPort.java
+│   │   └── IdempotencyKeyRepositoryPort.java
 │   ├── constant/
-│   │   ├── PaymentStatus.java
-│   │   ├── PaymentMethod.java
+│   │   ├── PaymentStatus.java                     # code 为 String："PENDING"/"SUCCESS"/"REFUNDED"/...（已语义化）
+│   │   ├── PaymentMethod.java                     # code 为 String："WECHAT"/"ALIPAY"/"BALANCE"
 │   │   └── PaymentResultCode.java
 │   └── exception/
-│       ├── PaymentDomainException.java     # 统一支付异常（含 of()工厂方法，覆盖 notFound/invalidStatus/gateway 等场景）
-│       └── SagaCompensationFailedException.java  # Saga 补偿失败异常（含 CompensationFailure 列表）
+│       ├── PaymentDomainException.java             # 统一支付异常（含 of() 工厂方法）
+│       └── SagaCompensationFailedException.java    # Saga 补偿失败异常
 └── constant/
     └── PaymentConstant.java
 ```
@@ -102,9 +109,9 @@ payment/
 - `DistributedLockWrapper` 封装 Redis 分布式锁
 - 支付创建、退款等关键操作加锁防止并发冲突
 
-## 支付状态机（不可变聚合根）
+## 支付状态机（不可变聚合根 + PaymentTransition）
 
-所有状态转换返回 Result record（新聚合根实例 + 领域事件），不修改自身。
+所有状态转换返回 `PaymentTransition<E extends DomainEvent>` record（聚合根新实例 + 领域事件），不修改自身。简单状态切换直接返回新 `PaymentAggregate` 实例。
 
 ```
 PENDING → PAYING → SUCCESS
@@ -116,35 +123,62 @@ CLOSED    FAILED   REFUNDING → REFUNDED
                     SUCCESS
 ```
 
-- 两阶段支付：`preparePay()` → `PayPreparedResult` → 网关调用 → `confirmPay(PaymentResult)` → `PayConfirmedResult`
-- 两阶段退款：`prepareRefund()` → `RefundPreparedResult` → 网关调用 → `confirmRefund(RefundResult)` → `RefundConfirmedResult`
-- Saga 补偿：`cancelPay()` / `cancelRefund()` 回退到前一状态
+- 两阶段支付：`preparePay()` → `PaymentAggregate` → 网关调用 → `confirmPay(PaymentResult)` → `PaymentTransition<DomainEvent>`
+- 两阶段退款：`prepareRefund(BigDecimal)` → `PaymentAggregate` → 网关调用 → `confirmRefund(RefundResult, BigDecimal)` → `PaymentTransition<PaymentRefundedEvent>`
+- 单步退款：`directRefund(String refundReason)` → `PaymentTransition<PaymentRefundedEvent>`
+- Saga 补偿：`cancelPay()` / `cancelRefund()` 返回新 `PaymentAggregate` 实例回退状态
 - **补偿失败处理**：补偿操作失败时抛出 `SagaCompensationFailedException`，发布 `CompensationFailedAlertEvent` 告警事件，不会被静默吞掉
 - Guard 方法：`canPay()` / `canRefund()` / `canClose()` / `canFail()` / `canConfirmPay()` / `canConfirmRefund()`
+
+## Spec Record 与 Command Record
+
+聚合根工厂与重建入口通过 spec record 收敛长参数列表：
+
+| Spec / Command | 用途 | 关键字段 |
+|----------------|------|---------|
+| `PaymentCreateSpec` | `PaymentAggregate.create()` 工厂参数 | paymentId, orderId, userId, amount, paymentMethod, attach |
+| `PaymentReconstructSpec` | `PaymentAggregate.from()` 重建参数 | id, paymentNo, orderId, userId, amount, refundedAmount, paymentMethod, status, transactionId, refundReason, refundTime, attach, createTime, updateTime, version |
+| `PaymentTransition<E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
+| `PaymentCommand` | sealed 接口（permits 4 个命令 record） | — |
+| `CreatePaymentCommand` | 创建支付命令 | orderId, amount, paymentMethod, payPassword, attach |
+| `PayCommand` / `ClosePaymentCommand` | 单字段命令 | paymentNo / paymentId |
+| `RefundPaymentCommand` | 退款命令 | paymentId, refundAmount, refundReason |
+| `PaymentListQuery` | 列表查询参数收敛 | userId, status: PaymentStatus, pageNum, pageSize |
+
+## 枚举字符串化
+
+`PaymentStatus` / `PaymentMethod` 的 `code` 字段为 String（非 Integer），全链路字符串化：
+
+- **DB 层**：`eo_payment.status` / `eo_payment.payment_method` 为 `VARCHAR(20)`，带 CHECK 约束
+- **MyBatis**：`PaymentStatusTypeHandler` / `PaymentMethodTypeHandler`（继承 `BaseEnumTypeHandler`）完成 enum ↔ String 互转
+- **领域层**：`PaymentAggregate` / `PaymentReconstructSpec` 直接使用枚举类型，无 String.valueOf 转换
+- **查询端口**：`PaymentQueryRepositoryPort.findByUserIdAndStatus(String, PaymentStatus, ...)` 入参为枚举类型
+- **JSON 序列化**：`@JsonValue` 标注在 `code` 上，前端收到的就是 `"SUCCESS"` / `"WECHAT"` 而非 `1`
 
 ## 常见开发任务
 
 ### 添加新支付方式
 
-1. `PaymentMethod` 枚举新增值
+1. `PaymentMethod` 枚举新增值（code 为 String，如 `"UNIONPAY"`）
 2. `PaymentGatewayAdapter` 添加新网关调用逻辑
-3. `PaymentFactory` 适配新支付方式
-4. 添加模拟支付支持 (MockPaymentUseCase)
-5. Flyway 迁移（如需新表/字段）
+3. Flyway 迁移：`eo_payment.payment_method` 列 CHECK 约束追加新 code
+4. `PaymentMethodTypeHandler` 已通过 `fromCode()` 自动适配（throw on unknown）
+5. 添加模拟支付支持（`MockPaymentUseCase` 通过 `PaymentCreateSpec` 创建聚合根）
 6. 测试
 
 ### 添加新支付事件
 
 1. 创建事件 record 实现 `DomainEvent`
-2. 在状态转换方法中，在 Result record 的 `event()` 中返回事件
-3. Handler 通过 `domainEventPublisher.publish(result.event())` 发布
-4. 在 `RoutingKeyResolver.EVENT_ROUTING_KEYS` 注册路由键（`payment.{aggregate}.{event}`）
+2. 在状态转换方法中返回 `PaymentTransition<XxxEvent>`
+3. Handler 通过 `domainEventPublisher.publish(transition.event())` 发布
+4. 路由键由事件类名自动派生（`PaymentXxxEvent` → `payment.xxx`），无需手动注册
 5. 创建 `@RabbitListener` 消费者处理事件
 6. 测试
 
 ## 安全要点
 
-- 支付回调必须验签 (`CallbackSignatureVerifierPort`)
-- 金额使用 `PaymentAmount` 值对象，避免浮点精度问题
-- 版本号乐观锁（`PaymentDO` 上的 `@Version` 注解 + 聚合根内手动递增 `int version`）
+- 支付回调必须验签（`CallbackSignatureVerifierPort`）
+- 金额使用 `Money` 值对象（`easyorange-common`），避免浮点精度问题
+- 版本号乐观锁（`PaymentDO` 上的 `@Version` 注解 + 聚合根内 `int version` 字段）
 - 幂等保护防止重复支付/退款
+- Command 字段使用 Bean Validation（`@NotBlank` / `@NotNull` / `@Positive`）在 Controller 入口校验

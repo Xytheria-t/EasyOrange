@@ -4,6 +4,23 @@
 
 ## [unreleased]
 
+### 2026-07-26 — 测试基础设施现代化（PIT 变异测试 + JaCoCo 修复 + 守卫测试）
+
+- **test(infra)**: 集成 **PIT 1.25.8** 变异测试（pitest-maven + pitest-junit5-plugin 1.2.2），放 `-Ppit` profile 按需启用。仅对 domain 层注入变异（聚合根状态机/领域服务/值对象），评估测试对缺陷的真实检测能力——行覆盖率的"金标准"补充。order 模块基线：mutation 70% / test strength 89% / line 81%（81 变异，41 秒）。阈值门禁默认 0 不阻断，CI 用 `-Dpit.mutationThreshold=60 -Dpit.testStrengthThreshold=75 -Dpit.coverageThreshold=70` 启用（对齐 JaCoCo `haltOnFailure` 约定）
+- **fix(build)**: 修复 pom.xml 重复 `maven-surefire-plugin` 配置——第一个有完整 WSL2 add-opens 但缺 `@{argLine}`，第二个有 `@{argLine}` 但丢了 add-opens。合并为单一配置：`@{argLine}`（JaCoCo agent）+ WSL2 add-opens + `-XX:+EnableDynamicAgentLoading`
+- **fix(test)**: 修复 `RedisConfigTest` 编译错误（`containsSame` → `isSameAs`，`getConnectionFactory()` 返回非 Optional）。P2 新增的 3 个守卫测试文件此前未编译通过，未计入测试数
+- **chore(deps)**: JaCoCo 0.8.12 → 0.8.14（Java 25 class file 69 兼容）
+- **test**: 后端测试 1,199 → **1,218**（P2 守卫测试修复后编译通过：RedisConfigTest 3 + CodeEnumTypeHandlerTest 6 + FavoriteTest 10）。注解 1,137 → **1,152**，测试文件 134 → **137**。总测试 2,151 → **2,170**
+- **docs**: 同步数字单一来源 `doc/工程指标.md`（§1.2 测试规模表 + §2.1 填入实测覆盖率：domain 69.9% line / 53.1% branch，全模块聚合 43.7% / 34.9%）；根 AGENTS.md / easyorange-backend/AGENTS.md / README.md / doc/技术债务清单.md / project_memory.md 全量同步 1,218/2,170/1,152/137 + PIT 说明
+
+### 2026-07-26 — order/payment 模块现代化对齐 + neat-freak 文档同步
+
+- **refactor(order,payment)**: 按product/user模块现代化最佳实践对齐 order 与 payment 模块。9 项落地：①Bean Validation（@NotBlank/@NotNull/@Positive）②sealed Command 接口（`OrderCommand` / `PaymentCommand` permits 各 7/4 个 record）③ListQuery record 收敛查询参数（`OrderListQuery` / `PaymentListQuery`，含默认分页）④查询端口入参类型安全化（`String status` → `OrderStatus` / `PaymentStatus` 枚举）⑤Spec record 收敛聚合根工厂/重建长参数（`OrderCreateSpec` / `OrderReconstructSpec` / `PaymentCreateSpec` / `PaymentReconstructSpec`）⑥`PaymentTransition<E>` record 统一状态转换结果（消除 10 个冗余 Result record）⑦不可变聚合根（字段 final，状态转换返回新实例）⑧枚举 code 语义化（`PaymentStatus` `0`→`PENDING`、`PaymentMethod` `1`→`WECHAT`，DB 列从 TINYINT 改 VARCHAR(20)）⑨Saga 抽到 `application/saga/` 包（对标 order 的 `CreateOrderSaga + support/`）
+- **test**: 后端测试 1,220 → 1,199（现代化重构后用例数微调，全绿）。@Test 注解 1,153 → 1,137。测试文件数 134 不变
+- **docs(neat-freak)**: 数字单一来源 `doc/工程指标.md` v1.2 → v1.3，最近核对 2026-07-22 → 2026-07-26；同步 README.md / AGENTS.md（根）/ codemap.md / doc/技术债务清单.md 中所有 1,220→1,199 / 2,172→2,151 引用
+- **docs(neat-freak)**: 重写 `easyorange-backend/easyorange-payment/AGENTS.md` 目录结构——修复 `PaymentFactory.java`（已删）、`PaymentAmount.java`（不存在）、`PaymentCommandAssembler.java`（实为 `PaymentCommandMapper` + `PaymentViewAssembler`）、`PaymentConverter.java`（实为 `PaymentDataMapper`）、`PaymentMetricsListener.java`（实为 `PaymentMetricsConsumer`）、`PayPreparedResult`/`PayConfirmedResult`（被 `PaymentTransition<E>` 取代）等 6 处过期引用；补 `PaymentCommand` sealed 接口 / `PaymentListQuery` / `PaymentCreateSpec` / `PaymentReconstructSpec` / `PaymentTransition<E>`
+- **docs(neat-freak)**: 修复 `easyorange-backend/easyorange-order/AGENTS.md`——`OrderQuery.java` → `OrderListQuery.java`、删除 `Money.java`（在 common 模块）、修正 `mq/subscriber/` 列表（实际只有 `OrderSagaEventConsumer.java`，非 4 个分散 Subscriber）、移除 `adapter/outbound/messaging/` 段（跨模块适配器实际在 `easyorange-application/adapter/outbound/`）、补 `OrderCommand` sealed 接口 / `OrderCreateSpec` / `OrderReconstructSpec`
+
 ### 2026-07-15 — 定位差异化重审：从「企业级 Java 架构实战」到「LLM × DDD 工程化实战」
 
 - **refactor(brand)**: 项目定位从「企业级 Java 架构实战项目」演化为「**LLM × DDD 工程化实战项目**」。差异化锚点：DDD/Saga/CQRS/事件驱动是 10 份简历 9 份的标准话术，单纯堆砌清单无记忆点。改为「核心矛盾 + 解法」叙事——DDD 铁律（domain 层零框架依赖）vs LLM 调用昂贵且不稳定，Port/Adapter + 装饰器模式解了这个矛盾

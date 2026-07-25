@@ -28,6 +28,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
+import com.cartethyia.easyorange.order.domain.saga.SagaException;
 import com.cartethyia.easyorange.order.domain.saga.SagaRepository;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -188,7 +189,7 @@ class CreateOrderSagaCompensationTest {
         when(productInventoryPort.getSnapshot("999")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saga.execute(command))
-                .isInstanceOf(Exception.class)
+                .isInstanceOf(OrderCreationException.class)
                 .hasMessageContaining("资产不存在");
     }
 
@@ -204,7 +205,7 @@ class CreateOrderSagaCompensationTest {
         );
 
         assertThatThrownBy(() -> saga.execute(command))
-                .isInstanceOf(Exception.class)
+                .isInstanceOf(SagaException.class)
                 .hasMessageContaining("繁忙");
     }
 }

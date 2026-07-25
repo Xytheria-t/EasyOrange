@@ -10,8 +10,8 @@ order/
 │   ├── inbound/
 │   │   ├── web/
 │   │   │   ├── controller/
-│   │   │   │   ├── OrderCommandController.java  # 写端点
-│   │   │   │   └── OrderQueryController.java    # 读端点
+│   │   │   │   ├── OrderCommandController.java  # 写端点（@Validated 触发 Bean Validation）
+│   │   │   │   └── OrderQueryController.java    # 读端点（基于 OrderListQuery）
 │   │   │   ├── dto/request/
 │   │   │   │   ├── CreateOrderRequest.java
 │   │   │   │   └── QueryOrderRequest.java
@@ -19,10 +19,7 @@ order/
 │   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
 │   │   │   └── OrderAutoConfirmTask.java    # 自动确认收货
 │   │   └── mq/subscriber/                   # 事件订阅
-│   │       ├── OrderCreatedEventSubscriber.java
-│   │       ├── OrderCancelledEventSubscriber.java
-│   │       ├── OrderCompletedEventSubscriber.java
-│   │       └── OrderRefundedEventSubscriber.java
+│   │       └── OrderSagaEventConsumer.java  # 单一 Saga 事件消费者（替代多个分散 Subscriber）
 │   └── outbound/
 │       ├── persistence/                     # 持久化
 │       │   ├── MybatisOrderRepository.java
@@ -32,14 +29,13 @@ order/
 │       │   ├── OrderMapper.java, SagaMapper.java
 │       │   ├── OrderItemDO.java             # eo_order_item 实体
 │       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
-│       │   └── OrderEntityMapper.java       # MapStruct: DO ↔ Domain
+│       │   ├── OrderEntityMapper.java       # MapStruct: DO ↔ Domain
+│       │   └── typehandler/                 # OrderStatusTypeHandler, PaymentStatusTypeHandler（VARCHAR ↔ 枚举）
 │       ├── cache/                           # 缓存
-│       │   └── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
-│       └── messaging/                       # 跨模块适配器
-│           ├── ProductInventoryAdapter.java  # → product 扣减库存
-│           ├── ProductQueryAdapter.java      # → product 查询
-│           ├── PaymentGatewayAdapter.java    # → payment 创建支付
-│           └── UserInfoAdapter.java          # → user 查询用户
+│       │   ├── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
+│       │   └── OrderCacheConstant.java
+│       └── config/
+│           └── OrderTimeoutProperties.java  # 超时配置
 ├── application/
 │   ├── saga/                                 # Saga 编排（应用层）
 │   │   ├── CreateOrderSaga.java            # 创建订单 Saga 编排（重构后仅 157 行）
@@ -49,8 +45,9 @@ order/
 │   │       ├── OrderCompensationService.java # 订单补偿操作
 │   │       ├── OrderPreparationService.java  # 商品数据准备
 │   │       └── OrderCreationExecutor.java    # 订单创建执行
-│   ├── command/                             # 命令 (CQRS Write)
+│   ├── command/                             # 命令（CQRS Write，sealed OrderCommand 接口）
 │   │   ├── OrderCommandHandler.java
+│   │   ├── OrderCommand.java                 # sealed 接口，permits 7 个命令 record
 │   │   ├── CreateOrderCommand.java / CreateOrderResult.java
 │   │   ├── PayOrderCommand.java
 │   │   ├── CancelOrderCommand.java
@@ -59,14 +56,16 @@ order/
 │   │   └── RefundOrderCommand.java
 │   ├── query/                               # 查询 (CQRS Read)
 │   │   ├── OrderQueryHandler.java
-│   │   ├── OrderQuery.java
+│   │   ├── OrderListQuery.java              # record 收敛查询参数（orderNo, status: OrderStatus, buyerId, sellerId, pageNum, pageSize）
 │   │   └── assembler/
 │   │       └── OrderReadModelAssembler.java  # ReadModel → OrderVO（应用层组装）
 │   └── dto/
 │       └── OrderVO.java                      # 响应 VO
 ├── domain/
 │   ├── aggregate/
-│   │   └── OrderAggregate.java             # 订单聚合根 (不可变)
+│   │   ├── OrderAggregate.java             # 订单聚合根（不可变，字段 final）
+│   │   ├── OrderCreateSpec.java            # record 收敛 createOrder() 工厂参数
+│   │   └── OrderReconstructSpec.java       # record 收敛 from() 重建参数
 │   ├── saga/                                 # Saga 支持类型（纯领域）
 │   │   ├── SagaRepository.java            # Saga 仓储接口
 │   │   ├── SagaState.java, SagaStatus.java
@@ -75,12 +74,11 @@ order/
 │   │   └── OrderCreationException.java
 │   ├── valueobject/
 │   │   ├── OrderId.java, OrderNo.java
-│   │   ├── Money.java
 │   │   ├── Address.java, Phone.java
 │   │   ├── ProductId.java, UserId.java
 │   │   ├── OrderItem.java                 # 行项值对象（含 ProductSnapshot）
 │   │   ├── ProductSnapshot.java           # 下单时商品快照
-│   │   ├── PaymentStatus.java             # 支付状态枚举（UNPAID/PAID/REFUNDED）
+│   │   └── PaymentStatus.java             # 支付状态枚举（UNPAID/PAID/REFUNDED）
 │   ├── event/
 │   │   ├── OrderEvent.java                   # sealed 接口（含 default aggregateId），所有事件实现此接口
 │   │   ├── OrderCreatedEvent.java
@@ -99,13 +97,13 @@ order/
 │   │   ├── ProductQueryPort.java           # 商品查询端口
 │   │   ├── PaymentGatewayPort.java         # 支付网关端口
 │   │   ├── UserInfoPort.java              # 用户信息端口
-│   │   └── OrderQueryCondition.java
+│   │   └── OrderQueryCondition.java        # record 查询条件（status 为 OrderStatus 枚举）
 │   ├── repository/                         # 仓储接口
 │   │   ├── OrderRepository.java            # 写仓储
-│   │   └── OrderReadRepository.java        # 读仓储
+│   │   └── OrderReadRepository.java        # 读仓储（countByStatus 入参为 OrderStatus 枚举）
 │   ├── constant/
 │   │   ├── OrderConstant.java
-│   │   ├── OrderStatus.java
+│   │   ├── OrderStatus.java                # code 为 String："PENDING_PAYMENT"/"PAID"/"SHIPPED"/...
 │   │   └── OrderResultCode.java
 │   └── exception/
 │       ├── OrderDomainException.java
@@ -113,9 +111,11 @@ order/
 │       ├── OrderStatusException.java
 │       ├── OrderPermissionException.java
 │       └── OrderOperationException.java
-└── config/
-    └── OrderTimeoutProperties.java         # 超时配置
 ```
+
+> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` / `OrderCachePort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/OrderProductInventoryAdapter`、`product/OrderProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
+
+> **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 
 ## Saga 模式
 
@@ -228,7 +228,8 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 | `OrderCreateSpec` | `OrderAggregate.createOrder()` 工厂参数 | orderId, buyerId, sellerId, items, address, phone, remark |
 | `OrderReconstructSpec` | `OrderAggregate.from()` 重建参数 | id, orderNo, buyerId, sellerId, items, totalAmount, status, paymentStatus, ... |
 | `OrderTransition<E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
+| `OrderCommand` | sealed 接口（permits 7 个命令 record） | — |
 | `CreateOrderCommand` | 创建订单命令（record） | items, address, phone, remark, paymentMethod |
 | `PayOrderCommand` / `ShipOrderCommand` / `ConfirmReceiptCommand` | 单字段命令（record） | orderId |
 | `CancelOrderCommand` / `RefundOrderCommand` | 带原因命令（record） | orderId, reason |
-| `OrderListQuery` | 列表查询参数收敛 | orderNo, status, buyerId, sellerId, pageNum, pageSize |
+| `OrderListQuery` | 列表查询参数收敛 | orderNo, status: OrderStatus, buyerId, sellerId, pageNum, pageSize |
