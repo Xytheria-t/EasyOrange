@@ -1,20 +1,24 @@
 package com.cartethyia.easyorange.product.application.query.assembler;
 
 import com.cartethyia.easyorange.common.util.MaskUtils;
+import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
-import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.application.query.ProductVO;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
 public class ProductReadModelAssembler {
 
+    /**
+     * 从聚合根富化装配 ProductVO（含卖家/图片/分类/详情 多维关联）。
+     */
     public ProductVO toProductVO(Product product,
                                   Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
                                   Map<String, ProductQueryRepository.CategoryInfo> categoryMap,
@@ -110,6 +114,55 @@ public class ProductReadModelAssembler {
                 .contactMethod(readModel.contactMethod())
                 .images(readModel.images())
                 .mainImageUrl(readModel.mainImageUrl())
+                .createTime(readModel.createTime())
+                .updateTime(readModel.updateTime())
+                .build();
+    }
+
+    /**
+     * 从 ReadModel + 关联数据富化装配 ProductVO（重写卖家信息与图片列表）。
+     */
+    public ProductVO toProductVO(ProductReadModel readModel,
+                                  Map<String, List<ProductQueryRepository.ProductImageInfo>> imagesByProduct,
+                                  Map<String, SellerReadModel> sellerMap) {
+        var seller = sellerMap.get(readModel.sellerId());
+        var username = seller != null
+                ? (seller.nickName() != null ? seller.nickName() : seller.username())
+                : readModel.username();
+        var userAvatar = seller != null ? seller.avatar() : readModel.userAvatar();
+
+        var images = imagesByProduct.getOrDefault(readModel.id(), List.of());
+        var imageUrls = images.stream()
+                .map(ProductQueryRepository.ProductImageInfo::imageUrl)
+                .filter(Objects::nonNull)
+                .toList();
+        var mainImageUrl = images.stream()
+                .filter(ProductQueryRepository.ProductImageInfo::isMain)
+                .findFirst()
+                .map(ProductQueryRepository.ProductImageInfo::imageUrl)
+                .orElseGet(() -> imageUrls.isEmpty() ? "" : imageUrls.getFirst());
+
+        return ProductVO.builder()
+                .id(readModel.id())
+                .sellerId(readModel.sellerId())
+                .username(username)
+                .userAvatar(userAvatar)
+                .categoryId(readModel.categoryId())
+                .categoryName(readModel.categoryName())
+                .title(readModel.title())
+                .description(readModel.description())
+                .price(readModel.price())
+                .originalPrice(readModel.originalPrice())
+                .stock(readModel.stock())
+                .status(readModel.status())
+                .statusDesc(readModel.statusDesc())
+                .views(readModel.views())
+                .condition(readModel.condition())
+                .conditionDesc(readModel.conditionDesc())
+                .location(readModel.location())
+                .contactMethod(readModel.contactMethod())
+                .images(imageUrls)
+                .mainImageUrl(mainImageUrl)
                 .createTime(readModel.createTime())
                 .updateTime(readModel.updateTime())
                 .build();

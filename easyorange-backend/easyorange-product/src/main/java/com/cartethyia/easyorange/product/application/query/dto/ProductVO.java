@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.query;
+package com.cartethyia.easyorange.product.application.query.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;

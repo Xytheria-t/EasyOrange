@@ -26,8 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
@@ -164,20 +162,4 @@ public class ProductCommandService {
         }
         return product;
     }
-
-    // ==================== Inner Records ====================
-
-    public record CreateProductCommand(
-            String categoryId, String name, BigDecimal price,
-            BigDecimal originalPrice, Integer stock, String conditionLevel,
-            String location, String contactMethod, String description,
-            List<String> imageUrls
-    ) {}
-
-    public record UpdateProductCommand(
-            String id, String categoryId, String name, BigDecimal price,
-            BigDecimal originalPrice, Integer stock, String conditionLevel,
-            String location, String contactMethod, String description,
-            List<String> imageUrls
-    ) {}
 }

@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
 import com.cartethyia.easyorange.payment.domain.event.CompensationFailedAlertEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -41,7 +42,9 @@ public class PaymentCommandHandler {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         String paymentId = idGenerator.generateId();
-        PaymentAggregate.PaymentCreatedResult result = PaymentAggregate.create(paymentId, command.getOrderId(), userId, command.getAmount(), PaymentMethod.fromCode(command.getPaymentMethod()), command.getAttach());
+        var spec = new PaymentCreateSpec(paymentId, command.orderId(), userId, command.amount(),
+                PaymentMethod.fromCode(command.paymentMethod()), command.attach());
+        PaymentAggregate.PaymentTransition<PaymentCreatedEvent> result = PaymentAggregate.create(spec);
 
         paymentRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());
@@ -50,10 +53,10 @@ public class PaymentCommandHandler {
     }
 
     public void handle(PayCommand command) {
-        String lockKey = "payment:pay:" + command.getPaymentNo();
+        String lockKey = "payment:pay:" + command.paymentNo();
 
         lockWrapper.executeWithLock(lockKey, () -> {
-            final String paymentId = preparePayPhase1(command.getPaymentNo());
+            final String paymentId = preparePayPhase1(command.paymentNo());
             try {
                 SagaOrchestrator saga = new SagaOrchestrator();
 
@@ -73,10 +76,10 @@ public class PaymentCommandHandler {
 
                 saga.execute();
             } catch (SagaExecutionException e) {
-                log.error("支付Saga执行失败 paymentNo={} step={}", command.getPaymentNo(), e.getFailedStep(), e);
+                log.error("支付Saga执行失败 paymentNo={} step={}", command.paymentNo(), e.getFailedStep(), e);
                 throw PaymentDomainException.of(PaymentResultCode.PAYMENT_GATEWAY_ERROR, "支付失败: " + e.getMessage());
             } catch (SagaCompensationFailedException e) {
-                log.error("支付Saga补偿失败 paymentNo={} paymentId={}", command.getPaymentNo(), paymentId, e);
+                log.error("支付Saga补偿失败 paymentNo={} paymentId={}", command.paymentNo(), paymentId, e);
                 domainEventPublisher.publish(new CompensationFailedAlertEvent(
                     paymentId,
                     "pay",
@@ -93,10 +96,10 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findByPaymentNo(paymentNo)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
-        PaymentAggregate.PayPreparedResult result = aggregate.preparePay();
-        paymentRepository.update(result.aggregate());
+        PaymentAggregate updated = aggregate.preparePay();
+        paymentRepository.update(updated);
 
-        return result.aggregate().id();
+        return updated.id();
     }
 
     public PaymentResult invokePayGateway(String paymentId) {
@@ -110,17 +113,17 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
-        PaymentAggregate.PayConfirmedResult confirmed = aggregate.confirmPay(result);
+        var confirmed = aggregate.confirmPay(result);
         paymentRepository.update(confirmed.aggregate());
         domainEventPublisher.publish(confirmed.event());
     }
 
     public void handle(RefundPaymentCommand command) {
-        String lockKey = "payment:refund:" + command.getPaymentId();
+        String lockKey = "payment:refund:" + command.paymentId();
 
         lockWrapper.executeWithLock(lockKey, () -> {
-            BigDecimal refundAmount = command.getRefundAmount();
-            String paymentId = command.getPaymentId();
+            BigDecimal refundAmount = command.refundAmount();
+            String paymentId = command.paymentId();
 
             try {
                 prepareRefundPhase1(paymentId, refundAmount);
@@ -167,8 +170,8 @@ public class PaymentCommandHandler {
             refundAmount = aggregate.amount();
         }
 
-        PaymentAggregate.RefundPreparedResult result = aggregate.prepareRefund(refundAmount);
-        paymentRepository.update(result.aggregate());
+        PaymentAggregate updated = aggregate.prepareRefund(refundAmount);
+        paymentRepository.update(updated);
 
         return paymentId;
     }
@@ -184,17 +187,17 @@ public class PaymentCommandHandler {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
-        PaymentAggregate.RefundConfirmedResult confirmed = aggregate.confirmRefund(result, refundAmount);
+        var confirmed = aggregate.confirmRefund(result, refundAmount);
         paymentRepository.update(confirmed.aggregate());
         domainEventPublisher.publish(confirmed.event());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(ClosePaymentCommand command) {
-        PaymentAggregate aggregate = paymentRepository.findById(command.getPaymentId())
+        PaymentAggregate aggregate = paymentRepository.findById(command.paymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
-        PaymentAggregate.ClosedResult result = aggregate.close();
+        var result = aggregate.close();
         paymentRepository.update(result.aggregate());
         domainEventPublisher.publish(result.event());
     }
@@ -203,15 +206,15 @@ public class PaymentCommandHandler {
     public void rollbackPayStatus(String paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        PaymentAggregate.CancelPayResult result = aggregate.cancelPay();
-        paymentRepository.update(result.aggregate());
+        PaymentAggregate updated = aggregate.cancelPay();
+        paymentRepository.update(updated);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void rollbackRefundStatus(String paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        PaymentAggregate.CancelRefundResult result = aggregate.cancelRefund();
-        paymentRepository.update(result.aggregate());
+        PaymentAggregate updated = aggregate.cancelRefund();
+        paymentRepository.update(updated);
     }
 }

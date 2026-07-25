@@ -338,8 +338,8 @@ CREATE TABLE `eo_payment` (
     `user_id`         VARCHAR(36)   NOT NULL COMMENT '用户 ID',
     `amount`          DECIMAL(10,2) NOT NULL COMMENT '支付金额',
     `refunded_amount` DECIMAL(10,2) NOT NULL DEFAULT 0 COMMENT '已退款金额',
-    `payment_method`  TINYINT       DEFAULT NULL COMMENT '支付方式（1 微信 2 支付宝 3 余额）',
-    `status`          TINYINT       NOT NULL DEFAULT 0 COMMENT '支付状态（0 待支付 1 已支付 2 已退款 3 部分退款 4 支付失败 5 已关闭 6 支付中 7 退款中）',
+    `payment_method`  VARCHAR(20)   DEFAULT NULL COMMENT '支付方式（WECHAT 微信 ALIPAY 支付宝 BALANCE 余额）',
+    `status`          VARCHAR(20)   NOT NULL DEFAULT 'PENDING' COMMENT '支付状态（PENDING 待支付 SUCCESS 已支付 REFUNDED 已退款 PARTIALLY_REFUNDED 部分退款 FAILED 支付失败 CLOSED 已关闭 PAYING 支付中 REFUNDING 退款中）',
     `transaction_id`  VARCHAR(64)   DEFAULT NULL COMMENT '第三方支付流水号',
     `refund_reason`   VARCHAR(500)  DEFAULT NULL COMMENT '退款原因',
     `refund_time`     DATETIME      DEFAULT NULL COMMENT '退款时间',
@@ -358,8 +358,8 @@ CREATE TABLE `eo_payment` (
     KEY `idx_eo_payment_user_status` (`user_id`, `status`, `create_time` DESC),
     CONSTRAINT `chk_eo_payment_amount` CHECK (`amount` >= 0),
     CONSTRAINT `chk_eo_payment_refunded_amount` CHECK (`refunded_amount` >= 0),
-    CONSTRAINT `chk_eo_payment_status` CHECK (`status` IN (0, 1, 2, 3, 4, 5, 6, 7)),
-    CONSTRAINT `chk_eo_payment_method` CHECK (`payment_method` IS NULL OR `payment_method` IN (1, 2, 3))
+    CONSTRAINT `chk_eo_payment_status` CHECK (`status` IN ('PENDING', 'SUCCESS', 'REFUNDED', 'PARTIALLY_REFUNDED', 'FAILED', 'CLOSED', 'PAYING', 'REFUNDING')),
+    CONSTRAINT `chk_eo_payment_method` CHECK (`payment_method` IS NULL OR `payment_method` IN ('WECHAT', 'ALIPAY', 'BALANCE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='支付记录表';
 
 CREATE TABLE `eo_payment_config` (

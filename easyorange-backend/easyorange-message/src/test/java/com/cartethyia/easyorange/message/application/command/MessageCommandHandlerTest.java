@@ -93,12 +93,9 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常发送消息")
         void handle_sendMessage_success() {
-            SendMessageCommand command = SendMessageCommand.builder()
-                    .receiverId(RECEIVER_ID)
-                    .type(2)
-                    .title("标题")
-                    .content("hello")
-                    .build();
+            SendMessageCommand command = new SendMessageCommand(
+                    RECEIVER_ID, 2, "标题", "hello", null, null
+            );
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -126,12 +123,9 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("发送过于频繁时抛出异常")
         void handle_sendMessage_rateLimited_throws() {
-            SendMessageCommand command = SendMessageCommand.builder()
-                    .receiverId(RECEIVER_ID)
-                    .type(2)
-                    .title("标题")
-                    .content("hello")
-                    .build();
+            SendMessageCommand command = new SendMessageCommand(
+                    RECEIVER_ID, 2, "标题", "hello", null, null
+            );
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(false);
 
@@ -150,12 +144,9 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("发送消息经过敏感词过滤")
         void handle_sendMessage_sensitiveFilterApplied() {
-            SendMessageCommand command = SendMessageCommand.builder()
-                    .receiverId(RECEIVER_ID)
-                    .type(2)
-                    .title("标题")
-                    .content("包含敏感词示例")
-                    .build();
+            SendMessageCommand command = new SendMessageCommand(
+                    RECEIVER_ID, 2, "标题", "包含敏感词示例", null, null
+            );
 
             when(rateLimiterService.allowSendMessage(anyString())).thenReturn(true);
             when(sensitiveWordFilterService.filter("包含敏感词示例")).thenReturn("包含***");
@@ -189,12 +180,9 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常发送系统消息")
         void handle_sendSystemMessage_success() {
-            SendSystemMessageCommand command = SendSystemMessageCommand.builder()
-                    .receiverId(RECEIVER_ID)
-                    .title("系统通知")
-                    .content("您的商品已审核通过")
-                    .businessId(null)
-                    .build();
+            SendSystemMessageCommand command = new SendSystemMessageCommand(
+                    RECEIVER_ID, "系统通知", "您的商品已审核通过", null
+            );
 
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
             when(routingService.decideRoute(anyString())).thenReturn(decision);
@@ -220,9 +208,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常标记已读")
         void handle_markAsRead_success() {
-            MarkAsReadCommand command = MarkAsReadCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            MarkAsReadCommand command = new MarkAsReadCommand(MESSAGE_ID);
 
             MessageAggregate aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
@@ -240,9 +226,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("消息不存在时抛出异常")
         void handle_markAsRead_notFound_throws() {
-            MarkAsReadCommand command = MarkAsReadCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            MarkAsReadCommand command = new MarkAsReadCommand(MESSAGE_ID);
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
@@ -258,9 +242,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("非接收者标记已读时抛出异常")
         void handle_markAsRead_notOwner_throws() {
-            MarkAsReadCommand command = MarkAsReadCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            MarkAsReadCommand command = new MarkAsReadCommand(MESSAGE_ID);
 
             MessageAggregate aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
@@ -282,9 +264,9 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("批量标记已读成功")
         void handle_markAsReadBatch_success() {
-            MarkAsReadBatchCommand command = MarkAsReadBatchCommand.builder()
-                    .messageIds(new ArrayList<>(List.of(MESSAGE_ID, "101", "102")))
-                    .build();
+            MarkAsReadBatchCommand command = new MarkAsReadBatchCommand(
+                    new ArrayList<>(List.of(MESSAGE_ID, "101", "102"))
+            );
 
             MessageAggregate msg1 = createTestMessage();
             MessageAggregate msg2 = MessageAggregate.fromRaw(
@@ -313,9 +295,9 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("批量标记时跳过不存在的消息")
         void handle_markAsReadBatch_skipNotFound() {
-            MarkAsReadBatchCommand command = MarkAsReadBatchCommand.builder()
-                    .messageIds(new ArrayList<>(List.of(MESSAGE_ID, "999")))
-                    .build();
+            MarkAsReadBatchCommand command = new MarkAsReadBatchCommand(
+                    new ArrayList<>(List.of(MESSAGE_ID, "999"))
+            );
 
             MessageAggregate msg1 = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
@@ -339,9 +321,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常撤回消息")
         void handle_recallMessage_success() {
-            RecallMessageCommand command = RecallMessageCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID, null);
 
             MessageAggregate aggregate = createTestMessageForRecall();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
@@ -360,9 +340,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("撤回不存在的消息抛出异常")
         void handle_recallMessage_notFound_throws() {
-            RecallMessageCommand command = RecallMessageCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID, null);
 
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.empty());
 
@@ -383,9 +361,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("正常删除消息")
         void handle_deleteMessage_success() {
-            DeleteMessageCommand command = DeleteMessageCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            DeleteMessageCommand command = new DeleteMessageCommand(MESSAGE_ID);
 
             MessageAggregate aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
@@ -403,9 +379,7 @@ class MessageCommandHandlerTest {
         @Test
         @DisplayName("非接收者删除消息抛出异常")
         void handle_deleteMessage_notOwner_throws() {
-            DeleteMessageCommand command = DeleteMessageCommand.builder()
-                    .messageId(MESSAGE_ID)
-                    .build();
+            DeleteMessageCommand command = new DeleteMessageCommand(MESSAGE_ID);
 
             MessageAggregate aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));

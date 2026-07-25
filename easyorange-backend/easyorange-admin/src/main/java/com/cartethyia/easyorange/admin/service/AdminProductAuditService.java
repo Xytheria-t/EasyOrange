@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDet
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
-import com.cartethyia.easyorange.product.application.query.SellerInfo;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
@@ -209,7 +209,7 @@ public class AdminProductAuditService {
         String categoryName = categories.isEmpty() ? null : categories.get(0).getName();
 
         Set<String> sellerIds = Set.of(product.getUserId());
-        List<SellerInfo> sellers = productMapper.selectSellersByIds(sellerIds);
+        List<SellerReadModel> sellers = productMapper.selectSellersByIds(sellerIds);
         String sellerName = sellers.isEmpty() ? null : sellers.get(0).nickName();
 
         List<ProductImageDO> images = productMapper.selectImagesByProductIds(List.of(productId));

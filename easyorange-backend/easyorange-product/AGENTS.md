@@ -30,20 +30,31 @@ product/
 │           └── ProductCacheConstant.java
 ├── application/
 │   ├── command/                         # 命令侧 (CQRS Write)
-│   │   ├── ProductCommandService.java       # 含内联 CreateProductCommand/UpdateProductCommand records
+│   │   ├── ProductCommand.java               # 密封接口（所有命令实现此接口）
+│   │   ├── CreateProductCommand.java         # 顶层 record
+│   │   ├── UpdateProductCommand.java         # 顶层 record
+│   │   ├── CreateProductRatingCommand.java   # 顶层 record
+│   │   ├── ProductCommandService.java
 │   │   ├── ProductReportCommandService.java
-│   │   └── ProductRatingCommandService.java # 含内联 CreateProductRatingCommand record
+│   │   └── ProductRatingCommandService.java
 │   ├── query/                           # 查询侧 (CQRS Read)
 │   │   ├── ProductQueryService.java
 │   │   ├── ProductReportQueryService.java
 │   │   ├── ProductRatingQueryService.java
 │   │   ├── ProductSearchHandler.java
-│   │   ├── ProductVO.java, ProductRatingVO.java, RatingStatsVO.java, SellerInfo.java
-│   │   ├── readmodel/                   # 读模型
+│   │   ├── CategoryQueryService.java
+│   │   ├── criteria/                    # 查询参数对象
+│   │   │   └── ProductSearchCriteria.java
+│   │   ├── dto/                         # 应用层输出 VO
+│   │   │   ├── ProductVO.java
+│   │   │   ├── ProductRatingVO.java
+│   │   │   └── RatingStatsVO.java
+│   │   ├── readmodel/                   # 读模型（Repository 返回）
 │   │   │   ├── ProductReadModel.java
 │   │   │   ├── CategoryReadModel.java
 │   │   │   ├── SellerReadModel.java
-│   │   │   └── ...
+│   │   │   ├── HotKeywordReadModel.java
+│   │   │   └── SearchHistoryReadModel.java
 │   │   └── assembler/
 │   │       └── ProductReadModelAssembler.java
 │   ├── port/                            # 应用层端口
@@ -187,11 +198,12 @@ public interface ProductCachePort {
 
 ### 添加新搜索维度
 
-1. `ProductSearchRequest` 添加字段
-2. `ProductQueryRepository` 修改查询
-3. `ProductReadModel` 添加字段
-4. 缓存 Key 调整
-5. 测试
+1. `ProductSearchRequest`（adapter DTO）和 `ProductSearchCriteria`（application criteria）添加字段
+2. `ProductSearchController` 补充 DTO→Criteria 转换
+3. `ProductQueryRepository` 修改查询
+4. `ProductReadModel` 添加字段
+5. 缓存 Key 调整
+6. 测试
 
 ## 跨模块交互
 

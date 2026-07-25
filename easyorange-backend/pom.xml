@@ -52,6 +52,7 @@
         <flyway.version>11.15.0</flyway.version>
         <archunit.version>1.4.1</archunit.version>
         <redisson.version>4.6.1</redisson.version>
+        <resilience4j.version>2.2.0</resilience4j.version>
     </properties>
 
     <dependencyManagement>
@@ -207,6 +208,15 @@
                 <groupId>org.springframework.modulith</groupId>
                 <artifactId>spring-modulith-bom</artifactId>
                 <version>2.1.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- Resilience4j -->
+            <dependency>
+                <groupId>io.github.resilience4j</groupId>
+                <artifactId>resilience4j-bom</artifactId>
+                <version>${resilience4j.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

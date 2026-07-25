@@ -45,12 +45,12 @@ public class ReportProcessedEventConsumer extends AbstractDomainEventConsumer {
         String title = e.approved() ? "举报处理结果：已受理" : "举报处理结果：已驳回";
         String content = buildContent(e);
 
-        messageCommandHandler.handle(SendSystemMessageCommand.builder()
-                .receiverId(String.valueOf(e.reporterId()))
-                .title(title)
-                .content(content)
-                .businessId(String.valueOf(e.productId()))
-                .build());
+        messageCommandHandler.handle(new SendSystemMessageCommand(
+                String.valueOf(e.reporterId()),
+                title,
+                content,
+                String.valueOf(e.productId())
+        ));
     }
 
     private String buildContent(ReportProcessedEvent e) {

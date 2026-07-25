@@ -6,6 +6,9 @@ import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRep
 import com.cartethyia.easyorange.product.application.port.CategoryCachePort;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.RedisConnectionFailureException;
@@ -16,31 +19,27 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * 分类缓存适配器
  *
- * 改进点：
- * 1. 将 broad catch 改为具体异常类型（RedisConnectionFailureException, QueryTimeoutException）
- * 2. 添加告警机制：ERROR 级别日志 + 失败计数器
- * 3. 添加简单熔断机制：连续失败达到阈值时跳过 Redis，直接降级到 DB
- * 4. 保持降级逻辑，确保 DB 查询可用
+ * <p>缓存拓扑：L1 Caffeine → L2 Redis → DB 三级降级。
+ *
+ * <p>熔断保护：使用 Resilience4j CircuitBreaker 保护 Redis 操作。
+ * 连续失败率超过阈值时自动开路，避免对已故障的 Redis 做无效重试，
+ * 所有请求直接降级到 DB + 本地缓存。等待时间过后进入 Half-Open 探测恢复。
+ *
+ * <p>Micrometer 指标：熔断器状态切换、调用计数、耗时百分位自动上报到 Prometheus。
  */
 @Slf4j
 @Component
 public class CategoryCacheAdapter implements CategoryCachePort {
 
     private final CategoryQueryRepository categoryQueryRepository;
-    private final RedisTemplate<Object, Object> redisTemplate;
     private final Cache<String, List<CategoryReadModel>> localCache;
-
-    // 熔断状态管理
-    private final AtomicInteger redisFailureCount = new AtomicInteger(0);
-    private final AtomicBoolean circuitBreakerOpen = new AtomicBoolean(false);
-    private final AtomicLong lastFailureTime = new AtomicLong(0);
+    private final CircuitBreaker redisCircuitBreaker;
+    private final RedisTemplate<Object, Object> redisTemplate;
 
     private static final String CACHE_KEY_PREFIX = "eo:category:list";
     private static final String CACHE_KEY_LEVEL = CACHE_KEY_PREFIX + ":level:";
@@ -50,18 +49,35 @@ public class CategoryCacheAdapter implements CategoryCachePort {
     private static final int LOCAL_CACHE_MAX_SIZE = 100;
     private static final long LOCAL_CACHE_EXPIRE_MINUTES = 30;
 
-    // 熔断配置
-    private static final int CIRCUIT_BREAKER_THRESHOLD = 5; // 连续失败 5 触发熔断
-    private static final long CIRCUIT_BREAKER_RESET_INTERVAL_MS = 60_000; // 60 秒后重置熔断
+    private static final String CIRCUIT_BREAKER_NAME = "redisCategoryCache";
 
     public CategoryCacheAdapter(CategoryQueryRepository categoryQueryRepository,
-                                RedisTemplate<Object, Object> redisTemplate) {
+                                RedisTemplate<Object, Object> redisTemplate,
+                                CircuitBreakerRegistry circuitBreakerRegistry) {
         this.categoryQueryRepository = categoryQueryRepository;
         this.redisTemplate = redisTemplate;
         this.localCache = Caffeine.newBuilder()
                 .maximumSize(LOCAL_CACHE_MAX_SIZE)
                 .expireAfterWrite(LOCAL_CACHE_EXPIRE_MINUTES, TimeUnit.MINUTES)
                 .build();
+        this.redisCircuitBreaker = circuitBreakerRegistry
+                .circuitBreaker(CIRCUIT_BREAKER_NAME);
+
+        // 注册熔断事件监听（结构化日志）
+        this.redisCircuitBreaker.getEventPublisher()
+                .onStateTransition(event -> log.info(
+                        "action=circuit_breaker_state_transition, name={}, from={}, to={}",
+                        event.getCircuitBreakerName(),
+                        event.getStateTransition().getFromState(),
+                        event.getStateTransition().getToState()))
+                .onError(event -> log.warn(
+                        "action=circuit_breaker_error, name={}, elapsed={}ms, throwable={}",
+                        event.getCircuitBreakerName(),
+                        event.getElapsedDuration().toMillis(),
+                        event.getThrowable().toString()))
+                .onCallNotPermitted(event -> log.warn(
+                        "action=circuit_breaker_call_blocked, name={}",
+                        event.getCircuitBreakerName()));
     }
 
     @Override
@@ -73,49 +89,22 @@ public class CategoryCacheAdapter implements CategoryCachePort {
             return cached;
         }
 
-        // 检查熔断状态
-        if (!shouldSkipRedis()) {
-            try {
-                Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
-                if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
-                    @SuppressWarnings("unchecked")
-                    List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
-                    localCache.put(cacheKey, redisCached);
-                    recordRedisSuccess();
-                    return redisCached;
-                }
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("读取分类缓存", "level=" + level, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("读取分类缓存", "level=" + level, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("读取分类缓存", "level=" + level, e);
-            }
-        } else {
-            log.warn("action=circuit_breaker_skip_redis, operation=读取分类缓存, key={}", cacheKey);
+        // 熔断保护的 Redis 读取
+        List<CategoryReadModel> redisCached = tryRedisGet(cacheKey, CategoryReadModel.class);
+        if (redisCached != null) {
+            localCache.put(cacheKey, redisCached);
+            return redisCached;
         }
 
+        // 降级：读 DB
         List<CategoryReadModel> models = categoryQueryRepository.findByLevel(level);
         if (models == null) {
             models = List.of();
         }
-
         localCache.put(cacheKey, models);
 
-        // 写入 Redis（仅在熔断未开启时）
-        if (!shouldSkipRedis()) {
-            try {
-                redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
-                recordRedisSuccess();
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("设置分类缓存", "level=" + level, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("设置分类缓存", "level=" + level, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("设置分类缓存", "level=" + level, e);
-            }
-        }
-
+        // 异步写回 Redis（熔断未开启时）
+        tryRedisSet(cacheKey, models);
         return models;
     }
 
@@ -128,49 +117,22 @@ public class CategoryCacheAdapter implements CategoryCachePort {
             return cached;
         }
 
-        // 检查熔断状态
-        if (!shouldSkipRedis()) {
-            try {
-                Object redisRaw = redisTemplate.opsForValue().get(cacheKey);
-                if (redisRaw instanceof List<?> rawList && !rawList.isEmpty() && rawList.getFirst() instanceof CategoryReadModel) {
-                    @SuppressWarnings("unchecked")
-                    List<CategoryReadModel> redisCached = (List<CategoryReadModel>) redisRaw;
-                    localCache.put(cacheKey, redisCached);
-                    recordRedisSuccess();
-                    return redisCached;
-                }
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("读取分类缓存", "parentId=" + parentId, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("读取分类缓存", "parentId=" + parentId, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("读取分类缓存", "parentId=" + parentId, e);
-            }
-        } else {
-            log.warn("action=circuit_breaker_skip_redis, operation=读取分类缓存, key={}", cacheKey);
+        // 熔断保护的 Redis 读取
+        List<CategoryReadModel> redisCached = tryRedisGet(cacheKey, CategoryReadModel.class);
+        if (redisCached != null) {
+            localCache.put(cacheKey, redisCached);
+            return redisCached;
         }
 
+        // 降级：读 DB
         List<CategoryReadModel> models = categoryQueryRepository.findByParentId(parentId);
         if (models == null) {
             models = List.of();
         }
-
         localCache.put(cacheKey, models);
 
-        // 写入 Redis（仅在熔断未开启时）
-        if (!shouldSkipRedis()) {
-            try {
-                redisTemplate.opsForValue().set(cacheKey, models, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
-                recordRedisSuccess();
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("设置分类缓存", "parentId=" + parentId, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("设置分类缓存", "parentId=" + parentId, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("设置分类缓存", "parentId=" + parentId, e);
-            }
-        }
-
+        // 异步写回 Redis（熔断未开启时）
+        tryRedisSet(cacheKey, models);
         return models;
     }
 
@@ -182,43 +144,19 @@ public class CategoryCacheAdapter implements CategoryCachePort {
 
         String cacheKey = CACHE_KEY_ID + id;
 
-        // 检查熔断状态
-        if (!shouldSkipRedis()) {
-            try {
-                Object cached = redisTemplate.opsForValue().get(cacheKey);
-                if (cached instanceof CategoryReadModel readModel) {
-                    recordRedisSuccess();
-                    return Optional.of(readModel);
-                }
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("读取分类缓存", "id=" + id, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("读取分类缓存", "id=" + id, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("读取分类缓存", "id=" + id, e);
-            }
-        } else {
-            log.warn("action=circuit_breaker_skip_redis, operation=读取分类缓存, key={}", cacheKey);
+        // 熔断保护的 Redis 读取
+        Supplier<Optional<CategoryReadModel>> redisGet = decorateRedisGetOptional(cacheKey, CategoryReadModel.class);
+        Optional<CategoryReadModel> redisCached = tryWithFallback(redisGet, "getCategoryById", id);
+        if (redisCached != null && redisCached.isPresent()) {
+            return redisCached;
         }
 
+        // 降级：读 DB
         List<CategoryReadModel> allCategories = categoryQueryRepository.findByIds(List.of(id));
         if (allCategories != null && !allCategories.isEmpty()) {
             CategoryReadModel model = allCategories.getFirst();
-
-            // 写入 Redis（仅在熔断未开启时）
-            if (!shouldSkipRedis()) {
-                try {
-                    redisTemplate.opsForValue().set(cacheKey, model, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES);
-                    recordRedisSuccess();
-                } catch (RedisConnectionFailureException e) {
-                    handleRedisConnectionFailure("设置分类缓存", "id=" + id, e);
-                } catch (QueryTimeoutException e) {
-                    handleRedisTimeout("设置分类缓存", "id=" + id, e);
-                } catch (Exception e) {
-                    handleUnexpectedRedisError("设置分类缓存", "id=" + id, e);
-                }
-            }
-
+            // 写入 Redis（熔断未开启时）
+            tryRedisSet(cacheKey, model);
             return Optional.of(model);
         }
 
@@ -228,145 +166,176 @@ public class CategoryCacheAdapter implements CategoryCachePort {
     @Override
     public void evictAll() {
         localCache.invalidateAll();
-
-        // 检查熔断状态
-        if (!shouldSkipRedis()) {
-            try {
-                var keys = CacheUtils.scan(redisTemplate, CACHE_KEY_PREFIX + "*");
-                if (keys != null && !keys.isEmpty()) {
-                    redisTemplate.delete(keys);
-                }
-                recordRedisSuccess();
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("清除分类缓存", "all", e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("清除分类缓存", "all", e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("清除分类缓存", "all", e);
-            }
-        } else {
-            log.warn("action=circuit_breaker_skip_redis, operation=清除分类缓存, pattern={}", CACHE_KEY_PREFIX + "*");
-        }
+        tryRedisEvict(CACHE_KEY_PREFIX + "*");
     }
 
     @Override
     public void evictByLevel(Integer level) {
         String cacheKey = CACHE_KEY_LEVEL + level;
         localCache.invalidate(cacheKey);
-
-        // 检查熔断状态
-        if (!shouldSkipRedis()) {
-            try {
-                redisTemplate.delete(cacheKey);
-                recordRedisSuccess();
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("清除分类缓存", "level=" + level, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("清除分类缓存", "level=" + level, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("清除分类缓存", "level=" + level, e);
-            }
-        } else {
-            log.warn("action=circuit_breaker_skip_redis, operation=清除分类缓存, key={}", cacheKey);
-        }
+        tryRedisDelete(cacheKey);
     }
 
     @Override
     public void evictByParentId(String parentId) {
         String cacheKey = CACHE_KEY_PARENT + parentId;
         localCache.invalidate(cacheKey);
+        tryRedisDelete(cacheKey);
+    }
 
-        // 检查熔断状态
-        if (!shouldSkipRedis()) {
-            try {
-                redisTemplate.delete(cacheKey);
-                recordRedisSuccess();
-            } catch (RedisConnectionFailureException e) {
-                handleRedisConnectionFailure("清除分类缓存", "parentId=" + parentId, e);
-            } catch (QueryTimeoutException e) {
-                handleRedisTimeout("清除分类缓存", "parentId=" + parentId, e);
-            } catch (Exception e) {
-                handleUnexpectedRedisError("清除分类缓存", "parentId=" + parentId, e);
+    // ==================== Resilience4j 辅助方法 ====================
+
+    /**
+     * 通过熔断器执行 Redis GET 并尝试类型安全的 cast。
+     * 熔断开路或 Redis 异常时返回 null，由调用方降级到 DB。
+     */
+    @SuppressWarnings("unchecked")
+    private <T> List<T> tryRedisGet(String key, Class<T> elementType) {
+        Supplier<List<T>> redisGet = decorateRedisGetList(key, elementType);
+        return tryWithFallback(redisGet, "redis_get", key);
+    }
+
+    /**
+     * 通过熔断器执行 Redis SET（写入操作，失败可容忍）。
+     */
+    private void tryRedisSet(String key, Object value) {
+        Runnable redisSet = decorateRedisSet(key, value);
+        tryWithFallback(redisSet, "redis_set", key);
+    }
+
+    /**
+     * 通过熔断器执行 Redis DELETE（单个 key）。
+     */
+    private void tryRedisDelete(String key) {
+        Runnable redisDelete = decorateRedisDelete(key);
+        tryWithFallback(redisDelete, "redis_delete", key);
+    }
+
+    /**
+     * 通过熔断器执行 Redis EVICT（scan + delete 批量）。
+     */
+    private void tryRedisEvict(String pattern) {
+        Runnable redisEvict = decorateRedisEvict(pattern);
+        tryWithFallback(redisEvict, "redis_evict", pattern);
+    }
+
+    // ==================== Resilience4j 装饰器 ====================
+
+    /**
+     * 为 List 类型的 Redis GET 创建熔断保护装饰器。
+     */
+    @SuppressWarnings("unchecked")
+    private <T> Supplier<List<T>> decorateRedisGetList(String key, Class<T> elementType) {
+        return CircuitBreaker.decorateSupplier(redisCircuitBreaker, () -> {
+            Object raw = redisTemplate.opsForValue().get(key);
+            // 类型安全的 List 检查
+            if (raw instanceof List<?> rawList && !rawList.isEmpty() && elementType.isInstance(rawList.getFirst())) {
+                return (List<T>) rawList;
             }
-        } else {
-            log.warn("action=circuit_breaker_skip_redis, operation=清除分类缓存, key={}", cacheKey);
+            return null;
+        });
+    }
+
+    /**
+     * 为单个对象的 Redis GET 创建熔断保护装饰器。
+     */
+    private <T> Supplier<T> decorateRedisGet(String key, Class<T> type) {
+        return CircuitBreaker.decorateSupplier(redisCircuitBreaker, () -> {
+            Object raw = redisTemplate.opsForValue().get(key);
+            if (type.isInstance(raw)) {
+                return type.cast(raw);
+            }
+            return null;
+        });
+    }
+
+    /**
+     * 为 Redis GET-List 且返回 Optional 创建熔断保护装饰器。
+     */
+    @SuppressWarnings("unchecked")
+    private <T> Supplier<Optional<T>> decorateRedisGetOptional(String key, Class<T> type) {
+        return CircuitBreaker.decorateSupplier(redisCircuitBreaker, () -> {
+            Object raw = redisTemplate.opsForValue().get(key);
+            if (type.isInstance(raw)) {
+                return Optional.of(type.cast(raw));
+            }
+            return Optional.empty();
+        });
+    }
+
+    /**
+     * 为 Redis SET 创建熔断保护装饰器。
+     */
+    private Runnable decorateRedisSet(String key, Object value) {
+        return CircuitBreaker.decorateRunnable(redisCircuitBreaker, () ->
+                redisTemplate.opsForValue().set(key, value, REDIS_EXPIRE_MINUTES, TimeUnit.MINUTES));
+    }
+
+    /**
+     * 为 Redis DELETE 创建熔断保护装饰器。
+     */
+    private Runnable decorateRedisDelete(String key) {
+        return CircuitBreaker.decorateRunnable(redisCircuitBreaker, () ->
+                redisTemplate.delete(key));
+    }
+
+    /**
+     * 为 Redis 批量 evict（scan + delete）创建熔断保护装饰器。
+     */
+    private Runnable decorateRedisEvict(String pattern) {
+        return CircuitBreaker.decorateRunnable(redisCircuitBreaker, () -> {
+            var keys = CacheUtils.scan(redisTemplate, pattern);
+            if (keys != null && !keys.isEmpty()) {
+                redisTemplate.delete(keys);
+            }
+        });
+    }
+
+    // ==================== 执行 + 降级 ====================
+
+    /**
+     * 执行熔断保护的 Supplier，异常时降级返回 null。
+     */
+    private <T> T tryWithFallback(Supplier<T> supplier, String operation, String context) {
+        try {
+            return supplier.get();
+        } catch (CallNotPermittedException e) {
+            log.warn("action=circuit_breaker_open, operation={}, context={}, message=熔断开路，跳过Redis",
+                    operation, context);
+            return null;
+        } catch (RedisConnectionFailureException e) {
+            log.error("action=redis_connection_failure, operation={}, context={}, message=Redis连接失败",
+                    operation, context, e);
+            return null;
+        } catch (QueryTimeoutException e) {
+            log.error("action=redis_timeout, operation={}, context={}, message=Redis操作超时",
+                    operation, context, e);
+            return null;
+        } catch (Exception e) {
+            log.warn("action=redis_unexpected_error, operation={}, context={}, message=Redis操作异常",
+                    operation, context, e);
+            return null;
         }
     }
 
-    // ==================== 熔断状态管理 ====================
-
     /**
-     * 判断是否应该跳过 Redis 操作（熔断开启或连续失败达到阈值）
+     * 执行熔断保护的 Runnable，异常时静默降级。
      */
-    private boolean shouldSkipRedis() {
-        resetCircuitBreakerIfNeeded();
-        return circuitBreakerOpen.get() || redisFailureCount.get() >= CIRCUIT_BREAKER_THRESHOLD;
-    }
-
-    /**
-     * 记录 Redis 成功，重置失败计数器和熔断状态
-     */
-    private void recordRedisSuccess() {
-        if (redisFailureCount.get() > 0 || circuitBreakerOpen.get()) {
-            log.info("action=redis_recovered, previous_failure_count={}", redisFailureCount.get());
-        }
-        redisFailureCount.set(0);
-        circuitBreakerOpen.set(false);
-    }
-
-    /**
-     * 记录 Redis 失败，增加计数器，检查是否需要触发熔断
-     */
-    private void recordRedisFailure() {
-        int count = redisFailureCount.incrementAndGet();
-        lastFailureTime.set(System.currentTimeMillis());
-
-        if (count >= CIRCUIT_BREAKER_THRESHOLD && !circuitBreakerOpen.get()) {
-            circuitBreakerOpen.set(true);
-            log.error("action=circuit_breaker_opened, failure_count={}, threshold={}, message=Redis连续失败达到阈值，触发熔断保护",
-                    count, CIRCUIT_BREAKER_THRESHOLD);
+    private void tryWithFallback(Runnable runnable, String operation, String context) {
+        try {
+            runnable.run();
+        } catch (CallNotPermittedException e) {
+            log.warn("action=circuit_breaker_open, operation={}, context={}, message=熔断开路，跳过Redis",
+                    operation, context);
+        } catch (RedisConnectionFailureException e) {
+            log.error("action=redis_connection_failure, operation={}, context={}, message=Redis连接失败",
+                    operation, context, e);
+        } catch (QueryTimeoutException e) {
+            log.error("action=redis_timeout, operation={}, context={}, message=Redis操作超时",
+                    operation, context, e);
+        } catch (Exception e) {
+            log.warn("action=redis_unexpected_error, operation={}, context={}, message=Redis操作异常",
+                    operation, context, e);
         }
     }
-
-    /**
-     * 定期重置熔断状态（距离上次失败超过重置间隔）
-     */
-    private void resetCircuitBreakerIfNeeded() {
-        long lastFailure = lastFailureTime.get();
-        if (circuitBreakerOpen.get() && System.currentTimeMillis() - lastFailure > CIRCUIT_BREAKER_RESET_INTERVAL_MS) {
-            circuitBreakerOpen.set(false);
-            redisFailureCount.set(0);
-            log.info("action=circuit_breaker_reset, message=熔断重置，允许重新尝试Redis操作");
-        }
-    }
-
-    // ==================== 异常处理 ====================
-
-    /**
-     * 处理 Redis 连接失败（需要告警）
-     */
-    private void handleRedisConnectionFailure(String operation, String context, RedisConnectionFailureException e) {
-        recordRedisFailure();
-        log.error("action=redis_connection_failure, operation={}, context={}, failure_count={}, message=Redis连接失败，请检查Redis服务状态",
-                operation, context, redisFailureCount.get(), e);
-    }
-
-    /**
-     * 处理 Redis 超时（需要告警）
-     */
-    private void handleRedisTimeout(String operation, String context, QueryTimeoutException e) {
-        recordRedisFailure();
-        log.error("action=redis_timeout, operation={}, context={}, failure_count={}, message=Redis操作超时，请检查Redis性能",
-                operation, context, redisFailureCount.get(), e);
-    }
-
-    /**
-     * 处理其他 Redis 异常（需要关注）
-     */
-    private void handleUnexpectedRedisError(String operation, String context, Exception e) {
-        recordRedisFailure();
-        log.warn("action=redis_unexpected_error, operation={}, context={}, failure_count={}, message=Redis操作异常",
-                operation, context, redisFailureCount.get(), e);
-    }
-
 }

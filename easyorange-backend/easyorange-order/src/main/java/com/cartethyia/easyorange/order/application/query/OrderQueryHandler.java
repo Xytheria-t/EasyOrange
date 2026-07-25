@@ -71,30 +71,40 @@ public class OrderQueryHandler {
                 orderPage.current(), orderPage.size());
     }
 
+    /**
+     * 我的订单（认领方视角） — 通过 OrderListQuery 收敛参数，与 listOrders 入口统一。
+     * buyerId 自动填充为当前登录用户。
+     */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getMyOrders(String status, Integer pageNum, Integer pageSize) {
+    public PageResult<OrderVO> getMyOrders(OrderListQuery query) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryOrdersWithCache(userId, null, status, pageNum, pageSize);
+        return queryOrdersWithCache(userId, null, query);
     }
 
+    /**
+     * 我售出的订单（资产方视角） — 通过 OrderListQuery 收敛参数，与 listOrders 入口统一。
+     * sellerId 自动填充为当前登录用户。
+     */
     @Transactional(readOnly = true)
-    public PageResult<OrderVO> getSoldOrders(String status, Integer pageNum, Integer pageSize) {
+    public PageResult<OrderVO> getSoldOrders(OrderListQuery query) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        return queryOrdersWithCache(null, userId, status, pageNum, pageSize);
+        return queryOrdersWithCache(null, userId, query);
     }
 
-    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, String status,
-                                                       Integer pageNum, Integer pageSize) {
+    private PageResult<OrderVO> queryOrdersWithCache(String buyerId, String sellerId, OrderListQuery query) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        String cacheKey = orderCachePort.buildOrderListKey(userId, status);
+        String statusCode = query.status() != null ? query.status().getCode() : null;
+        String cacheKey = orderCachePort.buildOrderListKey(userId, statusCode);
 
         Optional<PageResult<OrderVO>> cachedResult = orderCachePort.getOrderList(cacheKey);
         if (cachedResult.isPresent()) {
             return cachedResult.get();
         }
 
-        OrderListQuery query = new OrderListQuery(null, status, buyerId, sellerId, pageNum, pageSize);
-        PageResult<OrderVO> result = listOrders(query);
+        OrderListQuery effectiveQuery = new OrderListQuery(
+                query.orderNo(), query.status(), buyerId, sellerId,
+                query.pageNum(), query.pageSize());
+        PageResult<OrderVO> result = listOrders(effectiveQuery);
         orderCachePort.putOrderList(cacheKey, result);
         return result;
     }

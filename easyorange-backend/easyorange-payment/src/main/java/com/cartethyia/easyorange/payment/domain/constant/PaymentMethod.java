@@ -8,9 +8,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum PaymentMethod {
 
-    WECHAT("1", "微信支付"),
-    ALIPAY("2", "支付宝"),
-    BALANCE("3", "余额支付");
+    WECHAT("WECHAT", "微信支付"),
+    ALIPAY("ALIPAY", "支付宝"),
+    BALANCE("BALANCE", "余额支付");
 
     @JsonValue
     private final String code;

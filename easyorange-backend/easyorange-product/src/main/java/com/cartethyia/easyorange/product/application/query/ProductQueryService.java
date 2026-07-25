@@ -3,6 +3,8 @@ package com.cartethyia.easyorange.product.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.Singleflight;
 import com.cartethyia.easyorange.product.application.query.assembler.ProductReadModelAssembler;
+import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
@@ -146,37 +148,6 @@ public class ProductQueryService {
 
     // ── ReadModel assembly path (for listing / similar queries) ──
 
-    private ProductVO assembleFromReadModel(ProductReadModel m,
-                                             Map<String, List<ProductImageInfo>> imagesByProduct,
-                                             Map<String, SellerReadModel> sellerMap) {
-        var seller = sellerMap.get(m.sellerId());
-        var username = seller != null
-                ? (seller.nickName() != null ? seller.nickName() : seller.username())
-                : m.username();
-        var userAvatar = seller != null ? seller.avatar() : m.userAvatar();
-
-        var images = imagesByProduct.getOrDefault(m.id(), List.of());
-        var imageUrls = images.stream().map(ProductImageInfo::imageUrl).toList();
-        var mainImageUrl = images.stream()
-                .filter(ProductImageInfo::isMain)
-                .findFirst()
-                .map(ProductImageInfo::imageUrl)
-                .orElseGet(() -> imageUrls.isEmpty() ? "" : imageUrls.getFirst());
-
-        return ProductVO.builder()
-                .id(m.id()).sellerId(m.sellerId())
-                .username(username).userAvatar(userAvatar)
-                .categoryId(m.categoryId()).categoryName(m.categoryName())
-                .title(m.title()).description(m.description())
-                .price(m.price()).originalPrice(m.originalPrice())
-                .stock(m.stock()).status(m.status()).statusDesc(m.statusDesc())
-                .views(m.views()).condition(m.condition()).conditionDesc(m.conditionDesc())
-                .location(m.location()).contactMethod(m.contactMethod())
-                .images(imageUrls).mainImageUrl(mainImageUrl)
-                .createTime(m.createTime()).updateTime(m.updateTime())
-                .build();
-    }
-
     private List<ProductVO> enrichRecords(List<ProductReadModel> records) {
         var productIds = records.stream().map(ProductReadModel::id).toList();
         var imagesByProduct = fetchImages(productIds);
@@ -186,7 +157,7 @@ public class ProductQueryService {
                 .collect(Collectors.toSet());
         var sellerMap = fetchSellers(sellerIds);
         return records.stream()
-                .map(m -> assembleFromReadModel(m, imagesByProduct, sellerMap))
+                .map(m -> readModelAssembler.toProductVO(m, imagesByProduct, sellerMap))
                 .toList();
     }
 

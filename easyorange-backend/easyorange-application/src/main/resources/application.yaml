@@ -156,6 +156,16 @@ mybatis-plus:
   optimistic-lock:
     enabled: true
 
+# -------------------------------------------------------------------
+# 慢 SQL 检测（MyBatis 拦截器）
+# -------------------------------------------------------------------
+slow-sql:
+  enabled: true
+  threshold-ms: 500
+  log-level: warn
+  log-parameters: true
+  metrics-enabled: true
+
 management:
   tracing:
     sampling:

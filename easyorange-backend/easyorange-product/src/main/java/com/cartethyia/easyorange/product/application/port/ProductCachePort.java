@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.port;
 
-import com.cartethyia.easyorange.product.application.query.ProductVO;
+import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 
 import java.util.Optional;
 

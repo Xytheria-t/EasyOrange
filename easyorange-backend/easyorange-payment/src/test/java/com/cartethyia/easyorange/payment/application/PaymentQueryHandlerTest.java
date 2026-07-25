@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -32,11 +33,12 @@ class PaymentQueryHandlerTest {
     private PaymentQueryHandler queryHandler;
 
     private PaymentAggregate createTestAggregate(String id, String paymentNo, PaymentStatus status) {
-        return PaymentAggregate.reconstruct(
+        var spec = new PaymentReconstructSpec(
                 id, paymentNo, "2001", "3001",
                 new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 status, null, null, null, null, null, null, 0
         );
+        return PaymentAggregate.from(spec);
     }
 
     @Nested

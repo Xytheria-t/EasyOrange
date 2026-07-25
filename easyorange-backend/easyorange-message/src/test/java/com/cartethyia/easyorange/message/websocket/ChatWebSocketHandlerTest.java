@@ -89,11 +89,11 @@ class ChatWebSocketHandlerTest {
                 verify(messageCommandHandler).handle(commandCaptor.capture());
 
                 SendMessageCommand cmd = commandCaptor.getValue();
-                assertThat(cmd.getReceiverId()).isEqualTo(RECEIVER_ID);
-                assertThat(cmd.getType()).isZero();
-                assertThat(cmd.getTitle()).isEqualTo("你好");
-                assertThat(cmd.getContent()).isEqualTo("hello");
-                assertThat(cmd.getConversationId()).isEqualTo(CONVERSATION_ID);
+                assertThat(cmd.receiverId()).isEqualTo(RECEIVER_ID);
+                assertThat(cmd.type()).isZero();
+                assertThat(cmd.title()).isEqualTo("你好");
+                assertThat(cmd.content()).isEqualTo("hello");
+                assertThat(cmd.conversationId()).isEqualTo(CONVERSATION_ID);
 
                 verify(messagingTemplate).convertAndSend(
                         eq("/queue/chat/" + CONVERSATION_ID),
@@ -120,7 +120,7 @@ class ChatWebSocketHandlerTest {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().getTitle()).isEmpty();
+                assertThat(commandCaptor.getValue().title()).isEmpty();
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -137,7 +137,7 @@ class ChatWebSocketHandlerTest {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().getType()).isZero();
+                assertThat(commandCaptor.getValue().type()).isZero();
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -154,7 +154,7 @@ class ChatWebSocketHandlerTest {
                 handler.handleChatMessage(wsMessage, principal);
 
                 verify(messageCommandHandler).handle(commandCaptor.capture());
-                assertThat(commandCaptor.getValue().getBusinessId()).isEqualTo("999");
+                assertThat(commandCaptor.getValue().businessId()).isEqualTo("999");
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

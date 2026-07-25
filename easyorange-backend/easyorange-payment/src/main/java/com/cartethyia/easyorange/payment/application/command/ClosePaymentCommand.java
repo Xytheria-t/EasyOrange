@@ -1,15 +1,7 @@
 package com.cartethyia.easyorange.payment.application.command;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ClosePaymentCommand {
-
-    private String paymentId;
-}
+public record ClosePaymentCommand(
+        @NotBlank(message = "支付 ID 不能为空") String paymentId
+) implements PaymentCommand {}

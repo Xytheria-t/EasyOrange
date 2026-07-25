@@ -75,20 +75,20 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public List<PaymentAggregate> findByUserIdAndStatus(String userId, String status, int pageNum, int pageSize) {
+    public List<PaymentAggregate> findByUserIdAndStatus(String userId, PaymentStatus status, int pageNum, int pageSize) {
         Page<PaymentDO> page = lambdaQuery()
                 .eq(userId != null, PaymentDO::getUserId, userId)
-                .eq(status != null, PaymentDO::getStatus, status != null ? PaymentStatus.fromCode(status) : null)
+                .eq(status != null, PaymentDO::getStatus, status)
                 .orderByDesc(PaymentDO::getCreateTime)
                 .page(new Page<>(pageNum, pageSize));
         return page.getRecords().stream().map(paymentDataMapper::toAggregate).toList();
     }
 
     @Override
-    public long countByUserIdAndStatus(String userId, String status) {
+    public long countByUserIdAndStatus(String userId, PaymentStatus status) {
         return lambdaQuery()
                 .eq(userId != null, PaymentDO::getUserId, userId)
-                .eq(status != null, PaymentDO::getStatus, status != null ? PaymentStatus.fromCode(status) : null)
+                .eq(status != null, PaymentDO::getStatus, status)
                 .count();
     }
 }

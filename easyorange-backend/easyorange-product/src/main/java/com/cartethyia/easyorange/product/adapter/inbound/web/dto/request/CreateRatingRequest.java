@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.adapter.inbound.web.dto.request;
 
-import com.cartethyia.easyorange.product.application.command.ProductRatingCommandService.CreateProductRatingCommand;
+import com.cartethyia.easyorange.product.application.command.CreateProductRatingCommand;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;

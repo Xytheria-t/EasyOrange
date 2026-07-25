@@ -103,12 +103,12 @@ public class OrderNotificationEventConsumer extends AbstractDomainEventConsumer 
     }
 
     private void sendNotification(String receiverId, String title, String content, String businessId) {
-        messageCommandHandler.handle(SendSystemMessageCommand.builder()
-                .receiverId(receiverId)
-                .title(title)
-                .content(content)
-                .businessId(businessId)
-                .build());
+        messageCommandHandler.handle(new SendSystemMessageCommand(
+                receiverId,
+                title,
+                content,
+                businessId
+        ));
     }
 
     private String lookupBuyerId(String orderId) {

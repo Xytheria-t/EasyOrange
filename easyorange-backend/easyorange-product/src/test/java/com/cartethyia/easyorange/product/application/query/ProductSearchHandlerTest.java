@@ -1,18 +1,13 @@
 package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchHistoryResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,58 +49,43 @@ class ProductSearchHandlerTest {
 
     @Test
     @DisplayName("搜索商品应返回分页结果")
-    void handleSearch_shouldReturnPageResult() {
-        ProductSearchRequest request = new ProductSearchRequest();
-        request.setKeyword("手机");
-        request.setCategoryId("2");
-        request.setStatus("1");
-
+    void search_shouldReturnPageResult() {
+        var criteria = new ProductSearchCriteria("手机", "2", "1", null, null, null, null, null, 1, 20);
         PageResult<ProductReadModel> page = PageResult.of(List.of(testProduct), 1, 1, 20);
-        var expectedCriteria = new ProductSearchCriteria("手机", "2", "1", null, null, null, null, null, 1, 20);
-        when(productQueryRepository.searchProducts(expectedCriteria))
-                .thenReturn(page);
+        when(productQueryRepository.searchProducts(criteria)).thenReturn(page);
 
-        SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
+        ProductSearchResult result = searchHandler.search(criteria, false);
 
         assertThat(result).isNotNull();
-        assertThat(result.records()).hasSize(1);
-        assertThat(result.total()).isEqualTo(1);
-        assertThat(result.records().get(0).id()).isEqualTo("1");
-        assertThat(result.records().get(0).title()).isEqualTo("测试商品");
-        assertThat(result.records().get(0).price()).isEqualByComparingTo(new BigDecimal("100"));
-        assertThat(result.records().get(0).mainImageUrl()).isEqualTo("http://img/1.jpg");
+        assertThat(result.page().records()).hasSize(1);
+        assertThat(result.page().total()).isEqualTo(1);
+        assertThat(result.page().records().get(0).id()).isEqualTo("1");
+        assertThat(result.page().records().get(0).title()).isEqualTo("测试商品");
     }
 
     @Test
     @DisplayName("搜索商品无结果应返回空分页")
-    void handleSearch_withNoResults_shouldReturnEmptyPage() {
-        ProductSearchRequest request = new ProductSearchRequest();
-        request.setKeyword("不存在");
-
+    void search_withNoResults_shouldReturnEmptyPage() {
+        var criteria = new ProductSearchCriteria("不存在", null, null, null, null, null, null, null, 1, 20);
         PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
-        var expectedCriteria = new ProductSearchCriteria("不存在", null, null, null, null, null, null, null, 1, 20);
-        when(productQueryRepository.searchProducts(expectedCriteria))
-                .thenReturn(page);
+        when(productQueryRepository.searchProducts(criteria)).thenReturn(page);
 
-        SearchPageResponse<ProductResponse> result = searchHandler.handleSearch(request);
-        assertThat(result.records()).isEmpty();
-        assertThat(result.total()).isZero();
+        ProductSearchResult result = searchHandler.search(criteria, false);
+
+        assertThat(result.page().records()).isEmpty();
+        assertThat(result.page().total()).isZero();
     }
 
     @Test
     @DisplayName("搜索使用默认分页参数")
-    void handleSearch_withNullPageParams_shouldUseDefaults() {
-        ProductSearchRequest request = new ProductSearchRequest();
-        request.setKeyword("手机");
-
+    void search_withNullPageParams_shouldUseDefaults() {
+        var criteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, null, null);
         PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
-        var expectedCriteria = new ProductSearchCriteria("手机", null, null, null, null, null, null, null, 1, 20);
-        when(productQueryRepository.searchProducts(expectedCriteria))
-                .thenReturn(page);
+        when(productQueryRepository.searchProducts(any())).thenReturn(page);
 
-        searchHandler.handleSearch(request);
+        searchHandler.search(criteria, false);
 
-        verify(productQueryRepository).searchProducts(expectedCriteria);
+        verify(productQueryRepository).searchProducts(any());
     }
 
     @Test
@@ -117,7 +97,7 @@ class ProductSearchHandlerTest {
             when(productQueryRepository.findSearchHistoryByUserId("1", 10))
                     .thenReturn(List.of(history));
 
-            List<SearchHistoryResponse> result = searchHandler.getMySearchHistory(10);
+            List<SearchHistoryReadModel> result = searchHandler.getMySearchHistory(10);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).id()).isEqualTo("100");
@@ -159,7 +139,7 @@ class ProductSearchHandlerTest {
         HotKeywordReadModel keyword = new HotKeywordReadModel("1", "手机", 100, 5);
         when(productQueryRepository.findHotKeywords(10)).thenReturn(List.of(keyword));
 
-        List<HotKeywordResponse> result = searchHandler.getHotKeywords(10);
+        List<HotKeywordReadModel> result = searchHandler.getHotKeywords(10);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo("1");

@@ -49,11 +49,11 @@ public class ProductAuditEventConsumer extends AbstractDomainEventConsumer {
                 ? "您发布的「%s」已通过审核，现已上架销售！".formatted(e.productName())
                 : "您发布的「%s」未通过审核。原因：%s。请修改后重新提交。".formatted(e.productName(), e.reason());
 
-        messageCommandHandler.handle(SendSystemMessageCommand.builder()
-                .receiverId(e.sellerId())
-                .title(title)
-                .content(content)
-                .businessId(e.productId())
-                .build());
+        messageCommandHandler.handle(new SendSystemMessageCommand(
+                e.sellerId(),
+                title,
+                content,
+                e.productId()
+        ));
     }
 }

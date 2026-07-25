@@ -115,13 +115,10 @@ class OrderCommandControllerTest {
     class CancelOrderTests {
 
         @Test
-        @DisplayName("成功取消订单应返回 200")
-        void cancelOrder_withValidId_shouldReturnSuccess() throws Exception {
+        @DisplayName("缺少取消原因应返回 400")
+        void cancelOrder_withoutReason_shouldReturn400() throws Exception {
             mockMvc.perform(put("/api/orders/{id}/cancel", ORDER_ID))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value("A0000"));
-
-            verify(commandHandler).handle(any(CancelOrderCommand.class));
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -185,13 +182,10 @@ class OrderCommandControllerTest {
     class RefundOrderTests {
 
         @Test
-        @DisplayName("成功退款应返回 200")
-        void refundOrder_withValidId_shouldReturnSuccess() throws Exception {
+        @DisplayName("缺少退款原因应返回 400")
+        void refundOrder_withoutReason_shouldReturn400() throws Exception {
             mockMvc.perform(put("/api/orders/{id}/refund", ORDER_ID))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.code").value("A0000"));
-
-            verify(commandHandler).handle(any(RefundOrderCommand.class));
+                    .andExpect(status().isBadRequest());
         }
 
         @Test

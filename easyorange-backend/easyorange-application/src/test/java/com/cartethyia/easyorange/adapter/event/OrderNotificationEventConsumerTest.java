@@ -116,10 +116,10 @@ class OrderNotificationEventConsumerTest {
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
             var command = captor.getValue();
-            assertThat(command.getReceiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.getTitle()).isEqualTo("订单已创建");
-            assertThat(command.getContent()).isEqualTo("您的订单已创建，订单号: " + ORDER_ID);
-            assertThat(command.getBusinessId()).isEqualTo(ORDER_ID);
+            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+            assertThat(command.title()).isEqualTo("订单已创建");
+            assertThat(command.content()).isEqualTo("您的订单已创建，订单号: " + ORDER_ID);
+            assertThat(command.businessId()).isEqualTo(ORDER_ID);
         }
     }
 
@@ -145,10 +145,10 @@ class OrderNotificationEventConsumerTest {
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
             var command = captor.getValue();
-            assertThat(command.getReceiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.getTitle()).isEqualTo("订单已支付");
-            assertThat(command.getContent()).isEqualTo("您的订单已支付成功，订单号: " + ORDER_ID);
-            assertThat(command.getBusinessId()).isEqualTo(ORDER_ID);
+            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+            assertThat(command.title()).isEqualTo("订单已支付");
+            assertThat(command.content()).isEqualTo("您的订单已支付成功，订单号: " + ORDER_ID);
+            assertThat(command.businessId()).isEqualTo(ORDER_ID);
         }
     }
 
@@ -174,10 +174,10 @@ class OrderNotificationEventConsumerTest {
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
             var command = captor.getValue();
-            assertThat(command.getReceiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.getTitle()).isEqualTo("订单已发货");
-            assertThat(command.getContent()).isEqualTo("您的订单已发货，订单号: " + ORDER_ID);
-            assertThat(command.getBusinessId()).isEqualTo(ORDER_ID);
+            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+            assertThat(command.title()).isEqualTo("订单已发货");
+            assertThat(command.content()).isEqualTo("您的订单已发货，订单号: " + ORDER_ID);
+            assertThat(command.businessId()).isEqualTo(ORDER_ID);
         }
     }
 
@@ -203,10 +203,10 @@ class OrderNotificationEventConsumerTest {
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
             var command = captor.getValue();
-            assertThat(command.getReceiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.getTitle()).isEqualTo("订单已完成");
-            assertThat(command.getContent()).isEqualTo("您的订单已完成，订单号: " + ORDER_ID);
-            assertThat(command.getBusinessId()).isEqualTo(ORDER_ID);
+            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+            assertThat(command.title()).isEqualTo("订单已完成");
+            assertThat(command.content()).isEqualTo("您的订单已完成，订单号: " + ORDER_ID);
+            assertThat(command.businessId()).isEqualTo(ORDER_ID);
         }
     }
 
@@ -232,10 +232,10 @@ class OrderNotificationEventConsumerTest {
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
             var command = captor.getValue();
-            assertThat(command.getReceiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.getTitle()).isEqualTo("订单已取消");
-            assertThat(command.getContent()).isEqualTo("您的订单已取消，订单号: " + ORDER_ID);
-            assertThat(command.getBusinessId()).isEqualTo(ORDER_ID);
+            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+            assertThat(command.title()).isEqualTo("订单已取消");
+            assertThat(command.content()).isEqualTo("您的订单已取消，订单号: " + ORDER_ID);
+            assertThat(command.businessId()).isEqualTo(ORDER_ID);
         }
     }
 
@@ -261,10 +261,10 @@ class OrderNotificationEventConsumerTest {
             var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
             verify(messageCommandHandler).handle(captor.capture());
             var command = captor.getValue();
-            assertThat(command.getReceiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.getTitle()).isEqualTo("订单已退款");
-            assertThat(command.getContent()).isEqualTo("您的订单已退款，订单号: " + ORDER_ID);
-            assertThat(command.getBusinessId()).isEqualTo(ORDER_ID);
+            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
+            assertThat(command.title()).isEqualTo("订单已退款");
+            assertThat(command.content()).isEqualTo("您的订单已退款，订单号: " + ORDER_ID);
+            assertThat(command.businessId()).isEqualTo(ORDER_ID);
         }
     }
 

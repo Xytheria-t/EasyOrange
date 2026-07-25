@@ -1,21 +1,16 @@
 package com.cartethyia.easyorange.product.application.query;
 
-import com.cartethyia.easyorange.common.dto.AiEnhancement;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.FacetBucketResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchPageResponse;
+import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
-import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
-import com.cartethyia.easyorange.product.domain.port.SearchResult;
-import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductSearchRequest;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.HotKeywordResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductResponse;
-import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.SearchHistoryResponse;
+import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
+import com.cartethyia.easyorange.product.domain.port.FacetBucket;
+import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -36,63 +30,42 @@ public class ProductSearchHandler {
     private final Optional<AiSearchEnhancerPort> aiSearchEnhancer;
 
     @Transactional(readOnly = true)
-    public SearchPageResponse<ProductResponse> handleSearch(ProductSearchRequest request) {
+    public ProductSearchResult search(ProductSearchCriteria criteria, boolean aiEnhanced) {
         List<ProductReadModel> readModels;
-        SearchPageResponse<ProductResponse> result;
+        PageResult<ProductReadModel> page;
+        List<FacetBucket> facets = List.of();
 
         if (searchQueryPort.isPresent()) {
             var query = new ProductSearchQueryPort.ProductSearchQuery(
-                    request.getKeyword(), request.getCategoryId(), request.getStatus(),
-                    request.getMinPrice(), request.getMaxPrice(), request.getConditionLevel(),
-                    request.getSortField(),
-                    request.getPageNum() != null ? request.getPageNum() : 1,
-                    request.getPageSize() != null ? request.getPageSize() : 20,
+                    criteria.keyword(), criteria.categoryId(), criteria.status(),
+                    criteria.minPrice(), criteria.maxPrice(), criteria.conditionLevel(),
+                    criteria.sort(),
+                    criteria.effectivePageNum(), criteria.effectivePageSize(),
                     null, false);
             var searchResult = searchQueryPort.get().search(query);
             readModels = searchResult.records();
-            var responses = readModels.stream().map(this::toProductResponse).toList();
-            var facets = mergeFacets(searchResult);
-            result = SearchPageResponse.of(responses, searchResult.total(), searchResult.current(),
-                    searchResult.size(), facets);
+            facets = mergeFacetsList(searchResult);
+            page = PageResult.of(searchResult.records(), searchResult.total(),
+                    searchResult.current(), searchResult.size());
         } else {
-            var criteria = new ProductSearchCriteria(
-                    request.getKeyword(), request.getCategoryId(), request.getStatus(),
-                    null, null, null, null, null,
-                    request.getPageNum() != null ? request.getPageNum() : 1,
-                    request.getPageSize() != null ? request.getPageSize() : 20);
-            var page = productQueryRepository.searchProducts(criteria);
+            page = productQueryRepository.searchProducts(criteria);
             readModels = page.records();
-            var responses = readModels.stream().map(this::toProductResponse).toList();
-            result = SearchPageResponse.of(page, responses);
         }
 
-        // AI search enhancement — use original ReadModels directly, no back-conversion
-        if (request.isAiEnhanced()
+        // AI search enhancement
+        var aiEnhancement = aiEnhanced
                 && aiSearchEnhancer.isPresent()
-                && !readModels.isEmpty()) {
-            var topProducts = readModels.size() <= 5
-                    ? readModels
-                    : readModels.subList(0, 5);
-            var enhancement = aiSearchEnhancer.get().tryEnhance(request.getKeyword(), topProducts);
-            if (enhancement.isPresent()) {
-                result = result.withAiEnhancement(enhancement.get());
-            }
-        }
+                && !readModels.isEmpty()
+                ? aiSearchEnhancer.get().tryEnhance(criteria.keyword(), takeTop(readModels, 5)).orElse(null)
+                : null;
 
-        return result;
+        return new ProductSearchResult(page, facets, aiEnhancement);
     }
 
     @Transactional(readOnly = true)
-    public List<SearchHistoryResponse> getMySearchHistory(Integer limit) {
+    public List<SearchHistoryReadModel> getMySearchHistory(Integer limit) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
-        List<SearchHistoryReadModel> histories = productQueryRepository.findSearchHistoryByUserId(userId, limit);
-        return histories.stream()
-                .map(h -> SearchHistoryResponse.builder()
-                        .id(h.id())
-                        .keyword(h.keyword())
-                        .createTime(h.createTime())
-                        .build())
-                .collect(Collectors.toList());
+        return productQueryRepository.findSearchHistoryByUserId(userId, limit);
     }
 
     public void clearMySearchHistory() {
@@ -106,16 +79,8 @@ public class ProductSearchHandler {
     }
 
     @Transactional(readOnly = true)
-    public List<HotKeywordResponse> getHotKeywords(Integer limit) {
-        List<HotKeywordReadModel> keywords = productQueryRepository.findHotKeywords(limit);
-        return keywords.stream()
-                .map(k -> HotKeywordResponse.builder()
-                        .id(k.id())
-                        .keyword(k.keyword())
-                        .searchCount(k.searchCount())
-                        .hotLevel(k.hotLevel())
-                        .build())
-                .collect(Collectors.toList());
+    public List<HotKeywordReadModel> getHotKeywords(Integer limit) {
+        return productQueryRepository.findHotKeywords(limit);
     }
 
     @Transactional(readOnly = true)
@@ -128,30 +93,21 @@ public class ProductSearchHandler {
         productQueryRepository.saveSearchHistory(userId, keyword);
     }
 
-    private ProductResponse toProductResponse(ProductReadModel model) {
-        return ProductResponse.builder()
-                .id(model.id())
-                .title(model.title())
-                .price(model.price())
-                .originalPrice(model.originalPrice())
-                .mainImageUrl(model.mainImageUrl())
-                .status(model.status())
-                .statusDesc(model.statusDesc())
-                .condition(model.condition())
-                .conditionDesc(model.conditionDesc())
-                .location(model.location())
-                .createTime(model.createTime())
-                .build();
+    // ── private helpers ──
+
+    private static List<FacetBucket> mergeFacetsList(
+            com.cartethyia.easyorange.product.domain.port.SearchResult result) {
+        var list = new ArrayList<FacetBucket>();
+        result.categoryFacets().forEach(fb ->
+                list.add(new FacetBucket("category_" + fb.key(), fb.label(), fb.count())));
+        result.conditionFacets().forEach(fb ->
+                list.add(new FacetBucket("condition_" + fb.key(), fb.label(), fb.count())));
+        result.priceRangeFacets().forEach(fb ->
+                list.add(new FacetBucket("price_" + fb.key(), fb.label(), fb.count())));
+        return List.copyOf(list);
     }
 
-    private List<FacetBucketResponse> mergeFacets(SearchResult result) {
-        List<FacetBucketResponse> list = new ArrayList<>();
-        result.categoryFacets().forEach(fb ->
-                list.add(new FacetBucketResponse("category_" + fb.key(), fb.count())));
-        result.conditionFacets().forEach(fb ->
-                list.add(new FacetBucketResponse("condition_" + fb.key(), fb.count())));
-        result.priceRangeFacets().forEach(fb ->
-                list.add(new FacetBucketResponse("price_" + fb.key(), fb.count())));
-        return List.copyOf(list);
+    private static List<ProductReadModel> takeTop(List<ProductReadModel> items, int n) {
+        return items.size() <= n ? items : items.subList(0, n);
     }
 }

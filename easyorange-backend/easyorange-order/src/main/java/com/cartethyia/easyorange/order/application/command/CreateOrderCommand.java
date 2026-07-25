@@ -19,7 +19,7 @@ public record CreateOrderCommand(
         String phone,
         String remark,
         String paymentMethod
-) {
+) implements OrderCommand {
 
     public record CreateOrderItem(
             @NotNull(message = "资产 ID 不能为空") String productId,

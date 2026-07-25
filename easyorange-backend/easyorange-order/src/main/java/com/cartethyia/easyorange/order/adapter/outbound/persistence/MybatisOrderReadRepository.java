@@ -45,8 +45,7 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
         var wrapper = lambdaQuery();
 
         wrapper.eq(StringUtils.isNotBlank(condition.orderNo()), OrderDO::getOrderNo, condition.orderNo());
-        var statusEnum = resolveStatus(condition.status());
-        wrapper.eq(statusEnum != null, OrderDO::getStatus, statusEnum);
+        wrapper.eq(condition.status() != null, OrderDO::getStatus, condition.status());
         wrapper.eq(condition.buyerId() != null, OrderDO::getBuyerId, condition.buyerId());
         wrapper.eq(condition.sellerId() != null, OrderDO::getSellerId, condition.sellerId());
 
@@ -61,13 +60,12 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
     }
 
     @Override
-    public long countByStatus(String status) {
-        var statusEnum = resolveStatus(status);
-        if (statusEnum == null) {
+    public long countByStatus(OrderStatus status) {
+        if (status == null) {
             return lambdaQuery().count();
         }
         return lambdaQuery()
-                .eq(OrderDO::getStatus, statusEnum)
+                .eq(OrderDO::getStatus, status)
                 .count();
     }
 
@@ -77,13 +75,5 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)
         ).stream().map(entityMapper::toItemReadModel).toList();
-    }
-
-    /** 将前端传入的 String code 转为 OrderStatus enum，让 TypeHandler 处理持久化。 */
-    private static OrderStatus resolveStatus(String status) {
-        if (StringUtils.isBlank(status)) {
-            return null;
-        }
-        return OrderStatus.fromCode(status);
     }
 }

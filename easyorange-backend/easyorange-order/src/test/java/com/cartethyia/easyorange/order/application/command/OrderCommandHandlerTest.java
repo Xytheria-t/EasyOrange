@@ -17,7 +17,6 @@ import com.cartethyia.easyorange.order.application.saga.CreateOrderSaga;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -64,10 +63,6 @@ class OrderCommandHandlerTest {
     private static final String SELLER_ID = "2";
     private static final String ORDER_ID = "100";
     private static final String PRODUCT_ID = "200";
-
-    @BeforeEach
-    void setUp() {
-    }
 
     @Nested
     @DisplayName("handle(CreateOrderCommand)")

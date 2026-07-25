@@ -8,14 +8,14 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum PaymentStatus {
 
-    PENDING("0", "待支付"),
-    SUCCESS("1", "已支付"),
-    REFUNDED("2", "已退款"),
-    PARTIALLY_REFUNDED("3", "部分退款"),
-    FAILED("4", "支付失败"),
-    CLOSED("5", "已关闭"),
-    PAYING("6", "支付中"),
-    REFUNDING("7", "退款中");
+    PENDING("PENDING", "待支付"),
+    SUCCESS("SUCCESS", "已支付"),
+    REFUNDED("REFUNDED", "已退款"),
+    PARTIALLY_REFUNDED("PARTIALLY_REFUNDED", "部分退款"),
+    FAILED("FAILED", "支付失败"),
+    CLOSED("CLOSED", "已关闭"),
+    PAYING("PAYING", "支付中"),
+    REFUNDING("REFUNDING", "退款中");
 
     @JsonValue
     private final String code;

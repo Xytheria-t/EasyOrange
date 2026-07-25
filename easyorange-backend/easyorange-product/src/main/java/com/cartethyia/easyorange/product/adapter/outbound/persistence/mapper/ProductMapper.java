@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.cartethyia.easyorange.product.application.query.SellerInfo;
+import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
@@ -40,7 +40,7 @@ public interface ProductMapper extends BaseMapper<ProductDO> {
 
     List<CategoryDO> selectCategoriesByIds(@Param("categoryIds") List<String> categoryIds);
 
-    List<SellerInfo> selectSellersByIds(@Param("sellerIds") Set<String> sellerIds);
+    List<SellerReadModel> selectSellersByIds(@Param("sellerIds") Set<String> sellerIds);
 
     // -- 写入 --
 

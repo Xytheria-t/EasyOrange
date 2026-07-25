@@ -40,14 +40,14 @@ public class ChatWebSocketHandler {
             return;
         }
 
-        SendMessageCommand command = SendMessageCommand.builder()
-                .receiverId(payload.getReceiverId())
-                .type(payload.getType() != null ? payload.getType() : 0)
-                .title(payload.getTitle() != null ? payload.getTitle() : "")
-                .content(payload.getContent())
-                .businessId(payload.getBusinessId())
-                .conversationId(payload.getConversationId())
-                .build();
+        SendMessageCommand command = new SendMessageCommand(
+                payload.getReceiverId(),
+                payload.getType() != null ? payload.getType() : 0,
+                payload.getTitle() != null ? payload.getTitle() : "",
+                payload.getContent(),
+                payload.getBusinessId(),
+                payload.getConversationId()
+        );
         messageCommandHandler.handle(command);
 
         String dest = "/queue/chat/" + payload.getConversationId();

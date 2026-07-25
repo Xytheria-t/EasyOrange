@@ -139,13 +139,13 @@ public class AdminOrderService {
     @Transactional(readOnly = true)
     public OrderStatsResponse getOrderStats() {
         long totalOrders = orderReadRepository.countByStatus(null);
-        long pendingPayment = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode());
-        long paid = orderReadRepository.countByStatus(OrderStatus.PAID.getCode());
-        long shipped = orderReadRepository.countByStatus(OrderStatus.SHIPPED.getCode());
+        long pendingPayment = orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT);
+        long paid = orderReadRepository.countByStatus(OrderStatus.PAID);
+        long shipped = orderReadRepository.countByStatus(OrderStatus.SHIPPED);
         long toReceive = shipped;
-        long completed = orderReadRepository.countByStatus(OrderStatus.COMPLETED.getCode());
-        long cancelled = orderReadRepository.countByStatus(OrderStatus.CANCELLED.getCode());
-        long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED.getCode());
+        long completed = orderReadRepository.countByStatus(OrderStatus.COMPLETED);
+        long cancelled = orderReadRepository.countByStatus(OrderStatus.CANCELLED);
+        long refunded = orderReadRepository.countByStatus(OrderStatus.REFUNDED);
 
         LocalDate today = LocalDate.now();
         LocalDateTime todayStart = today.atStartOfDay();

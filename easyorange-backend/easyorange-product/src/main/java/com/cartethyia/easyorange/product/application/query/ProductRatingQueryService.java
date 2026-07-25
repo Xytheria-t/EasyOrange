@@ -3,6 +3,8 @@ package com.cartethyia.easyorange.product.application.query;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.application.port.query.ProductRatingQueryRepository;
+import com.cartethyia.easyorange.product.application.query.dto.ProductRatingVO;
+import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.port.SellerInfoPort;
 import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;

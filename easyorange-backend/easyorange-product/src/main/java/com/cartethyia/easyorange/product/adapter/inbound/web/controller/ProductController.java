@@ -12,10 +12,12 @@ import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.Product
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ProductUpdateRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.product.application.command.ProductCommandService;
+import com.cartethyia.easyorange.product.application.command.CreateProductCommand;
+import com.cartethyia.easyorange.product.application.command.UpdateProductCommand;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryService;
-import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
-import com.cartethyia.easyorange.product.application.query.ProductVO;
+import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountAppService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -54,7 +56,7 @@ public class ProductController {
     @PostMapping
     @Idempotent
     public Result<String> createProduct(@Valid @RequestBody ProductCreateRequest request) {
-        var cmd = new ProductCommandService.CreateProductCommand(
+        var cmd = new CreateProductCommand(
                 request.categoryId(), request.name(), request.price(),
                 request.originalPrice(), request.stock(), request.conditionLevel(),
                 request.location(), request.contactMethod(), request.description(),
@@ -64,7 +66,7 @@ public class ProductController {
 
     @PutMapping("/{id}")
     public Result<Void> updateProduct(@PathVariable String id, @Valid @RequestBody ProductUpdateRequest request) {
-        var cmd = new ProductCommandService.UpdateProductCommand(
+        var cmd = new UpdateProductCommand(
                 id, request.categoryId(), request.name(), request.price(),
                 request.originalPrice(), request.stock(), request.conditionLevel(),
                 request.location(), request.contactMethod(), request.description(),

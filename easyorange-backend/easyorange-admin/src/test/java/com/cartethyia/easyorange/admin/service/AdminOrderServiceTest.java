@@ -179,12 +179,12 @@ class AdminOrderServiceTest {
         @DisplayName("获取订单统计")
         void getOrderStats_returnsStats() {
             when(orderReadRepository.countByStatus(null)).thenReturn(100L);
-            when(orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT.getCode())).thenReturn(20L);
-            when(orderReadRepository.countByStatus(OrderStatus.PAID.getCode())).thenReturn(30L);
-            when(orderReadRepository.countByStatus(OrderStatus.SHIPPED.getCode())).thenReturn(15L);
-            when(orderReadRepository.countByStatus(OrderStatus.COMPLETED.getCode())).thenReturn(25L);
-            when(orderReadRepository.countByStatus(OrderStatus.CANCELLED.getCode())).thenReturn(5L);
-            when(orderReadRepository.countByStatus(OrderStatus.REFUNDED.getCode())).thenReturn(5L);
+            when(orderReadRepository.countByStatus(OrderStatus.PENDING_PAYMENT)).thenReturn(20L);
+            when(orderReadRepository.countByStatus(OrderStatus.PAID)).thenReturn(30L);
+            when(orderReadRepository.countByStatus(OrderStatus.SHIPPED)).thenReturn(15L);
+            when(orderReadRepository.countByStatus(OrderStatus.COMPLETED)).thenReturn(25L);
+            when(orderReadRepository.countByStatus(OrderStatus.CANCELLED)).thenReturn(5L);
+            when(orderReadRepository.countByStatus(OrderStatus.REFUNDED)).thenReturn(5L);
             when(adminOrderQueryPort.queryOrders(any(OrderQueryCondition.class)))
                     .thenReturn(new OrderQueryResult(List.of(), 10, 1, 20));
 

@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
+import com.cartethyia.easyorange.product.application.command.CreateProductRatingCommand;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +45,7 @@ class ProductRatingCommandServiceTest {
                 return null;
             }).when(productRatingRepository).save(any(ProductRating.class));
 
-            var command = new ProductRatingCommandService.CreateProductRatingCommand("10", 5, "非常好的商品");
+            var command = new CreateProductRatingCommand("10", 5, "非常好的商品");
 
             String reviewId = commandService.createReview(command);
 

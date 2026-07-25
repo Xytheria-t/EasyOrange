@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.cache;
 
 import com.cartethyia.easyorange.framework.bloom.BloomFilter;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
-import com.cartethyia.easyorange.product.application.query.ProductVO;
+import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

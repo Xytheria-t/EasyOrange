@@ -20,12 +20,13 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
 
     @Override
     public String createPayment(CreatePaymentRequest request) {
-        CreatePaymentCommand command = CreatePaymentCommand.builder()
-                .orderId(request.orderId())
-                .amount(request.amount())
-                .paymentMethod(request.paymentMethod())
-                .attach(request.attach())
-                .build();
+        CreatePaymentCommand command = new CreatePaymentCommand(
+                request.orderId(),
+                request.amount(),
+                request.paymentMethod(),
+                null,  // payPassword
+                request.attach()
+        );
         return paymentCommandHandler.handle(command);
     }
 
@@ -34,11 +35,11 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
         PaymentAggregate payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
 
-        RefundPaymentCommand command = RefundPaymentCommand.builder()
-                .paymentId(payment.id())
-                .refundAmount(payment.amount())
-                .refundReason(reason)
-                .build();
+        RefundPaymentCommand command = new RefundPaymentCommand(
+                payment.id(),
+                payment.amount(),
+                reason
+        );
         paymentCommandHandler.handle(command);
     }
 }

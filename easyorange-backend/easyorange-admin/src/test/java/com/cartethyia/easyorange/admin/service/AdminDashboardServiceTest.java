@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.RecentUs
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProductResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
@@ -102,7 +103,7 @@ class AdminDashboardServiceTest {
         @DisplayName("获取待处理事项")
         void getPendingItems_returnsItems() {
             when(productReportQueryRepository.countPendingReports()).thenReturn(3L);
-            when(orderReadRepository.countByStatus(anyString())).thenReturn(5L);
+            when(orderReadRepository.countByStatus(any(OrderStatus.class))).thenReturn(5L);
             when(productQueryRepository.countByStatus(anyString())).thenReturn(7L);
             when(productReportQueryRepository.findPendingReports(anyInt(), anyInt()))
                     .thenReturn(List.of(

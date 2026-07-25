@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.application.port.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;

@@ -21,11 +21,11 @@ class PaymentCommandAssemblerTest {
     private final PaymentCommandMapper mapper = new PaymentCommandMapper() {
         @Override
         public PayCommand toPayCommand(PaymentCallback callback) {
-            return PayCommand.builder()
-                    .paymentNo(callback.getPaymentNo())
-                    .transactionId(callback.getTransactionId())
-                    .attach(callback.getAttach())
-                    .build();
+            return new PayCommand(
+                    callback.getPaymentNo(),
+                    callback.getTransactionId(),
+                    callback.getAttach()
+            );
         }
     };
 
@@ -43,9 +43,9 @@ class PaymentCommandAssemblerTest {
 
             CreatePaymentCommand command = mapper.toCreateCommand(request, "2001");
 
-            assertThat(command.getOrderId()).isEqualTo("1001");
-            assertThat(command.getPaymentMethod()).isEqualTo("1");
-            assertThat(command.getAttach()).isNull();
+            assertThat(command.orderId()).isEqualTo("1001");
+            assertThat(command.paymentMethod()).isEqualTo("1");
+            assertThat(command.attach()).isNull();
         }
     }
 
@@ -64,9 +64,9 @@ class PaymentCommandAssemblerTest {
 
             PayCommand command = mapper.toPayCommand(callback);
 
-            assertThat(command.getPaymentNo()).isEqualTo("PAY123");
-            assertThat(command.getTransactionId()).isEqualTo("TXN456");
-            assertThat(command.getAttach()).isEqualTo("test_attach");
+            assertThat(command.paymentNo()).isEqualTo("PAY123");
+            assertThat(command.transactionId()).isEqualTo("TXN456");
+            assertThat(command.attach()).isEqualTo("test_attach");
         }
     }
 
@@ -84,9 +84,9 @@ class PaymentCommandAssemblerTest {
 
             RefundPaymentCommand command = mapper.toRefundCommand("2001", request);
 
-            assertThat(command.getPaymentId()).isEqualTo("2001");
-            assertThat(command.getRefundAmount()).isEqualByComparingTo(new BigDecimal("50.00"));
-            assertThat(command.getRefundReason()).isEqualTo("测试退款");
+            assertThat(command.paymentId()).isEqualTo("2001");
+            assertThat(command.refundAmount()).isEqualByComparingTo(new BigDecimal("50.00"));
+            assertThat(command.refundReason()).isEqualTo("测试退款");
         }
     }
 
@@ -99,7 +99,7 @@ class PaymentCommandAssemblerTest {
         void toCloseCommand_convertsCorrectly() {
             ClosePaymentCommand command = mapper.toCloseCommand("1001");
 
-            assertThat(command.getPaymentId()).isEqualTo("1001");
+            assertThat(command.paymentId()).isEqualTo("1001");
         }
     }
 }

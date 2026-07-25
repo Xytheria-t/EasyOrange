@@ -12,7 +12,9 @@ import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CreateOrderRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+@Validated
 public class OrderCommandController {
 
     private final OrderCommandHandler commandHandler;
@@ -37,31 +40,33 @@ public class OrderCommandController {
     }
 
     @PutMapping("/{id}/cancel")
-    public Result<Void> cancelOrder(@PathVariable String id, @RequestParam(required = false) String reason) {
+    public Result<Void> cancelOrder(@PathVariable @NotBlank(message = "订单 ID 不能为空") String id,
+                                     @RequestParam @NotBlank(message = "取消原因不能为空") String reason) {
         commandHandler.handle(new CancelOrderCommand(id, reason));
         return Result.success();
     }
 
     @PutMapping("/{id}/pay")
-    public Result<Void> payOrder(@PathVariable String id) {
+    public Result<Void> payOrder(@PathVariable @NotBlank(message = "订单 ID 不能为空") String id) {
         commandHandler.handle(new PayOrderCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/ship")
-    public Result<Void> shipOrder(@PathVariable String id) {
+    public Result<Void> shipOrder(@PathVariable @NotBlank(message = "订单 ID 不能为空") String id) {
         commandHandler.handle(new ShipOrderCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/receive")
-    public Result<Void> confirmReceipt(@PathVariable String id) {
+    public Result<Void> confirmReceipt(@PathVariable @NotBlank(message = "订单 ID 不能为空") String id) {
         commandHandler.handle(new ConfirmReceiptCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/refund")
-    public Result<Void> refundOrder(@PathVariable String id, @RequestParam(required = false) String reason) {
+    public Result<Void> refundOrder(@PathVariable @NotBlank(message = "订单 ID 不能为空") String id,
+                                     @RequestParam @NotBlank(message = "退款原因不能为空") String reason) {
         commandHandler.handle(new RefundOrderCommand(id, reason));
         return Result.success();
     }

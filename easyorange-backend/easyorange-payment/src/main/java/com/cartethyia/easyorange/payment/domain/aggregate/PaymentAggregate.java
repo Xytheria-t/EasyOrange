@@ -19,6 +19,21 @@ import com.cartethyia.easyorange.common.domain.Money;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 支付聚合根 —— 不可变对象
+ * <p>
+ * 状态机：
+ * <pre>
+ * PENDING → PAYING → SUCCESS
+ *   ↓         ↓        ↓
+ * CLOSED    FAILED   REFUNDING → REFUNDED
+ *                      ↓
+ *                PARTIALLY_REFUNDED
+ * </pre>
+ * <p>
+ * 状态转换返回 {@link PaymentTransition}（带事件）或 {@code PaymentAggregate}（中间态，无事件）。
+ * 聚合根工厂与重建入口通过 spec record 收敛参数。
+ */
 public class PaymentAggregate {
 
     private final String id;
@@ -61,43 +76,50 @@ public class PaymentAggregate {
 
     // ==================== Factory ====================
 
-    public static PaymentCreatedResult create(String paymentId, String orderId, String userId, BigDecimal amount,
-                                              PaymentMethod paymentMethod, String attach) {
-        BizRequire.notNull(paymentId, "支付ID不能为空");
-        BizRequire.notNull(orderId, "订单ID不能为空");
-        BizRequire.notNull(userId, "用户ID不能为空");
-        BizRequire.notNull(amount, "支付金额不能为空");
-        BizRequire.requireTrue(amount.compareTo(BigDecimal.ZERO) > 0, "支付金额必须大于0");
-        BizRequire.notNull(paymentMethod, "支付方式不能为空");
+    /**
+     * 创建新支付。
+     *
+     * @param spec 创建参数（收敛 paymentId/orderId/userId/amount/paymentMethod/attach）
+     * @return 支付创建结果（含聚合根与领域事件）
+     */
+    public static PaymentTransition<PaymentCreatedEvent> create(PaymentCreateSpec spec) {
+        BizRequire.notNull(spec.paymentId(), "支付ID不能为空");
+        BizRequire.notNull(spec.orderId(), "订单ID不能为空");
+        BizRequire.notNull(spec.userId(), "用户ID不能为空");
+        BizRequire.notNull(spec.amount(), "支付金额不能为空");
+        BizRequire.requireTrue(spec.amount().compareTo(BigDecimal.ZERO) > 0, "支付金额必须大于0");
+        BizRequire.notNull(spec.paymentMethod(), "支付方式不能为空");
 
-        String paymentNo = "PAY" + paymentId.hashCode();
-        Money paymentAmount = Money.of(amount);
+        String paymentNo = "PAY" + spec.paymentId().hashCode();
+        Money paymentAmount = Money.of(spec.amount());
 
         PaymentAggregate aggregate = new PaymentAggregate(
-                paymentId, paymentNo, orderId, userId,
-                paymentAmount, Money.ZERO, paymentMethod,
+                spec.paymentId(), paymentNo, spec.orderId(), spec.userId(),
+                paymentAmount, Money.ZERO, spec.paymentMethod(),
                 PaymentStatus.PENDING, null, null,
-                null, attach, null, null, 0
+                null, spec.attach(), null, null, 0
         );
 
         PaymentCreatedEvent event = new PaymentCreatedEvent(
-                paymentId, paymentNo, orderId, userId, amount, paymentMethod.getCode()
+                spec.paymentId(), paymentNo, spec.orderId(), spec.userId(), spec.amount(), spec.paymentMethod().getCode()
         );
 
-        return new PaymentCreatedResult(aggregate, event);
+        return new PaymentTransition<>(aggregate, event);
     }
 
     // ==================== Reconstruction ====================
 
-    public static PaymentAggregate reconstruct(String id, String paymentNo, String orderId, String userId,
-                                                BigDecimal amount, BigDecimal refundedAmount, PaymentMethod paymentMethod,
-                                                PaymentStatus status, String transactionId, String refundReason,
-                                                LocalDateTime refundTime, String attach,
-                                                LocalDateTime createTime, LocalDateTime updateTime, Integer version) {
-        return new PaymentAggregate(id, paymentNo, orderId, userId,
-                Money.of(amount), Money.of(refundedAmount),
-                paymentMethod, status, transactionId, refundReason, refundTime, attach,
-                createTime, updateTime, version != null ? version : 0);
+    /**
+     * 从持久层重建聚合根（统一入口）。
+     * <p>
+     * 状态字段使用领域枚举类型，由 TypeHandler 完成 VARCHAR 列互转。
+     */
+    public static PaymentAggregate from(PaymentReconstructSpec spec) {
+        return new PaymentAggregate(spec.id(), spec.paymentNo(), spec.orderId(), spec.userId(),
+                Money.of(spec.amount()), Money.of(spec.refundedAmount()),
+                spec.paymentMethod(), spec.status(), spec.transactionId(), spec.refundReason(),
+                spec.refundTime(), spec.attach(),
+                spec.createTime(), spec.updateTime(), spec.version() != null ? spec.version() : 0);
     }
 
     // ==================== Guard Methods ====================
@@ -129,59 +151,56 @@ public class PaymentAggregate {
     // ==================== State Transitions ====================
 
     /**
-     * 准备支付：将状态变为 PAYING
+     * 准备支付：将状态变为 PAYING（中间态，不发事件）。
      */
-    public PayPreparedResult preparePay() {
+    public PaymentAggregate preparePay() {
         if (!canPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许支付: " + this.status);
         }
-        PaymentAggregate updated = withStatus(PaymentStatus.PAYING, nextVersion());
-        return new PayPreparedResult(updated);
+        return withStatus(PaymentStatus.PAYING, nextVersion());
     }
 
     /**
-     * 确认支付结果：根据网关结果变为 SUCCESS 或 FAILED
+     * 确认支付结果：根据网关结果变为 SUCCESS 或 FAILED。
      */
-    public PayConfirmedResult confirmPay(PaymentResult result) {
+    public PaymentTransition<DomainEvent> confirmPay(PaymentResult result) {
         if (!canConfirmPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以确认支付结果");
         }
         if (result.isSuccess()) {
             PaymentAggregate updated = withSuccess(result.getTransactionId());
-            return new PayConfirmedResult(updated, new PaymentSucceededEvent(this.id, result.getTransactionId()));
+            return new PaymentTransition<>(updated, new PaymentSucceededEvent(this.id, result.getTransactionId()));
         } else {
             PaymentAggregate updated = withStatus(PaymentStatus.FAILED, nextVersion());
-            return new PayConfirmedResult(updated, new PaymentFailedEvent(this.id, result.getErrorMessage()));
+            return new PaymentTransition<>(updated, new PaymentFailedEvent(this.id, result.getErrorMessage()));
         }
     }
 
     /**
-     * 取消支付：从 PAYING 回退到 PENDING
+     * 取消支付：从 PAYING 回退到 PENDING（中间态，不发事件）。
      */
-    public CancelPayResult cancelPay() {
+    public PaymentAggregate cancelPay() {
         if (!PaymentStatus.PAYING.equals(this.status)) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以取消支付");
         }
-        PaymentAggregate updated = withStatus(PaymentStatus.PENDING, nextVersion());
-        return new CancelPayResult(updated);
+        return withStatus(PaymentStatus.PENDING, nextVersion());
     }
 
     /**
-     * 准备退款：将状态变为 REFUNDING
+     * 准备退款：将状态变为 REFUNDING（中间态，不发事件）。
      */
-    public RefundPreparedResult prepareRefund(BigDecimal refundAmount) {
+    public PaymentAggregate prepareRefund(BigDecimal refundAmount) {
         if (!canRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
         }
         validateRefundAmount(refundAmount);
-        PaymentAggregate updated = withStatus(PaymentStatus.REFUNDING, nextVersion());
-        return new RefundPreparedResult(updated);
+        return withStatus(PaymentStatus.REFUNDING, nextVersion());
     }
 
     /**
-     * 确认退款结果：根据网关结果变为 REFUNDED 或 PARTIALLY_REFUNDED
+     * 确认退款结果：根据网关结果变为 REFUNDED 或 PARTIALLY_REFUNDED。
      */
-    public RefundConfirmedResult confirmRefund(RefundResult result, BigDecimal refundAmount) {
+    public PaymentTransition<PaymentRefundedEvent> confirmRefund(RefundResult result, BigDecimal refundAmount) {
         if (!canConfirmRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以确认退款结果");
         }
@@ -203,67 +222,53 @@ public class PaymentAggregate {
             refundEventReason = "部分退款: " + refundAmount;
         }
         PaymentAggregate updated = withRefundResult(newStatus, newRefundedAmount, refundEventReason, LocalDateTime.now(), nextVersion());
-        return new RefundConfirmedResult(updated, new PaymentRefundedEvent(this.id, refundEventReason));
+        return new PaymentTransition<>(updated, new PaymentRefundedEvent(this.id, refundEventReason));
     }
 
     /**
-     * 取消退款：从 REFUNDING 回退到 SUCCESS
+     * 取消退款：从 REFUNDING 回退到 SUCCESS（中间态，不发事件）。
      */
-    public CancelRefundResult cancelRefund() {
+    public PaymentAggregate cancelRefund() {
         if (!PaymentStatus.REFUNDING.equals(this.status)) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以取消退款");
         }
-        PaymentAggregate updated = withStatus(PaymentStatus.SUCCESS, nextVersion());
-        return new CancelRefundResult(updated);
+        return withStatus(PaymentStatus.SUCCESS, nextVersion());
     }
 
     /**
-     * 直接退款（不复用网关两阶段流程）
+     * 直接退款（不复用网关两阶段流程，dev mock 路径使用）。
      */
-    public DirectRefundResult directRefund(String refundReason) {
+    public PaymentTransition<PaymentRefundedEvent> directRefund(String refundReason) {
         if (!canRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
         }
         PaymentAggregate updated = withRefundResult(
                 PaymentStatus.REFUNDED, this.amount, refundReason, LocalDateTime.now(), nextVersion()
         );
-        return new DirectRefundResult(updated, new PaymentRefundedEvent(this.id, refundReason));
+        return new PaymentTransition<>(updated, new PaymentRefundedEvent(this.id, refundReason));
     }
 
     /**
-     * 标记为失败
+     * 标记为失败。
      */
-    public FailedResult fail(String reason) {
+    public PaymentTransition<PaymentFailedEvent> fail(String reason) {
         if (!canFail()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有待支付状态可以标记为失败");
         }
         PaymentAggregate updated = withStatus(PaymentStatus.FAILED, nextVersion());
-        return new FailedResult(updated, new PaymentFailedEvent(this.id, reason));
+        return new PaymentTransition<>(updated, new PaymentFailedEvent(this.id, reason));
     }
 
     /**
-     * 关闭支付
+     * 关闭支付。
      */
-    public ClosedResult close() {
+    public PaymentTransition<PaymentClosedEvent> close() {
         if (!canClose()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许关闭: " + this.status);
         }
         PaymentAggregate updated = withStatus(PaymentStatus.CLOSED, nextVersion());
-        return new ClosedResult(updated, new PaymentClosedEvent(this.id));
+        return new PaymentTransition<>(updated, new PaymentClosedEvent(this.id));
     }
-
-    // ==================== Result Records ====================
-
-    public record PaymentCreatedResult(PaymentAggregate aggregate, PaymentCreatedEvent event) {}
-    public record PayPreparedResult(PaymentAggregate aggregate) {}
-    public record PayConfirmedResult(PaymentAggregate aggregate, DomainEvent event) {}
-    public record CancelPayResult(PaymentAggregate aggregate) {}
-    public record RefundPreparedResult(PaymentAggregate aggregate) {}
-    public record RefundConfirmedResult(PaymentAggregate aggregate, PaymentRefundedEvent event) {}
-    public record CancelRefundResult(PaymentAggregate aggregate) {}
-    public record DirectRefundResult(PaymentAggregate aggregate, PaymentRefundedEvent event) {}
-    public record FailedResult(PaymentAggregate aggregate, PaymentFailedEvent event) {}
-    public record ClosedResult(PaymentAggregate aggregate, PaymentClosedEvent event) {}
 
     // ==================== Internal Helpers ====================
 
@@ -321,4 +326,16 @@ public class PaymentAggregate {
     public LocalDateTime createTime() { return createTime; }
     public LocalDateTime updateTime() { return updateTime; }
     public int version() { return version; }
+
+    // ==================== Result Record ====================
+
+    /**
+     * 状态转换结果 — 聚合根新实例 + 领域事件。
+     * <p>
+     * 泛型 {@code <E>} 保留具体事件类型，避免调用方 cast。
+     * 仅最终态转换返回此类型；中间态（preparePay/cancelPay/prepareRefund/cancelRefund）直接返回 {@link PaymentAggregate}。
+     *
+     * @param <E> 领域事件具体类型
+     */
+    public record PaymentTransition<E extends DomainEvent>(PaymentAggregate aggregate, E event) {}
 }

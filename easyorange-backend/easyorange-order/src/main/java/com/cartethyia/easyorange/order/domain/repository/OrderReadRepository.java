@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.domain.repository;
 
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.port.OrderQueryCondition;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
@@ -15,7 +16,12 @@ public interface OrderReadRepository {
 
     PageResult<OrderReadModel> findPage(OrderQueryCondition condition);
 
-    long countByStatus(String status);
+    /**
+     * 按状态统计订单数。
+     *
+     * @param status 订单状态，null 表示统计全部
+     */
+    long countByStatus(OrderStatus status);
 
     List<OrderItemReadModel> findItemsByOrderId(String orderId);
 }

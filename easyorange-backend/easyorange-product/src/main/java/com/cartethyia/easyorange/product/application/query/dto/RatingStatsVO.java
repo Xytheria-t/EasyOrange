@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.query;
+package com.cartethyia.easyorange.product.application.query.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

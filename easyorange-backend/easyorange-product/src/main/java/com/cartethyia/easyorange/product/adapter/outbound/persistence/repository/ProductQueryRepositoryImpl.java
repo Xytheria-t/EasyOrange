@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.product.adapter.outbound.persistence.repositor
 import com.baomidou.mybatisplus.extension.conditions.query.LambdaQueryChainWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
@@ -156,9 +156,7 @@ public class ProductQueryRepositoryImpl implements ProductQueryRepository {
     @Override
     public List<SellerReadModel> findSellersByIds(Set<String> sellerIds) {
         if (sellerIds == null || sellerIds.isEmpty()) return List.of();
-        return productMapper.selectSellersByIds(sellerIds).stream()
-                .map(s -> new SellerReadModel(s.id(), s.username(), s.nickName(), s.avatar()))
-                .toList();
+        return productMapper.selectSellersByIds(sellerIds);
     }
 
     // ===================== 搜索历史与热词 =====================

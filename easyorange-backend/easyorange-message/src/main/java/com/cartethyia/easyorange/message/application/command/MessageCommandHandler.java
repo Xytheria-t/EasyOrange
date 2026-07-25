@@ -46,16 +46,16 @@ public class MessageCommandHandler {
             throw new MessageDomainException("发送过于频繁，请稍后再试");
         }
 
-        String filteredContent = sensitiveWordFilterService.filter(command.getContent());
-        String filteredTitle = sensitiveWordFilterService.filter(command.getTitle());
+        String filteredContent = sensitiveWordFilterService.filter(command.content());
+        String filteredTitle = sensitiveWordFilterService.filter(command.title());
 
         MessageCreateResult result = MessageAggregate.create(
                 senderId,
-                command.getReceiverId(),
-                command.getType(),
+                command.receiverId(),
+                command.type(),
                 filteredTitle,
                 filteredContent,
-                command.getBusinessId()
+                command.businessId()
         );
 
         MessageAggregate saved = messageRepository.save(result.aggregate());
@@ -65,16 +65,16 @@ public class MessageCommandHandler {
                 saved.receiverId(), saved.id(), "websocket", decision.isOnline());
 
         log.info("action=send_message messageId={} senderId={} receiverId={} type={}",
-                saved.id(), senderId, command.getReceiverId(), command.getType());
+                saved.id(), senderId, command.receiverId(), command.type());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
         MessageCreateResult result = MessageAggregate.createSystem(
-                command.getReceiverId(),
-                command.getTitle(),
-                command.getContent(),
-                command.getBusinessId()
+                command.receiverId(),
+                command.title(),
+                command.content(),
+                command.businessId()
         );
 
         MessageAggregate saved = messageRepository.save(result.aggregate());
@@ -95,15 +95,15 @@ public class MessageCommandHandler {
         }
 
         log.info("action=send_system_message messageId={} receiverId={}",
-                saved.id(), command.getReceiverId());
+                saved.id(), command.receiverId());
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
-                .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
+        MessageAggregate aggregate = messageRepository.findById(command.messageId())
+                .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         BizRequire.requireTrue(
                 aggregate.isOwnedBy(userId),
@@ -120,12 +120,12 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(MarkAsReadBatchCommand command) {
-        BizRequire.notEmpty(command.getMessageIds(), "消息ID列表不能为空");
-        BizRequire.requireTrue(command.getMessageIds() != null && !command.getMessageIds().contains(null), "消息ID不能为null");
+        BizRequire.notEmpty(command.messageIds(), "消息ID列表不能为空");
+        BizRequire.requireTrue(command.messageIds() != null && !command.messageIds().contains(null), "消息ID不能为null");
 
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        for (String messageId : command.getMessageIds()) {
+        for (String messageId : command.messageIds()) {
             try {
                 MessageAggregate aggregate = messageRepository.findById(messageId).orElse(null);
                 if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
@@ -139,7 +139,7 @@ public class MessageCommandHandler {
             }
         }
 
-        log.info("action=mark_batch_read userId={} count={}", userId, command.getMessageIds().size());
+        log.info("action=mark_batch_read userId={} count={}", userId, command.messageIds().size());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -160,8 +160,8 @@ public class MessageCommandHandler {
     public void handle(RecallMessageCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
-                .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
+        MessageAggregate aggregate = messageRepository.findById(command.messageId())
+                .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         String minId = aggregate.senderId() != null && aggregate.receiverId() != null
                 ? (aggregate.senderId().compareTo(aggregate.receiverId()) < 0 ? aggregate.senderId() : aggregate.receiverId())
@@ -174,15 +174,15 @@ public class MessageCommandHandler {
         messageRepository.update(recallResult.aggregate());
         domainEventPublisher.publish(recallResult.event());
 
-        log.info("action=recall_message messageId={} userId={}", command.getMessageId(), userId);
+        log.info("action=recall_message messageId={} userId={}", command.messageId(), userId);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(DeleteMessageCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = messageRepository.findById(command.getMessageId())
-                .orElseThrow(() -> new MessageNotFoundException(command.getMessageId()));
+        MessageAggregate aggregate = messageRepository.findById(command.messageId())
+                .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         BizRequire.requireTrue(
                 aggregate.isOwnedBy(userId),
@@ -190,8 +190,8 @@ public class MessageCommandHandler {
         );
 
         MessageDeletedEvent event = aggregate.delete(userId);
-        messageRepository.delete(command.getMessageId());
+        messageRepository.delete(command.messageId());
 
-        log.info("action=delete_message messageId={} userId={}", command.getMessageId(), userId);
+        log.info("action=delete_message messageId={} userId={}", command.messageId(), userId);
     }
 }

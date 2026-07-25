@@ -1,21 +1,15 @@
 package com.cartethyia.easyorange.payment.application.command;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class CreatePaymentCommand {
-
-    private String orderId;
-    private BigDecimal amount;
-    private String paymentMethod;
-    private String payPassword;
-    private String attach;
-}
+public record CreatePaymentCommand(
+        @NotBlank(message = "订单 ID 不能为空") String orderId,
+        @NotNull(message = "支付金额不能为空") @Positive(message = "支付金额必须大于 0") BigDecimal amount,
+        @NotBlank(message = "支付方式不能为空") String paymentMethod,
+        String payPassword,
+        String attach
+) implements PaymentCommand {}

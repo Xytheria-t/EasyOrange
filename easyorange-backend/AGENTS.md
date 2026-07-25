@@ -13,6 +13,7 @@ Spring Boot 4.0.3 + Java 25 后端，采用 DDD + 六边形架构。
 | Flyway | 11.15.0 |
 | Spring Security OAuth2 Resource Server | — |
 | ArchUnit | 1.4.1 |
+| Resilience4j | 2.2.0 |
 | Spring Data Elasticsearch | 6.0.3 |
 | Elasticsearch | 8.17.3 |
 
@@ -289,9 +290,32 @@ JDK 23+ 终端弃用 `sun.misc.Unsafe::objectFieldOffset`，Lombok 1.18.46 仍�
 
 **已配置**：编译阶段 `.mvn/jvm.config` + 运行阶段 `spring-boot-maven-plugin jvmArguments` 均已设置 `--sun-misc-unsafe-memory-access=allow`。JDK 26+ 默认变 `deny`，届时需升级 Lombok。
 
-### CategoryCacheAdapter 熔断
+### 慢 SQL 检测
 
-Redis 连接失败时自动降级 DB，连续 5 次失败熔断（跳过 Redis 60s），成功后重置计数器。ERROR 日志含结构化字段。新增缓存适配器时遵循此模式。
+`SlowSqlInterceptor` 是 MyBatis Executor 级拦截器，拦截所有 query/update，记录超过阈值的慢 SQL 并上报两路 Micrometer Timer：
+- `easyorange.sql.execution` — 全部 SQL P50/P95/P99
+- `easyorange.sql.slow` — 仅慢查询 P50/P95/P99
+
+配置前缀 `slow-sql`，默认 500ms 阈值，WARN 级别。在 `application.yaml` 中按环境调整：
+
+```yaml
+slow-sql:
+  enabled: true
+  threshold-ms: 500
+  log-level: warn
+  log-parameters: true
+  metrics-enabled: true
+```
+
+拦截器通过 `@Component` + Spring Boot 自动发现注册，无需手动配置。
+
+### Redis 熔断保护
+
+Redis 缓存操作统一使用 **Resilience4j CircuitBreaker** + 多级降级（L1 Caffeine → L2 Redis → DB）。
+
+`Resilience4jConfig` 在 framework 模块提供 `CircuitBreakerRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：COUNT_BASED 滑动窗口 10、最小调用 5、失败率阈值 50%、开路 60s、Half-Open 3 次探测。
+
+**新增缓存适配器时**：注入 `CircuitBreakerRegistry`，用 `CircuitBreaker.decorateSupplier()` / `decorateRunnable()` 包装 Redis 操作，异常时降级到 DB + 本地缓存。参考 `CategoryCacheAdapter` 模式。
 
 ### Admin 模块端口接口
 

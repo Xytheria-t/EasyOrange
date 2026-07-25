@@ -38,7 +38,7 @@ public class MessageCommandController {
 
     @PutMapping("/{id}/read")
     public Result<Void> markAsRead(@PathVariable String id) {
-        commandHandler.handle(MarkAsReadCommand.builder().messageId(id).build());
+        commandHandler.handle(new MarkAsReadCommand(id));
         return Result.success();
     }
 
@@ -50,7 +50,7 @@ public class MessageCommandController {
 
     @PutMapping("/read")
     public Result<Void> markAsReadBatch(@RequestBody List<String> ids) {
-        commandHandler.handle(MarkAsReadBatchCommand.builder().messageIds(ids).build());
+        commandHandler.handle(new MarkAsReadBatchCommand(ids));
         return Result.success();
     }
 
@@ -65,16 +65,16 @@ public class MessageCommandController {
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteMessage(@PathVariable String id) {
-        commandHandler.handle(DeleteMessageCommand.builder().messageId(id).build());
+        commandHandler.handle(new DeleteMessageCommand(id));
         return Result.success();
     }
 
     @PutMapping("/{id}/recall")
     public Result<Void> recallMessage(@PathVariable String id) {
-        commandHandler.handle(RecallMessageCommand.builder()
-                .messageId(id)
-                .operatorId(com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow())
-                .build());
+        commandHandler.handle(new RecallMessageCommand(
+                id,
+                com.cartethyia.easyorange.framework.util.SecurityContextUtil.getCurrentUserIdOrThrow()
+        ));
         return Result.success();
     }
 

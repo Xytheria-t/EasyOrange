@@ -2,8 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter
 
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
-import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import org.mapstruct.Mapper;
 
 import java.math.BigDecimal;
@@ -15,7 +14,7 @@ public interface PaymentDataMapper {
         if (po == null) {
             return null;
         }
-        return PaymentAggregate.reconstruct(
+        var spec = new PaymentReconstructSpec(
                 po.getId(),
                 po.getPaymentNo(),
                 po.getOrderId(),
@@ -32,6 +31,7 @@ public interface PaymentDataMapper {
                 po.getUpdateTime(),
                 po.getVersion()
         );
+        return PaymentAggregate.from(spec);
     }
 
     default PaymentDO toPO(PaymentAggregate aggregate) {
