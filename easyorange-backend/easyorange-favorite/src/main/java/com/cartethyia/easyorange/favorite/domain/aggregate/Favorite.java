@@ -19,11 +19,14 @@ public class Favorite {
         this.createTime = createTime;
     }
 
-    public static Favorite create(String userId, String productId) {
-        if (userId == null || productId == null) {
-            throw new IllegalArgumentException("userId and productId must not be null");
+    public static Favorite create(FavoriteCreateSpec spec) {
+        if (spec.userId() == null || spec.userId().isBlank()) {
+            throw new IllegalArgumentException("userId must not be blank");
         }
-        return new Favorite(null, userId, productId, LocalDateTime.now());
+        if (spec.productId() == null || spec.productId().isBlank()) {
+            throw new IllegalArgumentException("productId must not be blank");
+        }
+        return new Favorite(null, spec.userId(), spec.productId(), LocalDateTime.now());
     }
 
     public static Favorite reconstitute(String id, String userId, String productId, LocalDateTime createTime) {

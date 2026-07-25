@@ -30,7 +30,8 @@ favorite/
 │       └── FavoriteService.java
 └── domain/                            # 领域层
     ├── aggregate/
-    │   └── Favorite.java              # 收藏聚合根 (不可变)
+    │   ├── Favorite.java              # 收藏聚合根 (不可变)
+    │   └── FavoriteCreateSpec.java    # record 收敛 create() 工厂参数
     ├── port/
     │   ├── OutboundPort.java
     │   └── ProductInfoPort.java       # 商品信息端口
@@ -57,14 +58,15 @@ public class Favorite {
     private final String productId;
     private final LocalDateTime createTime;
 
-    public static Favorite create(String userId, String productId) { ... }
+    public static Favorite create(FavoriteCreateSpec spec) { ... }
     public static Favorite reconstitute(String id, String userId, String productId, LocalDateTime createTime) { ... }
 }
 ```
 
 - 不可变设计，通过静态工厂方法创建
 - `id`、`userId`、`productId` 均为 String (UUID v7)
-- `create()` 用于新建，`reconstitute()` 用于从持久化重建
+- `create(FavoriteCreateSpec)` 用于新建（对齐 product/order/payment 的 Spec 模式，校验 null + 空字符串）
+- `reconstitute()` 用于从持久化重建
 
 ## 事务规范
 

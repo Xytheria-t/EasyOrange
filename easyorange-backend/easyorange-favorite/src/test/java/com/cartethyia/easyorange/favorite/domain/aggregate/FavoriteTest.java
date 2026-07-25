@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.favorite.domain.aggregate;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
+import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class FavoriteTest {
         void create_validParams_returnsNewFavorite() {
             var before = LocalDateTime.now().minusSeconds(1);
 
-            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID);
+            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
             assertThat(favorite.getUserId()).isEqualTo(USER_ID);
             assertThat(favorite.getProductId()).isEqualTo(PRODUCT_ID);
@@ -39,23 +40,32 @@ class FavoriteTest {
         @Test
         @DisplayName("userId 为 null 时抛 IllegalArgumentException")
         void create_nullUserId_throws() {
-            assertThatThrownBy(() -> Favorite.create(null, PRODUCT_ID))
+            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(null, PRODUCT_ID)))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("userId");
         }
 
         @Test
-        @DisplayName("userId 为空字符串时不抛异常（现有行为：仅校验 null）")
-        void create_emptyUserId_doesNotThrow() {
-            assertThatCode(() -> Favorite.create("", PRODUCT_ID))
-                    .doesNotThrowAnyException();
+        @DisplayName("userId 为空字符串时抛 IllegalArgumentException")
+        void create_emptyUserId_throws() {
+            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec("", PRODUCT_ID)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("userId");
         }
 
         @Test
         @DisplayName("productId 为 null 时抛 IllegalArgumentException")
         void create_nullProductId_throws() {
-            assertThatThrownBy(() -> Favorite.create(USER_ID, null))
+            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, null)))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("productId 为空字符串时抛 IllegalArgumentException")
+        void create_emptyProductId_throws() {
+            assertThatThrownBy(() -> Favorite.create(new FavoriteCreateSpec(USER_ID, "")))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("productId");
         }
     }
 
@@ -84,7 +94,7 @@ class FavoriteTest {
         @Test
         @DisplayName("userId 匹配时返回 true")
         void belongsTo_sameUser_returnsTrue() {
-            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID);
+            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
             assertThat(favorite.belongsTo(USER_ID)).isTrue();
         }
@@ -92,7 +102,7 @@ class FavoriteTest {
         @Test
         @DisplayName("userId 不匹配时返回 false")
         void belongsTo_differentUser_returnsFalse() {
-            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID);
+            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
             assertThat(favorite.belongsTo("other-user")).isFalse();
         }
@@ -100,7 +110,7 @@ class FavoriteTest {
         @Test
         @DisplayName("传入 null userId 时返回 false（Objects.equals 安全处理 null）")
         void belongsTo_nullUserId_returnsFalse() {
-            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID);
+            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
             assertThat(favorite.belongsTo(null)).isFalse();
         }
@@ -113,7 +123,7 @@ class FavoriteTest {
         @Test
         @DisplayName("归属正确时不抛异常")
         void validateOwnership_sameUser_doesNotThrow() {
-            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID);
+            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
             assertThatCode(() -> favorite.validateOwnership(USER_ID))
                     .doesNotThrowAnyException();
@@ -122,7 +132,7 @@ class FavoriteTest {
         @Test
         @DisplayName("归属不正确时抛 BusinessException")
         void validateOwnership_differentUser_throwsBusinessException() {
-            Favorite favorite = Favorite.create(USER_ID, PRODUCT_ID);
+            Favorite favorite = Favorite.create(new FavoriteCreateSpec(USER_ID, PRODUCT_ID));
 
             assertThatThrownBy(() -> favorite.validateOwnership("other-user"))
                     .isInstanceOf(BusinessException.class)

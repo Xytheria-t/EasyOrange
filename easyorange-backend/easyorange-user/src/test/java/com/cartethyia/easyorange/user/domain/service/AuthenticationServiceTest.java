@@ -2,15 +2,11 @@ package com.cartethyia.easyorange.user.domain.service;
 
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.enums.UserStatus;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
+import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
 import com.cartethyia.easyorange.user.domain.port.PasswordEncoderPort;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
-import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
-import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -45,26 +41,16 @@ class AuthenticationServiceTest {
 
     private AuthenticationService service;
 
-    private static final String ACCOUNT = "testuser";
+    private static final String ACCOUNT = UserTestFixture.USERNAME;
     private static final String PASSWORD = "Password123";
-    private static final String ENCODED_PW = "$2a$10$encoded";
-    private static final String USER_ID = "1";
-    private static final String PHONE = "13812345678";
+    private static final String ENCODED_PW = UserTestFixture.ENCODED_PW;
+    private static final String USER_ID = UserTestFixture.USER_ID;
+    private static final String PHONE = UserTestFixture.PHONE;
     private static final String VERIFY_CODE = "123456";
 
     @BeforeEach
     void setUp() {
         service = new AuthenticationService(userRepository, passwordEncoder, loginSecurityService, smsCodePort);
-    }
-
-    private User createNormalUser() {
-        return User.builder()
-            .id(USER_ID)
-            .credentials(new Credentials(ACCOUNT, ENCODED_PW))
-            .userType(UserType.NORMAL)
-            .status(UserStatus.NORMAL)
-            .loginInfo(LoginInfo.empty())
-            .build();
     }
 
     @Nested
@@ -74,7 +60,7 @@ class AuthenticationServiceTest {
         @Test
         @DisplayName("密码认证成功")
         void success() {
-            User user = createNormalUser();
+            User user = UserTestFixture.normalUser();
             doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
@@ -104,7 +90,7 @@ class AuthenticationServiceTest {
         @Test
         @DisplayName("密码错误时抛出异常")
         void wrongPassword() {
-            User user = createNormalUser();
+            User user = UserTestFixture.normalUser();
             doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(false);
@@ -120,12 +106,7 @@ class AuthenticationServiceTest {
         @Test
         @DisplayName("用户被禁用时抛出异常")
         void userDisabled() {
-            User user = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials(ACCOUNT, ENCODED_PW))
-                .status(UserStatus.DISABLED)
-                .loginInfo(LoginInfo.empty())
-                .build();
+            User user = UserTestFixture.disabledUser();
             doNothing().when(loginSecurityService).checkAndThrowIfLocked(ACCOUNT);
             when(userRepository.findByLoginIdentifier(ACCOUNT)).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(PASSWORD, ENCODED_PW)).thenReturn(true);
@@ -148,7 +129,7 @@ class AuthenticationServiceTest {
         void success() {
             String phone = "13812345678";
             String verifyCode = "123456";
-            User user = createNormalUser();
+            User user = UserTestFixture.normalUser();
             when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 
@@ -177,12 +158,7 @@ class AuthenticationServiceTest {
         void userDisabled() {
             String phone = "13812345678";
             String verifyCode = "123456";
-            User user = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials(ACCOUNT, ENCODED_PW))
-                .status(UserStatus.DISABLED)
-                .loginInfo(LoginInfo.empty())
-                .build();
+            User user = UserTestFixture.disabledUser();
             when(smsCodePort.verify(phone, verifyCode)).thenReturn(VerifyResult.OK);
             when(userRepository.findByPhone(phone)).thenReturn(Optional.of(user));
 

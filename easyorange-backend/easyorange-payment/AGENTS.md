@@ -49,8 +49,6 @@ payment/
 │   ├── metrics/
 │   │   ├── PaymentMetricsService.java             # Micrometer 指标
 │   │   └── PaymentMetricsConsumer.java            # RabbitMQ 消费者（监听支付指标事件）
-│   └── mock/
-│       └── MockPaymentUseCase.java                # 模拟支付用例（基于 PaymentCreateSpec 创建聚合根）
 ├── domain/
 │   ├── aggregate/
 │   │   ├── PaymentAggregate.java                  # 不可变聚合根（字段 final，状态转换返回 PaymentTransition / 新实例）
@@ -163,7 +161,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 2. `PaymentGatewayAdapter` 添加新网关调用逻辑
 3. Flyway 迁移：`eo_payment.payment_method` 列 CHECK 约束追加新 code
 4. `PaymentMethodTypeHandler` 已通过 `fromCode()` 自动适配（throw on unknown）
-5. 添加模拟支付支持（`MockPaymentUseCase` 通过 `PaymentCreateSpec` 创建聚合根）
+5. 添加模拟支付支持（`MockPaymentController` `@Profile("dev")` 通过 `PaymentCreateSpec` 创建聚合根）
 6. 测试
 
 ### 添加新支付事件

@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.domain.valueobject;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum PaymentStatus {
+public enum PaymentStatus implements BaseCodeEnum {
 
     /** 未支付 */
     UNPAID("UNPAID", "未支付"),
@@ -28,14 +29,6 @@ public enum PaymentStatus {
     private final String desc;
 
     public static PaymentStatus fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("PaymentStatus code must not be null");
-        }
-        for (var status : values()) {
-            if (status.code.equals(code)) {
-                return status;
-            }
-        }
-        throw new IllegalArgumentException("Unknown PaymentStatus code: " + code);
+        return BaseCodeEnum.fromCode(PaymentStatus.class, code);
     }
 }

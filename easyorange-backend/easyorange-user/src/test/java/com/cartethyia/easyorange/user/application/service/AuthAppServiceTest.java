@@ -7,15 +7,12 @@ import com.cartethyia.easyorange.framework.auth.TokenRefreshResult;
 import com.cartethyia.easyorange.framework.auth.TokenService;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
-import com.cartethyia.easyorange.user.domain.enums.UserType;
+import com.cartethyia.easyorange.user.domain.aggregate.UserTestFixture;
 import com.cartethyia.easyorange.user.domain.port.SmsCodePort;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import com.cartethyia.easyorange.user.domain.service.AuthenticationService;
 import com.cartethyia.easyorange.user.domain.service.RegistrationService;
-import com.cartethyia.easyorange.user.domain.valueobject.ContactInfo;
-import com.cartethyia.easyorange.user.domain.valueobject.Credentials;
 import com.cartethyia.easyorange.user.domain.valueobject.LoginCredential;
-import com.cartethyia.easyorange.user.domain.valueobject.LoginInfo;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,9 +48,9 @@ class AuthAppServiceTest {
 
     private AuthAppService service;
 
-    private static final String USER_ID = "1";
-    private static final String USERNAME = "testuser";
-    private static final String PHONE = "13812345678";
+    private static final String USER_ID = UserTestFixture.USER_ID;
+    private static final String USERNAME = UserTestFixture.USERNAME;
+    private static final String PHONE = UserTestFixture.PHONE;
 
     @BeforeEach
     void setUp() {
@@ -75,11 +72,8 @@ class AuthAppServiceTest {
             String username = "newuser";
             String password = "Password123";
 
-            User savedUser = User.builder()
-                .id("100")
-                .credentials(new Credentials(username, "encodedPassword"))
-                .personalInfo(null)
-                .build();
+            User savedUser = UserTestFixture.userWithCredentials(username, "encodedPassword")
+                .toBuilder().id("100").personalInfo(null).build();
             when(registrationService.registerNewUser(username, password))
                 .thenReturn(savedUser);
             when(userRepository.save(savedUser)).thenReturn(savedUser);
@@ -103,12 +97,7 @@ class AuthAppServiceTest {
             String password = "Password123";
             LoginCredential credential = new LoginCredential.Password(account, password);
 
-            User user = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials(USERNAME, "encoded"))
-                .userType(UserType.NORMAL)
-                .loginInfo(LoginInfo.empty())
-                .build();
+            User user = UserTestFixture.userWithCredentials(USERNAME, "encoded");
             when(authenticationService.authenticate(any(LoginCredential.class)))
                 .thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
@@ -135,12 +124,7 @@ class AuthAppServiceTest {
             String verifyCode = "123456";
             LoginCredential credential = new LoginCredential.Sms(phone, verifyCode);
 
-            User user = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials(USERNAME, "encoded"))
-                .userType(UserType.NORMAL)
-                .loginInfo(LoginInfo.empty())
-                .build();
+            User user = UserTestFixture.userWithCredentials(USERNAME, "encoded");
             when(authenticationService.authenticate(any(LoginCredential.class)))
                 .thenReturn(user);
             when(tokenService.createAccessToken(USER_ID, USERNAME, List.of("ROLE_USER")))
@@ -226,10 +210,7 @@ class AuthAppServiceTest {
             String verifyCode = "123456";
             String newPassword = "NewPass123";
 
-            User updated = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials(USERNAME, "encodedNewPwd"))
-                .build();
+            User updated = UserTestFixture.userWithCredentials(USERNAME, "encodedNewPwd");
             when(authenticationService.resetPassword(phone, verifyCode, newPassword))
                 .thenReturn(updated);
 
@@ -248,14 +229,8 @@ class AuthAppServiceTest {
         @DisplayName("应查询用户后委托 AuthenticationService.changePassword 并保存")
         void shouldFindUserAndDelegateToChangePassword() {
             TestSecurityUtil.setSecurityContext(USER_ID);
-            var user = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials("testuser", "encodedOldPwd"))
-                .build();
-            var updatedUser = User.builder()
-                .id(USER_ID)
-                .credentials(new Credentials("testuser", "encodedNewPwd"))
-                .build();
+            var user = UserTestFixture.userWithCredentials("testuser", "encodedOldPwd");
+            var updatedUser = UserTestFixture.userWithCredentials("testuser", "encodedNewPwd");
             when(userRepository.findById(USER_ID)).thenReturn(java.util.Optional.of(user));
             when(authenticationService.changePassword(user, "oldPwd123", "NewPass123"))
                 .thenReturn(updatedUser);

@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
+import com.cartethyia.easyorange.favorite.domain.aggregate.FavoriteCreateSpec;
 import com.cartethyia.easyorange.favorite.domain.port.ProductInfoPort;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
@@ -39,7 +40,7 @@ public class FavoriteService {
                 "已收藏过该商品"
         );
 
-        Favorite favorite = Favorite.create(userId, productId);
+        Favorite favorite = Favorite.create(new FavoriteCreateSpec(userId, productId));
         favoriteRepository.save(favorite);
     }
 

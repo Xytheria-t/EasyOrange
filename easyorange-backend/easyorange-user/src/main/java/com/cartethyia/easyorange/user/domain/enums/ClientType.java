@@ -1,12 +1,13 @@
 package com.cartethyia.easyorange.user.domain.enums;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum ClientType {
+public enum ClientType implements BaseCodeEnum {
     WEB("web", "网页端");
 
     @JsonValue
@@ -15,11 +16,6 @@ public enum ClientType {
     private final String description;
 
     public static ClientType fromCode(String code) {
-        for (var type : values()) {
-            if (type.code.equals(code)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown ClientType code: " + code);
+        return BaseCodeEnum.fromCode(ClientType.class, code);
     }
 }

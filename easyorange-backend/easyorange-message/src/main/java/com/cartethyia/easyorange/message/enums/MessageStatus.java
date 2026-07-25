@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.enums;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum MessageStatus {
+public enum MessageStatus implements BaseCodeEnum {
 
     UNREAD("UNREAD", "未读"),
     READ("READ", "已读"),
@@ -25,15 +26,7 @@ public enum MessageStatus {
     private final String desc;
 
     public static MessageStatus fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("MessageStatus code must not be null");
-        }
-        for (var status : values()) {
-            if (status.code.equals(code)) {
-                return status;
-            }
-        }
-        throw new IllegalArgumentException("Unknown MessageStatus code: " + code);
+        return BaseCodeEnum.fromCode(MessageStatus.class, code);
     }
 
     public static String getDescByCode(String code) {

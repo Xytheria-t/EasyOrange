@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.domain.constant;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum OrderStatus {
+public enum OrderStatus implements BaseCodeEnum {
 
     PENDING_PAYMENT("PENDING_PAYMENT", "待付款"),
     PAID("PAID", "已付款"),
@@ -26,14 +27,6 @@ public enum OrderStatus {
     private final String desc;
 
     public static OrderStatus fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("OrderStatus code must not be null");
-        }
-        for (var status : values()) {
-            if (status.code.equals(code)) {
-                return status;
-            }
-        }
-        throw new IllegalArgumentException("Unknown OrderStatus code: " + code);
+        return BaseCodeEnum.fromCode(OrderStatus.class, code);
     }
 }

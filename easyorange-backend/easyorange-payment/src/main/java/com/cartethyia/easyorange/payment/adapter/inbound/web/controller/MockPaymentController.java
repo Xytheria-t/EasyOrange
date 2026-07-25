@@ -10,11 +10,11 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
-import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -26,10 +26,10 @@ import java.math.BigDecimal;
 public class MockPaymentController {
 
     private final PaymentRepositoryPort paymentRepository;
-    private final PaymentGatewayPort paymentGateway;
     private final IdGenerator idGenerator;
 
     @PostMapping("/create")
+    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> createMockPayment(
             @RequestParam String orderId,
             @RequestParam String paymentMethod,
@@ -45,6 +45,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/process")
+    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
         PaymentAggregate aggregate = paymentRepository.findById(request.getPaymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
@@ -64,6 +65,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/success/{paymentId}")
+    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentSuccess(@PathVariable String paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
@@ -76,6 +78,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/fail/{paymentId}")
+    @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentFail(@PathVariable String paymentId) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
@@ -87,6 +90,7 @@ public class MockPaymentController {
     }
 
     @PostMapping("/refund/{paymentId}")
+    @Transactional(rollbackFor = Exception.class)
     public Result<Void> mockRefund(@PathVariable String paymentId, @RequestParam String reason) {
         PaymentAggregate aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));

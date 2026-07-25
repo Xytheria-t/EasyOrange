@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +10,7 @@ import java.util.Set;
 
 @Getter
 @AllArgsConstructor
-public enum ProductStatus {
+public enum ProductStatus implements BaseCodeEnum {
 
     DRAFT("0", "草稿"),
     ONLINE("1", "上架"),
@@ -33,12 +34,7 @@ public enum ProductStatus {
     );
 
     public static ProductStatus fromCode(String code) {
-        for (var status : values()) {
-            if (status.code.equals(code)) {
-                return status;
-            }
-        }
-        throw new IllegalArgumentException("Unknown ProductStatus code: " + code);
+        return BaseCodeEnum.fromCode(ProductStatus.class, code);
     }
 
     // === State Machine ===

@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
  * 业务类型枚举，用于操作日志标识操作类型。
  *
@@ -15,7 +11,7 @@ import java.util.stream.Stream;
  */
 @Getter
 @AllArgsConstructor
-public enum BusinessType {
+public enum BusinessType implements BaseCodeEnum {
 
     OTHER("0", "其它"),
     ADD("1", "新增"),
@@ -23,22 +19,12 @@ public enum BusinessType {
     DELETE("3", "删除"),
     LOGIN("4", "登录");
 
-    private static final Map<String, BusinessType> CODE_MAP = Stream.of(values())
-            .collect(Collectors.toUnmodifiableMap(e -> e.code, e -> e));
-
     @JsonValue
     private final String code;
     private final String desc;
 
     public static BusinessType fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("BusinessType code must not be null");
-        }
-        var result = CODE_MAP.get(code);
-        if (result == null) {
-            throw new IllegalArgumentException("Unknown BusinessType code: " + code);
-        }
-        return result;
+        return BaseCodeEnum.fromCode(BusinessType.class, code);
     }
 
     public static String getDescByCode(String code) {

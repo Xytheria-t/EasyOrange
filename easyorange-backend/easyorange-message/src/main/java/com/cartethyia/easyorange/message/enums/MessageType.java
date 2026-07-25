@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.message.enums;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.Getter;
  */
 @Getter
 @AllArgsConstructor
-public enum MessageType {
+public enum MessageType implements BaseCodeEnum {
 
     SYSTEM("1", "系统通知"),
     CHAT("2", "聊天消息"),
@@ -25,15 +26,7 @@ public enum MessageType {
     private final String desc;
 
     public static MessageType fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("MessageType code must not be null");
-        }
-        for (var type : values()) {
-            if (type.code.equals(code)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown MessageType code: " + code);
+        return BaseCodeEnum.fromCode(MessageType.class, code);
     }
 
     public static String getDescByCode(String code) {

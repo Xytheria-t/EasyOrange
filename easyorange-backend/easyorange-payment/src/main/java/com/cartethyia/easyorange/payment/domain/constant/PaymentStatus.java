@@ -1,12 +1,13 @@
 package com.cartethyia.easyorange.payment.domain.constant;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum PaymentStatus {
+public enum PaymentStatus implements BaseCodeEnum {
 
     PENDING("PENDING", "待支付"),
     SUCCESS("SUCCESS", "已支付"),
@@ -22,15 +23,7 @@ public enum PaymentStatus {
     private final String desc;
 
     public static PaymentStatus fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("PaymentStatus code must not be null");
-        }
-        for (var status : values()) {
-            if (status.code.equals(code)) {
-                return status;
-            }
-        }
-        throw new IllegalArgumentException("Unknown PaymentStatus code: " + code);
+        return BaseCodeEnum.fromCode(PaymentStatus.class, code);
     }
 
     public static String getDescByCode(String code) {

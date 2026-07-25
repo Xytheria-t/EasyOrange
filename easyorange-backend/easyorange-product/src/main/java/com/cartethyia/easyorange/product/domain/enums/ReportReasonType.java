@@ -1,12 +1,13 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum ReportReasonType {
+public enum ReportReasonType implements BaseCodeEnum {
 
     FAKE_INFO("1", "虚假信息"),
     INFRINGEMENT("2", "侵权投诉"),
@@ -18,15 +19,7 @@ public enum ReportReasonType {
     private final String desc;
 
     public static ReportReasonType fromCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("ReportReasonType code must not be null");
-        }
-        for (var type : values()) {
-            if (type.code.equals(code)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Unknown ReportReasonType code: " + code);
+        return BaseCodeEnum.fromCode(ReportReasonType.class, code);
     }
 
     public static boolean isValidCode(String code) {

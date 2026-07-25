@@ -1,12 +1,13 @@
 package com.cartethyia.easyorange.product.domain.enums;
 
+import com.cartethyia.easyorange.common.enums.BaseCodeEnum;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum ConditionLevel {
+public enum ConditionLevel implements BaseCodeEnum {
 
     NEW("1", "全新"),
     LIKE_NEW("2", "几乎全新"),
@@ -18,11 +19,6 @@ public enum ConditionLevel {
     private final String desc;
 
     public static ConditionLevel fromCode(String code) {
-        for (var level : values()) {
-            if (level.code.equals(code)) {
-                return level;
-            }
-        }
-        throw new IllegalArgumentException("Unknown ConditionLevel code: " + code);
+        return BaseCodeEnum.fromCode(ConditionLevel.class, code);
     }
 }

@@ -44,7 +44,7 @@ easy-orange/
 │   ├── src/components/         # AdminTable, AdminSelect(Portal+listRef防误关), StatusBadge, ConfirmModal(Portal), StatCard, AdminMenuEntry
 │   │   ├── chat/              # 聊天组件（ChatHeader, MessageBubble[长按菜单], MessageList[虚拟滚动], ChatInputBar, TypingIndicator）
 │   │   ├── hooks/             # useAdmin* / useAdminProductAudit / useAdminGuard
-│   │   │   └── chat/          # useStompChat(STOMP连接), useChatMessages(react-query+store合并), useMessageRecall, useChatNotification(桌面通知+声音), useOfflineQueue
+│   │   │   └── chat/          # useStompChat(STOMP连接), useChatMessages(react-query+store合并), useMessageRecall
 │   │   ├── api/adminApi.ts    # 39 个 API 函数，覆盖 8 个管理端 Controller
 │   │   ├── api/messageApi.ts  # 消息 API（conversations, send, recall, typing, markAsRead）
 │   │   ├── types/admin.ts     # 完整类型定义（Order/Report/Category/Audit/User 操作）

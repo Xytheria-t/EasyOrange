@@ -107,7 +107,6 @@ order/
 │   │   └── OrderResultCode.java
 │   └── exception/
 │       ├── OrderDomainException.java
-│       ├── OrderNotFoundException.java
 │       ├── OrderStatusException.java
 │       ├── OrderPermissionException.java
 │       └── OrderOperationException.java
