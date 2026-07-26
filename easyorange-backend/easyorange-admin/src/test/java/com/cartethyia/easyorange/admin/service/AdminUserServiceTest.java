@@ -66,7 +66,7 @@ class AdminUserServiceTest {
             Page<UserDO> page = new Page<>(1, 20);
 
             // must use spy or return real page with records
-            when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+            when(userMapper.selectPage(any(), any()))
                     .thenAnswer(invocation -> {
                         Page<UserDO> p = invocation.getArgument(0);
                         p.setRecords(List.of(user));
@@ -87,7 +87,7 @@ class AdminUserServiceTest {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
             request.setKeyword("test");
 
-            when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+            when(userMapper.selectPage(any(), any()))
                     .thenAnswer(invocation -> {
                         Page<UserDO> p = invocation.getArgument(0);
                         p.setRecords(List.of(createTestUser()));
@@ -105,7 +105,7 @@ class AdminUserServiceTest {
         void listUsers_noResults_returnsEmptyPage() {
             AdminUserQueryRequest request = new AdminUserQueryRequest();
 
-            when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+            when(userMapper.selectPage(any(), any()))
                     .thenAnswer(invocation -> {
                         Page<UserDO> p = invocation.getArgument(0);
                         p.setRecords(List.of());

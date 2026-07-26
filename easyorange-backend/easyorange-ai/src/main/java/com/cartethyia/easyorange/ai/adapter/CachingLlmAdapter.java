@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
+import io.github.resilience4j.retry.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -17,6 +18,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 @Slf4j
 @Primary
@@ -28,18 +30,21 @@ public class CachingLlmAdapter implements LlmPort {
     private final Map<AiCallScope, MultiLevelCache> aiCaches;
     private final Cache<String, Object> staleCache;
     private final AiMetricsService aiMetricsService;
+    private final Retry aiRetry;
 
     public CachingLlmAdapter(
             DeepSeekLlmAdapter delegate,
             AiProperties aiProperties,
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
-            AiMetricsService aiMetricsService) {
+            AiMetricsService aiMetricsService,
+            @Qualifier("aiLlm") Retry aiRetry) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;
         this.staleCache = staleCache;
         this.aiMetricsService = aiMetricsService;
+        this.aiRetry = aiRetry;
     }
 
     @Override
@@ -60,9 +65,12 @@ public class CachingLlmAdapter implements LlmPort {
     }
 
     private String cached(AiCallScope scope, String system, String user,
-                          java.util.function.Supplier<String> loader) {
+                          Supplier<String> loader) {
+        // Resilience4j Retry 包装：网络故障时指数退避重试（最多 3 次）
+        Supplier<String> retriedLoader = Retry.decorateSupplier(aiRetry, loader);
+
         if (!aiProperties.getCache().isEnabled()) {
-            return loader.get();
+            return retriedLoader.get();
         }
 
         String fp = fingerprint(system, user);
@@ -71,13 +79,13 @@ public class CachingLlmAdapter implements LlmPort {
         var cache = aiCaches.get(scope);
         if (cache == null) {
             log.warn("No cache for scope {}, fallback to delegate", scope);
-            return loader.get();
+            return retriedLoader.get();
         }
 
         var cacheMiss = new AtomicBoolean(false);
         String result = cache.get(key, String.class, () -> {
             cacheMiss.set(true);
-            return loader.get();
+            return retriedLoader.get();
         });
 
         if (cacheMiss.get()) {

@@ -22,7 +22,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -184,7 +186,7 @@ class DeepSeekLlmAdapterTest {
         @DisplayName("响应为 null 时返回空列表")
         void nullResponseReturnsEmptyList() {
             stubEmbeddingChain();
-            when(responseSpec.body(any(Class.class))).thenReturn(null);
+            when(responseSpec.body((Class<?>) any())).thenReturn(null);
 
             List<Float> result = adapter.generateEmbedding("test text");
 
@@ -195,7 +197,7 @@ class DeepSeekLlmAdapterTest {
         @DisplayName("请求体构建正确 — model 为 deepseek-embedding")
         void usesCorrectModelInRequest() {
             stubEmbeddingChain();
-            when(responseSpec.body(any(Class.class))).thenReturn(null);
+            when(responseSpec.body((Class<?>) any())).thenReturn(null);
 
             adapter.generateEmbedding("search keyword");
 

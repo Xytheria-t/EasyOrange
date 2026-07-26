@@ -37,12 +37,12 @@ class WebMvcConfigTest {
             String json = jsonMapper.writeValueAsString(entity);
             JsonNode root = jsonMapper.readTree(json);
 
-            assertThat(root.get("id").isTextual())
+            assertThat(root.get("id").asStringOpt())
                     .as("Long id字段应为字符串类型以防止JavaScript精度丢失")
-                    .isTrue();
-            assertThat(root.get("id").asText()).isEqualTo("311597393252585472");
+                    .isPresent();
+            assertThat(root.get("id").asString()).isEqualTo("311597393252585472");
 
-            BigInteger parsedId = new BigInteger(root.get("id").asText());
+            BigInteger parsedId = new BigInteger(root.get("id").asString());
             BigInteger originalId = BigInteger.valueOf(311597393252585472L);
             assertThat(parsedId).isEqualTo(originalId);
         }
@@ -75,10 +75,10 @@ class WebMvcConfigTest {
             String json = jsonMapper.writeValueAsString(entity);
             JsonNode root = jsonMapper.readTree(json);
 
-            assertThat(root.get("id").isTextual())
+            assertThat(root.get("id").asStringOpt())
                     .as("基本类型long字段也应为字符串类型")
-                    .isTrue();
-            assertThat(root.get("id").asText()).isEqualTo("311597393252585472");
+                    .isPresent();
+            assertThat(root.get("id").asString()).isEqualTo("311597393252585472");
         }
     }
 
@@ -95,7 +95,7 @@ class WebMvcConfigTest {
             String json = jsonMapper.writeValueAsString(response);
             JsonNode root = jsonMapper.readTree(json);
 
-            String serializedId = root.get("id").asText();
+            String serializedId = root.get("id").asString();
             assertThat(serializedId).isEqualTo("311597393252585472");
 
             long deserializedId = Long.parseLong(serializedId);

@@ -111,7 +111,7 @@ Redisson 自动处理锁续期（Watch Dog）、重入、死锁检测。配置�
 
 **traceId 自动注入**：项目引入 `micrometer-tracing-bridge-brave`，Spring Boot 4 自动配置 `Slf4jScopeDecorator` 注入 `traceId`/`spanId` 到 MDC。HTTP 请求进入时 Brave 的 `TracingFilter` 自动开启 span，无需手写 UUID。
 
-**异步线程 MDC 传播**：`MdcTaskDecorator` 实现 Spring 的 `TaskDecorator`（类级标注 `@NullMarked` 匹配父接口契约），在 `ThreadPoolConfig` 中注入所有线程池（`domainEventExecutor` / `taskScheduler`）：
+**异步线程 MDC 传播**：`MdcTaskDecorator` 实现 Spring 的 `TaskDecorator`（类级标注 `@NullMarked` 匹配父接口契约），在 `ThreadPoolConfig` 中注入 `taskScheduler`（唯一的线程池）：
 
 ```java
 @NullMarked
@@ -128,7 +128,7 @@ public class MdcTaskDecorator implements TaskDecorator {
 }
 ```
 
-覆盖范围：`@Async`、`@Scheduled`、`@RabbitListener`（11 个消费者）、所有线程池任务。
+覆盖范围：`@Scheduled` 定时任务。`@Async` 在虚拟线程模式下由 Micrometer Tracing 自动继承 MDC，无需 `MdcTaskDecorator`。
 
 **AsyncAppender 异步日志写入**：`logback-spring.xml` 配置 `ASYNC_FILE` / `ASYNC_ERROR_FILE` / `ASYNC_JSON_FILE` 包装底层同步 Appender：
 
@@ -169,6 +169,19 @@ ProductDetail detail = multiLevelCache.get(
 // 手动失效 (同时清除 L1 + L2)
 multiLevelCache.evict("product:detail:" + id);
 ```
+
+### Resilience4j Retry (resilience4j/)
+
+`Resilience4jConfig` 提供 `RetryRegistry` Bean（自动绑定 Micrometer 指标）。默认配置：指数退避 500ms 初始间隔 × 2.0 乘数，最多 3 次，重试 `RestClientException` / `ResourceAccessException`，忽略 `IllegalArgumentException`。
+
+`Resilience4jConfig` 预注册两个具名 Retry 实例供 AI 模块注入：
+
+| 名称 | 用途 | 注入方式 |
+|------|------|---------|
+| `aiLlm` | LLM 文本调用重试（CachingLlmAdapter） | `@Qualifier("aiLlm") Retry` |
+| `aiVision` | Vision 图片分析重试（CachingVisionAdapter） | `@Qualifier("aiVision") Retry` |
+
+**使用模式**：AI 适配器构造器注入具名 `Retry`，用 `Retry.decorateSupplier()` 包装实际 LLM/Vision 调用，实现网络瞬断时自动重试。参考 `CachingLlmAdapter` / `CachingVisionAdapter`。
 
 ### 分布式 ID 生成器 (idgen/)
 

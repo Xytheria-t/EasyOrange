@@ -21,9 +21,9 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -68,7 +68,7 @@ class ConversationQueryHandlerTest {
             MessageDO msg2 = createMessage(OTHER_USER_ID, CURRENT_USER_ID, "嗨", "2");
 
             when(messageMapper.selectList(any())).thenReturn(List.of(msg1, msg2));
-            when(userInfoPort.getUserInfoMap(any(Set.class)))
+            when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(
                             CURRENT_USER_ID, new UserInfo(CURRENT_USER_ID, "当前用户", null),
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "对方用户", "avatar.jpg")
@@ -115,7 +115,7 @@ class ConversationQueryHandlerTest {
             MessageDO msgWithUser3 = createMessage(THIRD_USER_ID, CURRENT_USER_ID, "消息from3", "1");
 
             when(messageMapper.selectList(any())).thenReturn(List.of(msgWithUser2, msgFromUser2, msgWithUser3));
-            when(userInfoPort.getUserInfoMap(any(Set.class)))
+            when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(new HashMap<>(Map.of(
                             CURRENT_USER_ID, new UserInfo(CURRENT_USER_ID, "我", null),
                             OTHER_USER_ID, new UserInfo(OTHER_USER_ID, "用户2", "a.jpg"),

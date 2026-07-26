@@ -8,11 +8,9 @@ import com.cartethyia.easyorange.framework.cache.CacheUtils;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
-import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
-
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,7 +29,6 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
     private static final int TIMEOUT_SECONDS = 5;
     private static final long CACHE_TTL_MINUTES = 5;
     private static final String CACHE_KEY_PREFIX = "ai:search:enhance:";
-    private static final int PARALLELISM = 4;
     private static final int TOP_PRODUCTS_LIMIT = 5;
 
     private static final String INTENT_SYSTEM_PROMPT = """
@@ -52,12 +49,6 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         直接输出分析结果，不要前缀。
         """;
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(PARALLELISM, r -> {
-        Thread t = new Thread(r, "ai-search-enhancer");
-        t.setDaemon(true);
-        return t;
-    });
-
     public AiSearchEnhancerAdapter(
             NaturalLanguageDetector nlDetector,
             LlmPort llmPort,
@@ -67,19 +58,6 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         this.llmPort = llmPort;
         this.productTagger = productTagger;
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
-    }
-
-    @PreDestroy
-    void shutdown() {
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
     }
 
     @Override
@@ -108,10 +86,10 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
         List<ProductReadModel> top5 = topProducts.subList(0, Math.min(TOP_PRODUCTS_LIMIT, topProducts.size()));
 
         CompletableFuture<String> intentFuture = CompletableFuture.supplyAsync(
-            () -> llmPort.generateText(INTENT_SYSTEM_PROMPT, keyword), executor);
+            () -> llmPort.generateText(INTENT_SYSTEM_PROMPT, keyword));
 
         CompletableFuture<Map<String, List<String>>> tagsFuture = CompletableFuture.supplyAsync(
-            () -> productTagger.tagProducts(top5), executor);
+            () -> productTagger.tagProducts(top5));
 
         String marketContext = buildMarketContext(top5);
         CompletableFuture<String> marketFuture = CompletableFuture.supplyAsync(() -> {
@@ -121,7 +99,7 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
                 log.warn("Market analysis failed", e);
                 return null;
             }
-        }, executor);
+        });
 
         CompletableFuture<List<String>> questionsFuture = CompletableFuture.supplyAsync(() -> {
             try {
@@ -131,16 +109,16 @@ public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
                 log.warn("Suggested questions failed", e);
                 return List.of();
             }
-        }, executor);
+        });
 
         try {
             CompletableFuture.allOf(intentFuture, tagsFuture, marketFuture, questionsFuture)
                 .get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             log.warn("AI search enhancement timed out for keyword: {}", keyword);
-            intentFuture.cancel(true);
-            marketFuture.cancel(true);
-            questionsFuture.cancel(true);
+            intentFuture.cancel(false);
+            marketFuture.cancel(false);
+            questionsFuture.cancel(false);
             return collectAndCache(cacheKey,
                 collectPartialResults(intentFuture, tagsFuture, marketFuture, questionsFuture));
         } catch (InterruptedException e) {

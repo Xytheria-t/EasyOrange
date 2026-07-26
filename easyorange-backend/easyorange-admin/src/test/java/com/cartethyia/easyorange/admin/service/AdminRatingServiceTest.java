@@ -31,6 +31,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,7 +106,7 @@ class AdminRatingServiceTest {
             Page<ProductRatingDO> pageResult = new Page<>(1, 10, 1);
             pageResult.setRecords(List.of(review));
 
-            when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(pageResult);
+            when(reviewMapper.selectPage(any(), any())).thenReturn(pageResult);
             when(batchQueryUtil.batchGetProducts(anyList())).thenReturn(Map.of(PRODUCT_ID, createProduct(PRODUCT_ID, "测试商品")));
             when(batchQueryUtil.batchGetUsers(anyList())).thenReturn(Map.of(USER_ID, createUser(USER_ID, "testuser", "测试用户")));
 
@@ -131,7 +132,7 @@ class AdminRatingServiceTest {
             Page<ProductRatingDO> emptyPage = new Page<>(1, 20, 0);
             emptyPage.setRecords(List.of());
 
-            when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(emptyPage);
+            when(reviewMapper.selectPage(any(), any())).thenReturn(emptyPage);
 
             PageResult<AdminRatingResponse> result = reviewService.listReviews(request);
 

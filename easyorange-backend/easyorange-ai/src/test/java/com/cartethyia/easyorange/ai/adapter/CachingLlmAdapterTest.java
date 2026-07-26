@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
+import io.github.resilience4j.retry.Retry;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -67,7 +68,7 @@ class CachingLlmAdapterTest {
             aiCaches.put(scope, mlc);
         }
 
-        adapter = new CachingLlmAdapter(delegate, aiProperties, aiCaches, staleCache, aiMetricsService);
+        adapter = new CachingLlmAdapter(delegate, aiProperties, aiCaches, staleCache, aiMetricsService, Retry.ofDefaults("test"));
     }
 
     @Test

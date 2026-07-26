@@ -26,7 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -67,7 +67,7 @@ class MessageQueryHandlerTest {
         void getMessageDetail_success() {
             MessageAggregate aggregate = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
-            when(userInfoPort.getUserInfoMap(any(Set.class)))
+            when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", "avatar.jpg"),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
 
@@ -128,7 +128,7 @@ class MessageQueryHandlerTest {
             MessageAggregate aggregate = createTestMessage();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
             when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
-            when(userInfoPort.getUserInfoMap(any(Set.class)))
+            when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
 
@@ -177,7 +177,7 @@ class MessageQueryHandlerTest {
             MessageAggregate aggregate = createTestMessage();
             PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
             when(queryRepository.findUnreadByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
-            when(userInfoPort.getUserInfoMap(any(Set.class)))
+            when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
                             USER_ID, new UserInfo(USER_ID, "接收者", null)));
 

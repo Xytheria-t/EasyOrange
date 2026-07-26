@@ -1,11 +1,11 @@
 package com.cartethyia.easyorange.framework.util;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLongArray;
 
@@ -15,15 +15,16 @@ public class LocalRateLimiter {
     private static final long CLEAN_INTERVAL_SECONDS = 120;
 
     private final ConcurrentHashMap<String, AtomicLongArray> windows = new ConcurrentHashMap<>();
+    private final TaskScheduler taskScheduler;
+
+    public LocalRateLimiter(TaskScheduler taskScheduler) {
+        this.taskScheduler = taskScheduler;
+    }
 
     @PostConstruct
     void startCleaner() {
-        ScheduledExecutorService cleaner = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "local-ratelimit-cleaner");
-            t.setDaemon(true);
-            return t;
-        });
-        cleaner.scheduleAtFixedRate(this::evictExpired, CLEAN_INTERVAL_SECONDS, CLEAN_INTERVAL_SECONDS, TimeUnit.SECONDS);
+        taskScheduler.scheduleAtFixedRate(this::evictExpired,
+                Duration.ofSeconds(CLEAN_INTERVAL_SECONDS));
     }
 
     /**

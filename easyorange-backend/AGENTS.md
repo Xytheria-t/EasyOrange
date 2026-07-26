@@ -318,6 +318,18 @@ Redis 缓存操作统一使用 **Resilience4j CircuitBreaker** + 多级降级（
 
 **新增缓存适配器时**：注入 `CircuitBreakerRegistry`，用 `CircuitBreaker.decorateSupplier()` / `decorateRunnable()` 包装 Redis 操作，异常时降级到 DB + 本地缓存。参考 `CategoryCacheAdapter` 模式。
 
+### AI 调用重试 (Resilience4j Retry)
+
+AI 适配器（`CachingLlmAdapter` / `CachingVisionAdapter`）使用 **Resilience4j Retry** 实现 LLM/Vision API 调用重试，应对网络瞬断和上游限流。
+
+`Resilience4jConfig` 在 framework 模块提供 `RetryRegistry` Bean + 两个预注册实例：`aiLlm`（文本）和 `aiVision`（视觉）。默认指数退避 500ms × 2.0，最多 3 次，重试 `RestClientException`，忽略 `IllegalArgumentException`。
+
+**新增 AI 适配器时**：注入 `@Qualifier("aiLlm")` 或 `@Qualifier("aiVision") Retry`，用 `Retry.decorateSupplier()` 包装 API 调用。参考 `CachingLlmAdapter` 模式。
+
+### AI 搜索增强并行管道
+
+`AiSearchEnhancerAdapter` 内 4 路 `CompletableFuture` 并行执行（LLM 意图识别、商品标签、市场分析、建议问题），使用 `ForkJoinPool.commonPool()`（Java 21+ 虚拟线程），无需自定义线程池。单步骤超时 5s，异常部分降级不影响整体。取消操作使用 `cancel(false)` 避免中断虚拟线程的 carrier 线程。
+
 ### Admin 模块端口接口
 
 Admin 模块**禁止直接依赖其他模块的 Mapper/DO**，必须通过 `domain/port/`（`AdminProductQueryPort`, `AdminUserQueryPort`, `AdminOrderQueryPort`）接口查询，适配器在 `easyorange-application/adapter/outbound/admin/` 实现。

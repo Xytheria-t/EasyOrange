@@ -30,6 +30,10 @@ spring:
   flyway:
     locations: classpath:db/migration,classpath:db/dev
     out-of-order: false
+    # 开发阶段关闭校验：AI 改代码可能变更 V1 迁移文件校验和，
+    # 开启 validate-on-migrate 会导致每次启动崩溃。
+    # 需要真正刷新 schema 时手工重置：DROP DATABASE easyorange; CREATE DATABASE easyorange;
+    validate-on-migrate: false
 
   # -------------------------------------------------------------------
   # SQL 初始化配置 - 加载种子数据
@@ -73,10 +77,6 @@ spring:
         concurrent-consumers: 1
         max-concurrent-consumers: 5
         default-requeue-rejected: false
-
-  threads:
-    virtual:
-      enabled: false
 
 # -------------------------------------------------------------------
 # 日志配置 - 开发环境

@@ -4,7 +4,7 @@
 
 - [安全配置](#安全配置)
 - [JWT 配置](#jwt-配置)
-- [线程池配置](#线程池配置)
+- [线程池配置（虚拟线程优先）](#线程池配置虚拟线程优先)
 - [缓存配置](#缓存配置)
 
 ---
@@ -84,49 +84,35 @@ jwt:
 
 ---
 
-## 线程池配置
+## 线程池配置（虚拟线程优先）
 
-> **`@Async` 行为变更**：`@Async` 使用方法 Spring Boot 自动配置的 `TaskExecutor`（配置前缀 `spring.task.execution.pool.*`，见 `application.yaml`）。自定义的 `domainEventExecutor` 和 `taskScheduler` 仍使用 `thread-pool.*` 配置。
+> **架构变更（2026-07-26）**：项目已全面启用 Java 21+ 虚拟线程（`spring.threads.virtual.enabled=true`）。自定义 `ThreadPoolTaskExecutor` 已移除，IO 密集型异步任务由虚拟线程自动管理。仅保留 `taskScheduler`（`ThreadPoolTaskScheduler`）用于 `@Scheduled` 定时任务，固定 poolSize=5。
 
-### 基本配置
+### 为什么移除自定义线程池
 
-```yaml
-thread-pool:
-  # 核心线程数（domainEventExecutor 使用 core/2）
-  core-pool-size: 10
-  
-  # 最大线程数（domainEventExecutor 使用 max/2）
-  max-pool-size: 20
-  
-  # 队列容量（domainEventExecutor 使用 2x）
-  queue-capacity: 500
-  
-  # 线程存活时间（秒）
-  keep-alive-seconds: 60
-  
-  # 线程名前缀
-  thread-name-prefix: "async-"
-  
-  # 等待任务完成超时时间（秒）
-  await-termination-seconds: 60
-```
+| 旧组件 | 原参数 | 替换方案 |
+|--------|--------|---------|
+| `domainEventExecutor` | core=5, max=10, queue=1000 | 虚拟线程 — `@Async` 使用 Spring Boot 自动配置的 `SimpleAsyncTaskExecutor` |
+| `aiSearchExecutor` | core=4, max=8, queue=100 | 虚拟线程 — `CompletableFuture.supplyAsync()` 无参形式用 `ForkJoinPool.commonPool()` |
+| `webSocketInbound/OutboundExecutor` | core=4, max=10, queue=100 | 虚拟线程 — 删除自定义 channel 配置，Spring 默认线程 |
+| `thread-pool.*` 配置项 | 10 个 YAML 配置属性 | 已删除（死代码） |
 
-### 线程池拒绝策略
+### 保留的线程池：taskScheduler
 
-**改进内容**：
+`@Scheduled` 定时任务（消息归档、缓存清理等）保留平台线程池：
 
-- 使用自定义 `LoggingRejectedExecutionHandler`
-- 记录详细的拒绝信息
-- 支持两种模式：
-  - **丢弃模式**：丢弃任务并记录日志
-  - **调用线程执行模式**：由调用线程执行任务
+- PoolSize: **5**（固定）
+- 前缀：`scheduled-`
+- MDC 传播：`MdcTaskDecorator`
+- 拒绝策略：`LoggingRejectedExecutionHandler`（调用线程执行 + WARN 日志）
+- 优雅关闭：`waitForTasksToCompleteOnShutdown=true`, `awaitTerminationSeconds=60`
 
-**日志示例**：
+### 虚拟线程注意事项
 
-```
-WARN  - 线程池 [async-] 任务被拒绝 - 活跃线程: 16, 队列大小: 100, 已完成: 1234, 是否丢弃: false
-WARN  - 线程池 [async-] 由调用线程执行任务
-```
+- 虚拟线程由 JVM 管理，无需配置 core/max/queue —— **Spring Boot 忽略 `spring.task.execution.pool.*` 配置**（这些配置已在 application.yaml 中清理）
+- MDC 传播：虚拟线程自动继承父线程的 MDC 上下文（Micrometer Tracing + Brave），无需 `MdcTaskDecorator`
+- 调试：启动时加 `-Djdk.tracePinnedThreads=short` 检测虚拟线程钉在 carrier 线程上的情况
+- `CompletableFuture.cancel(true)` 发送 `Thread.interrupt()` 可能导致 carrier 线程泄漏，统一使用 `cancel(false)`
 
 ---
 
@@ -211,14 +197,14 @@ jwt:
   access-token-expiration: 30
   refresh-token-expiration: 7
 
-# 线程池配置
-thread-pool:
-  core-pool-size: 8
-  max-pool-size: 16
-  queue-capacity: 100
-  keep-alive-seconds: 60
-  thread-name-prefix: "async-"
-  await-termination-seconds: 60
+# 虚拟线程配置
+spring:
+  threads:
+    virtual:
+      enabled: true
+# （所有 IO 密集型异步任务使用虚拟线程，无需配置线程池参数）
+# 仅 taskScheduler 保留平台线程（poolSize=5，硬编码在 ThreadPoolConfig 中）
+# 旧 thread-pool.* 配置项已移除
 
 # Redis 配置
 spring:
@@ -255,9 +241,10 @@ easyorange:
    - 使用环境变量管理敏感配置
    - 定期轮换 JWT 密钥对（运行 `keys/generate-rsa-keypair.sh` 重新生成）
 
-2. **性能优化**
-   - 根据服务器性能调整线程池大小
-   - 监控线程池拒绝情况
+2. **性能优化（虚拟线程）**
+   - IO 密集型任务使用虚拟线程，无需调整线程池参数
+   - 启动时加 `-Djdk.tracePinnedThreads=short` 检测虚拟线程钉住 carrier 线程
+   - 避免在虚拟线程中使用 `synchronized` 块或 `Thread.interrupt()`（改用 `cancel(false)`）
 
 3. **安全建议**
    - 密码加密强度建议 12-14
@@ -273,7 +260,7 @@ easyorange:
 **新增功能**：
 
 - JWT 本地缓存优化（Caffeine）
-- 自定义线程池拒绝策略
+- 虚拟线程迁移（移除自定义线程池，仅保留 taskScheduler）
 - 自定义缓存类型转换异常
 - 移除 `XssFilter`，改用 `Content-Security-Policy` 响应头
 

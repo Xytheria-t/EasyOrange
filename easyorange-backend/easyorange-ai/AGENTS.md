@@ -15,7 +15,7 @@ ai/
 │   ├── CachingLlmAdapter.java      # @Primary 装饰器，L1+L2 缓存
 │   ├── CachingVisionAdapter.java   # @Primary 装饰器，L1+L2 缓存
 │   ├── outbound/
-│   │   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行)
+│   │   └── AiSearchEnhancerAdapter.java  # AI 导购搜索增强管道 (4 路并行，ForkJoinPool 虚拟线程)
 │   └── dto/                        # 适配器 DTO (DeepSeekRequest, DeepSeekResponse, QwenVlRequest, QwenVlResponse)
 ├── interceptor/
 │   └── AiRateLimitInterceptor.java # AI 限流拦截器，Redis 令牌桶 + stale 降级
@@ -60,7 +60,8 @@ ai/
 - **Port/Adapter 隔离**: `port/` 定义接口，`adapter/` 实现具体供应商。新增 AI 供应商只需新增 adapter 类，不修改业务代码
 - **跨模块 Port**: 本模块作为端口实现方，接口定义在 consumer 模块（如 `AiSearchEnhancerPort` 在 `easyorange-product` 的 `domain/port/`），通过 Spring `Optional<>` 注入实现运行时可替换
 - **纯规则零 LLM**: `NaturalLanguageDetector` 和 `ProductTagger` 不调任何 LLM，通过规则引擎 + 数据库查询完成，确保亚毫秒级响应
-- **并行容错**: `AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，单步骤超时/失败不影响其他步骤。5s 总超时控制
+- **并行容错**: `AiSearchEnhancer` 内 4 个子步骤使用 `CompletableFuture` 并行执行，单步骤超时/失败不影响其他步骤。5s 总超时控制。使用 `ForkJoinPool.commonPool()`（Java 21+ 虚拟线程），无需自定义线程池。取消操作使用 `cancel(false)` 避免中断虚拟线程 carrier 线程
+- **AI 调用重试**: `CachingLlmAdapter` / `CachingVisionAdapter` 使用 Resilience4j Retry 包装 LLM/Vision API 调用，指数退避 500ms × 2.0，最多 3 次。注入方式：`@Qualifier("aiLlm")` / `@Qualifier("aiVision") Retry`
 - **缓存装饰器**: `CachingLlmAdapter` / `CachingVisionAdapter` 使用 `@Primary` 装饰模式，L1 (Caffeine 5min) + L2 (Redis tiered TTL)，业务服务零修改
 - **限流拦截器**: `AiRateLimitInterceptor` 拦截 `/api/ai/**`，按端点独立令牌桶 (5-30次/分)，超限时优先返回 stale 缓存
 

@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.ai.port.VisionPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
+import io.github.resilience4j.retry.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 @Slf4j
 @Primary
@@ -30,18 +32,21 @@ public class CachingVisionAdapter implements VisionPort {
     private final Map<AiCallScope, MultiLevelCache> aiCaches;
     private final Cache<String, Object> staleCache;
     private final AiMetricsService aiMetricsService;
+    private final Retry aiRetry;
 
     public CachingVisionAdapter(
             QwenVlVisionAdapter delegate,
             AiProperties aiProperties,
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
-            AiMetricsService aiMetricsService) {
+            AiMetricsService aiMetricsService,
+            @Qualifier("aiVision") Retry aiRetry) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;
         this.staleCache = staleCache;
         this.aiMetricsService = aiMetricsService;
+        this.aiRetry = aiRetry;
     }
 
     @Override
@@ -51,8 +56,12 @@ public class CachingVisionAdapter implements VisionPort {
 
     @Override
     public String analyzeImages(List<String> imageUrls, String prompt) {
+        // Resilience4j Retry 包装：网络故障时指数退避重试（最多 3 次）
+        Supplier<String> retriedLoader = Retry.decorateSupplier(aiRetry,
+                () -> delegate.analyzeImages(imageUrls, prompt));
+
         if (!aiProperties.getCache().isEnabled()) {
-            return delegate.analyzeImages(imageUrls, prompt);
+            return retriedLoader.get();
         }
 
         var scope = AiCallScope.AUTO_LISTING;
@@ -61,13 +70,13 @@ public class CachingVisionAdapter implements VisionPort {
 
         var cache = aiCaches.get(scope);
         if (cache == null) {
-            return delegate.analyzeImages(imageUrls, prompt);
+            return retriedLoader.get();
         }
 
         var cacheMiss = new AtomicBoolean(false);
         String result = cache.get(key, String.class, () -> {
             cacheMiss.set(true);
-            return delegate.analyzeImages(imageUrls, prompt);
+            return retriedLoader.get();
         });
 
         if (cacheMiss.get()) {

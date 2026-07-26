@@ -85,7 +85,7 @@ easyorange-application
 
 | 文件 | 用途 | 关键差异 |
 |------|------|---------|
-| `application.yaml` | 基础配置 | 数据源、Redis、MyBatis-Plus、线程池 |
+| `application.yaml` | 基础配置 | 数据源、Redis、MyBatis-Plus、虚拟线程 |
 | `application-dev.yaml` | 开发环境 | 小连接池、详细日志、JWT 开发密钥 |
 | `application-prod.yaml` | 生产环境 | 大连接池、SSL、Swagger 关闭、优雅停机 |
 | `application-test.yaml` | 测试环境 | 测试环境配置（Testcontainers 已移除） |
@@ -95,7 +95,7 @@ easyorange-application
 - `easyorange.jwt.secret` / `easyorange.jwt.access-token-expiration` — JWT 配置
 - `easyorange.security` — 安全相关 (白名单路径等)
 - `rate-limit-filter` — 限流+防重 Filter 配置（规则列表、防重间隔、方法匹配）
-- `easyorange.thread-pool` — 线程池配置
+- ~~`thread-pool.*` — 线程池配置~~（已移除，改用虚拟线程，仅保留 `taskScheduler` 硬编码为 poolSize=5）
 - `file.upload.*` — 文件上传路径 (`path`) 和 URL 前缀 (`url-prefix`)
 - ~~`easyorange.idgen.*`~~ — ID 生成器配置（已移除，UUID v7 零配置零依赖）
 - `easyorange.cache.*` — 本地缓存配置（`image.max-size`、`image.expire-hours`、`l1.max-size`、`l1.expire-minutes`）
@@ -106,7 +106,7 @@ easyorange-application
 - `LOG_PATH` — 日志目录，默认 `./logs`，生产环境建议设置为绝对路径
 - 输出：CONSOLE + ASYNC_FILE (app.log) + ASYNC_ERROR_FILE (error.log)
 - 滚动策略：按天 + 大小（100MB/文件，30 天保留，总量 3GB）
-- MDC：`traceId` 由 Micrometer Tracing 自动注入，异步线程通过 `MdcTaskDecorator` 传播（见 framework/AGENTS.md）
+- MDC：`traceId` 由 Micrometer Tracing 自动注入。虚拟线程自动继承 MDC，无需额外配置；`taskScheduler` 通过 `MdcTaskDecorator` 传播（见 framework/AGENTS.md）
 - AsyncAppender：生产环境文件日志异步写入，队列满不阻塞业务线程
 
 ## Flyway 迁移规范
