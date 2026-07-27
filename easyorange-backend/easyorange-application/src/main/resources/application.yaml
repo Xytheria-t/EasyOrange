@@ -121,6 +121,22 @@ server:
     context-path: /
   trusted-proxies: ${SERVER_TRUSTED_PROXIES:127.0.0.1,localhost,0:0:0:0:0:0:0:1}
 
+# -------------------------------------------------------------------
+# SpringDoc OpenAPI 3 — 自动生成 API 契约文档 + Swagger UI
+# -------------------------------------------------------------------
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+    persist-authorization: true
+  default-flat-param-object: true
+
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   type-aliases-package: com.cartethyia.easyorange.product.adapter.outbound.persistence, com.cartethyia.easyorange.product.application.query
@@ -210,6 +226,10 @@ security:
     - /api/products/{id}/view
     - /api/products/batch
     - /api/products/categories/cache
+    # SpringDoc OpenAPI 3 — API 契约文档 + Swagger UI（仅开发/测试环境暴露，生产通过反向代理拦截）
+    - /v3/api-docs/**
+    - /swagger-ui/**
+    - /swagger-ui.html
   product-paths:
     - /api/products
     - /api/products/{id}
@@ -284,6 +304,27 @@ easyorange:
       fail-open: true
     budget:
       enabled: true
+      # 按场景配置 token 预算 — 覆盖 @TokenBudget 注解默认值，运维可热更新而无需发版
+      # scenario 键与 AiCallScope 枚举名（小写）对齐：pricing/review/copy/auto_listing/semantic/qa
+      scenarios:
+        pricing:           # 智能估值 — LLM JSON 输出，~2000 token/call
+          max-tokens-per-call: 2000
+          daily-token-limit: 500000
+        review:            # 商品审核 — LLM JSON 输出，~2000 token/call
+          max-tokens-per-call: 2000
+          daily-token-limit: 500000
+        copy:              # 文案生成 — LLM JSON 输出（200-500 字描述），~2500 token/call
+          max-tokens-per-call: 2500
+          daily-token-limit: 500000
+        auto_listing:      # 智能上架 — Vision + LLM JSON，~3000 token/call
+          max-tokens-per-call: 3000
+          daily-token-limit: 500000
+        semantic:          # 语义搜索 — 仅 embedding（无生成），~500 token/call
+          max-tokens-per-call: 500
+          daily-token-limit: 200000
+        qa:                # 智能客服 — LLM 文本输出（50 字内），~1000 token/call
+          max-tokens-per-call: 1000
+          daily-token-limit: 200000
 
 ---
 # -------------------------------------------------------------------

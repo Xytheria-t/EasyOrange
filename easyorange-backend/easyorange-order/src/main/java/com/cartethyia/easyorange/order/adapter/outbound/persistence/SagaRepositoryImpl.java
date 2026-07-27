@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -47,6 +48,17 @@ public class SagaRepositoryImpl extends BaseRepository<SagaMapper, SagaDO> imple
     @Override
     public void update(SagaStatus sagaStatus) {
         mapper.updateById(toDataObject(sagaStatus));
+    }
+
+    @Override
+    public List<SagaStatus> findTimedOut(LocalDateTime threshold) {
+        return lambdaQuery()
+                .in(SagaDO::getState, SagaState.PENDING.name(), SagaState.COMPENSATING.name())
+                .lt(SagaDO::getUpdatedAt, threshold)
+                .list()
+                .stream()
+                .map(this::toDomain)
+                .toList();
     }
 
     private SagaDO toDataObject(SagaStatus sagaStatus) {

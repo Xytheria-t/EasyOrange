@@ -9,10 +9,12 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.RefundReque
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "支付管理", description = "支付发起/确认/退款")
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor

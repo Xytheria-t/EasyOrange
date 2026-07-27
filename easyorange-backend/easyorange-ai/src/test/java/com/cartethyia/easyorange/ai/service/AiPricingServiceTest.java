@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +34,7 @@ class AiPricingServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiPricingService(llmPort, objectMapper);
+        service = new AiPricingService(llmPort, objectMapper, new TestPromptRegistry());
     }
 
     @Nested

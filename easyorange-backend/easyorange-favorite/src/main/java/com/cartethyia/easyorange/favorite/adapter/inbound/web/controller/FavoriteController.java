@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.request.BatchR
 import com.cartethyia.easyorange.favorite.adapter.inbound.web.dto.response.FavoriteResponse;
 import com.cartethyia.easyorange.favorite.application.service.FavoriteService;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
+@Tag(name = "收藏", description = "商品收藏管理")
 @RestController
 @RequestMapping("/api/favorites")
 @RequiredArgsConstructor

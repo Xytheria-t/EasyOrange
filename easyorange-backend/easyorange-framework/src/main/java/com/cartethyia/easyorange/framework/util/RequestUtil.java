@@ -47,11 +47,6 @@ public final class RequestUtil {
         return LOCALHOST_IPS.contains(ip) ? LOCALHOST_IPV4 : ip;
     }
 
-    public static String getRequestPath() {
-        var req = getRequest();
-        return req != null ? req.getRequestURI() : "";
-    }
-
     public static String getFullRequestUrl(HttpServletRequest request) {
         if (request == null) {
             return "";

@@ -6,12 +6,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryU
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminCategoryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "管理后台-分类", description = "商品分类管理")
 @RestController
 @RequestMapping("/api/admin/categories")
 @RequiredArgsConstructor

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -139,5 +140,12 @@ public class SagaCoordinator {
         SagaStatus updated = current.withRetry();
         sagaRepository.update(updated);
         return updated;
+    }
+
+    /**
+     * 查找超时的活跃 saga — 委托给 SagaRepository。
+     */
+    public List<SagaStatus> findTimedOut(LocalDateTime threshold) {
+        return sagaRepository.findTimedOut(threshold);
     }
 }

@@ -1,3 +1,4 @@
+import type { AiReviewResult } from '@/api/aiApi';
 import { request } from '@/api/core/request';
 import type { PageResult } from '@/types';
 import type {
@@ -14,7 +15,6 @@ import type {
     AdminReportQuery,
     AdminUser,
     AdminUserQuery,
-    AiReviewResult,
     AuditLogResponse,
     BatchAuditRequest,
     CategoryCreateRequest,

@@ -172,19 +172,6 @@ class RequestUtilTest {
     }
 
     @Nested
-    @DisplayName("getRequestPath")
-    class GetRequestPathTests {
-
-        @Test
-        @DisplayName("should return empty when no request attributes")
-        void getRequestPath_withNoContext_shouldReturnEmpty() {
-            String path = RequestUtil.getRequestPath();
-
-            assertThat(path).isEqualTo("");
-        }
-    }
-
-    @Nested
     @DisplayName("getClientIp without arguments")
     class GetClientIpNoArgsTests {
 

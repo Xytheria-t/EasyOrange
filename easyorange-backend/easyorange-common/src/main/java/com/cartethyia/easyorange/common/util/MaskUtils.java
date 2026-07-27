@@ -24,20 +24,6 @@ public class MaskUtils {
         };
     }
 
-    public static String maskIdCard(String idCard) {
-        if (idCard == null || idCard.length() < 15) {
-            return idCard;
-        }
-        return idCard.substring(0, 6) + "********" + idCard.substring(idCard.length() - 4);
-    }
-
-    public static String maskBankCard(String bankCard) {
-        if (bankCard == null || bankCard.length() < 8) {
-            return bankCard;
-        }
-        return bankCard.substring(0, 4) + MASK + bankCard.substring(bankCard.length() - 4);
-    }
-
     public static String maskName(String name) {
         if (name == null || name.isEmpty()) return name;
         return switch (name.length()) {
@@ -60,15 +46,5 @@ public class MaskUtils {
             return address;
         }
         return address.substring(0, visibleChars) + "***";
-    }
-
-    public static String mask(String value, int keepFront, int keepEnd) {
-        if (value == null || value.isEmpty()) {
-            return value;
-        }
-        if (value.length() <= keepFront + keepEnd) {
-            return value;
-        }
-        return value.substring(0, keepFront) + MASK + value.substring(value.length() - keepEnd);
     }
 }

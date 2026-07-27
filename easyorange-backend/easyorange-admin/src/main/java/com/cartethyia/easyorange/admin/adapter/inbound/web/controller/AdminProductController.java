@@ -6,10 +6,12 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProd
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "管理后台-商品", description = "商品管理")
 @RestController
 @RequestMapping("/api/admin/products")
 @RequiredArgsConstructor

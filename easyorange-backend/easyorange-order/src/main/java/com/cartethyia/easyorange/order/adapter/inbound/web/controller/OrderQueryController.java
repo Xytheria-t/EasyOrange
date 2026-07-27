@@ -7,10 +7,12 @@ import com.cartethyia.easyorange.order.application.query.OrderListQuery;
 import com.cartethyia.easyorange.order.application.query.OrderQueryHandler;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.QueryOrderRequest;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "订单管理", description = "订单查询")
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor

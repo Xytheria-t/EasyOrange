@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
@@ -96,31 +95,6 @@ export function StatusBadge({ status, type, className }: StatusBadgeProps) {
         >
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: vs.dot }} aria-hidden="true" />
             {label}
-        </Badge>
-    );
-}
-
-export interface CustomBadgeProps {
-    children: ReactNode;
-    variant?: StatusVariant;
-    className?: string;
-}
-
-export function CustomBadge({ children, variant = 'default', className }: CustomBadgeProps) {
-    const vs = variantConfig[variant];
-    return (
-        <Badge
-            variant="outline"
-            className={cn(
-                'inline-flex items-center gap-1.5 border-0 px-2.5 py-[0.27rem] text-[0.73rem] font-semibold tracking-wide rounded-full pointer-events-none',
-                className
-            )}
-            style={{
-                background: vs.bg,
-                color: vs.color,
-            }}
-        >
-            {children}
         </Badge>
     );
 }

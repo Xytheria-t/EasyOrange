@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# EasyOrange pre-commit hook — 快速编译校验，防止破坏性提交进入仓库。
+# 跳过方式：SKIP=git-hooks git commit -m "..."
+# 安装方式：git config core.hooksPath .githooks
+set -e
+
+if [ -n "$SKIP" ]; then
+  echo "[pre-commit] SKIP env var set, skipping hooks."
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+BACKEND_DIR="$ROOT/easyorange-backend"
+
+if [ ! -d "$BACKEND_DIR" ]; then
+  echo "[pre-commit] Backend dir not found, skipping compile check."
+  exit 0
+fi
+
+# 仅校验编译（validate 阶段不跑测试，秒级完成）
+echo "[pre-commit] Running ./mvnw validate -q (compile check)..."
+cd "$BACKEND_DIR"
+if ! ./mvnw validate -q -B -ntp 2>/dev/null; then
+  echo "[pre-commit] FAIL: compilation error. Fix and retry."
+  echo "[pre-commit] Skip with: SKIP=git-hooks git commit -m '...'"
+  exit 1
+fi
+
+echo "[pre-commit] OK"

@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
+@Tag(name = "支付管理", description = "支付查询")
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor

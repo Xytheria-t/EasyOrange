@@ -9,12 +9,14 @@ import com.cartethyia.easyorange.product.application.query.ProductReportQuerySer
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.request.ReportRequest;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportResponse;
 import com.cartethyia.easyorange.product.adapter.inbound.web.dto.response.ProductReportDetailResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Validated
+@Tag(name = "举报反馈", description = "商品举报")
 @RestController
 @RequestMapping("/api/reports")
 @RequiredArgsConstructor

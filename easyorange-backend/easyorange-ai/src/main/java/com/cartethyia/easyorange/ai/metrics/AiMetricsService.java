@@ -6,7 +6,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * AI 链路可观测性指标服务 — 记录多级缓存命中率、LLM/Vision 调用延迟、
- * 限流拒绝/降级/放行计数，暴露给 Prometheus 抓取（/actuator/prometheus）。
+ * 限流拒绝/降级/放行计数、Token 预算用量、Bulkhead 隔离拒绝，
+ * 暴露给 Prometheus 抓取（/actuator/prometheus）。
  */
 @Component
 public class AiMetricsService {
@@ -71,5 +72,36 @@ public class AiMetricsService {
     /** 限流 fail-open（Redis 不可用） */
     public void recordRateLimitFailOpen(String scope) {
         meterRegistry.counter("easyorange.ai.ratelimit", "scope", scope, "outcome", "fail_open").increment();
+    }
+
+    // ── Token 预算指标 ────────────────────────────────────────────
+
+    /**
+     * 记录 Token 预算用量（每次 AI 调用后上报）。
+     *
+     * @param scenario    场景名（与 AiCallScope 枚举名对齐）
+     * @param usedTokens  本次调用估算 token 数
+     * @param dailyTotal  当日累计 token 数（含本次）
+     */
+    public void recordTokenBudgetUsage(String scenario, int usedTokens, long dailyTotal) {
+        meterRegistry.counter("easyorange.ai.token_budget.usage",
+                "scenario", scenario, "outcome", "consumed").increment(usedTokens);
+        meterRegistry.gauge("easyorange.ai.token_budget.daily_total",
+                io.micrometer.core.instrument.Tags.of("scenario", scenario),
+                dailyTotal);
+    }
+
+    /** Token 预算超限（拒绝调用） */
+    public void recordTokenBudgetExceeded(String scenario) {
+        meterRegistry.counter("easyorange.ai.token_budget",
+                "scenario", scenario, "outcome", "exceeded").increment();
+    }
+
+    // ── Bulkhead 隔离指标 ────────────────────────────────────────
+
+    /** Bulkhead 满载拒绝（并发上限达到） */
+    public void recordBulkheadRejected(String name) {
+        meterRegistry.counter("easyorange.ai.bulkhead",
+                "name", name, "outcome", "rejected").increment();
     }
 }

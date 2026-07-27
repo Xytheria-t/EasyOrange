@@ -32,16 +32,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Test framework module
-        run: ./mvnw test -pl easyorange-framework -am
+      # 全量 11 模块测试（取代原先只测 framework/application/admin 三模块）
+      - name: Backend full test (11 modules)
+        run: ./mvnw test -B
         working-directory: easyorange-backend
 
-      - name: Test application module
-        run: ./mvnw test -pl easyorange-application -am
-        working-directory: easyorange-backend
-
-      - name: Test admin module
-        run: ./mvnw test -pl easyorange-admin -am
+      # verify 阶段启用 JaCoCo 门禁（Gitee 不跑 PIT 节省时间）
+      - name: Backend verify (JaCoCo gate)
+        run: ./mvnw verify -B -Djacoco.haltOnFailure=true -DskipTests=true
         working-directory: easyorange-backend
 
       - name: Setup Node.js

@@ -18,6 +18,7 @@ import com.cartethyia.easyorange.ai.service.AutoListingService;
 import com.cartethyia.easyorange.ai.service.SemanticSearchService;
 import com.cartethyia.easyorange.common.annotation.SkipRateLimit;
 import com.cartethyia.easyorange.common.result.Result;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @SkipRateLimit
+@Tag(name = "AI 服务", description = "AI 智能估值/审核/文案/客服/语义搜索/自动上架")
 @RestController
 @RequestMapping("/api/ai")
 @RequiredArgsConstructor

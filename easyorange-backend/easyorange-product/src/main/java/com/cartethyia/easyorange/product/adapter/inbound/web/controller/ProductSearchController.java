@@ -14,6 +14,7 @@ import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordR
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.domain.port.FacetBucket;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Size;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "商品管理", description = "商品搜索/筛选")
 @RestController
 @RequestMapping("/api/products/search")
 @RequiredArgsConstructor

@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.RepeatSubmitConfig;
 import com.cartethyia.easyorange.framework.config.properties.RateLimitFilterProperties.Rule;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.LocalRateLimiter;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -62,17 +63,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final RateLimitFilterProperties properties;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final LocalRateLimiter localRateLimiter;
+    private final DistributedRateLimiter distributedRateLimiter;
     private final ObjectMapper objectMapper;
     private final ObjectProvider<List<HandlerMapping>> handlerMappingsProvider;
 
     public RateLimitFilter(RateLimitFilterProperties properties,
                            RedisTemplate<Object, Object> redisTemplate,
                            LocalRateLimiter localRateLimiter,
+                           DistributedRateLimiter distributedRateLimiter,
                            ObjectMapper objectMapper,
                            ObjectProvider<List<HandlerMapping>> handlerMappingsProvider) {
         this.properties = properties;
         this.redisTemplate = redisTemplate;
         this.localRateLimiter = localRateLimiter;
+        this.distributedRateLimiter = distributedRateLimiter;
         this.objectMapper = objectMapper;
         this.handlerMappingsProvider = handlerMappingsProvider;
     }
@@ -161,15 +165,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String identifier = RequestUtil.getClientIp(request);
         String key = "eo:rate:" + identifier + ":" + method + ":" + request.getRequestURI();
         try {
-            // 用 increment + expire 替代 Lua 脚本，避免 JdkSerializationRedisSerializer
-            // 将 Integer 参数序列化成二进制破坏 Lua tonumber 的问题（与 AiRateLimitInterceptor 一致）
-            Long current = redisTemplate.opsForValue().increment(key);
-            if (current != null && current == 1L) {
-                redisTemplate.expire(key, rule.getWindowSeconds(), TimeUnit.SECONDS);
-            }
-
-            if (current != null && current > rule.getMaxRequests()) {
-                log.warn("action=redis_rate_limit, key={}, current={}, limit={}", key, current, rule.getMaxRequests());
+            // Redisson RRateLimiter 令牌桶 — 原子化取桶/补桶/扣桶，解决 increment+expire 的原子性缺口
+            boolean allowed = distributedRateLimiter.tryAcquire(
+                    key, rule.getMaxRequests(), rule.getWindowSeconds());
+            if (!allowed) {
+                log.warn("action=redis_rate_limit, key={}, limit={}", key, rule.getMaxRequests());
                 throw BusinessException.of(rule.getMessage());
             }
         } catch (BusinessException ex) {

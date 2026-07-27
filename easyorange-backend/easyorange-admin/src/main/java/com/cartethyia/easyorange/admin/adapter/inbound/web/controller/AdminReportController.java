@@ -8,12 +8,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRep
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.admin.service.AdminReportService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "管理后台-举报", description = "举报处理")
 @RestController
 @RequestMapping("/api/admin/reports")
 @RequiredArgsConstructor

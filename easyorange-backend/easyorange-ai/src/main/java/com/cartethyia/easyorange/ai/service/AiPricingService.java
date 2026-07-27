@@ -1,7 +1,10 @@
 package com.cartethyia.easyorange.ai.service;
 
+import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.PricingSuggestion;
 import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
+import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +17,13 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class AiPricingService {
 
+    private static final String PROMPT_NAME = "ai_pricing_system";
+
     private final LlmPort llmPort;
     private final ObjectMapper objectMapper;
+    private final PromptRegistry promptRegistry;
 
+    @TokenBudget(scenario = "pricing", maxTokensPerCall = 2000, dailyTokenLimit = 500_000)
     public PricingSuggestion suggestPrice(
             String productName,
             String description,
@@ -24,16 +31,7 @@ public class AiPricingService {
             String conditionLevel,
             BigDecimal originalPrice
     ) {
-        String systemPrompt = """
-                你是 EasyOrange — AI 工程化 的智能估值助手。根据资产信息，
-                分析市场价格并给出建议售价。
-                请以 JSON 格式返回，包含字段：
-                - suggestedPrice: 建议售价（数字）
-                - minPrice: 最低建议价（数字）
-                - maxPrice: 最高建议价（数字）
-                - reasoning: 定价理由（字符串，50字内）
-                - marketContext: 市场行情（字符串，30字内）
-                """;
+        String systemPrompt = loadSystemPrompt();
 
         String userMessage = String.format("""
                 商品名称：%s
@@ -59,6 +57,17 @@ public class AiPricingService {
             log.error("AI pricing failed for product: {}", productName, e);
             return null;
         }
+    }
+
+    /**
+     * 从 PromptRegistry 加载系统提示词（版本化、可热更新）。
+     * YAML 缺失时 fail-fast，避免静默使用错误 prompt。
+     */
+    private String loadSystemPrompt() {
+        return promptRegistry.getLatest(PROMPT_NAME)
+                .map(PromptTemplate::template)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Prompt template not found: " + PROMPT_NAME));
     }
 
     private String formatCondition(String conditionLevel) {

@@ -8,10 +8,12 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrd
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminOrderResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.OrderStatsResponse;
 import com.cartethyia.easyorange.admin.service.AdminOrderService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "管理后台-订单", description = "订单管理")
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor

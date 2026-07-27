@@ -6,10 +6,12 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminUser
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.UpdateStatusRequest;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "管理后台-用户", description = "用户管理")
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor

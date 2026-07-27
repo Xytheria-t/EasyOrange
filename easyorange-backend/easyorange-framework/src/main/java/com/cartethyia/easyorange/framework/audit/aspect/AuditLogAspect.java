@@ -1,15 +1,16 @@
 package com.cartethyia.easyorange.framework.audit.aspect;
 
 import com.cartethyia.easyorange.common.enums.BusinessType;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.security.AuthUser;
 import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
+import com.cartethyia.easyorange.framework.audit.event.AuditLogEvent;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import com.cartethyia.easyorange.framework.config.properties.AuditLogProperties;
 import com.cartethyia.easyorange.framework.util.AuditLogUtil;
 import com.cartethyia.easyorange.framework.util.RequestUtil;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -18,6 +19,8 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.core.JacksonException;
@@ -33,9 +36,14 @@ import java.util.Map;
 /**
  * 审计日志 AOP 切面。
  * <p>
- * 拦截所有 RestController 的写操作方法，自动记录审计日志到 {@code eo_audit_log} 表。
+ * 拦截所有 RestController 的写操作方法，通过 Spring Modulith Outbox 异步记录审计日志。
  * 约定优于注解：方法名以 get/query/find/list 等前缀开头视为读操作，跳过记录。
  * 模块名和操作标题通过 {@link AuditLogProperties} 的映射表推导。
+ * </p>
+ * <p>
+ * 事件流：切面发布 {@link AuditLogEvent} → Modulith 写入 {@code EVENT_PUBLICATION} 表
+ * （与当前事务同提交，Outbox 模式保证崩溃不丢）→ RabbitMQ 异步投递 →
+ * {@code AuditLogEventConsumer} 消费写库。若事件发布失败，降级为直接入库（best-effort）。
  * </p>
  * <p>
  * 执行顺序 {@code @Order(3)}，在 {@code IdempotencyAspect @Order(1)} 之后，
@@ -46,12 +54,25 @@ import java.util.Map;
 @Aspect
 @Order(3)
 @Component
-@RequiredArgsConstructor
 public class AuditLogAspect {
 
     private final AuditLogService auditLogService;
     private final AuditLogProperties auditLogProperties;
     private final ObjectMapper objectMapper;
+    private final DomainEventPublisher domainEventPublisher;
+    private final TransactionTemplate transactionTemplate;
+
+    public AuditLogAspect(AuditLogService auditLogService,
+                           AuditLogProperties auditLogProperties,
+                           ObjectMapper objectMapper,
+                           DomainEventPublisher domainEventPublisher,
+                           PlatformTransactionManager transactionManager) {
+        this.auditLogService = auditLogService;
+        this.auditLogProperties = auditLogProperties;
+        this.objectMapper = objectMapper;
+        this.domainEventPublisher = domainEventPublisher;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
+    }
 
     // ───────────────────────── Pointcut ─────────────────────────
 
@@ -90,7 +111,7 @@ public class AuditLogAspect {
             if (request == null) return;
 
             AuditLog auditLog = buildAuditLog(joinPoint, method, methodName, e, jsonResult, request, costTime);
-            auditLogService.insertAuditLog(auditLog);
+            publishAuditLog(auditLog);
 
         } catch (Exception exp) {
             log.error("Failed to save audit log", exp);
@@ -105,6 +126,24 @@ public class AuditLogAspect {
             if (methodName.startsWith(prefix)) return true;
         }
         return false;
+    }
+
+    // ───────────────────────── Event publishing (Outbox) ─────────────────────────
+
+    /**
+     * 通过 Spring Modulith Outbox 发布审计日志事件。
+     * <p>
+     * 事件在独立短事务中发布 → Modulith 写入 {@code EVENT_PUBLICATION} 表 →
+     * 提交后异步投递 RabbitMQ → 消费者写库。若发布失败，降级为直接入库。
+     */
+    private void publishAuditLog(AuditLog auditLog) {
+        try {
+            transactionTemplate.executeWithoutResult(status ->
+                    domainEventPublisher.publish(AuditLogEvent.of(auditLog)));
+        } catch (Exception e) {
+            log.warn("Outbox 发布审计日志失败，降级为直接入库: method={}", auditLog.getMethod(), e);
+            auditLogService.insertAuditLog(auditLog);
+        }
     }
 
     // ───────────────────────── AuditLog builder ─────────────────────────

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import type { AiReviewResult } from '@/api/aiApi';
 import { ShadcnButton, Sheet, SheetContent, SheetHeader, SheetTitle, Textarea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { AiReviewSuggestion } from '../../../components/ai/AiReviewSuggestion';
 import { adminApi } from '../../api/adminApi';
 import { useAuditLogs, useAuditProduct } from '../../hooks/useAdminProductAudit';
 import { useAdminProductDetail } from '../../hooks/useAdminProducts';
-import type { AiReviewResult, AuditDimension, AuditLogResponse } from '../../types/admin';
+import type { AuditDimension, AuditLogResponse } from '../../types/admin';
 
 interface ProductDetailDrawerProps {
     open: boolean;

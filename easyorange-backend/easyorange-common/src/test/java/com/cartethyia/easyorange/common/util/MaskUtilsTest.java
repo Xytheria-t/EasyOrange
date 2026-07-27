@@ -65,29 +65,6 @@ class MaskUtilsTest {
     }
 
     @Nested
-    @DisplayName("身份证脱敏")
-    class MaskIdCardTests {
-
-        @Test
-        @DisplayName("正常身份证号脱敏")
-        void maskIdCard_normal() {
-            assertEquals("110101********1234", MaskUtils.maskIdCard("110101199001011234"));
-        }
-
-        @Test
-        @DisplayName("null 返回 null")
-        void maskIdCard_null() {
-            assertNull(MaskUtils.maskIdCard(null));
-        }
-
-        @Test
-        @DisplayName("长度不足返回原值")
-        void maskIdCard_tooShort() {
-            assertEquals("123456789", MaskUtils.maskIdCard("123456789"));
-        }
-    }
-
-    @Nested
     @DisplayName("姓名脱敏")
     class MaskNameTests {
 
@@ -129,29 +106,6 @@ class MaskUtilsTest {
     }
 
     @Nested
-    @DisplayName("银行卡脱敏")
-    class MaskBankCardTests {
-
-        @Test
-        @DisplayName("正常银行卡号脱敏")
-        void maskBankCard_normal() {
-            assertEquals("6222****0123", MaskUtils.maskBankCard("6222021234567890123"));
-        }
-
-        @Test
-        @DisplayName("null 返回 null")
-        void maskBankCard_null() {
-            assertNull(MaskUtils.maskBankCard(null));
-        }
-
-        @Test
-        @DisplayName("长度不足返回原值")
-        void maskBankCard_tooShort() {
-            assertEquals("1234567", MaskUtils.maskBankCard("1234567"));
-        }
-    }
-
-    @Nested
     @DisplayName("地址脱敏")
     class MaskAddressTests {
 
@@ -169,26 +123,4 @@ class MaskUtilsTest {
         }
     }
 
-    @Nested
-    @DisplayName("通用脱敏")
-    class MaskTests {
-
-        @Test
-        @DisplayName("保留前3后4")
-        void mask_normal() {
-            assertEquals("138****5678", MaskUtils.mask("13812345678", 3, 4));
-        }
-
-        @Test
-        @DisplayName("长度不足返回原值")
-        void mask_tooShort() {
-            assertEquals("123", MaskUtils.mask("123", 2, 2));
-        }
-
-        @Test
-        @DisplayName("null 返回 null")
-        void mask_null() {
-            assertNull(MaskUtils.mask(null, 2, 2));
-        }
-    }
 }

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.ai.service;
 import com.cartethyia.easyorange.ai.dto.QaRequest;
 import com.cartethyia.easyorange.ai.dto.QaResponse;
 import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.prompt.TestPromptRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,7 +27,7 @@ class AiQaServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiQaService(llmPort);
+        service = new AiQaService(llmPort, new TestPromptRegistry());
     }
 
     private QaRequest createRequest(String question) {

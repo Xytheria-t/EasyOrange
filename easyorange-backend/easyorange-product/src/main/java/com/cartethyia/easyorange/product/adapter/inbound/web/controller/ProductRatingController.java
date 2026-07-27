@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.product.application.command.ProductRatingComman
 import com.cartethyia.easyorange.product.application.query.ProductRatingQueryService;
 import com.cartethyia.easyorange.product.application.query.dto.ProductRatingVO;
 import com.cartethyia.easyorange.product.application.query.dto.RatingStatsVO;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "商品管理", description = "商品评价")
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor

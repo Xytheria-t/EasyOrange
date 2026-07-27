@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.framework.audit.mapper.AuditLogMapper;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -18,7 +17,6 @@ public class AuditLogServiceImpl implements AuditLogService {
     private final IdGenerator idGenerator;
 
     @Override
-    @Async
     public void insertAuditLog(AuditLog auditLog) {
         if (auditLog.getId() == null) {
             auditLog.setId(idGenerator.generateId());

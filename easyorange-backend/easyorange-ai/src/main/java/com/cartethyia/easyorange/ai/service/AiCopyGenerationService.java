@@ -1,7 +1,10 @@
 package com.cartethyia.easyorange.ai.service;
 
+import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.CopyGenerationResult;
 import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
+import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,9 +15,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AiCopyGenerationService {
 
+    private static final String PROMPT_NAME = "ai_copy_generation_system";
+
     private final LlmPort llmPort;
     private final ObjectMapper objectMapper;
+    private final PromptRegistry promptRegistry;
 
+    @TokenBudget(scenario = "copy", maxTokensPerCall = 2500, dailyTokenLimit = 500_000)
     public CopyGenerationResult generateCopy(
             String productName,
             String categoryName,
@@ -29,13 +36,7 @@ public class AiCopyGenerationService {
             default -> "标准推荐型：平衡描述商品的基本信息和卖点，适合大多数商品";
         };
 
-        String systemPrompt = """
-                你是 EasyOrange — AI 工程化 的智能文案生成助手。根据资产信息生成吸引人的资产标题和描述。
-                请以 JSON 格式返回，包含字段：
-                - title: 商品标题（简洁有吸引力，含关键词，15-30字）
-                - description: 商品描述（详细描述商品状况、特点、卖点，200-500字）
-                - style: 使用的文案风格
-                """;
+        String systemPrompt = loadSystemPrompt();
 
         String userMessage = String.format("""
                 商品名称：%s
@@ -62,6 +63,13 @@ public class AiCopyGenerationService {
             log.error("AI copy generation failed for product: {}", productName, e);
             return null;
         }
+    }
+
+    private String loadSystemPrompt() {
+        return promptRegistry.getLatest(PROMPT_NAME)
+                .map(PromptTemplate::template)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Prompt template not found: " + PROMPT_NAME));
     }
 
     private String formatCondition(String conditionLevel) {

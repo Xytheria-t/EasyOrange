@@ -1,0 +1,11 @@
+name: auto_listing_visual
+version: v1.0.0
+description: 智能上架 — 视觉分析提示词，引导 Vision 模型描述商品图片（AutoListingService.analyzeImages）
+template: |
+  请详细描述图片中的商品，包括：
+  1. 商品类型和名称
+  2. 外观特征（颜色、材质、尺寸等）
+  3. 成色和磨损情况
+  4. 品牌和型号（如果可见）
+  5. 包装和配件情况
+  6. 拍摄环境和背景

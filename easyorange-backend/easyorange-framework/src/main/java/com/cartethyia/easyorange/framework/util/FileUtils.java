@@ -3,25 +3,18 @@ package com.cartethyia.easyorange.framework.util;
 import com.cartethyia.easyorange.common.exception.file.FileException;
 import com.cartethyia.easyorange.common.exception.file.FileSizeLimitExceededException;
 import com.cartethyia.easyorange.common.exception.file.InvalidExtensionException;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 
 public final class FileUtils {
 
@@ -30,10 +23,6 @@ public final class FileUtils {
     private static final long GB = MB * 1024;
 
     public static final long DEFAULT_MAX_SIZE = 50 * MB;
-
-    public static final int DEFAULT_FILE_NAME_LENGTH = 100;
-
-    private static final DateTimeFormatter DATE_PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     public static final Set<String> DEFAULT_ALLOWED_EXTENSION = new LinkedHashSet<>(Set.of(
             "bmp", "gif", "jpg", "jpeg", "png", "webp",
@@ -87,58 +76,6 @@ public final class FileUtils {
         throw new IllegalStateException("Utility class");
     }
 
-    public static String upload(String baseDir, MultipartFile file) throws IOException {
-        return upload(baseDir, file, DEFAULT_ALLOWED_EXTENSION, true);
-    }
-
-    public static String upload(String baseDir, MultipartFile file, String... allowedExtension) throws IOException {
-        Collection<String> extensions = allowedExtension.length > 0
-                ? Set.of(allowedExtension)
-                : DEFAULT_ALLOWED_EXTENSION;
-        return upload(baseDir, file, extensions, true);
-    }
-
-    public static String upload(String baseDir, MultipartFile file, Collection<String> allowedExtension, boolean useUuidName) throws IOException {
-        int fileNameLength = Objects.requireNonNull(file.getOriginalFilename()).length();
-        if (fileNameLength > DEFAULT_FILE_NAME_LENGTH) {
-            throw FileException.of("文件名长度超出限制：" + DEFAULT_FILE_NAME_LENGTH);
-        }
-        assertAllowed(file, allowedExtension);
-        String fileName = useUuidName ? generateUuidFilename(file) : generateTimestampFilename(file);
-        String absPath = getAbsoluteFile(baseDir, fileName).getAbsolutePath();
-        file.transferTo(Paths.get(absPath));
-        return fileName;
-    }
-
-    public static String generateUuidFilename(MultipartFile file) {
-        String extension = getExtension(file);
-        String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
-        return datePath + "/" + UUID.randomUUID().toString().replace("-", "") + "." + extension;
-    }
-
-    public static String generateTimestampFilename(MultipartFile file) {
-        String extension = getExtension(file);
-        String datePath = LocalDate.now().format(DATE_PATH_FORMATTER);
-        String baseName = getBaseName(file.getOriginalFilename());
-        return datePath + "/" + baseName + "_" + System.currentTimeMillis() + "." + extension;
-    }
-
-    public static File getAbsoluteFile(String uploadDir, String fileName) throws IOException {
-        Path basePath = Paths.get(uploadDir).normalize();
-        Path filePath = basePath.resolve(fileName).normalize();
-        if (!filePath.startsWith(basePath)) {
-            throw FileException.of("非法文件路径：" + fileName);
-        }
-        File desc = filePath.toFile();
-        if (!desc.exists()) {
-            File parentDir = desc.getParentFile();
-            if (parentDir != null && !parentDir.exists()) {
-                Files.createDirectories(parentDir.toPath());
-            }
-        }
-        return desc;
-    }
-
     public static void assertAllowed(MultipartFile file, Collection<String> allowedExtension) {
         var size = file.getSize();
         if (size > DEFAULT_MAX_SIZE) {
@@ -173,7 +110,7 @@ public final class FileUtils {
         }
     }
 
-    public static boolean isAllowedExtension(String extension, Collection<String> allowedExtension) {
+    private static boolean isAllowedExtension(String extension, Collection<String> allowedExtension) {
         if (allowedExtension == null || allowedExtension.isEmpty()) {
             return true;
         }
@@ -200,23 +137,6 @@ public final class FileUtils {
         return MIME_TO_EXTENSION.getOrDefault(contentType.toLowerCase(), "");
     }
 
-    public static String getBaseName(String filename) {
-        if (filename == null) {
-            return "";
-        }
-        int lastDotIndex = filename.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            return filename.substring(0, lastDotIndex);
-        }
-        return filename;
-    }
-
-    public static String calculateMd5(MultipartFile file) throws IOException {
-        try (var is = file.getInputStream()) {
-            return DigestUtils.md5DigestAsHex(is);
-        }
-    }
-
     public static String formatFileSize(long size) {
         if (size >= GB) {
             return String.format("%.2f GB", size / (double) GB);
@@ -238,23 +158,5 @@ public final class FileUtils {
         } catch (IOException e) {
             return false;
         }
-    }
-
-    public static boolean exists(String filePath) {
-        if (filePath == null) {
-            return false;
-        }
-        return new File(filePath).exists();
-    }
-
-    public static String getFileName(String filePath) {
-        if (filePath == null || filePath.isEmpty()) {
-            return "";
-        }
-        int lastSeparator = Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\'));
-        if (lastSeparator == -1) {
-            return filePath;
-        }
-        return filePath.substring(lastSeparator + 1);
     }
 }

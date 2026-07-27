@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.ai.config;
 
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.interceptor.AiRateLimitInterceptor;
+import com.cartethyia.easyorange.framework.cache.CacheInvalidationListener;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,6 +26,7 @@ public class AiCacheConfig implements WebMvcConfigurer {
     private final AiProperties aiProperties;
     private final RedisTemplate<Object, Object> redisTemplate;
     private final AiRateLimitInterceptor aiRateLimitInterceptor;
+    private final CacheInvalidationListener cacheInvalidationListener;
 
     @Bean("aiCaches")
     public Map<AiCallScope, MultiLevelCache> aiCaches() {
@@ -42,12 +44,13 @@ public class AiCacheConfig implements WebMvcConfigurer {
                     redisTemplate,
                     scope.cacheKeyPrefix(),
                     scope.getTtlSeconds(),
-                    TimeUnit.SECONDS
+                    TimeUnit.SECONDS,
+                    cacheInvalidationListener
             );
             map.put(scope, mlc);
         }
 
-        log.info("AI caches initialized: {} scopes, L1 maxSize={}, L1 expire={}min",
+        log.info("AI caches initialized: {} scopes, L1 maxSize={}, L1 expire={}min, cross-node invalidation=on",
                 map.size(), props.getL1MaxSize(), props.getL1ExpireMinutes());
         return map;
     }

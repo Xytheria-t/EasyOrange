@@ -29,6 +29,7 @@ public class  RabbitMQConfig {
 
     public static final String EXCHANGE_NAME = "eo.domain.events";
     public static final String DLQ_EXCHANGE_NAME = "eo.dlq";
+    public static final String TERMINAL_QUEUE = "eo.dlq.terminal";
 
     // Per-consumer queue names (used by @RabbitListener in consumer modules)
     public static final String QUEUE_PRODUCT_CQRS = "eo.product.cqrs";
@@ -36,6 +37,7 @@ public class  RabbitMQConfig {
     public static final String QUEUE_ORDER_SAGA = "eo.order.saga";
     public static final String QUEUE_STOCK_RESERVATION = "eo.stock.reservation";
     public static final String QUEUE_AUDIT_NOTIFICATION = "eo.audit.notification";
+    public static final String QUEUE_AUDIT_LOG = "eo.audit.log";
     public static final String QUEUE_REPORT_NOTIFICATION = "eo.report.notification";
     public static final String QUEUE_MESSAGE_WEBSOCKET = "eo.message.websocket";
     public static final String QUEUE_PAYMENT_METRICS = "eo.payment.metrics";
@@ -73,6 +75,7 @@ public class  RabbitMQConfig {
                 new QueueSpec(QUEUE_ORDER_SAGA, "order.created", "order.cancelled", "order.completed", "order.refunded"),
                 new QueueSpec(QUEUE_STOCK_RESERVATION, "stock.reservation.requested"),
                 new QueueSpec(QUEUE_AUDIT_NOTIFICATION, "product.audited"),
+                new QueueSpec(QUEUE_AUDIT_LOG, "audit.log"),
                 new QueueSpec(QUEUE_REPORT_NOTIFICATION, "report.#"),
                 new QueueSpec(QUEUE_MESSAGE_WEBSOCKET, "message.recalled"),
                 new QueueSpec(QUEUE_PAYMENT_METRICS, "payment.#", "compensation.failed.alert"),
@@ -98,7 +101,13 @@ public class  RabbitMQConfig {
             }
         }
 
-        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings", 11);
+        // Terminal queue — 超过 max-retries 的毒消息转储，等待人工介入
+        var terminalQueue = QueueBuilder.durable(TERMINAL_QUEUE)
+                .quorum()
+                .build();
+        declarables.add(terminalQueue);
+
+        log.info("Declared RabbitMQ topology: {} queues with DLQs and bindings, 1 terminal queue", 12);
         return new Declarables(declarables);
     }
 

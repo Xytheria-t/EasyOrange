@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.framework.file.service.FileService;
 import com.cartethyia.easyorange.framework.file.service.ImageProcessingService;
 import com.cartethyia.easyorange.framework.file.service.ImageQueryService;
 import com.cartethyia.easyorange.framework.file.service.ImageQueryService.ImageQueryResult;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Slf4j
+@Tag(name = "文件服务", description = "图片上传/处理")
 @RestController
 @RequestMapping("/api/file")
 @RequiredArgsConstructor

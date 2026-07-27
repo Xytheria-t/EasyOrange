@@ -1,7 +1,10 @@
 package com.cartethyia.easyorange.ai.service;
 
+import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.port.LlmPort;
+import com.cartethyia.easyorange.ai.prompt.PromptRegistry;
+import com.cartethyia.easyorange.ai.prompt.PromptTemplate;
 import tools.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,9 +17,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AiReviewService {
 
+    private static final String PROMPT_NAME = "ai_review_system";
+
     private final LlmPort llmPort;
     private final ObjectMapper objectMapper;
+    private final PromptRegistry promptRegistry;
 
+    @TokenBudget(scenario = "review", maxTokensPerCall = 2000, dailyTokenLimit = 500_000)
     public AiReviewResult reviewProduct(
             String productName,
             String description,
@@ -26,22 +33,7 @@ public class AiReviewService {
             String sellerName,
             List<String> imageUrls
     ) {
-        String systemPrompt = """
-                你是 EasyOrange — AI 工程化 的资产审核助手。
-                根据商品信息，判断该商品是否符合平台审核标准。
-                审核标准：
-                1. 商品信息是否完整准确
-                2. 商品描述是否与标题一致
-                3. 价格是否合理（是否存在明显异常高价或低价）
-                4. 是否存在违规内容（违禁品、虚假信息等）
-                5. 商品图片与描述是否匹配
-                请以 JSON 格式返回，包含字段：
-                - suggestedAction: 建议操作（true=通过, false=拒绝）
-                - suggestedActionDesc: "通过" 或 "拒绝"
-                - confidenceScore: 置信度（1-100的整数）
-                - riskFlags: 风险标记数组（如 ["价格异常","描述不清"] ，没有风险则返回空数组）
-                - reasoning: 审核理由（50字内）
-                """;
+        String systemPrompt = loadSystemPrompt();
 
         String userMessage = String.format("""
                 商品名称：%s
@@ -71,6 +63,13 @@ public class AiReviewService {
             log.error("AI review failed for product: {}", productName, e);
             return new AiReviewResult(true, "通过", 50, List.of(), "AI 分析异常，默认通过");
         }
+    }
+
+    private String loadSystemPrompt() {
+        return promptRegistry.getLatest(PROMPT_NAME)
+                .map(PromptTemplate::template)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Prompt template not found: " + PROMPT_NAME));
     }
 
     private String formatCondition(String conditionLevel) {

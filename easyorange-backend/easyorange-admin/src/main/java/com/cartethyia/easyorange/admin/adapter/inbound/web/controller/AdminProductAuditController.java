@@ -7,12 +7,14 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.ProductAu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AuditLogResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.BatchAuditResultResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductAuditService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "管理后台-审核", description = "商品审核")
 @RestController
 @RequestMapping("/api/admin/products")
 @RequiredArgsConstructor

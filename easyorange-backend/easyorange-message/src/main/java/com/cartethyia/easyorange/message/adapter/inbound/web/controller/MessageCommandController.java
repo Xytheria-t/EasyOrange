@@ -11,11 +11,13 @@ import com.cartethyia.easyorange.message.application.command.SendSystemMessageCo
 import com.cartethyia.easyorange.message.application.query.dto.ConversationListVO;
 import com.cartethyia.easyorange.message.enums.MessageType;
 import com.cartethyia.easyorange.message.websocket.TypingIndicatorService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "消息系统", description = "消息发送/已读")
 @RestController
 @RequestMapping("/api/messages")
 @RequiredArgsConstructor

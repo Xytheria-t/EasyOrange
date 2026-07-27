@@ -45,14 +45,14 @@
         <jackson-annotations.version>2.21</jackson-annotations.version>
         <mapstruct.version>1.6.3</mapstruct.version>
         <jetbrains.annotations.version>26.0.2</jetbrains.annotations.version>
-        <testcontainers.version>1.21.0</testcontainers.version>
-
 
         <!-- Flyway 数据库迁移（覆盖 Spring Boot 管理的版本，支持 MySQL 8.4） -->
         <flyway.version>11.15.0</flyway.version>
         <archunit.version>1.4.1</archunit.version>
         <redisson.version>4.6.1</redisson.version>
         <resilience4j.version>2.2.0</resilience4j.version>
+        <springdoc.version>2.8.6</springdoc.version>
+        <swagger-annotations.version>2.2.29</swagger-annotations.version>
 
         <!-- JaCoCo 覆盖率门禁：本地默认不阻断，CI 用 -Djacoco.haltOnFailure=true 启用 -->
         <jacoco.haltOnFailure>false</jacoco.haltOnFailure>
@@ -197,14 +197,6 @@
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson-annotations.version}</version>
             </dependency>
-            <!-- ==================== Testcontainers ==================== -->
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
 
             <!-- ==================== ArchUnit ==================== -->
             <dependency>
@@ -242,6 +234,14 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- OpenAPI 注解（@Tag/@Operation 等）— provided 作用域，仅编译期可见，运行时由 application 模块的 springdoc 依赖提供 -->
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations-jakarta</artifactId>
+            <version>${swagger-annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -255,23 +255,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Testcontainers for Integration Tests -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -429,16 +412,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.openrewrite.maven</groupId>
-                <artifactId>rewrite-maven-plugin</artifactId>
-                <version>6.0.0</version>
-                <configuration>
-                    <activeRecipes>
-                        <recipe>org.openrewrite.java.spring.boot4.UpgradeSpringBoot_4_0</recipe>
-                    </activeRecipes>
-                </configuration>
             </plugin>
         </plugins>
     </build>

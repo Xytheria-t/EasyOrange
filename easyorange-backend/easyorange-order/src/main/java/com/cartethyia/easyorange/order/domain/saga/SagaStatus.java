@@ -17,7 +17,25 @@ public record SagaStatus(
     public static final int MAX_RETRY_COUNT = 3;
 
     public boolean canRetry() {
-        return retryCount < MAX_RETRY_COUNT && state != SagaState.COMPLETED && state != SagaState.COMPENSATED;
+        return retryCount < MAX_RETRY_COUNT
+                && state != SagaState.COMPLETED
+                && state != SagaState.COMPENSATED
+                && state != SagaState.TIMEOUT
+                && state != SagaState.MANUAL_INTERVENTION;
+    }
+
+    /**
+     * 判断 saga 是否处于需要超时检测的活跃状态。
+     */
+    public boolean isTimedOutCandidate() {
+        return state == SagaState.PENDING || state == SagaState.COMPENSATING;
+    }
+
+    /**
+     * 判断 saga 是否需要升级为人工介入（重试次数已耗尽）。
+     */
+    public boolean needsManualIntervention() {
+        return retryCount >= MAX_RETRY_COUNT;
     }
 
     public SagaStatus withState(SagaState newState) {

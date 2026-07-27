@@ -12,12 +12,14 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.auth.SmsLo
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.LoginResult;
 import com.cartethyia.easyorange.user.application.service.AuthAppService;
 import com.cartethyia.easyorange.user.domain.constant.UserConstant;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "认证授权", description = "登录/注册/刷新令牌/密码重置")
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor

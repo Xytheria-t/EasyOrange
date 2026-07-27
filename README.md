@@ -2,7 +2,7 @@
 
 > **EasyOrange** — 在 DDD 六边形里装 LLM：可换供应商、可降级、可观测的 AI 工程化落地。
 >
-> **11 模块全解耦 · 2,169 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）· 4 ADR 架构决策记录。**
+> **11 模块全解耦 · 2,289 测试守卫 · 7 对 Port/Adapter 防腐层 · 6 AI 决策点全带 Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化（YAML）+ Token 预算治理（@TokenBudget AOP）+ Bulkhead 隔离 · 5 ADR 架构决策记录 · 审计日志 Outbox + DLQ 三级重试 + Saga 7 状态机 + OpenAPI 3。**
 >
 > 业务聚焦核心流程（C2C 资产流转：固定价格 + 直发 + 平台不碰货），把复杂度留给架构与 AI 工程化。 · 2025 年 11 月启动开发
 
@@ -36,13 +36,13 @@ C2C 资产流转（固定价格 + 直发 + 平台不碰货）—— 业务聚焦
 
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
-| **架构落地** | 11 模块 / 7 对 Port-Adapter / 11 消费者+DLQ / 30 表 / 2,169 测试 | DDD/CQRS/Saga/事件驱动 在真实业务压力下的协同落地 |
-| **架构决策记录** | 4 ADR + 13 关键决策可独立讲解 | 每个架构选择都有"为什么这样选 + 拒绝了什么"的 ADR 记录 |
-| **AI 工程化** | 6 决策点 + 7 件套 | Port/Adapter + L1/L2 多级缓存 + 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理 |
+| **架构落地** | 11 模块 / 7 对 Port-Adapter / 12 消费者+DLQ 三级重试 / 30 表 / 2,289 测试 | DDD/CQRS/Saga/事件驱动 + Outbox 审计 在真实业务压力下的协同落地 |
+| **架构决策记录** | 5 ADR + 13 关键决策可独立讲解 | 每个架构选择都有"为什么这样选 + 拒绝了什么"的 ADR 记录 |
+| **AI 工程化** | 6 决策点 + 7 件套 | Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶限流 + stale 降级 + AiMetrics 可观测 + Prompt 版本化 + Token 预算治理 + Bulkhead 隔离 |
 
-> **4 个核心架构模式**：`DDD 六边形` · `CQRS` · `Saga` · `事件驱动` — 11 模块全解耦、4 模式 4 ADR。落地细节见 [doc/架构/架构-DDD规范.md](doc/架构/架构-DDD规范.md) + [doc/adr/](doc/adr/)。
+> **4 个核心架构模式**：`DDD 六边形` · `CQRS` · `Saga` · `事件驱动` — 11 模块全解耦、4 模式 5 ADR。落地细节见 [doc/架构/架构-DDD规范.md](doc/架构/架构-DDD规范.md) + [doc/adr/](doc/adr/)。
 
-> **By the numbers**：11 模块 / 28 Port 接口 / 11 RabbitMQ 消费者 + DLQ / 6 AI 决策点 / 30 表 / 2,169 测试 / 4 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
+> **By the numbers**：11 模块 / 31 Port 接口 / 12 RabbitMQ 消费者 + DLQ 三级重试 / 6 AI 决策点 / 30 表 / 2,289 测试 / 5 ADR。数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
 
 ## 架构总览（一图看懂）
 
@@ -62,7 +62,7 @@ graph TB
     ADMIN[admin]
     AI["easyorange-ai · 6 决策点<br/>Port + 多级缓存 + 限流 + AiMetrics"]
 
-    MQ[("RabbitMQ<br/>11 消费者 + DLQ")]
+    MQ[("RabbitMQ<br/>12 消费者 + DLQ 三级重试")]
     DB[("MySQL 8.4<br/>30 表")]
     REDIS[("Redis 7.4")]
     ES[("ES 8 可选")]
@@ -224,8 +224,11 @@ AI 模块采用 Port/Adapter 六边形架构，核心关注点在工程化深度
 | 工程维度 | 实现方式 |
 |---------|---------|
 | **供应商隔离** | LlmPort/VisionPort 接口抽象，DeepSeek/Qwen-VL 可互换，新增供应商只需新增 adapter |
-| **多级缓存** | `@Primary` 装饰器模式（CachingLlmAdapter 包裹 DeepSeekLlmAdapter），L1 Caffeine + L2 Redis + stale 降级 |
-| **限流降级** | Redis 令牌桶按端点独立限流（5-30 次/分），超限时优先返回 stale 缓存，Redis 不可用时 fail-open |
+| **多级缓存** | `@Primary` 装饰器模式（CachingLlmAdapter 包裹 DeepSeekLlmAdapter），L1 Caffeine + L2 Redis + stale 降级 + Pub/Sub 广播失效 |
+| **限流降级** | Redisson 令牌桶按端点独立限流（5-30 次/分），超限时优先返回 stale 缓存，Redis 不可用时 fail-open |
+| **预算治理** | `@TokenBudget` AOP 切面 — 6 个 AI 场景全部接入日预算控制 + Micrometer 指标暴露 |
+| **Prompt 版本化** | 6 个 YAML 模板（`{var}` 渲染），版本号管理，热加载 |
+| **Bulkhead 隔离** | Resilience4j — aiLlm/aiVision/dbHeavy 三隔离舱限制并发，防止 AI 调用耗尽线程池 |
 | **并行容错** | 搜索增强 4 路 CompletableFuture 并行，单步骤超时/失败不影响其他步骤，5s 总超时 |
 
 详见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
@@ -262,7 +265,7 @@ easy-orange/
 - Conventional Commits (`feat/fix/docs/refactor/chore`)
 - 分支策略: `main` / `develop` / `feature/*` / `bugfix/*`
 - 代码风格: Google Java Style + Biome (前端, 替代 ESLint + Prettier)
-- 测试: 后端 JUnit 5 (1,219 用例) + 前端 Vitest/Playwright (950 用例)，JaCoCo 覆盖率 + PIT 变异测试双重质量门禁
+- 测试: 后端 JUnit 5 (1,369 用例) + 前端 Vitest/Playwright (920 用例)，JaCoCo 覆盖率 + PIT 变异测试双重质量门禁；Domain 层行覆盖 **84.1%**
 - 架构守卫: ArchUnit (`ArchitectureRulesTest`)
 
 ## 贡献指南

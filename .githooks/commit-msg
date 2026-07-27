@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# EasyOrange commit-msg hook — 校验 Conventional Commits 格式。
+# 安装方式：git config core.hooksPath .githooks
+set -e
+
+msg_file="$1"
+msg_first_line=$(head -1 "$msg_file")
+
+# Conventional Commits: <type>(<scope>): <description>
+# Types: feat fix refactor docs test chore perf ci style build
+# 标题 ≤ 72 字符
+pattern='^(feat|fix|refactor|docs|test|chore|perf|ci|style|build)(\([a-z0-9_-]+\))?: .{1,72}$'
+
+if ! echo "$msg_first_line" | grep -qE "$pattern"; then
+  cat >&2 <<EOF
+[commit-msg] FAIL: Commit message must follow Conventional Commits:
+
+  <type>(<scope>): <description>
+
+Expected pattern: $pattern
+Got: $msg_first_line
+
+Examples:
+  feat: add user login endpoint
+  fix(order): resolve Saga compensation deadlock
+  refactor(ai): extract Prompt YAML registry
+  docs: update README architecture section
+  test(payment): add PaymentTransition unit tests
+  chore: bump Spring Boot to 4.0.3
+  perf: cache product list with Caffeine
+  ci: enable JaCoCo gate in workflow
+
+Skip with: SKIP=git-hooks git commit -m '...'
+EOF
+  exit 1
+fi
+
+# 检查标题长度
+len=${#msg_first_line}
+if [ "$len" -gt 72 ]; then
+  echo "[commit-msg] FAIL: Title too long ($len > 72 chars)."
+  exit 1
+fi
+
+echo "[commit-msg] OK"

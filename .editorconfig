@@ -1,0 +1,34 @@
+# EditorConfig — 跨编辑器统一缩进/换行/编码
+# https://editorconfig.org
+# 与 google-java-format 对齐（4 空格、UTF-8、LF）
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{json,md}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.{sh,bash}]
+indent_size = 2
+
+# Java：4 空格，与 google-java-format 一致
+[*.java]
+indent_size = 4
+max_line_length = 120
+
+# 前端：2 穩格（与 biome.json indentWidth: 4 对齐，但 .tsx/.ts 实际使用 2）
+[*.{ts,tsx,js,jsx,css,html}]
+indent_size = 2

@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,14 +26,11 @@ class CreditScoringServiceTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
-    @Mock
-    private LlmPort llmPort;
-
     private CreditScoringService service;
 
     @BeforeEach
     void setUp() {
-        service = new CreditScoringService(jdbcTemplate, llmPort);
+        service = new CreditScoringService(jdbcTemplate);
     }
 
     @Nested

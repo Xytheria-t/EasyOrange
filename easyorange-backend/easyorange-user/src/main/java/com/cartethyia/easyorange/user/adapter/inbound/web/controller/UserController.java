@@ -10,11 +10,13 @@ import com.cartethyia.easyorange.user.adapter.inbound.web.dto.request.profile.Up
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserProfileResponse;
 import com.cartethyia.easyorange.user.adapter.inbound.web.dto.response.UserResponse;
 import com.cartethyia.easyorange.user.application.service.ProfileAppService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+@Tag(name = "用户中心", description = "用户资料管理")
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor

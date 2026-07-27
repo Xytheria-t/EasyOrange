@@ -19,6 +19,7 @@ import com.cartethyia.easyorange.product.application.query.criteria.ProductSearc
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountAppService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @Slf4j
+@Tag(name = "商品管理", description = "商品 CRUD/详情/分类")
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor

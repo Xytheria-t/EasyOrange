@@ -3,9 +3,9 @@ package com.cartethyia.easyorange.ai.interceptor;
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.enums.AiCallScope;
 import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import org.jspecify.annotations.NullMarked;
-import org.springframework.data.redis.core.RedisTemplate;
 import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,26 +19,25 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 @NullMarked
 public class AiRateLimitInterceptor implements HandlerInterceptor {
 
-    private final RedisTemplate<Object, Object> redisTemplate;
+    private final DistributedRateLimiter distributedRateLimiter;
     private final AiProperties aiProperties;
     private final ObjectMapper objectMapper;
     private final Cache<String, Object> staleCache;
     private final AiMetricsService aiMetricsService;
 
     public AiRateLimitInterceptor(
-            RedisTemplate<Object, Object> redisTemplate,
+            DistributedRateLimiter distributedRateLimiter,
             AiProperties aiProperties,
             ObjectMapper objectMapper,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
             AiMetricsService aiMetricsService) {
-        this.redisTemplate = redisTemplate;
+        this.distributedRateLimiter = distributedRateLimiter;
         this.aiProperties = aiProperties;
         this.objectMapper = objectMapper;
         this.staleCache = staleCache;
@@ -58,14 +57,12 @@ public class AiRateLimitInterceptor implements HandlerInterceptor {
         String bucketKey = scope.rateLimitKeyPrefix() + userKey;
 
         try {
-            Long count = redisTemplate.opsForValue().increment(bucketKey);
-            if (count != null && count == 1) {
-                redisTemplate.expire(bucketKey, 60, TimeUnit.SECONDS);
-            }
+            // Redisson RRateLimiter 令牌桶 — 原子化取桶/补桶/扣桶，解决 increment+expire 的原子性缺口
+            boolean allowed = distributedRateLimiter.tryAcquire(
+                    bucketKey, scope.getRatePerMinute(), 60);
 
-            if (count != null && count > scope.getRatePerMinute()) {
-                log.debug("AI rate limit exceeded: scope={}, user={}, count={}",
-                        scope, userKey, count);
+            if (!allowed) {
+                log.debug("AI rate limit exceeded: scope={}, user={}", scope, userKey);
 
                 String staleKey = extractStaleKey(request, scope);
                 if (staleKey != null) {

@@ -29,6 +29,5 @@ export {
     useSimilarProducts,
     useUpdateProduct,
 } from './product';
-export type { ColumnBreakpoint } from './ui';
-export { useColumnCount, usePlatformStats, useScrollReveal } from './ui';
+export { useColumnCount, useScrollReveal } from './ui';
 export { useSemanticSearch } from './useSemanticSearch';

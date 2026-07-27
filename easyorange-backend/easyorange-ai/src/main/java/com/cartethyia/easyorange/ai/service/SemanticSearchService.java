@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.ai.service;
 
+import com.cartethyia.easyorange.ai.budget.TokenBudget;
 import com.cartethyia.easyorange.ai.dto.SemanticSearchResult;
 import com.cartethyia.easyorange.ai.port.LlmPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
@@ -18,6 +19,7 @@ public class SemanticSearchService {
     private final LlmPort llmPort;
     private final Optional<ProductSearchQueryPort> searchQueryPort;
 
+    @TokenBudget(scenario = "semantic", maxTokensPerCall = 500, dailyTokenLimit = 200_000)
     public SemanticSearchResult search(String keyword, int pageNum, int pageSize) {
         if (keyword == null || keyword.isBlank()) {
             return SemanticSearchResult.empty(pageNum, pageSize);

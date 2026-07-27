@@ -35,11 +35,6 @@ vi.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
 }));
 
-const mockUsePlatformStats = vi.fn();
-vi.mock('@/hooks', () => ({
-    usePlatformStats: () => mockUsePlatformStats(),
-}));
-
 // Mock Image component
 vi.mock('@/components/ui/Image', () => ({
     Image: ({ alt, ...props }: { alt: string; [key: string]: unknown }) => (
@@ -71,9 +66,6 @@ describe('HeroSection', () => {
         vi.clearAllMocks();
         rafCbs.clear();
         rafId = 0;
-        mockUsePlatformStats.mockReturnValue({
-            data: { activeUsers: 1000, onlineProducts: 500, completedOrders: 300 },
-        });
 
         Element.prototype.getBoundingClientRect = vi.fn(() => ({
             width: 100,

@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.order.application.command.PayOrderCommand;
 import com.cartethyia.easyorange.order.application.command.RefundOrderCommand;
 import com.cartethyia.easyorange.order.application.command.ShipOrderCommand;
 import com.cartethyia.easyorange.order.adapter.inbound.web.dto.request.CreateOrderRequest;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "订单管理", description = "订单创建/取消/确认")
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor

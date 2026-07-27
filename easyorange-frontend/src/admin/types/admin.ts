@@ -1,7 +1,3 @@
-export type AdminUserType = string;
-export type UserStatus = string;
-export type ProductStatus = number;
-
 export interface AdminUser {
     userId: string;
     username: string;
@@ -380,16 +376,6 @@ export interface ResetPasswordRequest {
 
 export interface UserUnlockRequest {
     reason?: string;
-}
-
-// ==================== AI Review Types ====================
-
-export interface AiReviewResult {
-    isApproved: boolean;
-    suggestedActionDesc: string;
-    confidenceScore: number;
-    riskFlags: string[];
-    reasoning: string;
 }
 
 // ==================== Rating Types ====================

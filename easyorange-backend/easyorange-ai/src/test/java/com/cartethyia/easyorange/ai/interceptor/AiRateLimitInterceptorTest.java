@@ -2,8 +2,7 @@ package com.cartethyia.easyorange.ai.interceptor;
 
 import com.cartethyia.easyorange.ai.config.AiProperties;
 import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
+import com.cartethyia.easyorange.framework.util.DistributedRateLimiter;
 import tools.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -18,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -29,10 +27,7 @@ import static org.mockito.Mockito.*;
 class AiRateLimitInterceptorTest {
 
     @Mock
-    private RedisTemplate<Object, Object> redisTemplate;
-
-    @Mock
-    private ValueOperations<Object, Object> valueOps;
+    private DistributedRateLimiter distributedRateLimiter;
 
     @Mock
     private AiProperties aiProperties;
@@ -61,10 +56,10 @@ class AiRateLimitInterceptorTest {
         lenient().doNothing().when(aiMetricsService).recordRateLimitStaleServed(anyString());
         lenient().doNothing().when(aiMetricsService).recordRateLimitFailOpen(anyString());
 
-        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOps);
         staleCache = Caffeine.newBuilder().build();
         objectMapper = new ObjectMapper();
-        interceptor = new AiRateLimitInterceptor(redisTemplate, aiProperties, objectMapper, staleCache, aiMetricsService);
+        interceptor = new AiRateLimitInterceptor(
+                distributedRateLimiter, aiProperties, objectMapper, staleCache, aiMetricsService);
     }
 
     @Test
@@ -82,8 +77,7 @@ class AiRateLimitInterceptorTest {
     void withinLimitPass() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(valueOps.increment(anyString())).thenReturn(1L);
-        when(redisTemplate.expire(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
 
         boolean result = interceptor.preHandle(request, response, null);
 
@@ -95,7 +89,8 @@ class AiRateLimitInterceptorTest {
     void redisExceptionFailOpen() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(valueOps.increment(anyString())).thenThrow(new RuntimeException("Redis down"));
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong()))
+                .thenThrow(new RuntimeException("Redis down"));
 
         boolean result = interceptor.preHandle(request, response, null);
 
@@ -108,7 +103,7 @@ class AiRateLimitInterceptorTest {
     void rateLimitExceeded() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(valueOps.increment(anyString())).thenReturn(11L);
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(false);
         when(request.getReader()).thenReturn(new BufferedReader(new StringReader("")));
         when(response.getWriter()).thenReturn(mock(java.io.PrintWriter.class));
 
@@ -124,8 +119,7 @@ class AiRateLimitInterceptorTest {
     void xForwardedForHeader() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/ai/review");
         when(request.getHeader("X-Forwarded-For")).thenReturn("192.168.1.1, 10.0.0.1");
-        when(valueOps.increment(anyString())).thenReturn(1L);
-        when(redisTemplate.expire(anyString(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+        when(distributedRateLimiter.tryAcquire(anyString(), anyLong(), anyLong())).thenReturn(true);
 
         boolean result = interceptor.preHandle(request, response, null);
 

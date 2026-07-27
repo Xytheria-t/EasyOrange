@@ -6,6 +6,8 @@ import com.cartethyia.easyorange.ai.metrics.AiMetricsService;
 import com.cartethyia.easyorange.ai.port.VisionPort;
 import com.cartethyia.easyorange.framework.cache.MultiLevelCache;
 import com.github.benmanes.caffeine.cache.Cache;
+import io.github.resilience4j.bulkhead.Bulkhead;
+import io.github.resilience4j.bulkhead.BulkheadFullException;
 import io.github.resilience4j.retry.Retry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,6 +35,7 @@ public class CachingVisionAdapter implements VisionPort {
     private final Cache<String, Object> staleCache;
     private final AiMetricsService aiMetricsService;
     private final Retry aiRetry;
+    private final Bulkhead aiBulkhead;
 
     public CachingVisionAdapter(
             QwenVlVisionAdapter delegate,
@@ -40,13 +43,15 @@ public class CachingVisionAdapter implements VisionPort {
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
             AiMetricsService aiMetricsService,
-            @Qualifier("aiVision") Retry aiRetry) {
+            @Qualifier("aiVision") Retry aiRetry,
+            @Qualifier("aiVision") Bulkhead aiBulkhead) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;
         this.staleCache = staleCache;
         this.aiMetricsService = aiMetricsService;
         this.aiRetry = aiRetry;
+        this.aiBulkhead = aiBulkhead;
     }
 
     @Override
@@ -56,40 +61,47 @@ public class CachingVisionAdapter implements VisionPort {
 
     @Override
     public String analyzeImages(List<String> imageUrls, String prompt) {
-        // Resilience4j Retry 包装：网络故障时指数退避重试（最多 3 次）
-        Supplier<String> retriedLoader = Retry.decorateSupplier(aiRetry,
-                () -> delegate.analyzeImages(imageUrls, prompt));
+        // Resilience4j Bulkhead + Retry 双层装饰：先隔离并发，再重试网络故障
+        Supplier<String> decorated = Bulkhead.decorateSupplier(aiBulkhead,
+                Retry.decorateSupplier(aiRetry,
+                        () -> delegate.analyzeImages(imageUrls, prompt)));
 
-        if (!aiProperties.getCache().isEnabled()) {
-            return retriedLoader.get();
+        try {
+            if (!aiProperties.getCache().isEnabled()) {
+                return decorated.get();
+            }
+
+            var scope = AiCallScope.AUTO_LISTING;
+            String fp = fingerprintImages(imageUrls, prompt);
+            String key = scope.cacheKeyPrefix() + fp;
+
+            var cache = aiCaches.get(scope);
+            if (cache == null) {
+                return decorated.get();
+            }
+
+            var cacheMiss = new AtomicBoolean(false);
+            String result = cache.get(key, String.class, () -> {
+                cacheMiss.set(true);
+                return decorated.get();
+            });
+
+            if (cacheMiss.get()) {
+                aiMetricsService.recordCacheMiss(scope.name());
+            } else {
+                aiMetricsService.recordCacheHit(scope.name());
+            }
+
+            if (result != null) {
+                staleCache.put(key, result);
+            }
+
+            return result;
+        } catch (BulkheadFullException e) {
+            // Bulkhead 满载：记录指标后抛出，由上层 service 走降级路径
+            aiMetricsService.recordBulkheadRejected(aiBulkhead.getName());
+            throw e;
         }
-
-        var scope = AiCallScope.AUTO_LISTING;
-        String fp = fingerprintImages(imageUrls, prompt);
-        String key = scope.cacheKeyPrefix() + fp;
-
-        var cache = aiCaches.get(scope);
-        if (cache == null) {
-            return retriedLoader.get();
-        }
-
-        var cacheMiss = new AtomicBoolean(false);
-        String result = cache.get(key, String.class, () -> {
-            cacheMiss.set(true);
-            return retriedLoader.get();
-        });
-
-        if (cacheMiss.get()) {
-            aiMetricsService.recordCacheMiss(scope.name());
-        } else {
-            aiMetricsService.recordCacheHit(scope.name());
-        }
-
-        if (result != null) {
-            staleCache.put(key, result);
-        }
-
-        return result;
     }
 
     private static String fingerprintImages(List<String> urls, String prompt) {

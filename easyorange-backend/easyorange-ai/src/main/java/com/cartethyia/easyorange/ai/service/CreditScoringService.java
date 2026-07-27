@@ -1,7 +1,6 @@
 package com.cartethyia.easyorange.ai.service;
 
 import com.cartethyia.easyorange.ai.dto.CreditScoreResult;
-import com.cartethyia.easyorange.ai.port.LlmPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,7 +16,6 @@ import java.util.Optional;
 public class CreditScoringService {
 
     private final JdbcTemplate jdbcTemplate;
-    private final LlmPort llmPort;
 
     private static final int BASE_SCORE = 100;
     private static final int SCORE_MIN = 0;

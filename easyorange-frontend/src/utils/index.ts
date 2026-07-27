@@ -19,12 +19,10 @@ export {
     formatRelativeTime,
     parseQueryString,
 } from './format';
-export type { DebounceOptions } from './functionUtils';
 
 // 函数工具
 export { debounce, throttle } from './functionUtils';
 // 商品工具
 export { calculateDiscount, getConditionNameFromString, normalizeProduct } from './product';
-export type { StorageItem } from './storage';
 // 存储工具
-export { StorageUtils, storage } from './storage';
+export { storage } from './storage';
