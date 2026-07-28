@@ -1,12 +1,12 @@
 package com.cartethyia.easyorange.payment.domain.port;
 
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 
 import java.math.BigDecimal;
 
 public interface PaymentGatewayPort {
 
-    PaymentResult pay(PaymentAggregate aggregate);
+    PaymentResult pay(Payment aggregate);
 
-    RefundResult refund(PaymentAggregate aggregate, BigDecimal refundAmount);
+    RefundResult refund(Payment aggregate, BigDecimal refundAmount);
 }

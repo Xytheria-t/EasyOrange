@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportSt
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
@@ -22,7 +22,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.SellerId;
 import com.cartethyia.easyorange.product.domain.valueobject.StockQuantity;
 import com.cartethyia.easyorange.product.domain.valueobject.TagSet;
 import com.cartethyia.easyorange.product.domain.valueobject.Version;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;

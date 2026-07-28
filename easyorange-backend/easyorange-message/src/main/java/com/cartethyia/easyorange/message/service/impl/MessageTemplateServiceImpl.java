@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service.impl;
 
 import com.cartethyia.easyorange.common.util.BizRequire;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import com.cartethyia.easyorange.message.application.query.dto.MessageTemplateVO;
@@ -30,13 +30,13 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     private final RedisTemplate<Object, Object> redisTemplate;
 
     @Override
-    public MessageTemplateAggregate getByCode(String templateCode) {
+    public MessageTemplate getByCode(String templateCode) {
         return messageTemplateRepository.findByCode(templateCode);
     }
 
     @Override
     public MessageTemplateVO renderTemplate(String templateCode, Map<String, String> variables) {
-        MessageTemplateAggregate template = messageTemplateRepository.findByCode(templateCode);
+        MessageTemplate template = messageTemplateRepository.findByCode(templateCode);
         BizRequire.notNull(template, MessageResultCode.TEMPLATE_NOT_FOUND);
         String renderedContent = renderContent(template.content(), variables);
         String renderedTitle = renderContent(template.title(), variables);
@@ -70,18 +70,18 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     }
 
     @Override
-    public List<MessageTemplateAggregate> selectTemplateList(MessageTemplateAggregate condition) {
+    public List<MessageTemplate> selectTemplateList(MessageTemplate condition) {
         return messageTemplateRepository.findByCondition(condition);
     }
 
     @Override
-    public void insertTemplate(MessageTemplateAggregate template) {
+    public void insertTemplate(MessageTemplate template) {
         messageTemplateRepository.save(template);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateTemplate(MessageTemplateAggregate template) {
+    public void updateTemplate(MessageTemplate template) {
         messageTemplateRepository.update(template);
     }
 
@@ -91,16 +91,16 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     }
 
     @Override
-    public boolean checkTemplateCodeUnique(MessageTemplateAggregate template) {
+    public boolean checkTemplateCodeUnique(MessageTemplate template) {
         return !messageTemplateRepository.existsByCodeExcludingId(template.templateCode(), template.id());
     }
 
     @Override
     public void loadingTemplateCache() {
         log.info("开始加载消息模板缓存");
-        List<MessageTemplateAggregate> templates = messageTemplateRepository.findByCondition(null);
-        Map<String, MessageTemplateAggregate> templateMap = new HashMap<>();
-        for (MessageTemplateAggregate template : templates) {
+        List<MessageTemplate> templates = messageTemplateRepository.findByCondition(null);
+        Map<String, MessageTemplate> templateMap = new HashMap<>();
+        for (MessageTemplate template : templates) {
             templateMap.put(template.templateCode(), template);
         }
         if (!templateMap.isEmpty()) {

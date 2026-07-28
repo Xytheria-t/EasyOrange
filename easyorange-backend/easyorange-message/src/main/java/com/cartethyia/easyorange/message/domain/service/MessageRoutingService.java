@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.service;
 
-import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 
@@ -30,9 +30,9 @@ public class MessageRoutingService {
      */
     public RouteDecision decideRoute(String receiverId) {
         boolean isOnline = sessionManager.isUserOnline(receiverId);
-        List<MessageSubscriptionAggregate> subscriptions = subscriptionRepository.findByUserId(receiverId);
+        List<MessageSubscription> subscriptions = subscriptionRepository.findByUserId(receiverId);
         return new RouteDecision(isOnline, subscriptions);
     }
 
-    public record RouteDecision(boolean isOnline, List<MessageSubscriptionAggregate> subscriptions) {}
+    public record RouteDecision(boolean isOnline, List<MessageSubscription> subscriptions) {}
 }

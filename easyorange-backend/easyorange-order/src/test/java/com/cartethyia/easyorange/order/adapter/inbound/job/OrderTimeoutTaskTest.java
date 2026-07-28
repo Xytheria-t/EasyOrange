@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
@@ -54,8 +54,8 @@ class OrderTimeoutTaskTest {
     private static final String ORDER_ID_1 = "100";
     private static final String ORDER_ID_2 = "101";
 
-    private OrderAggregate expiredOrder1;
-    private OrderAggregate expiredOrder2;
+    private Order expiredOrder1;
+    private Order expiredOrder2;
 
     @BeforeEach
     void setUp() {
@@ -78,7 +78,7 @@ class OrderTimeoutTaskTest {
 
             orderTimeoutTask.cancelExpiredOrders();
 
-            verify(orderRepository, times(2)).update(any(OrderAggregate.class));
+            verify(orderRepository, times(2)).update(any(Order.class));
             verify(domainEventPublisher, times(2)).publish(any(OrderCancelledEvent.class));
             verify(orderCachePort, times(2)).evictOrderCache(anyString(), anyString());
         }
@@ -100,7 +100,7 @@ class OrderTimeoutTaskTest {
             orderTimeoutTask.cancelExpiredOrders();
 
             // Only second order should be processed
-            verify(orderRepository, times(1)).update(any(OrderAggregate.class));
+            verify(orderRepository, times(1)).update(any(Order.class));
             verify(domainEventPublisher, times(1)).publish(any(OrderCancelledEvent.class));
             verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());
         }
@@ -129,12 +129,12 @@ class OrderTimeoutTaskTest {
             // First order update throws exception
             doThrow(new RuntimeException("更新失败"))
                     .doNothing()
-                    .when(orderRepository).update(any(OrderAggregate.class));
+                    .when(orderRepository).update(any(Order.class));
 
             orderTimeoutTask.cancelExpiredOrders();
 
             // Both update attempts were made (first fails, second succeeds)
-            verify(orderRepository, times(2)).update(any(OrderAggregate.class));
+            verify(orderRepository, times(2)).update(any(Order.class));
             // Only the second order's event was published (first threw before publish)
             verify(domainEventPublisher, times(1)).publish(any(OrderCancelledEvent.class));
             verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());

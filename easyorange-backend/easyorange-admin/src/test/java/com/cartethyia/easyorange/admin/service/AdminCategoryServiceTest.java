@@ -6,8 +6,8 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.CategoryU
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryTreeResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.CategoryResponse;
 import com.cartethyia.easyorange.common.exception.BusinessException;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
 import com.cartethyia.easyorange.product.application.port.query.CategoryQueryRepository;
 import com.cartethyia.easyorange.product.application.query.readmodel.CategoryReadModel;
 import org.junit.jupiter.api.DisplayName;

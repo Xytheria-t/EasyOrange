@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -36,13 +36,13 @@ public class OrderTimeoutTask {
             return;
         }
 
-        List<OrderAggregate> expiredOrders = orderRepository.findExpiredOrders(properties.getTimeoutMinutes());
+        List<Order> expiredOrders = orderRepository.findExpiredOrders(properties.getTimeoutMinutes());
         if (expiredOrders.isEmpty()) {
             return;
         }
 
         int cancelled = 0;
-        for (OrderAggregate aggregate : expiredOrders) {
+        for (Order aggregate : expiredOrders) {
             String lockKey = CANCEL_LOCK_PREFIX + aggregate.id().value();
             RLock lock = redissonClient.getLock(lockKey);
 
@@ -75,12 +75,12 @@ public class OrderTimeoutTask {
         log.info("订单超时检查完成: 检查 {} 条, 取消 {} 条", expiredOrders.size(), cancelled);
     }
 
-    private boolean cancelExpiredOrder(OrderAggregate aggregate) {
+    private boolean cancelExpiredOrder(Order aggregate) {
         if (!aggregate.canCancel()) {
             return false;
         }
 
-        OrderAggregate.OrderTransition<OrderCancelledEvent> result = aggregate.cancel("订单超时自动取消");
+        Order.OrderTransition<OrderCancelledEvent> result = aggregate.cancel("订单超时自动取消");
         orderRepository.update(result.aggregate());
 
         orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());

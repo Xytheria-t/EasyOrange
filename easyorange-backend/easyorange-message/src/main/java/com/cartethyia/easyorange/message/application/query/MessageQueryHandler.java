@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.application.query;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
@@ -38,7 +38,7 @@ public class MessageQueryHandler {
     public MessageVO getMessageDetail(String messageId) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = queryRepository.findById(messageId);
+        Message aggregate = queryRepository.findById(messageId);
         if (aggregate == null) {
             throw new MessageNotFoundException(messageId);
         }
@@ -53,7 +53,7 @@ public class MessageQueryHandler {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         var readStatus = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
         MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), readStatus);
-        PageResult<MessageAggregate> messagePage = queryRepository.findByReceiverId(query, userId);
+        PageResult<Message> messagePage = queryRepository.findByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
@@ -62,7 +62,7 @@ public class MessageQueryHandler {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         var readStatus = request.getIsRead() != null ? ReadStatus.fromCode(String.valueOf(request.getIsRead())) : null;
         MessageQuery query = new MessageQuery(request.getPageNum(), request.getPageSize(), request.getType(), readStatus);
-        PageResult<MessageAggregate> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
+        PageResult<Message> messagePage = queryRepository.findUnreadByReceiverId(query, userId);
         return toMessageVOPage(messagePage);
     }
 
@@ -80,7 +80,7 @@ public class MessageQueryHandler {
                 .build();
     }
 
-    private PageResult<MessageVO> toMessageVOPage(PageResult<MessageAggregate> messagePage) {
+    private PageResult<MessageVO> toMessageVOPage(PageResult<Message> messagePage) {
         Map<String, String> usernameMap = resolveUsernames(
                 messagePage.records().stream().collect(Collectors.toSet()));
 
@@ -92,7 +92,7 @@ public class MessageQueryHandler {
                 messagePage.current(), messagePage.size());
     }
 
-    private Map<String, String> resolveUsernames(Set<MessageAggregate> aggregates) {
+    private Map<String, String> resolveUsernames(Set<Message> aggregates) {
         Set<String> userIds = aggregates.stream()
                 .flatMap(m -> java.util.stream.Stream.of(m.senderId(), m.receiverId()))
                 .filter(Objects::nonNull)
@@ -109,7 +109,7 @@ public class MessageQueryHandler {
         return result;
     }
 
-    private MessageVO toMessageVO(MessageAggregate aggregate, Map<String, String> usernameMap) {
+    private MessageVO toMessageVO(Message aggregate, Map<String, String> usernameMap) {
         MessageVO.MessageVOBuilder builder = MessageVO.builder()
                 .id(aggregate.id())
                 .senderId(aggregate.senderId())

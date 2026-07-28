@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.message.entity;
 
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageCreateResult;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageReadResult;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageRecallResult;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageCreateResult;
+import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageReadResult;
+import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageSentEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DisplayName("MessageAggregate 聚合根单元测试")
+@DisplayName("Message 聚合根单元测试")
 class MessageTest {
 
     private static final String SENDER_ID = "1";
@@ -33,7 +33,7 @@ class MessageTest {
         @Test
         @DisplayName("正常创建普通消息")
         void create_validParams_returnsMessage() {
-            MessageCreateResult result = MessageAggregate.create(SENDER_ID, RECEIVER_ID, 2, "你好", "hello world", "100");
+            MessageCreateResult result = Message.create(SENDER_ID, RECEIVER_ID, 2, "你好", "hello world", "100");
 
             assertThat(result.aggregate().senderId()).isEqualTo(SENDER_ID);
             assertThat(result.aggregate().receiverId()).isEqualTo(RECEIVER_ID);
@@ -47,7 +47,7 @@ class MessageTest {
         @Test
         @DisplayName("创建消息时 XSS 转义标题和内容")
         void create_xssEscape_titleAndContentEscaped() {
-            MessageCreateResult result = MessageAggregate.create(SENDER_ID, RECEIVER_ID, 2,
+            MessageCreateResult result = Message.create(SENDER_ID, RECEIVER_ID, 2,
                     "<script>alert('xss')</script>", "<b>bold</b>", null);
 
             assertThat(result.aggregate().title()).doesNotContain("<script>");
@@ -64,7 +64,7 @@ class MessageTest {
         @Test
         @DisplayName("正常创建系统消息")
         void createSystem_validParams_returnsSystemMessage() {
-            MessageCreateResult result = MessageAggregate.createSystem(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
+            MessageCreateResult result = Message.createSystem(RECEIVER_ID, "系统通知", "您的商品已审核通过", null);
 
             assertThat(result.aggregate().senderId()).isNull();
             assertThat(result.aggregate().receiverId()).isEqualTo(RECEIVER_ID);
@@ -77,7 +77,7 @@ class MessageTest {
         @Test
         @DisplayName("系统消息 XSS 转义")
         void createSystem_xssEscape_contentEscaped() {
-            MessageCreateResult result = MessageAggregate.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
+            MessageCreateResult result = Message.createSystem(RECEIVER_ID, "<script>alert(1)</script>", "<img onerror='alert(1)'>", null);
 
             assertThat(result.aggregate().title()).doesNotContain("<script>");
             assertThat(result.aggregate().content()).doesNotContain("<img");
@@ -91,7 +91,7 @@ class MessageTest {
         @Test
         @DisplayName("send 返回 MessageSentEvent")
         void send_returnsEvent() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -111,7 +111,7 @@ class MessageTest {
         @Test
         @DisplayName("2分钟内可以撤回消息")
         void recall_within2Minutes_success() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
@@ -128,7 +128,7 @@ class MessageTest {
         @Test
         @DisplayName("非发送者不能撤回消息")
         void recall_notSender_throws() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -141,7 +141,7 @@ class MessageTest {
         @Test
         @DisplayName("超过2分钟不能撤回消息")
         void recall_over2Minutes_throws() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(3));
@@ -154,7 +154,7 @@ class MessageTest {
         @Test
         @DisplayName("已撤回的消息不能再次撤回")
         void recall_alreadyRecalled_throws() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.RECALLED.getCode(), LocalDateTime.now(), LocalDateTime.now().minusMinutes(1));
@@ -167,7 +167,7 @@ class MessageTest {
         @Test
         @DisplayName("撤回后返回的事件包含正确信息")
         void recall_returnsEventWithCorrectInfo() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
@@ -188,7 +188,7 @@ class MessageTest {
         @Test
         @DisplayName("接收者可以标记为已读")
         void read_byReceiver_success() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -205,7 +205,7 @@ class MessageTest {
         @Test
         @DisplayName("非接收者不能标记已读")
         void read_notReceiver_throws() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -218,7 +218,7 @@ class MessageTest {
         @Test
         @DisplayName("已读消息再调用 read 返回 null")
         void read_alreadyRead_returnsNull() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.READ, LocalDateTime.now(), null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -236,7 +236,7 @@ class MessageTest {
         @Test
         @DisplayName("接收者可以删除消息")
         void delete_byReceiver_success() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -251,7 +251,7 @@ class MessageTest {
         @Test
         @DisplayName("非接收者不能删除消息")
         void delete_notReceiver_throws() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -269,7 +269,7 @@ class MessageTest {
         @Test
         @DisplayName("新建消息未读")
         void isUnread_newMessage_returnsTrue() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -280,7 +280,7 @@ class MessageTest {
         @Test
         @DisplayName("已读消息 isUnread 返回 false")
         void isUnread_readMessage_returnsFalse() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.READ, LocalDateTime.now(), null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -291,7 +291,7 @@ class MessageTest {
         @Test
         @DisplayName("isOwnedBy 判断接收者")
         void isOwnedBy_receiver_returnsTrue() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -303,7 +303,7 @@ class MessageTest {
         @Test
         @DisplayName("isSender 判断发送者")
         void isSender_correctSender_returnsTrue() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", SENDER_ID, RECEIVER_ID, 2, "标题", "内容",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -315,7 +315,7 @@ class MessageTest {
         @Test
         @DisplayName("系统消息 isSender 返回 false")
         void isSender_systemMessage_returnsFalse() {
-            MessageAggregate aggregate = MessageAggregate.fromRaw(
+            Message aggregate = Message.fromRaw(
                     "100", null, RECEIVER_ID, 1, "通知", "内容",
                     ReadStatus.UNREAD, null, null,
                     null, null, LocalDateTime.now());

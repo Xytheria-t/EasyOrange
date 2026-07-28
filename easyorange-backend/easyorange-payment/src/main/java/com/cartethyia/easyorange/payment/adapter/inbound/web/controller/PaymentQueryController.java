@@ -7,7 +7,7 @@ import com.cartethyia.easyorange.payment.adapter.inbound.web.request.QueryPaymen
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
 import com.cartethyia.easyorange.payment.application.query.PaymentListQuery;
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,19 +28,19 @@ public class PaymentQueryController {
 
     @GetMapping("/{id}")
     public Result<PaymentResponse> getById(@PathVariable String id) {
-        PaymentAggregate aggregate = queryHandler.getPaymentById(id);
+        Payment aggregate = queryHandler.getPaymentById(id);
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/orders/{orderId}")
     public Result<PaymentResponse> getByOrderId(@PathVariable String orderId) {
-        PaymentAggregate aggregate = queryHandler.getPaymentByOrderId(orderId);
+        Payment aggregate = queryHandler.getPaymentByOrderId(orderId);
         return Result.success(paymentViewAssembler.toPaymentResponse(aggregate));
     }
 
     @GetMapping("/{id}/status")
     public Result<PaymentStatusResponse> getStatus(@PathVariable String id) {
-        PaymentAggregate aggregate = queryHandler.getPaymentById(id);
+        Payment aggregate = queryHandler.getPaymentById(id);
         return Result.success(new PaymentStatusResponse(
                 aggregate.status().getDesc(),
                 com.cartethyia.easyorange.payment.domain.constant.PaymentMethod.getDescByCode(aggregate.paymentMethod().getCode()),
@@ -55,7 +55,7 @@ public class PaymentQueryController {
         PaymentListQuery query = new PaymentListQuery(
                 null, resolveStatus(request.getStatus()),
                 request.getPageNum(), request.getPageSize());
-        PageResult<PaymentAggregate> result = queryHandler.getMyPayments(query);
+        PageResult<Payment> result = queryHandler.getMyPayments(query);
         return Result.success(paymentViewAssembler.toPageResult(result));
     }
 
@@ -65,7 +65,7 @@ public class PaymentQueryController {
         PaymentListQuery query = new PaymentListQuery(
                 request.getUserId(), resolveStatus(request.getStatus()),
                 request.getPageNum(), request.getPageSize());
-        PageResult<PaymentAggregate> result = queryHandler.queryPayments(query);
+        PageResult<Payment> result = queryHandler.queryPayments(query);
         return Result.success(paymentViewAssembler.toPageResult(result));
     }
 

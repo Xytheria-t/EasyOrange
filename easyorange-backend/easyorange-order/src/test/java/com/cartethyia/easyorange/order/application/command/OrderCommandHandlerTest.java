@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCancelledEvent;
@@ -98,14 +98,14 @@ class OrderCommandHandlerTest {
         void handle_payOrder_success() {
             PayOrderCommand command = new PayOrderCommand(ORDER_ID);
 
-            OrderAggregate aggregate = createPendingPaymentAggregate();
+            Order aggregate = createPendingPaymentOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(BUYER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(orderRepository).update(any(Order.class));
                 verify(domainEventPublisher).publish(any(OrderPaidEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             } finally {
@@ -134,7 +134,7 @@ class OrderCommandHandlerTest {
         void handle_payOrder_notOwner() {
             PayOrderCommand command = new PayOrderCommand(ORDER_ID);
 
-            OrderAggregate aggregate = createPendingPaymentAggregate();
+            Order aggregate = createPendingPaymentOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext("999");
@@ -158,14 +158,14 @@ class OrderCommandHandlerTest {
         void handle_cancelOrder_success() {
             CancelOrderCommand command = new CancelOrderCommand(ORDER_ID, "不想要了");
 
-            OrderAggregate aggregate = createPendingPaymentAggregate();
+            Order aggregate = createPendingPaymentOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(BUYER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(orderRepository).update(any(Order.class));
                 verify(domainEventPublisher).publish(any(OrderCancelledEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             } finally {
@@ -183,14 +183,14 @@ class OrderCommandHandlerTest {
         void handle_shipOrder_success() {
             ShipOrderCommand command = new ShipOrderCommand(ORDER_ID);
 
-            OrderAggregate aggregate = createPaidAggregate();
+            Order aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(SELLER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(orderRepository).update(any(Order.class));
                 verify(domainEventPublisher).publish(any(OrderShippedEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             } finally {
@@ -203,7 +203,7 @@ class OrderCommandHandlerTest {
         void handle_shipOrder_notSeller() {
             ShipOrderCommand command = new ShipOrderCommand(ORDER_ID);
 
-            OrderAggregate aggregate = createPaidAggregate();
+            Order aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext("999");
@@ -227,14 +227,14 @@ class OrderCommandHandlerTest {
         void handle_confirmReceipt_success() {
             ConfirmReceiptCommand command = new ConfirmReceiptCommand(ORDER_ID);
 
-            OrderAggregate aggregate = createShippedAggregate();
+            Order aggregate = createShippedAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(BUYER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(orderRepository).update(any(Order.class));
                 verify(domainEventPublisher).publish(any(OrderCompletedEvent.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             } finally {
@@ -252,7 +252,7 @@ class OrderCommandHandlerTest {
         void handle_refundOrder_success() {
             RefundOrderCommand command = new RefundOrderCommand(ORDER_ID, "商品有问题");
 
-            OrderAggregate aggregate = createPaidAggregate();
+            Order aggregate = createPaidAggregate();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(BUYER_ID);
@@ -260,7 +260,7 @@ class OrderCommandHandlerTest {
                 commandHandler.handle(command);
 
                 verify(paymentGatewayPort).refundPayment(ORDER_ID, "商品有问题");
-                verify(orderRepository).update(any(OrderAggregate.class));
+                verify(orderRepository).update(any(Order.class));
                 verify(orderCachePort).evictOrderCache(BUYER_ID, SELLER_ID);
             } finally {
                 TestSecurityUtil.clearSecurityContext();
@@ -272,7 +272,7 @@ class OrderCommandHandlerTest {
         void handle_refundOrder_unpaidPayment_throwsException() {
             RefundOrderCommand command = new RefundOrderCommand(ORDER_ID, "商品有问题");
 
-            OrderAggregate aggregate = createPaidButUnpaidPaymentAggregate();
+            Order aggregate = createPaidButUnpaidOrder();
             when(orderRepository.findById(OrderId.of(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(BUYER_ID);
@@ -289,8 +289,8 @@ class OrderCommandHandlerTest {
 
     // ==================== Aggregate fixtures ====================
 
-    private OrderAggregate createPendingPaymentAggregate() {
-        return OrderAggregate.from(aReconstructSpec()
+    private Order createPendingPaymentOrder() {
+        return Order.from(aReconstructSpec()
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.PENDING_PAYMENT)
@@ -298,8 +298,8 @@ class OrderCommandHandlerTest {
                 .build());
     }
 
-    private OrderAggregate createPaidAggregate() {
-        return OrderAggregate.from(aReconstructSpec()
+    private Order createPaidAggregate() {
+        return Order.from(aReconstructSpec()
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.PAID)
@@ -307,8 +307,8 @@ class OrderCommandHandlerTest {
                 .build());
     }
 
-    private OrderAggregate createShippedAggregate() {
-        return OrderAggregate.from(aReconstructSpec()
+    private Order createShippedAggregate() {
+        return Order.from(aReconstructSpec()
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.SHIPPED)
@@ -316,8 +316,8 @@ class OrderCommandHandlerTest {
                 .build());
     }
 
-    private OrderAggregate createPaidButUnpaidPaymentAggregate() {
-        return OrderAggregate.from(aReconstructSpec()
+    private Order createPaidButUnpaidOrder() {
+        return Order.from(aReconstructSpec()
                 .id(ORDER_ID)
                 .orderNo("ORD" + ORDER_ID)
                 .status(OrderStatus.PAID)

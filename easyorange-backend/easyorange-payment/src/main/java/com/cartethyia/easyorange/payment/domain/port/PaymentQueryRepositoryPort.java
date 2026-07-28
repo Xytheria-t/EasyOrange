@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.domain.port;
 
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 
 import java.util.List;
@@ -8,11 +8,11 @@ import java.util.Optional;
 
 public interface PaymentQueryRepositoryPort {
 
-    Optional<PaymentAggregate> findAggregateById(String id);
+    Optional<Payment> findAggregateById(String id);
 
-    Optional<PaymentAggregate> findAggregateByPaymentNo(String paymentNo);
+    Optional<Payment> findAggregateByPaymentNo(String paymentNo);
 
-    Optional<PaymentAggregate> findAggregateByOrderId(String orderId);
+    Optional<Payment> findAggregateByOrderId(String orderId);
 
     /**
      * 按用户 ID 和支付状态分页查询。
@@ -22,7 +22,7 @@ public interface PaymentQueryRepositoryPort {
      * @param pageNum  页码
      * @param pageSize 每页大小
      */
-    List<PaymentAggregate> findByUserIdAndStatus(String userId, PaymentStatus status, int pageNum, int pageSize);
+    List<Payment> findByUserIdAndStatus(String userId, PaymentStatus status, int pageNum, int pageSize);
 
     /**
      * 按用户 ID 和支付状态计数。

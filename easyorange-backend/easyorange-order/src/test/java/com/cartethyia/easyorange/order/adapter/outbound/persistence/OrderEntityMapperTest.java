@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.domain.Money;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
@@ -72,8 +72,8 @@ class OrderEntityMapperTest {
                 .build());
     }
 
-    private OrderAggregate createAggregate() {
-        return OrderAggregate.from(new OrderReconstructSpec(
+    private Order createAggregate() {
+        return Order.from(new OrderReconstructSpec(
                 OrderId.of(ID), OrderNo.of(ORDER_NO),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID), itemForTest(),
                 Money.of(AMOUNT), STATUS, PAYMENT_STATUS,
@@ -88,7 +88,7 @@ class OrderEntityMapperTest {
         @Test
         @DisplayName("应将聚合根正确映射为数据对象")
         void toDataObject_shouldMapAllFields() {
-            OrderAggregate aggregate = createAggregate();
+            Order aggregate = createAggregate();
 
             OrderDO orderDO = mapper.toDataObject(aggregate);
 
@@ -117,7 +117,7 @@ class OrderEntityMapperTest {
         void toAggregate_shouldReconstructFullAggregate() {
             OrderDO orderDO = createOrderDO();
 
-            OrderAggregate aggregate = mapper.toAggregate(orderDO);
+            Order aggregate = mapper.toAggregate(orderDO);
 
             assertThat(aggregate).isNotNull();
             assertThat(aggregate.id().value()).isEqualTo(ID);
@@ -140,7 +140,7 @@ class OrderEntityMapperTest {
         void toAggregate_withItems_shouldKeepItems() {
             OrderDO orderDO = createOrderDO();
 
-            OrderAggregate aggregate = mapper.toAggregate(orderDO, itemForTest());
+            Order aggregate = mapper.toAggregate(orderDO, itemForTest());
 
             assertThat(aggregate.items()).hasSize(1);
             assertThat(aggregate.items().getFirst().productId().value()).isEqualTo(PRODUCT_ID);
@@ -265,10 +265,10 @@ class OrderEntityMapperTest {
         @Test
         @DisplayName("聚合根 → DO → 聚合根 应保持数据一致")
         void roundtrip_shouldPreserveAllData() {
-            OrderAggregate original = createAggregate();
+            Order original = createAggregate();
 
             OrderDO orderDO = mapper.toDataObject(original);
-            OrderAggregate restored = mapper.toAggregate(orderDO);
+            Order restored = mapper.toAggregate(orderDO);
 
             assertThat(restored.id().value()).isEqualTo(original.id().value());
             assertThat(restored.orderNo().value()).isEqualTo(original.orderNo().value());
@@ -290,7 +290,7 @@ class OrderEntityMapperTest {
         void roundtrip_fromDO_shouldPreserveAllData() {
             OrderDO original = createOrderDO();
 
-            OrderAggregate aggregate = mapper.toAggregate(original);
+            Order aggregate = mapper.toAggregate(original);
             OrderDO converted = mapper.toDataObject(aggregate);
 
             assertThat(converted.getId()).isEqualTo(original.getId());

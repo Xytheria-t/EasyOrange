@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service;
 
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.SubscriptionRequest;
 import com.cartethyia.easyorange.message.application.query.dto.MessageSubscriptionVO;
@@ -40,8 +40,8 @@ class MessageSubscriptionServiceTest {
         @Test
         @DisplayName("获取当前用户的订阅列表")
         void getMySubscriptions_returnsSubscriptions() {
-            MessageSubscriptionAggregate sub1 = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
-            MessageSubscriptionAggregate sub2 = MessageSubscriptionAggregate.create(USER_ID, "MARKETING", "EMAIL", false);
+            MessageSubscription sub1 = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
+            MessageSubscription sub2 = MessageSubscription.create(USER_ID, "MARKETING", "EMAIL", false);
 
             when(messageSubscriptionRepository.findByUserId(USER_ID)).thenReturn(List.of(sub1, sub2));
 
@@ -88,7 +88,7 @@ class MessageSubscriptionServiceTest {
             request.setPushChannel("WEBSOCKET");
             request.setEnabled(true);
 
-            MessageSubscriptionAggregate existing = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", false);
+            MessageSubscription existing = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", false);
 
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(existing);
@@ -112,7 +112,7 @@ class MessageSubscriptionServiceTest {
             request.setPushChannel("WEBSOCKET");
             request.setEnabled(false);
 
-            MessageSubscriptionAggregate existing = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
+            MessageSubscription existing = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
 
             when(messageSubscriptionRepository.findByUserIdAndTypeAndChannel(USER_ID, "SYSTEM", "WEBSOCKET"))
                     .thenReturn(existing);
@@ -143,11 +143,11 @@ class MessageSubscriptionServiceTest {
             try {
                 subscriptionService.updateSubscription(request);
 
-                ArgumentCaptor<MessageSubscriptionAggregate> captor = ArgumentCaptor.forClass(MessageSubscriptionAggregate.class);
+                ArgumentCaptor<MessageSubscription> captor = ArgumentCaptor.forClass(MessageSubscription.class);
                 verify(messageSubscriptionRepository).save(captor.capture());
                 verify(messageSubscriptionRepository, never()).update(any());
 
-                MessageSubscriptionAggregate saved = captor.getValue();
+                MessageSubscription saved = captor.getValue();
                 assertThat(saved.userId()).isEqualTo(USER_ID);
                 assertThat(saved.messageType()).isEqualTo("SYSTEM");
                 assertThat(saved.pushChannel()).isEqualTo("WEBSOCKET");

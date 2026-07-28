@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.service;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;

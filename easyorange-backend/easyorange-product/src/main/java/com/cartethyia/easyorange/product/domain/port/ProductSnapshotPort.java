@@ -10,7 +10,7 @@ import java.util.Optional;
 
 public interface ProductSnapshotPort {
 
-    Optional<ProductOrderSnapshot> getOrderableSnapshot(ProductId productId);
+    Optional<ProductOrderSnapshot> findSnapshot(ProductId productId);
 
     record ProductOrderSnapshot(
             ProductId productId,
@@ -18,7 +18,6 @@ public interface ProductSnapshotPort {
             Money price,
             ProductStatus status,
             StockQuantity stock,
-            Long version,
             String location
     ) { }
 }

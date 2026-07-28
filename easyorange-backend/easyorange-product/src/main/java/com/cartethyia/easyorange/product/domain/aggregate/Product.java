@@ -35,6 +35,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Getter
 @Builder(toBuilder = true)
@@ -241,14 +242,18 @@ public class Product {
     }
 
     public ProductTransition restoreStock() {
+        return restoreStock(1);
+    }
+
+    public ProductTransition restoreStock(int quantity) {
         if (status == ProductStatus.SOLD || status == ProductStatus.OFFLINE) {
             throw new InvalidProductStatusException("不允许恢复库存", id, status);
         }
         var updated = toBuilder()
-                .stock(stock.increase())
+                .stock(stock.increase(quantity))
                 .updateTime(LocalDateTime.now())
                 .build();
-        return new ProductTransition(updated, StockRestoredEvent.of(id.value(), 1));
+        return new ProductTransition(updated, StockRestoredEvent.of(id.value(), quantity));
     }
 
     // ==================== Query / Predicate ====================
@@ -270,4 +275,21 @@ public class Product {
     // ==================== Inner Types ====================
 
     public record ProductTransition(Product product, DomainEvent event) {}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Product other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "Product{id=" + id + ", title=" + title + ", status=" + status + ", price=" + price + "}";
+    }
 }

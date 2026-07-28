@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.payment.adapter.outbound.gateway;
 
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.domain.port.PaymentResult;
 import com.cartethyia.easyorange.payment.domain.port.RefundResult;
@@ -16,13 +16,13 @@ import java.util.UUID;
 public class PaymentGatewayAdapter implements PaymentGatewayPort {
 
     @Override
-    public PaymentResult pay(PaymentAggregate aggregate) {
+    public PaymentResult pay(Payment aggregate) {
         String transactionId = PaymentConstant.MOCK_TXN_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         return PaymentResult.success(transactionId);
     }
 
     @Override
-    public RefundResult refund(PaymentAggregate aggregate, BigDecimal refundAmount) {
+    public RefundResult refund(Payment aggregate, BigDecimal refundAmount) {
         String refundNo = PaymentConstant.MOCK_REFUND_NO_PREFIX + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
         return RefundResult.success(refundNo);
     }

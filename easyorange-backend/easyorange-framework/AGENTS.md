@@ -178,10 +178,12 @@ multiLevelCache.evict("product:detail:" + id);
 
 | 名称 | 用途 | 注入方式 |
 |------|------|---------|
-| `aiLlm` | LLM 文本调用重试（CachingLlmAdapter） | `@Qualifier("aiLlm") Retry` |
-| `aiVision` | Vision 图片分析重试（CachingVisionAdapter） | `@Qualifier("aiVision") Retry` |
+| `aiLlmRetry` | LLM 文本调用重试（CachingLlmAdapter） | `@Qualifier("aiLlmRetry") Retry` |
+| `aiVisionRetry` | Vision 图片分析重试（CachingVisionAdapter） | `@Qualifier("aiVisionRetry") Retry` |
 
 **使用模式**：AI 适配器构造器注入具名 `Retry`，用 `Retry.decorateSupplier()` 包装实际 LLM/Vision 调用，实现网络瞬断时自动重试。参考 `CachingLlmAdapter` / `CachingVisionAdapter`。
+
+Bulkhead 实例对应 Spring Bean 名为 `aiLlmBulkhead` / `aiVisionBulkhead` / `dbHeavyBulkhead`，注入使用 `@Qualifier("aiLlmBulkhead") Bulkhead`。
 
 ### 分布式 ID 生成器 (idgen/)
 

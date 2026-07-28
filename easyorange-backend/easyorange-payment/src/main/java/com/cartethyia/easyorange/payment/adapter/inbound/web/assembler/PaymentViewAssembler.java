@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.adapter.inbound.web.assembler;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import org.springframework.stereotype.Component;
@@ -12,7 +12,7 @@ import java.util.List;
 @Component
 public class PaymentViewAssembler {
 
-    public PaymentResponse toPaymentResponse(PaymentAggregate aggregate) {
+    public PaymentResponse toPaymentResponse(Payment aggregate) {
         if (aggregate == null) {
             return null;
         }
@@ -34,14 +34,14 @@ public class PaymentViewAssembler {
                 .build();
     }
 
-    public PageResult<PaymentResponse> toPageResult(PageResult<PaymentAggregate> page) {
+    public PageResult<PaymentResponse> toPageResult(PageResult<Payment> page) {
         List<PaymentResponse> records = page.records().stream()
                 .map(this::toPaymentResponse)
                 .toList();
         return PageResult.of(records, page.total(), page.current(), page.size());
     }
 
-    public PaymentResponse toPaymentResponseWithOrderInfo(PaymentAggregate aggregate, String orderNo, String username) {
+    public PaymentResponse toPaymentResponseWithOrderInfo(Payment aggregate, String orderNo, String username) {
         PaymentResponse response = toPaymentResponse(aggregate);
         return PaymentResponse.builder()
                 .id(response.getId())

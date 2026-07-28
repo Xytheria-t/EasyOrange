@@ -4,7 +4,7 @@ import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.common.result.Result;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.request.MockPaymentRequest;
 import com.cartethyia.easyorange.payment.adapter.inbound.web.response.PaymentResponse;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentCreateSpec;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
@@ -39,7 +39,7 @@ public class MockPaymentController {
         String paymentId = idGenerator.generateId();
         var spec = new PaymentCreateSpec(paymentId, orderId, "0", amount,
                 PaymentMethod.fromCode(paymentMethod), null);
-        var created = PaymentAggregate.create(spec);
+        var created = Payment.create(spec);
 
         paymentRepository.save(created.aggregate());
 
@@ -49,11 +49,11 @@ public class MockPaymentController {
     @PostMapping("/process")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> processMockPayment(@RequestBody MockPaymentRequest request) {
-        PaymentAggregate aggregate = paymentRepository.findById(request.getPaymentId())
+        Payment aggregate = paymentRepository.findById(request.getPaymentId())
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
 
         if (Boolean.TRUE.equals(request.getSuccess())) {
-            PaymentAggregate prepared = aggregate.preparePay();
+            Payment prepared = aggregate.preparePay();
             var confirmed = prepared.confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
             paymentRepository.update(confirmed.aggregate());
         } else {
@@ -69,9 +69,9 @@ public class MockPaymentController {
     @PostMapping("/success/{paymentId}")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentSuccess(@PathVariable String paymentId) {
-        PaymentAggregate aggregate = paymentRepository.findById(paymentId)
+        Payment aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
-        PaymentAggregate prepared = aggregate.preparePay();
+        Payment prepared = aggregate.preparePay();
         var confirmed = prepared.confirmPay(PaymentResult.success("MOCK_TXN_" + System.currentTimeMillis()));
         paymentRepository.update(confirmed.aggregate());
 
@@ -82,7 +82,7 @@ public class MockPaymentController {
     @PostMapping("/fail/{paymentId}")
     @Transactional(rollbackFor = Exception.class)
     public Result<PaymentResponse> mockPaymentFail(@PathVariable String paymentId) {
-        PaymentAggregate aggregate = paymentRepository.findById(paymentId)
+        Payment aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         var failed = aggregate.fail("模拟支付失败");
         paymentRepository.update(failed.aggregate());
@@ -94,7 +94,7 @@ public class MockPaymentController {
     @PostMapping("/refund/{paymentId}")
     @Transactional(rollbackFor = Exception.class)
     public Result<Void> mockRefund(@PathVariable String paymentId, @RequestParam String reason) {
-        PaymentAggregate aggregate = paymentRepository.findById(paymentId)
+        Payment aggregate = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
         var result = aggregate.directRefund(reason);
         paymentRepository.update(result.aggregate());
@@ -102,7 +102,7 @@ public class MockPaymentController {
         return Result.success();
     }
 
-    private PaymentResponse buildPaymentResponse(PaymentAggregate aggregate) {
+    private PaymentResponse buildPaymentResponse(Payment aggregate) {
         return PaymentResponse.builder()
                 .id(aggregate.id())
                 .paymentNo(aggregate.paymentNo())

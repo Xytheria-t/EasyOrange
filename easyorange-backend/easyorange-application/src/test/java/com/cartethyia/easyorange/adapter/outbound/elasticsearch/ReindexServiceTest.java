@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -31,19 +31,19 @@ EasyOrange 的 C2C 资产流转业务中，「认领方下单」是一个跨三�
 核心实现：
 
 - 编排器：[CreateOrderSaga.java](file:///home/cartethyia/projects/Java/easy-orange/easyorange-backend/easyorange-order/src/main/java/com/cartethyia/easyorange/order/application/saga/CreateOrderSaga.java)
-- 步骤：创建订单 → 创建支付 → 完成；失败时逆序执行补偿（`OrderCompensationService.cancelOrder`）
-- 状态机持久化到 `eo_saga` 表：`PENDING → ORDER_CREATED → PAYMENT_CREATED → COMPLETED` / `COMPENSATING → COMPENSATED`，支持故障后 `retryFailedSaga(sagaId)` 重试
+- 步骤：创建订单 → 同步扣库存 → 创建支付；失败时逆序执行补偿（`restoreStock` → `cancelOrder`）
+- 状态机持久化到 `eo_saga` 表：`PENDING → ORDER_CREATED → PAYMENT_CREATED → COMPLETED` / `COMPENSATING → COMPENSATED`；`SagaTimeoutScheduler` 每 60s 扫描 30 分钟无更新的活跃 saga，重试达到 `MAX_RETRY_COUNT` 的标记 `MANUAL_INTERVENTION`，其余标记 `TIMEOUT` 等待人工介入
 - 分布式锁按 `productId` 排序获取（`DistributedLockManager`），避免死锁
-- 写操作通过领域事件解耦后续模块（库存扣减由 `OrderFulfillmentEventConsumer` 异步消费 `StockReservationRequestedEvent` 完成）
+- 库存扣减在 Saga 同步步骤中完成（`CreateOrderSaga` 内直接调用 `ProductOrderPort.decreaseStock()`），不依赖异步事件路径
 
-典型事件流（来自 `easyorange-backend/AGENTS.md`）：
+Saga 同步流：
 
 ```
-OrderCreatedEvent → OrderSagaEventConsumer
-  → StockReservationRequestedEvent → OrderFulfillmentEventConsumer
-  → ProductCommandService.decrementStock()
-PaymentInitiationRequestedEvent → OrderFulfillmentEventConsumer
-  → PaymentCommandHandler.handle()
+CreateOrderSaga.execute()  ─ @Transactional ─
+  Step 1: 创建订单 + 注册 cancelOrder 补偿
+  Step 2: ProductOrderPort.decreaseStock() + 注册 restoreStock 补偿  ← 同步
+  Step 3: 创建支付
+  失败时逆序: restoreStock → cancelOrder
 ```
 
 核心驱动力：
@@ -59,7 +59,7 @@ PaymentInitiationRequestedEvent → OrderFulfillmentEventConsumer
 
 - 无 2PC 长锁等待，下单链路 RT 友好
 - 单模块故障不会拖垮整条链路（payment 宕机时 order 仍可创建，补偿后续触发）
-- Saga 状态可查可重试，符合「LLM × DDD 工程化实战项目」的可观测诉求
+- Saga 状态持久化可查，超时自动检测（`SagaTimeoutScheduler` 30 分钟无更新），符合「LLM × DDD 工程化实战项目」的可观测诉求
 - 与现有 RabbitMQ DLQ + 指数退避机制自然衔接
 
 ### 负向后果
@@ -71,7 +71,7 @@ PaymentInitiationRequestedEvent → OrderFulfillmentEventConsumer
 ### 缓解措施
 
 - 订单 30 分钟超时任务（`OrderTimeoutTask`）自动 `CANCELLED` 并触发商品重新可售
-- `eo_saga` 表 + `retryFailedSaga` 提供人工/定时恢复入口
+- `SagaTimeoutScheduler` 自动检测超时（30 分钟无更新），重试次数耗尽时标记 `MANUAL_INTERVENTION` 等待运维介入
 - 补偿路径有专门的单测覆盖（`CreateOrderSagaCompensationTest`）
 
 ## 备选方案（Alternatives Considered）

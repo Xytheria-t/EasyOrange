@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
 import com.cartethyia.easyorange.payment.application.command.RefundPaymentCommand;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -32,7 +32,7 @@ public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {
 
     @Override
     public void refundPayment(String orderId, String reason) {
-        PaymentAggregate payment = paymentRepository.findByOrderId(orderId)
+        Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> BusinessException.of(OrderResultCode.ORDER_NOT_FOUND, "支付单不存在"));
 
         RefundPaymentCommand command = new RefundPaymentCommand(

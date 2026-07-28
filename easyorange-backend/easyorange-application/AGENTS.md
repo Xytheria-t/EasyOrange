@@ -32,7 +32,7 @@ application/
 │       │       │   └── OrderPaymentGatewayAdapter.java
 │       │       ├── product/
 │       │       │   ├── FavoriteProductInfoAdapter.java
-│       │       │   ├── OrderProductInventoryAdapter.java
+│   │       │   ├── ProductOrderAdapter.java
 │       │       │   ├── OrderProductQueryAdapter.java
 │       │       │   └── ProductSearchIndexAdapter.java
 │       │       └── user/
@@ -140,7 +140,7 @@ easyorange-application
 | 适配器 | 端口接口 | 模块 | 功能 |
 |--------|---------|------|------|
 | `OrderPaymentGatewayAdapter` | `PaymentGatewayPort` | order | 支付网关调用 |
-| `OrderProductInventoryAdapter` | `ProductInventoryPort` | order | 商品库存操作 |
+| `ProductOrderAdapter` | `ProductOrderPort` | order | 订单生命周期产品操作 |
 | `OrderProductQueryAdapter` | `ProductQueryPort` | order | 商品查询 |
 | `OrderUserInfoAdapter` | `UserInfoPort` | order | 用户信息查询 |
 | `SellerInfoAdapter` | `SellerInfoPort` | product | 资产方信息查询 |
@@ -169,7 +169,6 @@ easyorange-application
 | 消费者 | 事件 | 功能 |
 |--------|------|------|
 | `OrderNotificationEventConsumer` | `OrderCreatedEvent` 等 6 个订单事件 | 订单状态变更→站内消息通知 |
-| `OrderFulfillmentEventConsumer` | `StockReservationRequestedEvent` | 库存扣减 |
 | `ProductAuditEventConsumer` | `ProductAuditedEvent` | 审核结果→站内消息通知 |
 | `ReportProcessedEventConsumer` | `ReportProcessedEvent` | 举报处理结果→站内消息通知 |
 | `AiProductEventConsumer` | `ProductCreatedEvent` / `ProductUpdatedEvent` / `ProductMarkedSoldEvent` | 商品→AI 智能估值 + 营销文案生成 |

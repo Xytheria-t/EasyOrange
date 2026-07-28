@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
 import com.baomidou.mybatisplus.extension.toolkit.ChainWrappers;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.CategoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductImageDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.CategoryMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductImageMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.category.CategoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductImageMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;

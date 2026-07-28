@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.common.dto.PageRequest;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
 import com.cartethyia.easyorange.message.domain.valueobject.MessageQuery;
 import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
@@ -29,12 +29,12 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
     }
 
     @Override
-    public MessageAggregate findById(String id) {
+    public Message findById(String id) {
         return messageDataMapper.toAggregate(mapper.selectById(id));
     }
 
     @Override
-    public PageResult<MessageAggregate> findByReceiverId(MessageQuery query, String userId) {
+    public PageResult<Message> findByReceiverId(MessageQuery query, String userId) {
         var pageReq = PageRequest.builder()
                 .pageNum(query.pageNum())
                 .pageSize(query.pageSize())
@@ -57,7 +57,7 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
     }
 
     @Override
-    public PageResult<MessageAggregate> findUnreadByReceiverId(MessageQuery query, String userId) {
+    public PageResult<Message> findUnreadByReceiverId(MessageQuery query, String userId) {
         var pageReq = PageRequest.builder()
                 .pageNum(query.pageNum())
                 .pageSize(query.pageSize())
@@ -99,8 +99,8 @@ public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper,
         );
     }
 
-    private PageResult<MessageAggregate> toAggregatePageResult(Page<MessageDO> messagePage) {
-        List<MessageAggregate> records = messageDataMapper.toAggregateList(messagePage.getRecords());
+    private PageResult<Message> toAggregatePageResult(Page<MessageDO> messagePage) {
+        List<Message> records = messageDataMapper.toAggregateList(messagePage.getRecords());
         return PageResult.of(records, messagePage.getTotal(),
                 (int) messagePage.getCurrent(), (int) messagePage.getSize());
     }

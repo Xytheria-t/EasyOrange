@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.product.application.service;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

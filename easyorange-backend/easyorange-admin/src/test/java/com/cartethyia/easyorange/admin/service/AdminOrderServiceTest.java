@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort.UserInfo;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
@@ -94,9 +94,9 @@ class AdminOrderServiceTest {
     /**
      * 构建订单聚合根 — 使用 OrderReconstructSpec 替代已废弃的 fromRaw。
      */
-    private OrderAggregate rebuildAggregate(OrderStatus status, PaymentStatus paymentStatus,
+    private Order rebuildAggregate(OrderStatus status, PaymentStatus paymentStatus,
                                              String cancelReason, java.time.LocalDateTime cancelTime) {
-        return OrderAggregate.from(new OrderReconstructSpec(
+        return Order.from(new OrderReconstructSpec(
                 OrderId.of(ORDER_ID), OrderNo.of("ORD2026001"),
                 UserId.of(BUYER_ID), UserId.of(SELLER_ID),
                 List.of(),
@@ -199,7 +199,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("取消待付款订单成功")
         void cancelOrder_success() {
-            OrderAggregate aggregate = rebuildAggregate(
+            Order aggregate = rebuildAggregate(
                     OrderStatus.PENDING_PAYMENT, PaymentStatus.UNPAID, null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -221,7 +221,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("强制完成订单成功")
         void forceComplete_success() {
-            OrderAggregate aggregate = rebuildAggregate(
+            Order aggregate = rebuildAggregate(
                     OrderStatus.SHIPPED, PaymentStatus.PAID, null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -233,7 +233,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("退款已付款订单成功")
         void refundOrder_success() {
-            OrderAggregate aggregate = rebuildAggregate(
+            Order aggregate = rebuildAggregate(
                     OrderStatus.PAID, PaymentStatus.PAID, null, null);
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 
@@ -245,7 +245,7 @@ class AdminOrderServiceTest {
         @Test
         @DisplayName("已取消订单无法退款")
         void refundOrder_cancelled_throws() {
-            OrderAggregate aggregate = rebuildAggregate(
+            Order aggregate = rebuildAggregate(
                     OrderStatus.CANCELLED, PaymentStatus.UNPAID, "已取消", LocalDateTime.now());
             when(orderRepository.findById(new OrderId(ORDER_ID))).thenReturn(Optional.of(aggregate));
 

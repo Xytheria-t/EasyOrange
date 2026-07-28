@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.payment.application;
 
 import com.cartethyia.easyorange.payment.application.query.PaymentQueryHandler;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
@@ -32,13 +32,13 @@ class PaymentQueryHandlerTest {
     @InjectMocks
     private PaymentQueryHandler queryHandler;
 
-    private PaymentAggregate createTestAggregate(String id, String paymentNo, PaymentStatus status) {
+    private Payment createTestAggregate(String id, String paymentNo, PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
                 id, paymentNo, "2001", "3001",
                 new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 status, null, null, null, null, null, null, 0
         );
-        return PaymentAggregate.from(spec);
+        return Payment.from(spec);
     }
 
     @Nested
@@ -48,10 +48,10 @@ class PaymentQueryHandlerTest {
         @Test
         @DisplayName("查询支付记录成功")
         void getById_found() {
-            PaymentAggregate aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
+            Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.SUCCESS);
             when(paymentQueryRepository.findAggregateById("1001")).thenReturn(Optional.of(aggregate));
 
-            PaymentAggregate result = queryHandler.getPaymentById("1001");
+            Payment result = queryHandler.getPaymentById("1001");
 
             assertThat(result.id()).isEqualTo("1001");
             assertThat(result.paymentNo()).isEqualTo("PAY123");
@@ -75,10 +75,10 @@ class PaymentQueryHandlerTest {
         @Test
         @DisplayName("按订单ID查询支付记录成功")
         void getByOrderId_found() {
-            PaymentAggregate aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
+            Payment aggregate = createTestAggregate("1001", "PAY123", PaymentStatus.PENDING);
             when(paymentQueryRepository.findAggregateByOrderId("2001")).thenReturn(Optional.of(aggregate));
 
-            PaymentAggregate result = queryHandler.getPaymentByOrderId("2001");
+            Payment result = queryHandler.getPaymentByOrderId("2001");
 
             assertThat(result.orderId()).isEqualTo("2001");
         }

@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.product.application.service;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.SearchHistoryDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.SearchHistoryMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.search.SearchHistoryMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

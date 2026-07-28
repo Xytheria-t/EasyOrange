@@ -3,17 +3,19 @@ package com.cartethyia.easyorange.order.application.saga.support;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
+import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
-import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
+import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort.ProductDetail;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
+import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class OrderPreparationService {
 
-    private final ProductInventoryPort productInventoryPort;
+    private final ProductOrderPort productOrderPort;
     private final ProductQueryPort productQueryPort;
     private final IdGenerator idGenerator;
 
@@ -41,7 +43,7 @@ public class OrderPreparationService {
      * @return 准备结果
      * @throws OrderDomainException 如果资产不存在、已下架或库存不足
      */
-    public PreparationResult prepareOrderItems(List<OrderItemRequest> items, String buyerId) {
+    public PreparationResult prepareOrderItems(List<CreateOrderCommand.CreateOrderItem> items, String buyerId) {
         // 获取商品快照并校验
         List<ItemPreparation> preparations = prepareAndValidateItems(items);
 
@@ -54,16 +56,16 @@ public class OrderPreparationService {
         // 构建订单项
         List<OrderItem> orderItems = buildOrderItems(preparations, productDetailMap);
 
-        return new PreparationResult(sellerId, orderItems);
+        return new PreparationResult(UserId.of(sellerId), orderItems);
     }
 
     /**
      * 准备并校验资产项
      */
-    private List<ItemPreparation> prepareAndValidateItems(List<OrderItemRequest> items) {
+    private List<ItemPreparation> prepareAndValidateItems(List<CreateOrderCommand.CreateOrderItem> items) {
         return items.stream()
             .map(item -> {
-                ProductInventoryPort.ProductSnapshot snapshot = productInventoryPort.getSnapshot(item.productId())
+                ProductOrderPort.ProductSnapshot snapshot = productOrderPort.getSnapshot(item.productId())
                     .orElseThrow(() -> new OrderDomainException("资产不存在: " + item.productId()));
 
                 BizRequire.requireTrue(snapshot.isOnline(), "资产已下架: " + item.productId());
@@ -118,25 +120,12 @@ public class OrderPreparationService {
     private OrderItem buildOrderItem(ItemPreparation prep, Map<String, ProductDetail> productDetailMap) {
         Money unitPrice = Money.of(prep.snapshot().price());
         Money subtotal = unitPrice.multiply(prep.quantity());
-
-        ProductDetail detail = productDetailMap.get(prep.snapshot().productId());
-        String name = detail != null ? detail.title() : "";
-        String image = (detail != null && detail.images() != null && !detail.images().isEmpty())
-            ? detail.images().getFirst() : "";
-        String description = detail != null && detail.description() != null ? detail.description() : "";
-        String conditionLevel = detail != null && detail.conditionLevel() != null ? detail.conditionLevel() : "";
+        var productId = prep.snapshot().productId();
 
         return OrderItem.builder()
             .id(idGenerator.generateId())
-            .productId(ProductId.of(prep.snapshot().productId()))
-            .snapshot(com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot.builder()
-                .productId(prep.snapshot().productId())
-                .name(name)
-                .image(image)
-                .description(description)
-                .price(unitPrice)
-                .conditionLevel(conditionLevel)
-                .build())
+            .productId(ProductId.of(productId))
+            .snapshot(buildProductSnapshot(productId, productDetailMap.get(productId), unitPrice))
             .unitPrice(unitPrice)
             .quantity(prep.quantity())
             .subtotal(subtotal)
@@ -144,31 +133,34 @@ public class OrderPreparationService {
     }
 
     /**
-     * 获取资产的默认地址（如果未指定）
+     * 构建商品快照（含从商品详情回填的标题/图片/描述/成色）
      */
-    public String resolveDefaultAddress(List<ItemPreparation> preparations, String requestedAddress) {
-        if (requestedAddress != null && !requestedAddress.isBlank()) {
-            return requestedAddress;
+    private static ProductSnapshot buildProductSnapshot(String productId, ProductDetail detail, Money price) {
+        if (detail == null) {
+            log.warn("商品详情缺失，快照字段将使用空值回退: productId={}", productId);
+            return ProductSnapshot.builder()
+                .productId(productId)
+                .price(price)
+                .build();
         }
-
-        ProductInventoryPort.ProductSnapshot firstSnapshot = preparations.getFirst().snapshot();
-        return (firstSnapshot.location() != null && !firstSnapshot.location().isBlank())
-            ? firstSnapshot.location()
-            : "未指定";
+        return ProductSnapshot.builder()
+            .productId(productId)
+            .name(detail.title() != null ? detail.title() : "")
+            .image(detail.images() != null && !detail.images().isEmpty()
+                ? detail.images().getFirst() : "")
+            .description(detail.description() != null ? detail.description() : "")
+            .price(price)
+            .conditionLevel(detail.conditionLevel() != null ? detail.conditionLevel() : "")
+            .build();
     }
-
-    /**
-     * 订单项请求
-     */
-    public record OrderItemRequest(String productId, int quantity) {}
 
     /**
      * 资产准备结果
      */
-    public record ItemPreparation(ProductInventoryPort.ProductSnapshot snapshot, int quantity) {}
+    private record ItemPreparation(ProductOrderPort.ProductSnapshot snapshot, int quantity) {}
 
     /**
      * 准备结果
      */
-    public record PreparationResult(String sellerId, List<OrderItem> orderItems) {}
+    public record PreparationResult(UserId sellerId, List<OrderItem> orderItems) {}
 }

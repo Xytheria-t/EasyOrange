@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.adapter.outbound.product;
 
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDetailDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductDetailMapper;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDetailMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

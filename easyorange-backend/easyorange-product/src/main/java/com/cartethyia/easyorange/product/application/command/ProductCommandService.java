@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransit
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotOwnerException;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -101,8 +102,12 @@ public class ProductCommandService {
     }
 
     public void restoreStock(String productId) {
+        restoreStock(productId, null);
+    }
+
+    public void restoreStock(String productId, Integer quantity) {
         var product = findByIdOrThrow(ProductId.of(productId));
-        mutate(product, Product::restoreStock);
+        mutate(product, p -> p.restoreStock(quantity != null ? quantity : 1));
     }
 
     // ==================== Status Transitions ====================
@@ -126,6 +131,10 @@ public class ProductCommandService {
 
     public void markAsSold(String productId) {
         var product = findByIdOrThrow(ProductId.of(productId));
+        if (product.getStatus() == ProductStatus.SOLD) {
+            log.info("Product {} already SOLD, skipping idempotent call", productId);
+            return;
+        }
         mutate(product, Product::markAsSold);
     }
 

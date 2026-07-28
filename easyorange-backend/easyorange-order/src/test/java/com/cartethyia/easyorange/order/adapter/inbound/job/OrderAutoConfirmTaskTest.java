@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
@@ -46,8 +46,8 @@ class OrderAutoConfirmTaskTest {
     private static final String ORDER_ID_1 = "100";
     private static final String ORDER_ID_2 = "101";
 
-    private OrderAggregate shippedOrder1;
-    private OrderAggregate shippedOrder2;
+    private Order shippedOrder1;
+    private Order shippedOrder2;
 
     @BeforeEach
     void setUp() {
@@ -68,7 +68,7 @@ class OrderAutoConfirmTaskTest {
 
             orderAutoConfirmTask.autoConfirmReceipt();
 
-            verify(orderRepository, times(2)).update(any(OrderAggregate.class));
+            verify(orderRepository, times(2)).update(any(Order.class));
             verify(domainEventPublisher, times(2)).publish(any(OrderCompletedEvent.class));
             verify(orderCachePort, times(2)).evictOrderCache(anyString(), anyString());
         }
@@ -96,12 +96,12 @@ class OrderAutoConfirmTaskTest {
 
             doThrow(new RuntimeException("确认收货失败"))
                     .doNothing()
-                    .when(orderRepository).update(any(OrderAggregate.class));
+                    .when(orderRepository).update(any(Order.class));
 
             orderAutoConfirmTask.autoConfirmReceipt();
 
             // Both orders were attempted
-            verify(orderRepository, times(2)).update(any(OrderAggregate.class));
+            verify(orderRepository, times(2)).update(any(Order.class));
             // Only the second succeeded past update
             verify(domainEventPublisher, times(1)).publish(any(OrderCompletedEvent.class));
             verify(orderCachePort, times(1)).evictOrderCache(anyString(), anyString());

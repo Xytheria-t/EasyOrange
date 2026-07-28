@@ -9,10 +9,10 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRat
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductRatingDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingDO;
 import com.cartethyia.easyorange.admin.util.BatchQueryUtil;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductRatingMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

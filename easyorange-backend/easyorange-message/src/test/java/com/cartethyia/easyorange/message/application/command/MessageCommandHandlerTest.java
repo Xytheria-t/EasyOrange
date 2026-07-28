@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.application.command;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
@@ -72,15 +72,15 @@ class MessageCommandHandlerTest {
     void setUp() {
     }
 
-    private MessageAggregate createTestMessage() {
-        return MessageAggregate.fromRaw(
+    private Message createTestMessage() {
+        return Message.fromRaw(
                 MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
                 ReadStatus.UNREAD, null, null,
                 MessageStatus.SENT.getCode(), null, LocalDateTime.now());
     }
 
-    private MessageAggregate createTestMessageForRecall() {
-        return MessageAggregate.fromRaw(
+    private Message createTestMessageForRecall() {
+        return Message.fromRaw(
                 MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
                 ReadStatus.UNREAD, null, null,
                 MessageStatus.SENT.getCode(), null, LocalDateTime.now().minusMinutes(1));
@@ -102,17 +102,17 @@ class MessageCommandHandlerTest {
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
             when(routingService.decideRoute(anyString())).thenReturn(decision);
 
-            MessageAggregate savedAggregate = MessageAggregate.fromRaw(
+            Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
-            when(messageRepository.save(any(MessageAggregate.class))).thenReturn(savedAggregate);
+            when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository).save(any(MessageAggregate.class));
+                verify(messageRepository).save(any(Message.class));
                 verify(rateLimiterService).allowSendMessage(USER_ID);
                 verify(sensitiveWordFilterService).filter("hello");
             } finally {
@@ -154,11 +154,11 @@ class MessageCommandHandlerTest {
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
             when(routingService.decideRoute(anyString())).thenReturn(decision);
 
-            MessageAggregate savedAggregate = MessageAggregate.fromRaw(
+            Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID, USER_ID, RECEIVER_ID, 2, "标题", "包含***",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
-            when(messageRepository.save(any(MessageAggregate.class))).thenReturn(savedAggregate);
+            when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
@@ -187,15 +187,15 @@ class MessageCommandHandlerTest {
             MessageRoutingService.RouteDecision decision = new MessageRoutingService.RouteDecision(true, List.of());
             when(routingService.decideRoute(anyString())).thenReturn(decision);
 
-            MessageAggregate savedAggregate = MessageAggregate.fromRaw(
+            Message savedAggregate = Message.fromRaw(
                     MESSAGE_ID, null, RECEIVER_ID, 1, "系统通知", "您的商品已审核通过",
                     ReadStatus.UNREAD, null, null,
                     null, null, LocalDateTime.now());
-            when(messageRepository.save(any(MessageAggregate.class))).thenReturn(savedAggregate);
+            when(messageRepository.save(any(Message.class))).thenReturn(savedAggregate);
 
             commandHandler.handle(command);
 
-            verify(messageRepository).save(any(MessageAggregate.class));
+            verify(messageRepository).save(any(Message.class));
             verify(offlineMessageStoreService).storeIfOffline(anyString(), any(), anyString(), eq(true));
             verify(webSocketNotifier).sendNotification(eq(RECEIVER_ID), any());
         }
@@ -210,14 +210,14 @@ class MessageCommandHandlerTest {
         void handle_markAsRead_success() {
             MarkAsReadCommand command = new MarkAsReadCommand(MESSAGE_ID);
 
-            MessageAggregate aggregate = createTestMessage();
+            Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(RECEIVER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository).update(any(MessageAggregate.class));
+                verify(messageRepository).update(any(Message.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -244,7 +244,7 @@ class MessageCommandHandlerTest {
         void handle_markAsRead_notOwner_throws() {
             MarkAsReadCommand command = new MarkAsReadCommand(MESSAGE_ID);
 
-            MessageAggregate aggregate = createTestMessage();
+            Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext("999");
@@ -268,12 +268,12 @@ class MessageCommandHandlerTest {
                     new ArrayList<>(List.of(MESSAGE_ID, "101", "102"))
             );
 
-            MessageAggregate msg1 = createTestMessage();
-            MessageAggregate msg2 = MessageAggregate.fromRaw(
+            Message msg1 = createTestMessage();
+            Message msg2 = Message.fromRaw(
                     "101", USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
-            MessageAggregate msg3 = MessageAggregate.fromRaw(
+            Message msg3 = Message.fromRaw(
                     "102", USER_ID, RECEIVER_ID, 2, "标题", "hello",
                     ReadStatus.UNREAD, null, null,
                     MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -286,7 +286,7 @@ class MessageCommandHandlerTest {
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository, times(3)).update(any(MessageAggregate.class));
+                verify(messageRepository, times(3)).update(any(Message.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -299,7 +299,7 @@ class MessageCommandHandlerTest {
                     new ArrayList<>(List.of(MESSAGE_ID, "999"))
             );
 
-            MessageAggregate msg1 = createTestMessage();
+            Message msg1 = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(msg1));
             when(messageRepository.findById("999")).thenReturn(Optional.empty());
 
@@ -307,7 +307,7 @@ class MessageCommandHandlerTest {
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository, times(1)).update(any(MessageAggregate.class));
+                verify(messageRepository, times(1)).update(any(Message.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }
@@ -323,14 +323,14 @@ class MessageCommandHandlerTest {
         void handle_recallMessage_success() {
             RecallMessageCommand command = new RecallMessageCommand(MESSAGE_ID, null);
 
-            MessageAggregate aggregate = createTestMessageForRecall();
+            Message aggregate = createTestMessageForRecall();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(USER_ID);
             try {
                 commandHandler.handle(command);
 
-                verify(messageRepository).update(any(MessageAggregate.class));
+                verify(messageRepository).update(any(Message.class));
                 verify(domainEventPublisher).publish(any(MessageRecalledEvent.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
@@ -363,7 +363,7 @@ class MessageCommandHandlerTest {
         void handle_deleteMessage_success() {
             DeleteMessageCommand command = new DeleteMessageCommand(MESSAGE_ID);
 
-            MessageAggregate aggregate = createTestMessage();
+            Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext(RECEIVER_ID);
@@ -381,7 +381,7 @@ class MessageCommandHandlerTest {
         void handle_deleteMessage_notOwner_throws() {
             DeleteMessageCommand command = new DeleteMessageCommand(MESSAGE_ID);
 
-            MessageAggregate aggregate = createTestMessage();
+            Message aggregate = createTestMessage();
             when(messageRepository.findById(MESSAGE_ID)).thenReturn(Optional.of(aggregate));
 
             TestSecurityUtil.setSecurityContext("999");

@@ -129,35 +129,32 @@ sequenceDiagram
     participant C as OrderCommandController
     participant H as OrderCommandHandler
     participant S as CreateOrderSaga
-    participant P as DomainEventPublisher
-    participant MQ as RabbitMQ
-    participant FC as OrderFulfillmentEventConsumer
+    participant Inv as ProductOrderPort
     participant DB as eo_saga 表
 
     C->>H: createOrder(cmd)
     H->>S: execute(sagaContext)
-    S->>DB: persist(STARTED)
-    S->>P: publish(OrderCreatedEvent)
-    P->>MQ: route(order.created)
+    S->>DB: persist(PENDING)
 
-    par Saga 步骤
-        MQ->>FC: StockReservationRequestedEvent
-        FC->>FC: 扣减库存
+    rect rgb(220, 240, 220)
+        Note over S,Inv: Saga 同步步骤（同一 @Transactional）
+        S->>DB: persist(ORDER_CREATED)
+        S->>S: 注册 cancelOrder 补偿
+        S->>Inv: decreaseStock(productId)  ← 同步
+        Inv-->>S: void / throw
+        S->>S: 注册 restoreStock 补偿
+        S->>DB: persist(PAYMENT_CREATED)
     end
 
     alt 全部成功
         S->>DB: persist(COMPLETED)
-        S-->>H: Saga 成功
+        S-->>H: CreateOrderResult
     else 任一失败
-        S->>S: 触发反向补偿
-        S->>P: publish(CompensationEvent)
-        S->>DB: persist(COMPENSATING)
-        Note over S,MQ: 反向遍历已成功步骤<br/>每个步骤独立补偿
-        S->>DB: persist(FAILED)
-        S-->>H: Saga 失败
+        S->>S: 逆序执行补偿
+        Note over S: restoreStock → cancelOrder
+        S->>DB: persist(COMPENSATING → COMPENSATED)
+        S-->>H: 抛 OrderCreationException
     end
-
-    Note over S,DB: eo_saga 表持久化状态机<br/>故障后可 retryFailedSaga(sagaId)
 ```
 
 > 详细架构文档：[doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md) — 含 11 模块依赖图 + 部署架构 + 可观测性栈

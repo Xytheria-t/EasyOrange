@@ -1,9 +1,9 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
-import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplate;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageSubscriptionDO;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageTemplateDO;
@@ -17,7 +17,7 @@ public interface MessageDataMapper {
 
     // ==================== Message ====================
 
-    default MessageDO toEntity(MessageAggregate aggregate) {
+    default MessageDO toEntity(Message aggregate) {
         if (aggregate == null) {
             return null;
         }
@@ -36,11 +36,11 @@ public interface MessageDataMapper {
             .build();
     }
 
-    default MessageAggregate toAggregate(MessageDO entity) {
+    default Message toAggregate(MessageDO entity) {
         if (entity == null) {
             return null;
         }
-        return MessageAggregate.fromRaw(
+        return Message.fromRaw(
                 entity.getId(),
                 entity.getSenderId(),
                 entity.getReceiverId(),
@@ -56,7 +56,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<MessageAggregate> toAggregateList(List<MessageDO> entities) {
+    default List<Message> toAggregateList(List<MessageDO> entities) {
         if (entities == null) {
             return List.of();
         }
@@ -65,7 +65,7 @@ public interface MessageDataMapper {
 
     // ==================== OfflineMessage ====================
 
-    default OfflineMessageDO toEntity(OfflineMessageAggregate aggregate) {
+    default OfflineMessageDO toEntity(OfflineMessage aggregate) {
         if (aggregate == null) {
             return null;
         }
@@ -80,11 +80,11 @@ public interface MessageDataMapper {
             .build();
     }
 
-    default OfflineMessageAggregate toAggregate(OfflineMessageDO entity) {
+    default OfflineMessage toAggregate(OfflineMessageDO entity) {
         if (entity == null) {
             return null;
         }
-        return OfflineMessageAggregate.fromRaw(
+        return OfflineMessage.fromRaw(
                 entity.getId(),
                 entity.getUserId(),
                 entity.getMessageId(),
@@ -95,7 +95,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<OfflineMessageAggregate> toOfflineAggregateList(List<OfflineMessageDO> entities) {
+    default List<OfflineMessage> toOfflineAggregateList(List<OfflineMessageDO> entities) {
         if (entities == null) {
             return List.of();
         }
@@ -104,7 +104,7 @@ public interface MessageDataMapper {
 
     // ==================== MessageSubscription ====================
 
-    default MessageSubscriptionDO toEntity(MessageSubscriptionAggregate aggregate) {
+    default MessageSubscriptionDO toEntity(MessageSubscription aggregate) {
         if (aggregate == null) {
             return null;
         }
@@ -117,11 +117,11 @@ public interface MessageDataMapper {
             .build();
     }
 
-    default MessageSubscriptionAggregate toAggregate(MessageSubscriptionDO entity) {
+    default MessageSubscription toAggregate(MessageSubscriptionDO entity) {
         if (entity == null) {
             return null;
         }
-        return MessageSubscriptionAggregate.fromRaw(
+        return MessageSubscription.fromRaw(
                 entity.getId(),
                 entity.getUserId(),
                 entity.getMessageType(),
@@ -130,7 +130,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<MessageSubscriptionAggregate> toSubscriptionAggregateList(List<MessageSubscriptionDO> entities) {
+    default List<MessageSubscription> toSubscriptionAggregateList(List<MessageSubscriptionDO> entities) {
         if (entities == null) {
             return List.of();
         }
@@ -139,7 +139,7 @@ public interface MessageDataMapper {
 
     // ==================== MessageTemplate ====================
 
-    default MessageTemplateDO toEntity(MessageTemplateAggregate aggregate) {
+    default MessageTemplateDO toEntity(MessageTemplate aggregate) {
         if (aggregate == null) {
             return null;
         }
@@ -156,11 +156,11 @@ public interface MessageDataMapper {
             .build();
     }
 
-    default MessageTemplateAggregate toAggregate(MessageTemplateDO entity) {
+    default MessageTemplate toAggregate(MessageTemplateDO entity) {
         if (entity == null) {
             return null;
         }
-        return MessageTemplateAggregate.fromRaw(
+        return MessageTemplate.fromRaw(
                 entity.getId(),
                 entity.getTemplateCode(),
                 entity.getTemplateName(),
@@ -173,7 +173,7 @@ public interface MessageDataMapper {
         );
     }
 
-    default List<MessageTemplateAggregate> toTemplateAggregateList(List<MessageTemplateDO> entities) {
+    default List<MessageTemplate> toTemplateAggregateList(List<MessageTemplateDO> entities) {
         if (entities == null) {
             return List.of();
         }

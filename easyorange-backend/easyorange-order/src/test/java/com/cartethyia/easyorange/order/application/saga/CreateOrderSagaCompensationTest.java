@@ -12,11 +12,11 @@ import com.cartethyia.easyorange.order.application.saga.support.OrderCompensatio
 import com.cartethyia.easyorange.order.application.saga.support.OrderCreationExecutor;
 import com.cartethyia.easyorange.order.application.saga.support.OrderPreparationService;
 import com.cartethyia.easyorange.order.application.saga.support.SagaCoordinator;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.port.PaymentGatewayPort;
-import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort;
-import com.cartethyia.easyorange.order.domain.port.ProductInventoryPort.ProductSnapshot;
+import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
+import com.cartethyia.easyorange.order.domain.port.ProductOrderPort.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.port.ProductQueryPort;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
@@ -26,6 +26,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
+import com.cartethyia.easyorange.order.application.dto.OrderVO;
 import com.cartethyia.easyorange.order.domain.port.OrderCachePort;
 import com.cartethyia.easyorange.order.domain.saga.OrderCreationException;
 import com.cartethyia.easyorange.order.domain.saga.SagaException;
@@ -67,7 +68,7 @@ class CreateOrderSagaCompensationTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private ProductInventoryPort productInventoryPort;
+    private ProductOrderPort productOrderPort;
 
     @Mock
     private PaymentGatewayPort paymentGatewayPort;
@@ -76,7 +77,7 @@ class CreateOrderSagaCompensationTest {
     private DomainEventPublisher eventPublisher;
 
     @Mock
-    private OrderCachePort orderCachePort;
+    private OrderCachePort<OrderVO> orderCachePort;
 
     @Mock
     private RedissonClient redissonClient;
@@ -107,11 +108,11 @@ class CreateOrderSagaCompensationTest {
         var lockManager = new DistributedLockManager(redissonClient);
         var sagaCoordinator = new SagaCoordinator(sagaRepository, objectMapper);
         var compensationService = new OrderCompensationService(orderRepository, orderCachePort);
-        var preparationService = new OrderPreparationService(productInventoryPort, productQueryPort, idGenerator);
+        var preparationService = new OrderPreparationService(productOrderPort, productQueryPort, idGenerator);
         var orderCreationExecutor = new OrderCreationExecutor(
             orderRepository, eventPublisher, paymentGatewayPort, orderCachePort, preparationService, idGenerator
         );
-        saga = new CreateOrderSaga(lockManager, sagaCoordinator, compensationService, orderCreationExecutor);
+        saga = new CreateOrderSaga(lockManager, sagaCoordinator, compensationService, orderCreationExecutor, productOrderPort);
 
         Collection<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
@@ -134,15 +135,15 @@ class CreateOrderSagaCompensationTest {
                 "北京市朝阳区", "13800138000", "备注", null
         );
 
-        ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
-        when(productInventoryPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
+        ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, 10, "北京");
+        when(productOrderPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenReturn("1");
 
         CreateOrderResult result = saga.execute(command);
 
         assertThat(result).isNotNull();
         verify(paymentGatewayPort).createPayment(any());
-        verify(orderRepository).save(any(OrderAggregate.class));
+        verify(orderRepository).save(any(Order.class));
         verify(eventPublisher).publish(any());
         verify(lock, atLeastOnce()).unlock();
     }
@@ -155,11 +156,11 @@ class CreateOrderSagaCompensationTest {
                 "北京市朝阳区", "13800138000", null, null
         );
 
-        ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, true, "北京");
-        when(productInventoryPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
+        ProductSnapshot snapshot = new ProductSnapshot("100", SELLER_ID, new BigDecimal("99.99"), true, 10, "北京");
+        when(productOrderPort.getSnapshot("100")).thenReturn(Optional.of(snapshot));
         when(paymentGatewayPort.createPayment(any())).thenThrow(new RuntimeException("支付失败"));
 
-        OrderAggregate cancelledAggregate = OrderAggregate.from(
+        Order cancelledAggregate = Order.from(
                 new OrderReconstructSpec(
                         OrderId.of("1"), OrderNo.of("ORD1"),
                         UserId.of(BUYER_ID), UserId.of(SELLER_ID),
@@ -175,7 +176,7 @@ class CreateOrderSagaCompensationTest {
         assertThatThrownBy(() -> saga.execute(command))
                 .isInstanceOf(OrderCreationException.class);
 
-        verify(orderRepository).update(any(OrderAggregate.class));
+        verify(orderRepository).update(any(Order.class));
     }
 
     @Test
@@ -186,7 +187,7 @@ class CreateOrderSagaCompensationTest {
                 "北京市朝阳区", "13800138000", null, null
         );
 
-        when(productInventoryPort.getSnapshot("999")).thenReturn(Optional.empty());
+        when(productOrderPort.getSnapshot("999")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> saga.execute(command))
                 .isInstanceOf(OrderCreationException.class)

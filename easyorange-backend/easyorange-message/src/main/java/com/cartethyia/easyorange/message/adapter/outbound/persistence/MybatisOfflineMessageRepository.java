@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
-import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import org.springframework.stereotype.Repository;
@@ -22,14 +22,14 @@ public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessa
     }
 
     @Override
-    public OfflineMessageAggregate save(OfflineMessageAggregate message) {
+    public OfflineMessage save(OfflineMessage message) {
         OfflineMessageDO entity = messageDataMapper.toEntity(message);
         mapper.insert(entity);
         return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public List<OfflineMessageAggregate> findPendingByUserId(String userId) {
+    public List<OfflineMessage> findPendingByUserId(String userId) {
         return messageDataMapper.toOfflineAggregateList(
                 lambdaQuery()
                         .eq(OfflineMessageDO::getUserId, userId)

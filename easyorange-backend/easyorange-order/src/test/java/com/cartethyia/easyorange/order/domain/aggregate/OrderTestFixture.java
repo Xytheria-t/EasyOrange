@@ -19,8 +19,8 @@ import java.util.List;
  * <p>
  * 推荐用法：
  * <pre>{@code
- * OrderAggregate.create(aCreateSpec().build());              // 默认创建参数
- * OrderAggregate.create(aCreateSpec().items(multiItems()).build());
+ * Order.create(aCreateSpec().build());              // 默认创建参数
+ * Order.create(aCreateSpec().items(multiItems()).build());
  * pendingPaymentOrder();                                     // 待付款订单
  * paidOrder();                                               // 已付款订单
  * shippedOrder();                                            // 已发货订单
@@ -103,31 +103,31 @@ public final class OrderTestFixture {
         return aCreateSpec().build();
     }
 
-    public static OrderAggregate pendingPaymentOrder() {
-        return OrderAggregate.from(aReconstructSpec().status(OrderStatus.PENDING_PAYMENT).build());
+    public static Order pendingPaymentOrder() {
+        return Order.from(aReconstructSpec().status(OrderStatus.PENDING_PAYMENT).build());
     }
 
-    public static OrderAggregate paidOrder() {
-        return OrderAggregate.from(aReconstructSpec().status(OrderStatus.PAID).paymentStatus(PaymentStatus.PAID).build());
+    public static Order paidOrder() {
+        return Order.from(aReconstructSpec().status(OrderStatus.PAID).paymentStatus(PaymentStatus.PAID).build());
     }
 
-    public static OrderAggregate shippedOrder() {
-        return OrderAggregate.from(aReconstructSpec().status(OrderStatus.SHIPPED).paymentStatus(PaymentStatus.PAID).build());
+    public static Order shippedOrder() {
+        return Order.from(aReconstructSpec().status(OrderStatus.SHIPPED).paymentStatus(PaymentStatus.PAID).build());
     }
 
-    public static OrderAggregate completedOrder() {
-        return OrderAggregate.from(aReconstructSpec().status(OrderStatus.COMPLETED).paymentStatus(PaymentStatus.PAID).build());
+    public static Order completedOrder() {
+        return Order.from(aReconstructSpec().status(OrderStatus.COMPLETED).paymentStatus(PaymentStatus.PAID).build());
     }
 
-    public static OrderAggregate cancelledOrder() {
-        return OrderAggregate.from(aReconstructSpec().status(OrderStatus.CANCELLED).paymentStatus(PaymentStatus.UNPAID).build());
+    public static Order cancelledOrder() {
+        return Order.from(aReconstructSpec().status(OrderStatus.CANCELLED).paymentStatus(PaymentStatus.UNPAID).build());
     }
 
     /**
      * 通过 ID 构建指定状态订单 — 用于 job/saga 测试。
      */
-    public static OrderAggregate orderWithStatus(String orderId, OrderStatus status, PaymentStatus paymentStatus) {
-        return OrderAggregate.from(aReconstructSpec()
+    public static Order orderWithStatus(String orderId, OrderStatus status, PaymentStatus paymentStatus) {
+        return Order.from(aReconstructSpec()
                 .id(orderId)
                 .orderNo("ORD" + orderId)
                 .status(status)

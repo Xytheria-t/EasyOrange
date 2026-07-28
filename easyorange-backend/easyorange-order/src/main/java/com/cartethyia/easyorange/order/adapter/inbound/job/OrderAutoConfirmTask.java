@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.adapter.inbound.job;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCompletedEvent;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -35,13 +35,13 @@ public class OrderAutoConfirmTask {
         long autoConfirmDays = OrderConstant.AUTO_CONFIRM_DAYS;
         LocalDateTime threshold = LocalDateTime.now().minusDays(autoConfirmDays);
 
-        List<OrderAggregate> shippedOrders = orderRepository.findShippedOrdersBefore(threshold);
+        List<Order> shippedOrders = orderRepository.findShippedOrdersBefore(threshold);
         if (shippedOrders.isEmpty()) {
             return;
         }
 
         int confirmed = 0;
-        for (OrderAggregate aggregate : shippedOrders) {
+        for (Order aggregate : shippedOrders) {
             try {
                 if (autoConfirmOrder(aggregate)) {
                     confirmed++;
@@ -54,12 +54,12 @@ public class OrderAutoConfirmTask {
         log.info("自动确认收货检查完成: 检查 {} 条, 确认 {} 条", shippedOrders.size(), confirmed);
     }
 
-    private boolean autoConfirmOrder(OrderAggregate aggregate) {
+    private boolean autoConfirmOrder(Order aggregate) {
         if (!aggregate.canConfirmReceipt()) {
             return false;
         }
 
-        OrderAggregate.OrderTransition<OrderCompletedEvent> result = aggregate.confirmReceipt();
+        Order.OrderTransition<OrderCompletedEvent> result = aggregate.confirmReceipt();
         orderRepository.update(result.aggregate());
 
         orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());

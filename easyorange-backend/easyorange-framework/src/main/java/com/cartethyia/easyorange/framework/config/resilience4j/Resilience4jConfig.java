@@ -144,12 +144,12 @@ public class Resilience4jConfig {
         return registry;
     }
 
-    @Bean("aiLlm")
+    @Bean("aiLlmRetry")
     public Retry aiLlmRetry(RetryRegistry retryRegistry) {
         return retryRegistry.retry("aiLlm");
     }
 
-    @Bean("aiVision")
+    @Bean("aiVisionRetry")
     public Retry aiVisionRetry(RetryRegistry retryRegistry) {
         return retryRegistry.retry("aiVision");
     }
@@ -194,17 +194,17 @@ public class Resilience4jConfig {
         return registry;
     }
 
-    @Bean("aiLlm")
+    @Bean("aiLlmBulkhead")
     public Bulkhead aiLlmBulkhead(BulkheadRegistry bulkheadRegistry) {
         return bulkheadRegistry.bulkhead("aiLlm");
     }
 
-    @Bean("aiVision")
+    @Bean("aiVisionBulkhead")
     public Bulkhead aiVisionBulkhead(BulkheadRegistry bulkheadRegistry) {
         return bulkheadRegistry.bulkhead("aiVision");
     }
 
-    @Bean("dbHeavy")
+    @Bean("dbHeavyBulkhead")
     public Bulkhead dbHeavyBulkhead(BulkheadRegistry bulkheadRegistry) {
         return bulkheadRegistry.bulkhead("dbHeavy");
     }

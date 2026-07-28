@@ -3,9 +3,10 @@ package com.cartethyia.easyorange.order.application.saga;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.application.saga.support.*;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.event.OrderCreatedEvent;
 import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
+import com.cartethyia.easyorange.order.domain.port.ProductOrderPort;
 import com.cartethyia.easyorange.order.domain.saga.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,11 +30,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CreateOrderSaga {
 
-    // 核心依赖（从 10 个减少到 4 个）
+    // 核心依赖
     private final DistributedLockManager lockManager;
     private final SagaCoordinator sagaCoordinator;
     private final OrderCompensationService compensationService;
     private final OrderCreationExecutor orderCreationExecutor;
+    private final ProductOrderPort productOrderPort;
 
     private static final String ORDER_LOCK_PREFIX = "eo:order:lock:product:";
 
@@ -90,11 +92,17 @@ public class CreateOrderSaga {
         // 步骤 1: 创建订单
         sagaStatus = sagaCoordinator.transitionTo(sagaStatus, SagaState.ORDER_CREATED, "CREATE_ORDER");
 
-        OrderAggregate.OrderTransition<OrderCreatedEvent> createResult = orderCreationExecutor.createOrder(command);
-        OrderAggregate aggregate = createResult.aggregate();
+        Order.OrderTransition<OrderCreatedEvent> createResult = orderCreationExecutor.createOrder(command);
+        Order aggregate = createResult.aggregate();
         OrderCreatedEvent orderEvent = createResult.event();
 
         compensations.add(() -> compensationService.cancelOrder(aggregate.id()));
+
+        // 步骤 1.5: 同步扣减库存（替代原来的异步事件驱动路径）
+        for (var item : command.items()) {
+            productOrderPort.decreaseStock(item.productId(), item.quantity());
+            compensations.add(() -> productOrderPort.restoreStock(item.productId(), item.quantity()));
+        }
 
         // 步骤 2: 创建支付
         sagaStatus = sagaCoordinator.transitionTo(sagaStatus, SagaState.PAYMENT_CREATED, "CREATE_PAYMENT");
@@ -122,33 +130,4 @@ public class CreateOrderSaga {
         sagaCoordinator.recordCompensationLog(sagaStatus, compensationLog);
     }
 
-    /**
-     * 重试失败的 Saga
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void retryFailedSaga(String sagaId) {
-        SagaStatus sagaStatus = sagaCoordinator.findById(sagaId);
-
-        if (!sagaStatus.canRetry()) {
-            throw new OrderDomainException("Saga 不允许重试: " + sagaId);
-        }
-
-        try {
-            CreateOrderCommand command = sagaCoordinator.deserializePayload(
-                sagaId, sagaStatus.payload(), CreateOrderCommand.class
-            );
-
-            sagaStatus = sagaCoordinator.incrementRetry(sagaStatus);
-
-            execute(command);
-        } catch (SagaException e) {
-            log.error("Saga 重试失败 sagaId={}，反序列化失败", sagaId, e);
-            sagaCoordinator.recordError(sagaStatus, e.getMessage());
-            throw new OrderDomainException("Saga 重试失败: payload 反序列化错误", e);
-        } catch (Exception e) {
-            log.error("Saga 重试失败 sagaId={}", sagaId, e);
-            sagaCoordinator.recordError(sagaStatus, e.getMessage());
-            throw new OrderDomainException("Saga 重试失败", e);
-        }
-    }
 }

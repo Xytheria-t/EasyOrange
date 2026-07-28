@@ -9,8 +9,8 @@ import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMap
 import com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderMapper;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

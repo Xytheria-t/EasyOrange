@@ -6,7 +6,7 @@ import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.payment.application.command.ClosePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.CreatePaymentCommand;
 import com.cartethyia.easyorange.payment.application.command.PaymentCommandHandler;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.aggregate.PaymentReconstructSpec;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
@@ -55,9 +55,9 @@ class PaymentCommandHandlerTest {
     private PaymentCommandHandler commandHandler;
 
     @Captor
-    private ArgumentCaptor<PaymentAggregate> aggregateCaptor;
+    private ArgumentCaptor<Payment> aggregateCaptor;
 
-    private PaymentAggregate testAggregate;
+    private Payment testAggregate;
 
     @BeforeEach
     void setUp() {
@@ -116,7 +116,7 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("支付成功 - 阶段2确认")
         void confirmPayPhase2_success() {
-            PaymentAggregate payingAggregate = buildAggregate(PaymentStatus.PAYING);
+            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
 
             commandHandler.confirmPayPhase2("1001", PaymentResult.success("TXN_123"));
@@ -143,7 +143,7 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("退款预处理成功")
         void prepareRefundPhase1_success() {
-            PaymentAggregate paidAggregate = buildAggregate(PaymentStatus.SUCCESS);
+            Payment paidAggregate = buildAggregate(PaymentStatus.SUCCESS);
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(paidAggregate));
 
             String paymentId = commandHandler.prepareRefundPhase1("1001", new BigDecimal("100.00"));
@@ -156,7 +156,7 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("退款确认成功")
         void confirmRefundPhase2_success() {
-            PaymentAggregate refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
+            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
 
             commandHandler.confirmRefundPhase2("1001", RefundResult.success("REF_123"), new BigDecimal("100.00"));
@@ -174,7 +174,7 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("PAYING 状态回退到 PENDING")
         void rollbackPayStatus_success() {
-            PaymentAggregate payingAggregate = buildAggregate(PaymentStatus.PAYING);
+            Payment payingAggregate = buildAggregate(PaymentStatus.PAYING);
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(payingAggregate));
 
             commandHandler.rollbackPayStatus("1001");
@@ -191,7 +191,7 @@ class PaymentCommandHandlerTest {
         @Test
         @DisplayName("REFUNDING 状态回退到 SUCCESS")
         void rollbackRefundStatus_success() {
-            PaymentAggregate refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
+            Payment refundingAggregate = buildAggregate(PaymentStatus.REFUNDING);
             when(paymentRepository.findById("1001")).thenReturn(Optional.of(refundingAggregate));
 
             commandHandler.rollbackRefundStatus("1001");
@@ -236,12 +236,12 @@ class PaymentCommandHandlerTest {
     /**
      * 构造测试用聚合根 — 除 status 外其余字段固定，便于不同状态场景复用。
      */
-    private static PaymentAggregate buildAggregate(PaymentStatus status) {
+    private static Payment buildAggregate(PaymentStatus status) {
         var spec = new PaymentReconstructSpec(
                 "1001", "PAY123", "2001", "3001",
                 new BigDecimal("100.00"), BigDecimal.ZERO, PaymentMethod.WECHAT,
                 status, null, null, null, null, null, null, 0
         );
-        return PaymentAggregate.from(spec);
+        return Payment.from(spec);
     }
 }

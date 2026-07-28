@@ -41,8 +41,8 @@ public class CachingLlmAdapter implements LlmPort {
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
             AiMetricsService aiMetricsService,
-            @Qualifier("aiLlm") Retry aiRetry,
-            @Qualifier("aiLlm") Bulkhead aiBulkhead) {
+            @Qualifier("aiLlmRetry") Retry aiRetry,
+            @Qualifier("aiLlmBulkhead") Bulkhead aiBulkhead) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;

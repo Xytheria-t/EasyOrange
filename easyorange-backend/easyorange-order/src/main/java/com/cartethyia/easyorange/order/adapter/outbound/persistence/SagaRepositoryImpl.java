@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Repository
@@ -27,22 +26,6 @@ public class SagaRepositoryImpl extends BaseRepository<SagaMapper, SagaDO> imple
     public void save(SagaStatus sagaStatus) {
         SagaDO sagaDO = toDataObject(sagaStatus);
         mapper.insert(sagaDO);
-    }
-
-    @Override
-    public Optional<SagaStatus> findById(String sagaId) {
-        SagaDO sagaDO = mapper.selectById(sagaId);
-        return Optional.ofNullable(sagaDO).map(this::toDomain);
-    }
-
-    @Override
-    public Optional<SagaStatus> findByOrderId(Long orderId) {
-        SagaDO sagaDO = lambdaQuery()
-                .eq(SagaDO::getPayload, orderId.toString())
-                .orderByDesc(SagaDO::getCreatedAt)
-                .last("LIMIT 1")
-                .one();
-        return Optional.ofNullable(sagaDO).map(this::toDomain);
     }
 
     @Override

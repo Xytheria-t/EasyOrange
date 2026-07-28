@@ -43,7 +43,6 @@ public class EventExternalizationConfig {
      * Examples:
      * <pre>
      *   ProductCreatedEvent  → "product.created"
-     *   StockReservationRequestedEvent → "stock.reservation.requested"
      *   OrderPaidEvent      → "order.paid"
      * </pre>
      */

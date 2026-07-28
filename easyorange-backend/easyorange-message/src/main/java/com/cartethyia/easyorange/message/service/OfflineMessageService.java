@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 
 import java.util.List;
 
@@ -8,7 +8,7 @@ public interface OfflineMessageService {
 
     void saveOfflineMessage(String userId, String messageId, String pushChannel);
 
-    List<OfflineMessageAggregate> getPendingMessages(String userId);
+    List<OfflineMessage> getPendingMessages(String userId);
 
     void markAsPushed(String offlineMessageId);
 

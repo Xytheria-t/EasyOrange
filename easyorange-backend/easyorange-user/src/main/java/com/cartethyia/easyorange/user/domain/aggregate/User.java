@@ -141,6 +141,23 @@ public class User {
         return this.status == UserStatus.NORMAL;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "User{id=" + id + ", userType=" + userType + ", status=" + status + "}";
+    }
+
     private AuditInfo updateAuditInfo(String operatorId) {
         if (this.auditInfo == null) {
             return operatorId != null ? AuditInfo.create(operatorId) : null;

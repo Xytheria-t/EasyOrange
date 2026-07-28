@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.domain.repository.MessageRepository;
@@ -22,13 +22,13 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public Optional<MessageAggregate> findById(String id) {
+    public Optional<Message> findById(String id) {
         MessageDO entity = mapper.selectById(id);
         return Optional.ofNullable(messageDataMapper.toAggregate(entity));
     }
 
     @Override
-    public List<MessageAggregate> findByReceiverId(String receiverId, int limit) {
+    public List<Message> findByReceiverId(String receiverId, int limit) {
         return messageDataMapper.toAggregateList(
                 lambdaQuery()
                         .eq(MessageDO::getReceiverId, receiverId)
@@ -39,7 +39,7 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public List<MessageAggregate> findByReceiverIdAndReadStatus(String receiverId, ReadStatus readStatus, int limit) {
+    public List<Message> findByReceiverIdAndReadStatus(String receiverId, ReadStatus readStatus, int limit) {
         return messageDataMapper.toAggregateList(
                 lambdaQuery()
                         .eq(MessageDO::getReceiverId, receiverId)
@@ -59,14 +59,14 @@ public class MybatisMessageRepository extends BaseRepository<MessageMapper, Mess
     }
 
     @Override
-    public MessageAggregate save(MessageAggregate message) {
+    public Message save(Message message) {
         MessageDO entity = messageDataMapper.toEntity(message);
         mapper.insert(entity);
         return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public void update(MessageAggregate message) {
+    public void update(Message message) {
         mapper.updateById(messageDataMapper.toEntity(message));
     }
 

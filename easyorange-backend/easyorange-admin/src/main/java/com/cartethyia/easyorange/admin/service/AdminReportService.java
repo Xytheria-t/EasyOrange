@@ -8,7 +8,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchHand
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminReportResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;

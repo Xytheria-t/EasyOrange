@@ -73,17 +73,19 @@ product、order、payment 模块使用 CQRS（在 application/domain 层分离�
 **当前状态**：所有跨模块依赖已通过端口接口 + 适配器模式隔离，Maven 依赖标记为 `<optional>true</optional>`。
 
 **隔离方式**：
-- 调用方模块定义 `domain/port/` 接口（如 `ProductInventoryPort`）
+- 调用方模块定义 `domain/port/` 接口（如 `ProductOrderPort`）
 - 适配器实现在 `easyorange-application/adapter/outbound/` 包下
 - Maven 依赖标记为 `<optional>true</optional>` 实现编译期隔离
 
 **事件驱动**：
-- 写操作通过领域事件解耦（如 `StockReservationRequestedEvent`）
+- 写操作通过领域事件解耦（如 `OrderCreatedEvent`）
 - 事件监听器在 `easyorange-application/adapter/event/` 包下（机制与第 3 节"领域事件"一致）
 
 **查询操作**：保留同步端口调用（如 `getSnapshot()`），通过可选依赖实现
 
-**事件流**：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandService.decrementStock()`
+**库存扣减（主路径同步 + 订阅校验）**：
+- 主路径：`CreateOrderSaga` 在 `@Transactional` 内同步调用 `ProductOrderPort.decreaseStock()`
+- 历史异步路径：`OrderCreatedEvent → OrderSagaEventConsumer → StockReservationRequestedEvent → OrderFulfillmentEventConsumer → ProductCommandService.decrementStock()` 已移除，`OrderSagaEventConsumer.handleCreated()` 不再发布预留事件
 
 ## 统一响应格式
 
@@ -100,7 +102,7 @@ PageResult.of(records, total, page, size)
 
 | 类型 | 命名 | 示例 |
 |------|------|------|
-| 聚合根 | 名词 | `User`, `Product`, `OrderAggregate` |
+| 聚合根 | 名词 | `User`, `Product`, `Order` |
 | 值对象 | 名词 (record) | `ProductId`, `Money`, `StockQuantity` |
 | 领域事件 | `*Event` | `OrderCreatedEvent` |
 | 领域服务 | `*Service` | `AuthenticationService` |
@@ -324,7 +326,7 @@ AI 适配器（`CachingLlmAdapter` / `CachingVisionAdapter`）使用 **Resilienc
 
 `Resilience4jConfig` 在 framework 模块提供 `RetryRegistry` Bean + 两个预注册实例：`aiLlm`（文本）和 `aiVision`（视觉）。默认指数退避 500ms × 2.0，最多 3 次，重试 `RestClientException`，忽略 `IllegalArgumentException`。
 
-**新增 AI 适配器时**：注入 `@Qualifier("aiLlm")` 或 `@Qualifier("aiVision") Retry`，用 `Retry.decorateSupplier()` 包装 API 调用。参考 `CachingLlmAdapter` 模式。
+**新增 AI 适配器时**：注入 `@Qualifier("aiLlmRetry") Retry` + `@Qualifier("aiLlmBulkhead") Bulkhead`，用 `Retry.decorateSupplier()` 包装 API 调用。参考 `CachingLlmAdapter` 模式。
 
 ### AI 搜索增强并行管道
 

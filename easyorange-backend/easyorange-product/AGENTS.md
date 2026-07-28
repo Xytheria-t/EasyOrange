@@ -16,12 +16,14 @@ product/
 │   │   ├── dto/request/
 │   │   └── dto/response/
 │   └── outbound/
-│       ├── persistence/                 # 持久化
-│       │   ├── converter/ProductConverter.java
-│       │   ├── persistence/             # DO: ProductDO, ProductDetailDO, CategoryDO, etc.
-│       │   ├── mapper/                  # MyBatis Mapper
-│       │   ├── repository/              # Repository 实现
-│       │   └── ProductSnapshotPortImpl.java
+│       ├── persistence/                 # 持久化 — 按领域聚合分组
+│       │   ├── product/                 # 商品聚合：ProductDO + DetailDO + ImageDO + Mapper + RepositoryImpl + DataMapper + SnapshotPortImpl
+│       │   ├── category/                # 分类：CategoryDO + CategoryProductCount + Mapper + QueryRepositoryImpl
+│       │   ├── audit/                   # 审核日志：ProductAuditLogDO + Mapper + RepositoryImpl
+│       │   ├── report/                  # 举报：ProductReportDO + ReportHandleHistoryDO + Mapper × 2 + RepositoryImpl × 3
+│       │   ├── rating/                  # 评价：ProductRatingDO + Mapper + RepositoryImpl × 2
+│       │   ├── search/                  # 搜索：HotKeywordDO + SearchHistoryDO + Mapper × 2
+│       │   └── typehandler/             # MyBatis 枚举 TypeHandler
 │       ├── scheduler/                  # 定时批处理
 │       │   └── ViewCountFlushScheduler.java  # 浏览量 Redis→DB 定时刷入
 │       └── cache/                       # 缓存适配器
@@ -190,7 +192,7 @@ public interface ProductCachePort {
 
 1. `Product` 聚合根 + 对应值对象
 2. Flyway 迁移脚本
-3. `ProductDO` + `ProductConverter`
+3. `ProductDO` + `ProductDataMapper`
 4. `ProductReadModel` + `ProductReadModelAssembler`
 5. Request/Response DTO
 6. 缓存失效逻辑
@@ -207,6 +209,6 @@ public interface ProductCachePort {
 
 ## 跨模块交互
 
-- **order 模块**: 通过 `ProductInventoryPort` 扣减/恢复库存
+- **order 模块**: 通过 `ProductOrderPort` 操作产品生命周期（快照、库存、售出）
 - **favorite 模块**: 通过 `ProductInfoPort`（`FavoriteProductInfoAdapter` 在 application 模块实现）查询商品信息
 - order/favorite 对 product 的 Maven 依赖均为 `<optional>true</optional>`，通过 Port 接口隔离领域模型

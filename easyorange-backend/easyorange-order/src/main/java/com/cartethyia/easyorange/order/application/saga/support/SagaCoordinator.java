@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.order.application.saga.support;
 
-import com.cartethyia.easyorange.order.domain.exception.OrderDomainException;
 import com.cartethyia.easyorange.order.domain.saga.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,14 +63,6 @@ public class SagaCoordinator {
     }
 
     /**
-     * 查找 Saga 状态
-     */
-    public SagaStatus findById(String sagaId) {
-        return sagaRepository.findById(sagaId)
-            .orElseThrow(() -> new OrderDomainException("Saga 不存在: " + sagaId));
-    }
-
-    /**
      * 将 Saga 状态转换到指定状态
      */
     public SagaStatus transitionTo(SagaStatus current, SagaState newState, String step) {
@@ -99,24 +90,6 @@ public class SagaCoordinator {
     }
 
     /**
-     * 反序列化 Saga payload
-     *
-     * @param sagaId     Saga ID
-     * @param payload    payload 字符串
-     * @param targetType 目标类型
-     * @param <T>        类型参数
-     * @return 反序列化后的对象
-     * @throws SagaException 如果反序列化失败
-     */
-    public <T> T deserializePayload(String sagaId, String payload, Class<T> targetType) {
-        try {
-            return objectMapper.readValue(payload, targetType);
-        } catch (Exception e) {
-            throw new SagaException(sagaId, SagaState.PENDING, "反序列化 Saga payload 失败", e);
-        }
-    }
-
-    /**
      * 序列化 payload
      *
      * @param sagaId Saga ID（用于日志）
@@ -131,15 +104,6 @@ public class SagaCoordinator {
             // 返回一个简化的 payload，避免完全失败
             return object.toString();
         }
-    }
-
-    /**
-     * 增加 Saga 重试计数
-     */
-    public SagaStatus incrementRetry(SagaStatus current) {
-        SagaStatus updated = current.withRetry();
-        sagaRepository.update(updated);
-        return updated;
     }
 
     /**

@@ -5,7 +5,7 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.converter.PaymentDataMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.PaymentMapper;
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.PaymentDO;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
@@ -28,12 +28,12 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public void save(PaymentAggregate aggregate) {
+    public void save(Payment aggregate) {
         mapper.insert(paymentDataMapper.toPO(aggregate));
     }
 
     @Override
-    public void update(PaymentAggregate aggregate) {
+    public void update(Payment aggregate) {
         PaymentDO po = paymentDataMapper.toPO(aggregate);
         int rows = mapper.updateById(po);
 
@@ -43,39 +43,39 @@ public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, Paym
     }
 
     @Override
-    public Optional<PaymentAggregate> findById(String id) {
+    public Optional<Payment> findById(String id) {
         return Optional.ofNullable(mapper.selectById(id)).map(paymentDataMapper::toAggregate);
     }
 
     @Override
-    public Optional<PaymentAggregate> findByPaymentNo(String paymentNo) {
+    public Optional<Payment> findByPaymentNo(String paymentNo) {
         return Optional.ofNullable(lambdaQuery().eq(PaymentDO::getPaymentNo, paymentNo).one())
                 .map(paymentDataMapper::toAggregate);
     }
 
     @Override
-    public Optional<PaymentAggregate> findByOrderId(String orderId) {
+    public Optional<Payment> findByOrderId(String orderId) {
         return Optional.ofNullable(lambdaQuery().eq(PaymentDO::getOrderId, orderId).one())
                 .map(paymentDataMapper::toAggregate);
     }
 
     @Override
-    public Optional<PaymentAggregate> findAggregateById(String id) {
+    public Optional<Payment> findAggregateById(String id) {
         return findById(id);
     }
 
     @Override
-    public Optional<PaymentAggregate> findAggregateByPaymentNo(String paymentNo) {
+    public Optional<Payment> findAggregateByPaymentNo(String paymentNo) {
         return findByPaymentNo(paymentNo);
     }
 
     @Override
-    public Optional<PaymentAggregate> findAggregateByOrderId(String orderId) {
+    public Optional<Payment> findAggregateByOrderId(String orderId) {
         return findByOrderId(orderId);
     }
 
     @Override
-    public List<PaymentAggregate> findByUserIdAndStatus(String userId, PaymentStatus status, int pageNum, int pageSize) {
+    public List<Payment> findByUserIdAndStatus(String userId, PaymentStatus status, int pageNum, int pageSize) {
         Page<PaymentDO> page = lambdaQuery()
                 .eq(userId != null, PaymentDO::getUserId, userId)
                 .eq(status != null, PaymentDO::getStatus, status)

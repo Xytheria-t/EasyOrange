@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageSubscriptionDO;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import org.springframework.stereotype.Repository;
@@ -20,7 +20,7 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
     }
 
     @Override
-    public List<MessageSubscriptionAggregate> findByUserId(String userId) {
+    public List<MessageSubscription> findByUserId(String userId) {
         return messageDataMapper.toSubscriptionAggregateList(
                 lambdaQuery()
                         .eq(MessageSubscriptionDO::getUserId, userId)
@@ -29,7 +29,7 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
     }
 
     @Override
-    public MessageSubscriptionAggregate findByUserIdAndTypeAndChannel(String userId, String messageType, String pushChannel) {
+    public MessageSubscription findByUserIdAndTypeAndChannel(String userId, String messageType, String pushChannel) {
         MessageSubscriptionDO entity = lambdaQuery()
                 .eq(MessageSubscriptionDO::getUserId, userId)
                 .eq(MessageSubscriptionDO::getMessageType, messageType)
@@ -39,14 +39,14 @@ public class MybatisMessageSubscriptionRepository extends BaseRepository<Message
     }
 
     @Override
-    public MessageSubscriptionAggregate save(MessageSubscriptionAggregate subscription) {
+    public MessageSubscription save(MessageSubscription subscription) {
         MessageSubscriptionDO entity = messageDataMapper.toEntity(subscription);
         mapper.insert(entity);
         return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public void update(MessageSubscriptionAggregate subscription) {
+    public void update(MessageSubscription subscription) {
         mapper.updateById(messageDataMapper.toEntity(subscription));
     }
 

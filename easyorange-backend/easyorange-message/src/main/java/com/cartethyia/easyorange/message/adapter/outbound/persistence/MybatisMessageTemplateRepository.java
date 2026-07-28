@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.message.adapter.outbound.persistence;
 
 import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.constant.MessageConstant;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplateAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplate;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageTemplateDO;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
 import org.springframework.stereotype.Repository;
@@ -22,7 +22,7 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
     }
 
     @Override
-    public MessageTemplateAggregate findByCode(String templateCode) {
+    public MessageTemplate findByCode(String templateCode) {
         MessageTemplateDO entity = lambdaQuery()
                 .eq(MessageTemplateDO::getTemplateCode, templateCode)
                 .eq(MessageTemplateDO::getStatus, MessageConstant.TEMPLATE_STATUS_ENABLED)
@@ -31,14 +31,14 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
     }
 
     @Override
-    public MessageTemplateAggregate save(MessageTemplateAggregate template) {
+    public MessageTemplate save(MessageTemplate template) {
         MessageTemplateDO entity = messageDataMapper.toEntity(template);
         mapper.insert(entity);
         return messageDataMapper.toAggregate(entity);
     }
 
     @Override
-    public void update(MessageTemplateAggregate template) {
+    public void update(MessageTemplate template) {
         mapper.updateById(messageDataMapper.toEntity(template));
     }
 
@@ -48,7 +48,7 @@ public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemp
     }
 
     @Override
-    public List<MessageTemplateAggregate> findByCondition(MessageTemplateAggregate condition) {
+    public List<MessageTemplate> findByCondition(MessageTemplate condition) {
         var wrapper = lambdaQuery();
         if (condition != null) {
             if (condition.templateCode() != null) {

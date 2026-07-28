@@ -43,6 +43,23 @@ public class Favorite {
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Favorite other)) return false;
+        return id != null && id.equals(other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
+    }
+
+    @Override
+    public String toString() {
+        return "Favorite{id=" + id + ", userId=" + userId + ", productId=" + productId + "}";
+    }
+
     public String getId() { return id; }
     public String getUserId() { return userId; }
     public String getProductId() { return productId; }

@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.service;
 
-import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
 import com.cartethyia.easyorange.message.domain.port.MessageNotifierPort;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -62,7 +62,7 @@ class MessageRoutingServiceTest {
         @Test
         @DisplayName("用户有订阅偏好时路由决策包含订阅列表")
         void decideRoute_hasSubscriptions_returnsSubscriptions() {
-            MessageSubscriptionAggregate sub = MessageSubscriptionAggregate.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
+            MessageSubscription sub = MessageSubscription.create(USER_ID, "SYSTEM", "WEBSOCKET", true);
             when(sessionManager.isUserOnline(USER_ID)).thenReturn(true);
             when(subscriptionRepository.findByUserId(USER_ID)).thenReturn(List.of(sub));
 

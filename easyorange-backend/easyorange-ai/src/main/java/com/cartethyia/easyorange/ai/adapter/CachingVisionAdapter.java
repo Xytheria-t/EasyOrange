@@ -43,8 +43,8 @@ public class CachingVisionAdapter implements VisionPort {
             @Qualifier("aiCaches") Map<AiCallScope, MultiLevelCache> aiCaches,
             @Qualifier("aiStaleCache") Cache<String, Object> staleCache,
             AiMetricsService aiMetricsService,
-            @Qualifier("aiVision") Retry aiRetry,
-            @Qualifier("aiVision") Bulkhead aiBulkhead) {
+            @Qualifier("aiVisionRetry") Retry aiRetry,
+            @Qualifier("aiVisionBulkhead") Bulkhead aiBulkhead) {
         this.delegate = delegate;
         this.aiProperties = aiProperties;
         this.aiCaches = aiCaches;

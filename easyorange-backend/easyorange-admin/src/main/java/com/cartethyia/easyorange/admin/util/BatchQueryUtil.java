@@ -1,8 +1,8 @@
 package com.cartethyia.easyorange.admin.util;
 
 import com.cartethyia.easyorange.common.constant.CommonConstant;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.ProductDO;
-import com.cartethyia.easyorange.product.adapter.outbound.persistence.mapper.ProductMapper;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
+import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;

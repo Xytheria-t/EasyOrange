@@ -2,7 +2,7 @@ package com.cartethyia.easyorange.payment.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentResultCode;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
@@ -20,12 +20,12 @@ public class PaymentQueryHandler {
 
     private final PaymentQueryRepositoryPort paymentQueryRepository;
 
-    public PaymentAggregate getPaymentById(String paymentId) {
+    public Payment getPaymentById(String paymentId) {
         return paymentQueryRepository.findAggregateById(paymentId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
     }
 
-    public PaymentAggregate getPaymentByOrderId(String orderId) {
+    public Payment getPaymentByOrderId(String orderId) {
         return paymentQueryRepository.findAggregateByOrderId(orderId)
                 .orElseThrow(() -> PaymentDomainException.of(PaymentResultCode.PAYMENT_NOT_FOUND));
     }
@@ -33,7 +33,7 @@ public class PaymentQueryHandler {
     /**
      * 我的支付记录 — userId 自动填充为当前登录用户。
      */
-    public PageResult<PaymentAggregate> getMyPayments(PaymentListQuery query) {
+    public PageResult<Payment> getMyPayments(PaymentListQuery query) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         return queryPaymentsInternal(userId, query.status(), query.pageNum(), query.pageSize());
     }
@@ -41,16 +41,16 @@ public class PaymentQueryHandler {
     /**
      * 通用支付记录查询（管理端） — 通过 PaymentListQuery 收敛参数。
      */
-    public PageResult<PaymentAggregate> queryPayments(PaymentListQuery query) {
+    public PageResult<Payment> queryPayments(PaymentListQuery query) {
         return queryPaymentsInternal(query.userId(), query.status(), query.pageNum(), query.pageSize());
     }
 
-    private PageResult<PaymentAggregate> queryPaymentsInternal(String userId, PaymentStatus status,
+    private PageResult<Payment> queryPaymentsInternal(String userId, PaymentStatus status,
                                                                 Integer pageNum, Integer pageSize) {
         int effectivePageNum = pageNum != null ? pageNum : 1;
         int effectivePageSize = pageSize != null ? pageSize : 20;
 
-        List<PaymentAggregate> aggregates = paymentQueryRepository.findByUserIdAndStatus(
+        List<Payment> aggregates = paymentQueryRepository.findByUserIdAndStatus(
                 userId, status, effectivePageNum, effectivePageSize);
         long total = paymentQueryRepository.countByUserIdAndStatus(userId, status);
         return PageResult.of(aggregates, total, effectivePageNum, effectivePageSize);

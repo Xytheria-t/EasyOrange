@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.message.application.query;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
 import com.cartethyia.easyorange.message.domain.exception.MessageNotFoundException;
 import com.cartethyia.easyorange.message.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.message.domain.repository.query.MessageQueryRepository;
@@ -51,8 +51,8 @@ class MessageQueryHandlerTest {
     private static final String SENDER_ID = "2";
     private static final String MESSAGE_ID = "100";
 
-    private MessageAggregate createTestMessage() {
-        return MessageAggregate.fromRaw(
+    private Message createTestMessage() {
+        return Message.fromRaw(
                 MESSAGE_ID, SENDER_ID, USER_ID, 2, "标题", "内容",
                 ReadStatus.UNREAD, null, null,
                 MessageStatus.SENT.getCode(), null, LocalDateTime.now());
@@ -65,7 +65,7 @@ class MessageQueryHandlerTest {
         @Test
         @DisplayName("获取消息详情成功")
         void getMessageDetail_success() {
-            MessageAggregate aggregate = createTestMessage();
+            Message aggregate = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", "avatar.jpg"),
@@ -102,7 +102,7 @@ class MessageQueryHandlerTest {
         @Test
         @DisplayName("非接收者获取详情时抛出异常")
         void getMessageDetail_notOwner_throws() {
-            MessageAggregate aggregate = createTestMessage();
+            Message aggregate = createTestMessage();
             when(queryRepository.findById(MESSAGE_ID)).thenReturn(aggregate);
 
             TestSecurityUtil.setSecurityContext("999");
@@ -125,8 +125,8 @@ class MessageQueryHandlerTest {
             QueryMessageRequest request = new QueryMessageRequest();
             request.setPageNum(1);
             request.setPageSize(20);
-            MessageAggregate aggregate = createTestMessage();
-            PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
+            Message aggregate = createTestMessage();
+            PageResult<Message> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
             when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),
@@ -149,7 +149,7 @@ class MessageQueryHandlerTest {
             QueryMessageRequest request = new QueryMessageRequest();
             request.setPageNum(1);
             request.setPageSize(20);
-            PageResult<MessageAggregate> pageResult = PageResult.of(List.of(), 0L, 1, 20);
+            PageResult<Message> pageResult = PageResult.of(List.of(), 0L, 1, 20);
             when(queryRepository.findByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
 
             TestSecurityUtil.setSecurityContext(USER_ID);
@@ -174,8 +174,8 @@ class MessageQueryHandlerTest {
             QueryMessageRequest request = new QueryMessageRequest();
             request.setPageNum(1);
             request.setPageSize(20);
-            MessageAggregate aggregate = createTestMessage();
-            PageResult<MessageAggregate> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
+            Message aggregate = createTestMessage();
+            PageResult<Message> pageResult = PageResult.of(List.of(aggregate), 1L, 1, 20);
             when(queryRepository.findUnreadByReceiverId(any(MessageQuery.class), anyString())).thenReturn(pageResult);
             when(userInfoPort.getUserInfoMap(any()))
                     .thenReturn(Map.of(SENDER_ID, new UserInfo(SENDER_ID, "发送者", null),

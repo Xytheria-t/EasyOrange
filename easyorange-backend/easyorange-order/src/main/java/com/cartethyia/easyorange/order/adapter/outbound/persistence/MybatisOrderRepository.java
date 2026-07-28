@@ -2,12 +2,11 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.repository.OrderRepository;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
-import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -28,18 +27,18 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     }
 
     @Override
-    public void save(OrderAggregate aggregate) {
+    public void save(Order aggregate) {
         mapper.insert(entityMapper.toDataObject(aggregate));
         batchInsertItems(aggregate.id().value(), aggregate.items());
     }
 
     @Override
-    public void update(OrderAggregate aggregate) {
+    public void update(Order aggregate) {
         mapper.updateById(entityMapper.toDataObject(aggregate));
     }
 
     @Override
-    public Optional<OrderAggregate> findById(OrderId id) {
+    public Optional<Order> findById(OrderId id) {
         OrderDO orderDO = mapper.selectById(id.value());
         if (orderDO == null) {
             return Optional.empty();
@@ -49,25 +48,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     }
 
     @Override
-    public List<OrderAggregate> findByBuyerId(UserId buyerId) {
-        return lambdaQuery()
-                .eq(OrderDO::getBuyerId, buyerId.value())
-                .orderByDesc(OrderDO::getCreateTime)
-                .list()
-                .stream().map(entityMapper::toAggregate).toList();
-    }
-
-    @Override
-    public List<OrderAggregate> findBySellerId(UserId sellerId) {
-        return lambdaQuery()
-                .eq(OrderDO::getSellerId, sellerId.value())
-                .orderByDesc(OrderDO::getCreateTime)
-                .list()
-                .stream().map(entityMapper::toAggregate).toList();
-    }
-
-    @Override
-    public List<OrderAggregate> findExpiredOrders(int timeoutMinutes) {
+    public List<Order> findExpiredOrders(int timeoutMinutes) {
         LocalDateTime threshold = LocalDateTime.now().minusMinutes(timeoutMinutes);
         return lambdaQuery()
                 .eq(OrderDO::getStatus, OrderStatus.PENDING_PAYMENT)
@@ -77,7 +58,7 @@ public class MybatisOrderRepository extends BaseRepository<OrderMapper, OrderDO>
     }
 
     @Override
-    public List<OrderAggregate> findShippedOrdersBefore(LocalDateTime threshold) {
+    public List<Order> findShippedOrdersBefore(LocalDateTime threshold) {
         return lambdaQuery()
                 .eq(OrderDO::getStatus, OrderStatus.SHIPPED)
                 .lt(OrderDO::getUpdateTime, threshold)

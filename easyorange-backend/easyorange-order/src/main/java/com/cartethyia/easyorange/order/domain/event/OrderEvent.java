@@ -9,8 +9,7 @@ import com.cartethyia.easyorange.common.event.DomainEvent;
  */
 public sealed interface OrderEvent extends DomainEvent
         permits OrderCreatedEvent, OrderPaidEvent, OrderShippedEvent,
-                OrderCompletedEvent, OrderCancelledEvent, OrderRefundedEvent,
-                StockReservationRequestedEvent {
+                OrderCompletedEvent, OrderCancelledEvent, OrderRefundedEvent {
 
     /**
      * 订单 ID，所有订单事件都关联到一个订单。

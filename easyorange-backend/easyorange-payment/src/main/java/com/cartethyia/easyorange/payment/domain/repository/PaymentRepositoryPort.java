@@ -1,18 +1,18 @@
 package com.cartethyia.easyorange.payment.domain.repository;
 
-import com.cartethyia.easyorange.payment.domain.aggregate.PaymentAggregate;
+import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 
 import java.util.Optional;
 
 public interface PaymentRepositoryPort {
 
-    void save(PaymentAggregate aggregate);
+    void save(Payment aggregate);
 
-    void update(PaymentAggregate aggregate);
+    void update(Payment aggregate);
 
-    Optional<PaymentAggregate> findById(String id);
+    Optional<Payment> findById(String id);
 
-    Optional<PaymentAggregate> findByPaymentNo(String paymentNo);
+    Optional<Payment> findByPaymentNo(String paymentNo);
 
-    Optional<PaymentAggregate> findByOrderId(String orderId);
+    Optional<Payment> findByOrderId(String orderId);
 }

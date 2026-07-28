@@ -10,10 +10,14 @@ order/
 │   ├── inbound/
 │   │   ├── web/
 │   │   │   ├── controller/
-│   │   │   │   ├── OrderCommandController.java  # 写端点（@Validated 触发 Bean Validation）
+│   │   │   │   ├── OrderCommandController.java  # 写端点（委托 OrderCommandAssembler 转换命令）
 │   │   │   │   └── OrderQueryController.java    # 读端点（基于 OrderListQuery）
+│   │   │   ├── assembler/
+│   │   │   │   └── OrderCommandAssembler.java   # Request DTO → Command 转换
 │   │   │   ├── dto/request/
 │   │   │   │   ├── CreateOrderRequest.java
+│   │   │   │   ├── CancelOrderRequest.java      # 取消原因（record + @NotBlank）
+│   │   │   │   ├── RefundOrderRequest.java      # 退款原因（record + @NotBlank）
 │   │   │   │   └── QueryOrderRequest.java
 │   │   ├── job/                             # 定时任务
 │   │   │   ├── OrderTimeoutTask.java        # 订单超时取消
@@ -63,7 +67,7 @@ order/
 │       └── OrderVO.java                      # 响应 VO
 ├── domain/
 │   ├── aggregate/
-│   │   ├── OrderAggregate.java             # 订单聚合根（不可变，字段 final）
+│   │   ├── Order.java             # 订单聚合根（不可变，字段 final）
 │   │   ├── OrderCreateSpec.java            # record 收敛 createOrder() 工厂参数
 │   │   └── OrderReconstructSpec.java       # record 收敛 from() 重建参数
 │   ├── saga/                                 # Saga 支持类型（纯领域）
@@ -93,7 +97,7 @@ order/
 │   │   └── OrderItemReadModel.java
 │   ├── port/                              # 出站端口
 │   │   ├── OrderCachePort.java             # 缓存端口
-│   │   ├── ProductInventoryPort.java       # 库存端口
+│   │   ├── ProductOrderPort.java       # 订单生命周期产品操作端口
 │   │   ├── ProductQueryPort.java           # 商品查询端口
 │   │   ├── PaymentGatewayPort.java         # 支付网关端口
 │   │   ├── UserInfoPort.java              # 用户信息端口
@@ -112,7 +116,7 @@ order/
 │       └── OrderOperationException.java
 ```
 
-> **跨模块适配器位置**：order 模块定义的 `ProductInventoryPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` / `OrderCachePort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/OrderProductInventoryAdapter`、`product/OrderProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
+> **跨模块适配器位置**：order 模块定义的 `ProductOrderPort` / `ProductQueryPort` / `PaymentGatewayPort` / `UserInfoPort` 的实现不在 order 模块内，而在 `easyorange-application/adapter/outbound/` 下：`product/ProductOrderAdapter`、`product/OrderProductQueryAdapter`、`payment/OrderPaymentGatewayAdapter`、`user/OrderUserInfoAdapter`。`OrderCachePort` 的实现 `RedisOrderCacheAdapter` 位于 order 模块自身 `adapter/outbound/cache/`，因其仅操作订单域缓存。Maven 依赖标记 `<optional>true</optional>` 实现编译期隔离。
 
 > **Money 值对象**：`Money` 不在 order 模块，位于 `easyorange-common`。order 模块通过 `Money` 使用金额，但不重复定义。
 
@@ -141,7 +145,7 @@ CreateOrderSaga.execute():
 
 ## CQRS 架构
 
-**Command 侧**: `OrderCommandController` → `OrderCommandHandler` → `OrderAggregate` → `OrderRepository`
+**Command 侧**: `OrderCommandController` → `OrderCommandHandler` → `Order` → `OrderRepository`
 
 **Query 侧**: `OrderQueryController` → `OrderQueryHandler` → `OrderReadRepository` → `OrderReadModel`
 
@@ -151,7 +155,7 @@ CreateOrderSaga.execute():
 
 | Mapper | 方向 | 位置 | 说明 |
 |--------|------|------|------|
-| `OrderEntityMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | MapStruct 接口：OrderDO ↔ OrderAggregate、OrderItemDO ↔ OrderItem |
+| `OrderEntityMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | MapStruct 接口：OrderDO ↔ Order、OrderItemDO ↔ OrderItem |
 | `OrderReadModelAssembler` | ReadModel → VO | `application/query/assembler/` | OrderReadModel → OrderVO（含脱敏、商品信息填充） |
 
 `OrderDO` 是纯数据库实体，不含映射逻辑。所有持久化映射集中在 `OrderEntityMapper`。
@@ -162,7 +166,7 @@ CreateOrderSaga.execute():
 
 | 端口 | 适配器 | 目标模块 |
 |------|--------|---------|
-| `ProductInventoryPort` | `ProductInventoryAdapter` | product |
+| `ProductOrderPort` | `ProductOrderAdapter` | product |
 | `ProductQueryPort` | `ProductQueryAdapter` | product |
 | `PaymentGatewayPort` | `PaymentGatewayAdapter` | payment |
 | `UserInfoPort` | `UserInfoAdapter` | user |
@@ -191,7 +195,7 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 ### 添加订单新状态
 
 1. `OrderStatus` 枚举新增值（`code` 为 String，如 `"EXCHANGED"`）
-2. `OrderAggregate` 添加状态转换方法和校验（返回 `OrderTransition<XxxEvent>`）
+2. `Order` 添加状态转换方法和校验（返回 `OrderTransition<XxxEvent>`）
 3. 添加对应领域事件
 4. `OrderCommandHandler` 添加命令处理（命令为 record）
 5. 更新 Saga 补偿逻辑（如需）
@@ -214,7 +218,7 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 
 - **DB 层**：`eo_order.status` / `eo_order.payment_status` 为 `VARCHAR(20)`，带 CHECK 约束
 - **MyBatis**：`OrderStatusTypeHandler` / `PaymentStatusTypeHandler`（继承 `BaseEnumTypeHandler`）完成 enum ↔ String 互转
-- **领域层**：`OrderAggregate` / `OrderReconstructSpec` 直接使用枚举类型，无 String.valueOf 转换
+- **领域层**：`Order` / `OrderReconstructSpec` 直接使用枚举类型，无 String.valueOf 转换
 - **读模型 / VO**：`OrderReadModel` / `OrderVO` 的 status 字段为 `String code`
 - **JSON 序列化**：`@JsonValue` 标注在 `code` 上，前端收到的就是 `"PENDING_PAYMENT"` 而非 `0`
 
@@ -224,8 +228,8 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 
 | Spec / Command | 用途 | 关键字段 |
 |----------------|------|---------|
-| `OrderCreateSpec` | `OrderAggregate.createOrder()` 工厂参数 | orderId, buyerId, sellerId, items, address, phone, remark |
-| `OrderReconstructSpec` | `OrderAggregate.from()` 重建参数 | id, orderNo, buyerId, sellerId, items, totalAmount, status, paymentStatus, ... |
+| `OrderCreateSpec` | `Order.createOrder()` 工厂参数 | orderId, buyerId, sellerId, items, address, phone, remark |
+| `OrderReconstructSpec` | `Order.from()` 重建参数 | id, orderNo, buyerId, sellerId, items, totalAmount, status, paymentStatus, ... |
 | `OrderTransition<E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
 | `OrderCommand` | sealed 接口（permits 7 个命令 record） | — |
 | `CreateOrderCommand` | 创建订单命令（record） | items, address, phone, remark, paymentMethod |

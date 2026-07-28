@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.domain.service;
 
-import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 
 public class OfflineMessageStoreService {
@@ -26,7 +26,7 @@ public class OfflineMessageStoreService {
      */
     public void storeIfOffline(String userId, String messageId, String pushChannel, boolean isOnline) {
         if (!isOnline) {
-            OfflineMessageAggregate offlineMessage = OfflineMessageAggregate.create(userId, messageId, pushChannel);
+            OfflineMessage offlineMessage = OfflineMessage.create(userId, messageId, pushChannel);
             offlineMessageRepository.save(offlineMessage);
         }
     }

@@ -3,7 +3,7 @@ package com.cartethyia.easyorange.order.adapter.outbound.persistence;
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.enums.ResultCode;
-import com.cartethyia.easyorange.order.domain.aggregate.OrderAggregate;
+import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
@@ -34,17 +34,17 @@ public interface OrderEntityMapper {
     /**
      * 不含行项的重建（用于列表查询等不需要行项的场景）。
      */
-    default OrderAggregate toAggregate(OrderDO orderDO) {
+    default Order toAggregate(OrderDO orderDO) {
         if (orderDO == null) return null;
-        return OrderAggregate.from(toReconstructSpec(orderDO, List.of()));
+        return Order.from(toReconstructSpec(orderDO, List.of()));
     }
 
     /**
      * 携带行项的重建（用于订单详情等需要行项的场景）。
      */
-    default OrderAggregate toAggregate(OrderDO orderDO, List<OrderItem> items) {
+    default Order toAggregate(OrderDO orderDO, List<OrderItem> items) {
         if (orderDO == null) return null;
-        return OrderAggregate.from(toReconstructSpec(orderDO, items != null ? items : List.of()));
+        return Order.from(toReconstructSpec(orderDO, items != null ? items : List.of()));
     }
 
     // ==================== DO → ReadModel ====================
@@ -106,9 +106,9 @@ public interface OrderEntityMapper {
     // ==================== Aggregate → DO (Write path) ====================
 
     /**
-     * OrderAggregate → OrderDO（不含行项）。status/paymentStatus 由 TypeHandler 持久化为 VARCHAR。
+     * Order → OrderDO（不含行项）。status/paymentStatus 由 TypeHandler 持久化为 VARCHAR。
      */
-    default OrderDO toDataObject(OrderAggregate aggregate) {
+    default OrderDO toDataObject(Order aggregate) {
         if (aggregate == null) return null;
         return OrderDO.builder()
                 .id(aggregate.id().value())

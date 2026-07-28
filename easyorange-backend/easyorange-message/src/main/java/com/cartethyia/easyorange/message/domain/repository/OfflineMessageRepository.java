@@ -1,14 +1,14 @@
 package com.cartethyia.easyorange.message.domain.repository;
 
-import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 
 import java.util.List;
 
 public interface OfflineMessageRepository {
 
-    OfflineMessageAggregate save(OfflineMessageAggregate message);
+    OfflineMessage save(OfflineMessage message);
 
-    List<OfflineMessageAggregate> findPendingByUserId(String userId);
+    List<OfflineMessage> findPendingByUserId(String userId);
 
     void markAsPushed(String offlineMessageId);
 

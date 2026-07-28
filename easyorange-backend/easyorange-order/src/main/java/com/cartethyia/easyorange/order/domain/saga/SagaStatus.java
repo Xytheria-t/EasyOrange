@@ -16,14 +16,6 @@ public record SagaStatus(
 ) {
     public static final int MAX_RETRY_COUNT = 3;
 
-    public boolean canRetry() {
-        return retryCount < MAX_RETRY_COUNT
-                && state != SagaState.COMPLETED
-                && state != SagaState.COMPENSATED
-                && state != SagaState.TIMEOUT
-                && state != SagaState.MANUAL_INTERVENTION;
-    }
-
     /**
      * 判断 saga 是否处于需要超时检测的活跃状态。
      */
@@ -49,13 +41,6 @@ public record SagaStatus(
         return new SagaStatus(
             sagaId, sagaType, SagaState.FAILED, currentStep, payload,
             error, compensationLog, retryCount, createdAt, LocalDateTime.now()
-        );
-    }
-
-    public SagaStatus withRetry() {
-        return new SagaStatus(
-            sagaId, sagaType, state, currentStep, payload,
-            errorMessage, compensationLog, retryCount + 1, createdAt, LocalDateTime.now()
         );
     }
 

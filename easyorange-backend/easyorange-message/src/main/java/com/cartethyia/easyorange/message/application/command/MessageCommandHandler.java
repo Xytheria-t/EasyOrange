@@ -3,10 +3,10 @@ package com.cartethyia.easyorange.message.application.command;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageCreateResult;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageReadResult;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageAggregate.MessageRecallResult;
+import com.cartethyia.easyorange.message.domain.aggregate.Message;
+import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageCreateResult;
+import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageReadResult;
+import com.cartethyia.easyorange.message.domain.aggregate.Message.MessageRecallResult;
 import com.cartethyia.easyorange.message.domain.event.MessageDeletedEvent;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import com.cartethyia.easyorange.message.domain.exception.MessageDomainException;
@@ -49,7 +49,7 @@ public class MessageCommandHandler {
         String filteredContent = sensitiveWordFilterService.filter(command.content());
         String filteredTitle = sensitiveWordFilterService.filter(command.title());
 
-        MessageCreateResult result = MessageAggregate.create(
+        MessageCreateResult result = Message.create(
                 senderId,
                 command.receiverId(),
                 command.type(),
@@ -58,7 +58,7 @@ public class MessageCommandHandler {
                 command.businessId()
         );
 
-        MessageAggregate saved = messageRepository.save(result.aggregate());
+        Message saved = messageRepository.save(result.aggregate());
 
         MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
@@ -70,14 +70,14 @@ public class MessageCommandHandler {
 
     @Transactional(rollbackFor = Exception.class)
     public void handle(SendSystemMessageCommand command) {
-        MessageCreateResult result = MessageAggregate.createSystem(
+        MessageCreateResult result = Message.createSystem(
                 command.receiverId(),
                 command.title(),
                 command.content(),
                 command.businessId()
         );
 
-        MessageAggregate saved = messageRepository.save(result.aggregate());
+        Message saved = messageRepository.save(result.aggregate());
 
         MessageRoutingService.RouteDecision decision = routingService.decideRoute(saved.receiverId());
         offlineMessageStoreService.storeIfOffline(
@@ -102,7 +102,7 @@ public class MessageCommandHandler {
     public void handle(MarkAsReadCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = messageRepository.findById(command.messageId())
+        Message aggregate = messageRepository.findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         BizRequire.requireTrue(
@@ -127,7 +127,7 @@ public class MessageCommandHandler {
 
         for (String messageId : command.messageIds()) {
             try {
-                MessageAggregate aggregate = messageRepository.findById(messageId).orElse(null);
+                Message aggregate = messageRepository.findById(messageId).orElse(null);
                 if (aggregate != null && aggregate.isOwnedBy(userId) && aggregate.isUnread()) {
                     MessageReadResult readResult = aggregate.read(userId);
                     if (readResult != null) {
@@ -160,7 +160,7 @@ public class MessageCommandHandler {
     public void handle(RecallMessageCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = messageRepository.findById(command.messageId())
+        Message aggregate = messageRepository.findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         String minId = aggregate.senderId() != null && aggregate.receiverId() != null
@@ -181,7 +181,7 @@ public class MessageCommandHandler {
     public void handle(DeleteMessageCommand command) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageAggregate aggregate = messageRepository.findById(command.messageId())
+        Message aggregate = messageRepository.findById(command.messageId())
                 .orElseThrow(() -> new MessageNotFoundException(command.messageId()));
 
         BizRequire.requireTrue(

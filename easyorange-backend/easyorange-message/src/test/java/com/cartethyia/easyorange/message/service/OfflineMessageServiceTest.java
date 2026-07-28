@@ -1,6 +1,6 @@
 package com.cartethyia.easyorange.message.service;
 
-import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessageAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
 import com.cartethyia.easyorange.message.service.impl.OfflineMessageServiceImpl;
 import org.junit.jupiter.api.DisplayName;
@@ -41,10 +41,10 @@ class OfflineMessageServiceTest {
         void saveOfflineMessage_saves() {
             offlineMessageService.saveOfflineMessage(USER_ID, MESSAGE_ID, PUSH_CHANNEL);
 
-            ArgumentCaptor<OfflineMessageAggregate> captor = ArgumentCaptor.forClass(OfflineMessageAggregate.class);
+            ArgumentCaptor<OfflineMessage> captor = ArgumentCaptor.forClass(OfflineMessage.class);
             verify(offlineMessageRepository).save(captor.capture());
 
-            OfflineMessageAggregate saved = captor.getValue();
+            OfflineMessage saved = captor.getValue();
             assertThat(saved.userId()).isEqualTo(USER_ID);
             assertThat(saved.messageId()).isEqualTo(MESSAGE_ID);
             assertThat(saved.pushChannel()).isEqualTo(PUSH_CHANNEL);
@@ -58,11 +58,11 @@ class OfflineMessageServiceTest {
         @Test
         @DisplayName("获取用户的待推送消息")
         void getPendingMessages_returnsList() {
-            OfflineMessageAggregate msg = OfflineMessageAggregate.fromRaw(
+            OfflineMessage msg = OfflineMessage.fromRaw(
                     OFFLINE_MESSAGE_ID, USER_ID, MESSAGE_ID, PUSH_CHANNEL, 0, 0, 3);
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of(msg));
 
-            List<OfflineMessageAggregate> result = offlineMessageService.getPendingMessages(USER_ID);
+            List<OfflineMessage> result = offlineMessageService.getPendingMessages(USER_ID);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).userId()).isEqualTo(USER_ID);
@@ -73,7 +73,7 @@ class OfflineMessageServiceTest {
         void getPendingMessages_noPending_returnsEmpty() {
             when(offlineMessageRepository.findPendingByUserId(USER_ID)).thenReturn(List.of());
 
-            List<OfflineMessageAggregate> result = offlineMessageService.getPendingMessages(USER_ID);
+            List<OfflineMessage> result = offlineMessageService.getPendingMessages(USER_ID);
 
             assertThat(result).isEmpty();
         }

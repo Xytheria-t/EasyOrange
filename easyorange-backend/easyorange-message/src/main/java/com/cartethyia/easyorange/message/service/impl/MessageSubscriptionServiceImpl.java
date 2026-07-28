@@ -1,7 +1,7 @@
 package com.cartethyia.easyorange.message.service.impl;
 
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscriptionAggregate;
+import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
 import com.cartethyia.easyorange.message.adapter.inbound.web.dto.request.SubscriptionRequest;
 import com.cartethyia.easyorange.message.application.query.dto.MessageSubscriptionVO;
@@ -38,16 +38,16 @@ public class MessageSubscriptionServiceImpl implements MessageSubscriptionServic
     public void updateSubscription(SubscriptionRequest request) {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        MessageSubscriptionAggregate existing = messageSubscriptionRepository.findByUserIdAndTypeAndChannel(
+        MessageSubscription existing = messageSubscriptionRepository.findByUserIdAndTypeAndChannel(
                 userId, request.getMessageType(), request.getPushChannel());
 
         if (existing != null) {
-            MessageSubscriptionAggregate updated = request.getEnabled()
+            MessageSubscription updated = request.getEnabled()
                     ? existing.enable()
                     : existing.disable();
             messageSubscriptionRepository.update(updated);
         } else {
-            MessageSubscriptionAggregate subscription = MessageSubscriptionAggregate.create(
+            MessageSubscription subscription = MessageSubscription.create(
                     userId, request.getMessageType(), request.getPushChannel(), request.getEnabled());
             messageSubscriptionRepository.save(subscription);
         }
