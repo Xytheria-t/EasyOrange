@@ -35,7 +35,7 @@ export default function CategoryManagePage() {
     const [searchInput, setSearchInput] = useState('');
     const [sortField, setSortField] = useState<SortField>('sortOrder');
     const [sortDir, setSortDir] = useState<SortDir>('asc');
-    const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
     // Create modal
     const [createOpen, setCreateOpen] = useState(false);
@@ -45,7 +45,7 @@ export default function CategoryManagePage() {
 
     // Edit modal
     const [editOpen, setEditOpen] = useState(false);
-    const [editId, setEditId] = useState<number | null>(null);
+    const [editId, setEditId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
     const [editParentId, setEditParentId] = useState<number | undefined>(undefined);
     const [editSortOrder, setEditSortOrder] = useState(0);
@@ -55,7 +55,7 @@ export default function CategoryManagePage() {
     const [deleteTarget, setDeleteTarget] = useState<CategoryTreeResponse | null>(null);
 
     // Toggle expand/collapse
-    const toggleExpand = useCallback((id: number) => {
+    const toggleExpand = useCallback((id: string) => {
         setExpandedIds(prev => {
             const next = new Set(prev);
             if (next.has(id)) {
@@ -164,7 +164,7 @@ export default function CategoryManagePage() {
 
     // Status toggle
     const handleToggleStatus = useCallback(
-        async (id: number, currentStatus: number) => {
+        async (id: string, currentStatus: number) => {
             await updateStatusMutation.mutateAsync({ id, status: currentStatus === 1 ? 0 : 1 });
         },
         [updateStatusMutation]
@@ -175,13 +175,13 @@ export default function CategoryManagePage() {
         if (!deleteTarget) {
             return;
         }
-        await deleteMutation.mutateAsync(Number(deleteTarget.categoryId));
+        await deleteMutation.mutateAsync(deleteTarget.categoryId);
         setDeleteTarget(null);
     }, [deleteTarget, deleteMutation]);
 
     // Open edit modal
     const openEdit = useCallback((node: CategoryTreeResponse) => {
-        setEditId(Number(node.categoryId));
+        setEditId(node.categoryId);
         setEditName(node.name);
         setEditSortOrder(node.sortOrder);
         setEditStatus(node.status);

@@ -53,23 +53,23 @@ describe('useAdminUserDetail', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { userId: 1, username: 'admin', email: 'admin@test.com', userType: '00' } as const,
+                    data: { userId: '1', username: 'admin', email: 'admin@test.com', userType: '00' } as const,
                     timestamp: Date.now(),
                 });
             })
         );
 
-        const { result } = renderHook(() => useAdminUserDetail(1), {
+        const { result } = renderHook(() => useAdminUserDetail('1'), {
             wrapper: Wrapper,
         });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(result.current.data?.userId).toBe(1);
+        expect(result.current.data?.userId).toBe('1');
         expect(result.current.data?.username).toBe('admin');
     });
 
-    it('is not enabled when id is 0', () => {
-        const { result } = renderHook(() => useAdminUserDetail(0), {
+    it('is not enabled when id is empty', () => {
+        const { result } = renderHook(() => useAdminUserDetail(''), {
             wrapper: Wrapper,
         });
 
@@ -94,7 +94,7 @@ describe('useUpdateUserStatus', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: 1, data: { status: 1 } });
+        result.current.mutate({ id: '1', data: { status: 1 } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });

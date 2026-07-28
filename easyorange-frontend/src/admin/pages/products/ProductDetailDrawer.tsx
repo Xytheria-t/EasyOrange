@@ -10,7 +10,7 @@ import type { AuditDimension, AuditLogResponse } from '../../types/admin';
 
 interface ProductDetailDrawerProps {
     open: boolean;
-    productId: number | null;
+    productId: string | null;
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -48,7 +48,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
     const [aiReviewResult, setAiReviewResult] = useState<AiReviewResult | null>(null);
     const [aiReviewLoading, setAiReviewLoading] = useState(false);
 
-    const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
+    const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useAuditProduct();
     const auditLogs = useAuditLogs(productId);
 
@@ -68,7 +68,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
         setAiReviewLoading(true);
         setAiReviewResult(null);
         try {
-            const response = await adminApi.aiReviewProduct(Number(product.productId));
+            const response = await adminApi.aiReviewProduct(product.productId);
             setAiReviewResult(response.data);
         } catch {
             setAiReviewResult(null);
@@ -94,7 +94,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
         }
         updateStatus
             .mutateAsync({
-                id: Number(product.productId),
+                id: product.productId,
                 data: { action: 1, dimensions: selectedDimensions, remark: auditRemark || undefined },
             })
             .then(() => {
@@ -109,7 +109,7 @@ export function ProductDetailDrawer({ open, productId, onClose, onSuccess }: Pro
         }
         try {
             await updateStatus.mutateAsync({
-                id: Number(product.productId),
+                id: product.productId,
                 data: {
                     action: 2,
                     reason: rejectReason,

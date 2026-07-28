@@ -86,32 +86,32 @@ export const adminApi = {
         });
     },
 
-    getUserById(id: number) {
+    getUserById(id: string) {
         return request<AdminUser>(`${ADMIN_API_PREFIX}/users/${id}`);
     },
 
-    updateUserStatus(id: number, data: UpdateStatusRequest) {
+    updateUserStatus(id: string, data: UpdateStatusRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/users/${id}/status`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    resetPassword(id: number, data: ResetPasswordRequest) {
+    resetPassword(id: string, data: ResetPasswordRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/users/${id}/reset-password`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    unlockUser(id: number, data: UserUnlockRequest) {
+    unlockUser(id: string, data: UserUnlockRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/users/${id}/unlock`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    updateUserRole(id: number, data: UserRoleRequest) {
+    updateUserRole(id: string, data: UserRoleRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/users/${id}/role`, {
             method: 'PUT',
             body: data,
@@ -124,18 +124,18 @@ export const adminApi = {
         });
     },
 
-    getProductById(id: number) {
+    getProductById(id: string) {
         return request<AdminProduct>(`${ADMIN_API_PREFIX}/products/${id}`);
     },
 
-    updateProductStatus(id: number, data: UpdateStatusRequest) {
+    updateProductStatus(id: string, data: UpdateStatusRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/products/${id}/status`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    auditProduct(id: number, data: ProductAuditRequest) {
+    auditProduct(id: string, data: ProductAuditRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/products/${id}/audit`, {
             method: 'PUT',
             body: data,
@@ -149,11 +149,11 @@ export const adminApi = {
         });
     },
 
-    getAuditLogs(id: number) {
+    getAuditLogs(id: string) {
         return request<AuditLogResponse[]>(`${ADMIN_API_PREFIX}/products/${id}/audit-logs`);
     },
 
-    aiReviewProduct(id: number) {
+    aiReviewProduct(id: string) {
         return request<AiReviewResult>(`${ADMIN_API_PREFIX}/products/${id}/ai-review`);
     },
 
@@ -163,7 +163,7 @@ export const adminApi = {
         });
     },
 
-    getOrderById(id: number) {
+    getOrderById(id: string) {
         return request<AdminOrderDetail>(`${ADMIN_API_PREFIX}/orders/${id}`);
     },
 
@@ -171,21 +171,21 @@ export const adminApi = {
         return request<OrderStatsResponse>(`${ADMIN_API_PREFIX}/orders/stats`);
     },
 
-    cancelOrder(id: number, data: OrderInterventionRequest) {
+    cancelOrder(id: string, data: OrderInterventionRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/cancel`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    forceCompleteOrder(id: number, data: OrderInterventionRequest) {
+    forceCompleteOrder(id: string, data: OrderInterventionRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/force-complete`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    refundOrder(id: number, data: OrderInterventionRequest) {
+    refundOrder(id: string, data: OrderInterventionRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/orders/${id}/refund`, {
             method: 'PUT',
             body: data,
@@ -207,21 +207,21 @@ export const adminApi = {
         });
     },
 
-    updateCategory(id: number, data: CategoryUpdateRequest) {
+    updateCategory(id: string, data: CategoryUpdateRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
             method: 'PUT',
             body: data,
         });
     },
 
-    updateCategoryStatus(id: number, status: number) {
+    updateCategoryStatus(id: string, status: number) {
         return request<void>(`${ADMIN_API_PREFIX}/categories/${id}/status`, {
             method: 'PUT',
             params: { status },
         });
     },
 
-    deleteCategory(id: number) {
+    deleteCategory(id: string) {
         return request<void>(`${ADMIN_API_PREFIX}/categories/${id}`, {
             method: 'DELETE',
         });
@@ -233,7 +233,7 @@ export const adminApi = {
         });
     },
 
-    getReportById(id: number) {
+    getReportById(id: string) {
         return request<AdminReport>(`${ADMIN_API_PREFIX}/reports/${id}`);
     },
 
@@ -241,7 +241,7 @@ export const adminApi = {
         return request<ReportStatsResponse>(`${ADMIN_API_PREFIX}/reports/stats`);
     },
 
-    handleReport(id: number, data: ReportHandleRequest) {
+    handleReport(id: string, data: ReportHandleRequest) {
         return request<void>(`${ADMIN_API_PREFIX}/reports/${id}/handle`, {
             method: 'PUT',
             body: data,

@@ -80,7 +80,7 @@ export function UserDetailModal({ open, user, onClose, onSave, loading = false }
         return `${maskedName}@${domain}`;
     };
 
-    const avatarGradient = AVATAR_GRADIENTS[Number(user.userId ?? 0) % AVATAR_GRADIENTS.length];
+    const avatarGradient = AVATAR_GRADIENTS[Number(user.userId ?? '') % AVATAR_GRADIENTS.length];
     const currentStatusStyle = STATUS_STYLES[selectedStatus] ?? STATUS_STYLES['0'];
 
     return (

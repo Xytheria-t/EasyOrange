@@ -22,7 +22,6 @@ beforeEach(() => {
         user: null,
         token: null,
         refreshToken: null,
-        isAuthenticated: false,
     });
     mockNavigate.mockClear();
 });
@@ -36,7 +35,6 @@ describe('AdminRouteGuard', () => {
     it('renders protected content when admin', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: { id: '1', userType: '00' as const, username: 'admin' } as unknown as import('@/types/user').User,
         });
 

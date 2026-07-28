@@ -30,7 +30,7 @@ describe('useAdminCategories', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: [{ id: 1, name: '电子产品', status: 1, sort: 1, parentId: 0 }],
+                    data: [{ id: 1, name: '电子产品', status: 1, sort: 1, parentId: '0' }],
                     timestamp: Date.now(),
                 });
             })
@@ -80,7 +80,7 @@ describe('useCreateCategory', () => {
 
         const { result } = renderHook(() => useCreateCategory(), { wrapper: Wrapper });
 
-        result.current.mutate({ name: '新分类', parentId: 0, sortOrder: 1 });
+        result.current.mutate({ name: '新分类', parentId: '0', sortOrder: 1 });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
         expect(result.current.data).toBe(1);
@@ -102,7 +102,7 @@ describe('useUpdateCategory', () => {
 
         const { result } = renderHook(() => useUpdateCategory(), { wrapper: Wrapper });
 
-        result.current.mutate({ id: 1, data: { name: '更新名', sortOrder: 2 } });
+        result.current.mutate({ id: '1', data: { name: '更新名', sortOrder: 2 } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });
@@ -123,7 +123,7 @@ describe('useDeleteCategory', () => {
 
         const { result } = renderHook(() => useDeleteCategory(), { wrapper: Wrapper });
 
-        result.current.mutate(1);
+        result.current.mutate('1');
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });

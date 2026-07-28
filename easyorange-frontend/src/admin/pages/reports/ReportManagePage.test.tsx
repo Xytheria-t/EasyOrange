@@ -120,11 +120,11 @@ vi.mock('../../components/ConfirmModal', () => ({
 // ─── Sample data ───
 const sampleReports: AdminReport[] = [
     {
-        reportId: 1,
-        productId: 10,
+        reportId: '1',
+        productId: '10',
         productName: '问题商品A',
         productImage: null,
-        reporterId: 100,
+        reporterId: '100',
         reporterName: '举报人A',
         reason: '虚假宣传',
         status: 0,
@@ -135,11 +135,11 @@ const sampleReports: AdminReport[] = [
         handleTime: null,
     },
     {
-        reportId: 2,
-        productId: 20,
+        reportId: '2',
+        productId: '20',
         productName: '问题商品B',
         productImage: null,
-        reporterId: 200,
+        reporterId: '200',
         reporterName: '举报人B',
         reason: '违规内容',
         status: 2,
@@ -293,7 +293,7 @@ describe('ReportManagePage', () => {
         // Confirm
         fireEvent.click(screen.getByTestId('confirm-yes'));
         expect(mockMutateAsync).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: { action: 'resolve' },
         });
     });
@@ -319,7 +319,7 @@ describe('ReportManagePage', () => {
         // Confirm
         fireEvent.click(screen.getByTestId('confirm-yes'));
         expect(mockMutateAsync).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: { action: 'dismiss' },
         });
     });
@@ -336,11 +336,11 @@ describe('ReportManagePage', () => {
     // ── Test 13: Pagination ──
     it('renders pagination when data exceeds page size', () => {
         const manyReports: AdminReport[] = Array.from({ length: 10 }, (_, i) => ({
-            reportId: i + 1,
-            productId: i + 10,
+            reportId: String(i + 1),
+            productId: String(i + 10),
             productName: `商品${i}`,
             productImage: null,
-            reporterId: i + 100,
+            reporterId: String(i + 100),
             reporterName: `举报人${i}`,
             reason: `原因${i}`,
             status: i % 2 === 0 ? 0 : 2,

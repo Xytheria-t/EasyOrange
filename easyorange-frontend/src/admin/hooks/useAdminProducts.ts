@@ -18,7 +18,7 @@ export const ADMIN_PRODUCT_KEYS = {
             params.endTime,
         ] as const,
     details: () => [...ADMIN_PRODUCT_KEYS.all, 'detail'] as const,
-    detail: (id: number) => [...ADMIN_PRODUCT_KEYS.details(), id] as const,
+    detail: (id: string) => [...ADMIN_PRODUCT_KEYS.details(), id] as const,
 };
 
 export function useAdminProducts(params: AdminProductQuery) {
@@ -34,7 +34,7 @@ export function useAdminProducts(params: AdminProductQuery) {
     });
 }
 
-export function useAdminProductDetail(id: number) {
+export function useAdminProductDetail(id: string) {
     return useQuery<AdminProduct>({
         queryKey: ADMIN_PRODUCT_KEYS.detail(id),
         queryFn: async () => {
@@ -52,7 +52,7 @@ export function useUpdateProductStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: UpdateStatusRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: UpdateStatusRequest }) => {
             const response = await adminApi.updateProductStatus(id, data);
             return response.data;
         },

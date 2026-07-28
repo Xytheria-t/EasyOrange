@@ -19,6 +19,7 @@ const mockUser: AdminUser = {
     loginIp: null,
     loginDate: null,
     createTime: '2024-01-15T08:30:00',
+    updateTime: '2024-01-15T08:30:00',
 };
 
 const defaultProps = {

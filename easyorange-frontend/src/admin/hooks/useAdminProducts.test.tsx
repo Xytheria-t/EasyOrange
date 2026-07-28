@@ -52,7 +52,7 @@ describe('useAdminProducts', () => {
 
 describe('useAdminProductDetail', () => {
     it('returns product detail', async () => {
-        const mockProduct = createMockAdminProduct({ productId: 42 });
+        const mockProduct = createMockAdminProduct({ productId: '42' });
 
         server.use(
             http.get('/api/admin/products/42', () => {
@@ -65,12 +65,12 @@ describe('useAdminProductDetail', () => {
             })
         );
 
-        const { result } = renderHook(() => useAdminProductDetail(42), {
+        const { result } = renderHook(() => useAdminProductDetail('42'), {
             wrapper: Wrapper,
         });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(result.current.data?.productId).toBe(42);
+        expect(result.current.data?.productId).toBe('42');
     });
 });
 
@@ -91,7 +91,7 @@ describe('useUpdateProductStatus', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: 1, data: { status: 3, reason: '下架' } });
+        result.current.mutate({ id: '1', data: { status: 3, reason: '下架' } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });

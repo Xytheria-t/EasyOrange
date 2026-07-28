@@ -16,7 +16,7 @@ vi.mock('../../hooks/useAdminProducts', () => ({
 
 // ─── Sample product ───
 const onlineProduct: AdminProduct = {
-    productId: 1,
+    productId: '1',
     name: '测试商品-上架中',
     description: '这是一个已上架的商品描述',
     price: 100,
@@ -29,9 +29,9 @@ const onlineProduct: AdminProduct = {
     contactMethod: '微信',
     images: ['https://example.com/img1.jpg', 'https://example.com/img2.jpg'],
     mainImage: null,
-    categoryId: 1,
+    categoryId: '1',
     categoryName: '电子产品',
-    sellerId: 1,
+    sellerId: '1',
     sellerName: '资产方A',
     sellerAvatar: null,
     viewCount: 100,
@@ -40,7 +40,7 @@ const onlineProduct: AdminProduct = {
 };
 
 const offlineProduct: AdminProduct = {
-    productId: 2,
+    productId: '2',
     name: '测试商品-已下架',
     description: null,
     price: 200,
@@ -53,9 +53,9 @@ const offlineProduct: AdminProduct = {
     contactMethod: null,
     images: [],
     mainImage: null,
-    categoryId: 2,
+    categoryId: '2',
     categoryName: '图书教材',
-    sellerId: 2,
+    sellerId: '2',
     sellerName: '资产方B',
     sellerAvatar: null,
     viewCount: 50,
@@ -85,7 +85,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 1: Does not render when open=false ──
     it('does not render when open is false', () => {
         const { container } = renderWithProviders(
-            <ProductManageDetailModal open={false} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={false} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         // Modal returns null when open=false
         expect(container.innerHTML).toBe('');
@@ -102,7 +102,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 3: Renders product detail when open=true with productId ──
     it('renders product detail modal when open is true and productId is set', () => {
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('商品详情')).toBeInTheDocument();
         expect(screen.getByText('测试商品-上架中')).toBeInTheDocument();
@@ -117,7 +117,7 @@ describe('ProductManageDetailModal', () => {
         });
 
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
@@ -131,7 +131,7 @@ describe('ProductManageDetailModal', () => {
         });
 
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={999} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'999'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('商品不存在或已被删除')).toBeInTheDocument();
     });
@@ -139,7 +139,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 6: Renders product info fields ──
     it('renders all product info fields', () => {
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('¥100.00')).toBeInTheDocument();
         expect(screen.getByText('9成新')).toBeInTheDocument();
@@ -152,7 +152,7 @@ describe('ProductManageDetailModal', () => {
     it('calls onClose when close button is clicked', () => {
         const onClose = vi.fn();
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={onClose} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={onClose} onSuccess={vi.fn()} />
         );
         // Filter to the visible footer close button (ignore hidden dialog sr-only text)
         const closeButtons = screen.getAllByText('关闭').filter(el => el.tagName === 'BUTTON');
@@ -163,7 +163,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 8: Shows "下架" action button for online product ──
     it('renders "下架" action button when product status is online (1)', () => {
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('下架')).toBeInTheDocument();
     });
@@ -177,7 +177,7 @@ describe('ProductManageDetailModal', () => {
         });
 
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={2} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'2'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('上架')).toBeInTheDocument();
     });
@@ -186,7 +186,7 @@ describe('ProductManageDetailModal', () => {
     it('does not render action buttons when product status is sold (2)', () => {
         const soldProduct: AdminProduct = {
             ...onlineProduct,
-            productId: 3,
+            productId: '3',
             status: 2,
             statusDesc: '已售',
         };
@@ -197,7 +197,7 @@ describe('ProductManageDetailModal', () => {
         });
 
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={3} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'3'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         // The footer with action buttons is only rendered when actions.length > 0
         // Sold products have no available actions
@@ -214,13 +214,13 @@ describe('ProductManageDetailModal', () => {
         });
 
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         const offlineButton = screen.getByText('下架');
         fireEvent.click(offlineButton);
 
         expect(mutateAsync).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: { status: 3 },
         });
     });
@@ -233,7 +233,7 @@ describe('ProductManageDetailModal', () => {
         });
 
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         // ShadcnButton shows loadingText and is disabled while isPending
         const loadingButton = screen.getByText('处理中...');
@@ -244,7 +244,7 @@ describe('ProductManageDetailModal', () => {
     it('calls onClose when Escape key is pressed', () => {
         const onClose = vi.fn();
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={onClose} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={onClose} onSuccess={vi.fn()} />
         );
         fireEvent.keyDown(document, { key: 'Escape' });
         expect(onClose).toHaveBeenCalledTimes(1);
@@ -253,7 +253,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 14: Renders original price when it exists ──
     it('renders original price strikethrough when originalPrice > price', () => {
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('¥150.00')).toBeInTheDocument();
     });
@@ -261,7 +261,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 15: Renders description when present ──
     it('renders product description section', () => {
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('商品描述')).toBeInTheDocument();
         expect(screen.getByText('这是一个已上架的商品描述')).toBeInTheDocument();
@@ -270,7 +270,7 @@ describe('ProductManageDetailModal', () => {
     // ── Test 16: Renders current status display ──
     it('displays current product status', () => {
         renderWithProviders(
-            <ProductManageDetailModal open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductManageDetailModal open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         expect(screen.getByText('当前状态：')).toBeInTheDocument();
         expect(screen.getByText('上架')).toBeInTheDocument();

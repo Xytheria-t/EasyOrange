@@ -1,0 +1,32 @@
+.dash-charts-grid-responsive {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 1280px) {
+    .dash-charts-grid-responsive {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .dash-charts-grid-responsive {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stat-card,
+    .dash-section,
+    .pending-section,
+    .dashboard-header,
+    .dashboard-time-dot,
+    .pending-indicator,
+    .dashboard-bg > div {
+        animation: none;
+    }
+
+    .stat-card:hover,
+    .pending-action:hover {
+        transform: none;
+    }
+}

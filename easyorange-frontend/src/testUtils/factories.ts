@@ -46,7 +46,7 @@ export function createMockProductPage(overrides: Partial<PageResult<Product>> = 
 
 export function createMockAdminProduct(overrides: Partial<AdminProduct> = {}): AdminProduct {
     return {
-        productId: 1,
+        productId: '1',
         name: '测试商品',
         description: '描述',
         price: 100,
@@ -59,9 +59,9 @@ export function createMockAdminProduct(overrides: Partial<AdminProduct> = {}): A
         contactMethod: null,
         images: [],
         mainImage: null,
-        categoryId: 1,
+        categoryId: '1',
         categoryName: '电子产品',
-        sellerId: 10,
+        sellerId: '10',
         sellerName: '资产方小明',
         sellerAvatar: null,
         viewCount: 50,
@@ -73,11 +73,11 @@ export function createMockAdminProduct(overrides: Partial<AdminProduct> = {}): A
 
 export function createMockAdminReport(overrides: Partial<AdminReport> = {}): AdminReport {
     return {
-        reportId: 1,
-        productId: 100,
+        reportId: '1',
+        productId: '100',
         productName: '被举报商品',
         productImage: null,
-        reporterId: 10,
+        reporterId: '10',
         reporterName: '举报人',
         reason: '虚假信息',
         status: 0,

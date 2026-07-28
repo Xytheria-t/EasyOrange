@@ -13,14 +13,14 @@ vi.mock('../../hooks', () => ({
 
 // ─── Sample data ───
 const sampleOrderDetail: AdminOrderDetail = {
-    orderId: 1,
+    orderId: '1',
     orderNo: 'ORD20260516001',
-    buyer: { userId: 1, nickname: '认领方A', avatar: null, phone: '13800138000' },
-    seller: { userId: 2, nickname: '资产方B', avatar: null, phone: '13900139000' },
+    buyer: { userId: '1', nickname: '认领方A', avatar: null, phone: '13800138000' },
+    seller: { userId: '2', nickname: '资产方B', avatar: null, phone: '13900139000' },
     items: [
         {
-            itemId: 1,
-            productId: 10,
+            itemId: '1',
+            productId: '10',
             productName: '测试商品',
             productImage: '',
             unitPrice: 100.0,
@@ -73,14 +73,14 @@ describe('OrderDetailModal', () => {
     // ── Test 3: Shows loading state ──
     it('shows loading spinner when loading', () => {
         setupMocks({ isLoading: true, data: undefined });
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={() => {}} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={() => {}} />);
 
         expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
 
     // ── Test 4: Renders order details correctly ──
     it('renders order details when open with data', () => {
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={() => {}} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={() => {}} />);
 
         // Title
         expect(screen.getByText('订单详情')).toBeInTheDocument();
@@ -106,7 +106,7 @@ describe('OrderDetailModal', () => {
     // ── Test 5: Shows "order not found" for missing data ──
     it('shows not found message when order is undefined', () => {
         setupMocks({ data: undefined, isLoading: false });
-        renderWithProviders(<OrderDetailModal open={true} orderId={999} onClose={() => {}} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'999'} onClose={() => {}} />);
 
         expect(screen.getByText('订单不存在或已被删除')).toBeInTheDocument();
     });
@@ -114,7 +114,7 @@ describe('OrderDetailModal', () => {
     // ── Test 6: Close button calls onClose ──
     it('calls onClose when close button is clicked', () => {
         const onClose = vi.fn();
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={onClose} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={onClose} />);
 
         // The visible header close button shares the accessible name with the hidden dialog close button
         const [closeBtn] = screen.getAllByRole('button', { name: '关闭' });
@@ -125,7 +125,7 @@ describe('OrderDetailModal', () => {
     // ── Test 7: Escape key closes modal ──
     it('calls onClose when Escape key is pressed', () => {
         const onClose = vi.fn();
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={onClose} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={onClose} />);
 
         fireEvent.keyDown(document, { key: 'Escape' });
         expect(onClose).toHaveBeenCalledTimes(1);
@@ -143,7 +143,7 @@ describe('OrderDetailModal', () => {
         };
         setupMocks({ data: orderWithAddress });
 
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={() => {}} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={() => {}} />);
 
         expect(screen.getByText('收货地址')).toBeInTheDocument();
         expect(screen.getByText(/张三/)).toBeInTheDocument();
@@ -158,7 +158,7 @@ describe('OrderDetailModal', () => {
         };
         setupMocks({ data: orderWithRemark });
 
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={() => {}} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={() => {}} />);
 
         expect(screen.getByText('备注')).toBeInTheDocument();
         expect(screen.getByText('这是一个备注')).toBeInTheDocument();
@@ -173,7 +173,7 @@ describe('OrderDetailModal', () => {
         };
         setupMocks({ data: orderWithCancel });
 
-        renderWithProviders(<OrderDetailModal open={true} orderId={1} onClose={() => {}} />);
+        renderWithProviders(<OrderDetailModal open={true} orderId={'1'} onClose={() => {}} />);
 
         expect(screen.getByText('取消原因')).toBeInTheDocument();
         expect(screen.getByText('认领方申请取消')).toBeInTheDocument();

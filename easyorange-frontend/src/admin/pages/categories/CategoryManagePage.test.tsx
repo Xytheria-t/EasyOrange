@@ -77,14 +77,14 @@ vi.mock('../../components/ConfirmModal', () => ({
 // ─── Sample data ───
 const sampleTree: CategoryTreeResponse[] = [
     {
-        categoryId: 1,
+        categoryId: '1',
         name: '电子产品',
         level: 0,
         sortOrder: 1,
         status: 1,
         children: [
             {
-                categoryId: 3,
+                categoryId: '3',
                 name: '手机',
                 level: 1,
                 sortOrder: 1,
@@ -94,7 +94,7 @@ const sampleTree: CategoryTreeResponse[] = [
         ],
     },
     {
-        categoryId: 2,
+        categoryId: '2',
         name: '图书',
         level: 0,
         sortOrder: 2,
@@ -222,7 +222,7 @@ describe('CategoryManagePage', () => {
         const disableButtons = screen.getAllByTitle('禁用');
         fireEvent.click(disableButtons[0]);
 
-        expect(mockMutateAsync).toHaveBeenCalledWith({ id: 1, status: 0 });
+        expect(mockMutateAsync).toHaveBeenCalledWith({ id: '1', status: 0 });
     });
 
     // ── Test 7: Delete confirm modal ──
@@ -244,7 +244,7 @@ describe('CategoryManagePage', () => {
 
         // Confirm delete
         fireEvent.click(screen.getByTestId('confirm-yes'));
-        expect(mockDeleteAsync).toHaveBeenCalledWith(1);
+        expect(mockDeleteAsync).toHaveBeenCalledWith('1');
     });
 
     // ── Test 8: Status filter ──

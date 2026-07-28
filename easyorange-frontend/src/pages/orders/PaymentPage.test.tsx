@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { UIState } from '@/store/uiStore';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { OrderDetail } from '@/types';
 import PaymentPage from './PaymentPage';
@@ -10,8 +11,16 @@ const mockUsePaymentStatus = vi.hoisted(() => vi.fn());
 const mockUseCreatePayment = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseUIStore = vi.hoisted(() =>
-    vi.fn((selector?: (s: { addToast: ReturnType<typeof vi.fn> }) => unknown) => {
-        const state = { addToast: vi.fn() };
+    vi.fn((selector?: (s: UIState) => unknown) => {
+        const state: UIState = {
+            toasts: [],
+            isLoading: false,
+            loadingMessage: '',
+            addToast: vi.fn(),
+            removeToast: vi.fn(),
+            showLoading: vi.fn(),
+            hideLoading: vi.fn(),
+        };
         return selector ? selector(state) : state;
     })
 );
@@ -75,8 +84,16 @@ beforeEach(() => {
         mutateAsync: vi.fn().mockResolvedValue({ paymentId: 'payment-1' }),
         isPending: false,
     });
-    mockUseUIStore.mockImplementation((selector?: (s: { addToast: ReturnType<typeof vi.fn> }) => unknown) => {
-        const state = { addToast: vi.fn() };
+    mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
+        const state: UIState = {
+            toasts: [],
+            isLoading: false,
+            loadingMessage: '',
+            addToast: vi.fn(),
+            removeToast: vi.fn(),
+            showLoading: vi.fn(),
+            hideLoading: vi.fn(),
+        };
         return selector ? selector(state) : state;
     });
 });
@@ -169,9 +186,17 @@ describe('PaymentPage', () => {
         const mockMutateAsync = vi.fn().mockResolvedValue({ paymentId: 'payment-1' });
         const addToast = vi.fn();
         mockUseCreatePayment.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((sel?: (s: { addToast: typeof vi.fn }) => unknown) => {
-            const s = { addToast };
-            return sel ? sel(s) : s;
+        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
+            const state: UIState = {
+                toasts: [],
+                isLoading: false,
+                loadingMessage: '',
+                addToast,
+                removeToast: vi.fn(),
+                showLoading: vi.fn(),
+                hideLoading: vi.fn(),
+            };
+            return selector ? selector(state) : state;
         });
         mockUsePaymentStatus.mockReturnValue({ data: { status: 'PROCESSING' }, isLoading: false });
         const order = createMockOrder();
@@ -210,9 +235,17 @@ describe('PaymentPage', () => {
         const mockMutateAsync = vi.fn().mockRejectedValue(new Error('Payment error'));
         const addToast = vi.fn();
         mockUseCreatePayment.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((sel?: (s: { addToast: typeof vi.fn }) => unknown) => {
-            const s = { addToast };
-            return sel ? sel(s) : s;
+        mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
+            const state: UIState = {
+                toasts: [],
+                isLoading: false,
+                loadingMessage: '',
+                addToast,
+                removeToast: vi.fn(),
+                showLoading: vi.fn(),
+                hideLoading: vi.fn(),
+            };
+            return selector ? selector(state) : state;
         });
         const order = createMockOrder();
         mockUseOrderDetail.mockReturnValue({ data: order, isLoading: false });

@@ -9,7 +9,7 @@ import ProductManagePage from './ProductManagePage';
 const mockUseAdminProducts = vi.fn();
 const mockUseUpdateProductStatus = vi.fn();
 let mockModalOpen = false;
-let mockModalProductId: number | null = null;
+let mockModalProductId: string | null = null;
 
 vi.mock('../../hooks/useAdminProducts', () => ({
     useAdminProducts: (...args: unknown[]) => mockUseAdminProducts(...args),
@@ -27,7 +27,7 @@ vi.mock('./ProductManageDetailModal', () => ({
         onSuccess,
     }: {
         open: boolean;
-        productId: number | null;
+        productId: string | null;
         onClose: () => void;
         onSuccess: () => void;
     }) => {
@@ -52,7 +52,7 @@ vi.mock('./ProductManageDetailModal', () => ({
 // ─── Sample data ───
 const sampleProducts: AdminProduct[] = [
     {
-        productId: 1,
+        productId: '1',
         name: '测试商品1',
         description: '这是一个测试商品',
         price: 100,
@@ -65,9 +65,9 @@ const sampleProducts: AdminProduct[] = [
         contactMethod: '微信',
         images: [],
         mainImage: null,
-        categoryId: 1,
+        categoryId: '1',
         categoryName: '电子产品',
-        sellerId: 1,
+        sellerId: '1',
         sellerName: '资产方A',
         sellerAvatar: null,
         viewCount: 100,
@@ -75,7 +75,7 @@ const sampleProducts: AdminProduct[] = [
         updateTime: '2026-05-16T10:00:00',
     },
     {
-        productId: 2,
+        productId: '2',
         name: '测试商品2',
         description: null,
         price: 200,
@@ -88,9 +88,9 @@ const sampleProducts: AdminProduct[] = [
         contactMethod: null,
         images: [],
         mainImage: null,
-        categoryId: 2,
+        categoryId: '2',
         categoryName: '图书教材',
-        sellerId: 2,
+        sellerId: '2',
         sellerName: '资产方B',
         sellerAvatar: null,
         viewCount: 50,
@@ -253,7 +253,7 @@ describe('ProductManagePage', () => {
         const detailButton = screen.getAllByText('详情')[0];
         fireEvent.click(detailButton);
         expect(mockModalOpen).toBe(true);
-        expect(mockModalProductId).toBe(1);
+        expect(mockModalProductId).toBe('1');
     });
 
     // ── Test 13: Status toggle button for online product (下架) ──
@@ -292,7 +292,7 @@ describe('ProductManagePage', () => {
         fireEvent.click(actionBtn as HTMLElement);
 
         expect(mutateAsyncMock).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: { status: 3 },
         });
     });

@@ -6,7 +6,7 @@ interface Toast {
     message: string;
 }
 
-interface UIState {
+export interface UIState {
     toasts: Toast[];
     isLoading: boolean;
     loadingMessage: string;

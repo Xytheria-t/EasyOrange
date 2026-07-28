@@ -33,7 +33,6 @@ beforeEach(() => {
         user: null,
         token: null,
         refreshToken: null,
-        isAuthenticated: false,
     });
 });
 
@@ -41,7 +40,6 @@ describe('useAdminGuard', () => {
     it('detects admin user with string userType 00', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: mockAdminUser,
         });
 
@@ -56,7 +54,6 @@ describe('useAdminGuard', () => {
     it('detects admin user with string userType 02', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: mockAdminUser02,
         });
 
@@ -69,7 +66,6 @@ describe('useAdminGuard', () => {
     it('detects non-admin user with string userType 01', () => {
         useAuthStore.setState({
             token: 'user-token',
-            isAuthenticated: true,
             user: mockRegularUser,
         });
 
@@ -84,7 +80,6 @@ describe('useAdminGuard', () => {
     it('detects admin user with code object userType 00', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: mockAdminUserWithCodeObject,
         });
 
@@ -97,7 +92,6 @@ describe('useAdminGuard', () => {
     it('detects admin user with code object userType 02', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: mockAdminUserWithCodeObject02,
         });
 
@@ -110,7 +104,6 @@ describe('useAdminGuard', () => {
     it('detects admin user with value object userType 00', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: mockAdminUserWithValueObject,
         });
 
@@ -123,7 +116,6 @@ describe('useAdminGuard', () => {
     it('detects admin user with value object userType 02', () => {
         useAuthStore.setState({
             token: 'admin-token',
-            isAuthenticated: true,
             user: mockAdminUserWithValueObject02,
         });
 
@@ -145,7 +137,6 @@ describe('useAdminGuard', () => {
     it('returns non-admin when user is null even with token', () => {
         useAuthStore.setState({
             token: 'some-token',
-            isAuthenticated: true,
             user: null,
         });
 

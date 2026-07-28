@@ -17,7 +17,7 @@ export const ADMIN_USER_KEYS = {
             params.endTime,
         ] as const,
     details: () => [...ADMIN_USER_KEYS.all, 'detail'] as const,
-    detail: (id: number) => [...ADMIN_USER_KEYS.details(), id] as const,
+    detail: (id: string) => [...ADMIN_USER_KEYS.details(), id] as const,
 };
 
 export function useAdminUsers(params: AdminUserQuery) {
@@ -33,7 +33,7 @@ export function useAdminUsers(params: AdminUserQuery) {
     });
 }
 
-export function useAdminUserDetail(id: number) {
+export function useAdminUserDetail(id: string) {
     return useQuery<AdminUser>({
         queryKey: ADMIN_USER_KEYS.detail(id),
         queryFn: async () => {
@@ -51,7 +51,7 @@ export function useUpdateUserStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: UpdateStatusRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: UpdateStatusRequest }) => {
             const response = await adminApi.updateUserStatus(id, data);
             return response.data;
         },

@@ -66,7 +66,7 @@ describe('useAdminOrderDetail', () => {
             })
         );
 
-        const { result } = renderHook(() => useAdminOrderDetail(1), {
+        const { result } = renderHook(() => useAdminOrderDetail('1'), {
             wrapper: Wrapper,
         });
 
@@ -126,7 +126,7 @@ describe('useAdminCancelOrder', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: 1, data: { reason: '认领方要求' } });
+        result.current.mutate({ id: '1', data: { reason: '认领方要求' } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });
@@ -149,7 +149,7 @@ describe('useForceCompleteOrder', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: 1, data: { reason: '特殊处理' } });
+        result.current.mutate({ id: '1', data: { reason: '特殊处理' } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });
@@ -172,7 +172,7 @@ describe('useAdminRefundOrder', () => {
             wrapper: Wrapper,
         });
 
-        result.current.mutate({ id: 1, data: { reason: '退款处理' } });
+        result.current.mutate({ id: '1', data: { reason: '退款处理' } });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });

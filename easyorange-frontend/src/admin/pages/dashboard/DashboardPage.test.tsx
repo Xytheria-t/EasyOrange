@@ -81,7 +81,7 @@ function setupDefaultMocks() {
     mockUseRecentUsers.mockReturnValue({
         data: [
             {
-                userId: 1,
+                userId: '1',
                 username: 'alice',
                 nickname: 'Alice',
                 avatar: null,
@@ -94,7 +94,7 @@ function setupDefaultMocks() {
                 createTime: new Date(Date.now() - 300_000).toISOString(), // 5 minutes ago
             },
             {
-                userId: 2,
+                userId: '2',
                 username: 'bob',
                 nickname: 'Bob',
                 avatar: null,
@@ -115,7 +115,7 @@ function setupDefaultMocks() {
     mockUseRecentProducts.mockReturnValue({
         data: [
             {
-                productId: 1,
+                productId: '1',
                 name: '高等数学教材',
                 price: 45,
                 mainImage: null,

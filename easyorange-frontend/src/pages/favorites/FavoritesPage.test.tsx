@@ -27,7 +27,7 @@ vi.mock('react-router-dom', async () => {
 });
 
 vi.mock('@/components/ui/Image', () => ({
-    Image: ({ alt, ...props }) => <img alt={alt || ''} {...props} />,
+    Image: ({ alt, ...props }: { alt?: string } & Record<string, unknown>) => <img alt={alt || ''} {...props} />,
 }));
 
 function createMockPage(recordsCount = 1, totalOverride?: number) {

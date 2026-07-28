@@ -6,10 +6,10 @@ const levelLabels = ['', '一级', '二级', '三级'];
 interface CategoryTreeNodeProps {
     node: CategoryTreeResponse;
     depth: number;
-    expandedIds: Set<number>;
-    onToggleExpand: (id: number) => void;
+    expandedIds: Set<string>;
+    onToggleExpand: (id: string) => void;
     onEdit: (node: CategoryTreeResponse) => void;
-    onToggleStatus: (id: number, currentStatus: number) => void;
+    onToggleStatus: (id: string, currentStatus: number) => void;
     onDelete: (node: CategoryTreeResponse) => void;
     isUpdatingStatus: boolean;
 }
@@ -25,7 +25,7 @@ export function CategoryTreeNode({
     isUpdatingStatus,
 }: CategoryTreeNodeProps) {
     const hasChildren = node.children && node.children.length > 0;
-    const isExpanded = expandedIds.has(Number(node.categoryId));
+    const isExpanded = expandedIds.has(node.categoryId);
     const isEnabled = node.status === 1;
     const paddingLeft = 16 + depth * 28;
 
@@ -52,7 +52,7 @@ export function CategoryTreeNode({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => onToggleExpand(Number(node.categoryId))}
+                    onClick={() => onToggleExpand(node.categoryId)}
                     style={{
                         width: 20,
                         height: 20,
@@ -174,7 +174,7 @@ export function CategoryTreeNode({
                         variant="ghost"
                         size="icon"
                         title={isEnabled ? '禁用' : '启用'}
-                        onClick={() => onToggleStatus(Number(node.categoryId), node.status)}
+                        onClick={() => onToggleStatus(node.categoryId, node.status)}
                         disabled={isUpdatingStatus}
                         style={{
                             display: 'inline-flex',

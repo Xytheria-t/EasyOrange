@@ -1,0 +1,232 @@
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 1280px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 520px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stat-card {
+    position: relative;
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius-2xl);
+    padding: 1.5rem;
+    overflow: hidden;
+    transition: all 0.35s var(--ease-out);
+    animation: statCardEnter 0.6s var(--ease-out) both;
+}
+
+.stat-card:nth-child(1) {
+    animation-delay: 0.05s;
+}
+.stat-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+.stat-card:nth-child(3) {
+    animation-delay: 0.15s;
+}
+.stat-card:nth-child(4) {
+    animation-delay: 0.2s;
+}
+.stat-card:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.stat-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.6) 0%,
+        rgba(255, 255, 255, 0.1) 40%,
+        rgba(255, 255, 255, 0) 60%,
+        rgba(249, 115, 22, 0.08) 100%
+    );
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: xor;
+    -webkit-mask-composite: xor;
+    pointer-events: none;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 12px 32px -8px rgba(42, 37, 32, 0.1),
+        0 4px 12px -4px rgba(249, 115, 22, 0.08);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-card-inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.stat-card-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    letter-spacing: 0.01em;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+}
+
+.stat-card-value {
+    font-family: var(--font-serif);
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-heading);
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+}
+
+.stat-card-growth {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.625rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.stat-card-growth.positive {
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.stat-card-growth.negative {
+    background: var(--error-light);
+    color: var(--error);
+}
+
+.stat-card-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card-icon-wrap svg {
+    width: 22px;
+    height: 22px;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-card[data-accent="orange"] .stat-card-icon-wrap {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(249, 115, 22, 0.05) 100%);
+    color: var(--primary-500);
+}
+.stat-card[data-accent="orange"]:hover {
+    box-shadow:
+        0 12px 32px -8px rgba(42, 37, 32, 0.1),
+        0 4px 16px -4px rgba(249, 115, 22, 0.15);
+}
+
+.stat-card[data-accent="rose"] .stat-card-icon-wrap {
+    background: linear-gradient(135deg, rgba(251, 113, 133, 0.15) 0%, rgba(251, 113, 133, 0.05) 100%);
+    color: var(--rose-500);
+}
+.stat-card[data-accent="rose"]:hover {
+    box-shadow:
+        0 12px 32px -8px rgba(42, 37, 32, 0.1),
+        0 4px 16px -4px rgba(251, 113, 133, 0.15);
+}
+
+.stat-card[data-accent="purple"] .stat-card-icon-wrap {
+    background: linear-gradient(135deg, rgba(195, 155, 211, 0.18) 0%, rgba(195, 155, 211, 0.06) 100%);
+    color: var(--purple-500);
+}
+.stat-card[data-accent="purple"]:hover {
+    box-shadow:
+        0 12px 32px -8px rgba(42, 37, 32, 0.1),
+        0 4px 16px -4px rgba(195, 155, 211, 0.15);
+}
+
+.stat-card[data-accent="gold"] .stat-card-icon-wrap {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(251, 191, 36, 0.05) 100%);
+    color: var(--gold-500);
+}
+.stat-card[data-accent="gold"]:hover {
+    box-shadow:
+        0 12px 32px -8px rgba(42, 37, 32, 0.1),
+        0 4px 16px -4px rgba(251, 191, 36, 0.15);
+}
+
+.stat-card[data-accent="emerald"] .stat-card-icon-wrap {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%);
+    color: var(--emerald-500);
+}
+.stat-card[data-accent="emerald"]:hover {
+    box-shadow:
+        0 12px 32px -8px rgba(42, 37, 32, 0.1),
+        0 4px 16px -4px rgba(16, 185, 129, 0.15);
+}
+
+.stat-card-skeleton {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius-2xl);
+    padding: 1.5rem;
+    animation: statCardEnter 0.6s var(--ease-out) both;
+}
+
+.stat-skeleton-line {
+    height: 12px;
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+}
+
+.stat-skeleton-line.short {
+    width: 40%;
+    margin-bottom: 0.75rem;
+}
+.stat-skeleton-line.tall {
+    width: 60%;
+    height: 28px;
+    border-radius: var(--radius-md);
+}

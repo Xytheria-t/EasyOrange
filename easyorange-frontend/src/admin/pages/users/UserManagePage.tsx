@@ -80,7 +80,7 @@ export default function UserManagePage() {
                 return;
             }
             await updateStatusMutation.mutateAsync({
-                id: Number(selectedUser.userId),
+                id: selectedUser.userId,
                 data: { status: Number(status) },
             });
             setModalOpen(false);
@@ -110,7 +110,7 @@ export default function UserManagePage() {
                             fontWeight: 700,
                             color: '#fff',
                             fontFamily: "'Playfair Display', 'Noto Serif SC', serif",
-                            background: AVATAR_GRADIENTS[Number(record.userId ?? 0) % AVATAR_GRADIENTS.length],
+                            background: AVATAR_GRADIENTS[Number(record.userId ?? '') % AVATAR_GRADIENTS.length],
                             flexShrink: 0,
                         }}
                     >

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useDashboardTime } from '../hooks/useDashboardTime';
 
 function getGreeting(): string {
     const hour = new Date().getHours();
@@ -17,24 +17,15 @@ function getGreeting(): string {
     return '晚上好';
 }
 
-function getCurrentTime(): string {
-    const now = new Date();
-    const dateStr = `${now.getMonth() + 1}月${now.getDate()}日`;
-    const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-    return `${dateStr} ${weekDays[now.getDay()]}`;
-}
-
 export function DashboardHeader() {
-    const [currentTime, setCurrentTime] = useState(getCurrentTime());
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(getCurrentTime()), 30000);
-        return () => clearInterval(timer);
-    }, []);
+    const currentTime = useDashboardTime();
 
     return (
         <header
-            style={{ marginBottom: '2.5rem', animation: 'dashHeaderReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both' }}
+            style={{
+                marginBottom: '2.5rem',
+                animation: 'dashHeaderReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both',
+            }}
         >
             <div
                 style={{
@@ -46,6 +37,7 @@ export function DashboardHeader() {
                 }}
             >
                 <div>
+                    {/* Decorative accent line above title */}
                     <div
                         style={{
                             display: 'flex',
@@ -64,7 +56,13 @@ export function DashboardHeader() {
                             }}
                         />
                         <div
-                            style={{ width: 8, height: 8, borderRadius: '50%', background: '#F97316', opacity: 0.5 }}
+                            style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                background: '#F97316',
+                                opacity: 0.5,
+                            }}
                         />
                     </div>
 
@@ -111,6 +109,7 @@ export function DashboardHeader() {
                         平台运营数据一览，掌控全局动态
                     </p>
 
+                    {/* Decorative underline element */}
                     <div
                         style={{
                             marginTop: '0.85rem',
@@ -140,6 +139,7 @@ export function DashboardHeader() {
                     </div>
                 </div>
 
+                {/* Live clock pill */}
                 <div
                     style={{
                         display: 'flex',

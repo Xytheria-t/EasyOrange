@@ -35,7 +35,7 @@ describe('useAuditProduct', () => {
         });
 
         result.current.mutate({
-            id: 1,
+            id: '1',
             data: { action: 1 },
         });
 
@@ -62,8 +62,8 @@ describe('useBatchAuditProducts', () => {
 
         result.current.mutate({
             items: [
-                { productId: 1, action: 1 },
-                { productId: 2, action: 2, reason: '图片不合规' },
+                { productId: '1', action: 1 },
+                { productId: '2', action: 2, reason: '图片不合规' },
             ],
         });
 
@@ -81,7 +81,7 @@ describe('useAuditLogs', () => {
                     data: [
                         {
                             id: 1,
-                            productId: 1,
+                            productId: '1',
                             operatorId: 1,
                             operatorName: '管理员',
                             action: 1,
@@ -101,7 +101,7 @@ describe('useAuditLogs', () => {
             })
         );
 
-        const { result } = renderHook(() => useAuditLogs(1), {
+        const { result } = renderHook(() => useAuditLogs('1'), {
             wrapper: Wrapper,
         });
 

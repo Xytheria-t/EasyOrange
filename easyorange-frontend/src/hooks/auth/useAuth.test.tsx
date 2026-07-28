@@ -100,7 +100,7 @@ describe('useRegister', () => {
                 return HttpResponse.json({
                     code: 'A0000',
                     message: 'success',
-                    data: { id: '2', username: 'newuser' },
+                    data: 2,
                     timestamp: Date.now(),
                 });
             })
@@ -113,11 +113,10 @@ describe('useRegister', () => {
         result.current.mutate({
             username: 'newuser',
             password: 'password123',
-            confirmPassword: 'password123',
         });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(result.current.data?.username).toBe('newuser');
+        expect(result.current.data).toBe(2);
     });
 });
 

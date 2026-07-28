@@ -25,10 +25,12 @@ describe('normalizeProduct', () => {
     });
 
     it('uses defaults for missing fields', () => {
-        const product = normalizeProduct({ id: '1', price: 50, categoryId: 1, sellerId: 'u1' } as Record<
-            string,
-            unknown
-        >);
+        const product = normalizeProduct({
+            id: '1',
+            price: 50,
+            categoryId: 1,
+            sellerId: 'u1',
+        } as import('@/types').RawProduct);
         expect(product.title).toBe('');
         expect(product.description).toBe('');
         expect(product.status).toBe('ONLINE');

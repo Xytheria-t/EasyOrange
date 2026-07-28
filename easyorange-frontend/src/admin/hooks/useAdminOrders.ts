@@ -19,7 +19,7 @@ export const ADMIN_ORDER_KEYS = {
             params.endTime,
         ] as const,
     details: () => [...ADMIN_ORDER_KEYS.all, 'detail'] as const,
-    detail: (id: number) => [...ADMIN_ORDER_KEYS.details(), id] as const,
+    detail: (id: string) => [...ADMIN_ORDER_KEYS.details(), id] as const,
     stats: () => [...ADMIN_ORDER_KEYS.all, 'stats'] as const,
 };
 
@@ -36,7 +36,7 @@ export function useAdminOrders(params: AdminOrderQuery) {
     });
 }
 
-export function useAdminOrderDetail(id: number) {
+export function useAdminOrderDetail(id: string) {
     return useQuery<AdminOrderDetail>({
         queryKey: ADMIN_ORDER_KEYS.detail(id),
         queryFn: async () => {
@@ -67,7 +67,7 @@ export function useAdminCancelOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: OrderInterventionRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: OrderInterventionRequest }) => {
             const response = await adminApi.cancelOrder(id, data);
             return response.data;
         },
@@ -81,7 +81,7 @@ export function useForceCompleteOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: OrderInterventionRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: OrderInterventionRequest }) => {
             const response = await adminApi.forceCompleteOrder(id, data);
             return response.data;
         },
@@ -95,7 +95,7 @@ export function useAdminRefundOrder() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: OrderInterventionRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: OrderInterventionRequest }) => {
             const response = await adminApi.refundOrder(id, data);
             return response.data;
         },

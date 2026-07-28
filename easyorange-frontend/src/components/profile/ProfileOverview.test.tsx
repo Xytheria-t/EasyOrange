@@ -3,13 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 import type { User } from '@/types';
 import { ProfileOverview } from './ProfileOverview';
 
+type EditableField = 'nickname' | 'email' | 'phone' | 'realName' | 'studentId';
+
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
     useNavigate: () => mockNavigate,
 }));
 
 const mockUser: User = {
-    id: '1',
+    userId: '1',
     username: 'testuser',
     nickname: 'TestUser',
     email: 'test@example.com',
@@ -17,13 +19,19 @@ const mockUser: User = {
     avatar: null,
     realName: 'Test',
     studentId: '2021001',
+    status: 0,
+    userType: '01',
     createTime: '2026-01-01T00:00:00Z',
+    updateTime: '2026-01-01T00:00:00Z',
 };
 
 const defaultProps = {
     user: mockUser,
     favoriteCount: 10,
-    editingField: null as string | null,
+    orderCount: 3,
+    productCount: 5,
+    unreadMessageCount: 2,
+    editingField: null as EditableField | null,
     editValue: '',
     isSaving: false,
     onEdit: vi.fn(),

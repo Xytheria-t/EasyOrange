@@ -39,9 +39,9 @@ export default function ReportManagePage() {
     const [searchInput, setSearchInput] = useState('');
     const [confirmModal, setConfirmModal] = useState<{
         open: boolean;
-        reportId: number;
+        reportId: string;
         action: 'resolve' | 'dismiss';
-    }>({ open: false, reportId: 0, action: 'resolve' });
+    }>({ open: false, reportId: '0', action: 'resolve' });
     const {
         pageNum: page,
         pageSize,
@@ -80,7 +80,7 @@ export default function ReportManagePage() {
     const handleConfirmAction = async () => {
         try {
             await handleReport.mutateAsync({ id: confirmModal.reportId, data: { action: confirmModal.action } });
-            setConfirmModal({ open: false, reportId: 0, action: 'resolve' });
+            setConfirmModal({ open: false, reportId: '0', action: 'resolve' });
         } catch {
             setConfirmModal(prev => ({ ...prev, open: false }));
         }
@@ -179,7 +179,7 @@ export default function ReportManagePage() {
                                     e.stopPropagation();
                                     setConfirmModal({
                                         open: true,
-                                        reportId: Number(record.reportId),
+                                        reportId: record.reportId,
                                         action: 'resolve',
                                     });
                                 }}
@@ -214,7 +214,7 @@ export default function ReportManagePage() {
                                     e.stopPropagation();
                                     setConfirmModal({
                                         open: true,
-                                        reportId: Number(record.reportId),
+                                        reportId: record.reportId,
                                         action: 'dismiss',
                                     });
                                 }}
@@ -561,7 +561,7 @@ export default function ReportManagePage() {
                 confirmText={confirmModal.action === 'resolve' ? '确认处理' : '确认驳回'}
                 onConfirm={handleConfirmAction}
                 isLoading={handleReport.isPending}
-                onCancel={() => setConfirmModal({ open: false, reportId: 0, action: 'resolve' })}
+                onCancel={() => setConfirmModal({ open: false, reportId: '0', action: 'resolve' })}
                 variant={confirmModal.action === 'resolve' ? 'warning' : 'info'}
             />
 

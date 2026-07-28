@@ -24,7 +24,6 @@ afterEach(() => {
         user: null,
         token: null,
         refreshToken: null,
-        isAuthenticated: false,
     });
     useUIStore.setState({ toasts: [], isLoading: false, loadingMessage: '' });
 });
@@ -34,8 +33,7 @@ describe('useFavoriteCheck', () => {
         it('fetches favorite status when logged in', async () => {
             useAuthStore.setState({
                 token: 'test-token',
-                user: { id: '1' } as unknown as import('@/types').User,
-                isAuthenticated: true,
+                user: null,
             });
 
             server.use(
@@ -74,8 +72,7 @@ describe('useFavoriteCheck', () => {
         it('adds favorite successfully', async () => {
             useAuthStore.setState({
                 token: 'test-token',
-                user: { id: '1' } as unknown as import('@/types').User,
-                isAuthenticated: true,
+                user: null,
             });
 
             server.use(
@@ -103,8 +100,7 @@ describe('useFavoriteCheck', () => {
         it('removes favorite successfully', async () => {
             useAuthStore.setState({
                 token: 'test-token',
-                user: { id: '1' } as unknown as import('@/types').User,
-                isAuthenticated: true,
+                user: null,
             });
 
             server.use(

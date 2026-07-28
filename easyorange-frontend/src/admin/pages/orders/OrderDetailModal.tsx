@@ -5,7 +5,7 @@ import type { AdminOrderDetail } from '../../types/admin';
 
 export interface OrderDetailModalProps {
     open: boolean;
-    orderId: number | null;
+    orderId: string | null;
     onClose: () => void;
 }
 
@@ -77,7 +77,7 @@ function InfoCell({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 export function OrderDetailModal({ open, orderId, onClose }: OrderDetailModalProps) {
-    const { data: order, isLoading } = useAdminOrderDetail(orderId ?? 0);
+    const { data: order, isLoading } = useAdminOrderDetail(orderId ?? '');
 
     if (!open || !orderId) {
         return null;

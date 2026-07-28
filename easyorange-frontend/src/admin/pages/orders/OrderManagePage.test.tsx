@@ -111,16 +111,16 @@ vi.mock('../../components/AdminSelect', () => ({
 const samplePageData: PageResult<AdminOrder> = {
     records: [
         {
-            orderId: 1,
+            orderId: '1',
             orderNo: 'ORD20260516001',
-            buyerId: 1,
+            buyerId: '1',
             buyerName: '认领方A',
-            sellerId: 2,
+            sellerId: '2',
             sellerName: '资产方B',
             items: [
                 {
-                    itemId: 1,
-                    productId: 10,
+                    itemId: '1',
+                    productId: '10',
                     productName: '测试商品1',
                     productImage: '',
                     unitPrice: 100.0,
@@ -137,16 +137,16 @@ const samplePageData: PageResult<AdminOrder> = {
             createTime: '2026-05-16T10:00:00',
         },
         {
-            orderId: 2,
+            orderId: '2',
             orderNo: 'ORD20260516002',
-            buyerId: 3,
+            buyerId: '3',
             buyerName: '认领方C',
-            sellerId: 4,
+            sellerId: '4',
             sellerName: '资产方D',
             items: [
                 {
-                    itemId: 2,
-                    productId: 20,
+                    itemId: '2',
+                    productId: '20',
                     productName: '测试商品2',
                     productImage: '',
                     unitPrice: 200.0,
@@ -268,16 +268,16 @@ describe('OrderManagePage', () => {
     it('triggers pagination on page change', () => {
         const multiPageData: PageResult<AdminOrder> = {
             records: Array.from({ length: 10 }, (_, i) => ({
-                orderId: i + 1,
+                orderId: String(i + 1),
                 orderNo: `ORD${String(i + 1).padStart(11, '0')}`,
-                buyerId: 1,
+                buyerId: '1',
                 buyerName: `认领方${i}`,
-                sellerId: 2,
+                sellerId: '2',
                 sellerName: `资产方${i}`,
                 items: [
                     {
-                        itemId: i + 1,
-                        productId: 10 + i,
+                        itemId: String(i + 1),
+                        productId: `10${i}`,
                         productName: `商品${i}`,
                         productImage: '',
                         unitPrice: (i + 1) * 100,

@@ -30,7 +30,7 @@ export default function OrderManagePage() {
     } = usePagination({
         resetDeps: [keyword, statusFilter],
     });
-    const [detailOrderId, setDetailOrderId] = useState<number | null>(null);
+    const [detailOrderId, setDetailOrderId] = useState<string | null>(null);
 
     const { data, isLoading } = useAdminOrders({
         pageNum: page,
@@ -172,7 +172,7 @@ export default function OrderManagePage() {
                         e.currentTarget.style.background = 'rgba(249,115,22,0.07)';
                         e.currentTarget.style.transform = 'translateX(0)';
                     }}
-                    onClick={() => setDetailOrderId(Number(record.orderId))}
+                    onClick={() => setDetailOrderId(record.orderId)}
                 >
                     <svg
                         aria-hidden="true"

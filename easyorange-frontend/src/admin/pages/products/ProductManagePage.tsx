@@ -50,7 +50,7 @@ export default function ProductManagePage() {
     } = usePagination({
         resetDeps: [keyword, statusFilter, categoryFilter],
     });
-    const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
     const [modalOpen, setModalOpen] = useState(false);
 
     const { data, isLoading, isError, refetch } = useAdminProducts({
@@ -78,7 +78,7 @@ export default function ProductManagePage() {
     );
 
     const handleViewDetail = useCallback((product: AdminProduct) => {
-        setSelectedProductId(Number(product.productId));
+        setSelectedProductId(product.productId);
         setModalOpen(true);
     }, []);
 
@@ -91,7 +91,7 @@ export default function ProductManagePage() {
             const targetStatus = product.status === 1 ? 3 : 1;
             try {
                 await updateStatusMutation.mutateAsync({
-                    id: Number(product.productId),
+                    id: product.productId,
                     data: { status: targetStatus },
                 });
                 refetch();

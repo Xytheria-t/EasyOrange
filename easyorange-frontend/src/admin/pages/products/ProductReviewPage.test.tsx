@@ -20,7 +20,7 @@ vi.mock('../../hooks/useAdminProducts', () => ({
 
 // Mock the drawer component
 let mockDrawerOpen = false;
-let mockDrawerProductId: number | null = null;
+let mockDrawerProductId: string | null = null;
 
 vi.mock('./ProductDetailDrawer', () => ({
     ProductDetailDrawer: ({
@@ -30,7 +30,7 @@ vi.mock('./ProductDetailDrawer', () => ({
         onSuccess,
     }: {
         open: boolean;
-        productId: number | null;
+        productId: string | null;
         onClose: () => void;
         onSuccess: () => void;
     }) => {
@@ -75,7 +75,7 @@ function createPageData(records: AdminProduct[], total: number): PageResult<Admi
 function createSampleProducts(fakeNow: number) {
     return [
         {
-            productId: 1,
+            productId: '1',
             name: '待审核商品',
             description: '需要审核的商品描述',
             price: 100,
@@ -88,9 +88,9 @@ function createSampleProducts(fakeNow: number) {
             contactMethod: '微信',
             images: [],
             mainImage: null,
-            categoryId: 1,
+            categoryId: '1',
             categoryName: '电子产品',
-            sellerId: 1,
+            sellerId: '1',
             sellerName: '资产方A',
             sellerAvatar: null,
             viewCount: 100,
@@ -98,7 +98,7 @@ function createSampleProducts(fakeNow: number) {
             updateTime: new Date(fakeNow - 30_000).toISOString(),
         },
         {
-            productId: 2,
+            productId: '2',
             name: '已驳回商品',
             description: null,
             price: 200,
@@ -111,9 +111,9 @@ function createSampleProducts(fakeNow: number) {
             contactMethod: null,
             images: [],
             mainImage: null,
-            categoryId: 2,
+            categoryId: '2',
             categoryName: '图书教材',
-            sellerId: 2,
+            sellerId: '2',
             sellerName: '资产方B',
             sellerAvatar: null,
             viewCount: 50,
@@ -250,7 +250,7 @@ describe('ProductReviewPage', () => {
         fireEvent.click(auditButton);
 
         expect(mockDrawerOpen).toBe(true);
-        expect(mockDrawerProductId).toBe(1);
+        expect(mockDrawerProductId).toBe('1');
     });
 
     // ── Test 11: Relative time formatting - "刚刚" ──

@@ -51,12 +51,12 @@ describe('useAdminReports', () => {
 
 describe('useAdminReportDetail', () => {
     it('returns report detail', async () => {
-        const { result } = renderHook(() => useAdminReportDetail(1), {
+        const { result } = renderHook(() => useAdminReportDetail('1'), {
             wrapper: Wrapper,
         });
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(result.current.data?.reportId).toBe(1);
+        expect(result.current.data?.reportId).toBe('1');
         expect(result.current.data?.productName).toBe('测试商品');
     });
 });
@@ -92,7 +92,7 @@ describe('useHandleReport', () => {
         });
 
         result.current.mutate({
-            id: 1,
+            id: '1',
             data: { action: 'resolve', remark: '已确认处理' },
         });
 

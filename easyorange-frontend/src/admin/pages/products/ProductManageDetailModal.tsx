@@ -7,7 +7,7 @@ import type { AdminProduct } from '../../types/admin';
 
 export interface ProductManageDetailModalProps {
     open: boolean;
-    productId: number | null;
+    productId: string | null;
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -58,7 +58,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [selectedImage, setSelectedImage] = useState(0);
 
-    const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? 0);
+    const { data: product, isLoading, refetch } = useAdminProductDetail(productId ?? '');
     const updateStatus = useUpdateProductStatus();
 
     useEffect(() => {
@@ -79,7 +79,7 @@ export function ProductManageDetailModal({ open, productId, onClose, onSuccess }
             return;
         }
         try {
-            await updateStatus.mutateAsync({ id: Number(product.productId), data: { status: targetStatus } });
+            await updateStatus.mutateAsync({ id: product.productId, data: { status: targetStatus } });
             onSuccess();
             onClose();
         } catch {

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { PendingItemRow } from './PendingItemRow';
 
 interface PendingItems {
     pendingProducts: number;
@@ -180,289 +180,31 @@ export function PendingItemsAlert({ pendingItems, isLoading }: PendingItemsAlert
                         }}
                     >
                         {pendingItems?.pendingProducts > 0 && (
-                            <li
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.85rem 1.1rem',
-                                    borderRadius: 14,
-                                    background: 'rgba(249,115,22,0.02)',
-                                    border: '1px solid rgba(249,115,22,0.06)',
-                                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(249,115,22,0.05)';
-                                    e.currentTarget.style.paddingLeft = '1.3rem';
-                                    e.currentTarget.style.borderColor = 'rgba(249,115,22,0.12)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'rgba(249,115,22,0.02)';
-                                    e.currentTarget.style.paddingLeft = '0.85rem';
-                                    e.currentTarget.style.borderColor = 'rgba(249,115,22,0.06)';
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                    <span
-                                        style={{
-                                            width: 9,
-                                            height: 9,
-                                            borderRadius: '50%',
-                                            background: '#F97316',
-                                            flexShrink: 0,
-                                            boxShadow: '0 0 10px rgba(249,115,22,0.45)',
-                                            animation: 'dashPulse 2s ease-in-out infinite',
-                                        }}
-                                    />
-                                    <span
-                                        style={{
-                                            fontSize: '0.9rem',
-                                            color: '#4A4540',
-                                            fontWeight: 500,
-                                            fontFamily: "'LXGW WenKai', sans-serif",
-                                        }}
-                                    >
-                                        <strong style={{ fontWeight: 700, color: '#EA580C' }}>
-                                            {pendingItems.pendingProducts}
-                                        </strong>{' '}
-                                        个商品待审核
-                                    </span>
-                                </div>
-                                <Link
-                                    to="/admin/products?status=0"
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.35rem',
-                                        padding: '0.42rem 0.95rem',
-                                        borderRadius: 9999,
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        color: '#fff',
-                                        background: 'linear-gradient(135deg, #F97316, #EA580C)',
-                                        textDecoration: 'none',
-                                        transition: 'all 0.25s ease',
-                                        letterSpacing: '0.01em',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        fontFamily: "'LXGW WenKai', sans-serif",
-                                        boxShadow: '0 2px 8px rgba(249,115,22,0.2)',
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.transform = 'translateX(3px)';
-                                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(249,115,22,0.35)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.transform = 'translateX(0)';
-                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(249,115,22,0.2)';
-                                    }}
-                                >
-                                    立即处理
-                                    <svg
-                                        aria-hidden="true"
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
+                            <PendingItemRow
+                                count={pendingItems.pendingProducts}
+                                label="个商品待审核"
+                                theme="orange"
+                                actionLink="/admin/products?status=0"
+                                actionText="立即处理"
+                            />
                         )}
                         {pendingItems?.pendingReports > 0 && (
-                            <li
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.85rem 1.1rem',
-                                    borderRadius: 14,
-                                    background: 'rgba(244,63,94,0.02)',
-                                    border: '1px solid rgba(244,63,94,0.06)',
-                                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(244,63,94,0.05)';
-                                    e.currentTarget.style.paddingLeft = '1.3rem';
-                                    e.currentTarget.style.borderColor = 'rgba(244,63,94,0.12)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'rgba(244,63,94,0.02)';
-                                    e.currentTarget.style.paddingLeft = '0.85rem';
-                                    e.currentTarget.style.borderColor = 'rgba(244,63,94,0.06)';
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                    <span
-                                        style={{
-                                            width: 9,
-                                            height: 9,
-                                            borderRadius: '50%',
-                                            background: '#F43F5E',
-                                            flexShrink: 0,
-                                            boxShadow: '0 0 10px rgba(244,63,94,0.45)',
-                                            animation: 'dashPulse 2s ease-in-out infinite',
-                                        }}
-                                    />
-                                    <span
-                                        style={{
-                                            fontSize: '0.9rem',
-                                            color: '#4A4540',
-                                            fontWeight: 500,
-                                            fontFamily: "'LXGW WenKai', sans-serif",
-                                        }}
-                                    >
-                                        <strong style={{ fontWeight: 700, color: '#E11D48' }}>
-                                            {pendingItems.pendingReports}
-                                        </strong>{' '}
-                                        条举报待处理
-                                    </span>
-                                </div>
-                                <Link
-                                    to="/admin/reports"
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.35rem',
-                                        padding: '0.42rem 0.95rem',
-                                        borderRadius: 9999,
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        color: '#fff',
-                                        background: 'linear-gradient(135deg, #F43F5E, #E11D48)',
-                                        textDecoration: 'none',
-                                        transition: 'all 0.25s ease',
-                                        letterSpacing: '0.01em',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        fontFamily: "'LXGW WenKai', sans-serif",
-                                        boxShadow: '0 2px 8px rgba(244,63,94,0.2)',
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.transform = 'translateX(3px)';
-                                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(244,63,94,0.35)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.transform = 'translateX(0)';
-                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(244,63,94,0.2)';
-                                    }}
-                                >
-                                    立即处理
-                                    <svg
-                                        aria-hidden="true"
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
+                            <PendingItemRow
+                                count={pendingItems.pendingReports}
+                                label="条举报待处理"
+                                theme="rose"
+                                actionLink="/admin/reports"
+                                actionText="立即处理"
+                            />
                         )}
                         {pendingItems?.pendingOrders > 0 && (
-                            <li
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.85rem 1.1rem',
-                                    borderRadius: 14,
-                                    background: 'rgba(251,191,36,0.02)',
-                                    border: '1px solid rgba(251,191,36,0.06)',
-                                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(251,191,36,0.05)';
-                                    e.currentTarget.style.paddingLeft = '1.3rem';
-                                    e.currentTarget.style.borderColor = 'rgba(251,191,36,0.12)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'rgba(251,191,36,0.02)';
-                                    e.currentTarget.style.paddingLeft = '0.85rem';
-                                    e.currentTarget.style.borderColor = 'rgba(251,191,36,0.06)';
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                    <span
-                                        style={{
-                                            width: 9,
-                                            height: 9,
-                                            borderRadius: '50%',
-                                            background: '#FBBF24',
-                                            flexShrink: 0,
-                                            boxShadow: '0 0 10px rgba(251,191,36,0.45)',
-                                            animation: 'dashPulse 2s ease-in-out infinite',
-                                        }}
-                                    />
-                                    <span
-                                        style={{
-                                            fontSize: '0.9rem',
-                                            color: '#4A4540',
-                                            fontWeight: 500,
-                                            fontFamily: "'LXGW WenKai', sans-serif",
-                                        }}
-                                    >
-                                        <strong style={{ fontWeight: 700, color: '#D97706' }}>
-                                            {pendingItems.pendingOrders}
-                                        </strong>{' '}
-                                        笔待处理订单
-                                    </span>
-                                </div>
-                                <Link
-                                    to="/admin/orders"
-                                    style={{
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.35rem',
-                                        padding: '0.42rem 0.95rem',
-                                        borderRadius: 9999,
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
-                                        color: '#fff',
-                                        background: 'linear-gradient(135deg, #FBBF24, #D97706)',
-                                        textDecoration: 'none',
-                                        transition: 'all 0.25s ease',
-                                        letterSpacing: '0.01em',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        fontFamily: "'LXGW WenKai', sans-serif",
-                                        boxShadow: '0 2px 8px rgba(251,191,36,0.2)',
-                                    }}
-                                    onMouseEnter={e => {
-                                        e.currentTarget.style.transform = 'translateX(3px)';
-                                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(251,191,36,0.35)';
-                                    }}
-                                    onMouseLeave={e => {
-                                        e.currentTarget.style.transform = 'translateX(0)';
-                                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(251,191,36,0.2)';
-                                    }}
-                                >
-                                    立即处理
-                                    <svg
-                                        aria-hidden="true"
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
-                                </Link>
-                            </li>
+                            <PendingItemRow
+                                count={pendingItems.pendingOrders}
+                                label="笔待处理订单"
+                                theme="amber"
+                                actionLink="/admin/orders"
+                                actionText="立即处理"
+                            />
                         )}
                     </ul>
                 )}

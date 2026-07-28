@@ -1,6 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { UIState } from '@/store/uiStore';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { OrderDetail } from '@/types';
 import OrderDetailPage from './OrderDetailPage';
@@ -12,8 +13,16 @@ const mockUseReceiveOrder = vi.hoisted(() => vi.fn());
 const mockUseRefundOrder = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseUIStore = vi.hoisted(() =>
-    vi.fn((selector?: (s: { addToast: ReturnType<typeof vi.fn> }) => unknown) => {
-        const state = { addToast: vi.fn() };
+    vi.fn((selector?: (s: UIState) => unknown) => {
+        const state: UIState = {
+            toasts: [],
+            isLoading: false,
+            loadingMessage: '',
+            addToast: vi.fn(),
+            removeToast: vi.fn(),
+            showLoading: vi.fn(),
+            hideLoading: vi.fn(),
+        };
         return selector ? selector(state) : state;
     })
 );
@@ -84,8 +93,16 @@ beforeEach(() => {
     mockUsePayOrder.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false });
     mockUseReceiveOrder.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false });
     mockUseRefundOrder.mockReturnValue({ mutateAsync: vi.fn().mockResolvedValue(undefined), isPending: false });
-    mockUseUIStore.mockImplementation((selector?: (s: { addToast: ReturnType<typeof vi.fn> }) => unknown) => {
-        const state = { addToast: vi.fn() };
+    mockUseUIStore.mockImplementation((selector?: (s: UIState) => unknown) => {
+        const state: UIState = {
+            toasts: [],
+            isLoading: false,
+            loadingMessage: '',
+            addToast: vi.fn(),
+            removeToast: vi.fn(),
+            showLoading: vi.fn(),
+            hideLoading: vi.fn(),
+        };
         return selector ? selector(state) : state;
     });
 });
@@ -219,8 +236,16 @@ describe('OrderDetailPage', () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         const addToast = vi.fn();
         mockUseCancelOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((sel?: (s: { addToast: typeof vi.fn }) => unknown) => {
-            const s = { addToast };
+        mockUseUIStore.mockImplementation((sel?: (s: UIState) => unknown) => {
+            const s: UIState = {
+                toasts: [],
+                isLoading: false,
+                loadingMessage: '',
+                addToast,
+                removeToast: vi.fn(),
+                showLoading: vi.fn(),
+                hideLoading: vi.fn(),
+            };
             return sel ? sel(s) : s;
         });
         const order = createMockOrderDetail({ status: 0 });
@@ -238,8 +263,16 @@ describe('OrderDetailPage', () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         const addToast = vi.fn();
         mockUsePayOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((sel?: (s: { addToast: typeof vi.fn }) => unknown) => {
-            const s = { addToast };
+        mockUseUIStore.mockImplementation((sel?: (s: UIState) => unknown) => {
+            const s: UIState = {
+                toasts: [],
+                isLoading: false,
+                loadingMessage: '',
+                addToast,
+                removeToast: vi.fn(),
+                showLoading: vi.fn(),
+                hideLoading: vi.fn(),
+            };
             return sel ? sel(s) : s;
         });
         const order = createMockOrderDetail({ status: 0 });
@@ -257,8 +290,16 @@ describe('OrderDetailPage', () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         const addToast = vi.fn();
         mockUseReceiveOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((sel?: (s: { addToast: typeof vi.fn }) => unknown) => {
-            const s = { addToast };
+        mockUseUIStore.mockImplementation((sel?: (s: UIState) => unknown) => {
+            const s: UIState = {
+                toasts: [],
+                isLoading: false,
+                loadingMessage: '',
+                addToast,
+                removeToast: vi.fn(),
+                showLoading: vi.fn(),
+                hideLoading: vi.fn(),
+            };
             return sel ? sel(s) : s;
         });
         const order = createMockOrderDetail({ status: 2 });
@@ -276,8 +317,16 @@ describe('OrderDetailPage', () => {
         const mockMutateAsync = vi.fn().mockResolvedValue(undefined);
         const addToast = vi.fn();
         mockUseRefundOrder.mockReturnValue({ mutateAsync: mockMutateAsync, isPending: false });
-        mockUseUIStore.mockImplementation((sel?: (s: { addToast: typeof vi.fn }) => unknown) => {
-            const s = { addToast };
+        mockUseUIStore.mockImplementation((sel?: (s: UIState) => unknown) => {
+            const s: UIState = {
+                toasts: [],
+                isLoading: false,
+                loadingMessage: '',
+                addToast,
+                removeToast: vi.fn(),
+                showLoading: vi.fn(),
+                hideLoading: vi.fn(),
+            };
             return sel ? sel(s) : s;
         });
         const order = createMockOrderDetail({ status: 1 });

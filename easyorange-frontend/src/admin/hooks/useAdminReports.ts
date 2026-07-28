@@ -17,7 +17,7 @@ export const ADMIN_REPORT_KEYS = {
             params.endTime,
         ] as const,
     details: () => [...ADMIN_REPORT_KEYS.all, 'detail'] as const,
-    detail: (id: number) => [...ADMIN_REPORT_KEYS.details(), id] as const,
+    detail: (id: string) => [...ADMIN_REPORT_KEYS.details(), id] as const,
     stats: () => [...ADMIN_REPORT_KEYS.all, 'stats'] as const,
 };
 
@@ -34,7 +34,7 @@ export function useAdminReports(params: AdminReportQuery) {
     });
 }
 
-export function useAdminReportDetail(id: number) {
+export function useAdminReportDetail(id: string) {
     return useQuery<AdminReport>({
         queryKey: ADMIN_REPORT_KEYS.detail(id),
         queryFn: async () => {
@@ -65,7 +65,7 @@ export function useHandleReport() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: ReportHandleRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: ReportHandleRequest }) => {
             const response = await adminApi.handleReport(id, data);
             return response.data;
         },

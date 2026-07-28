@@ -57,7 +57,7 @@ export function useUpdateCategory() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: CategoryUpdateRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: CategoryUpdateRequest }) => {
             const response = await adminApi.updateCategory(id, data);
             return response.data;
         },
@@ -71,7 +71,7 @@ export function useUpdateCategoryStatus() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, status }: { id: number; status: number }) => {
+        mutationFn: async ({ id, status }: { id: string; status: number }) => {
             const response = await adminApi.updateCategoryStatus(id, status);
             return response.data;
         },
@@ -85,7 +85,7 @@ export function useDeleteCategory() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (id: number) => {
+        mutationFn: async (id: string) => {
             const response = await adminApi.deleteCategory(id);
             return response.data;
         },

@@ -122,7 +122,7 @@ vi.mock('../../components/AdminSelect', () => ({
 // ─── Sample data ───
 const sampleUsers: AdminUser[] = [
     {
-        userId: 1,
+        userId: '1',
         username: 'alice',
         nickname: 'Alice',
         avatar: null,
@@ -140,7 +140,7 @@ const sampleUsers: AdminUser[] = [
         updateTime: null,
     },
     {
-        userId: 2,
+        userId: '2',
         username: 'bob',
         nickname: null,
         avatar: null,
@@ -301,7 +301,7 @@ describe('UserManagePage', () => {
     // ── Test 12: Pagination ──
     it('renders pagination when data exceeds page size', () => {
         const manyUsers: AdminUser[] = Array.from({ length: 10 }, (_, i) => ({
-            userId: i + 1,
+            userId: String(i + 1),
             username: `user${i}`,
             nickname: `User${i}`,
             avatar: null,

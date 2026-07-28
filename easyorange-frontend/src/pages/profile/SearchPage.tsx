@@ -21,13 +21,14 @@ import {
     Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ProductCard } from '@/components/product/ProductCard';
 import { AiSearchPanel } from '@/components/search/AiSearchPanel';
 import FacetFilter from '@/components/search/FacetFilter';
 import { Input } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { useCategories, useHotKeywords, useProductSearch, useSearchSuggestions } from '@/hooks';
+import { useSearchUrlState } from '@/hooks/product/useSearchUrlState';
 import type { ProductSearchParams } from '@/types/product';
 import { debounce } from '@/utils';
 import '@/styles/main.css';
@@ -54,10 +55,17 @@ const TRENDING_TOPICS = [
 
 function SearchPage() {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const initialKeyword = searchParams.get('keyword') || '';
-    const [keyword, setKeyword] = useState(initialKeyword);
-    const [submittedKeyword, setSubmittedKeyword] = useState(initialKeyword);
+    const {
+        keyword: urlKeyword,
+        filters,
+        pageNum,
+        aiEnabled,
+        setKeyword: setUrlKeyword,
+        setFilterValue,
+        setAiEnabled: setUrlAiEnabled,
+    } = useSearchUrlState();
+    const [keyword, setKeyword] = useState(urlKeyword);
+    const [submittedKeyword, setSubmittedKeyword] = useState(urlKeyword);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -69,10 +77,7 @@ function SearchPage() {
         }
     });
 
-    const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword);
-    const [filters, setFilters] = useState<Record<string, string>>({});
-    const [pageNum, setPageNum] = useState(1);
-    const [aiEnabled, setAiEnabled] = useState(false);
+    const [debouncedKeyword, setDebouncedKeyword] = useState(urlKeyword);
 
     const searchQueryParams: ProductSearchParams = useMemo(() => {
         const params: ProductSearchParams = {
@@ -106,17 +111,12 @@ function SearchPage() {
     const { data: hotKeywords } = useHotKeywords(10);
     const { data: categories } = useCategories();
 
-    const handleFilterChange = useCallback((key: string, value: string | null) => {
-        setFilters(prev => {
-            if (value === null) {
-                const next = { ...prev };
-                delete next[key];
-                return next;
-            }
-            return { ...prev, [key]: value };
-        });
-        setPageNum(1);
-    }, []);
+    const handleFilterChange = useCallback(
+        (key: string, value: string | null) => {
+            setFilterValue(key, value);
+        },
+        [setFilterValue]
+    );
 
     // 防抖处理搜索输入，避免频繁请求建议
     const debouncedSetKeyword = useMemo(
@@ -165,14 +165,15 @@ function SearchPage() {
                 setSubmittedKeyword(trimmed);
                 setShowSuggestions(false);
                 addToHistory(trimmed);
+                setUrlKeyword(trimmed);
             }
         },
-        [keyword, addToHistory]
+        [keyword, addToHistory, setUrlKeyword]
     );
 
     const handleAiToggle = useCallback(() => {
-        setAiEnabled(prev => !prev);
-    }, []);
+        setUrlAiEnabled(!aiEnabled);
+    }, [aiEnabled, setUrlAiEnabled]);
 
     const handleAiQuestionClick = useCallback(
         (question: string) => {
@@ -209,6 +210,7 @@ function SearchPage() {
         setKeyword('');
         setDebouncedKeyword('');
         setSubmittedKeyword('');
+        setUrlKeyword('');
         inputRef.current?.focus();
     };
 

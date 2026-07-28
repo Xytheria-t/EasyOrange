@@ -26,7 +26,7 @@ vi.mock('../../hooks/useAdminProductAudit', () => ({
 
 // ─── Sample data ───
 const sampleProduct: AdminProduct = {
-    productId: 1,
+    productId: '1',
     name: '审核商品',
     description: '这是一个待审核的商品描述',
     price: 100,
@@ -39,9 +39,9 @@ const sampleProduct: AdminProduct = {
     contactMethod: '微信',
     images: ['https://example.com/img1.jpg'],
     mainImage: null,
-    categoryId: 1,
+    categoryId: '1',
     categoryName: '电子产品',
-    sellerId: 1,
+    sellerId: '1',
     sellerName: '资产方A',
     sellerAvatar: null,
     viewCount: 100,
@@ -51,9 +51,9 @@ const sampleProduct: AdminProduct = {
 
 const auditLogs: AuditLogResponse[] = [
     {
-        id: 1,
-        productId: 1,
-        operatorId: 1,
+        id: '1',
+        productId: '1',
+        operatorId: '1',
         operatorName: '管理员',
         action: 2,
         actionDesc: '驳回',
@@ -95,7 +95,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 1: Does not render when open=false ──
     it('does not render when open is false', () => {
         const { container } = renderWithProviders(
-            <ProductDetailDrawer open={false} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />
+            <ProductDetailDrawer open={false} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />
         );
         // Returns null when open=false
         expect(container.innerHTML).toBe('');
@@ -103,7 +103,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 2: Opens with product data when open=true ──
     it('renders product detail drawer when open is true', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('商品详情')).toBeInTheDocument();
         expect(screen.getByText('审核商品')).toBeInTheDocument();
     });
@@ -116,7 +116,7 @@ describe('ProductDetailDrawer', () => {
             refetch: vi.fn(),
         });
 
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('加载中...')).toBeInTheDocument();
     });
 
@@ -128,13 +128,15 @@ describe('ProductDetailDrawer', () => {
             refetch: vi.fn(),
         });
 
-        renderWithProviders(<ProductDetailDrawer open={true} productId={999} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(
+            <ProductDetailDrawer open={true} productId={'999'} onClose={vi.fn()} onSuccess={vi.fn()} />
+        );
         expect(screen.getByText('商品不存在或已被删除')).toBeInTheDocument();
     });
 
     // ── Test 5: Renders product info ──
     it('renders product info fields', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('¥100.00')).toBeInTheDocument();
         expect(screen.getByText('¥150.00')).toBeInTheDocument();
         expect(screen.getByText('电子产品')).toBeInTheDocument();
@@ -143,7 +145,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 6: Renders 4 audit dimension buttons ──
     it('renders 4 audit dimension toggle buttons', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('基本信息合规')).toBeInTheDocument();
         expect(screen.getByText('内容无违规')).toBeInTheDocument();
         expect(screen.getByText('图片质量合格')).toBeInTheDocument();
@@ -152,7 +154,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 7: Clicking dimension button toggles selection ──
     it('toggles dimension selection when clicked', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         const dimensionBtn = screen.getByText('基本信息合规');
         // Initially no checkmark
         expect(dimensionBtn.textContent).toBe('基本信息合规');
@@ -166,19 +168,19 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 8: "审核维度" header exists ──
     it('renders audit dimension section header', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('审核维度')).toBeInTheDocument();
     });
 
     // ── Test 9: "通过审核" button exists ──
     it('renders "通过审核" approve button', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('✅ 通过审核')).toBeInTheDocument();
     });
 
     // ── Test 10: "驳回商品" button exists ──
     it('renders "驳回商品" reject button', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('🚫 驳回商品')).toBeInTheDocument();
     });
 
@@ -190,17 +192,17 @@ describe('ProductDetailDrawer', () => {
             isPending: false,
         });
 
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('✅ 通过审核'));
         expect(mutateAsync).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: { action: 1, dimensions: [], remark: undefined },
         });
     });
 
     // ── Test 12: Clicking "驳回商品" opens reject modal ──
     it('opens reject confirmation modal when "驳回商品" is clicked', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('🚫 驳回商品'));
         // The h3 text includes emoji "⚠️ 确认驳回商品" — use a partial text matcher
         expect(screen.getByText(content => content.includes('确认驳回商品'))).toBeInTheDocument();
@@ -209,7 +211,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 13: Cancel button in reject modal closes it ──
     it('closes reject modal when cancel is clicked', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         // Open reject modal
         fireEvent.click(screen.getByText('🚫 驳回商品'));
         expect(screen.getByText(content => content.includes('确认驳回商品'))).toBeInTheDocument();
@@ -221,7 +223,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 14: "确认驳回" is disabled when reason is empty ──
     it('disables confirm reject button when reason is empty', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('🚫 驳回商品'));
         const confirmBtn = screen.getByText('确认驳回');
         expect(confirmBtn).toBeDisabled();
@@ -229,7 +231,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 15: Adding reason enables confirm reject ──
     it('enables confirm reject button when reason is typed', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('🚫 驳回商品'));
 
         // Type a reason
@@ -248,7 +250,7 @@ describe('ProductDetailDrawer', () => {
             isPending: false,
         });
 
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('🚫 驳回商品'));
 
         const textarea = screen.getByPlaceholderText('请填写驳回原因（必填）...');
@@ -257,14 +259,14 @@ describe('ProductDetailDrawer', () => {
         fireEvent.click(screen.getByText('确认驳回'));
 
         expect(mutateAsync).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: { action: 2, reason: '信息不完整', dimensions: [], remark: undefined },
         });
     });
 
     // ── Test 17: Quick reject reason tags ──
     it('renders quick reject reason tags', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('🚫 驳回商品'));
 
         // "信息不完整" appears both in audit log and reject tags, use getAllByText
@@ -279,7 +281,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 18: Clicking quick reason tag fills reason ──
     it('appends quick reason tag text to reject reason', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         fireEvent.click(screen.getByText('🚫 驳回商品'));
 
         // Use getAllByText since "信息不完整" appears in both audit log and reject tags
@@ -294,7 +296,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 19: "关闭" button exists in drawer ──
     it('renders close button in drawer header', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         // "关闭" button is in the footer (ignore hidden sheet sr-only text)
         const closeButtons = screen.getAllByText('关闭').filter(el => el.tagName === 'BUTTON');
         expect(closeButtons.length).toBeGreaterThanOrEqual(1);
@@ -303,7 +305,7 @@ describe('ProductDetailDrawer', () => {
     // ── Test 20: "关闭" button calls onClose ──
     it('calls onClose when close button is clicked', () => {
         const onClose = vi.fn();
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={onClose} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={onClose} onSuccess={vi.fn()} />);
         // Filter to visible button elements and click the footer close button
         const closeButtons = screen.getAllByText('关闭').filter(el => el.tagName === 'BUTTON');
         fireEvent.click(closeButtons[closeButtons.length - 1]);
@@ -312,7 +314,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 21: Audit logs display ──
     it('renders audit log timeline entries', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('📜 审核记录')).toBeInTheDocument();
         expect(screen.getByText('管理员')).toBeInTheDocument();
         expect(screen.getByText('信息不完整')).toBeInTheDocument();
@@ -321,7 +323,7 @@ describe('ProductDetailDrawer', () => {
 
     // ── Test 22: Audit log dimension tags render ──
     it('renders audit log dimension tags', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         // Should show "基本信息" dimension tag from audit log
         expect(screen.getByText('基本信息')).toBeInTheDocument();
     });
@@ -333,39 +335,39 @@ describe('ProductDetailDrawer', () => {
             isLoading: false,
         });
 
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.queryByText('📜 审核记录')).not.toBeInTheDocument();
     });
 
     // ── Test 24: View count display ──
     it('renders view count', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('100')).toBeInTheDocument();
         expect(screen.getByText(/次浏览/)).toBeInTheDocument();
     });
 
     // ── Test 25: "审核意见" textarea exists ──
     it('renders audit remark textarea', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByPlaceholderText('审核意见（选填）...')).toBeInTheDocument();
     });
 
     // ── Test 26: Options for the "点击预览" label ──
     it('renders click-to-preview label on image', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('点击预览')).toBeInTheDocument();
     });
 
     // ── Test 27: Product description renders ──
     it('renders product description section', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('商品描述')).toBeInTheDocument();
         expect(screen.getByText('这是一个待审核的商品描述')).toBeInTheDocument();
     });
 
     // ── Test 28: Location renders ──
     it('renders product location', () => {
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         expect(screen.getByText('北京')).toBeInTheDocument();
         expect(screen.getByText('交易地点：')).toBeInTheDocument();
     });
@@ -378,7 +380,7 @@ describe('ProductDetailDrawer', () => {
             isPending: false,
         });
 
-        renderWithProviders(<ProductDetailDrawer open={true} productId={1} onClose={vi.fn()} onSuccess={vi.fn()} />);
+        renderWithProviders(<ProductDetailDrawer open={true} productId={'1'} onClose={vi.fn()} onSuccess={vi.fn()} />);
         // Select two dimensions
         fireEvent.click(screen.getByText('基本信息合规'));
         fireEvent.click(screen.getByText('内容无违规'));
@@ -386,7 +388,7 @@ describe('ProductDetailDrawer', () => {
         fireEvent.click(screen.getByText('✅ 通过审核'));
 
         expect(mutateAsync).toHaveBeenCalledWith({
-            id: 1,
+            id: '1',
             data: {
                 action: 1,
                 dimensions: ['basic', 'compliance'],

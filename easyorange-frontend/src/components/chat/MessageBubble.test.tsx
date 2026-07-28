@@ -11,6 +11,8 @@ const baseMessage = {
     type: 'TEXT' as const,
     status: 'SENT' as const,
     conversationId: 'conv1',
+    readTime: null,
+    recalledAt: null,
 };
 
 describe('MessageBubble', () => {

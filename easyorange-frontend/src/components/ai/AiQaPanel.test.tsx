@@ -1,10 +1,12 @@
 import { fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import type { QaRequest } from '@/api/aiApi';
 import type { QaHistoryItem } from '@/hooks/useAiQa';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import AiQaPanel from './AiQaPanel';
+
+type AskHandler = (request: QaRequest) => void;
 
 const mockProduct = {
     id: 1,
@@ -38,7 +40,9 @@ describe('AiQaPanel', () => {
 
     describe('empty state', () => {
         it('shows suggested questions when history is empty', () => {
-            renderWithProviders(<AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[]} isLoading={false} />);
+            renderWithProviders(
+                <AiQaPanel product={mockProduct} onAsk={vi.fn<AskHandler>()} qaHistory={[]} isLoading={false} />
+            );
             expect(screen.getByText('向 AI 询问关于商品的任何问题')).toBeInTheDocument();
             expect(screen.getByText('这个商品成色如何？')).toBeInTheDocument();
             expect(screen.getByText('价格还能优惠吗？')).toBeInTheDocument();
@@ -47,12 +51,16 @@ describe('AiQaPanel', () => {
         });
 
         it('does not show messages when history is empty', () => {
-            renderWithProviders(<AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[]} isLoading={false} />);
+            renderWithProviders(
+                <AiQaPanel product={mockProduct} onAsk={vi.fn<AskHandler>()} qaHistory={[]} isLoading={false} />
+            );
             expect(screen.queryByText('商品描述为99新')).not.toBeInTheDocument();
         });
 
         it('clicking suggested question fills input', async () => {
-            renderWithProviders(<AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[]} isLoading={false} />);
+            renderWithProviders(
+                <AiQaPanel product={mockProduct} onAsk={vi.fn<AskHandler>()} qaHistory={[]} isLoading={false} />
+            );
             await userEvent.click(screen.getByText('这个商品成色如何？'));
             const input = screen.getByPlaceholderText('输入您的问题...');
             expect(input).toHaveValue('这个商品成色如何？');
@@ -60,7 +68,7 @@ describe('AiQaPanel', () => {
     });
 
     describe('message input and submission', () => {
-        function submitQuestion(handleAsk: ReturnType<typeof vi.fn>, question: string) {
+        function submitQuestion(handleAsk: MockInstance<AskHandler> & AskHandler, question: string) {
             const { container } = renderWithProviders(
                 <AiQaPanel product={mockProduct} onAsk={handleAsk} qaHistory={[]} isLoading={false} />
             );
@@ -72,7 +80,7 @@ describe('AiQaPanel', () => {
         }
 
         it('submits question on form submit', () => {
-            const handleAsk = vi.fn();
+            const handleAsk = vi.fn<AskHandler>();
             submitQuestion(handleAsk, '有保修吗？');
             expect(handleAsk).toHaveBeenCalledTimes(1);
             const request: QaRequest = handleAsk.mock.calls[0][0];
@@ -82,7 +90,7 @@ describe('AiQaPanel', () => {
         });
 
         it('does not submit empty input', () => {
-            const handleAsk = vi.fn();
+            const handleAsk = vi.fn<AskHandler>();
             const { container } = renderWithProviders(
                 <AiQaPanel product={mockProduct} onAsk={handleAsk} qaHistory={[]} isLoading={false} />
             );
@@ -98,7 +106,12 @@ describe('AiQaPanel', () => {
 
         it('disables input and send button while loading', () => {
             const { container } = renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[createHistoryItem()]} isLoading />
+                <AiQaPanel
+                    product={mockProduct}
+                    onAsk={vi.fn<AskHandler>()}
+                    qaHistory={[createHistoryItem()]}
+                    isLoading
+                />
             );
             expect(screen.getByPlaceholderText('输入您的问题...')).toBeDisabled();
             expect(container.querySelector('button[type="submit"]')).toBeDisabled();
@@ -108,7 +121,12 @@ describe('AiQaPanel', () => {
     describe('loading state', () => {
         it('shows typing animation when loading with history', () => {
             renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[createHistoryItem()]} isLoading />
+                <AiQaPanel
+                    product={mockProduct}
+                    onAsk={vi.fn<AskHandler>()}
+                    qaHistory={[createHistoryItem()]}
+                    isLoading
+                />
             );
             const dots = document.querySelectorAll('.ai-typing-dot');
             expect(dots.length).toBe(3);
@@ -116,7 +134,12 @@ describe('AiQaPanel', () => {
 
         it('does not show typing animation when not loading', () => {
             renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[createHistoryItem()]} isLoading={false} />
+                <AiQaPanel
+                    product={mockProduct}
+                    onAsk={vi.fn<AskHandler>()}
+                    qaHistory={[createHistoryItem()]}
+                    isLoading={false}
+                />
             );
             expect(document.querySelector('.ai-typing-dot')).not.toBeInTheDocument();
         });
@@ -125,7 +148,12 @@ describe('AiQaPanel', () => {
     describe('message history', () => {
         it('renders question and answer from history', () => {
             renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[createHistoryItem()]} isLoading={false} />
+                <AiQaPanel
+                    product={mockProduct}
+                    onAsk={vi.fn<AskHandler>()}
+                    qaHistory={[createHistoryItem()]}
+                    isLoading={false}
+                />
             );
             expect(screen.getByText('这个商品成色如何？')).toBeInTheDocument();
             expect(screen.getByText('商品描述为99新，建议联系资产方确认具体细节。')).toBeInTheDocument();
@@ -140,7 +168,7 @@ describe('AiQaPanel', () => {
                 }),
             ];
             renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={items} isLoading={false} />
+                <AiQaPanel product={mockProduct} onAsk={vi.fn<AskHandler>()} qaHistory={items} isLoading={false} />
             );
             expect(screen.getByText('这个商品成色如何？')).toBeInTheDocument();
             expect(screen.getByText('价格还能优惠吗？')).toBeInTheDocument();
@@ -151,7 +179,7 @@ describe('AiQaPanel', () => {
             renderWithProviders(
                 <AiQaPanel
                     product={mockProduct}
-                    onAsk={vi.fn()}
+                    onAsk={vi.fn<AskHandler>()}
                     qaHistory={[createHistoryItem({ answer: { answer: '确认信息', hasConfidence: true } })]}
                     isLoading={false}
                 />
@@ -163,7 +191,7 @@ describe('AiQaPanel', () => {
             renderWithProviders(
                 <AiQaPanel
                     product={mockProduct}
-                    onAsk={vi.fn()}
+                    onAsk={vi.fn<AskHandler>()}
                     qaHistory={[createHistoryItem({ answer: { answer: '不确定', hasConfidence: false } })]}
                     isLoading={false}
                 />
@@ -176,7 +204,12 @@ describe('AiQaPanel', () => {
             Object.assign(navigator, { clipboard: { writeText } });
 
             renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[createHistoryItem()]} isLoading={false} />
+                <AiQaPanel
+                    product={mockProduct}
+                    onAsk={vi.fn<AskHandler>()}
+                    qaHistory={[createHistoryItem()]}
+                    isLoading={false}
+                />
             );
             const copyBtn = screen.getByTitle('复制回答');
             await userEvent.click(copyBtn);
@@ -188,7 +221,12 @@ describe('AiQaPanel', () => {
             Object.assign(navigator, { clipboard: { writeText } });
 
             renderWithProviders(
-                <AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[createHistoryItem()]} isLoading={false} />
+                <AiQaPanel
+                    product={mockProduct}
+                    onAsk={vi.fn<AskHandler>()}
+                    qaHistory={[createHistoryItem()]}
+                    isLoading={false}
+                />
             );
             // Before click, copy icon is visible
             const copyBtn = screen.getByTitle('复制回答');
@@ -201,7 +239,9 @@ describe('AiQaPanel', () => {
 
     describe('header', () => {
         it('renders header title', () => {
-            renderWithProviders(<AiQaPanel product={mockProduct} onAsk={vi.fn()} qaHistory={[]} isLoading={false} />);
+            renderWithProviders(
+                <AiQaPanel product={mockProduct} onAsk={vi.fn<AskHandler>()} qaHistory={[]} isLoading={false} />
+            );
             expect(screen.getByText('AI 智能问答')).toBeInTheDocument();
             expect(screen.getByText('基于商品信息的智能助手')).toBeInTheDocument();
         });

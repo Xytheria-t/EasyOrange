@@ -4,14 +4,14 @@ import type { AuditLogResponse, BatchAuditRequest, ProductAuditRequest } from '.
 
 export const ADMIN_AUDIT_KEYS = {
     all: ['admin', 'audit'] as const,
-    logs: (id: number) => ['admin', 'audit-logs', id] as const,
+    logs: (id: string) => ['admin', 'audit-logs', id] as const,
 };
 
 export function useAuditProduct() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: ProductAuditRequest }) => {
+        mutationFn: async ({ id, data }: { id: string; data: ProductAuditRequest }) => {
             const response = await adminApi.auditProduct(id, data);
             return response.data;
         },
@@ -35,16 +35,16 @@ export function useBatchAuditProducts() {
     });
 }
 
-export function useAuditLogs(productId: number | null) {
+export function useAuditLogs(productId: string | null) {
     return useQuery({
-        queryKey: ADMIN_AUDIT_KEYS.logs(productId ?? 0),
+        queryKey: ADMIN_AUDIT_KEYS.logs(productId ?? ''),
         queryFn: async (): Promise<{ data: AuditLogResponse[] }> => {
             if (!productId) {
                 return { data: [] };
             }
             return adminApi.getAuditLogs(productId);
         },
-        enabled: productId != null && productId > 0,
+        enabled: productId != null && productId.length > 0,
         select: (res): AuditLogResponse[] => res.data,
     });
 }

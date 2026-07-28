@@ -49,7 +49,7 @@ export default function ProductReviewPage() {
         resetDeps: [keyword, statusFilter, categoryFilter],
     });
     const [sortBy, setSortBy] = useState('createTime');
-    const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
+    const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     const { data, isLoading, isError, refetch } = useAdminProducts({
@@ -75,7 +75,7 @@ export default function ProductReviewPage() {
     };
 
     const handleViewDetail = (product: AdminProduct) => {
-        setSelectedProductId(Number(product.productId) || null);
+        setSelectedProductId(product.productId || null);
         setDrawerOpen(true);
     };
 

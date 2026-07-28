@@ -3,7 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '@/testUtils/renderWithProviders';
 import type { Product } from '@/types';
+import type { ProductSearchParams } from '@/types/product';
 import SearchPage from './SearchPage';
+
+function getLastSearchParams(): ProductSearchParams | undefined {
+    const calls = mockUseProductSearch.mock.calls as unknown as Array<[ProductSearchParams]>;
+    return calls.at(-1)?.[0];
+}
 
 const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseProductSearch = vi.hoisted(() =>
@@ -135,6 +141,7 @@ describe('SearchPage', () => {
             products: mockProducts,
             total: 1,
             facets: [],
+            aiEnhancement: undefined,
             isLoading: false,
             error: null,
         });
@@ -157,6 +164,7 @@ describe('SearchPage', () => {
             products: [],
             total: 0,
             facets: [],
+            aiEnhancement: undefined,
             isLoading: true,
             error: null,
         });
@@ -175,6 +183,7 @@ describe('SearchPage', () => {
             products: [],
             total: 0,
             facets: [],
+            aiEnhancement: undefined,
             isLoading: false,
             error: null,
         });
@@ -187,5 +196,37 @@ describe('SearchPage', () => {
 
         expect(await screen.findByText('未找到相关商品')).toBeInTheDocument();
         expect(screen.getByText('试试其他关键词，或浏览下面的热门商品')).toBeInTheDocument();
+    });
+
+    it('reads keyword from URL on mount and triggers search', () => {
+        renderWithProviders(<SearchPage />, { initialRoute: '/search?keyword=耳机' });
+
+        const lastCall = getLastSearchParams();
+        expect(lastCall).toBeDefined();
+        expect(lastCall?.keyword).toBe('耳机');
+        expect(screen.getByDisplayValue('耳机')).toBeInTheDocument();
+    });
+
+    it('writes submitted keyword to URL', async () => {
+        renderPage();
+        const user = userEvent.setup();
+        const input = screen.getByPlaceholderText('搜索你想要的商品...');
+        await user.type(input, '平板');
+        await user.click(screen.getByText('搜索'));
+
+        const lastCall = getLastSearchParams();
+        expect(lastCall).toBeDefined();
+        expect(lastCall?.keyword).toBe('平板');
+    });
+
+    it('toggles AI flag and passes aiEnhanced to search params', async () => {
+        renderPage();
+        const user = userEvent.setup();
+        const aiButton = screen.getByTitle('开启AI智能搜索');
+        await user.click(aiButton);
+
+        const lastCall = getLastSearchParams();
+        expect(lastCall).toBeDefined();
+        expect(lastCall?.aiEnhanced).toBe(true);
     });
 });

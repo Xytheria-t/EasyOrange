@@ -53,7 +53,7 @@ const sampleOrderStats: OrderStatsResponse = {
 
 const sampleCategories: CategoryResponse[] = [
     {
-        categoryId: 1,
+        categoryId: '1',
         name: '电子产品',
         parentId: null,
         parentName: null,
@@ -65,7 +65,7 @@ const sampleCategories: CategoryResponse[] = [
         updateTime: null,
     },
     {
-        categoryId: 2,
+        categoryId: '2',
         name: '图书',
         parentId: null,
         parentName: null,
@@ -77,7 +77,7 @@ const sampleCategories: CategoryResponse[] = [
         updateTime: null,
     },
     {
-        categoryId: 3,
+        categoryId: '3',
         name: '服装',
         parentId: null,
         parentName: null,

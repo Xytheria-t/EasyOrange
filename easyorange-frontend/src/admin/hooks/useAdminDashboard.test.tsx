@@ -184,7 +184,7 @@ describe('useTopProducts', () => {
                     message: 'success',
                     data: [
                         {
-                            productId: 1,
+                            productId: '1',
                             name: '热销商品',
                             viewCount: 50,
                             price: 100,
