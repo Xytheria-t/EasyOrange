@@ -108,7 +108,7 @@ PageResult.of(records, total, page, size)
 | 领域服务 | `*Service` | `AuthenticationService` |
 | 应用服务 | `*AppService` / `*CommandHandler` | `AuthAppService`, `ProfileAppService` |
 | 仓储接口 | `*Repository` | `UserRepository` |
-| 仓储实现 | `*RepositoryImpl` / `Mybatis*Repository` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserDO>` |
+| 仓储实现 | `*RepositoryImpl` (继承 `BaseRepository`) | `UserRepositoryImpl extends BaseRepository<UserMapper, UserDO>` |
 | 出站端口 | `*Port` | `PaymentGatewayPort` |
 | 控制器 | `*Controller` | `AuthController` |
 | 请求 DTO | `*Request` | `PasswordLoginRequest`, `RegisterRequest` |
