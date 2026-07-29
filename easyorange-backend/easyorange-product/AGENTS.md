@@ -43,10 +43,9 @@ product/
 │   │   ├── ProductQueryService.java
 │   │   ├── ProductReportQueryService.java
 │   │   ├── ProductRatingQueryService.java
-│   │   ├── ProductSearchHandler.java
+│   │   ├── ProductSearchQueryService.java
+│   │   ├── ProductSearchCriteria.java
 │   │   ├── CategoryQueryService.java
-│   │   ├── criteria/                    # 查询参数对象
-│   │   │   └── ProductSearchCriteria.java
 │   │   ├── dto/                         # 应用层输出 VO
 │   │   │   ├── ProductVO.java
 │   │   │   ├── ProductRatingVO.java

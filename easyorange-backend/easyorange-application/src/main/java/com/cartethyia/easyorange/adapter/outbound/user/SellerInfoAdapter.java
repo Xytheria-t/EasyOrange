@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.product.domain.valueobject.SellerInfo;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Primary
 @Component
 @RequiredArgsConstructor
 public class SellerInfoAdapter implements SellerInfoPort {

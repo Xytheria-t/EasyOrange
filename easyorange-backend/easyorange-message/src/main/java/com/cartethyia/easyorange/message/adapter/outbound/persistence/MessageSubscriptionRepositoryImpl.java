@@ -4,17 +4,19 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageSubscription;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageSubscriptionDO;
 import com.cartethyia.easyorange.message.domain.repository.MessageSubscriptionRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Primary
 @Repository
-public class MybatisMessageSubscriptionRepository extends BaseRepository<MessageSubscriptionMapper, MessageSubscriptionDO> implements MessageSubscriptionRepository {
+public class MessageSubscriptionRepositoryImpl extends BaseRepository<MessageSubscriptionMapper, MessageSubscriptionDO> implements MessageSubscriptionRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
 
-    public MybatisMessageSubscriptionRepository(MessageSubscriptionMapper mapper, MessageDataMapper messageDataMapper) {
+    public MessageSubscriptionRepositoryImpl(MessageSubscriptionMapper mapper, MessageDataMapper messageDataMapper) {
         super(mapper);
         this.messageDataMapper = messageDataMapper;
     }

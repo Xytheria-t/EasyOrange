@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cartethyia.easyorange.favorite.domain.aggregate.Favorite;
 import com.cartethyia.easyorange.favorite.domain.repository.FavoriteRepository;
 import com.cartethyia.easyorange.common.repository.BaseRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,10 +12,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Primary
 @Repository
-public class MybatisFavoriteRepository extends BaseRepository<FavoriteMapper, FavoriteDO> implements FavoriteRepository {
+public class FavoriteRepositoryImpl extends BaseRepository<FavoriteMapper, FavoriteDO> implements FavoriteRepository {
 
-    public MybatisFavoriteRepository(FavoriteMapper mapper) {
+    public FavoriteRepositoryImpl(FavoriteMapper mapper) {
         super(mapper);
     }
 

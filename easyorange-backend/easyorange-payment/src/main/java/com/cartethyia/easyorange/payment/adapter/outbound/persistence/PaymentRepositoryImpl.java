@@ -11,18 +11,20 @@ import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException;
 import com.cartethyia.easyorange.payment.domain.port.PaymentQueryRepositoryPort;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-
+@Primary
 @Repository
-public class MybatisPaymentRepository extends BaseRepository<PaymentMapper, PaymentDO> implements PaymentRepositoryPort, PaymentQueryRepositoryPort {
+public class PaymentRepositoryImpl extends BaseRepository<PaymentMapper, PaymentDO>
+        implements PaymentRepositoryPort, PaymentQueryRepositoryPort {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final PaymentDataMapper paymentDataMapper;
 
-    public MybatisPaymentRepository(PaymentMapper paymentMapper, PaymentDataMapper paymentDataMapper) {
+    public PaymentRepositoryImpl(PaymentMapper paymentMapper, PaymentDataMapper paymentDataMapper) {
         super(paymentMapper);
         this.paymentDataMapper = paymentDataMapper;
     }

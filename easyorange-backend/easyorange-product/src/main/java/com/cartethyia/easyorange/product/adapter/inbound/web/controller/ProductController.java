@@ -15,7 +15,7 @@ import com.cartethyia.easyorange.product.application.command.ProductCommandServi
 import com.cartethyia.easyorange.product.application.command.CreateProductCommand;
 import com.cartethyia.easyorange.product.application.command.UpdateProductCommand;
 import com.cartethyia.easyorange.product.application.query.CategoryQueryService;
-import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
+import com.cartethyia.easyorange.product.application.query.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
 import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.application.service.ProductViewCountAppService;

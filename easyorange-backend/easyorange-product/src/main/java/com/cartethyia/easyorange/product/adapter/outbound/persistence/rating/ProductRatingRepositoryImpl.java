@@ -5,10 +5,12 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.Pro
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.rating.ProductRatingMapper;
 import com.cartethyia.easyorange.product.domain.entity.ProductRating;
 import com.cartethyia.easyorange.product.domain.repository.ProductRatingRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
+@Primary
 @Repository
 public class ProductRatingRepositoryImpl extends BaseRepository<ProductRatingMapper, ProductRatingDO>
         implements ProductRatingRepository {

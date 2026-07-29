@@ -1,4 +1,4 @@
-package com.cartethyia.easyorange.product.application.query.criteria;
+package com.cartethyia.easyorange.product.application.query;
 
 import java.math.BigDecimal;
 
@@ -25,4 +25,8 @@ public record ProductSearchCriteria(
 
     public int effectivePageNum() { return pageNum; }
     public int effectivePageSize() { return pageSize; }
+
+    public static ProductSearchCriteria byCategory(String categoryId, int pageNum, int pageSize) {
+        return new ProductSearchCriteria(null, categoryId, null, null, null, null, null, null, pageNum, pageSize);
+    }
 }

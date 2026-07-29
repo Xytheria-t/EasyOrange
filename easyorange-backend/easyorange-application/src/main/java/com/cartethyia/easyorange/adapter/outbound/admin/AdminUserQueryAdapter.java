@@ -4,6 +4,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminUserQueryPort;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
  * Admin 用户查询适配器
  * 实现 AdminUserQueryPort，通过 User Mapper 查询数据并转换为 Admin 模块需要的格式
  */
+@Primary
 @Component
 @RequiredArgsConstructor
 public class AdminUserQueryAdapter implements AdminUserQueryPort {

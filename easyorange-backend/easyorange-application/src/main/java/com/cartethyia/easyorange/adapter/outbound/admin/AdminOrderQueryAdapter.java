@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
  * 实现 {@link AdminOrderQueryPort}，通过 Order Mapper 查询数据并转换为 Admin 模块需要的格式。
  * 状态字段使用 String code，由 OrderDO 的 enum 字段直接 {@code getCode()} 派生。
  */
+@Primary
 @Component
 @RequiredArgsConstructor
 public class AdminOrderQueryAdapter implements AdminOrderQueryPort {

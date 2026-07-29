@@ -10,6 +10,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -18,6 +19,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 @Slf4j
+@Primary
 @Component
 public class AiSearchEnhancerAdapter implements AiSearchEnhancerPort {
 

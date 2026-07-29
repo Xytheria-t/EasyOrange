@@ -24,7 +24,7 @@ favorite/
 │   └── outbound/persistence/          # 出站适配器
 │       ├── FavoriteDO.java
 │       ├── FavoriteMapper.java
-│       └── MybatisFavoriteRepository.java
+│       └── FavoriteRepositoryImpl.java
 ├── application/                       # 应用层
 │   └── service/
 │       └── FavoriteService.java

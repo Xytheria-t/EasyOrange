@@ -4,11 +4,13 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.product.domain.entity.ReportHandleHistory;
 import com.cartethyia.easyorange.product.domain.repository.ReportHandleHistoryRepository;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ReportHandleHistoryDO;
+import org.springframework.context.annotation.Primary;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ReportHandleHistoryMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Primary
 @Repository
 public class ReportHandleHistoryRepositoryImpl extends BaseRepository<ReportHandleHistoryMapper, ReportHandleHistoryDO> implements ReportHandleHistoryRepository {
 

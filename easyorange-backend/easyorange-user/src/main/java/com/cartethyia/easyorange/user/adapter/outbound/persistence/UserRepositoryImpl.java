@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.common.repository.BaseRepository;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+@Primary
 @Repository
 public class UserRepositoryImpl extends BaseRepository<UserMapper, UserDO> implements UserRepository {
 

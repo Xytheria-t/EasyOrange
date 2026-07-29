@@ -9,16 +9,7 @@ import com.cartethyia.easyorange.framework.event.metadata.EventMetadata;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.product.adapter.outbound.cache.ProductCacheConstant;
 import com.cartethyia.easyorange.product.application.query.ProductQueryService;
-import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
-import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductPutOnlineEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductUpdatedEvent;
-import com.cartethyia.easyorange.product.domain.event.StockDecreasedEvent;
-import com.cartethyia.easyorange.product.domain.event.StockRestoredEvent;
+import com.cartethyia.easyorange.product.domain.event.*;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
@@ -30,12 +21,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-/**
- * 商品 CQRS 投影消费者 — 将商品领域事件投影到读模型（缓存 / 搜索索引 / 布隆过滤器）。
- * <p>
- * 关闭幂等检查：投影操作本身是幂等的（重复写入缓存/索引结果一致）。
- * 子操作（ES 索引、通知端口）失败由 {@link #safeCall} 容忍，不影响主流程。
- */
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RabbitListener(queues = RabbitMQConfig.QUEUE_PRODUCT_CQRS, containerFactory = "domainEventContainerFactory")
@@ -45,8 +30,8 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
 
     private final ProductCacheEvictionPort productCachePort;
     private final ProductQueryService productQueryService;
-    private final Optional<ProductNotificationPort> notificationPort;
-    private final Optional<ProductSearchIndexPort> searchIndexPort;
+    private final ProductNotificationPort notificationPort;
+    private final ProductSearchIndexPort searchIndexPort;
     private final BloomFilter bloomFilter;
 
     public ProductEventConsumer(EventIdempotencyChecker idempotencyChecker,
@@ -59,8 +44,8 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
         super(idempotencyChecker, metricsService, false);
         this.productCachePort = productCachePort;
         this.productQueryService = productQueryService;
-        this.notificationPort = notificationPort;
-        this.searchIndexPort = searchIndexPort;
+        this.notificationPort = notificationPort.orElse(null);
+        this.searchIndexPort = searchIndexPort.orElse(null);
         this.bloomFilter = bloomFilter;
     }
 
@@ -112,27 +97,27 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
         var data = e.data();
         bloomFilter.put(ProductCacheConstant.PRODUCT_BLOOM_KEY, productId);
         evictListCache(data.categoryId());
-        notificationPort.ifPresent(p -> safeCall(() -> p.notifyProductCreated(productId, data.userId()), "notifyProductCreated", productId));
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.indexProduct(productId), "indexProduct", productId));
+        if (notificationPort != null) safeCall(() -> notificationPort.notifyProductCreated(productId, data.userId()), "notifyProductCreated", productId);
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.indexProduct(productId), "indexProduct", productId);
     }
 
     private void handleUpdated(ProductUpdatedEvent e) {
         var productId = e.productId();
         evictListCache(e.data().categoryId());
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.updateProductIndex(productId), "updateProductIndex", productId));
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.updateProductIndex(productId), "updateProductIndex", productId);
     }
 
     private void handleDeleted(ProductDeletedEvent e) {
         var productId = e.productId();
         productCachePort.evictProductCache(productId);
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.removeProductIndex(productId), "removeProductIndex", productId));
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.removeProductIndex(productId), "removeProductIndex", productId);
     }
 
     private void handleMarkedSold(ProductMarkedSoldEvent e) {
         var productId = e.productId();
         productCachePort.evictProductCache(productId);
-        notificationPort.ifPresent(p -> safeCall(() -> p.notifyProductMarkedSold(productId, e.sellerId()), "notifyProductMarkedSold", productId));
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.updateProductIndex(productId), "updateProductIndex", productId));
+        if (notificationPort != null) safeCall(() -> notificationPort.notifyProductMarkedSold(productId, e.sellerId()), "notifyProductMarkedSold", productId);
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.updateProductIndex(productId), "updateProductIndex", productId);
     }
 
     private void handleStockDecreased(StockDecreasedEvent e) {
@@ -142,7 +127,7 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
     private void handleStockRestored(StockRestoredEvent e) {
         var productId = e.productId();
         productCachePort.evictProductCache(productId);
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.updateProductIndex(productId), "updateProductIndex", productId));
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.updateProductIndex(productId), "updateProductIndex", productId);
     }
 
     private void handleSubmittedForReview(ProductSubmittedForReviewEvent e) {
@@ -152,42 +137,35 @@ public class ProductEventConsumer extends AbstractDomainEventConsumer {
     private void handlePutOnline(ProductPutOnlineEvent e) {
         var productId = e.productId();
         productCachePort.evictProductCache(productId);
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.indexProduct(productId), "indexProduct", productId));
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.indexProduct(productId), "indexProduct", productId);
     }
 
     private void handleTakeOffline(ProductTakeOfflineEvent e) {
         var productId = e.productId();
         productCachePort.evictProductCache(productId);
-        searchIndexPort.ifPresent(p -> safeCall(() -> p.removeProductIndex(productId), "removeProductIndex", productId));
+        if (searchIndexPort != null) safeCall(() -> searchIndexPort.removeProductIndex(productId), "removeProductIndex", productId);
     }
 
     private void evictListCache(String categoryId) {
-        if (categoryId != null) {
-            productCachePort.evictProductListCache(categoryId);
-        }
+        if (categoryId != null) productCachePort.evictProductListCache(categoryId);
     }
 
     private void checkLowStock(String productId) {
         try {
-            ProductReadModel readModel = productQueryService.getProductReadModel(productId);
+            var readModel = productQueryService.getProductReadModel(productId);
             if (readModel != null && readModel.stock() != null && readModel.stock() <= LOW_STOCK_THRESHOLD) {
                 log.warn("event=LowStockWarning productId={} currentStock={} threshold={}",
                         productId, readModel.stock(), LOW_STOCK_THRESHOLD);
-                notificationPort.ifPresent(p -> safeCall(
-                        () -> p.notifyLowStock(productId, readModel.sellerId(), readModel.stock()),
-                        "notifyLowStock", productId));
+                if (notificationPort != null) safeCall(
+                        () -> notificationPort.notifyLowStock(productId, readModel.sellerId(), readModel.stock()),
+                        "notifyLowStock", productId);
             }
         } catch (Exception e) {
             log.error("event=checkLowStockFailed productId={}", productId, e);
         }
     }
 
-    @FunctionalInterface
-    private interface SafeAction {
-        void run() throws Exception;
-    }
-
-    private void safeCall(SafeAction action, String actionName, String productId) {
+    private void safeCall(Runnable action, String actionName, String productId) {
         try {
             action.run();
             log.debug("action={} success productId={}", actionName, productId);

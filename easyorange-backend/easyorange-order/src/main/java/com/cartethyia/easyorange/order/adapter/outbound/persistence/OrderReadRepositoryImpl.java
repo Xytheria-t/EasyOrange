@@ -11,21 +11,24 @@ import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Primary
 @Repository
-public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, OrderDO> implements OrderReadRepository {
+public class OrderReadRepositoryImpl extends BaseRepository<OrderMapper, OrderDO> implements OrderReadRepository {
 
-    private final OrderEntityMapper entityMapper;
+    private final OrderDataMapper dataMapper;
     private final OrderItemMapper orderItemMapper;
 
-    public MybatisOrderReadRepository(OrderMapper orderMapper, OrderEntityMapper entityMapper,
+    public OrderReadRepositoryImpl(OrderMapper orderMapper, @Qualifier("orderDataMapper") OrderDataMapper dataMapper,
                                       OrderItemMapper orderItemMapper) {
         super(orderMapper);
-        this.entityMapper = entityMapper;
+        this.dataMapper = dataMapper;
         this.orderItemMapper = orderItemMapper;
     }
 
@@ -36,7 +39,7 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
             return Optional.empty();
         }
         List<OrderItemReadModel> items = findItemsByOrderId(id.value());
-        return Optional.ofNullable(entityMapper.toReadModel(orderDO, items));
+        return Optional.ofNullable(dataMapper.toReadModel(orderDO, items));
     }
 
     @Override
@@ -54,7 +57,7 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
         Page<OrderDO> orderPage = wrapper.page(page);
 
         return PageResult.of(
-                orderPage.getRecords().stream().map(entityMapper::toReadModel).toList(),
+                orderPage.getRecords().stream().map(dataMapper::toReadModel).toList(),
                 orderPage.getTotal(), (int) orderPage.getCurrent(), (int) orderPage.getSize()
         );
     }
@@ -74,6 +77,6 @@ public class MybatisOrderReadRepository extends BaseRepository<OrderMapper, Orde
         return orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItemDO>()
                         .eq(OrderItemDO::getOrderId, orderId)
-        ).stream().map(entityMapper::toItemReadModel).toList();
+        ).stream().map(dataMapper::toItemReadModel).toList();
     }
 }

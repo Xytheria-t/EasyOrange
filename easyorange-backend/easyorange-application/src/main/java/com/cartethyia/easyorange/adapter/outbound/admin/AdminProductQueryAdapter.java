@@ -11,6 +11,7 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
  * Admin 产品查询适配器
  * 实现 AdminProductQueryPort，通过 Product Mapper 查询数据并转换为 Admin 模块需要的格式
  */
+@Primary
 @Component
 @RequiredArgsConstructor
 public class AdminProductQueryAdapter implements AdminProductQueryPort {

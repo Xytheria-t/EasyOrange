@@ -26,14 +26,14 @@ order/
 │   │       └── OrderSagaEventConsumer.java  # 单一 Saga 事件消费者（替代多个分散 Subscriber）
 │   └── outbound/
 │       ├── persistence/                     # 持久化
-│       │   ├── MybatisOrderRepository.java
-│       │   ├── MybatisOrderReadRepository.java
+│       │   ├── OrderRepositoryImpl.java
+│       │   ├── OrderReadRepositoryImpl.java
 │       │   ├── SagaRepositoryImpl.java
 │       │   ├── OrderDO.java, SagaDO.java
 │       │   ├── OrderMapper.java, SagaMapper.java
 │       │   ├── OrderItemDO.java             # eo_order_item 实体
 │       │   ├── OrderItemMapper.java         # 行项 MyBatis Mapper
-│       │   ├── OrderEntityMapper.java       # MapStruct: DO ↔ Domain
+│       │   ├── OrderDataMapper.java        # MapStruct: DO ↔ Domain
 │       │   └── typehandler/                 # OrderStatusTypeHandler, PaymentStatusTypeHandler（VARCHAR ↔ 枚举）
 │       ├── cache/                           # 缓存
 │       │   ├── RedisOrderCacheAdapter.java  # 实现 OrderCachePort
@@ -155,10 +155,10 @@ CreateOrderSaga.execute():
 
 | Mapper | 方向 | 位置 | 说明 |
 |--------|------|------|------|
-| `OrderEntityMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | MapStruct 接口：OrderDO ↔ Order、OrderItemDO ↔ OrderItem |
+| `OrderDataMapper` | DO ↔ Domain | `adapter/outbound/persistence/` | MapStruct 接口：OrderDO ↔ Order、OrderItemDO ↔ OrderItem |
 | `OrderReadModelAssembler` | ReadModel → VO | `application/query/assembler/` | OrderReadModel → OrderVO（含脱敏、商品信息填充） |
 
-`OrderDO` 是纯数据库实体，不含映射逻辑。所有持久化映射集中在 `OrderEntityMapper`。
+`OrderDO` 是纯数据库实体，不含映射逻辑。所有持久化映射集中在 `OrderDataMapper`。
 
 ## 跨模块通信
 

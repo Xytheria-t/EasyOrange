@@ -4,10 +4,12 @@ import com.cartethyia.easyorange.product.domain.port.ProductSnapshotPort;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+@Primary
 @Component
 public class ProductSnapshotPortImpl implements ProductSnapshotPort {
 

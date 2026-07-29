@@ -6,12 +6,14 @@ import com.cartethyia.easyorange.order.domain.saga.SagaState;
 import com.cartethyia.easyorange.order.domain.saga.SagaStatus;
 import tools.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
+@Primary
 @Repository
 public class SagaRepositoryImpl extends BaseRepository<SagaMapper, SagaDO> implements SagaRepository {
 

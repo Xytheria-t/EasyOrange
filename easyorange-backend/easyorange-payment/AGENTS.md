@@ -21,8 +21,8 @@ payment/
 │       ├── gateway/
 │       │   └── PaymentGatewayAdapter.java        # 支付网关适配器（实现 PaymentGatewayPort）
 │       ├── persistence/
-│       │   ├── MybatisPaymentRepository.java     # 写仓储（实现 PaymentRepositoryPort + PaymentQueryRepositoryPort）
-│       │   ├── MybatisIdempotencyKeyRepository.java
+│       │   ├── PaymentRepositoryImpl.java     # 写仓储（实现 PaymentRepositoryPort + PaymentQueryRepositoryPort）
+│       │   ├── IdempotencyKeyRepositoryImpl.java
 │       │   ├── PaymentConfigRepository.java
 │       │   ├── converter/
 │       │   │   └── PaymentDataMapper.java        # MapStruct：PaymentDO ↔ Payment（基于 PaymentCreateSpec / PaymentReconstructSpec）

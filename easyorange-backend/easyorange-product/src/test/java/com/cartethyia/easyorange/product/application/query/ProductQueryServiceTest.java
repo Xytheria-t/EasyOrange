@@ -6,6 +6,7 @@ import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;
 import com.cartethyia.easyorange.product.application.port.ProductCachePort;
+import com.cartethyia.easyorange.product.application.port.SellerCachePort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
 import com.cartethyia.easyorange.common.domain.Money;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -43,6 +45,9 @@ class ProductQueryServiceTest {
     @Mock
     private ProductCachePort productCachePort;
 
+    @Mock
+    private SellerCachePort sellerCachePort;
+
     private ProductQueryService queryService;
 
     private Product testProduct;
@@ -50,7 +55,7 @@ class ProductQueryServiceTest {
 
     @BeforeEach
     void setUp() {
-        queryService = new ProductQueryService(productRepository, productQueryRepository, readModelAssembler, productCachePort);
+        queryService = new ProductQueryService(productRepository, productQueryRepository, readModelAssembler, productCachePort, sellerCachePort);
 
         testProduct = Product.create(
                 new ProductCreateSpec(
@@ -96,8 +101,8 @@ class ProductQueryServiceTest {
         when(productQueryRepository.findImagesByProductIds(any())).thenReturn(List.of());
         when(productQueryRepository.findCategoriesByIds(any())).thenReturn(List.of());
         when(productQueryRepository.findDetailsByProductIds(any())).thenReturn(List.of());
-        when(productQueryRepository.findSellersByIds(any())).thenReturn(List.of());
-        when(readModelAssembler.toProductVO(eq(testProduct), any(), any(), any(), any())).thenReturn(testProductVO);
+        when(sellerCachePort.getSellers(any())).thenReturn(Map.of());
+        when(readModelAssembler.toProductVO(eq(testProduct), any())).thenReturn(testProductVO);
 
         ProductVO result = queryService.getProductById("1");
 

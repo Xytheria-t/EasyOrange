@@ -9,8 +9,10 @@ import com.cartethyia.easyorange.payment.application.command.RefundPaymentComman
 import com.cartethyia.easyorange.payment.domain.aggregate.Payment;
 import com.cartethyia.easyorange.payment.domain.repository.PaymentRepositoryPort;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+@Primary
 @Component
 @RequiredArgsConstructor
 public class OrderPaymentGatewayAdapter implements PaymentGatewayPort {

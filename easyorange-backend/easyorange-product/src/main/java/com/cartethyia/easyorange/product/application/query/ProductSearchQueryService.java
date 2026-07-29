@@ -2,12 +2,11 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
-import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
-import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.SearchHistoryReadModel;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.domain.port.AiSearchEnhancerPort;
 import com.cartethyia.easyorange.product.domain.port.FacetBucket;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort;
@@ -23,7 +22,7 @@ import java.util.Optional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class ProductSearchHandler {
+public class ProductSearchQueryService {
 
     private final ProductQueryRepository productQueryRepository;
     private final Optional<ProductSearchQueryPort> searchQueryPort;
@@ -52,7 +51,6 @@ public class ProductSearchHandler {
             readModels = page.records();
         }
 
-        // AI search enhancement
         var aiEnhancement = aiEnhanced
                 && aiSearchEnhancer.isPresent()
                 && !readModels.isEmpty()
@@ -92,8 +90,6 @@ public class ProductSearchHandler {
         String userId = SecurityContextUtil.getCurrentUserIdOrThrow();
         productQueryRepository.saveSearchHistory(userId, keyword);
     }
-
-    // ── private helpers ──
 
     private static List<FacetBucket> mergeFacetsList(
             com.cartethyia.easyorange.product.domain.port.SearchResult result) {

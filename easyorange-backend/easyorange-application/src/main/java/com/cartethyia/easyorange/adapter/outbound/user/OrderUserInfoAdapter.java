@@ -4,10 +4,12 @@ import com.cartethyia.easyorange.order.domain.port.UserInfoPort;
 import com.cartethyia.easyorange.user.domain.aggregate.User;
 import com.cartethyia.easyorange.user.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+@Primary
 @Component
 @RequiredArgsConstructor
 public class OrderUserInfoAdapter implements UserInfoPort {

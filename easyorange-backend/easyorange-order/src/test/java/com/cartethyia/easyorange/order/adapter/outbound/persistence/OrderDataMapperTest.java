@@ -17,6 +17,7 @@ import com.cartethyia.easyorange.order.domain.valueobject.UserId;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -24,10 +25,10 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("OrderEntityMapper 单元测试")
-class OrderEntityMapperTest {
+@DisplayName("OrderDataMapper 单元测试")
+class OrderDataMapperTest {
 
-    private final OrderEntityMapper mapper = new OrderEntityMapperImpl();
+    private final OrderDataMapper mapper = new OrderDataMapper(new ObjectMapper());
 
     private static final String ID = "100";
     private static final String ORDER_NO = "ORD100";

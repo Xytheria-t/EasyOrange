@@ -2,7 +2,6 @@ package com.cartethyia.easyorange.product.application.query;
 
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.application.query.criteria.ProductSearchCriteria;
 import com.cartethyia.easyorange.product.application.query.dto.ProductSearchResult;
 import com.cartethyia.easyorange.product.application.query.readmodel.HotKeywordReadModel;
 import com.cartethyia.easyorange.product.application.query.readmodel.ProductReadModel;
@@ -24,18 +23,18 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProductSearchHandler 测试")
-class ProductSearchHandlerTest {
+@DisplayName("ProductSearchQueryService 测试")
+class ProductSearchQueryServiceTest {
 
     @Mock
     private ProductQueryRepository productQueryRepository;
 
-    private ProductSearchHandler searchHandler;
+    private ProductSearchQueryService searchQueryService;
     private ProductReadModel testProduct;
 
     @BeforeEach
     void setUp() {
-        searchHandler = new ProductSearchHandler(productQueryRepository, Optional.empty(), Optional.empty());
+        searchQueryService = new ProductSearchQueryService(productQueryRepository, Optional.empty(), Optional.empty());
 
         testProduct = new ProductReadModel(
                 "1", "10", "资产方", null, "2", "分类",
@@ -54,7 +53,7 @@ class ProductSearchHandlerTest {
         PageResult<ProductReadModel> page = PageResult.of(List.of(testProduct), 1, 1, 20);
         when(productQueryRepository.searchProducts(criteria)).thenReturn(page);
 
-        ProductSearchResult result = searchHandler.search(criteria, false);
+        ProductSearchResult result = searchQueryService.search(criteria, false);
 
         assertThat(result).isNotNull();
         assertThat(result.page().records()).hasSize(1);
@@ -70,7 +69,7 @@ class ProductSearchHandlerTest {
         PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
         when(productQueryRepository.searchProducts(criteria)).thenReturn(page);
 
-        ProductSearchResult result = searchHandler.search(criteria, false);
+        ProductSearchResult result = searchQueryService.search(criteria, false);
 
         assertThat(result.page().records()).isEmpty();
         assertThat(result.page().total()).isZero();
@@ -83,7 +82,7 @@ class ProductSearchHandlerTest {
         PageResult<ProductReadModel> page = PageResult.of(List.of(), 0, 1, 20);
         when(productQueryRepository.searchProducts(any())).thenReturn(page);
 
-        searchHandler.search(criteria, false);
+        searchQueryService.search(criteria, false);
 
         verify(productQueryRepository).searchProducts(any());
     }
@@ -97,7 +96,7 @@ class ProductSearchHandlerTest {
             when(productQueryRepository.findSearchHistoryByUserId("1", 10))
                     .thenReturn(List.of(history));
 
-            List<SearchHistoryReadModel> result = searchHandler.getMySearchHistory(10);
+            List<SearchHistoryReadModel> result = searchQueryService.getMySearchHistory(10);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).id()).isEqualTo("100");
@@ -112,7 +111,7 @@ class ProductSearchHandlerTest {
     void clearMySearchHistory_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            searchHandler.clearMySearchHistory();
+            searchQueryService.clearMySearchHistory();
 
             verify(productQueryRepository).clearSearchHistory("1");
         } finally {
@@ -125,7 +124,7 @@ class ProductSearchHandlerTest {
     void deleteSearchHistory_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            searchHandler.deleteSearchHistory("100");
+            searchQueryService.deleteSearchHistory("100");
 
             verify(productQueryRepository).deleteSearchHistoryById("100", "1");
         } finally {
@@ -139,7 +138,7 @@ class ProductSearchHandlerTest {
         HotKeywordReadModel keyword = new HotKeywordReadModel("1", "手机", 100, 5);
         when(productQueryRepository.findHotKeywords(10)).thenReturn(List.of(keyword));
 
-        List<HotKeywordReadModel> result = searchHandler.getHotKeywords(10);
+        List<HotKeywordReadModel> result = searchQueryService.getHotKeywords(10);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).id()).isEqualTo("1");
@@ -154,7 +153,7 @@ class ProductSearchHandlerTest {
         when(productQueryRepository.findSearchSuggestions("手", 10))
                 .thenReturn(List.of("手机", "手表", "手套"));
 
-        List<String> result = searchHandler.getSearchSuggestions("手", 10);
+        List<String> result = searchQueryService.getSearchSuggestions("手", 10);
 
         assertThat(result).hasSize(3);
         assertThat(result).containsExactly("手机", "手表", "手套");
@@ -165,7 +164,7 @@ class ProductSearchHandlerTest {
     void recordSearch_shouldDelegate() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            searchHandler.recordSearch("手机");
+            searchQueryService.recordSearch("手机");
 
             verify(productQueryRepository).saveSearchHistory("1", "手机");
         } finally {

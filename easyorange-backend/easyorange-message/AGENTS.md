@@ -17,11 +17,11 @@ message/
 │       ├── MessageSubscriptionMapper.java
 │       ├── MessageTemplateMapper.java
 │       ├── OfflineMessageMapper.java
-│       ├── MybatisMessageRepository.java
-│       ├── MybatisMessageQueryRepository.java
-│       ├── MybatisMessageSubscriptionRepository.java
-│       ├── MybatisMessageTemplateRepository.java
-│       └── MybatisOfflineMessageRepository.java
+│       ├── MessageRepositoryImpl.java
+│       ├── MessageQueryRepositoryImpl.java
+│       ├── MessageSubscriptionRepositoryImpl.java
+│       ├── MessageTemplateRepositoryImpl.java
+│       └── OfflineMessageRepositoryImpl.java
 ├── application/                       # [DDD] 应用层 (CQRS)
 │   ├── service/
 │   │   └── RateLimiterService.java           # 消息发送频率限制（应用层运维策略）

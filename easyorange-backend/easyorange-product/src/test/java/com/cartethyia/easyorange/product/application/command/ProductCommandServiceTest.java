@@ -3,8 +3,6 @@ package com.cartethyia.easyorange.product.application.command;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
-import com.cartethyia.easyorange.product.application.command.CreateProductCommand;
-import com.cartethyia.easyorange.product.application.command.UpdateProductCommand;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductTestFixture;
 import com.cartethyia.easyorange.product.domain.exception.ProductNotFoundException;

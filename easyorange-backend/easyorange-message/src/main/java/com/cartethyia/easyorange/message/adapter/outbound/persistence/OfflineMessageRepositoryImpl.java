@@ -5,18 +5,20 @@ import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.aggregate.OfflineMessage;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.OfflineMessageDO;
 import com.cartethyia.easyorange.message.domain.repository.OfflineMessageRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Primary
 @Repository
-public class MybatisOfflineMessageRepository extends BaseRepository<OfflineMessageMapper, OfflineMessageDO> implements OfflineMessageRepository {
+public class OfflineMessageRepositoryImpl extends BaseRepository<OfflineMessageMapper, OfflineMessageDO> implements OfflineMessageRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
 
-    public MybatisOfflineMessageRepository(OfflineMessageMapper mapper, MessageDataMapper messageDataMapper) {
+    public OfflineMessageRepositoryImpl(OfflineMessageMapper mapper, MessageDataMapper messageDataMapper) {
         super(mapper);
         this.messageDataMapper = messageDataMapper;
     }

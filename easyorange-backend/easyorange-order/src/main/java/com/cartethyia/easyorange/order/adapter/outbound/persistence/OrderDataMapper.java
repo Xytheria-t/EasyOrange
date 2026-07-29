@@ -5,62 +5,51 @@ import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.enums.ResultCode;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
 import com.cartethyia.easyorange.order.domain.aggregate.OrderReconstructSpec;
-import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderItemReadModel;
 import com.cartethyia.easyorange.order.domain.readmodel.OrderReadModel;
 import com.cartethyia.easyorange.order.domain.valueobject.Address;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderId;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderItem;
 import com.cartethyia.easyorange.order.domain.valueobject.OrderNo;
-import com.cartethyia.easyorange.order.domain.valueobject.PaymentStatus;
 import com.cartethyia.easyorange.order.domain.valueobject.Phone;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductId;
 import com.cartethyia.easyorange.order.domain.valueobject.ProductSnapshot;
 import com.cartethyia.easyorange.order.domain.valueobject.UserId;
-import org.mapstruct.Mapper;
+import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
-@SuppressWarnings("unused")
-public interface OrderEntityMapper {
+@Component
+public class OrderDataMapper {
 
-    ObjectMapper JACKSON = new tools.jackson.databind.ObjectMapper();
+    private final ObjectMapper objectMapper;
+
+    public OrderDataMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     // ==================== DO → Aggregate (Read path) ====================
 
-    /**
-     * 不含行项的重建（用于列表查询等不需要行项的场景）。
-     */
-    default Order toAggregate(OrderDO orderDO) {
+    public Order toAggregate(OrderDO orderDO) {
         if (orderDO == null) return null;
         return Order.from(toReconstructSpec(orderDO, List.of()));
     }
 
-    /**
-     * 携带行项的重建（用于订单详情等需要行项的场景）。
-     */
-    default Order toAggregate(OrderDO orderDO, List<OrderItem> items) {
+    public Order toAggregate(OrderDO orderDO, List<OrderItem> items) {
         if (orderDO == null) return null;
         return Order.from(toReconstructSpec(orderDO, items != null ? items : List.of()));
     }
 
     // ==================== DO → ReadModel ====================
 
-    /**
-     * 不含行项的 ReadModel 重建（用于列表查询）。
-     */
-    default OrderReadModel toReadModel(OrderDO orderDO) {
+    public OrderReadModel toReadModel(OrderDO orderDO) {
         if (orderDO == null) return null;
         return toReadModel(orderDO, List.of());
     }
 
-    /**
-     * 携带行项的 ReadModel 重建（用于订单详情）。
-     */
-    default OrderReadModel toReadModel(OrderDO orderDO, List<OrderItemReadModel> items) {
+    public OrderReadModel toReadModel(OrderDO orderDO, List<OrderItemReadModel> items) {
         if (orderDO == null) return null;
         var status = orderDO.getStatus();
         var paymentStatus = orderDO.getPaymentStatus();
@@ -80,7 +69,7 @@ public interface OrderEntityMapper {
 
     // ==================== Item DO → Domain ====================
 
-    default OrderItem toOrderItem(OrderItemDO itemDO) {
+    public OrderItem toOrderItem(OrderItemDO itemDO) {
         if (itemDO == null) return null;
         return OrderItem.builder()
                 .id(itemDO.getId())
@@ -94,7 +83,7 @@ public interface OrderEntityMapper {
 
     // ==================== Item DO → ItemReadModel ====================
 
-    default OrderItemReadModel toItemReadModel(OrderItemDO itemDO) {
+    public OrderItemReadModel toItemReadModel(OrderItemDO itemDO) {
         if (itemDO == null) return null;
         return new OrderItemReadModel(
                 itemDO.getId(), itemDO.getProductId(),
@@ -105,10 +94,7 @@ public interface OrderEntityMapper {
 
     // ==================== Aggregate → DO (Write path) ====================
 
-    /**
-     * Order → OrderDO（不含行项）。status/paymentStatus 由 TypeHandler 持久化为 VARCHAR。
-     */
-    default OrderDO toDataObject(Order aggregate) {
+    public OrderDO toDataObject(Order aggregate) {
         if (aggregate == null) return null;
         return OrderDO.builder()
                 .id(aggregate.id().value())
@@ -126,10 +112,7 @@ public interface OrderEntityMapper {
                 .build();
     }
 
-    /**
-     * OrderItem → OrderItemDO
-     */
-    default OrderItemDO toItemDO(String orderId, OrderItem item) {
+    public OrderItemDO toItemDO(String orderId, OrderItem item) {
         if (item == null) return null;
         return OrderItemDO.builder()
                 .id(item.id())
@@ -144,10 +127,7 @@ public interface OrderEntityMapper {
 
     // ==================== Shared helpers ====================
 
-    /**
-     * OrderDO + items → OrderReconstructSpec（统一重建入口）。
-     */
-    private OrderReconstructSpec toReconstructSpec(OrderDO orderDO, List<OrderItem> items) {
+    private static OrderReconstructSpec toReconstructSpec(OrderDO orderDO, List<OrderItem> items) {
         return new OrderReconstructSpec(
                 OrderId.of(orderDO.getId()), OrderNo.of(orderDO.getOrderNo()),
                 UserId.of(orderDO.getBuyerId()), UserId.of(orderDO.getSellerId()),
@@ -160,17 +140,17 @@ public interface OrderEntityMapper {
         );
     }
 
-    private static String toJson(ProductSnapshot snapshot) {
+    private String toJson(ProductSnapshot snapshot) {
         try {
-            return JACKSON.writeValueAsString(snapshot);
+            return objectMapper.writeValueAsString(snapshot);
         } catch (JacksonException e) {
             throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to serialize ProductSnapshot", e);
         }
     }
 
-    private static ProductSnapshot fromJson(String json) {
+    private ProductSnapshot fromJson(String json) {
         try {
-            return JACKSON.readValue(json, ProductSnapshot.class);
+            return objectMapper.readValue(json, ProductSnapshot.class);
         } catch (JacksonException e) {
             throw BusinessException.of(ResultCode.INTERNAL_SERVER_ERROR, "Failed to deserialize ProductSnapshot", e);
         }

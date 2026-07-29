@@ -5,6 +5,7 @@ import com.cartethyia.easyorange.payment.domain.exception.PaymentDomainException
 import com.cartethyia.easyorange.payment.domain.port.CallbackSignatureVerifierPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -15,6 +16,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 @Slf4j
+@Primary
 @Component
 public class CallbackSignatureVerifier implements CallbackSignatureVerifierPort {
 

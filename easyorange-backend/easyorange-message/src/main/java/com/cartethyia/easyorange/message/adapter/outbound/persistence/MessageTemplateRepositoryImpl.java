@@ -5,18 +5,20 @@ import com.cartethyia.easyorange.message.constant.MessageConstant;
 import com.cartethyia.easyorange.message.domain.aggregate.MessageTemplate;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageTemplateDO;
 import com.cartethyia.easyorange.message.domain.repository.MessageTemplateRepository;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Primary
 @Repository
-public class MybatisMessageTemplateRepository extends BaseRepository<MessageTemplateMapper, MessageTemplateDO> implements MessageTemplateRepository {
+public class MessageTemplateRepositoryImpl extends BaseRepository<MessageTemplateMapper, MessageTemplateDO> implements MessageTemplateRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
 
-    public MybatisMessageTemplateRepository(MessageTemplateMapper mapper, MessageDataMapper messageDataMapper) {
+    public MessageTemplateRepositoryImpl(MessageTemplateMapper mapper, MessageDataMapper messageDataMapper) {
         super(mapper);
         this.messageDataMapper = messageDataMapper;
     }

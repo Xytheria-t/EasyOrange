@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cartethyia.easyorange.order.adapter.outbound.persistence.OrderItemMapper">
+
+    <insert id="batchInsert">
+        INSERT INTO eo_order_item (id, order_id, product_id, product_snapshot, unit_price, quantity, subtotal)
+        VALUES
+        <foreach collection="items" item="item" separator=",">
+            (#{item.id}, #{item.orderId}, #{item.productId}, #{item.productSnapshot},
+             #{item.unitPrice}, #{item.quantity}, #{item.subtotal})
+        </foreach>
+    </insert>
+
+</mapper>

@@ -5,11 +5,13 @@ import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.enums.ProductReportStatus;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ProductReportDO;
+import org.springframework.context.annotation.Primary;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.report.ProductReportMapper;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 
+@Primary
 @Repository
 public class ProductReportRepositoryImpl extends BaseRepository<ProductReportMapper, ProductReportDO> implements ProductReportRepository {
 

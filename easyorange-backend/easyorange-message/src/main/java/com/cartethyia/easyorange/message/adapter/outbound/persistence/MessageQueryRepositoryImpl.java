@@ -11,19 +11,21 @@ import com.cartethyia.easyorange.message.domain.valueobject.UnreadCount;
 import com.cartethyia.easyorange.message.adapter.outbound.persistence.MessageDO;
 import com.cartethyia.easyorange.message.enums.ReadStatus;
 import com.cartethyia.easyorange.message.enums.MessageType;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Primary
 @Repository
-public class MybatisMessageQueryRepository extends BaseRepository<MessageMapper, MessageDO> implements MessageQueryRepository {
+public class MessageQueryRepositoryImpl extends BaseRepository<MessageMapper, MessageDO> implements MessageQueryRepository {
 
     @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
     private final MessageDataMapper messageDataMapper;
 
-    public MybatisMessageQueryRepository(MessageMapper messageMapper, MessageDataMapper messageDataMapper) {
+    public MessageQueryRepositoryImpl(MessageMapper messageMapper, MessageDataMapper messageDataMapper) {
         super(messageMapper);
         this.messageDataMapper = messageDataMapper;
     }

@@ -18,6 +18,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.StringQuery;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ import java.util.Objects;
 @Component
 @ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "true")
 @RequiredArgsConstructor
+@Primary
 public class ElasticsearchProductSearchQueryAdapter implements ProductSearchQueryPort {
 
     private final ElasticsearchOperations elasticsearchOperations;

@@ -5,15 +5,17 @@ import com.cartethyia.easyorange.payment.adapter.outbound.persistence.mapper.Ide
 import com.cartethyia.easyorange.payment.adapter.outbound.persistence.IdempotencyKeyDO;
 import com.cartethyia.easyorange.payment.domain.valueobject.IdempotencyKey;
 import com.cartethyia.easyorange.payment.domain.repository.IdempotencyKeyRepositoryPort;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+@Primary
 @Repository
-public class MybatisIdempotencyKeyRepository extends BaseRepository<IdempotencyKeyMapper, IdempotencyKeyDO> implements IdempotencyKeyRepositoryPort {
+public class IdempotencyKeyRepositoryImpl extends BaseRepository<IdempotencyKeyMapper, IdempotencyKeyDO> implements IdempotencyKeyRepositoryPort {
 
-    public MybatisIdempotencyKeyRepository(IdempotencyKeyMapper mapper) {
+    public IdempotencyKeyRepositoryImpl(IdempotencyKeyMapper mapper) {
         super(mapper);
     }
 

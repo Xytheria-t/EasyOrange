@@ -5,10 +5,12 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.audit.Prod
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+@Primary
 @Repository
 @RequiredArgsConstructor
 public class ProductAuditLogRepositoryImpl implements ProductAuditLogRepository {

@@ -78,22 +78,6 @@ public class Order {
         this.cancelTime = cancelTime;
     }
 
-    // ==================== Getters ====================
-
-    public OrderId id() { return id; }
-    public OrderNo orderNo() { return orderNo; }
-    public UserId buyerId() { return buyerId; }
-    public UserId sellerId() { return sellerId; }
-    public List<OrderItem> items() { return List.copyOf(items); }
-    public Money totalAmount() { return totalAmount; }
-    public OrderStatus status() { return status; }
-    public PaymentStatus paymentStatus() { return paymentStatus; }
-    public Address address() { return address; }
-    public Phone phone() { return phone; }
-    public String remark() { return remark; }
-    public String cancelReason() { return cancelReason; }
-    public LocalDateTime cancelTime() { return cancelTime; }
-
     // ==================== Factory ====================
 
     /**
@@ -219,6 +203,22 @@ public class Order {
         var updated = copy(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason, LocalDateTime.now());
         return new OrderTransition<>(updated, new OrderRefundedEvent(id.value(), extractProductIds(), reason));
     }
+
+    // ==================== Getters ====================
+
+    public OrderId id() { return id; }
+    public OrderNo orderNo() { return orderNo; }
+    public UserId buyerId() { return buyerId; }
+    public UserId sellerId() { return sellerId; }
+    public List<OrderItem> items() { return List.copyOf(items); }
+    public Money totalAmount() { return totalAmount; }
+    public OrderStatus status() { return status; }
+    public PaymentStatus paymentStatus() { return paymentStatus; }
+    public Address address() { return address; }
+    public Phone phone() { return phone; }
+    public String remark() { return remark; }
+    public String cancelReason() { return cancelReason; }
+    public LocalDateTime cancelTime() { return cancelTime; }
 
     // ==================== Internal Helpers ====================
 

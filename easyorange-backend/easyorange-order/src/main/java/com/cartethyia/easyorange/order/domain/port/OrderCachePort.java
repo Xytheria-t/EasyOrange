@@ -12,12 +12,6 @@ public interface OrderCachePort<T> {
 
     void evictOrderList(String cacheKey);
 
-    Optional<T> getOrderDetail(String orderId);
-
-    void putOrderDetail(String orderId, T orderVO);
-
-    void evictOrderDetail(String orderId);
-
     void evictBuyerOrders(String buyerId);
 
     void evictSellerOrders(String sellerId);

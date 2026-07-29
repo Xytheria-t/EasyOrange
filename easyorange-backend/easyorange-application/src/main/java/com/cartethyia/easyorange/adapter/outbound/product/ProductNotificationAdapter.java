@@ -5,9 +5,11 @@ import com.cartethyia.easyorange.message.application.command.SendSystemMessageCo
 import com.cartethyia.easyorange.product.domain.port.ProductNotificationPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 @Slf4j
+@Primary
 @Component
 @RequiredArgsConstructor
 public class ProductNotificationAdapter implements ProductNotificationPort {

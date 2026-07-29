@@ -7,6 +7,7 @@ import com.cartethyia.easyorange.framework.util.FileUtils;
 import com.cartethyia.easyorange.user.domain.port.AvatarFilePort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.regex.Pattern;
@@ -17,6 +18,7 @@ import java.util.regex.Pattern;
  * 领域层持有 byte[]，通过 {@link ByteArrayMultipartFile} 适配到框架层的 {@link FileService}。
  */
 @Slf4j
+@Primary
 @Component
 @RequiredArgsConstructor
 public class LocalAvatarFileStorage implements AvatarFilePort {

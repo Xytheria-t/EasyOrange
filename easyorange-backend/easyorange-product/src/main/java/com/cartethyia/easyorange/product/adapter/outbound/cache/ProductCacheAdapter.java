@@ -7,11 +7,13 @@ import com.cartethyia.easyorange.product.application.query.dto.ProductVO;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Slf4j
+@Primary
 @Component
 @RequiredArgsConstructor
 public class ProductCacheAdapter implements ProductCachePort, ProductCacheEvictionPort {
