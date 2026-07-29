@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminRep
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportStatsResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.ReportHandleHistoryResponse;
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductDO;
-import com.cartethyia.easyorange.product.domain.aggregate.Product;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
@@ -57,7 +56,7 @@ public class AdminReportService {
 
         List<AdminReportResponse> records = reportPage.records().stream()
             .map(r -> toAdminReportResponse(r, userMap, productMap))
-            .collect(Collectors.toList());
+            .toList();
 
         return PageResult.of(records, reportPage.total(), page, size);
     }
@@ -106,7 +105,6 @@ public class AdminReportService {
             try {
                 processSingleReport(reportId, action, remark, operatorId);
             } catch (BusinessException e) {
-                continue;
             }
         }
     }
@@ -187,8 +185,8 @@ public class AdminReportService {
     private void handleProductOffline(ProductReport report, String remark) {
         productRepository.findById(ProductId.of(report.getProductId()))
                 .ifPresent(product -> {
-                    Product updated = product.takeOffline().product();
-                    productRepository.update(updated);
+                    var t = product.takeOffline();
+                    productRepository.update(t.aggregate());
                     productCachePort.evictProductCache(report.getProductId());
                 });
     }
@@ -196,8 +194,8 @@ public class AdminReportService {
     private void handleBanProduct(ProductReport report, String remark) {
         productRepository.findById(ProductId.of(report.getProductId()))
                 .ifPresent(product -> {
-                    Product updated = product.reject("举报封禁: " + remark).product();
-                    productRepository.update(updated);
+                    var t = product.reject("举报封禁: " + remark);
+                    productRepository.update(t.aggregate());
                     productCachePort.evictProductCache(report.getProductId());
                 });
     }

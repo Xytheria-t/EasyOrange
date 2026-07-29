@@ -181,9 +181,9 @@ class PaymentTest {
 
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.SUCCESS);
             assertThat(result.aggregate().transactionId()).isEqualTo("TXN_001");
-            assertThat(result.event()).isInstanceOf(PaymentSucceededEvent.class);
-            PaymentSucceededEvent event = (PaymentSucceededEvent) result.event();
-            assertThat(event.transactionId()).isEqualTo("TXN_001");
+            assertThat(result.event())
+                    .isInstanceOfSatisfying(PaymentSucceededEvent.class,
+                            e -> assertThat(e.transactionId()).isEqualTo("TXN_001"));
         }
 
         @Test
@@ -194,9 +194,9 @@ class PaymentTest {
             var result = aggregate.confirmPay(PaymentResult.failure("余额不足"));
 
             assertThat(result.aggregate().status()).isEqualTo(PaymentStatus.FAILED);
-            assertThat(result.event()).isInstanceOf(PaymentFailedEvent.class);
-            PaymentFailedEvent event = (PaymentFailedEvent) result.event();
-            assertThat(event.reason()).isEqualTo("余额不足");
+            assertThat(result.event())
+                    .isInstanceOfSatisfying(PaymentFailedEvent.class,
+                            e -> assertThat(e.reason()).isEqualTo("余额不足"));
         }
 
         @Test

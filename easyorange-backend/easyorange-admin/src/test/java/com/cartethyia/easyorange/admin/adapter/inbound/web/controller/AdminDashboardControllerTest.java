@@ -9,6 +9,7 @@ import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TopProdu
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.TrendResponse;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.UserActivityHeatmapResponse;
 import com.cartethyia.easyorange.admin.service.AdminDashboardService;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -158,7 +159,7 @@ class AdminDashboardControllerTest {
     void getTopProducts_shouldReturnTopProducts() throws Exception {
         var topProducts = List.of(
             TopProductResponse.builder().productId("1").name("Top1").viewCount(1000)
-                .price(BigDecimal.valueOf(99)).status("1").statusDesc("上架").build()
+                .price(BigDecimal.valueOf(99)).status(ProductStatus.ONLINE.getCode()).statusDesc("上架").build()
         );
         when(adminDashboardService.getTopProducts(10)).thenReturn(topProducts);
 

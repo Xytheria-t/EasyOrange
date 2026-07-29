@@ -51,7 +51,7 @@ payment/
 │   │   └── PaymentMetricsConsumer.java            # RabbitMQ 消费者（监听支付指标事件）
 ├── domain/
 │   ├── aggregate/
-│   │   ├── Payment.java                  # 不可变聚合根（字段 final，状态转换返回 PaymentTransition / 新实例）
+│   │   ├── Payment.java                  # 不可变聚合根（字段 final，状态转换返回 Transition<Payment, E> / 新实例）
 │   │   ├── PaymentCreateSpec.java                 # record 收敛 create() 工厂参数
 │   │   └── PaymentReconstructSpec.java            # record 收敛 from() 重建参数（15 字段）
 │   ├── saga/                                      # Saga 编排（纯领域）
@@ -107,9 +107,9 @@ payment/
 - `DistributedLockWrapper` 封装 Redis 分布式锁
 - 支付创建、退款等关键操作加锁防止并发冲突
 
-## 支付状态机（不可变聚合根 + PaymentTransition）
+## 支付状态机（不可变聚合根 + Transition）
 
-所有状态转换返回 `PaymentTransition<E extends DomainEvent>` record（聚合根新实例 + 领域事件），不修改自身。简单状态切换直接返回新 `Payment` 实例。
+所有状态转换返回 `Transition<Payment, E>` record（聚合根新实例 + 领域事件），不修改自身。简单状态切换直接返回新 `Payment` 实例。
 
 ```
 PENDING → PAYING → SUCCESS
@@ -121,9 +121,9 @@ CLOSED    FAILED   REFUNDING → REFUNDED
                     SUCCESS
 ```
 
-- 两阶段支付：`preparePay()` → `Payment` → 网关调用 → `confirmPay(PaymentResult)` → `PaymentTransition<DomainEvent>`
-- 两阶段退款：`prepareRefund(BigDecimal)` → `Payment` → 网关调用 → `confirmRefund(RefundResult, BigDecimal)` → `PaymentTransition<PaymentRefundedEvent>`
-- 单步退款：`directRefund(String refundReason)` → `PaymentTransition<PaymentRefundedEvent>`
+- 两阶段支付：`preparePay()` → `Payment` → 网关调用 → `confirmPay(PaymentResult)` → `Transition<Payment, PaymentConfirmEvent>`
+- 两阶段退款：`prepareRefund(BigDecimal)` → `Payment` → 网关调用 → `confirmRefund(RefundResult, BigDecimal)` → `Transition<Payment, PaymentRefundedEvent>`
+- 单步退款：`directRefund(String refundReason)` → `Transition<Payment, PaymentRefundedEvent>`
 - Saga 补偿：`cancelPay()` / `cancelRefund()` 返回新 `Payment` 实例回退状态
 - **补偿失败处理**：补偿操作失败时抛出 `SagaCompensationFailedException`，发布 `CompensationFailedAlertEvent` 告警事件，不会被静默吞掉
 - Guard 方法：`canPay()` / `canRefund()` / `canClose()` / `canFail()` / `canConfirmPay()` / `canConfirmRefund()`
@@ -136,7 +136,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 |----------------|------|---------|
 | `PaymentCreateSpec` | `Payment.create()` 工厂参数 | paymentId, orderId, userId, amount, paymentMethod, attach |
 | `PaymentReconstructSpec` | `Payment.from()` 重建参数 | id, paymentNo, orderId, userId, amount, refundedAmount, paymentMethod, status, transactionId, refundReason, refundTime, attach, createTime, updateTime, version |
-| `PaymentTransition<E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
+| `Transition<Payment, E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
 | `PaymentCommand` | sealed 接口（permits 4 个命令 record） | — |
 | `CreatePaymentCommand` | 创建支付命令 | orderId, amount, paymentMethod, payPassword, attach |
 | `PayCommand` / `ClosePaymentCommand` | 单字段命令 | paymentNo / paymentId |
@@ -167,7 +167,7 @@ CLOSED    FAILED   REFUNDING → REFUNDED
 ### 添加新支付事件
 
 1. 创建事件 record 实现 `DomainEvent`
-2. 在状态转换方法中返回 `PaymentTransition<XxxEvent>`
+2. 在状态转换方法中返回 `Transition<Payment, XxxEvent>`
 3. Handler 通过 `domainEventPublisher.publish(transition.event())` 发布
 4. 路由键由事件类名自动派生（`PaymentXxxEvent` → `payment.xxx`），无需手动注册
 5. 创建 `@RabbitListener` 消费者处理事件

@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminUserResponse;
 import com.cartethyia.easyorange.admin.service.AdminUserService;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.user.domain.enums.UserStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -35,8 +36,8 @@ class AdminUserControllerTest {
     @Test
     void listUsers_shouldReturnPaginatedUsers() throws Exception {
         var users = List.of(
-            AdminUserResponse.builder().userId("1").username("alice").status("1").statusDesc("正常").build(),
-            AdminUserResponse.builder().userId("2").username("bob").status("1").statusDesc("正常").build()
+            AdminUserResponse.builder().userId("1").username("alice").status(UserStatus.NORMAL.getCode()).statusDesc("正常").build(),
+            AdminUserResponse.builder().userId("2").username("bob").status(UserStatus.NORMAL.getCode()).statusDesc("正常").build()
         );
         var pageResult = PageResult.of(users, 2L, 1, 20);
         when(adminUserService.listUsers(any())).thenReturn(pageResult);
@@ -70,7 +71,7 @@ class AdminUserControllerTest {
     void getUserDetail_shouldReturnUser() throws Exception {
         var user = AdminUserResponse.builder()
             .userId("1").username("alice").nickname("Alice").email("alice@test.com")
-            .status("1").statusDesc("正常").createTime(LocalDateTime.of(2026, 1, 1, 0, 0))
+            .status(UserStatus.NORMAL.getCode()).statusDesc("正常").createTime(LocalDateTime.of(2026, 1, 1, 0, 0))
             .build();
         when(adminUserService.getUserDetail("1")).thenReturn(user);
 
@@ -88,7 +89,7 @@ class AdminUserControllerTest {
 
         mockMvc.perform(put("/api/admin/users/1/status")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"status\": 1, \"reason\": \"启用用户\"}"))
+                .content("{\"status\": \"" + UserStatus.NORMAL.getCode() + "\", \"reason\": \"启用用户\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
     }

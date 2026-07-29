@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
@@ -69,7 +70,7 @@ public class OrderCommandHandler {
     }
 
     private void persistAndPublish(Order oldAggregate,
-                                   Order.OrderTransition<? extends DomainEvent> result) {
+                                   Transition<Order, ?> result) {
         orderRepository.update(result.aggregate());
         orderCachePort.evictOrderCache(oldAggregate.buyerId().value(), oldAggregate.sellerId().value());
         domainEventPublisher.publish(result.event());

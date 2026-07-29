@@ -98,12 +98,12 @@ class ProductStatusTest {
     @Test
     @DisplayName("有效的 code 应返回对应的枚举值")
     void fromCode_withValidCode_shouldReturnEnum() {
-        assertThat(ProductStatus.fromCode("0")).isEqualTo(ProductStatus.DRAFT);
-        assertThat(ProductStatus.fromCode("1")).isEqualTo(ProductStatus.ONLINE);
-        assertThat(ProductStatus.fromCode("2")).isEqualTo(ProductStatus.SOLD);
-        assertThat(ProductStatus.fromCode("3")).isEqualTo(ProductStatus.OFFLINE);
-        assertThat(ProductStatus.fromCode("4")).isEqualTo(ProductStatus.PENDING_REVIEW);
-        assertThat(ProductStatus.fromCode("5")).isEqualTo(ProductStatus.REJECTED);
+        assertThat(ProductStatus.fromCode("DRAFT")).isEqualTo(ProductStatus.DRAFT);
+        assertThat(ProductStatus.fromCode("ONLINE")).isEqualTo(ProductStatus.ONLINE);
+        assertThat(ProductStatus.fromCode("SOLD")).isEqualTo(ProductStatus.SOLD);
+        assertThat(ProductStatus.fromCode("OFFLINE")).isEqualTo(ProductStatus.OFFLINE);
+        assertThat(ProductStatus.fromCode("PENDING_REVIEW")).isEqualTo(ProductStatus.PENDING_REVIEW);
+        assertThat(ProductStatus.fromCode("REJECTED")).isEqualTo(ProductStatus.REJECTED);
     }
 
     @Test

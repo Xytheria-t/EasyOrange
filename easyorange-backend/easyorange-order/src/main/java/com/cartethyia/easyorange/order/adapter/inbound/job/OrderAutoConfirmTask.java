@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.adapter.inbound.job;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.order.domain.constant.OrderConstant;
 import com.cartethyia.easyorange.order.adapter.outbound.config.OrderTimeoutProperties;
 import com.cartethyia.easyorange.order.domain.aggregate.Order;
@@ -59,7 +60,7 @@ public class OrderAutoConfirmTask {
             return false;
         }
 
-        Order.OrderTransition<OrderCompletedEvent> result = aggregate.confirmReceipt();
+        Transition<Order, OrderCompletedEvent> result = aggregate.confirmReceipt();
         orderRepository.update(result.aggregate());
 
         orderCachePort.evictOrderCache(aggregate.buyerId().value(), aggregate.sellerId().value());

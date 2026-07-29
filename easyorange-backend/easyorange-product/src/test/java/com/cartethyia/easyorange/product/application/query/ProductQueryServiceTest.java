@@ -71,7 +71,7 @@ class ProductQueryServiceTest {
                         ProductDescription.of("描述"),
                         ImageSet.of(List.of("http://img/1.jpg"))
                 )
-        ).product().assignId("1");
+        ).aggregate().assignId("1");
 
         testProductVO = ProductVO.builder()
                 .id("1")

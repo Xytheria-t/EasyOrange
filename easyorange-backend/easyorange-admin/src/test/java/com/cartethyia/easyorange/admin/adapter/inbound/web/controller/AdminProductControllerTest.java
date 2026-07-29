@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.admin.adapter.inbound.web.controller;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.response.AdminProductResponse;
 import com.cartethyia.easyorange.admin.service.AdminProductService;
 import com.cartethyia.easyorange.common.result.PageResult;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -36,9 +37,9 @@ class AdminProductControllerTest {
     void listProducts_shouldReturnPaginatedProducts() throws Exception {
         var products = List.of(
             AdminProductResponse.builder().productId("1").name("Product1").price(BigDecimal.valueOf(100))
-                .status("1").statusDesc("上架").build(),
+                .status(ProductStatus.ONLINE.getCode()).statusDesc("上架").build(),
             AdminProductResponse.builder().productId("2").name("Product2").price(BigDecimal.valueOf(200))
-                .status("0").statusDesc("草稿").build()
+                .status(ProductStatus.DRAFT.getCode()).statusDesc("草稿").build()
         );
         var pageResult = PageResult.of(products, 2L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
@@ -55,21 +56,21 @@ class AdminProductControllerTest {
     @Test
     void listProducts_withStatusFilter_shouldFilterByStatus() throws Exception {
         var products = List.of(
-            AdminProductResponse.builder().productId("1").name("Online").status("1").build()
+            AdminProductResponse.builder().productId("1").name("Online").status(ProductStatus.ONLINE.getCode()).build()
         );
         var pageResult = PageResult.of(products, 1L, 1, 20);
         when(adminProductService.listProducts(any())).thenReturn(pageResult);
 
-        mockMvc.perform(get("/api/admin/products?status=1"))
+        mockMvc.perform(get("/api/admin/products?status=" + ProductStatus.ONLINE.getCode()))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.data.records[0].status").value(1));
+            .andExpect(jsonPath("$.data.records[0].status").value(ProductStatus.ONLINE.getCode()));
     }
 
     @Test
     void getProductDetail_shouldReturnProduct() throws Exception {
         var product = AdminProductResponse.builder()
             .productId("1").name("DetailProduct").description("A detailed product")
-            .price(BigDecimal.valueOf(150)).status("1").statusDesc("上架").build();
+            .price(BigDecimal.valueOf(150)).status(ProductStatus.ONLINE.getCode()).statusDesc("上架").build();
         when(adminProductService.getProductDetail("1")).thenReturn(product);
 
         mockMvc.perform(get("/api/admin/products/1"))
@@ -86,7 +87,7 @@ class AdminProductControllerTest {
 
         mockMvc.perform(put("/api/admin/products/1/status")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"status\": 2, \"reason\": \"下架商品\"}"))
+                .content("{\"status\": \"" + ProductStatus.OFFLINE.getCode() + "\", \"reason\": \"下架商品\"}"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code").value("A0000"));
     }

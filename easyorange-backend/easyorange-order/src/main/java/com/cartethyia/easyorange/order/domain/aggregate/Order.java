@@ -2,6 +2,7 @@ package com.cartethyia.easyorange.order.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEvent;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.order.domain.constant.OrderResultCode;
 import com.cartethyia.easyorange.order.domain.constant.OrderStatus;
@@ -87,7 +88,7 @@ public class Order {
      * @return 订单创建结果（含聚合根与领域事件）
      * @throws IllegalArgumentException 如果认领方等于资产方、资产为空或金额为零
      */
-    public static OrderTransition<OrderCreatedEvent> createOrder(OrderCreateSpec spec) {
+    public static Transition<Order, OrderCreatedEvent> createOrder(OrderCreateSpec spec) {
         BizRequire.requireTrue(!java.util.Objects.equals(spec.buyerId().value(), spec.sellerId().value()),
                 "不能认领自己的资产");
         BizRequire.notEmpty(spec.items(), "订单资产不能为空");
@@ -116,7 +117,7 @@ public class Order {
                 itemPayloads, totalAmount.value()
         );
 
-        return new OrderTransition<>(aggregate, event);
+        return new Transition<>(aggregate, event);
     }
 
     // ==================== Reconstruction ====================
@@ -157,17 +158,17 @@ public class Order {
     // ==================== State Transitions ====================
 
     /** 支付订单 */
-    public OrderTransition<OrderPaidEvent> pay() {
+    public Transition<Order, OrderPaidEvent> pay() {
         BizRequire.requireTrue(canPay(), OrderResultCode.ORDER_STATUS_ERROR);
         var updated = copy(OrderStatus.PAID, PaymentStatus.PAID, cancelReason, cancelTime);
-        return new OrderTransition<>(updated, new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
+        return new Transition<>(updated, new OrderPaidEvent(id.value(), PaymentStatus.PAID.getCode()));
     }
 
     /** 取消订单 */
-    public OrderTransition<OrderCancelledEvent> cancel(String reason) {
+    public Transition<Order, OrderCancelledEvent> cancel(String reason) {
         BizRequire.requireTrue(canCancel(), OrderResultCode.ORDER_CANNOT_CANCEL);
         var updated = copy(OrderStatus.CANCELLED, paymentStatus, reason, LocalDateTime.now());
-        return new OrderTransition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
+        return new Transition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /**
@@ -175,33 +176,33 @@ public class Order {
      * <p>
      * 正常用户取消只允许待付款订单，管理端可以强制取消已付款订单。
      */
-    public OrderTransition<OrderCancelledEvent> forceCancel(String reason) {
+    public Transition<Order, OrderCancelledEvent> forceCancel(String reason) {
         if (status != OrderStatus.PENDING_PAYMENT && status != OrderStatus.PAID) {
             throw new OrderStatusException(id.value(), "强制取消", status);
         }
         var updated = copy(OrderStatus.CANCELLED, paymentStatus, reason, LocalDateTime.now());
-        return new OrderTransition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
+        return new Transition<>(updated, new OrderCancelledEvent(id.value(), extractProductIds(), reason));
     }
 
     /** 发货 */
-    public OrderTransition<OrderShippedEvent> ship() {
+    public Transition<Order, OrderShippedEvent> ship() {
         BizRequire.requireTrue(canShip(), OrderResultCode.ORDER_STATUS_ERROR);
         var updated = copy(OrderStatus.SHIPPED, paymentStatus, cancelReason, cancelTime);
-        return new OrderTransition<>(updated, new OrderShippedEvent(id.value()));
+        return new Transition<>(updated, new OrderShippedEvent(id.value()));
     }
 
     /** 确认收货 */
-    public OrderTransition<OrderCompletedEvent> confirmReceipt() {
+    public Transition<Order, OrderCompletedEvent> confirmReceipt() {
         BizRequire.requireTrue(canConfirmReceipt(), OrderResultCode.ORDER_STATUS_ERROR);
         var updated = copy(OrderStatus.COMPLETED, paymentStatus, cancelReason, cancelTime);
-        return new OrderTransition<>(updated, new OrderCompletedEvent(id.value(), extractProductIds()));
+        return new Transition<>(updated, new OrderCompletedEvent(id.value(), extractProductIds()));
     }
 
     /** 退款 */
-    public OrderTransition<OrderRefundedEvent> refund(String reason) {
+    public Transition<Order, OrderRefundedEvent> refund(String reason) {
         BizRequire.requireTrue(canRefund(), OrderResultCode.ORDER_CANNOT_REFUND);
         var updated = copy(OrderStatus.REFUNDED, PaymentStatus.REFUNDED, reason, LocalDateTime.now());
-        return new OrderTransition<>(updated, new OrderRefundedEvent(id.value(), extractProductIds(), reason));
+        return new Transition<>(updated, new OrderRefundedEvent(id.value(), extractProductIds(), reason));
     }
 
     // ==================== Getters ====================
@@ -236,17 +237,6 @@ public class Order {
     private List<String> extractProductIds() {
         return items.stream().map(i -> i.productId().value()).toList();
     }
-
-    // ==================== Result Record ====================
-
-    /**
-     * 状态转换结果 — 聚合根新实例 + 领域事件。
-     * <p>
-     * 泛型 {@code <E>} 保留具体事件类型，避免调用方 cast。
-     *
-     * @param <E> 领域事件具体类型
-     */
-    public record OrderTransition<E extends DomainEvent>(Order aggregate, E event) {}
 
     @Override
     public boolean equals(Object o) {

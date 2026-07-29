@@ -22,7 +22,7 @@ CREATE TABLE `eo_user` (
     `nick_name`   VARCHAR(30)  DEFAULT NULL COMMENT '用户昵称',
     `avatar`      VARCHAR(500) DEFAULT NULL COMMENT '头像 URL',
     `sex`         TINYINT      NOT NULL DEFAULT 0 COMMENT '用户性别（0 未知 1 男 2 女）',
-    `status`      TINYINT      NOT NULL DEFAULT 0 COMMENT '帐号状态（0 正常 1 禁用 2 锁定）',
+    `status`      VARCHAR(20)  NOT NULL DEFAULT 'NORMAL' COMMENT '帐号状态（NORMAL 正常 DISABLED 禁用 LOCKED 锁定）',
     `login_ip`    VARCHAR(128) DEFAULT NULL COMMENT '最后登录 IP',
     `login_date`  DATETIME     DEFAULT NULL COMMENT '最后登录时间',
     `pwd_update_date` DATETIME DEFAULT NULL COMMENT '密码最后更新时间',
@@ -40,7 +40,7 @@ CREATE TABLE `eo_user` (
     UNIQUE KEY `uk_eo_user_student_id` (`student_id`),
     KEY `idx_eo_user_status_del` (`status`, `del_flag`, `create_time` DESC),
     KEY `idx_eo_user_type_status` (`user_type`, `status`, `del_flag`),
-    CONSTRAINT `chk_eo_user_status` CHECK (`status` IN (0, 1, 2)),
+    CONSTRAINT `chk_eo_user_status` CHECK (`status` IN ('NORMAL', 'DISABLED', 'LOCKED')),
     CONSTRAINT `chk_eo_user_sex` CHECK (`sex` IN (0, 1, 2)),
     CONSTRAINT `chk_eo_user_type` CHECK (`user_type` IN ('01', '02'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='用户信息表';
@@ -77,7 +77,7 @@ CREATE TABLE `eo_product` (
     `price`       DECIMAL(10,2) NOT NULL COMMENT '售价',
     `original_price` DECIMAL(10,2) DEFAULT NULL COMMENT '原价',
     `stock`       INT           NOT NULL DEFAULT 1 COMMENT '库存数量',
-    `status`      VARCHAR(2)    NOT NULL DEFAULT '0' COMMENT '商品状态（0 草稿 4 待审核 5 已驳回 1 上架 2 已售出 3 下架）',
+    `status`      VARCHAR(20)   NOT NULL DEFAULT 'DRAFT' COMMENT '商品状态（DRAFT 草稿 PENDING_REVIEW 待审核 REJECTED 已驳回 ONLINE 上架 SOLD 已售出 OFFLINE 下架）',
     `view_count`  INT           NOT NULL DEFAULT 0 COMMENT '浏览次数',
     `condition_level` VARCHAR(2) DEFAULT NULL COMMENT '新旧程度（1 全新 2 九五新 3 八五新 4 七成新）',
     `location`    VARCHAR(100)  DEFAULT NULL COMMENT '交易地点',
@@ -103,7 +103,7 @@ CREATE TABLE `eo_product` (
     CONSTRAINT `chk_eo_product_price` CHECK (`price` >= 0),
     CONSTRAINT `chk_eo_product_original_price` CHECK (`original_price` IS NULL OR `original_price` >= 0),
     CONSTRAINT `chk_eo_product_stock` CHECK (`stock` >= 0),
-    CONSTRAINT `chk_eo_product_status` CHECK (`status` IN ('0', '1', '2', '3', '4', '5')),
+    CONSTRAINT `chk_eo_product_status` CHECK (`status` IN ('DRAFT', 'ONLINE', 'SOLD', 'OFFLINE', 'PENDING_REVIEW', 'REJECTED')),
     CONSTRAINT `chk_eo_product_condition` CHECK (`condition_level` IS NULL OR `condition_level` IN ('1', '2', '3', '4')),
     CONSTRAINT `chk_eo_product_view_count` CHECK (`view_count` >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='商品信息表';
@@ -116,8 +116,8 @@ CREATE TABLE `eo_product_audit_log` (
     `action`          TINYINT     NOT NULL COMMENT '审核动作（1 通过 2 拒绝 3 重新提交）',
     `reason`          VARCHAR(500) DEFAULT NULL COMMENT '审核原因',
     `audit_dimensions` VARCHAR(500) DEFAULT NULL COMMENT '审核维度JSON',
-    `before_status`   VARCHAR(2)  NOT NULL COMMENT '操作前状态',
-    `after_status`    VARCHAR(2)  NOT NULL COMMENT '操作后状态',
+    `before_status`   VARCHAR(20) NOT NULL COMMENT '操作前状态',
+    `after_status`    VARCHAR(20) NOT NULL COMMENT '操作后状态',
     `remark`          VARCHAR(500) DEFAULT NULL COMMENT '管理员备注',
     `create_time`     DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),

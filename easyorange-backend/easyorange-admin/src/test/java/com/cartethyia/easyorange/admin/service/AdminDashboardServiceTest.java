@@ -12,6 +12,7 @@ import com.cartethyia.easyorange.order.domain.repository.OrderReadRepository;
 import com.cartethyia.easyorange.product.domain.entity.ProductReport;
 import com.cartethyia.easyorange.product.application.port.query.ProductReportQueryRepository;
 import com.cartethyia.easyorange.product.application.port.query.ProductQueryRepository;
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserDO;
 import com.cartethyia.easyorange.user.adapter.outbound.persistence.UserMapper;
 import com.cartethyia.easyorange.user.domain.enums.UserStatus;
@@ -80,7 +81,7 @@ class AdminDashboardServiceTest {
         void getDashboardStats_returnsStats() {
             when(userMapper.selectCount(any())).thenReturn(100L, 5L);
             when(productQueryRepository.countByStatus(null)).thenReturn(200L);
-            when(productQueryRepository.countByStatus("0")).thenReturn(10L);
+            when(productQueryRepository.countByStatus(ProductStatus.DRAFT.getCode())).thenReturn(10L);
             when(orderReadRepository.countByStatus(null)).thenReturn(300L);
             when(productReportQueryRepository.countPendingReports()).thenReturn(8L);
 

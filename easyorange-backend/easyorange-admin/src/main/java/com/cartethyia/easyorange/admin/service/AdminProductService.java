@@ -6,6 +6,8 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.Product
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
 import com.cartethyia.easyorange.common.constant.CommonConstant;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.AdminProductQueryRequest;
@@ -39,6 +41,7 @@ public class AdminProductService {
     private final AdminProductQueryPort adminProductQueryPort;
     private final ProductRepository productRepository;
     private final ProductCacheEvictionPort productCachePort;
+    private final DomainEventPublisher domainEventPublisher;
 
     public PageResult<AdminProductResponse> listProducts(AdminProductQueryRequest request) {
         LocalDateTime startTime = parseStartTime(request.startTime());
@@ -115,21 +118,30 @@ public class AdminProductService {
         Product product = productRepository.findById(ProductId.of(id))
                 .orElseThrow(() -> BusinessException.of("商品不存在"));
 
-        Product updated = applyStatusTransition(product, newStatus);
-        productRepository.update(updated);
+        applyStatusTransition(product, newStatus);
         productCachePort.evictProductCache(id);
     }
 
-    private Product applyStatusTransition(Product product, ProductStatus newStatus) {
-        return switch (newStatus) {
-            case ONLINE -> product.putOnline().product();
-            case OFFLINE -> product.takeOffline().product();
-            case SOLD -> product.markAsSold().product();
-            default -> product.toBuilder()
-                    .status(newStatus)
-                    .updateTime(LocalDateTime.now())
-                    .build();
-        };
+    private void applyStatusTransition(Product product, ProductStatus newStatus) {
+        switch (newStatus) {
+            case ONLINE -> {
+                var t = product.putOnline();
+                productRepository.update(t.aggregate());
+                domainEventPublisher.publish(t.event());
+            }
+            case OFFLINE -> {
+                var t = product.takeOffline();
+                productRepository.update(t.aggregate());
+                domainEventPublisher.publish(t.event());
+            }
+            case SOLD -> {
+                var t = product.markAsSold();
+                productRepository.update(t.aggregate());
+                domainEventPublisher.publish(t.event());
+            }
+            default -> productRepository.update(
+                    product.toBuilder().status(newStatus).updateTime(LocalDateTime.now()).build());
+        }
     }
 
     private LocalDateTime parseStartTime(String startTimeStr) {

@@ -195,7 +195,7 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 ### 添加订单新状态
 
 1. `OrderStatus` 枚举新增值（`code` 为 String，如 `"EXCHANGED"`）
-2. `Order` 添加状态转换方法和校验（返回 `OrderTransition<XxxEvent>`）
+2. `Order` 添加状态转换方法和校验（返回 `Transition<Order, XxxEvent>`）
 3. 添加对应领域事件
 4. `OrderCommandHandler` 添加命令处理（命令为 record）
 5. 更新 Saga 补偿逻辑（如需）
@@ -230,7 +230,7 @@ PENDING_PAYMENT ──→ PAID ──→ SHIPPED ──→ COMPLETED
 |----------------|------|---------|
 | `OrderCreateSpec` | `Order.createOrder()` 工厂参数 | orderId, buyerId, sellerId, items, address, phone, remark |
 | `OrderReconstructSpec` | `Order.from()` 重建参数 | id, orderNo, buyerId, sellerId, items, totalAmount, status, paymentStatus, ... |
-| `OrderTransition<E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
+| `Transition<Order, E>` | 状态转换结果（聚合根新实例 + 领域事件） | aggregate, event |
 | `OrderCommand` | sealed 接口（permits 7 个命令 record） | — |
 | `CreateOrderCommand` | 创建订单命令（record） | items, address, phone, remark, paymentMethod |
 | `PayOrderCommand` / `ShipOrderCommand` / `ConfirmReceiptCommand` | 单字段命令（record） | orderId |

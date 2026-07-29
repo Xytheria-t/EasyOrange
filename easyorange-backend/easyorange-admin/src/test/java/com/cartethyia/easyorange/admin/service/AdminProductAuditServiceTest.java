@@ -9,7 +9,6 @@ import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.TestSecurityUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
@@ -62,7 +61,7 @@ class AdminProductAuditServiceTest {
     private static final String SELLER_ID = "2";
 
     private Product createProductInPendingReview() {
-        ProductTransition result = Product.create(new ProductCreateSpec(
+        var t = Product.create(new ProductCreateSpec(
                 SellerId.of(SELLER_ID),
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
@@ -74,13 +73,11 @@ class AdminProductAuditServiceTest {
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
         ));
-        Product product = result.product().assignId(PRODUCT_ID);
-        ProductTransition submitted = product.submitForReview(SELLER_ID);
-        return submitted.product();
+        return t.aggregate().assignId(PRODUCT_ID).submitForReview(SELLER_ID).aggregate();
     }
 
     private Product createProductWithStatus(ProductStatus status) {
-        ProductTransition result = Product.create(new ProductCreateSpec(
+        var t = Product.create(new ProductCreateSpec(
                 SellerId.of(SELLER_ID),
                 CategoryId.of("1"),
                 ProductTitle.of("测试商品"),
@@ -92,15 +89,13 @@ class AdminProductAuditServiceTest {
                 ProductDescription.of("描述"),
                 ImageSet.of(List.of("http://img/1.jpg"))
         ));
-        Product product = result.product().assignId(PRODUCT_ID);
+        var p = t.aggregate().assignId(PRODUCT_ID);
         if (status == ProductStatus.PENDING_REVIEW) {
-            return product.submitForReview(SELLER_ID).product();
+            return p.submitForReview(SELLER_ID).aggregate();
+        } else if (status == ProductStatus.ONLINE) {
+            return p.submitForReview(SELLER_ID).aggregate().approve(null).aggregate();
         }
-        if (status == ProductStatus.ONLINE) {
-            var pending = product.submitForReview(SELLER_ID);
-            return pending.product().approve(null).product();
-        }
-        return product;
+        return p;
     }
 
     @Nested
@@ -274,8 +269,8 @@ class AdminProductAuditServiceTest {
                     .operatorId(OPERATOR_ID)
                     .operatorName("管理员")
                     .action("1")
-                    .beforeStatus("4")
-                    .afterStatus("1")
+                    .beforeStatus(ProductStatus.PENDING_REVIEW.getCode())
+                    .afterStatus(ProductStatus.ONLINE.getCode())
                     .build();
 
             when(productAuditLogRepository.findByProductId(PRODUCT_ID)).thenReturn(List.of(log));

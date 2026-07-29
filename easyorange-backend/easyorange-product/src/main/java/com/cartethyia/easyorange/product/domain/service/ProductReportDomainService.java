@@ -6,7 +6,6 @@ import com.cartethyia.easyorange.product.domain.enums.ProductResultCode;
 import com.cartethyia.easyorange.product.domain.port.ProductCacheEvictionPort;
 import com.cartethyia.easyorange.product.domain.repository.ProductReportRepository;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.event.ProductTakeOfflineEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
@@ -69,10 +68,10 @@ public class ProductReportDomainService {
     private ProductTakeOfflineEvent takeProductOffline(String productId) {
         Product product = productRepository.findById(ProductId.of(productId))
                 .orElseThrow(() -> new ReportNotFoundException("商品不存在: " + productId));
-        ProductTransition result = product.takeOffline();
-        productRepository.update(result.product());
+        var t = product.takeOffline();
+        productRepository.update(t.aggregate());
         productCachePort.evictProductCache(productId);
-        return (ProductTakeOfflineEvent) result.event();
+        return t.event();
     }
 
     public static class ReportNotFoundException extends BaseBusinessException {

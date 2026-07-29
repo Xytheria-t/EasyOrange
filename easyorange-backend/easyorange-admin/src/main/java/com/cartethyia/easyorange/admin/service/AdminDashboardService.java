@@ -249,7 +249,7 @@ public class AdminDashboardService {
         return jdbcTemplate.queryForList(
             "SELECT p.id, p.name, p.view_count, p.price, p.status, " +
             "(SELECT pi.image_url FROM eo_product_image pi WHERE pi.product_id = p.id AND pi.del_flag = 0 ORDER BY pi.is_main DESC, pi.sort_order ASC LIMIT 1) AS main_image " +
-            "FROM eo_product p WHERE p.del_flag = 0 AND p.status = '1' " +
+            "FROM eo_product p WHERE p.del_flag = 0 AND p.status = 'ONLINE' " +
             "ORDER BY p.view_count DESC LIMIT " + limit
         ).stream()
             .map(row -> {

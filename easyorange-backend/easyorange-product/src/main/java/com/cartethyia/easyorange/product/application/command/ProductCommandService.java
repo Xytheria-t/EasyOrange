@@ -2,10 +2,10 @@ package com.cartethyia.easyorange.product.application.command;
 
 import com.cartethyia.easyorange.common.domain.Money;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductCreateSpec;
 import com.cartethyia.easyorange.product.domain.aggregate.ProductUpdateSpec;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
@@ -43,7 +43,7 @@ public class ProductCommandService {
     public String createProduct(CreateProductCommand command) {
         var userId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
-        ProductTransition result = Product.create(
+        var product = Product.create(
                 new ProductCreateSpec(
                         SellerId.of(userId),
                         CategoryId.of(command.categoryId()),
@@ -59,8 +59,8 @@ public class ProductCommandService {
                 )
         );
 
-        var created = productRepository.create(result.product());
-        domainEventPublisher.publish(result.event());
+        var created = productRepository.create(product.aggregate());
+        domainEventPublisher.publish(product.event());
         return created.getId().value();
     }
 
@@ -89,9 +89,9 @@ public class ProductCommandService {
         var pid = ProductId.of(id);
         var product = findByIdOrThrow(pid);
 
-        var result = product.delete(userId);
+        var t = product.delete(userId);
         productRepository.delete(pid);
-        domainEventPublisher.publish(result.event());
+        domainEventPublisher.publish(t.event());
     }
 
     // ==================== Stock ====================
@@ -153,9 +153,9 @@ public class ProductCommandService {
         }
     }
 
-    private void mutate(Product product, Function<Product, ProductTransition> fn) {
+    private void mutate(Product product, Function<Product, Transition<Product, ?>> fn) {
         var result = fn.apply(product);
-        productRepository.update(result.product());
+        productRepository.update(result.aggregate());
         domainEventPublisher.publish(result.event());
     }
 

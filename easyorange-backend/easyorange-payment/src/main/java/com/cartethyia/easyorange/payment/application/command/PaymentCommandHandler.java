@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.payment.application.command;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.payment.application.lock.DistributedLockWrapper;
@@ -44,7 +45,7 @@ public class PaymentCommandHandler {
         String paymentId = idGenerator.generateId();
         var spec = new PaymentCreateSpec(paymentId, command.orderId(), userId, command.amount(),
                 PaymentMethod.fromCode(command.paymentMethod()), command.attach());
-        Payment.PaymentTransition<PaymentCreatedEvent> result = Payment.create(spec);
+        Transition<Payment, PaymentCreatedEvent> result = Payment.create(spec);
 
         paymentRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());

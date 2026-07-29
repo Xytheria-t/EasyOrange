@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.adapter.outbound.elasticsearch;
 
+import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.port.ProductSearchQueryPort.ProductSearchQuery;
 import com.cartethyia.easyorange.product.domain.port.SearchResult;
 import tools.jackson.databind.ObjectMapper;
@@ -72,7 +73,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
                 .price(99.99)
                 .originalPrice(199.99)
                 .conditionLevel("5")
-                .status("1")
+                .status(ProductStatus.ONLINE.getCode())
                 .viewCount(1000)
                 .stock(10)
                 .location("北京")
@@ -109,7 +110,7 @@ class ElasticsearchProductSearchQueryAdapterTest {
         assertThat(record.price()).isEqualByComparingTo("99.99");
         assertThat(record.originalPrice()).isEqualByComparingTo("199.99");
         assertThat(record.condition()).isEqualTo("5");
-        assertThat(record.status()).isEqualTo("1");
+        assertThat(record.status()).isEqualTo(ProductStatus.ONLINE.getCode());
         assertThat(record.views()).isEqualTo(1000);
         assertThat(record.stock()).isEqualTo(10);
         assertThat(record.location()).isEqualTo("北京");

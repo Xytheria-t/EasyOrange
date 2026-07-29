@@ -1,5 +1,6 @@
 package com.cartethyia.easyorange.order.application.saga;
 
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
 import com.cartethyia.easyorange.order.application.command.CreateOrderResult;
 import com.cartethyia.easyorange.order.application.saga.support.*;
@@ -92,7 +93,7 @@ public class CreateOrderSaga {
         // 步骤 1: 创建订单
         sagaStatus = sagaCoordinator.transitionTo(sagaStatus, SagaState.ORDER_CREATED, "CREATE_ORDER");
 
-        Order.OrderTransition<OrderCreatedEvent> createResult = orderCreationExecutor.createOrder(command);
+        Transition<Order, OrderCreatedEvent> createResult = orderCreationExecutor.createOrder(command);
         Order aggregate = createResult.aggregate();
         OrderCreatedEvent orderEvent = createResult.event();
 

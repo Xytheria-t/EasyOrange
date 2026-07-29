@@ -27,9 +27,9 @@ class ProductTest {
     @Test
     @DisplayName("创建商品时应生成 ProductCreatedEvent")
     void create_shouldEmitProductCreatedEvent() {
-        var result = Product.create(ProductTestFixture.defaultCreateSpec());
+        var t = Product.create(ProductTestFixture.defaultCreateSpec());
 
-        assertThat(result.event()).isInstanceOf(ProductCreatedEvent.class);
+        assertThat(t.event()).isInstanceOf(ProductCreatedEvent.class);
     }
 
     @Test
@@ -59,61 +59,60 @@ class ProductTest {
     @Test
     @DisplayName("库存不足时应抛出 InsufficientStockException")
     void decrementStock_whenNoStock_shouldThrow() {
-        var result = Product.create(ProductTestFixture.aProduct().stock(0).build());
+        var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();
 
-        assertThatThrownBy(() -> result.product().decrementStock())
+        assertThatThrownBy(p::decrementStock)
                 .isInstanceOf(InsufficientStockException.class);
     }
 
     @Test
     @DisplayName("扣减库存成功时应减少库存并发布事件")
     void decrementStock_shouldDecreaseAndEmitEvent() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        var result = product.decrementStock();
+        var t = p.decrementStock();
 
-        assertThat(result.product().getStock().value()).isEqualTo(9);
-        assertThat(result.event()).isInstanceOf(StockDecreasedEvent.class);
+        assertThat(t.aggregate().getStock().value()).isEqualTo(9);
+        assertThat(t.event()).isInstanceOf(StockDecreasedEvent.class);
     }
 
     @Test
     @DisplayName("恢复库存成功时应增加库存并发布事件")
     void restoreStock_shouldIncreaseAndEmitEvent() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        var result = product.restoreStock();
+        var t = p.restoreStock();
 
-        assertThat(result.product().getStock().value()).isEqualTo(11);
-        assertThat(result.event()).isInstanceOf(StockRestoredEvent.class);
+        assertThat(t.aggregate().getStock().value()).isEqualTo(11);
+        assertThat(t.event()).isInstanceOf(StockRestoredEvent.class);
     }
 
     @Test
     @DisplayName("标记售出成功时应更改状态并发布事件")
     void markAsSold_shouldChangeStatusAndEmitEvent() {
-        var product = ProductTestFixture.defaultProduct();
-        product = product.putOnline().product();
+        var p = ProductTestFixture.onlineProduct();
 
-        var result = product.markAsSold();
+        var t = p.markAsSold();
 
-        assertThat(result.product().getStatus()).isEqualTo(ProductStatus.SOLD);
-        assertThat(result.event()).isInstanceOf(ProductMarkedSoldEvent.class);
+        assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.SOLD);
+        assertThat(t.event()).isInstanceOf(ProductMarkedSoldEvent.class);
     }
 
     @Test
     @DisplayName("非上架商品不能标记为已售")
     void markAsSold_whenNotOnline_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(product::markAsSold)
+        assertThatThrownBy(p::markAsSold)
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
     @DisplayName("库存为0时不能上架")
     void putOnline_whenNoStock_shouldThrow() {
-        var result = Product.create(ProductTestFixture.aProduct().stock(0).build());
+        var p = Product.create(ProductTestFixture.aProduct().stock(0).build()).aggregate();
 
-        assertThatThrownBy(() -> result.product().putOnline())
+        assertThatThrownBy(p::putOnline)
                 .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("库存不足");
     }
@@ -121,26 +120,24 @@ class ProductTest {
     @Test
     @DisplayName("已售商品不能再次标记为已售")
     void markAsSold_whenAlreadySold_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
-        product = product.putOnline().product();
-        var soldProduct = product.markAsSold().product();
+        var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(soldProduct::markAsSold)
+        assertThatThrownBy(p.markAsSold().aggregate()::markAsSold)
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
     @DisplayName("更新商品信息应修改对应字段")
     void update_shouldModifyFields() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        var result = product.update(
+        var t = p.update(
                 updateWith(CategoryId.of("99"), ProductTitle.of("新名称"), Money.of(new BigDecimal("200")))
         );
 
-        assertThat(result.product().getCategoryId().value()).isEqualTo("99");
-        assertThat(result.product().getTitle().value()).isEqualTo("新名称");
-        assertThat(result.product().getPrice().value()).isEqualByComparingTo(new BigDecimal("200"));
+        assertThat(t.aggregate().getCategoryId().value()).isEqualTo("99");
+        assertThat(t.aggregate().getTitle().value()).isEqualTo("新名称");
+        assertThat(t.aggregate().getPrice().value()).isEqualByComparingTo(new BigDecimal("200"));
     }
 
     // ==================== submitForReview ====================
@@ -148,29 +145,29 @@ class ProductTest {
     @Test
     @DisplayName("提交审核成功时应变更状态为 PENDING_REVIEW")
     void submitForReview_shouldChangeStatus() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        var result = product.submitForReview("1");
+        var t = p.submitForReview("1");
 
-        assertThat(result.product().getStatus()).isEqualTo(ProductStatus.PENDING_REVIEW);
-        assertThat(result.event()).isInstanceOf(ProductSubmittedForReviewEvent.class);
+        assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.PENDING_REVIEW);
+        assertThat(t.event()).isInstanceOf(ProductSubmittedForReviewEvent.class);
     }
 
     @Test
     @DisplayName("非资产方不能提交审核")
     void submitForReview_notOwner_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(() -> product.submitForReview("999"))
+        assertThatThrownBy(() -> p.submitForReview("999"))
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
     @DisplayName("ONLINE 状态的商品不能提交审核")
     void submitForReview_whenOnline_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct().putOnline().product();
+        var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> product.submitForReview("1"))
+        assertThatThrownBy(() -> p.submitForReview("1"))
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
@@ -179,29 +176,30 @@ class ProductTest {
     @Test
     @DisplayName("审核通过成功时应变更状态为 ONLINE")
     void approve_shouldChangeStatus() {
-        var product = ProductTestFixture.defaultProduct();
-        product = product.submitForReview("1").product();
+        var p = ProductTestFixture.defaultProduct();
+        var submitted = p.submitForReview("1").aggregate();
 
-        var result = product.approve("审核通过");
+        var t = submitted.approve("审核通过");
 
-        assertThat(result.product().getStatus()).isEqualTo(ProductStatus.ONLINE);
-        assertThat(result.event()).isInstanceOf(ProductAuditedEvent.class);
+        assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.ONLINE);
+        assertThat(t.event()).isInstanceOf(ProductAuditedEvent.class);
     }
 
     @Test
     @DisplayName("ONLINE 状态的商品不能审核通过")
     void approve_whenOnline_shouldThrow() {
-        var published = ProductTestFixture.defaultProduct().putOnline().product();
+        var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(() -> published.approve("审核通过"))
+        assertThatThrownBy(() -> p.approve("审核通过"))
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
     @DisplayName("REJECTED 状态的商品不能审核通过")
     void approve_whenRejected_shouldThrow() {
-        var submitted = ProductTestFixture.defaultProduct().submitForReview("1").product();
-        var rejected = submitted.reject("不合规").product();
+        var p = ProductTestFixture.defaultProduct();
+        var submitted = p.submitForReview("1").aggregate();
+        var rejected = submitted.reject("不合规").aggregate();
 
         assertThatThrownBy(() -> rejected.approve("审核通过"))
                 .isInstanceOf(InvalidProductStatusException.class);
@@ -212,13 +210,13 @@ class ProductTest {
     @Test
     @DisplayName("审核拒绝成功时应变更状态为 REJECTED")
     void reject_shouldChangeStatus() {
-        var product = ProductTestFixture.defaultProduct();
-        product = product.submitForReview("1").product();
+        var p = ProductTestFixture.defaultProduct();
+        var submitted = p.submitForReview("1").aggregate();
 
-        var result = product.reject("描述不合规");
+        var t = submitted.reject("描述不合规");
 
-        assertThat(result.product().getStatus()).isEqualTo(ProductStatus.REJECTED);
-        assertThat(result.event()).isInstanceOf(ProductAuditedEvent.class);
+        assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.REJECTED);
+        assertThat(t.event()).isInstanceOf(ProductAuditedEvent.class);
     }
 
     // ==================== putOnline (admin bypass) ====================
@@ -226,19 +224,19 @@ class ProductTest {
     @Test
     @DisplayName("管理员直接上架成功时应变更状态为 ONLINE")
     void putOnline_shouldChangeStatus() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        var result = product.putOnline();
+        var t = p.putOnline();
 
-        assertThat(result.product().getStatus()).isEqualTo(ProductStatus.ONLINE);
-        assertThat(result.event()).isInstanceOf(ProductPutOnlineEvent.class);
+        assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.ONLINE);
+        assertThat(t.event()).isInstanceOf(ProductPutOnlineEvent.class);
     }
 
     @Test
     @DisplayName("上架验证：缺标题时不能上架")
     void putOnline_whenMissingTitle_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
-        var incomplete = product.toBuilder().title(null).build();
+        var p = ProductTestFixture.defaultProduct();
+        var incomplete = p.toBuilder().title(null).build();
 
         assertThatThrownBy(incomplete::putOnline)
                 .isInstanceOf(BusinessException.class)
@@ -248,8 +246,8 @@ class ProductTest {
     @Test
     @DisplayName("上架验证：缺成色时不能上架")
     void putOnline_whenMissingCondition_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
-        var incomplete = product.toBuilder().conditionLevel(null).build();
+        var p = ProductTestFixture.defaultProduct();
+        var incomplete = p.toBuilder().conditionLevel(null).build();
 
         assertThatThrownBy(incomplete::putOnline)
                 .isInstanceOf(BusinessException.class)
@@ -259,8 +257,8 @@ class ProductTest {
     @Test
     @DisplayName("上架验证：零价格时不能上架")
     void putOnline_withZeroPrice_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
-        var zeroPrice = product.toBuilder().price(Money.ZERO).build();
+        var p = ProductTestFixture.defaultProduct();
+        var zeroPrice = p.toBuilder().price(Money.ZERO).build();
 
         assertThatThrownBy(zeroPrice::putOnline)
                 .isInstanceOf(BusinessException.class)
@@ -270,9 +268,9 @@ class ProductTest {
     @Test
     @DisplayName("已上架的商品不能重复上架")
     void putOnline_whenAlreadyOnline_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct().putOnline().product();
+        var p = ProductTestFixture.onlineProduct();
 
-        assertThatThrownBy(product::putOnline)
+        assertThatThrownBy(p::putOnline)
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
@@ -281,20 +279,20 @@ class ProductTest {
     @Test
     @DisplayName("下架成功时应变更状态为 OFFLINE")
     void takeOffline_shouldChangeStatus() {
-        var product = ProductTestFixture.defaultProduct().putOnline().product();
+        var p = ProductTestFixture.onlineProduct();
 
-        var result = product.takeOffline();
+        var t = p.takeOffline();
 
-        assertThat(result.product().getStatus()).isEqualTo(ProductStatus.OFFLINE);
-        assertThat(result.event()).isInstanceOf(ProductTakeOfflineEvent.class);
+        assertThat(t.aggregate().getStatus()).isEqualTo(ProductStatus.OFFLINE);
+        assertThat(t.event()).isInstanceOf(ProductTakeOfflineEvent.class);
     }
 
     @Test
     @DisplayName("DRAFT 状态的商品不能下架")
     void takeOffline_whenDraft_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
+        var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(product::takeOffline)
+        assertThatThrownBy(p::takeOffline)
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
@@ -303,27 +301,27 @@ class ProductTest {
     @Test
     @DisplayName("删除商品成功时应发布事件")
     void delete_shouldEmitEvent() {
-        var product = ProductTestFixture.defaultProduct().assignId("1");
+        var p = ProductTestFixture.defaultProduct();
 
-        var result = product.delete("1");
+        var t = p.delete("1");
 
-        assertThat(result.event()).isInstanceOf(ProductDeletedEvent.class);
+        assertThat(t.event()).isInstanceOf(ProductDeletedEvent.class);
     }
 
     @Test
     @DisplayName("非资产方不能删除商品")
     void delete_notOwner_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct().assignId("1");
+        var p = ProductTestFixture.defaultProduct();
 
-        assertThatThrownBy(() -> product.delete("999"))
+        assertThatThrownBy(() -> p.delete("999"))
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
     @DisplayName("已售商品不能删除")
     void delete_whenSold_shouldThrow() {
-        var online = ProductTestFixture.defaultProduct().putOnline().product();
-        var sold = online.markAsSold().product();
+        var p = ProductTestFixture.onlineProduct();
+        var sold = p.markAsSold().aggregate();
 
         assertThatThrownBy(() -> sold.delete("1"))
                 .isInstanceOf(InvalidProductStatusException.class);
@@ -334,22 +332,20 @@ class ProductTest {
     @Test
     @DisplayName("已售商品不能恢复库存")
     void restoreStock_whenSold_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
-        product = product.putOnline().product();
-        product = product.markAsSold().product();
+        var p = ProductTestFixture.onlineProduct();
+        var sold = p.markAsSold().aggregate();
 
-        assertThatThrownBy(product::restoreStock)
+        assertThatThrownBy(sold::restoreStock)
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
     @Test
     @DisplayName("下架商品不能恢复库存")
     void restoreStock_whenOffline_shouldThrow() {
-        var product = ProductTestFixture.defaultProduct();
-        product = product.putOnline().product();
-        product = product.takeOffline().product();
+        var p = ProductTestFixture.onlineProduct();
+        var offline = p.takeOffline().aggregate();
 
-        assertThatThrownBy(product::restoreStock)
+        assertThatThrownBy(offline::restoreStock)
                 .isInstanceOf(InvalidProductStatusException.class);
     }
 
@@ -358,49 +354,49 @@ class ProductTest {
     @Test
     @DisplayName("完整商品信息应通过 isComplete 校验")
     void isComplete_withFullInfo_shouldReturnTrue() {
-        var product = ProductTestFixture.defaultProduct();
-        assertThat(product.isComplete()).isTrue();
+        var p = ProductTestFixture.defaultProduct();
+        assertThat(p.isComplete()).isTrue();
     }
 
     @Test
     @DisplayName("缺价格时 isComplete 应为 false")
     void isComplete_withoutPrice_shouldReturnFalse() {
-        var product = ProductTestFixture.defaultProduct();
-        var incomplete = product.toBuilder().price(null).build();
+        var p = ProductTestFixture.defaultProduct();
+        var incomplete = p.toBuilder().price(null).build();
         assertThat(incomplete.isComplete()).isFalse();
     }
 
     @Test
     @DisplayName("缺标题时 isComplete 应为 false")
     void isComplete_withoutTitle_shouldReturnFalse() {
-        var product = ProductTestFixture.defaultProduct();
-        var incomplete = product.toBuilder().title(null).build();
+        var p = ProductTestFixture.defaultProduct();
+        var incomplete = p.toBuilder().title(null).build();
         assertThat(incomplete.isComplete()).isFalse();
     }
 
     @Test
     @DisplayName("缺成色时 isComplete 应为 false")
     void isComplete_withoutCondition_shouldReturnFalse() {
-        var product = ProductTestFixture.defaultProduct();
-        var incomplete = product.toBuilder().conditionLevel(null).build();
+        var p = ProductTestFixture.defaultProduct();
+        var incomplete = p.toBuilder().conditionLevel(null).build();
         assertThat(incomplete.isComplete()).isFalse();
     }
 
     @Test
     @DisplayName("hasValidPrice 在价格为0时应返回 false")
     void hasValidPrice_withZero_shouldReturnFalse() {
-        var product = ProductTestFixture.defaultProduct();
-        var zeroPrice = product.toBuilder().price(Money.ZERO).build();
+        var p = ProductTestFixture.defaultProduct();
+        var zeroPrice = p.toBuilder().price(Money.ZERO).build();
         assertThat(zeroPrice.hasValidPrice()).isFalse();
     }
 
     @Test
     @DisplayName("hasStock 应正确判断库存")
     void hasStock_shouldReturnCorrectValue() {
-        var product = ProductTestFixture.defaultProduct();
-        assertThat(product.hasStock()).isTrue();
+        var p = ProductTestFixture.defaultProduct();
+        assertThat(p.hasStock()).isTrue();
 
-        var noStock = product.toBuilder().stock(StockQuantity.of(0)).build();
+        var noStock = p.toBuilder().stock(StockQuantity.of(0)).build();
         assertThat(noStock.hasStock()).isFalse();
     }
 
@@ -409,21 +405,21 @@ class ProductTest {
     @Test
     @DisplayName("assignId 应设置聚合根 ID")
     void assignId_shouldSetId() {
-        var product = Product.create(ProductTestFixture.defaultCreateSpec()).product();
+        var p = Product.create(ProductTestFixture.defaultCreateSpec()).aggregate();
 
-        var result = product.assignId("test-id");
+        var assigned = p.assignId("test-id");
 
-        assertThat(result.getId().value()).isEqualTo("test-id");
+        assertThat(assigned.getId().value()).isEqualTo("test-id");
     }
 
     @Test
     @DisplayName("已分配 ID 时 assignId 不应覆盖")
     void assignId_whenAlreadySet_shouldNotOverride() {
-        var product = ProductTestFixture.defaultProduct();
-        assertThat(product.getId().value()).isEqualTo("1");
+        var p = ProductTestFixture.defaultProduct();
+        assertThat(p.getId().value()).isEqualTo("1");
 
-        var result = product.assignId("other-id");
-        assertThat(result.getId().value()).isEqualTo("1");
+        var overridden = p.assignId("other-id");
+        assertThat(overridden.getId().value()).isEqualTo("1");
     }
 
     private static ProductUpdateSpec updateWith(CategoryId categoryId, ProductTitle title, Money price) {

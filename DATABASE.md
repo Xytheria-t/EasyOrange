@@ -85,7 +85,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | nick_name | VARCHAR(30) | | 用户昵称 |
 | avatar | VARCHAR(500) | | 头像 URL |
 | sex | TINYINT | NOT NULL DEFAULT 0 | 性别（0 未知 / 1 男 / 2 女） |
-| status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 正常 / 1 禁用 / 2 锁定） |
+| status | VARCHAR(20) | NOT NULL DEFAULT 'NORMAL' | 状态（NORMAL 正常 / DISABLED 禁用 / LOCKED 锁定） |
 | login_ip | VARCHAR(128) | | 最后登录 IP |
 | login_date | DATETIME | | 最后登录时间 |
 | pwd_update_date | DATETIME | | 密码更新时间 |
@@ -103,7 +103,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | idx_eo_user_status_del | KEY | status, del_flag, create_time DESC |
 | idx_eo_user_type_status | KEY | user_type, status, del_flag |
 
-**CHECK 约束**：status IN (0,1,2), sex IN (0,1,2), user_type IN ('01','02')
+**CHECK 约束**：status IN ('NORMAL','DISABLED','LOCKED'), sex IN (0,1,2), user_type IN ('01','02')
 
 ---
 
@@ -184,7 +184,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | price | DECIMAL(10,2) | NOT NULL | 售价 |
 | original_price | DECIMAL(10,2) | | 原价 |
 | stock | INT | NOT NULL DEFAULT 1 | 库存 |
-| status | TINYINT | NOT NULL DEFAULT 0 | 状态（0 草稿 / 1 上架 / 2 已售 / 3 下架） |
+| status | VARCHAR(20) | NOT NULL DEFAULT 'DRAFT' | 状态（DRAFT 草稿 / ONLINE 上架 / SOLD 已售 / OFFLINE 下架 / PENDING_REVIEW 待审核 / REJECTED 已驳回） |
 | view_count | INT | NOT NULL DEFAULT 0 | 浏览次数 |
 | condition_level | TINYINT | | 新旧程度（1-10） |
 | location | VARCHAR(100) | | 交易地点 |
@@ -207,7 +207,7 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | ft_eo_product_name | FULLTEXT(ngram) | name |
 | ft_eo_product_search_text | FULLTEXT(ngram) | search_text |
 
-**CHECK 约束**：price>=0, original_price>=0, stock>=0, status IN (0,1,2,3), condition_level 1-10, view_count>=0
+**CHECK 约束**：price>=0, original_price>=0, stock>=0, status IN ('DRAFT','ONLINE','SOLD','OFFLINE','PENDING_REVIEW','REJECTED'), condition_level 1-10, view_count>=0
 
 ---
 
@@ -249,8 +249,8 @@ eo_audit_log 无 del_flag / version / create_by / update_by，使用独立主键
 | action | TINYINT | NOT NULL | 审核动作（1 通过 / 2 拒绝 / 3 重新提交） |
 | reason | VARCHAR(500) | | 审核原因 |
 | audit_dimensions | VARCHAR(500) | | 审核维度 JSON |
-| before_status | TINYINT | NOT NULL | 操作前状态 |
-| after_status | TINYINT | NOT NULL | 操作后状态 |
+| before_status | VARCHAR(20) | NOT NULL | 操作前状态 |
+| after_status | VARCHAR(20) | NOT NULL | 操作后状态 |
 | remark | VARCHAR(500) | | 管理员备注 |
 | create_time | DATETIME | NOT NULL DEFAULT CURRENT_TIMESTAMP | 创建时间 |
 

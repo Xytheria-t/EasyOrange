@@ -12,12 +12,12 @@ import java.util.Set;
 @AllArgsConstructor
 public enum ProductStatus implements BaseCodeEnum {
 
-    DRAFT("0", "草稿"),
-    ONLINE("1", "上架"),
-    SOLD("2", "已售出"),
-    OFFLINE("3", "下架"),
-    PENDING_REVIEW("4", "待审核"),
-    REJECTED("5", "已驳回");
+    DRAFT("DRAFT", "草稿"),
+    ONLINE("ONLINE", "上架"),
+    SOLD("SOLD", "已售出"),
+    OFFLINE("OFFLINE", "下架"),
+    PENDING_REVIEW("PENDING_REVIEW", "待审核"),
+    REJECTED("REJECTED", "已驳回");
 
     @JsonValue
     private final String code;

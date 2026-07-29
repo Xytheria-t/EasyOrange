@@ -7,23 +7,9 @@ import com.cartethyia.easyorange.product.domain.valueobject.*;
 import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * Product 测试夹具 — Test Data Builder 模式 + 快捷工厂方法。
- * <p>
- * 推荐用法：
- * <pre>{@code
- * Product.create(aProduct().build());                     // 默认参数
- * Product.create(aProduct().stock(0).build());            // 零库存
- * Product.create(aProduct().withNoTitle().build());       // 无标题（校验测试）
- * Product.create(aProduct().price(BigDecimal.ZERO).build());     // 零价格
- * Product.create(aProduct().emptyImages().build());       // 无图片
- * }</pre>
- */
 public final class ProductTestFixture {
 
     private ProductTestFixture() {}
-
-    // ==================== Test Data Builder ====================
 
     public static ProductCreateSpecBuilder aProduct() {
         return new ProductCreateSpecBuilder();
@@ -49,22 +35,23 @@ public final class ProductTestFixture {
         public ProductCreateSpecBuilder emptyImages() { this.images = ImageSet.empty(); return this; }
 
         public ProductCreateSpec build() {
-            return new ProductCreateSpec(sellerId, categoryId, title, price, /* originalPrice */ null, stock,
+            return new ProductCreateSpec(sellerId, categoryId, title, price, null, stock,
                     conditionLevel, location, contactMethod, description, images);
         }
     }
-
-    // ==================== Convenience ====================
 
     public static ProductCreateSpec defaultCreateSpec() {
         return aProduct().build();
     }
 
     public static Product defaultProduct() {
-        return Product.create(defaultCreateSpec()).product().assignId("1");
+        var t = Product.create(defaultCreateSpec());
+        return t.aggregate().assignId("1");
     }
 
     public static Product onlineProduct() {
-        return defaultProduct().putOnline().product();
+        var t = Product.create(defaultCreateSpec());
+        var p = t.aggregate().assignId("1");
+        return p.putOnline().aggregate();
     }
 }

@@ -1,10 +1,11 @@
 package com.cartethyia.easyorange.payment.domain.aggregate;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentMethod;
 import com.cartethyia.easyorange.payment.domain.constant.PaymentStatus;
 import com.cartethyia.easyorange.payment.domain.event.PaymentClosedEvent;
+import com.cartethyia.easyorange.payment.domain.event.PaymentConfirmEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentCreatedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentFailedEvent;
 import com.cartethyia.easyorange.payment.domain.event.PaymentRefundedEvent;
@@ -31,7 +32,7 @@ import java.time.LocalDateTime;
  *                PARTIALLY_REFUNDED
  * </pre>
  * <p>
- * 状态转换返回 {@link PaymentTransition}（带事件）或 {@code Payment}（中间态，无事件）。
+ * 状态转换返回 {@link Transition}（带事件）或 {@code Payment}（中间态，无事件）。
  * 聚合根工厂与重建入口通过 spec record 收敛参数。
  */
 public class Payment {
@@ -82,7 +83,7 @@ public class Payment {
      * @param spec 创建参数（收敛 paymentId/orderId/userId/amount/paymentMethod/attach）
      * @return 支付创建结果（含聚合根与领域事件）
      */
-    public static PaymentTransition<PaymentCreatedEvent> create(PaymentCreateSpec spec) {
+    public static Transition<Payment, PaymentCreatedEvent> create(PaymentCreateSpec spec) {
         BizRequire.notNull(spec.paymentId(), "支付ID不能为空");
         BizRequire.notNull(spec.orderId(), "订单ID不能为空");
         BizRequire.notNull(spec.userId(), "用户ID不能为空");
@@ -104,7 +105,7 @@ public class Payment {
                 spec.paymentId(), paymentNo, spec.orderId(), spec.userId(), spec.amount(), spec.paymentMethod().getCode()
         );
 
-        return new PaymentTransition<>(aggregate, event);
+        return new Transition<>(aggregate, event);
     }
 
     // ==================== Reconstruction ====================
@@ -163,16 +164,16 @@ public class Payment {
     /**
      * 确认支付结果：根据网关结果变为 SUCCESS 或 FAILED。
      */
-    public PaymentTransition<DomainEvent> confirmPay(PaymentResult result) {
+    public Transition<Payment, PaymentConfirmEvent> confirmPay(PaymentResult result) {
         if (!canConfirmPay()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有支付中状态可以确认支付结果");
         }
         if (result.isSuccess()) {
             Payment updated = withSuccess(result.getTransactionId());
-            return new PaymentTransition<>(updated, new PaymentSucceededEvent(this.id, result.getTransactionId()));
+            return new Transition<>(updated, new PaymentSucceededEvent(this.id, result.getTransactionId()));
         } else {
             Payment updated = withStatus(PaymentStatus.FAILED, nextVersion());
-            return new PaymentTransition<>(updated, new PaymentFailedEvent(this.id, result.getErrorMessage()));
+            return new Transition<>(updated, new PaymentFailedEvent(this.id, result.getErrorMessage()));
         }
     }
 
@@ -200,7 +201,7 @@ public class Payment {
     /**
      * 确认退款结果：根据网关结果变为 REFUNDED 或 PARTIALLY_REFUNDED。
      */
-    public PaymentTransition<PaymentRefundedEvent> confirmRefund(RefundResult result, BigDecimal refundAmount) {
+    public Transition<Payment, PaymentRefundedEvent> confirmRefund(RefundResult result, BigDecimal refundAmount) {
         if (!canConfirmRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有退款中状态可以确认退款结果");
         }
@@ -222,7 +223,7 @@ public class Payment {
             refundEventReason = "部分退款: " + refundAmount;
         }
         Payment updated = withRefundResult(newStatus, newRefundedAmount, refundEventReason, LocalDateTime.now(), nextVersion());
-        return new PaymentTransition<>(updated, new PaymentRefundedEvent(this.id, refundEventReason));
+        return new Transition<>(updated, new PaymentRefundedEvent(this.id, refundEventReason));
     }
 
     /**
@@ -238,36 +239,36 @@ public class Payment {
     /**
      * 直接退款（不复用网关两阶段流程，dev mock 路径使用）。
      */
-    public PaymentTransition<PaymentRefundedEvent> directRefund(String refundReason) {
+    public Transition<Payment, PaymentRefundedEvent> directRefund(String refundReason) {
         if (!canRefund()) {
             throw PaymentDomainException.of(PaymentResultCode.REFUND_NOT_ALLOWED, "当前状态不允许退款: " + this.status);
         }
         Payment updated = withRefundResult(
                 PaymentStatus.REFUNDED, this.amount, refundReason, LocalDateTime.now(), nextVersion()
         );
-        return new PaymentTransition<>(updated, new PaymentRefundedEvent(this.id, refundReason));
+        return new Transition<>(updated, new PaymentRefundedEvent(this.id, refundReason));
     }
 
     /**
      * 标记为失败。
      */
-    public PaymentTransition<PaymentFailedEvent> fail(String reason) {
+    public Transition<Payment, PaymentFailedEvent> fail(String reason) {
         if (!canFail()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "只有待支付状态可以标记为失败");
         }
         Payment updated = withStatus(PaymentStatus.FAILED, nextVersion());
-        return new PaymentTransition<>(updated, new PaymentFailedEvent(this.id, reason));
+        return new Transition<>(updated, new PaymentFailedEvent(this.id, reason));
     }
 
     /**
      * 关闭支付。
      */
-    public PaymentTransition<PaymentClosedEvent> close() {
+    public Transition<Payment, PaymentClosedEvent> close() {
         if (!canClose()) {
             throw PaymentDomainException.of(PaymentResultCode.PAYMENT_INVALID_STATUS, "当前状态不允许关闭: " + this.status);
         }
         Payment updated = withStatus(PaymentStatus.CLOSED, nextVersion());
-        return new PaymentTransition<>(updated, new PaymentClosedEvent(this.id));
+        return new Transition<>(updated, new PaymentClosedEvent(this.id));
     }
 
     // ==================== Internal Helpers ====================
@@ -326,18 +327,6 @@ public class Payment {
     public LocalDateTime createTime() { return createTime; }
     public LocalDateTime updateTime() { return updateTime; }
     public int version() { return version; }
-
-    // ==================== Result Record ====================
-
-    /**
-     * 状态转换结果 — 聚合根新实例 + 领域事件。
-     * <p>
-     * 泛型 {@code <E>} 保留具体事件类型，避免调用方 cast。
-     * 仅最终态转换返回此类型；中间态（preparePay/cancelPay/prepareRefund/cancelRefund）直接返回 {@link Payment}。
-     *
-     * @param <E> 领域事件具体类型
-     */
-    public record PaymentTransition<E extends DomainEvent>(Payment aggregate, E event) {}
 
     @Override
     public boolean equals(Object o) {

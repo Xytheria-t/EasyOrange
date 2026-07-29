@@ -1,15 +1,15 @@
 package com.cartethyia.easyorange.product.domain.aggregate;
 
 import com.cartethyia.easyorange.common.domain.Money;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ConditionLevel;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
 import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
-import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductCreatedEvent;
-import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductDeletedEvent;
+import com.cartethyia.easyorange.product.domain.event.ProductEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductMarkedSoldEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductPutOnlineEvent;
 import com.cartethyia.easyorange.product.domain.event.ProductSubmittedForReviewEvent;
@@ -63,13 +63,13 @@ public class Product {
 
     // ==================== Static Factory ====================
 
-    public static ProductTransition create(ProductCreateSpec spec) {
+    public static Transition<Product, ProductCreatedEvent> create(ProductCreateSpec spec) {
         BizRequire.notNull(spec.title(), "资产名称不能为空");
         BizRequire.notNull(spec.price(), "资产价格不能为空");
         BizRequire.requireTrue(spec.price().isGreaterThan(Money.ZERO), "资产价格必须大于0");
         BizRequire.requireTrue(spec.images() != null && !spec.images().isEmpty(), "资产图片不能为空");
 
-        var p = Product.builder()
+        Product p = Product.builder()
                 .sellerId(spec.sellerId()).categoryId(spec.categoryId()).title(spec.title())
                 .price(spec.price()).originalPrice(spec.originalPrice())
                 .stock(spec.stock() != null ? spec.stock() : StockQuantity.of(1))
@@ -80,104 +80,80 @@ public class Product {
                 .createTime(LocalDateTime.now()).updateTime(LocalDateTime.now())
                 .build();
 
-        var event = new ProductCreatedEvent(ProductEvent.Data.from(p));
-        return new ProductTransition(p, event);
+        return new Transition<>(p, new ProductCreatedEvent(ProductEvent.Data.from(p)));
     }
 
     // ==================== State Transitions ====================
     // Ordered by state machine lifecycle: DRAFT → PENDING_REVIEW → ONLINE → OFFLINE → SOLD
 
-    public ProductTransition submitForReview(String userId) {
+    public Transition<Product, ProductSubmittedForReviewEvent> submitForReview(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("只能提交自己的资产审核", id, status);
         }
         if (!status.canTransitionTo(ProductStatus.PENDING_REVIEW)) {
             throw new InvalidProductStatusException("不允许提交审核", id, status);
         }
-        var updated = toBuilder()
-                .status(ProductStatus.PENDING_REVIEW)
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(
-                updated, new ProductSubmittedForReviewEvent(
-                id.value(), userId, sellerId.value(), status, ProductStatus.PENDING_REVIEW));
+        return new Transition<>(
+                toBuilder().status(ProductStatus.PENDING_REVIEW).updateTime(LocalDateTime.now()).build(),
+                new ProductSubmittedForReviewEvent(
+                        id.value(), userId, sellerId.value(), status, ProductStatus.PENDING_REVIEW));
     }
 
-    /**
-     * 审核通过 — 将资产状态变更为 ONLINE（上架）。
-     * <p>
-     * 只有处于 PENDING_REVIEW（待审核）状态的资产可以通过审核。
-     * 返回 {@link ProductTransition}，包含更新后的聚合根和 {@link ProductAuditedEvent}。
-     */
-    public ProductTransition approve(String reason) {
+    public Transition<Product, ProductAuditedEvent> approve(String reason) {
         if (!status.canTransitionTo(ProductStatus.ONLINE)) {
             throw new InvalidProductStatusException("不允许审核通过", id, status);
         }
-        var updated = toBuilder()
-                .status(ProductStatus.ONLINE)
-                .updateTime(LocalDateTime.now())
-                .build();
-        var event = new ProductAuditedEvent(
-                id.value(), title.value(), sellerId.value(),
-                AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()
-        );
-        return new ProductTransition(updated, event);
+        return new Transition<>(
+                toBuilder().status(ProductStatus.ONLINE).updateTime(LocalDateTime.now()).build(),
+                new ProductAuditedEvent(
+                        id.value(), title.value(), sellerId.value(),
+                        AuditAction.APPROVED.getCode(), reason, LocalDateTime.now()));
     }
 
-    public ProductTransition reject(String reason) {
+    public Transition<Product, ProductAuditedEvent> reject(String reason) {
         if (!status.canTransitionTo(ProductStatus.REJECTED)) {
             throw new InvalidProductStatusException("不允许审核拒绝", id, status);
         }
-        var updated = toBuilder()
-                .status(ProductStatus.REJECTED)
-                .updateTime(LocalDateTime.now())
-                .build();
-        var event = new ProductAuditedEvent(
-                id.value(), title.value(), sellerId.value(),
-                AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()
-        );
-        return new ProductTransition(updated, event);
+        return new Transition<>(
+                toBuilder().status(ProductStatus.REJECTED).updateTime(LocalDateTime.now()).build(),
+                new ProductAuditedEvent(
+                        id.value(), title.value(), sellerId.value(),
+                        AuditAction.REJECTED.getCode(), reason, LocalDateTime.now()));
     }
 
-    public ProductTransition putOnline() {
+    public Transition<Product, ProductPutOnlineEvent> putOnline() {
         if (!status.canTransitionTo(ProductStatus.ONLINE)) {
             throw new InvalidProductStatusException("不允许上架", id, status);
         }
         BizRequire.requireTrue(isComplete(), "资产信息不完整，无法上架");
         BizRequire.requireTrue(hasValidPrice(), "资产价格无效，无法上架");
         BizRequire.requireTrue(hasStock(), "资产库存不足，无法上架");
-        var updated = toBuilder()
-                .status(ProductStatus.ONLINE)
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(updated, new ProductPutOnlineEvent(id.value(), sellerId.value()));
+        return new Transition<>(
+                toBuilder().status(ProductStatus.ONLINE).updateTime(LocalDateTime.now()).build(),
+                new ProductPutOnlineEvent(id.value(), sellerId.value()));
     }
 
-    public ProductTransition takeOffline() {
+    public Transition<Product, ProductTakeOfflineEvent> takeOffline() {
         if (!status.canTransitionTo(ProductStatus.OFFLINE)) {
             throw new InvalidProductStatusException("不允许下架", id, status);
         }
-        var updated = toBuilder()
-                .status(ProductStatus.OFFLINE)
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(updated, new ProductTakeOfflineEvent(id.value(), sellerId.value()));
+        return new Transition<>(
+                toBuilder().status(ProductStatus.OFFLINE).updateTime(LocalDateTime.now()).build(),
+                new ProductTakeOfflineEvent(id.value(), sellerId.value()));
     }
 
-    public ProductTransition markAsSold() {
+    public Transition<Product, ProductMarkedSoldEvent> markAsSold() {
         if (!status.canTransitionTo(ProductStatus.SOLD)) {
             throw new InvalidProductStatusException("不允许标记已售", id, status);
         }
-        var updated = toBuilder()
-                .status(ProductStatus.SOLD)
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(updated, new ProductMarkedSoldEvent(id.value(), sellerId.value()));
+        return new Transition<>(
+                toBuilder().status(ProductStatus.SOLD).updateTime(LocalDateTime.now()).build(),
+                new ProductMarkedSoldEvent(id.value(), sellerId.value()));
     }
 
     // ==================== Mutations ====================
 
-    public ProductTransition update(ProductUpdateSpec spec) {
+    public Transition<Product, ProductUpdatedEvent> update(ProductUpdateSpec spec) {
         var builder = toBuilder();
         if (spec.categoryId() != null) builder.categoryId(spec.categoryId());
         if (spec.title() != null && !spec.title().value().isBlank()) builder.title(spec.title());
@@ -192,24 +168,20 @@ public class Product {
         if (spec.contactMethod() != null && spec.contactMethod().isNotBlank()) builder.contactMethod(spec.contactMethod());
         if (spec.description() != null) builder.description(spec.description());
         if (spec.images() != null) builder.images(spec.images());
-
         var updated = builder.updateTime(LocalDateTime.now()).build();
-
-        var event = new ProductUpdatedEvent(ProductEvent.Data.from(updated));
-        return new ProductTransition(updated, event);
+        return new Transition<>(updated, new ProductUpdatedEvent(ProductEvent.Data.from(updated)));
     }
 
-    public ProductTransition delete(String userId) {
+    public Transition<Product, ProductDeletedEvent> delete(String userId) {
         if (!this.sellerId.equals(SellerId.of(userId))) {
             throw new InvalidProductStatusException("无权删除此资产", id, status);
         }
         if (!status.canDelete()) {
             throw new InvalidProductStatusException("不允许删除", id, status);
         }
-        var updated = toBuilder()
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(updated, new ProductDeletedEvent(id.value(), userId));
+        return new Transition<>(
+                toBuilder().updateTime(LocalDateTime.now()).build(),
+                new ProductDeletedEvent(id.value(), userId));
     }
 
     // ==================== Utility ====================
@@ -218,41 +190,35 @@ public class Product {
         if (this.id != null && this.id.value() != null) {
             return this;
         }
-        return toBuilder()
-                .id(ProductId.of(id))
-                .build();
+        return toBuilder().id(ProductId.of(id)).build();
     }
 
     // ==================== Stock Operations ====================
 
-    public ProductTransition decrementStock() {
+    public Transition<Product, StockDecreasedEvent> decrementStock() {
         return decrementStock(1);
     }
 
-    public ProductTransition decrementStock(int quantity) {
+    public Transition<Product, StockDecreasedEvent> decrementStock(int quantity) {
         if (!hasStock()) {
             throw new InsufficientStockException("资产库存不足", id, stock);
         }
-        var updated = toBuilder()
-                .stock(stock.decrease(quantity))
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(updated, StockDecreasedEvent.of(id.value(), quantity));
+        return new Transition<>(
+                toBuilder().stock(stock.decrease(quantity)).updateTime(LocalDateTime.now()).build(),
+                StockDecreasedEvent.of(id.value(), quantity));
     }
 
-    public ProductTransition restoreStock() {
+    public Transition<Product, StockRestoredEvent> restoreStock() {
         return restoreStock(1);
     }
 
-    public ProductTransition restoreStock(int quantity) {
+    public Transition<Product, StockRestoredEvent> restoreStock(int quantity) {
         if (status == ProductStatus.SOLD || status == ProductStatus.OFFLINE) {
             throw new InvalidProductStatusException("不允许恢复库存", id, status);
         }
-        var updated = toBuilder()
-                .stock(stock.increase(quantity))
-                .updateTime(LocalDateTime.now())
-                .build();
-        return new ProductTransition(updated, StockRestoredEvent.of(id.value(), quantity));
+        return new Transition<>(
+                toBuilder().stock(stock.increase(quantity)).updateTime(LocalDateTime.now()).build(),
+                StockRestoredEvent.of(id.value(), quantity));
     }
 
     // ==================== Query / Predicate ====================
@@ -270,10 +236,6 @@ public class Product {
     public boolean hasStock() {
         return stock != null && stock.isAvailable();
     }
-
-    // ==================== Inner Types ====================
-
-    public record ProductTransition(Product product, DomainEvent event) {}
 
     @Override
     public boolean equals(Object o) {

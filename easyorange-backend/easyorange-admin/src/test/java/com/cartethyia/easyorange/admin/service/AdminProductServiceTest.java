@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.Product
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryCondition;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductQueryResult;
 import com.cartethyia.easyorange.admin.domain.port.AdminProductQueryPort.ProductSummary;
+import com.cartethyia.easyorange.common.event.DomainEventPublisher;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.result.PageResult;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
@@ -54,6 +55,9 @@ class AdminProductServiceTest {
 
     @Mock
     private ProductCacheEvictionPort productCachePort;
+
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
 
     @InjectMocks
     private AdminProductService productService;
@@ -177,7 +181,7 @@ class AdminProductServiceTest {
                     .thenReturn(Optional.of(product));
 
             UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus("3");
+            request.setStatus(ProductStatus.OFFLINE.getCode());
 
             productService.updateProductStatus(PRODUCT_ID, request);
 
@@ -192,7 +196,7 @@ class AdminProductServiceTest {
                     .thenReturn(Optional.empty());
 
             UpdateStatusRequest request = new UpdateStatusRequest();
-            request.setStatus("3");
+            request.setStatus(ProductStatus.OFFLINE.getCode());
 
             assertThatThrownBy(() -> productService.updateProductStatus(PRODUCT_ID, request))
                     .isInstanceOf(BusinessException.class)

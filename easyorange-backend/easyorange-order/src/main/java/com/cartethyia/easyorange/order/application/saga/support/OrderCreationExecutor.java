@@ -1,6 +1,7 @@
 package com.cartethyia.easyorange.order.application.saga.support;
 
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.idgen.IdGenerator;
 import com.cartethyia.easyorange.framework.util.SecurityContextUtil;
 import com.cartethyia.easyorange.order.application.command.CreateOrderCommand;
@@ -47,7 +48,7 @@ public class OrderCreationExecutor {
      * @param command 创建订单命令
      * @return 创建结果（聚合根 + 领域事件）
      */
-    public Order.OrderTransition<OrderCreatedEvent> createOrder(CreateOrderCommand command) {
+    public Transition<Order, OrderCreatedEvent> createOrder(CreateOrderCommand command) {
         String buyerId = SecurityContextUtil.getCurrentUserIdOrThrow();
 
         // 准备订单项数据
@@ -55,7 +56,7 @@ public class OrderCreationExecutor {
             preparationService.prepareOrderItems(command.items(), buyerId);
 
         // 创建订单聚合根（通过 spec record 收敛 7 个参数）
-        Order.OrderTransition<OrderCreatedEvent> result = Order.createOrder(
+        Transition<Order, OrderCreatedEvent> result = Order.createOrder(
             new OrderCreateSpec(
                 idGenerator.generateId(),
                 UserId.of(buyerId),

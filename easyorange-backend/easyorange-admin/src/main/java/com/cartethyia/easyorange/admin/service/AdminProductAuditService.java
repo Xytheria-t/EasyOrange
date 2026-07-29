@@ -3,6 +3,7 @@ package com.cartethyia.easyorange.admin.service;
 import com.cartethyia.easyorange.ai.dto.AiReviewResult;
 import com.cartethyia.easyorange.ai.service.AiReviewService;
 import com.cartethyia.easyorange.common.event.DomainEventPublisher;
+import com.cartethyia.easyorange.common.event.Transition;
 import com.cartethyia.easyorange.common.exception.BusinessException;
 import com.cartethyia.easyorange.common.util.BizRequire;
 import com.cartethyia.easyorange.admin.adapter.inbound.web.dto.request.BatchAuditRequest;
@@ -17,11 +18,9 @@ import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.Pr
 import com.cartethyia.easyorange.product.adapter.outbound.persistence.product.ProductMapper;
 import com.cartethyia.easyorange.product.application.query.readmodel.SellerReadModel;
 import com.cartethyia.easyorange.product.domain.aggregate.Product;
-import com.cartethyia.easyorange.product.domain.aggregate.Product.ProductTransition;
 import com.cartethyia.easyorange.product.domain.entity.ProductAuditLog;
 import com.cartethyia.easyorange.product.domain.enums.AuditAction;
 import com.cartethyia.easyorange.product.domain.enums.ProductStatus;
-import com.cartethyia.easyorange.product.domain.event.ProductAuditedEvent;
 import com.cartethyia.easyorange.product.domain.repository.ProductAuditLogRepository;
 import com.cartethyia.easyorange.product.domain.repository.ProductRepository;
 import com.cartethyia.easyorange.product.domain.valueobject.ProductId;
@@ -69,25 +68,16 @@ public class AdminProductAuditService {
             throw BusinessException.of("无效的审核动作");
         }
 
-        Product updated;
-        ProductAuditedEvent event;
-
-        switch (action) {
-            case APPROVED -> {
-                ProductTransition result = product.approve(request.reason());
-                updated = result.product();
-                event = (ProductAuditedEvent) result.event();
-            }
+        Transition<Product, ?> t = switch (action) {
+            case APPROVED -> product.approve(request.reason());
             case REJECTED -> {
                 BizRequire.notBlank(request.reason(), "拒绝时必须填写原因");
-                ProductTransition result = product.reject(request.reason());
-                updated = result.product();
-                event = (ProductAuditedEvent) result.event();
+                yield product.reject(request.reason());
             }
             default -> throw BusinessException.of("无效的审核动作");
-        }
+        };
 
-        productRepository.update(updated);
+        productRepository.update(t.aggregate());
 
         ProductAuditLog auditLog = ProductAuditLog.builder()
                 .productId(id)
@@ -97,15 +87,15 @@ public class AdminProductAuditService {
                 .reason(request.reason())
                 .auditDimensions(toJsonString(request.dimensions()))
                 .beforeStatus(beforeStatus)
-                .afterStatus(updated.getStatus().getCode())
+                .afterStatus(product.getStatus().getCode())
                 .remark(request.remark())
                 .build();
         productAuditLogRepository.save(auditLog);
 
-        domainEventPublisher.publish(event);
+        domainEventPublisher.publish(t.event());
 
         log.info("action=audit_product productId={} action={} operatorId={} beforeStatus={} afterStatus={}",
-                id, action.getCode(), operatorId, beforeStatus, updated.getStatus().getCode());
+                id, action.getCode(), operatorId, beforeStatus, product.getStatus().getCode());
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -133,31 +123,11 @@ public class AdminProductAuditService {
                 }
 
                 String beforeStatus = product.getStatus().getCode();
-                Product updated;
-                ProductAuditedEvent event;
 
-                switch (action) {
-                    case APPROVED -> {
-                        ProductTransition result = product.approve(item.reason());
-                        updated = result.product();
-                        event = (ProductAuditedEvent) result.event();
-                    }
-                    case REJECTED -> {
-                        if (item.reason() == null || item.reason().isBlank()) {
-                            errors.add("商品ID " + item.productId() + ": 拒绝时必须填写原因");
-                            continue;
-                        }
-                        ProductTransition result = product.reject(item.reason());
-                        updated = result.product();
-                        event = (ProductAuditedEvent) result.event();
-                    }
-                    default -> {
-                        errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + item.action());
-                        continue;
-                    }
-                }
+                Transition<Product, ?> t = applyTransition(product, action, item, errors);
+                if (t == null) continue;
 
-                productRepository.update(updated);
+                productRepository.update(t.aggregate());
 
                 ProductAuditLog auditLog = ProductAuditLog.builder()
                         .productId(item.productId())
@@ -167,11 +137,11 @@ public class AdminProductAuditService {
                         .reason(item.reason())
                         .auditDimensions(toJsonString(item.dimensions()))
                         .beforeStatus(beforeStatus)
-                        .afterStatus(updated.getStatus().getCode())
+                        .afterStatus(product.getStatus().getCode())
                         .build();
                 productAuditLogRepository.save(auditLog);
 
-                domainEventPublisher.publish(event);
+                domainEventPublisher.publish(t.event());
 
                 successCount++;
             } catch (BusinessException e) {
@@ -266,6 +236,24 @@ public class AdminProductAuditService {
             log.warn("Failed to serialize audit dimensions to JSON", e);
             return null;
         }
+    }
+
+    private static Transition<Product, ?> applyTransition(Product product, AuditAction action,
+                                                           BatchAuditRequest.AuditItem item, List<String> errors) {
+        return switch (action) {
+            case APPROVED -> product.approve(item.reason());
+            case REJECTED -> {
+                if (item.reason() == null || item.reason().isBlank()) {
+                    errors.add("商品ID " + item.productId() + ": 拒绝时必须填写原因");
+                    yield null;
+                }
+                yield product.reject(item.reason());
+            }
+            default -> {
+                errors.add("商品ID " + item.productId() + ": 无效的审核动作 " + item.action());
+                yield null;
+            }
+        };
     }
 
     @SuppressWarnings("unchecked")

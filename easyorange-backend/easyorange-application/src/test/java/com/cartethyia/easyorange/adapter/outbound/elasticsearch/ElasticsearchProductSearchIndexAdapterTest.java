@@ -91,7 +91,7 @@ class ElasticsearchProductSearchIndexAdapterTest {
         assertThat(doc.getPrice()).isEqualTo(99.99);
         assertThat(doc.getOriginalPrice()).isEqualTo(199.99);
         assertThat(doc.getConditionLevel()).isEqualTo("3");
-        assertThat(doc.getStatus()).isEqualTo("1");
+        assertThat(doc.getStatus()).isEqualTo(ProductStatus.ONLINE.getCode());
         assertThat(doc.getViewCount()).isEqualTo(1000);
         assertThat(doc.getStock()).isEqualTo(10);
         assertThat(doc.getLocation()).isEqualTo("北京");
