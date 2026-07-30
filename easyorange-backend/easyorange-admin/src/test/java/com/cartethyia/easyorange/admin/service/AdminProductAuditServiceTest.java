@@ -118,7 +118,7 @@ class AdminProductAuditServiceTest {
             }
 
             ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-            verify(productRepository).update(productCaptor.capture());
+            verify(productRepository).save(productCaptor.capture());
             assertThat(productCaptor.getValue().getStatus()).isEqualTo(ProductStatus.ONLINE);
 
             verify(productAuditLogRepository).save(any(ProductAuditLog.class));
@@ -141,7 +141,7 @@ class AdminProductAuditServiceTest {
             }
 
             ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-            verify(productRepository).update(productCaptor.capture());
+            verify(productRepository).save(productCaptor.capture());
             assertThat(productCaptor.getValue().getStatus()).isEqualTo(ProductStatus.REJECTED);
 
             verify(productAuditLogRepository).save(any(ProductAuditLog.class));
@@ -227,7 +227,7 @@ class AdminProductAuditServiceTest {
 
                 assertThat(result.success()).isEqualTo(2);
                 assertThat(result.failed()).isZero();
-                verify(productRepository, times(2)).update(any(Product.class));
+                verify(productRepository, times(2)).save(any(Product.class));
             } finally {
                 TestSecurityUtil.clearSecurityContext();
             }

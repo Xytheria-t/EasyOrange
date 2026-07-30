@@ -1,6 +1,5 @@
 package com.cartethyia.easyorange.framework.audit.event;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
 import com.cartethyia.easyorange.framework.audit.entity.AuditLog;
 import com.cartethyia.easyorange.framework.audit.service.AuditLogService;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
@@ -18,7 +17,6 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,8 +24,6 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuditLogEventConsumer 单元测试")
 class AuditLogEventConsumerTest {
-
-    private static final String CONSUMER_ID = "AuditLogEventConsumer";
 
     @Mock
     private EventIdempotencyChecker idempotencyChecker;
@@ -75,7 +71,7 @@ class AuditLogEventConsumerTest {
             var auditLog = buildAuditLog();
             var event = AuditLogEvent.of(auditLog);
 
-            consumer.handle(event, buildMessage());
+            consumer.onAuditLog(event, buildMessage());
 
             var captor = ArgumentCaptor.forClass(AuditLog.class);
             verify(auditLogService).insertAuditLog(captor.capture());
@@ -91,9 +87,8 @@ class AuditLogEventConsumerTest {
         void handle_doesNotCheckIdempotency() {
             var event = AuditLogEvent.of(buildAuditLog());
 
-            consumer.handle(event, buildMessage());
+            consumer.onAuditLog(event, buildMessage());
 
-            // idempotencyEnabled=false，不触发 isDuplicate / tryMark
             verify(idempotencyChecker, never()).isDuplicate(any(), any());
             verify(idempotencyChecker, never()).tryMark(any(), any());
         }
@@ -112,34 +107,12 @@ class AuditLogEventConsumerTest {
                     .build();
             var event = AuditLogEvent.of(auditLog);
 
-            consumer.handle(event, buildMessage());
+            consumer.onAuditLog(event, buildMessage());
 
             var captor = ArgumentCaptor.forClass(AuditLog.class);
             verify(auditLogService).insertAuditLog(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(1);
             assertThat(captor.getValue().getErrorMsg()).isEqualTo("订单不存在");
-        }
-    }
-
-    @Nested
-    @DisplayName("异常处理")
-    class ExceptionHandlingTests {
-
-        @Test
-        @DisplayName("不支持的事件类型抛出 IllegalStateException")
-        void doHandle_unsupportedEvent_throwsIllegalState() {
-            var unsupportedEvent = new DomainEvent() {
-                @Override
-                public String aggregateId() {
-                    return "test";
-                }
-            };
-
-            assertThatThrownBy(() -> consumer.handle(unsupportedEvent, buildMessage()))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("不支持的事件");
-
-            verify(auditLogService, never()).insertAuditLog(any());
         }
     }
 }

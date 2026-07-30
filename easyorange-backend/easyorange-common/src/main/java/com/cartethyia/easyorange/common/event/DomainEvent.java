@@ -9,7 +9,7 @@ package com.cartethyia.easyorange.common.event;
  * 类型判别（RabbitMQ 路由）使用事件类 simple name 去掉 "Event" 后缀，而非 {@code @JsonTypeInfo}。
  * <p>
  * 事件元数据（eventId / occurredOn / traceId）通过 RabbitMQ message headers 传输，
- * 由 {@code EventMetadataMessagePostProcessor} 在发布时注入，{@code AbstractDomainEventConsumer} 在消费时读取。
+ * 由 {@code EventMetadataMessagePostProcessor} 在发布时注入，{@link com.cartethyia.easyorange.framework.event.core.EventConsumerHandler} 在消费时读取。
  * 事件幂等去重基于 {@code metadata.eventId()}（UUID v7，每事件实例唯一），而非事件的语义内容。
  */
 public interface DomainEvent {

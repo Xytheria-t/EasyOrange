@@ -10,7 +10,7 @@ import java.time.Instant;
  * 领域事件元数据信封。
  * <p>
  * 由发布端 {@code EventMetadataMessagePostProcessor} 在 RabbitTemplate 发送前注入到 message headers，
- * 由消费端 {@code AbstractDomainEventConsumer} 在 @RabbitHandler 调用时从 Message 重建。
+ * 由消费端 {@link com.cartethyia.easyorange.framework.event.core.EventConsumerHandler} 在 @RabbitHandler 调用时从 Message 重建。
  * <p>
  * 字段语义：
  * <ul>

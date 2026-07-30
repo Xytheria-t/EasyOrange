@@ -8,6 +8,7 @@ import com.cartethyia.easyorange.product.domain.port.ProductSearchIndexPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Component;
  * 当未来迁移至 Elasticsearch 等专用搜索引擎时，只需替换此适配器实现。</p>
  */
 @Slf4j
+@Primary
 @Component
 @ConditionalOnProperty(name = "easyorange.search.elasticsearch.enabled", havingValue = "false", matchIfMissing = true)
 @RequiredArgsConstructor

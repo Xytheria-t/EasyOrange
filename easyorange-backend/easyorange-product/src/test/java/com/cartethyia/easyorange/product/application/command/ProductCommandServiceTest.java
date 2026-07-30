@@ -47,7 +47,7 @@ class ProductCommandServiceTest {
     void createProduct_shouldSaveToRepository() {
         TestSecurityUtil.setSecurityContext(1L);
         try {
-            when(productRepository.create(any(Product.class))).thenAnswer(invocation -> {
+            when(productRepository.save(any(Product.class))).thenAnswer(invocation -> {
                 Product p = invocation.getArgument(0);
                 return p.assignId("42");
             });
@@ -61,7 +61,7 @@ class ProductCommandServiceTest {
             String productId = commandService.createProduct(command);
 
             assertThat(productId).isEqualTo("42");
-            verify(productRepository).create(any(Product.class));
+            verify(productRepository).save(any(Product.class));
             verify(domainEventPublisher).publish(any(ProductCreatedEvent.class));
         } finally {
             TestSecurityUtil.clearSecurityContext();

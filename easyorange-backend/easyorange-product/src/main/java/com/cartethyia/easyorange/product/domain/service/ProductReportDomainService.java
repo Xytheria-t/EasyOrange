@@ -69,7 +69,7 @@ public class ProductReportDomainService {
         Product product = productRepository.findById(ProductId.of(productId))
                 .orElseThrow(() -> new ReportNotFoundException("商品不存在: " + productId));
         var t = product.takeOffline();
-        productRepository.update(t.aggregate());
+        productRepository.save(t.aggregate());
         productCachePort.evictProductCache(productId);
         return t.event();
     }

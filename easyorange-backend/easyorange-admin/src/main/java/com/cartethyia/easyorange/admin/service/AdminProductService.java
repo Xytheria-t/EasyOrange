@@ -126,20 +126,20 @@ public class AdminProductService {
         switch (newStatus) {
             case ONLINE -> {
                 var t = product.putOnline();
-                productRepository.update(t.aggregate());
+                productRepository.save(t.aggregate());
                 domainEventPublisher.publish(t.event());
             }
             case OFFLINE -> {
                 var t = product.takeOffline();
-                productRepository.update(t.aggregate());
+                productRepository.save(t.aggregate());
                 domainEventPublisher.publish(t.event());
             }
             case SOLD -> {
                 var t = product.markAsSold();
-                productRepository.update(t.aggregate());
+                productRepository.save(t.aggregate());
                 domainEventPublisher.publish(t.event());
             }
-            default -> productRepository.update(
+            default -> productRepository.save(
                     product.toBuilder().status(newStatus).updateTime(LocalDateTime.now()).build());
         }
     }

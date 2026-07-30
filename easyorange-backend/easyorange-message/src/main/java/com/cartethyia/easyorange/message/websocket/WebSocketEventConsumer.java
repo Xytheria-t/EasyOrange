@@ -1,10 +1,8 @@
 package com.cartethyia.easyorange.message.websocket;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
-import com.cartethyia.easyorange.framework.event.core.AbstractDomainEventConsumer;
+import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
-import com.cartethyia.easyorange.framework.event.metadata.EventMetadata;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.domain.event.MessageRecalledEvent;
 import org.springframework.amqp.core.Message;
@@ -21,27 +19,21 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RabbitListener(queues = RabbitMQConfig.QUEUE_MESSAGE_WEBSOCKET, containerFactory = "domainEventContainerFactory")
-public class WebSocketEventConsumer extends AbstractDomainEventConsumer {
+public class WebSocketEventConsumer {
 
+    private final EventConsumerHandler handler;
     private final ChatWebSocketHandler chatWebSocketHandler;
 
     public WebSocketEventConsumer(EventIdempotencyChecker idempotencyChecker,
                                   EventMetricsService metricsService,
                                   ChatWebSocketHandler chatWebSocketHandler) {
-        super(idempotencyChecker, metricsService, false);
+        this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService, false);
         this.chatWebSocketHandler = chatWebSocketHandler;
     }
 
     @RabbitHandler
     public void onMessageRecalled(MessageRecalledEvent event, Message message) {
-        handle(event, message);
-    }
-
-    @Override
-    protected void doHandle(DomainEvent event, EventMetadata metadata) {
-        if (!(event instanceof MessageRecalledEvent e)) {
-            throw new IllegalStateException("不支持的事件: " + event.getClass());
-        }
-        chatWebSocketHandler.broadcastRecallEvent(e.conversationId(), e.messageId(), e.operatorId());
+        handler.handle(event, message, metadata ->
+                chatWebSocketHandler.broadcastRecallEvent(event.conversationId(), event.messageId(), event.operatorId()));
     }
 }

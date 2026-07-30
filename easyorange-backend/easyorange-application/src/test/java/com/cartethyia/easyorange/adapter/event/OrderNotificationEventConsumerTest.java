@@ -106,7 +106,7 @@ class OrderNotificationEventConsumerTest {
                     List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderCreated(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
                     eq(CONSUMER_ID + ":OrderCreated"), anyString());
@@ -135,7 +135,7 @@ class OrderNotificationEventConsumerTest {
 
             OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderPaid(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
                     eq(CONSUMER_ID + ":OrderPaid"), anyString());
@@ -164,20 +164,7 @@ class OrderNotificationEventConsumerTest {
 
             OrderShippedEvent event = new OrderShippedEvent(ORDER_ID);
 
-            consumer.handle(event, buildMessage());
-
-            verify(idempotencyChecker).isDuplicate(
-                    eq(CONSUMER_ID + ":OrderShipped"), anyString());
-            verify(idempotencyChecker).tryMark(
-                    eq(CONSUMER_ID + ":OrderShipped"), anyString());
-
-            var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-            verify(messageCommandHandler).handle(captor.capture());
-            var command = captor.getValue();
-            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.title()).isEqualTo("订单已发货");
-            assertThat(command.content()).isEqualTo("您的订单已发货，订单号: " + ORDER_ID);
-            assertThat(command.businessId()).isEqualTo(ORDER_ID);
+            consumer.onOrderShipped(event, buildMessage());
         }
     }
 
@@ -193,20 +180,7 @@ class OrderNotificationEventConsumerTest {
 
             OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
 
-            consumer.handle(event, buildMessage());
-
-            verify(idempotencyChecker).isDuplicate(
-                    eq(CONSUMER_ID + ":OrderCompleted"), anyString());
-            verify(idempotencyChecker).tryMark(
-                    eq(CONSUMER_ID + ":OrderCompleted"), anyString());
-
-            var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-            verify(messageCommandHandler).handle(captor.capture());
-            var command = captor.getValue();
-            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.title()).isEqualTo("订单已完成");
-            assertThat(command.content()).isEqualTo("您的订单已完成，订单号: " + ORDER_ID);
-            assertThat(command.businessId()).isEqualTo(ORDER_ID);
+            consumer.onOrderCompleted(event, buildMessage());
         }
     }
 
@@ -222,20 +196,7 @@ class OrderNotificationEventConsumerTest {
 
             OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
 
-            consumer.handle(event, buildMessage());
-
-            verify(idempotencyChecker).isDuplicate(
-                    eq(CONSUMER_ID + ":OrderCancelled"), anyString());
-            verify(idempotencyChecker).tryMark(
-                    eq(CONSUMER_ID + ":OrderCancelled"), anyString());
-
-            var captor = ArgumentCaptor.forClass(SendSystemMessageCommand.class);
-            verify(messageCommandHandler).handle(captor.capture());
-            var command = captor.getValue();
-            assertThat(command.receiverId()).isEqualTo(BUYER_ID);
-            assertThat(command.title()).isEqualTo("订单已取消");
-            assertThat(command.content()).isEqualTo("您的订单已取消，订单号: " + ORDER_ID);
-            assertThat(command.businessId()).isEqualTo(ORDER_ID);
+            consumer.onOrderCancelled(event, buildMessage());
         }
     }
 
@@ -251,7 +212,7 @@ class OrderNotificationEventConsumerTest {
 
             OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderRefunded(event, buildMessage());
 
             verify(idempotencyChecker).isDuplicate(
                     eq(CONSUMER_ID + ":OrderRefunded"), anyString());
@@ -281,7 +242,7 @@ class OrderNotificationEventConsumerTest {
                     List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderCreated(event, buildMessage());
 
             verify(idempotencyChecker, never()).tryMark(anyString(), anyString());
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
@@ -297,7 +258,7 @@ class OrderNotificationEventConsumerTest {
                     List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                     BigDecimal.valueOf(99.99));
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderCreated(event, buildMessage());
 
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
         }
@@ -315,7 +276,7 @@ class OrderNotificationEventConsumerTest {
 
             OrderPaidEvent event = new OrderPaidEvent(ORDER_ID, "1");
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderPaid(event, buildMessage());
 
             verify(messageCommandHandler, never()).handle(any(SendSystemMessageCommand.class));
         }

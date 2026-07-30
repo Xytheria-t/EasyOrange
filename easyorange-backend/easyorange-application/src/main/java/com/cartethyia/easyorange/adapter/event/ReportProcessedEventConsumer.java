@@ -1,10 +1,8 @@
 package com.cartethyia.easyorange.adapter.event;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
-import com.cartethyia.easyorange.framework.event.core.AbstractDomainEventConsumer;
+import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
-import com.cartethyia.easyorange.framework.event.metadata.EventMetadata;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
@@ -21,36 +19,26 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RabbitListener(queues = RabbitMQConfig.QUEUE_REPORT_NOTIFICATION, containerFactory = "domainEventContainerFactory")
-public class ReportProcessedEventConsumer extends AbstractDomainEventConsumer {
+public class ReportProcessedEventConsumer {
 
+    private final EventConsumerHandler handler;
     private final MessageCommandHandler messageCommandHandler;
 
     public ReportProcessedEventConsumer(EventIdempotencyChecker idempotencyChecker,
                                         EventMetricsService metricsService,
                                         MessageCommandHandler messageCommandHandler) {
-        super(idempotencyChecker, metricsService);
+        this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
         this.messageCommandHandler = messageCommandHandler;
     }
 
     @RabbitHandler
     public void onReportProcessed(ReportProcessedEvent event, Message message) {
-        handle(event, message);
-    }
-
-    @Override
-    protected void doHandle(DomainEvent event, EventMetadata metadata) {
-        if (!(event instanceof ReportProcessedEvent e)) {
-            throw new IllegalStateException("不支持的事件: " + event.getClass());
-        }
-        String title = e.approved() ? "举报处理结果：已受理" : "举报处理结果：已驳回";
-        String content = buildContent(e);
-
-        messageCommandHandler.handle(new SendSystemMessageCommand(
-                String.valueOf(e.reporterId()),
-                title,
-                content,
-                String.valueOf(e.productId())
-        ));
+        handler.handle(event, message, metadata -> {
+            var title = event.approved() ? "举报处理结果：已受理" : "举报处理结果：已驳回";
+            var content = buildContent(event);
+            messageCommandHandler.handle(new SendSystemMessageCommand(
+                    event.reporterId(), title, content, event.productId()));
+        });
     }
 
     private String buildContent(ReportProcessedEvent e) {

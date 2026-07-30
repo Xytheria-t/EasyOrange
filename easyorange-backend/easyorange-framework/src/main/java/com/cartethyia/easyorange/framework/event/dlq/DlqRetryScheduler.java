@@ -25,7 +25,7 @@ import java.util.Map;
  *   <li>重试次数 ≥ max → 转储 {@code eo.dlq.terminal} 队列，等待人工介入</li>
  * </ol>
  * <p>
- * 幂等安全：重投消息保留原 body + eventId，消费者端 {@code AbstractDomainEventConsumer}
+ * 幂等安全：重投消息保留原 body + eventId，消费者端 {@link com.cartethyia.easyorange.framework.event.core.EventConsumerHandler}
  * 幂等检查基于 eventId 去重，重复投递不会产生副作用。
  */
 @Slf4j

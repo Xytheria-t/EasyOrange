@@ -186,7 +186,7 @@ public class AdminReportService {
         productRepository.findById(ProductId.of(report.getProductId()))
                 .ifPresent(product -> {
                     var t = product.takeOffline();
-                    productRepository.update(t.aggregate());
+                    productRepository.save(t.aggregate());
                     productCachePort.evictProductCache(report.getProductId());
                 });
     }
@@ -195,7 +195,7 @@ public class AdminReportService {
         productRepository.findById(ProductId.of(report.getProductId()))
                 .ifPresent(product -> {
                     var t = product.reject("举报封禁: " + remark);
-                    productRepository.update(t.aggregate());
+                    productRepository.save(t.aggregate());
                     productCachePort.evictProductCache(report.getProductId());
                 });
     }

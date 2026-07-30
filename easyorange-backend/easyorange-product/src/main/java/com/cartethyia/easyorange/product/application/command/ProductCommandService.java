@@ -59,7 +59,7 @@ public class ProductCommandService {
                 )
         );
 
-        var created = productRepository.create(product.aggregate());
+        var created = productRepository.save(product.aggregate());
         domainEventPublisher.publish(product.event());
         return created.getId().value();
     }
@@ -155,7 +155,7 @@ public class ProductCommandService {
 
     private void mutate(Product product, Function<Product, Transition<Product, ?>> fn) {
         var result = fn.apply(product);
-        productRepository.update(result.aggregate());
+        productRepository.save(result.aggregate());
         domainEventPublisher.publish(result.event());
     }
 

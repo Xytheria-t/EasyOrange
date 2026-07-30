@@ -69,9 +69,8 @@ class OrderEventSubscribersTest {
                 List.of(new OrderCreatedEvent.OrderItemPayload(PRODUCT_ID, 1, BigDecimal.valueOf(99.99), BigDecimal.valueOf(99.99))),
                 BigDecimal.valueOf(99.99));
 
-        consumer.handle(event, buildMessage());
+        consumer.onOrderCreated(event, buildMessage());
 
-        // 库存扣减已在 CreateOrderSaga 同步完成，此处不应再触发库存操作
         verify(productOrderPort, never()).restoreStock(anyString());
         verify(productOrderPort, never()).markAsSold(anyString());
     }
@@ -81,7 +80,7 @@ class OrderEventSubscribersTest {
         void onOrderCancelled_shouldRestoreStock() {
             OrderCancelledEvent event = new OrderCancelledEvent(ORDER_ID, List.of(PRODUCT_ID), "取消原因");
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderCancelled(event, buildMessage());
 
             verify(productOrderPort).restoreStock(PRODUCT_ID);
         }
@@ -91,7 +90,7 @@ class OrderEventSubscribersTest {
         void onOrderCompleted_shouldMarkAsSold() {
             OrderCompletedEvent event = new OrderCompletedEvent(ORDER_ID, List.of(PRODUCT_ID));
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderCompleted(event, buildMessage());
 
             verify(productOrderPort).markAsSold(PRODUCT_ID);
         }
@@ -101,7 +100,7 @@ class OrderEventSubscribersTest {
         void onOrderRefunded_shouldRestoreStock() {
             OrderRefundedEvent event = new OrderRefundedEvent(ORDER_ID, List.of(PRODUCT_ID), "退款原因");
 
-            consumer.handle(event, buildMessage());
+            consumer.onOrderRefunded(event, buildMessage());
 
             verify(productOrderPort).restoreStock(PRODUCT_ID);
         }

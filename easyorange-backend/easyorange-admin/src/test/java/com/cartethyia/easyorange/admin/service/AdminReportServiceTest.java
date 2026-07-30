@@ -278,7 +278,7 @@ class AdminReportServiceTest {
 
                 reportService.handleReport(REPORT_ID, request);
 
-                verify(productRepository).update(argThat(p -> p.getStatus() == ProductStatus.OFFLINE));
+                verify(productRepository).save(argThat(p -> p.getStatus() == ProductStatus.OFFLINE));
                 verify(productCachePort).evictProductCache(PRODUCT_ID);
             } finally {
                 TestSecurityUtil.clearSecurityContext();

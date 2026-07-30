@@ -1,10 +1,8 @@
 package com.cartethyia.easyorange.adapter.event;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
-import com.cartethyia.easyorange.framework.event.core.AbstractDomainEventConsumer;
+import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
-import com.cartethyia.easyorange.framework.event.metadata.EventMetadata;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.message.application.command.MessageCommandHandler;
 import com.cartethyia.easyorange.message.application.command.SendSystemMessageCommand;
@@ -23,37 +21,28 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RabbitListener(queues = RabbitMQConfig.QUEUE_AUDIT_NOTIFICATION, containerFactory = "domainEventContainerFactory")
-public class ProductAuditEventConsumer extends AbstractDomainEventConsumer {
+public class ProductAuditEventConsumer {
 
+    private final EventConsumerHandler handler;
     private final MessageCommandHandler messageCommandHandler;
 
     public ProductAuditEventConsumer(EventIdempotencyChecker idempotencyChecker,
                                       EventMetricsService metricsService,
                                       MessageCommandHandler messageCommandHandler) {
-        super(idempotencyChecker, metricsService);
+        this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
         this.messageCommandHandler = messageCommandHandler;
     }
 
     @RabbitHandler
     public void onProductAudited(ProductAuditedEvent event, Message message) {
-        handle(event, message);
-    }
-
-    @Override
-    protected void doHandle(DomainEvent event, EventMetadata metadata) {
-        if (!(event instanceof ProductAuditedEvent e)) {
-            throw new IllegalStateException("不支持的事件: " + event.getClass());
-        }
-        String title = "1".equals(e.action()) ? "商品审核通过" : "商品审核未通过";
-        String content = "1".equals(e.action())
-                ? "您发布的「%s」已通过审核，现已上架销售！".formatted(e.productName())
-                : "您发布的「%s」未通过审核。原因：%s。请修改后重新提交。".formatted(e.productName(), e.reason());
-
-        messageCommandHandler.handle(new SendSystemMessageCommand(
-                e.sellerId(),
-                title,
-                content,
-                e.productId()
-        ));
+        handler.handle(event, message, metadata -> {
+            var approved = "1".equals(event.action());
+            var title = approved ? "商品审核通过" : "商品审核未通过";
+            var content = approved
+                    ? "您发布的「%s」已通过审核，现已上架销售！".formatted(event.productName())
+                    : "您发布的「%s」未通过审核。原因：%s。请修改后重新提交。".formatted(event.productName(), event.reason());
+            messageCommandHandler.handle(new SendSystemMessageCommand(
+                    event.sellerId(), title, content, event.productId()));
+        });
     }
 }

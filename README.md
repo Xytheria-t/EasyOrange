@@ -11,259 +11,144 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.3-6DB33F)](https://spring.io/projects/spring-boot)
 [![React](https://img.shields.io/badge/React-19-61DAFB)](https://react.dev/)
 
+## 🔑 双岗位适配面板（HR/面试官一眼匹配）
+
+| 🎯 AI Agent / 大模型 Java 后端 | 🏛 Java 架构师 / 高级后端 |
+|---|---|
+| ✅ LLM/Vision Port/Adapter 隔离，供应商可换 | ✅ DDD 六边形 + 31 Port 编译期隔离 |
+| ✅ 轻量级 Agent 编排（4 路并行 Tool Calling） | ✅ Saga 状态机 + 反向补偿（9 状态持久化） |
+| ✅ L1 Caffeine + L2 Redis 多级缓存 + stale 降级 | ✅ Spring Modulith Outbox + DLQ 三级重试 |
+| ✅ Redisson 令牌桶限流 + Bulkhead 隔离舱 | ✅ Resilience4j 熔断 + 限流 + 降级 + 幂等 |
+| ✅ Prompt YAML 版本化 + @TokenBudget 日预算 | ✅ ArchUnit 6 条规则 + ADR 5 条决策记录 |
+| ✅ AiMetrics 可观测 + Prometheus 指标 | ✅ JaCoCo + PIT 变异测试双重门禁 |
+| ✅ EmbeddingPort + Semantic Rerank（RAG 轻量版） | ✅ 全链路 traceId（HTTP → MQ → @Async → MDC） |
+| ✅ 多模态 Vision（拍照识别自动上架） | ✅ SlowSql 检测 + Redis 多级缓存一致性 |
+
 ## 四个并列钩子
 
 | 钩子 | 数字锚点 | 一句话 |
 |---|---|---|
-| **AI 工程化** | 6 决策点 + 7 件套 | Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead |
+| **AI 工程化** | 6 决策点 + 7 件套 + 轻量 Agent | Port/Adapter + L1/L2 多级缓存 + Redisson 令牌桶 + stale 降级 + AiMetrics + Prompt YAML + TokenBudget + Bulkhead + 4 路并行 Tool Calling |
 | **分布式可靠性** | Saga + Outbox + DLQ 三级重试 + 12 消费者 | 订单跨模块 Saga 编排 + 反向补偿；领域事件走 Spring Modulith Outbox → RabbitMQ；DLQ 指数退避 + terminal 转储 |
-| **架构落地** | 11 模块 / 31 Port / DDD+CQRS+事件驱动 / ArchUnit 6 规则 | domain 层零框架依赖，编译期隔离，ADR 记录关键决策与拒绝项 |
-| **质量门禁** | 2,427 测试（后端 1,389 + 前端 1,038）/ JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
+| **架构落地** | 11 模块 / 31 Port / DDD+CQRS+事件驱动 / ArchUnit 6 规则 | domain 层零框架依赖，编译期隔离；message/favorite 故意不做 CQRS（ADR-0002） |
+| **质量门禁** | 2,427 测试 / JaCoCo + PIT / Biome 0 errors | 后端 ArchUnit + JaCoCo 行≥80% + PIT 变异测试；前端 Vitest + Playwright + Biome |
 
 ## 项目定位
 
-**EasyOrange — LLM × DDD 工程化实战**：在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。
+**EasyOrange — LLM × DDD 工程化实战**：在 DDD 六边形架构里集成 LLM，让 AI 链路可换供应商、可降级、可观测。一套代码，双岗位叙事——投「AI Agent / 大模型 Java 后端」看 AI 工程化 + 轻量 Agent；投「Java 架构师」看 DDD + 分布式可靠性 + 架构治理。
 
 ### 核心矛盾
 
-DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，必须有多级缓存 + 限流降级 + 可观测。EasyOrange 用 Port/Adapter + 装饰器模式解了这个矛盾：
+DDD 铁律要求 domain 层零框架依赖，但 LLM 调用昂贵且不稳定，必须有多级缓存 + 限流降级 + 可观测。解法：Port/Adapter + 装饰器。`LlmPort` / `VisionPort` 在 domain 层，`@Primary` 装饰器 `CachingLlmAdapter` 在 adapter 层包装 DeepSeek 实现 L1 Caffeine + L2 Redis 多级缓存；`AiRateLimitInterceptor` 令牌桶按端点限流，超限返回 stale 缓存而非 429；`AiMetricsService` 暴露缓存命中率 / LLM p99 / 限流计数到 Prometheus；Prompt YAML 版本化 + `@TokenBudget` AOP 日预算 + Resilience4j Bulkhead 隔离舱，6 个 AI 决策点全链路覆盖。
 
-- `LlmPort` / `VisionPort` 接口定义在 domain 层 — 业务逻辑只依赖抽象
-- `@Primary` 装饰器（`CachingLlmAdapter` / `CachingVisionAdapter`）在 adapter 层包装具体供应商（DeepSeek / 通义千问 VL）
-- L1 Caffeine + L2 Redis 多级缓存让大部分重复估值请求不打 LLM
-- `AiRateLimitInterceptor` 令牌桶按端点独立限流，超限返回 stale 缓存而不是 429
-- `AiMetricsService` 把缓存命中率 / LLM p99 / 限流计数暴露到 Prometheus
-- Prompt 版本化（YAML）+ Token 预算治理（`@TokenBudget` AOP）
+### 轻量级 Agent 编排（AI Agent 岗叙事）
 
-6 个 AI 决策点（智能估值 / AI 文案 / AI 找货 / AI 评估 / AI 信用画像 / AI 审核）全部走这套工程化链路。
+[`AiSearchEnhancerAdapter`](./easyorange-backend/easyorange-ai/src/main/java/com/cartethyia/easyorange/ai/adapter/outbound/AiSearchEnhancerAdapter.java) 是手写轻量 Agent Planner（没用 LangChain4j/Spring AI，避免框架黑盒，面试能讲清每一层实现）：
 
-### 业务载体
+```
+用户自然语言查询
+  ├─ Tool 1: LLM 意图识别（找货/比价/问答）→ 路由
+  ├─ Tool 2: 商品标签生成（品类/成色/价格区间）
+  ├─ Tool 3: 市场分析（基于历史成交统计）
+  └─ Tool 4: 建议问题生成（自动追问模糊需求）
+```
 
-C2C 资产流转（固定价格 + 直发 + 平台不碰货）—— 资产不只是旧手机，还包括没用完的会员、设计素材、健身卡时长、技能咨询时段。业务聚焦核心流程，把复杂度留给架构与 AI 工程化。
+- 4 路 `CompletableFuture` 并行（虚拟线程 `ForkJoinPool.commonPool()`）
+- 单步骤 5s 超时，失败降级不影响整体
+- 每路 Tool 复用同一套 LLM 缓存/限流/预算链路
 
-### 5 条 ADR 与拒绝项
+### 架构治理三板斧（Java 架构师岗叙事） + 拒绝项清单
 
-Saga over 2PC/XA/TCC · CQRS 只在 4 个模块做 · AI 用 Port/Adapter + 装饰器 · AI 用 Bulkhead + TokenBudget AOP · 模块解耦与编译期隔离。每个决策都记录「为什么这样选 + 拒绝了什么」。
+> 加分点：不是列「我用了什么」，是讲「我评估过什么、为什么不用」。
+
+| 层 | 机制 | 解决的问题 |
+|---|---|---|
+| **决策层** | 5 条 ADR（[`doc/adr/`](doc/adr/)） | 记录「为什么 + 拒绝项」，不让选型沦为偏好 |
+| **守卫层** | ArchUnit 6 条（[`ArchitectureRulesTest`](./easyorange-backend/easyorange-application/src/test/java/com/cartethyia/easyorange/architecture/ArchitectureRulesTest.java)） | CI 阻断违规：domain 零框架 / port 必配 adapter / CQRS 分离 |
+| **验证层** | JaCoCo + PIT 变异测试 | JaCoCo 看「代码跑过」，PIT 注入变异看「测试能否发现缺陷」 |
+
+| 被拒绝方案 | 原因 | 替代方案 | ADR |
+|---|---|---|---|
+| 2PC / XA / Seata AT | 强一致锁表久 + 连接池代理侵入 | Saga + 9 状态持久化 + 超时检测 + 人工介入 | [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) |
+| 全模块 CQRS | message/favorite 读写均衡，收益 < 维护成本 | 仅 product/order/payment/message 4 模块做 | [ADR-0002](doc/adr/0002-cqrs-scope-only-4-modules.md) |
+| LangChain4j / Spring AI | Tool 调用反射黑盒 + 升级兼容差 | 手写 AiSearchEnhancer 4 路 Tool Registry，复用缓存限流 | [ADR-0003](doc/adr/0003-ai-port-adapter-with-decorator.md) |
+| Seata TCC | 3× try-confirm-cancel 样板 + 业务侵入 | Saga 逆序补偿 + restoreStock/cancelOrder | [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) |
+| Milvus / PGVector | SKU < 10 万，向量库 ROI 低 | ES BM25 召回 + LLM semantic rerank（RAG 轻量版） | 隐含决策 |
+
+C2C 资产流转业务载体（固定价格 + 直发 + 平台不碰货）详见 [PRODUCT_DIRECTION.md](./PRODUCT_DIRECTION.md)。
 
 ## 架构总览
-
-### 11 模块依赖与 AI 工程化
 
 ```mermaid
 graph TB
     FE["React 19 前端"]
     APP["easyorange-application · Spring Boot 4"]
-    USER[user]
-    PROD["product<br/>+ ES 搜索"]
-    ORD["order<br/>+ Saga 编排"]
-    PAY["payment<br/>+ 幂等"]
-    MSG["message<br/>+ STOMP"]
-    FAV[favorite]
-    ADMIN[admin]
-    AI["easyorange-ai · 6 决策点"]
-    MQ[("RabbitMQ<br/>12 消费者 + DLQ")]
-    DB[("MySQL 8.4<br/>30 表")]
-    REDIS[("Redis 7.4")]
-    ES[("ES 8 可选")]
-    LLM["DeepSeek + 通义 VL"]
-    FE --> APP
-    APP --> USER & PROD & ORD & PAY & MSG & FAV & ADMIN & AI
-    AI --> LLM
-    PROD --> ES
-    ORD -.事件.-> MQ
-    PAY -.事件.-> MQ
-    MQ -.事件.-> PROD & PAY
-    USER & PROD & ORD & PAY --> DB
-    AI --> REDIS
+    USER[user] PROD["product + ES"] ORD["order + Saga"]
+    PAY["payment + 幂等"] MSG["message + STOMP"]
+    FAV[favorite] ADMIN[admin] AI["ai · 6 决策点 + Agent"]
+    MQ[("RabbitMQ · 12c + DLQ")] DB[("MySQL 8.4 · 30 表")]
+    REDIS[("Redis 7.4")] ES[("ES 8 可选")] LLM["DeepSeek + 通义 VL"]
+    FE --> APP --> USER & PROD & ORD & PAY & MSG & FAV & ADMIN & AI
+    AI --> LLM PROD --> ES ORD & PAY -.事件.-> MQ -.事件.-> PROD & PAY
+    USER & PROD & ORD & PAY --> DB AI --> REDIS
 ```
-
-### AI 调用流程
-
-```mermaid
-sequenceDiagram
-    participant C as Controller
-    participant S as Service
-    participant AI as CachingLlmAdapter<br/>L1 + L2
-    participant L as AiRateLimitInterceptor<br/>令牌桶
-    participant D as DeepSeekLlmAdapter
-    participant M as AiMetricsService
-    participant LLM as DeepSeek API
-    C->>S: generateTag(product)
-    S->>AI: chat(LlmRequest)
-    alt L1 命中
-        AI->>M: recordCacheHit(L1)
-        AI-->>S: LlmResponse
-    else L1 未命中 L2 命中
-        AI->>AI: 回填 L1
-        AI->>M: recordCacheHit(L2)
-        AI-->>S: LlmResponse
-    else 都未命中
-        AI->>L: 检查令牌桶
-        alt 限流通过
-            L->>D: chat(LlmRequest)
-            D->>LLM: POST /chat/completions
-            LLM-->>D: 响应 + usage
-            D-->>L: LlmResponse
-            L->>M: recordLatency + recordUsage
-            L-->>AI: LlmResponse
-            AI->>AI: 写入 L1 + L2
-            AI-->>S: LlmResponse
-        else 限流超限
-            L->>M: recordRateLimitRejected
-            L->>AI: stale 缓存降级
-            AI-->>S: stale LlmResponse
-        end
-    end
-```
-
-### Saga 编排 + 事件驱动 Outbox
 
 ```mermaid
 stateDiagram-v2
-    [*] --> PENDING
-    PENDING --> ORDER_CREATED
-    ORDER_CREATED --> PAYMENT_CREATED
-    PAYMENT_CREATED --> COMPLETED
-    COMPLETED --> [*]
-    ORDER_CREATED --> COMPENSATING: 失败
-    PAYMENT_CREATED --> COMPENSATING: 失败
-    COMPENSATING --> COMPENSATED: 补偿成功
-    COMPENSATING --> FAILED: 补偿异常
-    FAILED --> TIMEOUT: 30min 未更新
-    TIMEOUT --> MANUAL_INTERVENTION: retry ≥ 3
+    [*] --> PENDING --> ORDER_CREATED --> PAYMENT_CREATED --> COMPLETED --> [*]
+    ORDER_CREATED --> COMPENSATING:失败 PAYMENT_CREATED --> COMPENSATING:失败
+    COMPENSATING --> COMPENSATED:补偿成功 COMPENSATING --> FAILED:补偿异常
+    FAILED --> TIMEOUT:30min TIMEOUT --> MANUAL_INTERVENTION:retry≥3
 ```
 
-**创建订单 Saga**：`CreateOrderSaga` 按 `productId` 排序加锁防死锁 → 创建订单 → 同步扣库存 → 创建支付；失败时逆序补偿 `restoreStock` → `cancelOrder`。
+**Saga + 事件可靠性 + traceId 全链路**：`CreateOrderSaga` 按 productId 排序加锁防死锁 → 建单 → 扣库存 → 建支付；失败逆序补偿 `restoreStock → cancelOrder`。事件走 Spring Modulith Outbox（业务表 + `EVENT_PUBLICATION` 原子写入）→ 异步 externalize 到 RabbitMQ → `EventConsumerHandler` 统一幂等/metrics/DLQ → `DlqRetryScheduler` 每 5min 重投或转储 terminal。traceId：Brave TracingFilter → MDC → `MdcTaskDecorator` 传 @Async → MQ message header → 消费者 MDC。
 
-**事件投递可靠性**：业务表写入 + `EVENT_PUBLICATION` 表原子写入（Spring Modulith Outbox）→ 异步 externalize 到 RabbitMQ → 消费者继承 `AbstractDomainEventConsumer` 统一幂等/metrics/日志/异常 → DLQ → `DlqRetryScheduler` 每 5min 扫描重投或转储 terminal。
-
-> 详细架构：[doc/架构/架构-系统架构.md](doc/架构/架构-系统架构.md) · 事件与 Saga：[doc/adr/0001-use-saga-over-2pc.md](doc/adr/0001-use-saga-over-2pc.md)
+> 细节：[架构-系统架构.md](doc/架构/架构-系统架构.md) · [ADR-0001](doc/adr/0001-use-saga-over-2pc.md) · [ADR-0003](doc/adr/0003-ai-port-adapter-with-decorator.md) · [ADR-0004](doc/adr/0004-ai-bulkhead-and-token-budget.md)
 
 ## 技术栈
 
-| 层 | 技术 |
-|---|------|
-| **后端** | Java 25, Spring Boot 4.0.3, MyBatis-Plus 3.5.16, Spring Security OAuth2 Resource Server + JWT |
-| **前端** | React 19, TypeScript 5, Vite 8, TanStack Query 5, Zustand 5, Tailwind CSS 4, shadcn/ui |
-| **数据/消息** | MySQL 8.4, Redis 7.4, RabbitMQ 3.13, Elasticsearch 8 (可选) |
-| **AI** | DeepSeek (文本), 通义千问 VL (视觉) |
-| **DevOps** | Docker, docker-compose, Flyway 11.15.0, GitHub Actions |
+后端 `Java 25 + Spring Boot 4 + MyBatis-Plus 3.5 + Spring Security OAuth2 + JWT` · 前端 `React 19 + TS 5 + Vite 8 + TanStack Query 5 + Zustand 5 + Tailwind 4 + shadcn/ui` · 数据/消息 `MySQL 8.4 + Redis 7.4 + RabbitMQ 3.13 + ES 8(可选)` · AI `DeepSeek + 通义千问 VL` · 可靠性 `Resilience4j + Redisson` · 可观测 `Micrometer + Brave + AiMetrics + SlowSql + StructuredLog` · DevOps `Docker + Flyway 11 + GitHub Actions`
 
 ## 快速开始
 
 ```bash
 git clone https://gitee.com/cartethyia_XLS/easy-orange.git && cd easy-orange
-docker compose -f compose.yaml up -d                    # MySQL/Redis/RabbitMQ
-./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application  # :8080
-cd easyorange-frontend && npm install && npm run dev    # :5173
+docker compose -f compose.yaml up -d                               # MySQL/Redis/RabbitMQ
+./mvnw install -DskipTests && ./mvnw spring-boot:run -pl easyorange-application   # :8080
+cd easyorange-frontend && npm install && npm run dev               # :5173
 ```
 
-> 项目支持**零配置启动**。详见 [AGENTS.md](./AGENTS.md)。
+> 零配置启动，详见 [AGENTS.md](./AGENTS.md)。后端 11 模块 / 前端 1038 测试 / 31 Port 接口，数字单一来源 [doc/工程指标.md](doc/工程指标.md)
 
-## 后端模块划分 (11 个 Maven 模块)
+## 模块 · AI 工程化 · 可靠性 · 质量门禁
 
-| 模块 | 职责 |
-|------|------|
-| `common` | Result/PageResult/注解/异常/Money/UUID v7 |
-| `framework` | Security/Redis/缓存/Bloom/AOP/事件/文件/RabbitMQ |
-| `user` | DDD：认证/注册/密码/个人资料/信用 |
-| `product` | DDD + CQRS + 审核工作流 + 举报 + 全文搜索 |
-| `order` | DDD + CQRS + Saga 补偿 |
-| `payment` | DDD + CQRS |
-| `message` | DDD + WebSocket + Repository |
-| `favorite` | DDD 六边形 |
-| `ai` | Port/Adapter + LLM/Vision/Embedding + 限流/缓存/可观测 |
-| `admin` | 管理端 API |
-| `application` | 启动入口 + Flyway + ArchUnit + ES 适配器 |
-
-## AI 工程化
-
-| 工程维度 | 实现方式 |
-|---------|---------|
-| **供应商隔离** | `LlmPort` / `VisionPort` / `EmbeddingPort` 接口抽象，DeepSeek/Qwen-VL 可互换 |
-| **多级缓存** | `@Primary` 装饰器 `CachingLlmAdapter` 包裹 `DeepSeekLlmAdapter`，L1 Caffeine + L2 Redis + stale 降级 + Pub/Sub 失效 |
-| **限流降级** | Redisson 令牌桶按端点限流，超限返回 stale 缓存，Redis 不可用时 fail-open |
-| **预算治理** | `@TokenBudget` AOP — 6 个 AI 场景全部接入日预算控制 |
-| **Prompt 版本化** | 6 个 YAML 模板，版本号管理，热加载 |
-| **Bulkhead 隔离** | Resilience4j — `aiLlm`（并发 8）/ `aiVision`（并发 4）/ `dbHeavy`（并发 16） |
-| **并行容错** | AI 搜索 4 路 `CompletableFuture` 并行，单步骤失败不影响整体 |
-
-详见 [doc/集成/AI-资产管理.md](doc/集成/AI-资产管理.md)。
-
-## 分布式可靠性与安全
-
-| 维度 | 实现 |
+| 维度 | 详情 |
 |---|---|
-| **Saga 分布式事务** | `CreateOrderSaga` 编排创建订单 → 同步扣库存 → 创建支付；失败逆序补偿；`SagaTimeoutScheduler` 检测超时/人工介入 |
-| **Outbox 可靠事件** | Spring Modulith 原子写入 `EVENT_PUBLICATION` 表，崩溃后自动重发 |
-| **DLQ 三级重试** | RetryTemplate 指数退避 → DLQ → `DlqRetryScheduler` 每 5 分钟扫描重投/转储 terminal |
-| **消费者模板** | `AbstractDomainEventConsumer` 统一幂等、metrics、日志、异常；多消费者命名空间隔离 |
-| **认证** | Spring Security OAuth2 Resource Server + JWT（Access + Refresh）+ Token 吊销黑名单 |
-| **限流防重** | `RateLimitFilter` — GET 本地内存 / 写操作 Redisson 分布式令牌桶；写操作 3s 防连点；fail-open |
-| **幂等** | `@Idempotent` + `Idempotency-Key` 头，24h 缓存成功响应 |
-| **审计日志** | `AuditLogAspect` 发布 `AuditLogEvent` → Outbox → `AuditLogEventConsumer` 异步入库 |
-| **依赖安全** | OWASP Dependency-Check 在 CI `security-scan` job 执行，CVSS ≥ 8 阻断 |
+| **11 Maven 模块** | common / framework / user / product(CQRS+审核+举报+ES) / order(CQRS+Saga) / payment(CQRS) / message(WS) / favorite / ai(Port+Agent) / admin / application(入口+Flyway+ArchUnit) |
+| **AI 工程化 8 项** | 供应商 Port 隔离 · L1/L2 多级缓存装饰器 · Redisson 令牌桶 + stale 降级 · @TokenBudget 日预算 · Prompt 6 个 YAML · Resilience4j Bulkhead(8/4/16) · AiSearchEnhancer 4 路并行 Tool Calling · CompletableFuture 单步骤超时降级 |
+| **分布式可靠性** | Saga 9 状态机 + 超时检测 · Outbox 原子写 EVENT_PUBLICATION · DLQ 三级重试(指数退避 1/5/15min + terminal) · EventConsumerHandler 统一幂等/metrics · traceId 全链路 · JWT + 黑名单吊销 · RateLimitFilter(GET 本地 / 写 Redisson) · @Idempotent(24h) · AuditLogAspect Outbox · OWASP CVSS≥8 阻断 |
+| **质量门禁** | ArchUnit 6 条 · JaCoCo Domain 84.1% / 71.5% · PIT order(70/89/81) product(70/79/92) · Biome 0 errors · Git hooks commit-msg + pre-commit |
 
-## 前端工程化
+前端：暖橙指挥中心 Admin 设计系统 · 120+ Portal/Dialog/Drawer/Sheet · 95 共享 UI + 107 Admin 组件 · 296 a11y 属性 · 171 TanStack Query hooks · 111 测试文件 / 1038 用例
 
-```
-React 19 + TypeScript 5 + Vite 8 + Tailwind CSS 4 + shadcn/ui
-TanStack Query 5（服务端状态）+ Zustand 5（客户端状态）
-Vitest（单元）+ Playwright（E2E）+ Biome（lint/format，0 errors）
-```
+## 面试快速导航
 
-- **Admin 设计系统**：自研「暖橙指挥中心」管理端，覆盖 dashboard / users / products / orders / categories / reports / stats，全部真实后端 API 对接
-- **组件化**：Portal / Dialog / Drawer / Sheet 等 120+ 处使用；共享 UI 组件 95 个；管理端组件 107 个
-- **无障碍**：a11y 属性 296 处，Biome 0 errors / 0 warnings
-- **状态管理**：171 处 TanStack Query hooks；Zustand 分 store 管理 auth/chat/ui
-- **测试**：111 文件 / 1,038 用例
+| 你投的岗位 | 先看这几节 | 被追问时跳 |
+|---|---|---|
+| **AI Agent / 大模型 Java 后端** | 双岗位适配面板 → 轻量级 Agent 编排 → AI 工程化 → 拒绝项清单 | ADR-0003 / ADR-0004 / [工程指标.md §四](doc/工程指标.md) |
+| **Java 架构师 / 高级后端** | 架构治理三板斧 → 拒绝项清单 → 架构总览(Saga+Outbox+traceId) | ADR-0001 / ADR-0002 / ArchitectureRulesTest |
+| **全栈** | 技术栈 → 快速开始 → 模块总览 | [API-速查.md](doc/集成/API-速查.md) |
 
-## 质量门禁与 CI
-
-```
-后端：JUnit 5 + Mockito → JaCoCo（行≥80%/分支≥60%）→ PIT 变异测试 → ArchUnit 架构守卫
-前端：Vitest + Playwright → Biome lint/format 0 errors
-CI：GitHub Actions 双 job（build-and-test + security-scan）
-```
-
-- **ArchUnit 6 规则**：domain 零框架依赖 / CQRS 读写分离 / 模块间仅通过 port/valueobject 通信 / port 必须有 adapter 实现 / 禁止 infrastructure 包
-- **JaCoCo**：Domain 层行覆盖 **84.1%**，分支覆盖 **71.5%**
-- **PIT**：order 模块 mutation 70% / test strength 89%；product 模块 mutation 70% / test strength 79%
-- **Git hooks**：`commit-msg` 校验 Conventional Commits，`pre-commit` 本地检查
-
-数字单一来源见 [doc/工程指标.md](doc/工程指标.md)。
-
-## Docker 部署
+## 部署 · 结构 · 贡献
 
 ```bash
-docker compose -f compose.yaml up -d                    # MySQL/Redis/RabbitMQ
-docker compose up -d elasticsearch                      # 可选 ES
-cd easyorange-frontend && docker build -t easyorange-frontend . && docker run -p 80:80 easyorange-frontend
+docker compose up -d elasticsearch                # 可选 ES
+cd easyorange-frontend && docker build -t easyorange-fe . && docker run -p 80:80 easyorange-fe
 ```
 
-## 项目结构
+项目结构：`easyorange-backend/`(11 Maven) + `easyorange-frontend/`(React) + `doc/架构/` + `doc/集成/` + `doc/adr/`(5 ADR) + `PRODUCT_DIRECTION.md`（业务场景）+ `AGENTS.md`（编码规范）+ `CHANGELOG.md`
 
-```
-easy-orange/
-├── easyorange-backend/     # Spring Boot (11 Maven 模块)
-├── easyorange-frontend/    # React SPA
-├── doc/架构/               # 架构规范文档
-├── doc/集成/               # 业务专题 + API 速查
-├── doc/adr/                # 架构决策记录
-├── PRODUCT_DIRECTION.md    # 业务场景说明
-├── CLAUDE.md               # AI 项目指南
-├── AGENTS.md               # Agent 使用说明
-└── CHANGELOG.md            # 更新日志
-```
-
-## 开发规范与贡献
-
-- Conventional Commits · `main` / `develop` / `feature/*` / `bugfix/*` · Google Java Style + Biome
-- PR 前本地验证：`./mvnw test` + `npm test`，详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
-
-## 许可证
-
-MIT License — 详见 [LICENSE](LICENSE) 文件
+贡献：Conventional Commits · `main/develop/feature/*/bugfix/*` · 本地验证 `./mvnw test` + `npm test`，详见 [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ---
 

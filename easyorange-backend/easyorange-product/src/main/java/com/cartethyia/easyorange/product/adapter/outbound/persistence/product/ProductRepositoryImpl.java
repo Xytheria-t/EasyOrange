@@ -11,9 +11,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Primary
@@ -35,34 +33,12 @@ public class ProductRepositoryImpl implements ProductRepository {
         this.dataMapper = dataMapper;
     }
 
-    // ========== 写 ==========
-
     @Override
-    public Product create(Product product) {
-        ProductDO productDO = dataMapper.toDataObject(product);
-        productMapper.insert(productDO);
-        Product created = product.assignId(productDO.getId());
-
-        ProductDetailDO detailDO = dataMapper.toDetailDO(created.getId(), created.getDescription());
-        if (detailDO != null) {
-            productDetailMapper.insert(detailDO);
+    public Product save(Product product) {
+        if (product.getId() == null) {
+            return insert(product);
         }
-
-        List<ProductImageDO> imageDOs = dataMapper.toImageDOs(created.getId(), created.getImages());
-        if (!imageDOs.isEmpty()) {
-            productImageMapper.batchInsert(imageDOs);
-        }
-
-        return created;
-    }
-
-    @Override
-    public void update(Product product) {
-        if (productMapper.updateById(dataMapper.toDataObject(product)) == 0) {
-            throw new ConcurrentUpdateException("商品更新冲突: id=" + product.getId().value());
-        }
-        updateProductDetail(product);
-        updateImagesDifferentially(product);
+        return update(product);
     }
 
     @Override
@@ -73,16 +49,14 @@ public class ProductRepositoryImpl implements ProductRepository {
                 .eq(ProductImageDO::getProductId, id.value()));
     }
 
-    // ========== 读 ==========
-
     @Override
     public Optional<Product> findById(ProductId id) {
-        ProductDO productDO = productMapper.selectById(id.value());
+        var productDO = productMapper.selectById(id.value());
         if (productDO == null) {
             return Optional.empty();
         }
-        ProductDetailDO detailDO = productDetailMapper.selectById(productDO.getId());
-        List<ProductImageDO> imageDOs = productMapper.selectImagesByProductIds(List.of(productDO.getId()));
+        var detailDO = productDetailMapper.selectById(productDO.getId());
+        var imageDOs = productMapper.selectImagesByProductIds(List.of(productDO.getId()));
         return Optional.of(dataMapper.toDomain(productDO, detailDO, imageDOs));
     }
 
@@ -91,28 +65,44 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (ids == null || ids.isEmpty()) {
             return List.of();
         }
-        List<ProductDO> productDOs = productMapper.selectList(
+        var productDOs = productMapper.selectList(
                 Wrappers.<ProductDO>lambdaQuery()
                         .in(ProductDO::getId, ids.stream().map(ProductId::value).toList()));
-        if (productDOs.isEmpty()) {
-            return List.of();
-        }
-        return batchConvertProducts(productDOs);
+        return productDOs.isEmpty() ? List.of() : toDomainList(productDOs);
     }
 
-    // ========== 私有辅助 ==========
+    private Product insert(Product product) {
+        var productDO = dataMapper.toDataObject(product);
+        productMapper.insert(productDO);
+        var saved = product.assignId(productDO.getId());
+        var detailDO = dataMapper.toDetailDO(saved.getId(), saved.getDescription());
+        if (detailDO != null) {
+            productDetailMapper.insert(detailDO);
+        }
+        var imageDOs = dataMapper.toImageDOs(saved.getId(), saved.getImages());
+        if (!imageDOs.isEmpty()) {
+            productImageMapper.batchInsert(imageDOs);
+        }
+        return saved;
+    }
 
-    private List<Product> batchConvertProducts(List<ProductDO> productDOs) {
-        List<String> productIds = productDOs.stream().map(ProductDO::getId).toList();
+    private Product update(Product product) {
+        if (productMapper.updateById(dataMapper.toDataObject(product)) == 0) {
+            throw new ConcurrentUpdateException("商品更新冲突: id=" + product.getId().value());
+        }
+        upsertDetail(product);
+        syncImages(product);
+        return product;
+    }
 
-        Map<String, ProductDetailDO> detailMap = productDetailMapper
+    private List<Product> toDomainList(List<ProductDO> productDOs) {
+        var productIds = productDOs.stream().map(ProductDO::getId).toList();
+        var detailMap = productDetailMapper
                 .selectDetailsByProductIds(productIds).stream()
                 .collect(Collectors.toMap(ProductDetailDO::getProductId, d -> d, (a, _) -> a));
-
-        Map<String, List<ProductImageDO>> imagesByProduct = productMapper
+        var imagesByProduct = productMapper
                 .selectImagesByProductIds(productIds).stream()
                 .collect(Collectors.groupingBy(ProductImageDO::getProductId));
-
         return productDOs.stream()
                 .map(productDO -> dataMapper.toDomain(
                         productDO,
@@ -122,12 +112,10 @@ public class ProductRepositoryImpl implements ProductRepository {
                 .toList();
     }
 
-    private void updateProductDetail(Product product) {
-        ProductDetailDO detailDO = dataMapper.toDetailDO(product.getId(), product.getDescription());
-        if (detailDO == null) {
-            return;
-        }
-        ProductDetailDO existingDetail = productDetailMapper.selectById(product.getId().value());
+    private void upsertDetail(Product product) {
+        var detailDO = dataMapper.toDetailDO(product.getId(), product.getDescription());
+        if (detailDO == null) return;
+        var existingDetail = productDetailMapper.selectById(product.getId().value());
         if (existingDetail != null) {
             existingDetail.setDescription(detailDO.getDescription());
             productDetailMapper.updateById(existingDetail);
@@ -136,32 +124,25 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
     }
 
-    private void updateImagesDifferentially(Product product) {
-        String productId = product.getId().value();
-
-        List<ProductImageDO> existingImages = productMapper.selectImagesByProductIds(List.of(productId));
-        List<ProductImageDO> newImages = dataMapper.toImageDOs(product.getId(), product.getImages());
-
-        Set<String> existingUrls = existingImages.stream()
+    private void syncImages(Product product) {
+        var productId = product.getId().value();
+        var existingImages = productMapper.selectImagesByProductIds(List.of(productId));
+        var newImages = dataMapper.toImageDOs(product.getId(), product.getImages());
+        var existingUrls = existingImages.stream()
                 .map(ProductImageDO::getImageUrl)
                 .collect(Collectors.toSet());
-
-        Set<String> newUrls = newImages.stream()
+        var newUrls = newImages.stream()
                 .map(ProductImageDO::getImageUrl)
                 .collect(Collectors.toSet());
-
-        Set<String> urlsToDelete = new HashSet<>(existingUrls);
+        var urlsToDelete = new HashSet<>(existingUrls);
         urlsToDelete.removeAll(newUrls);
-
         if (!urlsToDelete.isEmpty()) {
             productImageMapper.deleteByProductIdAndUrls(productId, new ArrayList<>(urlsToDelete));
         }
-
-        Set<String> urlsToAdd = new HashSet<>(newUrls);
+        var urlsToAdd = new HashSet<>(newUrls);
         urlsToAdd.removeAll(existingUrls);
-
         if (!urlsToAdd.isEmpty()) {
-            List<ProductImageDO> imagesToAdd = newImages.stream()
+            var imagesToAdd = newImages.stream()
                     .filter(img -> urlsToAdd.contains(img.getImageUrl()))
                     .toList();
             productImageMapper.batchInsert(imagesToAdd);

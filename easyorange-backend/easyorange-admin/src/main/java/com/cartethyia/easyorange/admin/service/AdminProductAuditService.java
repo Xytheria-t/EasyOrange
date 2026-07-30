@@ -77,7 +77,7 @@ public class AdminProductAuditService {
             default -> throw BusinessException.of("无效的审核动作");
         };
 
-        productRepository.update(t.aggregate());
+        productRepository.save(t.aggregate());
 
         ProductAuditLog auditLog = ProductAuditLog.builder()
                 .productId(id)
@@ -127,7 +127,7 @@ public class AdminProductAuditService {
                 Transition<Product, ?> t = applyTransition(product, action, item, errors);
                 if (t == null) continue;
 
-                productRepository.update(t.aggregate());
+productRepository.save(t.aggregate());
 
                 ProductAuditLog auditLog = ProductAuditLog.builder()
                         .productId(item.productId())

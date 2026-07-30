@@ -10,7 +10,7 @@ framework/
 ├── bloom/             # BloomFilter + RedisBitmapBloomFilter（布隆过滤器）
 ├── cache/             # CacheLoader + CacheUtils + MultiLevelCache（多级缓存门面）
 ├── config/            # 框架配置（线程池/Jackson/MDC/缓存/Redis/Security/WebMVC/Properties）
-├── event/             # 领域事件基础设施（AbstractDomainEventConsumer / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
+├── event/             # 领域事件基础设施（EventConsumerHandler / EventMetadata / EventMetricsService / EventIdempotencyChecker / DlqAnomalyListener）
 ├── exception/         # GlobalExceptionHandler（全局异常处理，RFC 9457 ProblemDetail）
 ├── file/              # 文件上传下载（FileController/FileService/FileStorage）
 ├── idgen/             # UuidV7IdGenerator（UUID v7）
@@ -44,13 +44,13 @@ JWT 认证由 Spring Security OAuth2 Resource Server 内置的 `BearerTokenAuthe
 
 ### 事件消费者基础设施
 
-所有消费者继承 `AbstractDomainEventConsumer` 模板基类，统一以下横切关注点：
+所有消费者使用 `EventConsumerHandler` 组合类，统一以下横切关注点：
 
-1. **幂等去重**：`EventIdempotencyChecker`（Redis SETNX + Redisson 锁），命名空间 `consumerId() + ":" + eventType()` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
+1. **幂等去重**：`EventIdempotencyChecker`（Redis SETNX + Redisson 锁），命名空间 `consumerId + ":" + eventType` 隔离多消费者，`idempotencyEnabled=false` 构造器关闭投影/广播/指标类消费者
 2. **事件元数据**：`EventMetadataMessagePostProcessor` 发布前向 message headers 注入 eventId/timestamp/traceId；`EventMetadata.from(message, event)` 在消费端解码
 3. **指标埋点**：`EventMetricsService` 自动上报 `easyorange.events.received{type,outcome}` / `easyorange.events.duration{type,outcome}` / `easyorange.events.dlq{queue,reason}`
 4. **DLQ 异常监听**：`DlqAnomalyListener` 监听 11 个 DLQ 队列，提取 x-death header 记录指标
-5. **模板方法**：`handle(event, message)` 做统一预处理（幂等 → metrics 采样 → 日志 → 业务处理 → 异常兜底），`doHandle(event, metadata)` 由子类实现业务逻辑
+5. **组合**：`EventConsumerHandler.handle(event, message, metadata -> ...)` 封装统一预处理（幂等 → metrics → 日志 → 业务 → 异常兜底），业务逻辑写在 lambda 中
 
 ### Redis 缓存操作
 

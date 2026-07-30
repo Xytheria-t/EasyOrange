@@ -67,7 +67,7 @@ class ProductReportDomainServiceTest {
 
         assertThat(event).isPresent();
         assertThat(event.get().productId()).isEqualTo(PRODUCT_ID);
-        verify(productRepository).update(argThat(p ->
+        verify(productRepository).save(argThat(p ->
                 p.getId().value().equals(PRODUCT_ID) && p.getStatus() == ProductStatus.OFFLINE));
         verify(productCacheEvictionPort).evictProductCache(PRODUCT_ID);
         verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
@@ -83,7 +83,7 @@ class ProductReportDomainServiceTest {
         var event = domainService.processReport("100", false);
 
         assertThat(event).isEmpty();
-        verify(productRepository, never()).update(any());
+        verify(productRepository, never()).save(any());
         verify(productCacheEvictionPort, never()).evictProductCache(any());
         verify(productReportRepository).update(argThat(r -> r != null && !r.isPending()));
     }

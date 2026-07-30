@@ -1,10 +1,8 @@
 package com.cartethyia.easyorange.adapter.event;
 
-import com.cartethyia.easyorange.common.event.DomainEvent;
-import com.cartethyia.easyorange.framework.event.core.AbstractDomainEventConsumer;
+import com.cartethyia.easyorange.framework.event.core.EventConsumerHandler;
 import com.cartethyia.easyorange.framework.event.idempotency.EventIdempotencyChecker;
 import com.cartethyia.easyorange.framework.event.metrics.EventMetricsService;
-import com.cartethyia.easyorange.framework.event.metadata.EventMetadata;
 import com.cartethyia.easyorange.framework.messaging.config.RabbitMQConfig;
 import com.cartethyia.easyorange.payment.domain.event.CompensationFailedAlertEvent;
 import lombok.extern.slf4j.Slf4j;
@@ -24,24 +22,19 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(prefix = "easyorange.rabbitmq", name = "enabled", havingValue = "true", matchIfMissing = true)
 @RabbitListener(queues = RabbitMQConfig.QUEUE_COMPENSATION_ALERT, containerFactory = "domainEventContainerFactory")
-public class CompensationFailedAlertConsumer extends AbstractDomainEventConsumer {
+public class CompensationFailedAlertConsumer {
+
+    private final EventConsumerHandler handler;
 
     public CompensationFailedAlertConsumer(EventIdempotencyChecker idempotencyChecker,
                                            EventMetricsService metricsService) {
-        super(idempotencyChecker, metricsService);
+        this.handler = new EventConsumerHandler(getClass().getSimpleName(), idempotencyChecker, metricsService);
     }
 
     @RabbitHandler
     public void onCompensationFailed(CompensationFailedAlertEvent event, Message message) {
-        handle(event, message);
-    }
-
-    @Override
-    protected void doHandle(DomainEvent event, EventMetadata metadata) {
-        if (!(event instanceof CompensationFailedAlertEvent e)) {
-            throw new IllegalStateException("不支持的事件: " + event.getClass());
-        }
-        log.error("event=compensation_failed paymentId={} operationType={} errorMessage={} details={}",
-                e.paymentId(), e.operationType(), e.errorMessage(), e.failureDetails());
+        handler.handle(event, message, metadata ->
+                log.error("event=compensation_failed paymentId={} operationType={} errorMessage={} details={}",
+                        event.paymentId(), event.operationType(), event.errorMessage(), event.failureDetails()));
     }
 }
